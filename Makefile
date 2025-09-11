@@ -1,4 +1,4 @@
-.PHONY: lint-fix test type-check ci
+.PHONY: lint-fix test type-check docs ci
 
 # Run RuboCop linter
 lint-fix:

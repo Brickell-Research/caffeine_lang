@@ -1,6 +1,7 @@
 # caffeine
 
 [![CI](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml/badge.svg)](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-read%20the%20docs-blue.svg)](https://caffeine.docs.brickellresearch.org/)
 [![Built with Ruby](https://img.shields.io/badge/built%20with-Ruby-red.svg)](https://www.ruby-lang.org/)
 [![We love types!](https://img.shields.io/badge/built%20with-Sorbet-blue.svg)](https://sorbet.org/)
 
