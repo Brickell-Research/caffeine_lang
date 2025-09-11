@@ -1,9 +1,10 @@
 # caffeine
 
-[![CI](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml/badge.svg)](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-read%20the%20docs-blue.svg)](https://caffeine.docs.brickellresearch.org/)
-[![Built with Ruby](https://img.shields.io/badge/built%20with-Ruby-red.svg)](https://www.ruby-lang.org/)
-[![We love types!](https://img.shields.io/badge/built%20with-Sorbet-blue.svg)](https://sorbet.org/)
+[![CI](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml/badge.svg?style=for-the-badge)](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-read%20the%20docs-blue?style=for-the-badge&logo=readthedocs&logoColor=white)](https://caffeine.docs.brickellresearch.org/)
+[![Ruby](https://img.shields.io/badge/ruby-%23CC342D.svg?style=for-the-badge&logo=ruby&logoColor=white)](https://www.ruby-lang.org/)
+[![Sorbet](https://img.shields.io/badge/Sorbet-3C4858?style=for-the-badge&logo=sorbet&logoColor=white)](https://sorbet.org/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 
 <div align="center">
 <img src="images/caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
