@@ -1,14 +1,25 @@
+# Ruby artifacts
 *.gem
 *.rbc
 /.config
-/coverage/
 /InstalledFiles
 /pkg/
+/tmp/
+
+# Bundler
+/.bundle/
+/vendor/bundle
+/lib/bundler/man/
+
+# RSpec
+/coverage/
 /spec/reports/
 /spec/examples.txt
+.rspec_status
+
+# Test artifacts
 /test/tmp/
 /test/version_tmp/
-/tmp/
 
 # Used by dotenv library to load environment variables.
 # .env
@@ -16,41 +27,100 @@
 # Ignore Byebug command history file.
 .byebug_history
 
-## Specific to RubyMotion:
-.dat*
-.repl_history
-build/
-*.bridgesupport
-build-iPhoneOS/
-build-iPhoneSimulator/
+# RuboCop
+.rubocop-https?--*
+.rubocop_todo.yml
 
-## Specific to RubyMotion (use of CocoaPods):
-#
-# We recommend against adding the Pods directory to your .gitignore. However
-# you should judge for yourself, the pros and cons are mentioned at:
-# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-#
-# vendor/Pods/
+# Sorbet
+/sorbet/rbi/gems/
+/sorbet/rbi/hidden-definitions/
+/sorbet/rbi/sorbet-typed/
+/sorbet/rbi/todo.rbi
+/sorbet/rbi/annotations/
+/sorbet/rbi/dsl.rbi
 
-## Documentation cache and generated files:
+# Tapioca
+/sorbet/rbi/dsl.rbi
+/sorbet/rbi/gems/**/*.rbi
+/sorbet/rbi/todo.rbi
+
+# YARD documentation
 /.yardoc/
 /_yardoc/
 /doc/
 /rdoc/
 
-## Environment normalization:
-/.bundle/
-/vendor/bundle
-/lib/bundler/man/
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# for a library or gem, you might want to ignore these files since the code is
-# intended to run in multiple environments; otherwise, check them in:
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ruby version managers
+.ruby-version
+.ruby-gemset
+.rvmrc
+.rbenv-version
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+*.log
+/log/
+
+# Database files (if using SQLite for testing)
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+build/
+dist/
+
+# RubyMotion specific
+.dat*
+.repl_history
+*.bridgesupport
+build-iPhoneOS/
+build-iPhoneSimulator/
+
+# CocoaPods (uncomment if using)
+# vendor/Pods/
+
+# For libraries/gems - uncomment if you want to ignore these
 # Gemfile.lock
 # .ruby-version
 # .ruby-gemset
 
-# unless supporting rvm < 1.11.0 or doing something fancy, ignore this:
-.rvmrc
+# Profiling and benchmarking
+/benchmark/
+/profile/
+*.prof
 
-# Used by RuboCop. Remote config files pulled in from inherit_from directive.
-# .rubocop-https?--*
+# SimpleCov coverage reports
+/coverage.data
+/coverage/
+
+# Metrics and reports
+/metrics/
+/reports/
