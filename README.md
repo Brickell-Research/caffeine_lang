@@ -1,6 +1,10 @@
 # caffeine
 
-<img src="images/caffeine_icon.png" alt="Caffeine Icon" width="100" height="100">
+[![CI](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml/badge.svg)](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml)
+
+<div align="center">
+<img src="images/caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
+</div>
 
 ***
 
