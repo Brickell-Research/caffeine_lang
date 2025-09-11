@@ -2,15 +2,15 @@
 
 # Run RuboCop linter
 lint-fix:
-	rubocop -A
+	bundle exec rubocop -A
 
 # Run Sorbet type checker
 type-check:
-	srb tc
+	bundle exec srb tc
 
 # Run RSpec tests
 test:
-	rspec
+	bundle exec rspec
 
 # Run CI pipeline: lint, type-check, then test
 ci: lint-fix type-check test 
