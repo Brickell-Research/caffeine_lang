@@ -10,18 +10,14 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        ruby-version: ['3.4.0', '3.4.5']
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Ruby ${{ matrix.ruby-version }}
+    - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: ${{ matrix.ruby-version }}
+        ruby-version: 3.4.5
         bundler-cache: true
     
     - name: Install dependencies

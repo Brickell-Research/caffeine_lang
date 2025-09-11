@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir['lib/**/*', 'README.md', 'LICENSE']
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = '>= 3.4'
+  spec.required_ruby_version = '3.4.5'
 
   spec.add_dependency 'sorbet-runtime'
 
