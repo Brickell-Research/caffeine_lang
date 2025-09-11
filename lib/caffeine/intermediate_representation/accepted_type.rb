@@ -5,6 +5,8 @@ module Caffeine
   # From RFC-001:
   # enum AcceptedType = Boolean | Decimal | Integer | List<AcceptedTypes> | String
   module IntermediateRepresentation
+    extend T::Sig
+
     AcceptedType = T.type_alias do
       T.any(
         T::Boolean, BigDecimal, Integer, String,

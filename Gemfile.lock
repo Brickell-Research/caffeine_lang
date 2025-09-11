@@ -9,6 +9,7 @@ GEM
   specs:
     ast (2.4.3)
     benchmark (0.4.1)
+    bigdecimal (3.2.3)
     diff-lcs (1.6.2)
     erubi (1.13.1)
     json (2.13.2)
@@ -104,6 +105,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  bigdecimal
   caffeine!
   rspec
   rubocop

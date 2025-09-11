@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 # typed: strict
 
+require 'bigdecimal'
+
 module Caffeine
   module IntermediateRepresentation
     # From RFC-001:
@@ -24,7 +26,7 @@ module Caffeine
       sig { params(filters: T.untyped, threshold: T.untyped, slo_type: T.untyped).void }
       def initialize(filters, threshold, slo_type)
         @filters = T.let(filters, T::Hash[String, T.untyped])
-        @threshold = T.let(threshold, BigDecimal)
+        @threshold = T.let(BigDecimal(threshold.to_s), BigDecimal)
         @slo_type = T.let(slo_type, SLOType)
 
         super()

@@ -5,6 +5,8 @@ source 'https://rubygems.org'
 ruby '3.4.5'
 
 gemspec
+# core dependencies
+gem 'bigdecimal'
 
 # type-checking - sorbet
 gem 'sorbet', group: :development
