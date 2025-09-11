@@ -1,6 +1,8 @@
 # caffeine
 
 [![CI](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml/badge.svg)](https://github.com/Brickell-Research/caffeine/actions/workflows/ci.yml)
+[![Built with Ruby](https://img.shields.io/badge/built%20with-Ruby-red.svg)](https://www.ruby-lang.org/)
+[![We love types!](https://img.shields.io/badge/built%20with-Sorbet-blue.svg)](https://sorbet.org/)
 
 <div align="center">
 <img src="images/caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
