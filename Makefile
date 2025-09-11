@@ -6,7 +6,7 @@ lint-fix:
 
 # Run Sorbet type checker
 type-check:
-	bundle exec srb tc
+	bundle exec srb tc -a
 
 # Run RSpec tests
 test:

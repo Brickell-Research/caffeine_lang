@@ -33,7 +33,7 @@ As this is a compiler, we'll leverage a typical multi-phase design.
 ```haskell
 -- Top Level --
 struct Organization {
-  known_teams:         List<Team>
+  teams:               List<Team>
   service_definitions: List<Service>
 }
 
@@ -52,7 +52,7 @@ struct Service {
 struct SLO {
   filters:   Hash<String, Any>
   threshold: Decimal
-  type:      SLOType
+  slo_type:      SLOType
 }
 
 struct SLOType {
