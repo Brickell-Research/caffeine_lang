@@ -69,6 +69,7 @@ GEM
       sorbet-static (= 0.6.12507)
     sorbet-runtime (0.6.12507)
     sorbet-static (0.6.12507-universal-darwin)
+    sorbet-static (0.6.12507-x86_64-linux)
     sorbet-static-and-runtime (0.6.12507)
       sorbet (= 0.6.12507)
       sorbet-runtime (= 0.6.12507)
@@ -100,6 +101,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-24
+  x86_64-linux
 
 DEPENDENCIES
   caffeine!
