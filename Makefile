@@ -1,16 +1,24 @@
-.PHONY: lint-fix test type-check docs ci
+.PHONY: lint lint-fix test build docs ci
 
-# Run RuboCop linter
+# Check code formatting
+lint:
+	gleam format --check
+
+# Fix code formatting
 lint-fix:
-	bundle exec rubocop -A
+	gleam format
 
-# Run Sorbet type checker
-type-check:
-	bundle exec srb tc -a
+# Build the project
+build:
+	gleam build
 
-# Run RSpec tests
+# Run tests
 test:
-	bundle exec rspec
+	gleam test
 
-# Run CI pipeline: lint, type-check, then test
-ci: lint-fix type-check test 
+# Run CI pipeline: format check, build, then test
+ci: lint build test
+
+# Generate documentation (if needed)
+docs:
+	@echo "Documentation generation not configured yet" 

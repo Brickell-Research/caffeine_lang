@@ -1,126 +1,113 @@
-# Ruby artifacts
-*.gem
-*.rbc
-/.config
-/InstalledFiles
-/pkg/
-/tmp/
-
-# Bundler
-/.bundle/
-/vendor/bundle
-/lib/bundler/man/
-
-# RSpec
-/coverage/
-/spec/reports/
-/spec/examples.txt
-.rspec_status
-
-# Test artifacts
-/test/tmp/
-/test/version_tmp/
-
-# Used by dotenv library to load environment variables.
-# .env
-
-# Ignore Byebug command history file.
-.byebug_history
-
-# RuboCop
-.rubocop-https?--*
-.rubocop_todo.yml
-
-# Sorbet
-/sorbet/rbi/gems/
-/sorbet/rbi/hidden-definitions/
-/sorbet/rbi/sorbet-typed/
-/sorbet/rbi/todo.rbi
-/sorbet/rbi/annotations/
-/sorbet/rbi/dsl.rbi
-
-# Tapioca
-/sorbet/rbi/dsl.rbi
-/sorbet/rbi/gems/**/*.rbi
-/sorbet/rbi/todo.rbi
-
-# YARD documentation
-/.yardoc/
-/_yardoc/
-/doc/
-/rdoc/
-
-# IDE and editor files
-.vscode/
-.idea/
+# General artifacts
+.DS_Store
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Ruby version managers
-.ruby-version
-.ruby-gemset
-.rvmrc
-.rbenv-version
-
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.project
+.settings
+.idea
+*.iml
+*.ipr
+*.iws
+.classpath
+.vscode/
+*.sublime-*
 
 # Log files
 *.log
-/log/
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
 
-# Database files (if using SQLite for testing)
-*.sqlite3
-*.db
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+/build/
+/dist/
+/out/
+
+# OS specific
+Thumbs.db
+Desktop.ini
+
+# Node.js (if switching to JS/TS)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if switching to Python)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Rust (keeping since you have rust_caffeine)
+/target/
+Cargo.lock
+**/*.rs.bk
+
+# Documentation build artifacts
+docs/*.html
+docs/_site/
+_site/
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
+*.orig
 
-# Build artifacts
-build/
-dist/
+# IDE specific
+.idea/
+*.swp
+*.swo
+.vscode/
+.history/
 
-# RubyMotion specific
-.dat*
-.repl_history
-*.bridgesupport
-build-iPhoneOS/
-build-iPhoneSimulator/
+# Cache directories
+.cache/
+.pytest_cache/
+.mypy_cache/
 
-# CocoaPods (uncomment if using)
-# vendor/Pods/
+# Coverage reports
+coverage/
+*.cover
+.coverage
+htmlcov/
 
-# For libraries/gems - uncomment if you want to ignore these
-# Gemfile.lock
-# .ruby-version
-# .ruby-gemset
+# Package manager directories
+.npm/
+.yarn/
 
-# Profiling and benchmarking
-/benchmark/
-/profile/
-*.prof
+# Miscellaneous
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# SimpleCov coverage reports
-/coverage.data
-/coverage/
+# Scribble/Racket documentation build files
+docs/caffeine/
+docs/compiled/
 
-# Metrics and reports
-/metrics/
-/reports/
+# Keep important files
+!.gitkeep
+!README.md
+!LICENSE
+!CNAME

@@ -1,4 +1,0 @@
---dir=lib
---ignore=/vendor/
---ignore=/spec/
---typed=strict

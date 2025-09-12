@@ -1,0 +1,8 @@
+name = "caffeine"
+version = "0.0.1"
+description = "A simple hello world Gleam project"
+licences = ["GPL-3.0"]
+
+[dependencies]
+
+[dev-dependencies]
