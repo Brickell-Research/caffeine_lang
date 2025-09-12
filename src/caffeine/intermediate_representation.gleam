@@ -13,7 +13,12 @@ pub type Team {
 
 /// An SLO is an expectation set by stakeholders upon a metric emulating the user experience as best as possible.
 pub type Slo {
-  Slo(filters: dict.Dict(String, String), threshold: Float, sli_type: String)
+  Slo(
+    filters: dict.Dict(String, String),
+    threshold: Float,
+    sli_type: String,
+    service_name: String,
+  )
 }
 
 // ================================================

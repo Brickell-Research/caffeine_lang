@@ -4,9 +4,9 @@ description = "A simple hello world Gleam project"
 licences = ["GPL-3.0"]
 
 [dependencies]
-glaml = ">= 3.0.2 and < 4.0.0"
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
 simplifile = ">= 2.3.0 and < 3.0.0"
+glaml = ">= 3.0.2 and < 4.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.6.1 and < 2.0.0"

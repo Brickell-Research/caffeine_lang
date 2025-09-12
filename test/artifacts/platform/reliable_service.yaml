@@ -1,0 +1,9 @@
+slos:
+  - sli_type: "http_status_code"
+    filters:
+      "acceptable_status_codes": "[200, 201]"
+    threshold: 99.5
+  - sli_type: "http_status_code"
+    filters:
+      "acceptable_status_codes": "[203, 204]"
+    threshold: 99.99

@@ -32,6 +32,7 @@ pub fn organization_test() {
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
       sli_type: "http_status_code",
+      service_name: "super_scalabale_web_service",
     )
 
   let platform_team_definition =
@@ -44,6 +45,7 @@ pub fn organization_test() {
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
       sli_type: "http_status_code",
+      service_name: "super_scalabale_web_service",
     )
 
   let other_team_definition =
