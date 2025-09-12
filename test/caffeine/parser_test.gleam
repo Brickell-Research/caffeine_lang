@@ -78,7 +78,7 @@ pub fn parse_instantiation_invalid_threshold_type_test() {
     parser.parse_instantiation(
       "test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
     )
-  assert actual == Error("Expected node to be a float")
+  assert actual == Error("Expected threshold to be a float")
 }
 
 pub fn parse_instantiation_invalid_sli_type_type_test() {
@@ -86,5 +86,5 @@ pub fn parse_instantiation_invalid_sli_type_type_test() {
     parser.parse_instantiation(
       "test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
     )
-  assert actual == Error("Expected node to be a string")
+  assert actual == Error("Expected sli_type to be a string")
 }
