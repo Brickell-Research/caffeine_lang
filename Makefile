@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix test build docs ci
+.PHONY: lint lint-fix test build docs ci watch
 
 # Check code formatting
 lint:
@@ -21,4 +21,8 @@ ci: lint build test
 
 # Generate documentation (if needed)
 docs:
-	@echo "Documentation generation not configured yet" 
+	@echo "Documentation generation not configured yet"
+
+# Watch for changes and run tests automatically
+watch:
+	@./watch.sh 
