@@ -20,7 +20,6 @@ pub fn organization_test() {
       name: "http_status_code",
       query_template: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
     )
-
   let service_definition =
     intermediate_representation.Service(
       name: "super_scalabale_web_service",
@@ -32,7 +31,7 @@ pub fn organization_test() {
     intermediate_representation.Slo(
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
-      sli_type: some_sli_type,
+      sli_type: "http_status_code",
     )
 
   let platform_team_definition =
@@ -44,7 +43,7 @@ pub fn organization_test() {
     intermediate_representation.Slo(
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
-      sli_type: some_sli_type,
+      sli_type: "http_status_code",
     )
 
   let other_team_definition =
