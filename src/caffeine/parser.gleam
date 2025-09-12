@@ -1,5 +1,6 @@
 import caffeine/intermediate_representation
 import glaml
+import gleam/bool
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -9,51 +10,55 @@ import gleam/string
 pub fn parse_instantiation(
   file_path: String,
 ) -> Result(List(intermediate_representation.Team), String) {
-  // get the team name and service name from the file path
   let splitted_file_path = file_path |> string.split("/")
-  assert list.length(splitted_file_path) == 4
 
-  // these are fine
-  let assert Ok(team_name) = splitted_file_path |> list.drop(2) |> list.first
-  let assert Ok(doc) = glaml.parse_file(file_path)
+  use <- bool.guard(
+    list.length(splitted_file_path) != 4,
+    Error("Invalid file path: expected format 'dir/dir/team/file.yaml'"),
+  )
+
+  use team_name <- result.try(
+    splitted_file_path
+    |> list.drop(2)
+    |> list.first
+    |> result.replace_error("Failed to extract team name from path"),
+  )
+
+  use service_name <- result.try(
+    splitted_file_path
+    |> list.last
+    |> result.map(fn(name) { string.replace(name, ".yaml", "") })
+    |> result.replace_error("Failed to extract service name from path"),
+  )
+
+  use doc <- result.try(
+    glaml.parse_file(file_path)
+    |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
+  )
 
   // Handle empty documents
   case doc {
-    [] -> {
-      let team =
-        intermediate_representation.Team(
-          name: "badass_" <> team_name <> "_team",
-          slos: [],
-        )
-      Ok([team])
-    }
-    _ -> {
-      // Normal processing for non-empty documents
-      let first_doc = case doc |> list.first {
-        Ok(node) -> glaml.document_root(node)
-        _ -> panic as "error"
-      }
+    [] -> Error("Empty YAML file")
+    [first, ..] -> {
+      let root = glaml.document_root(first)
 
       use slos_node <- result.try(
-        glaml.select_sugar(first_doc, "slos")
+        glaml.select_sugar(root, "slos")
         |> result.map_error(fn(_) { "Missing SLOs" }),
       )
-      use slos <- result.try(parse_slos(slos_node))
 
-      let team =
-        intermediate_representation.Team(
-          name: "badass_" <> team_name <> "_team",
-          slos: slos,
-        )
-      Ok([team])
+      use slos <- result.try(parse_slos(slos_node, service_name))
+
+      Ok([intermediate_representation.Team(name: team_name, slos: slos)])
     }
   }
 }
 
 fn parse_slos(
   slos: glaml.Node,
+  service_name: String,
 ) -> Result(List(intermediate_representation.Slo), String) {
-  parse_slos_iterative(slos, 0, "super_scalabale_web_service")
+  parse_slos_iterative(slos, 0, service_name)
 }
 
 fn parse_slos_iterative(
