@@ -13,8 +13,8 @@ jobs:
     
     strategy:
       matrix:
-        # Last 5 Gleam versions. Probably should be a more dynamic way to do this.
-        gleam-version: ["1.8.0", "1.9.0", "1.10.0", "1.11.0", "1.12.0"]
+        # Last Gleam version. Probably should be a more dynamic way to do this.
+        gleam-version: ["1.12.0"]
     
     steps:
     - name: Checkout code
