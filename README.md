@@ -1,5 +1,6 @@
 # caffeine
 
+[![Build and Deploy Scribble Documentation](https://github.com/Brickell-Research/caffeine/actions/workflows/docs.yml/badge.svg)](https://github.com/Brickell-Research/caffeine/actions/workflows/docs.yml)
 [![Documentation](https://img.shields.io/badge/docs-read%20the%20docs-blue?style=for-the-badge&logo=readthedocs&logoColor=white)](https://caffeine.docs.brickellresearch.org/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Gleam](https://img.shields.io/badge/Gleam-FFAFF3?style=for-the-badge&logo=gleam&logoColor=black)](https://gleam.run/)
