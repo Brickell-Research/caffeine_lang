@@ -1,0 +1,19 @@
+slos_groups:
+  - name: "Frontend Page Load Performance"
+    slos:
+      - type: lcp_latency
+        target: 99.9
+        duration_threshold_seconds: 2.5
+        view: "/dashboard/*"
+      - type: frontend_renders
+        target: 99.9
+        view: "/dashboard/*"
+  - name: "Real-time Communication"
+    slos:
+      - type: lcp_latency
+        target: 99.9
+        duration_threshold_seconds: 2.5
+        view: "/rtc/*"
+      - type: frontend_renders
+        target: 99.9
+        view: "/rtc/*"
