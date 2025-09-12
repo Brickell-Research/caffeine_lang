@@ -13,18 +13,18 @@ jobs:
     
     strategy:
       matrix:
-        # Last Gleam version. Probably should be a more dynamic way to do this.
-        gleam-version: ["1.12.0"]
+        gleam-version: ["1.8.0", "1.9.0"]
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup BEAM (Erlang + Gleam)
+    - name: Setup BEAM (Erlang + Gleam + rebar3)
       uses: erlef/setup-beam@v1
       with:
         otp-version: '27'
         gleam-version: ${{ matrix.gleam-version }}
+        rebar3-version: '3.25.0'
         
     - name: Cache Gleam dependencies
       uses: actions/cache@v4
