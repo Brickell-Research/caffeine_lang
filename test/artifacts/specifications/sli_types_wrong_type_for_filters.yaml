@@ -1,0 +1,4 @@
+types:
+  - name: latency
+    query_template: avg:(latency by {team_name, accepted_status_codes})
+    filters: "not_a_list"

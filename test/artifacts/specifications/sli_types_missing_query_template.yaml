@@ -1,0 +1,5 @@
+types:
+  - name: latency
+    filters:
+      - team_name
+      - accepted_status_codes

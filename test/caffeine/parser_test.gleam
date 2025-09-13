@@ -237,3 +237,56 @@ pub fn parse_sli_filters_unrecognized_attribute_type_test() {
     )
   assert actual == Error("Unknown attribute type: LargeNumber")
 }
+
+pub fn parse_sli_types_test() {
+  let expected_sli_types = [
+    specification.SliTypePreSugared(
+      name: "latency",
+      query_template: "avg:(latency by {team_name, accepted_status_codes})",
+      filters: ["team_name", "accepted_status_codes"],
+    ),
+    specification.SliTypePreSugared(
+      name: "error_rate",
+      query_template: "avg:(error_rate by {number_of_users})",
+      filters: ["number_of_users"],
+    ),
+  ]
+
+  let actual =
+    specification.parse_sli_types_specification(
+      "test/artifacts/specifications/sli_types.yaml",
+    )
+  assert actual == Ok(expected_sli_types)
+}
+
+pub fn parse_sli_types_missing_name_test() {
+  let actual =
+    specification.parse_sli_types_specification(
+      "test/artifacts/specifications/sli_types_missing_name.yaml",
+    )
+  assert actual == Error("Missing name")
+}
+
+pub fn parse_sli_types_missing_query_template_test() {
+  let actual =
+    specification.parse_sli_types_specification(
+      "test/artifacts/specifications/sli_types_missing_query_template.yaml",
+    )
+  assert actual == Error("Missing query_template")
+}
+
+pub fn parse_sli_types_missing_filters_test() {
+  let actual =
+    specification.parse_sli_types_specification(
+      "test/artifacts/specifications/sli_types_missing_filters.yaml",
+    )
+  assert actual == Error("Missing filters")
+}
+
+pub fn parse_sli_types_wrong_type_for_filters_test() {
+  let actual =
+    specification.parse_sli_types_specification(
+      "test/artifacts/specifications/sli_types_wrong_type_for_filters.yaml",
+    )
+  assert actual == Error("Expected sli type filter to be a string")
+}

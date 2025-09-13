@@ -3,12 +3,15 @@ import caffeine/parser/common
 import glaml
 import gleam/dict
 import gleam/int
-import gleam/list
 import gleam/result
 
 // ==== Pre Sugared Specification Parsing Types ====
 pub type ServicePreSugared {
   ServicePreSugared(name: String, sli_types: List(String))
+}
+
+pub type SliTypePreSugared {
+  SliTypePreSugared(name: String, query_template: String, filters: List(String))
 }
 
 pub fn parse_services_specification(
@@ -229,5 +232,139 @@ fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
   case required {
     glaml.NodeBool(value) -> Ok(value)
     _ -> Error("Expected attribute required to be a string")
+  }
+}
+
+pub fn parse_sli_types_specification(
+  file_path: String,
+) -> Result(List(SliTypePreSugared), String) {
+  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
+
+  // parse the YAML file
+  use doc <- result.try(common.parse_yaml_file(file_path))
+
+  // empty, but required
+  let params = dict.new()
+
+  // parse the intermediate representation, here just the sli_types
+  case doc {
+    [first, ..] -> parse_sli_types_from_doc(first, params)
+    _ -> Error("Empty YAML file")
+  }
+}
+
+pub fn parse_sli_types_from_doc(
+  doc: glaml.Document,
+  params: dict.Dict(String, String),
+) -> Result(List(SliTypePreSugared), String) {
+  use sli_types <- result.try(parse_sli_types(glaml.document_root(doc), params))
+
+  Ok(sli_types)
+}
+
+pub fn parse_sli_types(
+  root: glaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(List(SliTypePreSugared), String) {
+  use types_node <- result.try(
+    glaml.select_sugar(root, "types")
+    |> result.map_error(fn(_) { "Missing types" }),
+  )
+
+  do_parse_sli_types(types_node, 0)
+}
+
+fn do_parse_sli_types(
+  types: glaml.Node,
+  index: Int,
+) -> Result(List(SliTypePreSugared), String) {
+  case glaml.select_sugar(types, "#" <> int.to_string(index)) {
+    Ok(type_node) -> {
+      use sli_type <- result.try(parse_sli_type(type_node))
+      use rest <- result.try(do_parse_sli_types(types, index + 1))
+      Ok([sli_type, ..rest])
+    }
+    // TODO: fix this super hacky way of iterating over SLI types.
+    Error(_) -> Ok([])
+  }
+}
+
+fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypePreSugared, String) {
+  use name <- result.try(extract_sli_type_name(type_node))
+  use query_template <- result.try(extract_sli_type_query_template(type_node))
+  use filters <- result.try(extract_sli_type_filters(type_node))
+
+  Ok(SliTypePreSugared(
+    name: name,
+    query_template: query_template,
+    filters: filters,
+  ))
+}
+
+fn extract_sli_type_name(type_node: glaml.Node) -> Result(String, String) {
+  use name_node <- result.try(common.extract_some_node_by_key(type_node, "name"))
+
+  case name_node {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected sli type name to be a string")
+  }
+}
+
+fn extract_sli_type_query_template(
+  type_node: glaml.Node,
+) -> Result(String, String) {
+  use query_template_node <- result.try(common.extract_some_node_by_key(
+    type_node,
+    "query_template",
+  ))
+
+  case query_template_node {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected sli type query_template to be a string")
+  }
+}
+
+fn extract_sli_type_filters(
+  type_node: glaml.Node,
+) -> Result(List(String), String) {
+  use filters_node <- result.try(common.extract_some_node_by_key(
+    type_node,
+    "filters",
+  ))
+  
+  // Try to access the first element to validate it's a list structure
+  case glaml.select_sugar(filters_node, "#0") {
+    Ok(_) -> do_extract_sli_type_filters(filters_node, 0)
+    Error(_) -> {
+      // Check if it's a non-list node that would cause the wrong error
+      case filters_node {
+        glaml.NodeStr(_) -> Error("Expected sli type filter to be a string")
+        _ -> Error("Expected filters to be a list")
+      }
+    }
+  }
+}
+
+fn do_extract_sli_type_filters(
+  filters_node: glaml.Node,
+  index: Int,
+) -> Result(List(String), String) {
+  case glaml.select_sugar(filters_node, "#" <> int.to_string(index)) {
+    Ok(filter_node) -> {
+      use filter <- result.try(extract_sli_type_filter(filter_node))
+      use rest <- result.try(do_extract_sli_type_filters(
+        filters_node,
+        index + 1,
+      ))
+      Ok([filter, ..rest])
+    }
+    Error(_) -> Ok([])
+  }
+}
+
+fn extract_sli_type_filter(filter_node: glaml.Node) -> Result(String, String) {
+  case filter_node {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected sli type filter to be a string")
   }
 }
