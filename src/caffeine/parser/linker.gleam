@@ -5,7 +5,8 @@ import gleam/result
 
 /// This function is a two step process. While it fundamentally enables us to sugar
 /// the specification (services), it also semantically validates that the specification
-/// makes sense.
+/// makes sense; right now this just means that we're able to link sli_types to services
+/// and sli_filters to sli_types.
 pub fn link_and_validate_specification_sub_parts(
   services: List(specification.ServicePreSugared),
   sli_types: List(specification.SliTypePreSugared),
@@ -75,6 +76,7 @@ pub fn sugar_pre_sugared_sli_type(
   }
 }
 
+/// This function takes a pre sugared Service and a list of SliTypes and returns a sugared Service.
 pub fn sugar_pre_sugared_service(
   pre_sugared_service: specification.ServicePreSugared,
   sli_types: List(intermediate_representation.SliType),
