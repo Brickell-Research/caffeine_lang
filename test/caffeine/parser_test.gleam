@@ -1,6 +1,7 @@
 import caffeine/intermediate_representation
 import caffeine/parser/common
 import caffeine/parser/instantiation
+import caffeine/parser/specification
 import glaml
 import gleam/dict
 
@@ -141,4 +142,38 @@ pub fn parse_yaml_file_invalid_test() {
     == Error(
       "Failed to parse YAML file: test/artifacts/platform/non_existent.yaml",
     )
+}
+
+pub fn parse_services_test() {
+  let expected_services = [
+    specification.ServicePreSugared(name: "reliable_service", sli_types: [
+      "latency",
+      "error_rate",
+    ]),
+    specification.ServicePreSugared(name: "unreliable_service", sli_types: [
+      "error_rate",
+    ]),
+  ]
+
+  let actual =
+    specification.parse_services_specification(
+      "test/artifacts/specifications/services.yaml",
+    )
+  assert actual == Ok(expected_services)
+}
+
+pub fn parse_services_missing_sli_types_test() {
+  let actual =
+    specification.parse_services_specification(
+      "test/artifacts/specifications/services_missing_sli_types.yaml",
+    )
+  assert actual == Error("Missing sli_types")
+}
+
+pub fn parse_services_missing_name_test() {
+  let actual =
+    specification.parse_services_specification(
+      "test/artifacts/specifications/services_missing_name.yaml",
+    )
+  assert actual == Error("Missing name")
 }

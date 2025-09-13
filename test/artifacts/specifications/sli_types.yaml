@@ -1,0 +1,10 @@
+types:
+  - name: latency
+    query_template: avg:(latency by {team_name, accepted_status_codes})
+    filters:
+      - team_name
+      - accepted_status_codes
+  - name: error_rate
+    query_template: avg:(error_rate by {number_of_users})
+    filters:
+      - number_of_users

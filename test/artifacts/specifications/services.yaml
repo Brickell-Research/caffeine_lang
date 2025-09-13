@@ -1,0 +1,8 @@
+services:
+  - name: reliable_service
+    sli_types:
+      - latency
+      - error_rate
+  - name: unreliable_service
+    sli_types:
+      - error_rate

@@ -1,0 +1,112 @@
+import caffeine/parser/common
+import glaml
+import gleam/dict
+import gleam/int
+import gleam/result
+
+// ==== Pre Sugared Specification Parsing Types ====
+pub type ServicePreSugared {
+  ServicePreSugared(name: String, sli_types: List(String))
+}
+
+pub fn parse_services_specification(
+  file_path: String,
+) -> Result(List(ServicePreSugared), String) {
+  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
+
+  // parse the YAML file
+  use doc <- result.try(common.parse_yaml_file(file_path))
+
+  // empty, but required
+  let params = dict.new()
+
+  // parse the intermediate representation, here just the services
+  case doc {
+    [first, ..] -> parse_services_from_doc(first, params)
+    _ -> Error("Empty YAML file")
+  }
+}
+
+pub fn parse_services_from_doc(
+  doc: glaml.Document,
+  params: dict.Dict(String, String),
+) -> Result(List(ServicePreSugared), String) {
+  use services <- result.try(parse_services(glaml.document_root(doc), params))
+
+  Ok(services)
+}
+
+pub fn parse_services(
+  root: glaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(List(ServicePreSugared), String) {
+  use services_node <- result.try(
+    glaml.select_sugar(root, "services")
+    |> result.map_error(fn(_) { "Missing services" }),
+  )
+
+  do_parse_services(services_node, 0)
+}
+
+fn do_parse_services(
+  services: glaml.Node,
+  index: Int,
+) -> Result(List(ServicePreSugared), String) {
+  case glaml.select_sugar(services, "#" <> int.to_string(index)) {
+    Ok(service_node) -> {
+      use service <- result.try(parse_service(service_node))
+      use rest <- result.try(do_parse_services(services, index + 1))
+      Ok([service, ..rest])
+    }
+    // TODO: fix this super hacky way of iterating over SLOs.
+    Error(_) -> Ok([])
+  }
+}
+
+fn parse_service(service: glaml.Node) -> Result(ServicePreSugared, String) {
+  use sli_types <- result.try(extract_sli_types(service))
+  use name <- result.try(extract_service_name(service))
+
+  Ok(ServicePreSugared(name: name, sli_types: sli_types))
+}
+
+fn extract_sli_types(service: glaml.Node) -> Result(List(String), String) {
+  use sli_types_node <- result.try(common.extract_some_node_by_key(
+    service,
+    "sli_types",
+  ))
+  do_extract_sli_types(sli_types_node, 0)
+}
+
+fn do_extract_sli_types(
+  sli_types_node: glaml.Node,
+  index: Int,
+) -> Result(List(String), String) {
+  case glaml.select_sugar(sli_types_node, "#" <> int.to_string(index)) {
+    Ok(sli_type_node) -> {
+      use sli_type <- result.try(extract_sli_type(sli_type_node))
+      use rest <- result.try(do_extract_sli_types(sli_types_node, index + 1))
+      Ok([sli_type, ..rest])
+    }
+    Error(_) -> Ok([])
+  }
+}
+
+fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
+  case sli_type_node {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected sli type to be a string")
+  }
+}
+
+fn extract_service_name(service: glaml.Node) -> Result(String, String) {
+  use service_name <- result.try(common.extract_some_node_by_key(
+    service,
+    "name",
+  ))
+
+  case service_name {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected service name to be a string")
+  }
+}
