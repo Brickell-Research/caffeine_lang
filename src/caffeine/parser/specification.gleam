@@ -1,35 +1,18 @@
 import caffeine/intermediate_representation
 import caffeine/parser/common
+import caffeine/parser/specification_types.{
+  type ServicePreSugared, type SliTypePreSugared, ServicePreSugared,
+  SliTypePreSugared,
+}
 import glaml
 import gleam/dict
 import gleam/int
 import gleam/result
 
-// ==== Pre Sugared Specification Parsing Types ====
-pub type ServicePreSugared {
-  ServicePreSugared(name: String, sli_types: List(String))
-}
-
-pub type SliTypePreSugared {
-  SliTypePreSugared(name: String, query_template: String, filters: List(String))
-}
-
 pub fn parse_services_specification(
   file_path: String,
-) -> Result(List(ServicePreSugared), String) {
-  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
-
-  // parse the YAML file
-  use doc <- result.try(common.parse_yaml_file(file_path))
-
-  // empty, but required
-  let params = dict.new()
-
-  // parse the intermediate representation, here just the services
-  case doc {
-    [first, ..] -> parse_services_from_doc(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
+) -> Result(List(specification_types.ServicePreSugared), String) {
+  common.parse_specification(file_path, parse_services_from_doc)
 }
 
 pub fn parse_services_from_doc(
@@ -70,7 +53,7 @@ fn do_parse_services(
 
 fn parse_service(service: glaml.Node) -> Result(ServicePreSugared, String) {
   use sli_types <- result.try(extract_sli_types(service))
-  use name <- result.try(extract_service_name(service))
+  use name <- result.try(common.extract_string_from_node(service, "name"))
 
   Ok(ServicePreSugared(name: name, sli_types: sli_types))
 }
@@ -104,34 +87,10 @@ fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
   }
 }
 
-fn extract_service_name(service: glaml.Node) -> Result(String, String) {
-  use service_name <- result.try(common.extract_some_node_by_key(
-    service,
-    "name",
-  ))
-
-  case service_name {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected service name to be a string")
-  }
-}
-
 pub fn parse_sli_filters_specification(
   file_path: String,
 ) -> Result(List(intermediate_representation.SliFilter), String) {
-  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
-
-  // parse the YAML file
-  use doc <- result.try(common.parse_yaml_file(file_path))
-
-  // empty, but required
-  let params = dict.new()
-
-  // parse the intermediate representation, here just the sli_filters
-  case doc {
-    [first, ..] -> parse_sli_filters_from_doc(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
+  common.parse_specification(file_path, parse_sli_filters_from_doc)
 }
 
 pub fn parse_sli_filters_from_doc(
@@ -176,8 +135,14 @@ fn do_parse_sli_filters(
 fn parse_sli_filter(
   sli_filter: glaml.Node,
 ) -> Result(intermediate_representation.SliFilter, String) {
-  use attribute_name <- result.try(extract_attribute_name(sli_filter))
-  use attribute_type <- result.try(extract_attribute_type(sli_filter))
+  use attribute_name <- result.try(common.extract_string_from_node(
+    sli_filter,
+    "attribute_name",
+  ))
+  use attribute_type <- result.try(common.extract_string_from_node(
+    sli_filter,
+    "attribute_type",
+  ))
   use required <- result.try(extract_attribute_required(sli_filter))
 
   let accepted_type_for_attribute_type = case attribute_type {
@@ -199,30 +164,6 @@ fn parse_sli_filter(
   ))
 }
 
-fn extract_attribute_name(sli_filter: glaml.Node) -> Result(String, String) {
-  use attribute_name <- result.try(common.extract_some_node_by_key(
-    sli_filter,
-    "attribute_name",
-  ))
-
-  case attribute_name {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected attribute name to be a string")
-  }
-}
-
-fn extract_attribute_type(sli_filter: glaml.Node) -> Result(String, String) {
-  use attribute_type <- result.try(common.extract_some_node_by_key(
-    sli_filter,
-    "attribute_type",
-  ))
-
-  case attribute_type {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected attribute type to be a string")
-  }
-}
-
 fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
   use required <- result.try(common.extract_some_node_by_key(
     sli_filter,
@@ -238,19 +179,7 @@ fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
 pub fn parse_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypePreSugared), String) {
-  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
-
-  // parse the YAML file
-  use doc <- result.try(common.parse_yaml_file(file_path))
-
-  // empty, but required
-  let params = dict.new()
-
-  // parse the intermediate representation, here just the sli_types
-  case doc {
-    [first, ..] -> parse_sli_types_from_doc(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
+  common.parse_specification(file_path, parse_sli_types_from_doc)
 }
 
 pub fn parse_sli_types_from_doc(
@@ -290,8 +219,11 @@ fn do_parse_sli_types(
 }
 
 fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypePreSugared, String) {
-  use name <- result.try(extract_sli_type_name(type_node))
-  use query_template <- result.try(extract_sli_type_query_template(type_node))
+  use name <- result.try(common.extract_string_from_node(type_node, "name"))
+  use query_template <- result.try(common.extract_string_from_node(
+    type_node,
+    "query_template",
+  ))
   use filters <- result.try(extract_sli_type_filters(type_node))
 
   Ok(SliTypePreSugared(
@@ -299,29 +231,6 @@ fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypePreSugared, String) {
     query_template: query_template,
     filters: filters,
   ))
-}
-
-fn extract_sli_type_name(type_node: glaml.Node) -> Result(String, String) {
-  use name_node <- result.try(common.extract_some_node_by_key(type_node, "name"))
-
-  case name_node {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected sli type name to be a string")
-  }
-}
-
-fn extract_sli_type_query_template(
-  type_node: glaml.Node,
-) -> Result(String, String) {
-  use query_template_node <- result.try(common.extract_some_node_by_key(
-    type_node,
-    "query_template",
-  ))
-
-  case query_template_node {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected sli type query_template to be a string")
-  }
 }
 
 fn extract_sli_type_filters(

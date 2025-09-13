@@ -49,3 +49,36 @@ pub fn apply_to_glaml_document(
     _ -> Error("Empty YAML file: within apply_to_glaml_document")
   }
 }
+
+/// Parses a specification file into a list of glaml documents according to the given parse function.
+pub fn parse_specification(
+  file_path: String,
+  parse_fn: fn(glaml.Document, dict.Dict(String, String)) -> Result(a, String),
+) -> Result(a, String) {
+  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
+
+  // parse the YAML file
+  use doc <- result.try(parse_yaml_file(file_path))
+
+  // empty, but required
+  let params = dict.new()
+
+  // parse the intermediate representation, here just the sli_types
+  case doc {
+    [first, ..] -> parse_fn(first, params)
+    _ -> Error("Empty YAML file: " <> file_path)
+  }
+}
+
+/// Extracts a string from a glaml node.
+pub fn extract_string_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(String, String) {
+  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+
+  case query_template_node {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected " <> key <> " to be a string")
+  }
+}

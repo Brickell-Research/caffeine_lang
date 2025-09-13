@@ -2,7 +2,7 @@ import caffeine/intermediate_representation.{
   Integer, Organization, Service, SliFilter, SliType, Slo, Team,
 }
 import caffeine/parser/linker
-import caffeine/parser/specification
+import caffeine/parser/specification_types.{ServicePreSugared, SliTypePreSugared}
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -43,7 +43,7 @@ pub fn sugar_pre_sugared_sli_type_test() {
   ]
 
   assert linker.sugar_pre_sugared_sli_type(
-      specification.SliTypePreSugared(
+      SliTypePreSugared(
         name: "a",
         filters: ["a", "b"],
         query_template: "some_query_template",
@@ -60,7 +60,7 @@ pub fn sugar_pre_sugared_sli_type_error_test() {
   ]
 
   assert linker.sugar_pre_sugared_sli_type(
-      specification.SliTypePreSugared(
+      SliTypePreSugared(
         name: "a",
         filters: ["a", "b", "c"],
         query_template: "some_query_template",
@@ -77,7 +77,7 @@ pub fn sugar_pre_sugared_service_test() {
   ]
 
   assert linker.sugar_pre_sugared_service(
-      specification.ServicePreSugared(name: "a", sli_types: ["a", "b"]),
+      ServicePreSugared(name: "a", sli_types: ["a", "b"]),
       xs,
     )
     == Ok(Service(name: "a", supported_sli_types: xs))
@@ -90,7 +90,7 @@ pub fn sugar_pre_sugared_service_error_test() {
   ]
 
   assert linker.sugar_pre_sugared_service(
-      specification.ServicePreSugared(name: "a", sli_types: ["a", "b", "c"]),
+      ServicePreSugared(name: "a", sli_types: ["a", "b", "c"]),
       xs,
     )
     == Error("Failed to link sli types to service")
@@ -108,12 +108,12 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let pre_sugared_sli_types = [
-    specification.SliTypePreSugared(
+    SliTypePreSugared(
       name: "sli_type_a",
       filters: ["a", "b"],
       query_template: "some_query_template",
     ),
-    specification.SliTypePreSugared(
+    SliTypePreSugared(
       name: "sli_type_b",
       filters: ["a"],
       query_template: "some_other_query_template",
@@ -121,7 +121,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let pre_sugared_services = [
-    specification.ServicePreSugared(name: "service_a", sli_types: [
+    ServicePreSugared(name: "service_a", sli_types: [
       "sli_type_a",
       "sli_type_b",
     ]),

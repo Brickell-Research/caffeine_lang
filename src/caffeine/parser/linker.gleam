@@ -1,6 +1,14 @@
 import caffeine/intermediate_representation
 import caffeine/parser/instantiation
-import caffeine/parser/specification
+import caffeine/parser/specification.{
+  parse_services_specification, parse_sli_filters_specification,
+  parse_sli_types_specification,
+}
+
+import caffeine/parser/specification_types.{
+  type ServicePreSugared, type SliTypePreSugared,
+}
+
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
@@ -13,8 +21,8 @@ import simplifile
 /// makes sense; right now this just means that we're able to link sli_types to services
 /// and sli_filters to sli_types.
 pub fn link_and_validate_specification_sub_parts(
-  services: List(specification.ServicePreSugared),
-  sli_types: List(specification.SliTypePreSugared),
+  services: List(ServicePreSugared),
+  sli_types: List(SliTypePreSugared),
   sli_filters: List(intermediate_representation.SliFilter),
 ) -> Result(List(intermediate_representation.Service), String) {
   // First we need to link sli_filters to sli_types
@@ -58,7 +66,7 @@ pub fn fetch_by_name_sli_type(
 
 /// This function takes a pre sugared SliType and a list of SliFilters and returns a sugared SliType.
 pub fn sugar_pre_sugared_sli_type(
-  pre_sugared_sli_type: specification.SliTypePreSugared,
+  pre_sugared_sli_type: SliTypePreSugared,
   sli_filters: List(intermediate_representation.SliFilter),
 ) -> Result(intermediate_representation.SliType, String) {
   // fill in the sli filters
@@ -83,7 +91,7 @@ pub fn sugar_pre_sugared_sli_type(
 
 /// This function takes a pre sugared Service and a list of SliTypes and returns a sugared Service.
 pub fn sugar_pre_sugared_service(
-  pre_sugared_service: specification.ServicePreSugared,
+  pre_sugared_service: ServicePreSugared,
   sli_types: List(intermediate_representation.SliType),
 ) -> Result(intermediate_representation.Service, String) {
   // fill in the sli types
@@ -138,19 +146,15 @@ pub fn link_specification_and_instantiation(
   instantiations_directory: String,
 ) -> Result(intermediate_representation.Organization, String) {
   // ==== Specification ====
-  use desugared_services <- result.try(
-    specification.parse_services_specification(
-      specification_directory <> "/services.yaml",
-    ),
-  )
+  use desugared_services <- result.try(parse_services_specification(
+    specification_directory <> "/services.yaml",
+  ))
 
-  use desugared_sli_types <- result.try(
-    specification.parse_sli_types_specification(
-      specification_directory <> "/sli_types.yaml",
-    ),
-  )
+  use desugared_sli_types <- result.try(parse_sli_types_specification(
+    specification_directory <> "/sli_types.yaml",
+  ))
 
-  use sli_filters <- result.try(specification.parse_sli_filters_specification(
+  use sli_filters <- result.try(parse_sli_filters_specification(
     specification_directory <> "/sli_filters.yaml",
   ))
 
