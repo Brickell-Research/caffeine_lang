@@ -26,3 +26,7 @@ docs:
 # Watch for changes and run tests automatically
 watch:
 	@./watch.sh 
+
+# Generate a report of the codebase
+lines-of-code:
+	cloc . --exclude-dir=node_modules,vendor,dist,.git,build
