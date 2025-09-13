@@ -1,7 +1,9 @@
+import caffeine/intermediate_representation
 import caffeine/parser/common
 import glaml
 import gleam/dict
 import gleam/int
+import gleam/list
 import gleam/result
 
 // ==== Pre Sugared Specification Parsing Types ====
@@ -108,5 +110,124 @@ fn extract_service_name(service: glaml.Node) -> Result(String, String) {
   case service_name {
     glaml.NodeStr(value) -> Ok(value)
     _ -> Error("Expected service name to be a string")
+  }
+}
+
+pub fn parse_sli_filters_specification(
+  file_path: String,
+) -> Result(List(intermediate_representation.SliFilter), String) {
+  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
+
+  // parse the YAML file
+  use doc <- result.try(common.parse_yaml_file(file_path))
+
+  // empty, but required
+  let params = dict.new()
+
+  // parse the intermediate representation, here just the sli_filters
+  case doc {
+    [first, ..] -> parse_sli_filters_from_doc(first, params)
+    _ -> Error("Empty YAML file")
+  }
+}
+
+pub fn parse_sli_filters_from_doc(
+  doc: glaml.Document,
+  params: dict.Dict(String, String),
+) -> Result(List(intermediate_representation.SliFilter), String) {
+  use sli_filters <- result.try(parse_sli_filters(
+    glaml.document_root(doc),
+    params,
+  ))
+
+  Ok(sli_filters)
+}
+
+pub fn parse_sli_filters(
+  root: glaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(List(intermediate_representation.SliFilter), String) {
+  use sli_filters_node <- result.try(
+    glaml.select_sugar(root, "filters")
+    |> result.map_error(fn(_) { "Missing sli_filters" }),
+  )
+
+  do_parse_sli_filters(sli_filters_node, 0)
+}
+
+fn do_parse_sli_filters(
+  sli_filters: glaml.Node,
+  index: Int,
+) -> Result(List(intermediate_representation.SliFilter), String) {
+  case glaml.select_sugar(sli_filters, "#" <> int.to_string(index)) {
+    Ok(sli_filter_node) -> {
+      use sli_filter <- result.try(parse_sli_filter(sli_filter_node))
+      use rest <- result.try(do_parse_sli_filters(sli_filters, index + 1))
+      Ok([sli_filter, ..rest])
+    }
+    // TODO: fix this super hacky way of iterating over sli_filters.
+    Error(_) -> Ok([])
+  }
+}
+
+fn parse_sli_filter(
+  sli_filter: glaml.Node,
+) -> Result(intermediate_representation.SliFilter, String) {
+  use attribute_name <- result.try(extract_attribute_name(sli_filter))
+  use attribute_type <- result.try(extract_attribute_type(sli_filter))
+  use required <- result.try(extract_attribute_required(sli_filter))
+
+  let accepted_type_for_attribute_type = case attribute_type {
+    "Boolean" -> Ok(intermediate_representation.Boolean)
+    "Decimal" -> Ok(intermediate_representation.Decimal)
+    "Integer" -> Ok(intermediate_representation.Integer)
+    "String" -> Ok(intermediate_representation.String)
+    "List(String)" ->
+      Ok(intermediate_representation.List(intermediate_representation.String))
+    _ -> Error("Unknown attribute type: " <> attribute_type)
+  }
+
+  use accepted_type <- result.try(accepted_type_for_attribute_type)
+
+  Ok(intermediate_representation.SliFilter(
+    attribute_name: attribute_name,
+    attribute_type: accepted_type,
+    required: required,
+  ))
+}
+
+fn extract_attribute_name(sli_filter: glaml.Node) -> Result(String, String) {
+  use attribute_name <- result.try(common.extract_some_node_by_key(
+    sli_filter,
+    "attribute_name",
+  ))
+
+  case attribute_name {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected attribute name to be a string")
+  }
+}
+
+fn extract_attribute_type(sli_filter: glaml.Node) -> Result(String, String) {
+  use attribute_type <- result.try(common.extract_some_node_by_key(
+    sli_filter,
+    "attribute_type",
+  ))
+
+  case attribute_type {
+    glaml.NodeStr(value) -> Ok(value)
+    _ -> Error("Expected attribute type to be a string")
+  }
+}
+
+fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
+  use required <- result.try(common.extract_some_node_by_key(
+    sli_filter,
+    "required",
+  ))
+
+  case required {
+    glaml.NodeBool(value) -> Ok(value)
+    _ -> Error("Expected attribute required to be a string")
   }
 }
