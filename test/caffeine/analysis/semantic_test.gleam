@@ -115,3 +115,32 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_success_test() {
 
   assert actual == expected
 }
+
+pub fn perform_semantic_analysis_test() {
+  let organization =
+    Organization(
+      service_definitions: [
+        Service(name: "team1", supported_sli_types: [
+          SliType(filters: [], name: "availability", query_template: ""),
+        ]),
+        Service(name: "team2", supported_sli_types: [
+          SliType(filters: [], name: "availability", query_template: ""),
+        ]),
+      ],
+      teams: [team_1()],
+    )
+
+  let actual = semantic.perform_semantic_analysis(organization)
+  let expected = Ok(True)
+
+  assert actual == expected
+}
+
+pub fn perform_semantic_analysis_failure_test() {
+  let organization = Organization(service_definitions: [], teams: [team_1()])
+
+  let actual = semantic.perform_semantic_analysis(organization)
+  let expected = Error(UndefinedServiceError(service_names: ["team1", "team2"]))
+
+  assert actual == expected
+}

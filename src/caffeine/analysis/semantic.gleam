@@ -14,6 +14,7 @@
 
 import caffeine/intermediate_representation.{type Organization, type Slo}
 import gleam/list
+import gleam/result
 
 pub type SemanticAnalysisError {
   UndefinedServiceError(service_names: List(String))
@@ -54,6 +55,7 @@ pub fn validate_services_from_instantiation(
   }
 }
 
+// TODO: fix this - it is incorrect as an sli type is tied to a service.
 pub fn validate_sli_types_exist_from_instantiation(
   organization: Organization,
 ) -> Result(Bool, SemanticAnalysisError) {
@@ -93,5 +95,26 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation(
   case invalid_thresholds {
     [] -> Ok(True)
     thresholds -> Error(InvalidSloThresholdError(thresholds: thresholds))
+  }
+}
+
+pub fn perform_semantic_analysis(
+  organization: Organization,
+) -> Result(Bool, SemanticAnalysisError) {
+  case validate_services_from_instantiation(organization) {
+    Ok(_) -> {
+      case validate_sli_types_exist_from_instantiation(organization) {
+        Ok(_) -> {
+          case
+            validate_slos_thresholds_reasonable_from_instantiation(organization)
+          {
+            Ok(_) -> Ok(True)
+            Error(error) -> Error(error)
+          }
+        }
+        Error(error) -> Error(error)
+      }
+    }
+    Error(error) -> Error(error)
   }
 }
