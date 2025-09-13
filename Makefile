@@ -30,3 +30,6 @@ watch:
 # Generate a report of the codebase
 lines-of-code:
 	cloc . --exclude-dir=node_modules,vendor,dist,.git,build
+
+run-example:
+	gleam run -- compile test/artifacts/some_organization/specifications test/artifacts/some_organization

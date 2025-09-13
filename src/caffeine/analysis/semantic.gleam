@@ -14,7 +14,6 @@
 
 import caffeine/intermediate_representation.{type Organization, type Slo}
 import gleam/list
-import gleam/result
 
 pub type SemanticAnalysisError {
   UndefinedServiceError(service_names: List(String))

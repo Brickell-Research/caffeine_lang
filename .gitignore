@@ -111,3 +111,5 @@ docs/compiled/
 !README.md
 !LICENSE
 !CNAME
+
+test/artifacts/some_organization/generated.txt
