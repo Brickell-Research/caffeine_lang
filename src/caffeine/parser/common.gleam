@@ -46,6 +46,6 @@ pub fn apply_to_glaml_document(
 ) -> Result(value, String) {
   case docs {
     [first, ..] -> f(first, params)
-    _ -> Error("Empty YAML file")
+    _ -> Error("Empty YAML file: within apply_to_glaml_document")
   }
 }

@@ -26,7 +26,7 @@ pub fn parse_instantiation(
   // parse the intermediate representation, here just the instantiation (team)
   case doc {
     [first, ..] -> parse_instantiation_from_doc(first, params)
-    _ -> Error("Empty YAML file")
+    _ -> Error("Empty YAML file: " <> file_path)
   }
 }
 

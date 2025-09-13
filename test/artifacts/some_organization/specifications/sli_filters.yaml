@@ -1,0 +1,4 @@
+filters:
+  - attribute_name: number_of_users
+    attribute_type: Integer
+    required: true

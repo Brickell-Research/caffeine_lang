@@ -1,7 +1,12 @@
 import caffeine/intermediate_representation
+import caffeine/parser/instantiation
 import caffeine/parser/specification
+import gleam/dict
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/result
+import gleam/string
+import simplifile
 
 /// This function is a two step process. While it fundamentally enables us to sugar
 /// the specification (services), it also semantically validates that the specification
@@ -98,4 +103,142 @@ pub fn sugar_pre_sugared_service(
       ))
     Error(_) -> Error("Failed to link sli types to service")
   }
+}
+
+/// Given a list of teams which map to single service SLOs, we want to aggregate all SLOs for a single team
+/// into a single team object.
+pub fn aggregate_teams_and_slos(
+  teams: List(intermediate_representation.Team),
+) -> List(intermediate_representation.Team) {
+  let dict_of_teams =
+    list.fold(teams, dict.new(), fn(acc, team) {
+      dict.upsert(acc, team.name, fn(existing_teams) {
+        case existing_teams {
+          Some(teams_list) -> [team, ..teams_list]
+          None -> [team]
+        }
+      })
+    })
+
+  dict.fold(dict_of_teams, [], fn(acc, team_name, teams_list) {
+    let all_slos =
+      teams_list
+      |> list.map(fn(team) { team.slos })
+      |> list.flatten
+
+    let aggregated_team =
+      intermediate_representation.Team(name: team_name, slos: all_slos)
+
+    [aggregated_team, ..acc]
+  })
+}
+
+pub fn link_specification_and_instantiation(
+  specification_directory: String,
+  instantiations_directory: String,
+) -> Result(intermediate_representation.Organization, String) {
+  // ==== Specification ====
+  use desugared_services <- result.try(
+    specification.parse_services_specification(
+      specification_directory <> "/services.yaml",
+    ),
+  )
+
+  use desugared_sli_types <- result.try(
+    specification.parse_sli_types_specification(
+      specification_directory <> "/sli_types.yaml",
+    ),
+  )
+
+  use sli_filters <- result.try(specification.parse_sli_filters_specification(
+    specification_directory <> "/sli_filters.yaml",
+  ))
+
+  use linked_services <- result.try(link_and_validate_specification_sub_parts(
+    desugared_services,
+    desugared_sli_types,
+    sli_filters,
+  ))
+
+  // ==== Instantiations ====
+  use instantiations_files <- result.try(get_instantiation_yaml_files(
+    instantiations_directory,
+  ))
+
+  use instantiations <- result.try(
+    instantiations_files
+    |> list.try_map(fn(file) { instantiation.parse_instantiation(file) }),
+  )
+
+  Ok(intermediate_representation.Organization(
+    service_definitions: linked_services,
+    teams: instantiations,
+  ))
+}
+
+pub fn get_instantiation_yaml_files(
+  base_directory: String,
+) -> Result(List(String), String) {
+  use top_level_items <- result.try(read_directory_or_error(base_directory))
+
+  top_level_items
+  |> list.try_fold([], fn(accumulated_files, item_name) {
+    process_top_level_item(base_directory, item_name, accumulated_files)
+  })
+}
+
+fn read_directory_or_error(
+  directory_path: String,
+) -> Result(List(String), String) {
+  case simplifile.read_directory(directory_path) {
+    Ok(items) -> Ok(items)
+    Error(_) -> Error("Failed to read directory: " <> directory_path)
+  }
+}
+
+fn process_top_level_item(
+  base_directory: String,
+  item_name: String,
+  accumulated_files: List(String),
+) -> Result(List(String), String) {
+  let item_path = base_directory <> "/" <> item_name
+
+  case is_directory(item_path), string.ends_with(item_name, "specifications") {
+    True, False ->
+      collect_yaml_files_from_subdirectory(item_path, accumulated_files)
+    True, True -> Ok(accumulated_files)
+    // Skip other directories
+    False, _ -> Ok(accumulated_files)
+    // Skip files at the top level
+  }
+}
+
+fn is_directory(path: String) -> Bool {
+  case simplifile.is_directory(path) {
+    Ok(True) -> True
+    _ -> False
+  }
+}
+
+fn collect_yaml_files_from_subdirectory(
+  subdirectory_path: String,
+  accumulated_files: List(String),
+) -> Result(List(String), String) {
+  use files_in_subdirectory <- result.try(read_directory_or_error(
+    subdirectory_path,
+  ))
+
+  let yaml_files =
+    extract_yaml_files_with_full_paths(files_in_subdirectory, subdirectory_path)
+
+  Ok(list.append(accumulated_files, yaml_files))
+}
+
+fn extract_yaml_files_with_full_paths(
+  files: List(String),
+  directory_path: String,
+) -> List(String) {
+  files
+  |> list.filter(fn(file) { string.ends_with(file, ".yaml") })
+  |> list.map(fn(file) { directory_path <> "/" <> file })
 }

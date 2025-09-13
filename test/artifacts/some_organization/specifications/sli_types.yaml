@@ -1,0 +1,5 @@
+types:
+  - name: error_rate
+    query_template: avg:(error_rate by {number_of_users})
+    filters:
+      - number_of_users

@@ -7,7 +7,10 @@ pub fn parse_instantiation_no_slos_test() {
     instantiation.parse_instantiation(
       "test/artifacts/platform/less_reliable_service.yaml",
     )
-  assert actual == Error("Empty YAML file")
+  assert actual
+    == Error(
+      "Empty YAML file: test/artifacts/platform/less_reliable_service.yaml",
+    )
 }
 
 pub fn parse_instantiation_multiple_slos_test() {

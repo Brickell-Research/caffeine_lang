@@ -28,7 +28,7 @@ pub fn parse_services_specification(
   // parse the intermediate representation, here just the services
   case doc {
     [first, ..] -> parse_services_from_doc(first, params)
-    _ -> Error("Empty YAML file")
+    _ -> Error("Empty YAML file: " <> file_path)
   }
 }
 
@@ -130,7 +130,7 @@ pub fn parse_sli_filters_specification(
   // parse the intermediate representation, here just the sli_filters
   case doc {
     [first, ..] -> parse_sli_filters_from_doc(first, params)
-    _ -> Error("Empty YAML file")
+    _ -> Error("Empty YAML file: " <> file_path)
   }
 }
 
@@ -249,7 +249,7 @@ pub fn parse_sli_types_specification(
   // parse the intermediate representation, here just the sli_types
   case doc {
     [first, ..] -> parse_sli_types_from_doc(first, params)
-    _ -> Error("Empty YAML file")
+    _ -> Error("Empty YAML file: " <> file_path)
   }
 }
 
@@ -331,7 +331,7 @@ fn extract_sli_type_filters(
     type_node,
     "filters",
   ))
-  
+
   // Try to access the first element to validate it's a list structure
   case glaml.select_sugar(filters_node, "#0") {
     Ok(_) -> do_extract_sli_type_filters(filters_node, 0)
