@@ -11,24 +11,16 @@ import gleam/result
 pub fn parse_unresolved_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypeUnresolved), String) {
-  common.parse_specification(file_path, dict.new(), parse_sli_types_from_doc)
+  common.parse_specification(file_path, dict.new(), fn(doc, _params) {
+    common.iteratively_parse_collection(
+      glaml.document_root(doc),
+      parse_sli_type,
+      "types",
+    )
+  })
 }
 
 // ==== Private ====
-/// Given a document, returns a list of unresolved SLI types.
-fn parse_sli_types_from_doc(
-  doc: glaml.Document,
-  _params: dict.Dict(String, String),
-) -> Result(List(SliTypeUnresolved), String) {
-  use sli_types <- result.try(common.iteratively_parse_collection(
-    glaml.document_root(doc),
-    parse_sli_type,
-    "types",
-  ))
-
-  Ok(sli_types)
-}
-
 /// Parses a single unresolved SLI type.
 fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
   use name <- result.try(common.extract_string_from_node(type_node, "name"))

@@ -11,28 +11,16 @@ import gleam/result
 pub fn parse_unresolved_query_template_types_specification(
   file_path: String,
 ) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  common.parse_specification(
-    file_path,
-    dict.new(),
-    parse_query_template_types_from_doc,
-  )
+  common.parse_specification(file_path, dict.new(), fn(doc, _params) {
+    common.iteratively_parse_collection(
+      glaml.document_root(doc),
+      parse_query_template_type,
+      "query_template_types",
+    )
+  })
 }
 
 // ==== Private ====
-/// Given a document, returns a list of unresolved query template types.
-fn parse_query_template_types_from_doc(
-  doc: glaml.Document,
-  _params: dict.Dict(String, String),
-) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  use query_template_types <- result.try(common.iteratively_parse_collection(
-    glaml.document_root(doc),
-    parse_query_template_type,
-    "query_template_types",
-  ))
-
-  Ok(query_template_types)
-}
-
 /// Parses a single unresolved query template type.
 fn parse_query_template_type(
   type_node: glaml.Node,
