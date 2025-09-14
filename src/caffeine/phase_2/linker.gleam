@@ -1,12 +1,14 @@
 import caffeine/phase_1/parser/instantiation
 import caffeine/phase_1/parser/specification.{
+  parse_query_template_filters_specification,
   parse_query_template_types_specification, parse_services_specification,
-  parse_sli_filters_specification, parse_sli_types_specification,
+  parse_sli_types_specification,
 }
 import caffeine/types/intermediate_representation
 
 import caffeine/types/specification_types.{
-  type ServiceUnresolved, type SliTypeUnresolved,
+  type QueryTemplateTypeUnresolved, type ServiceUnresolved,
+  type SliTypeUnresolved, GoodOverBadQueryTemplateUnresolved,
 }
 
 import gleam/dict
@@ -19,18 +21,30 @@ import simplifile
 /// This function is a three step process. While it fundamentally enables us to resolve
 /// the specification (services), it also semantically validates that the specification
 /// makes sense; right now this just means that we're able to link query_template_types to sli_types,
-/// sli_filters to sli_types, and sli_types to services.
+/// query_template_filters to query_template_types, and sli_types to services.
 pub fn link_and_validate_specification_sub_parts(
   services: List(ServiceUnresolved),
   sli_types: List(SliTypeUnresolved),
-  sli_filters: List(intermediate_representation.SliFilter),
-  query_template_types: List(intermediate_representation.QueryTemplateType),
+  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
+  query_template_types_unresolved: List(QueryTemplateTypeUnresolved),
 ) -> Result(List(intermediate_representation.Service), String) {
-  // First we need to link sli_filters and query_template_types to sli_types
+  // First we need to resolve query template types by linking filters to them
+  use resolved_query_template_types <- result.try(
+    query_template_types_unresolved
+    |> list.map(fn(query_template_type) {
+      resolve_unresolved_query_template_type(
+        query_template_type,
+        query_template_filters,
+      )
+    })
+    |> result.all,
+  )
+
+  // Then we need to link query_template_types to sli_types
   use resolved_sli_types <- result.try(
     sli_types
     |> list.map(fn(sli_type) {
-      resolve_unresolved_sli_type(sli_type, sli_filters, query_template_types)
+      resolve_unresolved_sli_type(sli_type, resolved_query_template_types)
     })
     |> result.all,
   )
@@ -45,15 +59,6 @@ pub fn link_and_validate_specification_sub_parts(
   )
 
   Ok(resolved_services)
-}
-
-/// This function fetches a single SliFilter by attribute name.
-pub fn fetch_by_attribute_name_sli_filter(
-  values: List(intermediate_representation.SliFilter),
-  attribute_name: String,
-) -> Result(intermediate_representation.SliFilter, String) {
-  list.find(values, fn(value) { value.attribute_name == attribute_name })
-  |> result.replace_error("Attribute " <> attribute_name <> " not found")
 }
 
 /// This function fetches a single SliType by name.
@@ -82,35 +87,69 @@ pub fn fetch_by_name_query_template_type(
   }
 }
 
+/// This function fetches a single QueryTemplateFilter by attribute name.
+pub fn fetch_by_attribute_name_query_template_filter(
+  values: List(intermediate_representation.QueryTemplateFilter),
+  attribute_name: String,
+) -> Result(intermediate_representation.QueryTemplateFilter, String) {
+  case
+    list.find(values, fn(filter) { filter.attribute_name == attribute_name })
+  {
+    Ok(filter) -> Ok(filter)
+    Error(_) -> Error("QueryTemplateFilter " <> attribute_name <> " not found")
+  }
+}
 
-/// This function takes an unresolved SliType, a list of SliFilters, and a list of QueryTemplateTypes and returns a resolved SliType.
+/// This function takes an unresolved QueryTemplateType and a list of QueryTemplateFilters and returns a resolved QueryTemplateType.
+pub fn resolve_unresolved_query_template_type(
+  unresolved_query_template_type: QueryTemplateTypeUnresolved,
+  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
+) -> Result(intermediate_representation.QueryTemplateType, String) {
+  case unresolved_query_template_type {
+    GoodOverBadQueryTemplateUnresolved(
+      numerator_query,
+      denominator_query,
+      filter_names,
+    ) -> {
+      // Resolve the filter names to actual filters
+      let resolved_filters =
+        filter_names
+        |> list.map(fn(filter_name) {
+          fetch_by_attribute_name_query_template_filter(
+            query_template_filters,
+            filter_name,
+          )
+        })
+        |> result.all
+
+      case resolved_filters {
+        Ok(filters) ->
+          Ok(intermediate_representation.GoodOverBadQueryTemplate(
+            numerator_query: numerator_query,
+            denominator_query: denominator_query,
+            filters: filters,
+          ))
+        Error(error) -> Error(error)
+      }
+    }
+  }
+}
+
+/// This function takes an unresolved SliType and a list of QueryTemplateTypes and returns a resolved SliType.
 pub fn resolve_unresolved_sli_type(
   unresolved_sli_type: SliTypeUnresolved,
-  sli_filters: List(intermediate_representation.SliFilter),
   query_template_types: List(intermediate_representation.QueryTemplateType),
 ) -> Result(intermediate_representation.SliType, String) {
-  // fill in the sli filters
-  let resolved_filters =
-    unresolved_sli_type.filters
-    |> list.map(fn(filter_name) {
-      fetch_by_attribute_name_sli_filter(sli_filters, filter_name)
-    })
-    |> result.all
-
   // find the query template type
-  use query_template <- result.try(
-    fetch_by_name_query_template_type(query_template_types, unresolved_sli_type.query_template_type)
-  )
+  use query_template <- result.try(fetch_by_name_query_template_type(
+    query_template_types,
+    unresolved_sli_type.query_template_type,
+  ))
 
-  case resolved_filters {
-    Ok(filters) ->
-      Ok(intermediate_representation.SliType(
-        name: unresolved_sli_type.name,
-        filters: filters,
-        query_template: query_template,
-      ))
-    Error(_) -> Error("Failed to link sli filters to sli type")
-  }
+  Ok(intermediate_representation.SliType(
+    name: unresolved_sli_type.name,
+    query_template: query_template,
+  ))
 }
 
 /// This function takes an unresolved Service and a list of SliTypes and returns a resolved Service.
@@ -178,19 +217,23 @@ pub fn link_specification_and_instantiation(
     specification_directory <> "/sli_types.yaml",
   ))
 
-  use sli_filters <- result.try(parse_sli_filters_specification(
-    specification_directory <> "/sli_filters.yaml",
-  ))
+  use query_template_filters <- result.try(
+    parse_query_template_filters_specification(
+      specification_directory <> "/query_template_filters.yaml",
+    ),
+  )
 
-  use query_template_types <- result.try(parse_query_template_types_specification(
-    specification_directory <> "/query_template_types.yaml",
-  ))
+  use query_template_types_unresolved <- result.try(
+    parse_query_template_types_specification(
+      specification_directory <> "/query_template_types.yaml",
+    ),
+  )
 
   use linked_services <- result.try(link_and_validate_specification_sub_parts(
     unresolved_services,
     unresolved_sli_types,
-    sli_filters,
-    query_template_types,
+    query_template_filters,
+    query_template_types_unresolved,
   ))
 
   // ==== Instantiations ====

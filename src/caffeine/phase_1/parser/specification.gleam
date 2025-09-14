@@ -1,7 +1,8 @@
 import caffeine/phase_1/parser/common
 import caffeine/types/intermediate_representation
 import caffeine/types/specification_types.{
-  type ServiceUnresolved, type SliTypeUnresolved, ServiceUnresolved,
+  type QueryTemplateTypeUnresolved, type ServiceUnresolved,
+  type SliTypeUnresolved, GoodOverBadQueryTemplateUnresolved, ServiceUnresolved,
   SliTypeUnresolved,
 }
 import glaml
@@ -88,64 +89,68 @@ fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
   }
 }
 
-/// Given a specification file, returns a list of SLI filters.
-pub fn parse_sli_filters_specification(
+/// Given a specification file, returns a list of query template filters.
+pub fn parse_query_template_filters_specification(
   file_path: String,
-) -> Result(List(intermediate_representation.SliFilter), String) {
-  common.parse_specification(file_path, dict.new(), parse_sli_filters_from_doc)
+) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
+  common.parse_specification(
+    file_path,
+    dict.new(),
+    parse_query_template_filters_from_doc,
+  )
 }
 
-fn parse_sli_filters_from_doc(
+fn parse_query_template_filters_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
-) -> Result(List(intermediate_representation.SliFilter), String) {
-  use sli_filters <- result.try(parse_sli_filters(
+) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
+  use query_template_filters <- result.try(parse_query_template_filters(
     glaml.document_root(doc),
     params,
   ))
 
-  Ok(sli_filters)
+  Ok(query_template_filters)
 }
 
-fn parse_sli_filters(
+fn parse_query_template_filters(
   root: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(List(intermediate_representation.SliFilter), String) {
-  use sli_filters_node <- result.try(
+) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
+  use filters_node <- result.try(
     glaml.select_sugar(root, "filters")
-    |> result.map_error(fn(_) { "Missing sli_filters" }),
+    |> result.map_error(fn(_) { "Missing query_template_filters" }),
   )
 
-  do_parse_sli_filters(sli_filters_node, 0)
+  do_parse_query_template_filters(filters_node, 0)
 }
 
-fn do_parse_sli_filters(
-  sli_filters: glaml.Node,
+fn do_parse_query_template_filters(
+  filters: glaml.Node,
   index: Int,
-) -> Result(List(intermediate_representation.SliFilter), String) {
-  case glaml.select_sugar(sli_filters, "#" <> int.to_string(index)) {
-    Ok(sli_filter_node) -> {
-      use sli_filter <- result.try(parse_sli_filter(sli_filter_node))
-      use rest <- result.try(do_parse_sli_filters(sli_filters, index + 1))
-      Ok([sli_filter, ..rest])
+) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
+  case glaml.select_sugar(filters, "#" <> int.to_string(index)) {
+    Ok(filter_node) -> {
+      use filter <- result.try(parse_query_template_filter(filter_node))
+      use rest <- result.try(do_parse_query_template_filters(filters, index + 1))
+      Ok([filter, ..rest])
     }
-    // TODO: fix this super hacky way of iterating over sli_filters.
+    // TODO: fix this super hacky way of iterating over query_template_filters.
     Error(_) -> Ok([])
   }
 }
 
-fn parse_sli_filter(
-  sli_filter: glaml.Node,
-) -> Result(intermediate_representation.SliFilter, String) {
+fn parse_query_template_filter(
+  filter: glaml.Node,
+) -> Result(intermediate_representation.QueryTemplateFilter, String) {
   use attribute_name <- result.try(common.extract_string_from_node(
-    sli_filter,
+    filter,
     "attribute_name",
   ))
   use attribute_type <- result.try(common.extract_string_from_node(
-    sli_filter,
+    filter,
     "attribute_type",
   ))
-  use required <- result.try(extract_attribute_required(sli_filter))
+  use required <- result.try(extract_attribute_required(filter))
 
   let accepted_type_for_attribute_type = case attribute_type {
     "Boolean" -> Ok(intermediate_representation.Boolean)
@@ -159,22 +164,19 @@ fn parse_sli_filter(
 
   use accepted_type <- result.try(accepted_type_for_attribute_type)
 
-  Ok(intermediate_representation.SliFilter(
+  Ok(intermediate_representation.QueryTemplateFilter(
     attribute_name: attribute_name,
     attribute_type: accepted_type,
     required: required,
   ))
 }
 
-fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
-  use required <- result.try(common.extract_some_node_by_key(
-    sli_filter,
-    "required",
-  ))
+fn extract_attribute_required(filter: glaml.Node) -> Result(Bool, String) {
+  use required <- result.try(common.extract_some_node_by_key(filter, "required"))
 
   case required {
     glaml.NodeBool(value) -> Ok(value)
-    _ -> Error("Expected attribute required to be a string")
+    _ -> Error("Expected attribute required to be a boolean")
   }
 }
 
@@ -227,64 +229,14 @@ fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
     type_node,
     "query_template_type",
   ))
-  use filters <- result.try(extract_sli_type_filters(type_node))
 
-  Ok(SliTypeUnresolved(
-    name: name,
-    query_template_type: query_template_type,
-    filters: filters,
-  ))
-}
-
-fn extract_sli_type_filters(
-  type_node: glaml.Node,
-) -> Result(List(String), String) {
-  use filters_node <- result.try(common.extract_some_node_by_key(
-    type_node,
-    "filters",
-  ))
-
-  // Try to access the first element to validate it's a list structure
-  case glaml.select_sugar(filters_node, "#0") {
-    Ok(_) -> do_extract_sli_type_filters(filters_node, 0)
-    Error(_) -> {
-      // Check if it's a non-list node that would cause the wrong error
-      case filters_node {
-        glaml.NodeStr(_) -> Error("Expected sli type filter to be a string")
-        _ -> Error("Expected filters to be a list")
-      }
-    }
-  }
-}
-
-fn do_extract_sli_type_filters(
-  filters_node: glaml.Node,
-  index: Int,
-) -> Result(List(String), String) {
-  case glaml.select_sugar(filters_node, "#" <> int.to_string(index)) {
-    Ok(filter_node) -> {
-      use filter <- result.try(extract_sli_type_filter(filter_node))
-      use rest <- result.try(do_extract_sli_type_filters(
-        filters_node,
-        index + 1,
-      ))
-      Ok([filter, ..rest])
-    }
-    Error(_) -> Ok([])
-  }
-}
-
-fn extract_sli_type_filter(filter_node: glaml.Node) -> Result(String, String) {
-  case filter_node {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected sli type filter to be a string")
-  }
+  Ok(SliTypeUnresolved(name: name, query_template_type: query_template_type))
 }
 
 /// Given a specification file, returns a list of resolved query template types.
 pub fn parse_query_template_types_specification(
   file_path: String,
-) -> Result(List(intermediate_representation.QueryTemplateType), String) {
+) -> Result(List(QueryTemplateTypeUnresolved), String) {
   common.parse_specification(
     file_path,
     dict.new(),
@@ -295,7 +247,7 @@ pub fn parse_query_template_types_specification(
 fn parse_query_template_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
-) -> Result(List(intermediate_representation.QueryTemplateType), String) {
+) -> Result(List(QueryTemplateTypeUnresolved), String) {
   use query_template_types <- result.try(parse_query_template_types(
     glaml.document_root(doc),
     params,
@@ -307,7 +259,7 @@ fn parse_query_template_types_from_doc(
 fn parse_query_template_types(
   root: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(List(intermediate_representation.QueryTemplateType), String) {
+) -> Result(List(QueryTemplateTypeUnresolved), String) {
   use types_node <- result.try(
     glaml.select_sugar(root, "query_template_types")
     |> result.map_error(fn(_) { "Missing query_template_types" }),
@@ -319,7 +271,7 @@ fn parse_query_template_types(
 fn do_parse_query_template_types(
   types: glaml.Node,
   index: Int,
-) -> Result(List(intermediate_representation.QueryTemplateType), String) {
+) -> Result(List(QueryTemplateTypeUnresolved), String) {
   case glaml.select_sugar(types, "#" <> int.to_string(index)) {
     Ok(type_node) -> {
       use query_template_type <- result.try(parse_query_template_type(type_node))
@@ -333,7 +285,7 @@ fn do_parse_query_template_types(
 
 fn parse_query_template_type(
   type_node: glaml.Node,
-) -> Result(intermediate_representation.QueryTemplateType, String) {
+) -> Result(QueryTemplateTypeUnresolved, String) {
   use numerator_query <- result.try(common.extract_string_from_node(
     type_node,
     "numerator_query",
@@ -342,9 +294,14 @@ fn parse_query_template_type(
     type_node,
     "denominator_query",
   ))
+  use filters <- result.try(common.extract_string_list_from_node(
+    type_node,
+    "filters",
+  ))
 
-  Ok(intermediate_representation.GoodOverBadQueryTemplate(
+  Ok(GoodOverBadQueryTemplateUnresolved(
     numerator_query: numerator_query,
     denominator_query: denominator_query,
+    filters: filters,
   ))
 }

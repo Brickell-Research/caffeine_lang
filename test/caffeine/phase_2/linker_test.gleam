@@ -1,28 +1,38 @@
 import caffeine/phase_2/linker
 import caffeine/types/intermediate_representation.{
-  GoodOverBadQueryTemplate, Integer, Organization, Service, SliFilter, SliType,
-  Slo, Team,
+  GoodOverBadQueryTemplate, Integer, Organization, QueryTemplateFilter, Service,
+  SliType, Slo, Team,
 }
-import caffeine/types/specification_types.{ServiceUnresolved, SliTypeUnresolved}
+import caffeine/types/specification_types.{
+  GoodOverBadQueryTemplateUnresolved, ServiceUnresolved, SliTypeUnresolved,
+}
 import gleam/dict
 import gleam/list
 import gleam/string
 
-pub fn fetch_by_attribute_name_sli_filter_test() {
+pub fn fetch_by_attribute_name_query_template_filter_test() {
   let xs = [
-    SliFilter(attribute_name: "a", attribute_type: Integer, required: True),
-    SliFilter(attribute_name: "b", attribute_type: Integer, required: False),
+    QueryTemplateFilter(
+      attribute_name: "a",
+      attribute_type: Integer,
+      required: True,
+    ),
+    QueryTemplateFilter(
+      attribute_name: "b",
+      attribute_type: Integer,
+      required: False,
+    ),
   ]
 
-  assert linker.fetch_by_attribute_name_sli_filter(xs, "a")
-    == Ok(SliFilter(
+  assert linker.fetch_by_attribute_name_query_template_filter(xs, "a")
+    == Ok(QueryTemplateFilter(
       attribute_name: "a",
       attribute_type: Integer,
       required: True,
     ))
 
-  assert linker.fetch_by_attribute_name_sli_filter(xs, "c")
-    == Error("Attribute c not found")
+  assert linker.fetch_by_attribute_name_query_template_filter(xs, "c")
+    == Error("QueryTemplateFilter c not found")
 }
 
 pub fn fetch_by_name_sli_type_test() {
@@ -30,68 +40,73 @@ pub fn fetch_by_name_sli_type_test() {
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: [],
     )
   let xs = [
-    SliType(name: "a", filters: [], query_template: query_template),
-    SliType(name: "b", filters: [], query_template: query_template),
+    SliType(name: "a", query_template: query_template),
+    SliType(name: "b", query_template: query_template),
   ]
 
   assert linker.fetch_by_name_sli_type(xs, "a")
-    == Ok(SliType(name: "a", filters: [], query_template: query_template))
+    == Ok(SliType(name: "a", query_template: query_template))
 
   assert linker.fetch_by_name_sli_type(xs, "c") == Error("SliType c not found")
 }
 
 pub fn resolve_unresolved_sli_type_test() {
-  let xs = [
-    SliFilter(attribute_name: "a", attribute_type: Integer, required: True),
-    SliFilter(attribute_name: "b", attribute_type: Integer, required: False),
+  let query_template_filters = [
+    QueryTemplateFilter(
+      attribute_name: "a",
+      attribute_type: Integer,
+      required: True,
+    ),
+    QueryTemplateFilter(
+      attribute_name: "b",
+      attribute_type: Integer,
+      required: False,
+    ),
   ]
   let query_template =
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: query_template_filters,
     )
   let query_template_types = [query_template]
 
   assert linker.resolve_unresolved_sli_type(
-      SliTypeUnresolved(
-        name: "a",
-        filters: ["a", "b"],
-        query_template_type: "good_over_bad",
-      ),
-      xs,
+      SliTypeUnresolved(name: "a", query_template_type: "good_over_bad"),
       query_template_types,
     )
-    == Ok(SliType(name: "a", filters: xs, query_template: query_template))
+    == Ok(SliType(name: "a", query_template: query_template))
 }
 
 pub fn resolve_unresolved_sli_type_error_test() {
-  let xs = [
-    SliFilter(attribute_name: "a", attribute_type: Integer, required: True),
-    SliFilter(attribute_name: "b", attribute_type: Integer, required: False),
+  let query_template_filters = [
+    QueryTemplateFilter(
+      attribute_name: "a",
+      attribute_type: Integer,
+      required: True,
+    ),
+    QueryTemplateFilter(
+      attribute_name: "b",
+      attribute_type: Integer,
+      required: False,
+    ),
   ]
   let query_template =
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: query_template_filters,
     )
   let query_template_types = [query_template]
 
   assert linker.resolve_unresolved_sli_type(
-      SliTypeUnresolved(
-        name: "a",
-        query_template_type: "good_over_bad",
-        filters: [
-          "a",
-          "b",
-          "c",
-        ],
-      ),
-      xs,
+      SliTypeUnresolved(name: "a", query_template_type: "nonexistent_template"),
       query_template_types,
     )
-    == Error("Failed to link sli filters to sli type")
+    == Error("QueryTemplateType nonexistent_template not found")
 }
 
 pub fn resolve_unresolved_service_test() {
@@ -99,10 +114,11 @@ pub fn resolve_unresolved_service_test() {
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: [],
     )
   let xs = [
-    SliType(name: "a", filters: [], query_template: query_template),
-    SliType(name: "b", filters: [], query_template: query_template),
+    SliType(name: "a", query_template: query_template),
+    SliType(name: "b", query_template: query_template),
   ]
 
   assert linker.resolve_unresolved_service(
@@ -117,10 +133,11 @@ pub fn resolve_unresolved_service_error_test() {
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: [],
     )
   let xs = [
-    SliType(name: "a", filters: [], query_template: query_template),
-    SliType(name: "b", filters: [], query_template: query_template),
+    SliType(name: "a", query_template: query_template),
+    SliType(name: "b", query_template: query_template),
   ]
 
   assert linker.resolve_unresolved_service(
@@ -131,24 +148,27 @@ pub fn resolve_unresolved_service_error_test() {
 }
 
 pub fn link_and_validate_specification_sub_parts_test() {
-  let sli_filter_a =
-    SliFilter(attribute_name: "a", attribute_type: Integer, required: True)
-  let sli_filter_b =
-    SliFilter(attribute_name: "b", attribute_type: Integer, required: False)
+  let query_template_filter_a =
+    QueryTemplateFilter(
+      attribute_name: "a",
+      attribute_type: Integer,
+      required: True,
+    )
+  let query_template_filter_b =
+    QueryTemplateFilter(
+      attribute_name: "b",
+      attribute_type: Integer,
+      required: False,
+    )
 
-  let sli_filters = [
-    sli_filter_a,
-    sli_filter_b,
+  let query_template_filters = [
+    query_template_filter_a,
+    query_template_filter_b,
   ]
 
   let unresolved_sli_types = [
-    SliTypeUnresolved(name: "a", query_template_type: "good_over_bad", filters: [
-      "a",
-      "b",
-    ]),
-    SliTypeUnresolved(name: "b", query_template_type: "good_over_bad", filters: [
-      "a",
-    ]),
+    SliTypeUnresolved(name: "a", query_template_type: "good_over_bad"),
+    SliTypeUnresolved(name: "b", query_template_type: "good_over_bad"),
   ]
 
   let unresolved_services = [
@@ -158,20 +178,24 @@ pub fn link_and_validate_specification_sub_parts_test() {
     ]),
   ]
 
-  let query_template =
+  let unresolved_query_template_types = [
+    GoodOverBadQueryTemplateUnresolved(
+      numerator_query: "numerator",
+      denominator_query: "denominator",
+      filters: ["a", "b"],
+    ),
+  ]
+
+  let resolved_query_template =
     GoodOverBadQueryTemplate(
       numerator_query: "numerator",
       denominator_query: "denominator",
+      filters: query_template_filters,
     )
-  let query_template_types = [query_template]
 
   let expected_sli_types = [
-    SliType(
-      name: "a",
-      filters: [sli_filter_a, sli_filter_b],
-      query_template: query_template,
-    ),
-    SliType(name: "b", filters: [sli_filter_a], query_template: query_template),
+    SliType(name: "a", query_template: resolved_query_template),
+    SliType(name: "b", query_template: resolved_query_template),
   ]
 
   let expected_services = [
@@ -181,8 +205,8 @@ pub fn link_and_validate_specification_sub_parts_test() {
   assert linker.link_and_validate_specification_sub_parts(
       unresolved_services,
       unresolved_sli_types,
-      sli_filters,
-      query_template_types,
+      query_template_filters,
+      unresolved_query_template_types,
     )
     == Ok(expected_services)
 }
@@ -276,8 +300,8 @@ pub fn link_specification_and_instantiation_test() {
       filters: dict.from_list([#("number_of_users", "100")]),
     )
 
-  let expected_sli_filter =
-    SliFilter(
+  let expected_query_template_filter =
+    QueryTemplateFilter(
       attribute_name: "number_of_users",
       attribute_type: Integer,
       required: True,
@@ -286,10 +310,10 @@ pub fn link_specification_and_instantiation_test() {
   let expected_sli_type =
     SliType(
       name: "error_rate",
-      filters: [expected_sli_filter],
       query_template: GoodOverBadQueryTemplate(
         numerator_query: "sum(rate(http_requests_total{status!~'5..'}[5m]))",
         denominator_query: "sum(rate(http_requests_total[5m]))",
+        filters: [expected_query_template_filter],
       ),
     )
 

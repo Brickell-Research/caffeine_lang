@@ -1,4 +1,5 @@
 import caffeine/phase_4/terraform/datadog
+import caffeine/types/intermediate_representation.{GoodOverBadQueryTemplate}
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -30,12 +31,6 @@ pub fn resource_top_line_test() {
   let expected =
     "resource \"datadog_service_level_objective\" team_service_type {"
   let actual = datadog.resource_top_line("team", "service", "type")
-  assert actual == expected
-}
-
-pub fn resource_type_test() {
-  let expected = "type        = \"metric\""
-  let actual = datadog.resource_type()
   assert actual == expected
 }
 
@@ -79,5 +74,18 @@ pub fn tf_resource_name_test() {
   let expected =
     "resource \"datadog_service_level_objective\" team_service_type {"
   let actual = datadog.tf_resource_name("team", "service", "type")
+  assert actual == expected
+}
+
+pub fn resource_type_test() {
+  let expected = "type        = \"metric\""
+  let actual =
+    datadog.resource_type(
+      GoodOverBadQueryTemplate(
+        numerator_query: "numerator",
+        denominator_query: "denominator",
+        filters: [],
+      ),
+    )
   assert actual == expected
 }

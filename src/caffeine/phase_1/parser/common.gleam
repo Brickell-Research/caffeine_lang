@@ -1,5 +1,6 @@
 import glaml
 import gleam/dict
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
@@ -91,5 +92,43 @@ pub fn extract_float_from_node(
   case query_template_node {
     glaml.NodeFloat(value) -> Ok(value)
     _ -> Error("Expected " <> key <> " to be a float")
+  }
+}
+
+/// Extracts a list of strings from a glaml node.
+pub fn extract_string_list_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(List(String), String) {
+  use list_node <- result.try(extract_some_node_by_key(node, key))
+
+  // Try to access the first element to validate it's a list structure
+  case glaml.select_sugar(list_node, "#0") {
+    Ok(_) -> do_extract_string_list(list_node, 0)
+    Error(_) -> {
+      // Check if it's a non-list node that would cause the wrong error
+      case list_node {
+        glaml.NodeStr(_) -> Error("Expected " <> key <> " list item to be a string")
+        _ -> Error("Expected " <> key <> " to be a list")
+      }
+    }
+  }
+}
+
+fn do_extract_string_list(
+  list_node: glaml.Node,
+  index: Int,
+) -> Result(List(String), String) {
+  case glaml.select_sugar(list_node, "#" <> int.to_string(index)) {
+    Ok(item_node) -> {
+      case item_node {
+        glaml.NodeStr(value) -> {
+          use rest <- result.try(do_extract_string_list(list_node, index + 1))
+          Ok([value, ..rest])
+        }
+        _ -> Error("Expected list item to be a string")
+      }
+    }
+    Error(_) -> Ok([])
   }
 }

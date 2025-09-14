@@ -5,8 +5,8 @@ import gleam/string
 
 pub fn organization_test() {
   // ==== Specfication ====
-  let some_sli_filter =
-    intermediate_representation.SliFilter(
+  let some_query_template_filter =
+    intermediate_representation.QueryTemplateFilter(
       attribute_name: "acceptable_status_codes",
       attribute_type: intermediate_representation.List(
         intermediate_representation.String,
@@ -16,11 +16,11 @@ pub fn organization_test() {
 
   let some_sli_type =
     intermediate_representation.SliType(
-      filters: [some_sli_filter],
       name: "http_status_code",
       query_template: intermediate_representation.GoodOverBadQueryTemplate(
         numerator_query: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
         denominator_query: "SELECT count(1) FROM http_requests",
+        filters: [some_query_template_filter],
       ),
     )
   let service_definition =

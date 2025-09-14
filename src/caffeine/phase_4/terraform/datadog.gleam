@@ -1,3 +1,4 @@
+import caffeine/types/intermediate_representation
 import gleam/dict
 import gleam/float
 import gleam/list
@@ -78,10 +79,16 @@ pub fn tf_resource_name(
   <> " {"
 }
 
-// TODO: allow this to be configurable
-// For now we only supported "good over bad" SLIs
-pub fn resource_type() -> String {
-  "type        = \"metric\""
+pub fn resource_type(
+  query_template_type: intermediate_representation.QueryTemplateType,
+) -> String {
+  case query_template_type {
+    intermediate_representation.GoodOverBadQueryTemplate(
+      _numerator_query,
+      _denominator_query,
+      _filters,
+    ) -> "type        = \"metric\""
+  }
 }
 
 // TODO: allow this to be configurable
@@ -105,11 +112,18 @@ pub fn resource_target_threshold(threshold: Float) -> String {
   "target = " <> float.to_string(threshold)
 }
 
-// TODO: allow this to be configurable
-// For now we only supported "good over bad" SLIs
-// pub fn slo_specification() -> String {
-// "query { numerator   = \"#{numerator_query}\" denominator = \"#{denominator_query}\" }"
-//   todo
+// // TODO: we need to figure out when to resolve the filters
+// pub fn slo_specification(
+//   _query_template_type: intermediate_representation.QueryTemplateType,
+// ) -> String {
+// todo
+// case query_template_type {
+//   intermediate_representation.GoodOverBadQueryTemplate(
+//     numerator_query,
+//     denominator_query,
+//   ) ->
+//     "query { numerator   = \"#{numerator_query}\" denominator = \"#{denominator_query}\" }"
+// }
 // }
 
 pub fn get_tags(tags: dict.Dict(String, String)) -> String {
