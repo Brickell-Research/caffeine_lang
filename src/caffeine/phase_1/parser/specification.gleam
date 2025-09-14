@@ -9,13 +9,14 @@ import gleam/dict
 import gleam/int
 import gleam/result
 
+/// Given a specification file, returns a list of unresolved service specifications.
 pub fn parse_services_specification(
   file_path: String,
 ) -> Result(List(specification_types.ServiceUnresolved), String) {
-  common.parse_specification(file_path, parse_services_from_doc)
+  common.parse_specification(file_path, dict.new(), parse_services_from_doc)
 }
 
-pub fn parse_services_from_doc(
+fn parse_services_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
 ) -> Result(List(ServiceUnresolved), String) {
@@ -24,7 +25,7 @@ pub fn parse_services_from_doc(
   Ok(services)
 }
 
-pub fn parse_services(
+fn parse_services(
   root: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(List(ServiceUnresolved), String) {
@@ -87,13 +88,14 @@ fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
   }
 }
 
+/// Given a specification file, returns a list of SLI filters.
 pub fn parse_sli_filters_specification(
   file_path: String,
 ) -> Result(List(intermediate_representation.SliFilter), String) {
-  common.parse_specification(file_path, parse_sli_filters_from_doc)
+  common.parse_specification(file_path, dict.new(), parse_sli_filters_from_doc)
 }
 
-pub fn parse_sli_filters_from_doc(
+fn parse_sli_filters_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
 ) -> Result(List(intermediate_representation.SliFilter), String) {
@@ -105,7 +107,7 @@ pub fn parse_sli_filters_from_doc(
   Ok(sli_filters)
 }
 
-pub fn parse_sli_filters(
+fn parse_sli_filters(
   root: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(List(intermediate_representation.SliFilter), String) {
@@ -176,13 +178,14 @@ fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
   }
 }
 
+/// Given a specification file, returns a list of unresolved SLI types.
 pub fn parse_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypeUnresolved), String) {
-  common.parse_specification(file_path, parse_sli_types_from_doc)
+  common.parse_specification(file_path, dict.new(), parse_sli_types_from_doc)
 }
 
-pub fn parse_sli_types_from_doc(
+fn parse_sli_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
 ) -> Result(List(SliTypeUnresolved), String) {
@@ -191,7 +194,7 @@ pub fn parse_sli_types_from_doc(
   Ok(sli_types)
 }
 
-pub fn parse_sli_types(
+fn parse_sli_types(
   root: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(List(SliTypeUnresolved), String) {

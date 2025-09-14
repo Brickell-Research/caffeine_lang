@@ -53,15 +53,13 @@ pub fn apply_to_glaml_document(
 /// Parses a specification file into a list of glaml documents according to the given parse function.
 pub fn parse_specification(
   file_path: String,
+  params: dict.Dict(String, String),
   parse_fn: fn(glaml.Document, dict.Dict(String, String)) -> Result(a, String),
 ) -> Result(a, String) {
   // TODO: consider enforcing constraints on file path, however for now, unnecessary.
 
   // parse the YAML file
   use doc <- result.try(parse_yaml_file(file_path))
-
-  // empty, but required
-  let params = dict.new()
 
   // parse the intermediate representation, here just the sli_types
   case doc {
@@ -80,5 +78,18 @@ pub fn extract_string_from_node(
   case query_template_node {
     glaml.NodeStr(value) -> Ok(value)
     _ -> Error("Expected " <> key <> " to be a string")
+  }
+}
+
+/// Extracts a float from a glaml node.
+pub fn extract_float_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(Float, String) {
+  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+
+  case query_template_node {
+    glaml.NodeFloat(value) -> Ok(value)
+    _ -> Error("Expected " <> key <> " to be a float")
   }
 }

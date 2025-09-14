@@ -12,22 +12,21 @@ import gleam/result
 pub fn parse_instantiation(
   file_path: String,
 ) -> Result(intermediate_representation.Team, String) {
-  // parse the team name and service name from the file path
+  use params <- result.try(extract_params_from_file_path(file_path))
+
+  common.parse_specification(file_path, params, parse_instantiation_from_doc)
+}
+
+fn extract_params_from_file_path(
+  file_path: String,
+) -> Result(dict.Dict(String, String), String) {
   use #(team_name, service_name) <- result.try(
     common.extract_service_and_team_name_from_file_path(file_path),
   )
-
-  // parse the YAML file
-  use doc <- result.try(common.parse_yaml_file(file_path))
-
   let params =
     dict.from_list([#("team_name", team_name), #("service_name", service_name)])
 
-  // parse the intermediate representation, here just the instantiation (team)
-  case doc {
-    [first, ..] -> parse_instantiation_from_doc(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
+  Ok(params)
 }
 
 fn parse_instantiation_from_doc(
@@ -76,9 +75,9 @@ fn parse_slo(
   slo: glaml.Node,
   service_name: String,
 ) -> Result(intermediate_representation.Slo, String) {
-  use sli_type <- result.try(extract_sli_type(slo))
+  use sli_type <- result.try(common.extract_string_from_node(slo, "sli_type"))
   use filters <- result.try(extract_filters(slo))
-  use threshold <- result.try(extract_threshold(slo))
+  use threshold <- result.try(common.extract_float_from_node(slo, "threshold"))
 
   Ok(intermediate_representation.Slo(
     sli_type:,
@@ -103,29 +102,5 @@ fn extract_filters(slo: glaml.Node) -> Result(dict.Dict(String, String), String)
       |> result.map(dict.from_list)
     }
     _ -> Error("Expected filters to be a map")
-  }
-}
-
-fn extract_sli_type(slo: glaml.Node) -> Result(String, String) {
-  use sli_type_node <- result.try(common.extract_some_node_by_key(
-    slo,
-    "sli_type",
-  ))
-
-  case sli_type_node {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected sli_type to be a string")
-  }
-}
-
-fn extract_threshold(slo: glaml.Node) -> Result(Float, String) {
-  use threshold_node <- result.try(common.extract_some_node_by_key(
-    slo,
-    "threshold",
-  ))
-
-  case threshold_node {
-    glaml.NodeFloat(value) -> Ok(value)
-    _ -> Error("Expected threshold to be a float")
   }
 }
