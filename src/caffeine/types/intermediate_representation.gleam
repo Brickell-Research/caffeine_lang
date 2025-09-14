@@ -40,11 +40,7 @@ pub type SliType {
 }
 
 pub type QueryTemplateType {
-  GoodOverBadQueryTemplate(
-    numerator_query: String,
-    denominator_query: String,
-    name: String,
-  )
+  GoodOverBadQueryTemplate(numerator_query: String, denominator_query: String)
 }
 
 /// A SliFilter is a single definition of a filter that can be applied to an SLI's query

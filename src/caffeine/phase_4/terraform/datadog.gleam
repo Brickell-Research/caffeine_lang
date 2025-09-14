@@ -1,4 +1,3 @@
-import caffeine/types/intermediate_representation.{SliType, Slo}
 import gleam/dict
 import gleam/float
 import gleam/list
@@ -40,12 +39,12 @@ pub fn provider_with_variables() -> String {
   provider() <> "\n\n" <> variables()
 }
 
-pub fn slo_definition_to_tf(
-  slo: intermediate_representation.Slo,
-  sli_type: intermediate_representation.SliType,
-) -> String {
-  todo
-}
+// pub fn slo_definition_to_tf(
+//   slo: intermediate_representation.Slo,
+//   sli_type: intermediate_representation.SliType,
+// ) -> String {
+//   todo
+// }
 
 pub fn set_resource_comment_header(team: String, sli_type: String) -> String {
   "# SLO created by EzSLO for " <> team <> " - Type: " <> sli_type
@@ -108,10 +107,10 @@ pub fn resource_target_threshold(threshold: Float) -> String {
 
 // TODO: allow this to be configurable
 // For now we only supported "good over bad" SLIs
-pub fn slo_specification() -> String {
-  "query { numerator   = \"#{numerator_query}\" denominator = \"#{denominator_query}\" }"
-  todo
-}
+// pub fn slo_specification() -> String {
+// "query { numerator   = \"#{numerator_query}\" denominator = \"#{denominator_query}\" }"
+//   todo
+// }
 
 pub fn get_tags(tags: dict.Dict(String, String)) -> String {
   let formatted_tags =

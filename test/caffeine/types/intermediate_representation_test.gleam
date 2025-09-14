@@ -21,7 +21,6 @@ pub fn organization_test() {
       query_template: intermediate_representation.GoodOverBadQueryTemplate(
         numerator_query: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
         denominator_query: "SELECT count(1) FROM http_requests",
-        name: "good_over_bad",
       ),
     )
   let service_definition =

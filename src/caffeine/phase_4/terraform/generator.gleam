@@ -40,20 +40,20 @@ fn do_build_variables(provider: SupportedProvider) -> String {
   }
 }
 
-pub fn build_slo_definitions() -> String {
-  todo
-}
+// pub fn build_slo_definitions() -> String {
+//   todo
+// }
 
-pub fn build_slo_dashboards() -> String {
-  todo
-}
+// pub fn build_slo_dashboards() -> String {
+//   todo
+// }
 
-pub fn build_main() -> String {
-  let _backend = build_backend()
-  let _slo_definitions = build_slo_definitions()
-  let _slo_dashboards = build_slo_dashboards()
-  todo
-}
+// pub fn build_main() -> String {
+//   let _backend = build_backend()
+//   let _slo_definitions = build_slo_definitions()
+//   let _slo_dashboards = build_slo_dashboards()
+//   todo
+// }
 
 pub fn generate() -> String {
   // -- variables.tf --
@@ -61,7 +61,6 @@ pub fn generate() -> String {
 
   // -- providers.tf --
   build_provider([Datadog])
-
   // -- main.tf --
-  build_main()
+  // build_main()
 }

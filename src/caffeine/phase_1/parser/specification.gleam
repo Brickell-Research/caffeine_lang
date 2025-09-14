@@ -285,14 +285,21 @@ fn extract_sli_type_filter(filter_node: glaml.Node) -> Result(String, String) {
 pub fn parse_query_template_types_specification(
   file_path: String,
 ) -> Result(List(intermediate_representation.QueryTemplateType), String) {
-  common.parse_specification(file_path, dict.new(), parse_query_template_types_from_doc)
+  common.parse_specification(
+    file_path,
+    dict.new(),
+    parse_query_template_types_from_doc,
+  )
 }
 
 fn parse_query_template_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
 ) -> Result(List(intermediate_representation.QueryTemplateType), String) {
-  use query_template_types <- result.try(parse_query_template_types(glaml.document_root(doc), params))
+  use query_template_types <- result.try(parse_query_template_types(
+    glaml.document_root(doc),
+    params,
+  ))
 
   Ok(query_template_types)
 }
@@ -324,8 +331,9 @@ fn do_parse_query_template_types(
   }
 }
 
-fn parse_query_template_type(type_node: glaml.Node) -> Result(intermediate_representation.QueryTemplateType, String) {
-  use name <- result.try(common.extract_string_from_node(type_node, "name"))
+fn parse_query_template_type(
+  type_node: glaml.Node,
+) -> Result(intermediate_representation.QueryTemplateType, String) {
   use numerator_query <- result.try(common.extract_string_from_node(
     type_node,
     "numerator_query",
@@ -336,7 +344,6 @@ fn parse_query_template_type(type_node: glaml.Node) -> Result(intermediate_repre
   ))
 
   Ok(intermediate_representation.GoodOverBadQueryTemplate(
-    name: name,
     numerator_query: numerator_query,
     denominator_query: denominator_query,
   ))
