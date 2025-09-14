@@ -1,8 +1,8 @@
-import caffeine/intermediate_representation.{
+import caffeine/phase_2/linker
+import caffeine/types/intermediate_representation.{
   Integer, Organization, Service, SliFilter, SliType, Slo, Team,
 }
-import caffeine/parser/linker
-import caffeine/parser/specification_types.{ServicePreSugared, SliTypePreSugared}
+import caffeine/types/specification_types.{ServiceUnresolved, SliTypeUnresolved}
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -36,14 +36,14 @@ pub fn fetch_by_name_sli_type_test() {
   assert linker.fetch_by_name_sli_type(xs, "c") == Error("SliType c not found")
 }
 
-pub fn sugar_pre_sugared_sli_type_test() {
+pub fn resolve_unresolved_sli_type_test() {
   let xs = [
     SliFilter(attribute_name: "a", attribute_type: Integer, required: True),
     SliFilter(attribute_name: "b", attribute_type: Integer, required: False),
   ]
 
-  assert linker.sugar_pre_sugared_sli_type(
-      SliTypePreSugared(
+  assert linker.resolve_unresolved_sli_type(
+      SliTypeUnresolved(
         name: "a",
         filters: ["a", "b"],
         query_template: "some_query_template",
@@ -53,44 +53,44 @@ pub fn sugar_pre_sugared_sli_type_test() {
     == Ok(SliType(name: "a", filters: xs, query_template: "some_query_template"))
 }
 
-pub fn sugar_pre_sugared_sli_type_error_test() {
+pub fn resolve_unresolved_sli_type_error_test() {
   let xs = [
     SliFilter(attribute_name: "a", attribute_type: Integer, required: True),
     SliFilter(attribute_name: "b", attribute_type: Integer, required: False),
   ]
 
-  assert linker.sugar_pre_sugared_sli_type(
-      SliTypePreSugared(
-        name: "a",
-        filters: ["a", "b", "c"],
-        query_template: "some_query_template",
-      ),
+  assert linker.resolve_unresolved_sli_type(
+      SliTypeUnresolved(name: "a", query_template: "query", filters: [
+        "a",
+        "b",
+        "c",
+      ]),
       xs,
     )
     == Error("Failed to link sli filters to sli type")
 }
 
-pub fn sugar_pre_sugared_service_test() {
+pub fn resolve_unresolved_service_test() {
   let xs = [
     SliType(name: "a", filters: [], query_template: "some_query_template"),
     SliType(name: "b", filters: [], query_template: "some_other_query_template"),
   ]
 
-  assert linker.sugar_pre_sugared_service(
-      ServicePreSugared(name: "a", sli_types: ["a", "b"]),
+  assert linker.resolve_unresolved_service(
+      ServiceUnresolved(name: "a", sli_types: ["a", "b"]),
       xs,
     )
     == Ok(Service(name: "a", supported_sli_types: xs))
 }
 
-pub fn sugar_pre_sugared_service_error_test() {
+pub fn resolve_unresolved_service_error_test() {
   let xs = [
     SliType(name: "a", filters: [], query_template: "some_query_template"),
     SliType(name: "b", filters: [], query_template: "some_other_query_template"),
   ]
 
-  assert linker.sugar_pre_sugared_service(
-      ServicePreSugared(name: "a", sli_types: ["a", "b", "c"]),
+  assert linker.resolve_unresolved_service(
+      ServiceUnresolved(name: "a", sli_types: ["a", "b", "c"]),
       xs,
     )
     == Error("Failed to link sli types to service")
@@ -107,34 +107,26 @@ pub fn link_and_validate_specification_sub_parts_test() {
     sli_filter_b,
   ]
 
-  let pre_sugared_sli_types = [
-    SliTypePreSugared(
-      name: "sli_type_a",
-      filters: ["a", "b"],
-      query_template: "some_query_template",
-    ),
-    SliTypePreSugared(
-      name: "sli_type_b",
-      filters: ["a"],
-      query_template: "some_other_query_template",
-    ),
+  let unresolved_sli_types = [
+    SliTypeUnresolved(name: "a", query_template: "some_query_template", filters: ["a", "b"]),
+    SliTypeUnresolved(name: "b", query_template: "some_other_query_template", filters: ["a"]),
   ]
 
-  let pre_sugared_services = [
-    ServicePreSugared(name: "service_a", sli_types: [
-      "sli_type_a",
-      "sli_type_b",
+  let unresolved_services = [
+    ServiceUnresolved(name: "service_a", sli_types: [
+      "a",
+      "b",
     ]),
   ]
 
   let expected_sli_types = [
     SliType(
-      name: "sli_type_a",
+      name: "a",
       filters: [sli_filter_a, sli_filter_b],
       query_template: "some_query_template",
     ),
     SliType(
-      name: "sli_type_b",
+      name: "b",
       filters: [sli_filter_a],
       query_template: "some_other_query_template",
     ),
@@ -145,8 +137,8 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   assert linker.link_and_validate_specification_sub_parts(
-      pre_sugared_services,
-      pre_sugared_sli_types,
+      unresolved_services,
+      unresolved_sli_types,
       sli_filters,
     )
     == Ok(expected_services)

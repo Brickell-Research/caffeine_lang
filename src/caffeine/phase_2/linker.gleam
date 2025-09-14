@@ -1,12 +1,12 @@
-import caffeine/intermediate_representation
-import caffeine/parser/instantiation
-import caffeine/parser/specification.{
+import caffeine/phase_1/parser/instantiation
+import caffeine/phase_1/parser/specification.{
   parse_services_specification, parse_sli_filters_specification,
   parse_sli_types_specification,
 }
+import caffeine/types/intermediate_representation
 
-import caffeine/parser/specification_types.{
-  type ServicePreSugared, type SliTypePreSugared,
+import caffeine/types/specification_types.{
+  type ServiceUnresolved, type SliTypeUnresolved,
 }
 
 import gleam/dict
@@ -16,34 +16,34 @@ import gleam/result
 import gleam/string
 import simplifile
 
-/// This function is a two step process. While it fundamentally enables us to sugar
+/// This function is a two step process. While it fundamentally enables us to resolve
 /// the specification (services), it also semantically validates that the specification
 /// makes sense; right now this just means that we're able to link sli_types to services
 /// and sli_filters to sli_types.
 pub fn link_and_validate_specification_sub_parts(
-  services: List(ServicePreSugared),
-  sli_types: List(SliTypePreSugared),
+  services: List(ServiceUnresolved),
+  sli_types: List(SliTypeUnresolved),
   sli_filters: List(intermediate_representation.SliFilter),
 ) -> Result(List(intermediate_representation.Service), String) {
   // First we need to link sli_filters to sli_types
-  use sugared_sli_types <- result.try(
+  use resolved_sli_types <- result.try(
     sli_types
     |> list.map(fn(sli_type) {
-      sugar_pre_sugared_sli_type(sli_type, sli_filters)
+      resolve_unresolved_sli_type(sli_type, sli_filters)
     })
     |> result.all,
   )
 
   // Next we need to link sli_types to services
-  use sugared_services <- result.try(
+  use resolved_services <- result.try(
     services
     |> list.map(fn(service) {
-      sugar_pre_sugared_service(service, sugared_sli_types)
+      resolve_unresolved_service(service, resolved_sli_types)
     })
     |> result.all,
   )
 
-  Ok(sugared_services)
+  Ok(resolved_services)
 }
 
 /// This function fetches a single SliFilter by attribute name.
@@ -64,49 +64,49 @@ pub fn fetch_by_name_sli_type(
   |> result.replace_error("SliType " <> name <> " not found")
 }
 
-/// This function takes a pre sugared SliType and a list of SliFilters and returns a sugared SliType.
-pub fn sugar_pre_sugared_sli_type(
-  pre_sugared_sli_type: SliTypePreSugared,
+/// This function takes an unresolved SliType and a list of SliFilters and returns a resolved SliType.
+pub fn resolve_unresolved_sli_type(
+  unresolved_sli_type: SliTypeUnresolved,
   sli_filters: List(intermediate_representation.SliFilter),
 ) -> Result(intermediate_representation.SliType, String) {
   // fill in the sli filters
 
-  let sugared_filters =
-    pre_sugared_sli_type.filters
+  let resolved_filters =
+    unresolved_sli_type.filters
     |> list.map(fn(filter_name) {
       fetch_by_attribute_name_sli_filter(sli_filters, filter_name)
     })
     |> result.all
 
-  case sugared_filters {
+  case resolved_filters {
     Ok(filters) ->
       Ok(intermediate_representation.SliType(
-        name: pre_sugared_sli_type.name,
+        name: unresolved_sli_type.name,
         filters: filters,
-        query_template: pre_sugared_sli_type.query_template,
+        query_template: unresolved_sli_type.query_template,
       ))
     Error(_) -> Error("Failed to link sli filters to sli type")
   }
 }
 
-/// This function takes a pre sugared Service and a list of SliTypes and returns a sugared Service.
-pub fn sugar_pre_sugared_service(
-  pre_sugared_service: ServicePreSugared,
+/// This function takes an unresolved Service and a list of SliTypes and returns a resolved Service.
+pub fn resolve_unresolved_service(
+  unresolved_service: ServiceUnresolved,
   sli_types: List(intermediate_representation.SliType),
 ) -> Result(intermediate_representation.Service, String) {
   // fill in the sli types
 
-  let sugared_sli_types =
-    pre_sugared_service.sli_types
+  let resolved_sli_types =
+    unresolved_service.sli_types
     |> list.map(fn(sli_type_name) {
       fetch_by_name_sli_type(sli_types, sli_type_name)
     })
     |> result.all
 
-  case sugared_sli_types {
+  case resolved_sli_types {
     Ok(sli_types) ->
       Ok(intermediate_representation.Service(
-        name: pre_sugared_service.name,
+        name: unresolved_service.name,
         supported_sli_types: sli_types,
       ))
     Error(_) -> Error("Failed to link sli types to service")
@@ -146,11 +146,11 @@ pub fn link_specification_and_instantiation(
   instantiations_directory: String,
 ) -> Result(intermediate_representation.Organization, String) {
   // ==== Specification ====
-  use desugared_services <- result.try(parse_services_specification(
+  use unresolved_services <- result.try(parse_services_specification(
     specification_directory <> "/services.yaml",
   ))
 
-  use desugared_sli_types <- result.try(parse_sli_types_specification(
+  use unresolved_sli_types <- result.try(parse_sli_types_specification(
     specification_directory <> "/sli_types.yaml",
   ))
 
@@ -159,8 +159,8 @@ pub fn link_specification_and_instantiation(
   ))
 
   use linked_services <- result.try(link_and_validate_specification_sub_parts(
-    desugared_services,
-    desugared_sli_types,
+    unresolved_services,
+    unresolved_sli_types,
     sli_filters,
   ))
 

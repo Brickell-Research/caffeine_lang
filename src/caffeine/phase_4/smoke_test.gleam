@@ -1,4 +1,4 @@
-import caffeine/intermediate_representation.{type Organization}
+import caffeine/types/intermediate_representation.{type Organization}
 import gleam/io
 import simplifile
 

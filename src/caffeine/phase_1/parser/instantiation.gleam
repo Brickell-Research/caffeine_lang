@@ -1,5 +1,5 @@
-import caffeine/intermediate_representation
-import caffeine/parser/common
+import caffeine/phase_1/parser/common
+import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
 import gleam/int

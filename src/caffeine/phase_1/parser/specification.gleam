@@ -1,8 +1,8 @@
-import caffeine/intermediate_representation
-import caffeine/parser/common
-import caffeine/parser/specification_types.{
-  type ServicePreSugared, type SliTypePreSugared, ServicePreSugared,
-  SliTypePreSugared,
+import caffeine/phase_1/parser/common
+import caffeine/types/intermediate_representation
+import caffeine/types/specification_types.{
+  type ServiceUnresolved, type SliTypeUnresolved, ServiceUnresolved,
+  SliTypeUnresolved,
 }
 import glaml
 import gleam/dict
@@ -11,14 +11,14 @@ import gleam/result
 
 pub fn parse_services_specification(
   file_path: String,
-) -> Result(List(specification_types.ServicePreSugared), String) {
+) -> Result(List(specification_types.ServiceUnresolved), String) {
   common.parse_specification(file_path, parse_services_from_doc)
 }
 
 pub fn parse_services_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
-) -> Result(List(ServicePreSugared), String) {
+) -> Result(List(ServiceUnresolved), String) {
   use services <- result.try(parse_services(glaml.document_root(doc), params))
 
   Ok(services)
@@ -27,7 +27,7 @@ pub fn parse_services_from_doc(
 pub fn parse_services(
   root: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(List(ServicePreSugared), String) {
+) -> Result(List(ServiceUnresolved), String) {
   use services_node <- result.try(
     glaml.select_sugar(root, "services")
     |> result.map_error(fn(_) { "Missing services" }),
@@ -39,7 +39,7 @@ pub fn parse_services(
 fn do_parse_services(
   services: glaml.Node,
   index: Int,
-) -> Result(List(ServicePreSugared), String) {
+) -> Result(List(ServiceUnresolved), String) {
   case glaml.select_sugar(services, "#" <> int.to_string(index)) {
     Ok(service_node) -> {
       use service <- result.try(parse_service(service_node))
@@ -51,11 +51,11 @@ fn do_parse_services(
   }
 }
 
-fn parse_service(service: glaml.Node) -> Result(ServicePreSugared, String) {
+fn parse_service(service: glaml.Node) -> Result(ServiceUnresolved, String) {
   use sli_types <- result.try(extract_sli_types(service))
   use name <- result.try(common.extract_string_from_node(service, "name"))
 
-  Ok(ServicePreSugared(name: name, sli_types: sli_types))
+  Ok(ServiceUnresolved(name: name, sli_types: sli_types))
 }
 
 fn extract_sli_types(service: glaml.Node) -> Result(List(String), String) {
@@ -178,14 +178,14 @@ fn extract_attribute_required(sli_filter: glaml.Node) -> Result(Bool, String) {
 
 pub fn parse_sli_types_specification(
   file_path: String,
-) -> Result(List(SliTypePreSugared), String) {
+) -> Result(List(SliTypeUnresolved), String) {
   common.parse_specification(file_path, parse_sli_types_from_doc)
 }
 
 pub fn parse_sli_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
-) -> Result(List(SliTypePreSugared), String) {
+) -> Result(List(SliTypeUnresolved), String) {
   use sli_types <- result.try(parse_sli_types(glaml.document_root(doc), params))
 
   Ok(sli_types)
@@ -194,7 +194,7 @@ pub fn parse_sli_types_from_doc(
 pub fn parse_sli_types(
   root: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(List(SliTypePreSugared), String) {
+) -> Result(List(SliTypeUnresolved), String) {
   use types_node <- result.try(
     glaml.select_sugar(root, "types")
     |> result.map_error(fn(_) { "Missing types" }),
@@ -206,7 +206,7 @@ pub fn parse_sli_types(
 fn do_parse_sli_types(
   types: glaml.Node,
   index: Int,
-) -> Result(List(SliTypePreSugared), String) {
+) -> Result(List(SliTypeUnresolved), String) {
   case glaml.select_sugar(types, "#" <> int.to_string(index)) {
     Ok(type_node) -> {
       use sli_type <- result.try(parse_sli_type(type_node))
@@ -218,7 +218,7 @@ fn do_parse_sli_types(
   }
 }
 
-fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypePreSugared, String) {
+fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
   use name <- result.try(common.extract_string_from_node(type_node, "name"))
   use query_template <- result.try(common.extract_string_from_node(
     type_node,
@@ -226,7 +226,7 @@ fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypePreSugared, String) {
   ))
   use filters <- result.try(extract_sli_type_filters(type_node))
 
-  Ok(SliTypePreSugared(
+  Ok(SliTypeUnresolved(
     name: name,
     query_template: query_template,
     filters: filters,

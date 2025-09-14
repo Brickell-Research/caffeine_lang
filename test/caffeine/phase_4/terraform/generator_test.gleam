@@ -1,4 +1,4 @@
-import caffeine/backend/terraform/generator
+import caffeine/phase_4/terraform/generator
 
 pub fn build_provider_datadog_test() {
   let expected = {

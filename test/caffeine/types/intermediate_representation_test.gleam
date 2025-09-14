@@ -1,4 +1,4 @@
-import caffeine/intermediate_representation
+import caffeine/types/intermediate_representation
 import gleam/dict
 import gleam/list
 import gleam/string

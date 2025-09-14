@@ -1,5 +1,5 @@
-import caffeine/intermediate_representation
-import caffeine/parser/instantiation
+import caffeine/types/intermediate_representation
+import caffeine/phase_1/parser/instantiation
 import gleam/dict
 
 pub fn parse_instantiation_no_slos_test() {

@@ -1,7 +1,7 @@
-import caffeine/analysis/semantic.{
+import caffeine/phase_3/semantic.{
   InvalidSloThresholdError, UndefinedServiceError, UndefinedSliTypeError,
 }
-import caffeine/intermediate_representation.{
+import caffeine/types/intermediate_representation.{
   type Team, Organization, Service, SliType, Slo, Team,
 }
 import gleam/dict

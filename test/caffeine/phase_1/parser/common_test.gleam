@@ -1,4 +1,4 @@
-import caffeine/parser/common
+import caffeine/phase_1/parser/common
 import glaml
 
 pub fn extract_some_node_by_key_exists_test() {

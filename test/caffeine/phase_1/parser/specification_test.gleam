@@ -1,14 +1,14 @@
-import caffeine/intermediate_representation
-import caffeine/parser/specification
-import caffeine/parser/specification_types.{ServicePreSugared, SliTypePreSugared}
+import caffeine/phase_1/parser/specification
+import caffeine/types/intermediate_representation
+import caffeine/types/specification_types.{ServiceUnresolved, SliTypeUnresolved}
 
 pub fn parse_services_test() {
   let expected_services = [
-    ServicePreSugared(name: "reliable_service", sli_types: [
+    ServiceUnresolved(name: "reliable_service", sli_types: [
       "latency",
       "error_rate",
     ]),
-    ServicePreSugared(name: "unreliable_service", sli_types: [
+    ServiceUnresolved(name: "unreliable_service", sli_types: [
       "error_rate",
     ]),
   ]
@@ -98,12 +98,12 @@ pub fn parse_sli_filters_unrecognized_attribute_type_test() {
 
 pub fn parse_sli_types_test() {
   let expected_sli_types = [
-    SliTypePreSugared(
+    SliTypeUnresolved(
       name: "latency",
       query_template: "avg:(latency by {team_name, accepted_status_codes})",
       filters: ["team_name", "accepted_status_codes"],
     ),
-    SliTypePreSugared(
+    SliTypeUnresolved(
       name: "error_rate",
       query_template: "avg:(error_rate by {number_of_users})",
       filters: ["number_of_users"],

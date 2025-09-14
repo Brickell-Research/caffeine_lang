@@ -1,8 +1,8 @@
 import birl
 import birl/duration
-import caffeine/analysis/semantic
-import caffeine/backend/smoke_test
-import caffeine/parser/linker
+import caffeine/phase_2/linker
+import caffeine/phase_3/semantic
+import caffeine/phase_4/smoke_test
 import gleam/int
 import gleam/io
 
