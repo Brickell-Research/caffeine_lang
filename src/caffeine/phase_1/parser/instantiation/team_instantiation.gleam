@@ -1,4 +1,4 @@
-import caffeine/phase_1/parser/common
+import caffeine/phase_1/parser/utils/common
 import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
@@ -9,7 +9,7 @@ import gleam/result
 /// Parses an instantiation from a YAML file. This is a single team with at least one slo.
 /// Note that within a configutation repository, there can be multiple instantiations for
 /// the same team and even the same service. Logic for this lives within the linking code.
-pub fn parse_instantiation(
+pub fn parse_team_instantiation(
   file_path: String,
 ) -> Result(intermediate_representation.Team, String) {
   use params <- result.try(extract_params_from_file_path(file_path))

@@ -1,7 +1,14 @@
-import caffeine/phase_1/parser/instantiation
-import caffeine/phase_1/parser/specification.{
+import caffeine/phase_1/parser/instantiation/team_instantiation
+import caffeine/phase_1/parser/specification/query_template_filters_specification.{
   parse_query_template_filters_specification,
-  parse_query_template_types_specification, parse_services_specification,
+}
+import caffeine/phase_1/parser/specification/unresolved_query_template_specification.{
+  parse_query_template_types_specification,
+}
+import caffeine/phase_1/parser/specification/unresolved_services_specification.{
+  parse_services_specification,
+}
+import caffeine/phase_1/parser/specification/unresolved_sli_types_specification.{
   parse_sli_types_specification,
 }
 import caffeine/types/intermediate_representation
@@ -243,7 +250,9 @@ pub fn link_specification_and_instantiation(
 
   use instantiations <- result.try(
     instantiations_files
-    |> list.try_map(fn(file) { instantiation.parse_instantiation(file) }),
+    |> list.try_map(fn(file) {
+      team_instantiation.parse_team_instantiation(file)
+    }),
   )
 
   Ok(intermediate_representation.Organization(
