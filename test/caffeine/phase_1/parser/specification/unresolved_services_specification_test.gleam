@@ -13,7 +13,7 @@ pub fn parse_services_test() {
   ]
 
   let actual =
-    unresolved_services_specification.parse_services_specification(
+    unresolved_services_specification.parse_unresolved_services_specification(
       "test/artifacts/specifications/services.yaml",
     )
   assert actual == Ok(expected_services)
@@ -21,7 +21,7 @@ pub fn parse_services_test() {
 
 pub fn parse_services_missing_sli_types_test() {
   let actual =
-    unresolved_services_specification.parse_services_specification(
+    unresolved_services_specification.parse_unresolved_services_specification(
       "test/artifacts/specifications/services_missing_sli_types.yaml",
     )
   assert actual == Error("Missing sli_types")
@@ -29,7 +29,7 @@ pub fn parse_services_missing_sli_types_test() {
 
 pub fn parse_services_missing_name_test() {
   let actual =
-    unresolved_services_specification.parse_services_specification(
+    unresolved_services_specification.parse_unresolved_services_specification(
       "test/artifacts/specifications/services_missing_name.yaml",
     )
   assert actual == Error("Missing name")

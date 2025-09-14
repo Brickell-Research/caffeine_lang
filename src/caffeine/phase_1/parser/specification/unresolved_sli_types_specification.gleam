@@ -8,7 +8,7 @@ import gleam/int
 import gleam/result
 
 /// Given a specification file, returns a list of unresolved SLI types.
-pub fn parse_sli_types_specification(
+pub fn parse_unresolved_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypeUnresolved), String) {
   common.parse_specification(file_path, dict.new(), parse_sli_types_from_doc)

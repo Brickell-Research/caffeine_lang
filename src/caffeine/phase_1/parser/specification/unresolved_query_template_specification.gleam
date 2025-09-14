@@ -8,7 +8,7 @@ import gleam/int
 import gleam/result
 
 /// Given a specification file, returns a list of resolved query template types.
-pub fn parse_query_template_types_specification(
+pub fn parse_unresolved_query_template_types_specification(
   file_path: String,
 ) -> Result(List(QueryTemplateTypeUnresolved), String) {
   common.parse_specification(

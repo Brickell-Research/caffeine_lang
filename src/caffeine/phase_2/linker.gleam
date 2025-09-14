@@ -3,13 +3,13 @@ import caffeine/phase_1/parser/specification/query_template_filters_specificatio
   parse_query_template_filters_specification,
 }
 import caffeine/phase_1/parser/specification/unresolved_query_template_specification.{
-  parse_query_template_types_specification,
+  parse_unresolved_query_template_types_specification,
 }
 import caffeine/phase_1/parser/specification/unresolved_services_specification.{
-  parse_services_specification,
+  parse_unresolved_services_specification,
 }
 import caffeine/phase_1/parser/specification/unresolved_sli_types_specification.{
-  parse_sli_types_specification,
+  parse_unresolved_sli_types_specification,
 }
 import caffeine/types/intermediate_representation
 
@@ -216,13 +216,15 @@ pub fn link_specification_and_instantiation(
   instantiations_directory: String,
 ) -> Result(intermediate_representation.Organization, String) {
   // ==== Specification ====
-  use unresolved_services <- result.try(parse_services_specification(
+  use unresolved_services <- result.try(parse_unresolved_services_specification(
     specification_directory <> "/services.yaml",
   ))
 
-  use unresolved_sli_types <- result.try(parse_sli_types_specification(
-    specification_directory <> "/sli_types.yaml",
-  ))
+  use unresolved_sli_types <- result.try(
+    parse_unresolved_sli_types_specification(
+      specification_directory <> "/sli_types.yaml",
+    ),
+  )
 
   use query_template_filters <- result.try(
     parse_query_template_filters_specification(
@@ -231,7 +233,7 @@ pub fn link_specification_and_instantiation(
   )
 
   use query_template_types_unresolved <- result.try(
-    parse_query_template_types_specification(
+    parse_unresolved_query_template_types_specification(
       specification_directory <> "/query_template_types.yaml",
     ),
   )
