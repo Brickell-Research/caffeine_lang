@@ -7,7 +7,8 @@ import gleam/dict
 import gleam/int
 import gleam/result
 
-/// Given a specification file, returns a list of resolved query template types.
+// ==== Public ====
+/// Given a specification file, returns a list of unresolved query template types.
 pub fn parse_unresolved_query_template_types_specification(
   file_path: String,
 ) -> Result(List(QueryTemplateTypeUnresolved), String) {
@@ -18,6 +19,8 @@ pub fn parse_unresolved_query_template_types_specification(
   )
 }
 
+// ==== Private ====
+/// Given a document, returns a list of unresolved query template types.
 fn parse_query_template_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
@@ -30,6 +33,7 @@ fn parse_query_template_types_from_doc(
   Ok(query_template_types)
 }
 
+/// Top level parser for list of unresolved query template types.
 fn parse_query_template_types(
   root: glaml.Node,
   _params: dict.Dict(String, String),
@@ -42,6 +46,7 @@ fn parse_query_template_types(
   do_parse_query_template_types(types_node, 0)
 }
 
+/// Internal parser for list of unresolved query template types, iterates over the list.
 fn do_parse_query_template_types(
   types: glaml.Node,
   index: Int,
@@ -57,6 +62,7 @@ fn do_parse_query_template_types(
   }
 }
 
+/// Parses a single unresolved query template type.
 fn parse_query_template_type(
   type_node: glaml.Node,
 ) -> Result(QueryTemplateTypeUnresolved, String) {

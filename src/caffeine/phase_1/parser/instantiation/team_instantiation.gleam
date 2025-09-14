@@ -6,6 +6,7 @@ import gleam/int
 import gleam/list
 import gleam/result
 
+// ==== Public ====
 /// Parses an instantiation from a YAML file. This is a single team with at least one slo.
 /// Note that within a configutation repository, there can be multiple instantiations for
 /// the same team and even the same service. Logic for this lives within the linking code.
@@ -17,6 +18,8 @@ pub fn parse_team_instantiation(
   common.parse_specification(file_path, params, parse_instantiation_from_doc)
 }
 
+// ==== Private ====
+/// Extracts team and service name parameters from the file path.
 fn extract_params_from_file_path(
   file_path: String,
 ) -> Result(dict.Dict(String, String), String) {
@@ -29,6 +32,7 @@ fn extract_params_from_file_path(
   Ok(params)
 }
 
+/// Given a document, returns a team instantiation.
 fn parse_instantiation_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
@@ -43,6 +47,7 @@ fn parse_instantiation_from_doc(
   Ok(intermediate_representation.Team(name: team_name, slos: slos))
 }
 
+/// Top level parser for list of SLOs.
 fn parse_slos(
   root: glaml.Node,
   service_name: String,
@@ -55,6 +60,7 @@ fn parse_slos(
   do_parse_slos(slos_node, 0, service_name)
 }
 
+/// Internal parser for list of SLOs, iterates over the list.
 fn do_parse_slos(
   slos: glaml.Node,
   index: Int,
@@ -71,6 +77,7 @@ fn do_parse_slos(
   }
 }
 
+/// Parses a single SLO.
 fn parse_slo(
   slo: glaml.Node,
   service_name: String,
@@ -87,6 +94,7 @@ fn parse_slo(
   ))
 }
 
+/// Extracts filters from an SLO node as a dictionary of key-value pairs.
 fn extract_filters(slo: glaml.Node) -> Result(dict.Dict(String, String), String) {
   use filters_node <- result.try(common.extract_some_node_by_key(slo, "filters"))
 

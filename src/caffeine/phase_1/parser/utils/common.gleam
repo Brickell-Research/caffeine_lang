@@ -95,6 +95,19 @@ pub fn extract_float_from_node(
   }
 }
 
+/// Extracts a boolean from a glaml node
+pub fn extract_bool_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(Bool, String) {
+  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+
+  case query_template_node {
+    glaml.NodeBool(value) -> Ok(value)
+    _ -> Error("Expected " <> key <> " to be a boolean")
+  }
+}
+
 /// Extracts a list of strings from a glaml node.
 pub fn extract_string_list_from_node(
   node: glaml.Node,
@@ -108,7 +121,8 @@ pub fn extract_string_list_from_node(
     Error(_) -> {
       // Check if it's a non-list node that would cause the wrong error
       case list_node {
-        glaml.NodeStr(_) -> Error("Expected " <> key <> " list item to be a string")
+        glaml.NodeStr(_) ->
+          Error("Expected " <> key <> " list item to be a string")
         _ -> Error("Expected " <> key <> " to be a list")
       }
     }

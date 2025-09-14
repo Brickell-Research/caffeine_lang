@@ -7,6 +7,7 @@ import gleam/dict
 import gleam/int
 import gleam/result
 
+// ==== Public ====
 /// Given a specification file, returns a list of unresolved SLI types.
 pub fn parse_unresolved_sli_types_specification(
   file_path: String,
@@ -14,6 +15,8 @@ pub fn parse_unresolved_sli_types_specification(
   common.parse_specification(file_path, dict.new(), parse_sli_types_from_doc)
 }
 
+// ==== Private ====
+/// Given a document, returns a list of unresolved SLI types.
 fn parse_sli_types_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
@@ -23,6 +26,7 @@ fn parse_sli_types_from_doc(
   Ok(sli_types)
 }
 
+/// Top level parser for list of unresolved SLI types.
 fn parse_sli_types(
   root: glaml.Node,
   _params: dict.Dict(String, String),
@@ -35,6 +39,7 @@ fn parse_sli_types(
   do_parse_sli_types(types_node, 0)
 }
 
+/// Internal parser for list of unresolved SLI types, iterates over the list.
 fn do_parse_sli_types(
   types: glaml.Node,
   index: Int,
@@ -50,6 +55,7 @@ fn do_parse_sli_types(
   }
 }
 
+/// Parses a single unresolved SLI type.
 fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
   use name <- result.try(common.extract_string_from_node(type_node, "name"))
   use query_template_type <- result.try(common.extract_string_from_node(

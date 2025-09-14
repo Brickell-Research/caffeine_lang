@@ -7,6 +7,7 @@ import gleam/dict
 import gleam/int
 import gleam/result
 
+// ==== Public ====
 /// Given a specification file, returns a list of unresolved service specifications.
 pub fn parse_unresolved_services_specification(
   file_path: String,
@@ -14,6 +15,8 @@ pub fn parse_unresolved_services_specification(
   common.parse_specification(file_path, dict.new(), parse_services_from_doc)
 }
 
+// ==== Private ====
+/// Given a document, returns a list of unresolved services.
 fn parse_services_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
@@ -23,6 +26,7 @@ fn parse_services_from_doc(
   Ok(services)
 }
 
+/// Top level parser for list of unresolved services.
 fn parse_services(
   root: glaml.Node,
   _params: dict.Dict(String, String),
@@ -35,6 +39,7 @@ fn parse_services(
   do_parse_services(services_node, 0)
 }
 
+/// Internal parser for list of unresolved services, iterates over the list.
 fn do_parse_services(
   services: glaml.Node,
   index: Int,
@@ -50,6 +55,7 @@ fn do_parse_services(
   }
 }
 
+/// Parses a single unresolved service.
 fn parse_service(service: glaml.Node) -> Result(ServiceUnresolved, String) {
   use sli_types <- result.try(extract_sli_types(service))
   use name <- result.try(common.extract_string_from_node(service, "name"))
@@ -57,6 +63,7 @@ fn parse_service(service: glaml.Node) -> Result(ServiceUnresolved, String) {
   Ok(ServiceUnresolved(name: name, sli_types: sli_types))
 }
 
+/// Extracts SLI types from a service node.
 fn extract_sli_types(service: glaml.Node) -> Result(List(String), String) {
   use sli_types_node <- result.try(common.extract_some_node_by_key(
     service,
@@ -65,6 +72,7 @@ fn extract_sli_types(service: glaml.Node) -> Result(List(String), String) {
   do_extract_sli_types(sli_types_node, 0)
 }
 
+/// Internal parser for list of SLI types, iterates over the list.
 fn do_extract_sli_types(
   sli_types_node: glaml.Node,
   index: Int,
@@ -79,6 +87,7 @@ fn do_extract_sli_types(
   }
 }
 
+/// Extracts a single SLI type string from a node.
 fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
   case sli_type_node {
     glaml.NodeStr(value) -> Ok(value)

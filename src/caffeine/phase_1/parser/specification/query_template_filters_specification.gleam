@@ -5,6 +5,7 @@ import gleam/dict
 import gleam/int
 import gleam/result
 
+// ==== Public ====
 /// Given a specification file, returns a list of query template filters.
 pub fn parse_query_template_filters_specification(
   file_path: String,
@@ -16,6 +17,8 @@ pub fn parse_query_template_filters_specification(
   )
 }
 
+// ==== Private ====
+/// Given a document, returns a list of query template filters.
 fn parse_query_template_filters_from_doc(
   doc: glaml.Document,
   params: dict.Dict(String, String),
@@ -28,6 +31,7 @@ fn parse_query_template_filters_from_doc(
   Ok(query_template_filters)
 }
 
+/// Top level parser for list of query template filters.
 fn parse_query_template_filters(
   root: glaml.Node,
   _params: dict.Dict(String, String),
@@ -40,6 +44,7 @@ fn parse_query_template_filters(
   do_parse_query_template_filters(filters_node, 0)
 }
 
+/// Internal parser for list of query template filters, iterates over the list.
 fn do_parse_query_template_filters(
   filters: glaml.Node,
   index: Int,
@@ -55,6 +60,7 @@ fn do_parse_query_template_filters(
   }
 }
 
+/// Parses a single query template filter.
 fn parse_query_template_filter(
   filter: glaml.Node,
 ) -> Result(intermediate_representation.QueryTemplateFilter, String) {
@@ -66,7 +72,7 @@ fn parse_query_template_filter(
     filter,
     "attribute_type",
   ))
-  use required <- result.try(extract_attribute_required(filter))
+  use required <- result.try(common.extract_bool_from_node(filter, "required"))
 
   let accepted_type_for_attribute_type = case attribute_type {
     "Boolean" -> Ok(intermediate_representation.Boolean)
@@ -85,13 +91,4 @@ fn parse_query_template_filter(
     attribute_type: accepted_type,
     required: required,
   ))
-}
-
-fn extract_attribute_required(filter: glaml.Node) -> Result(Bool, String) {
-  use required <- result.try(common.extract_some_node_by_key(filter, "required"))
-
-  case required {
-    glaml.NodeBool(value) -> Ok(value)
-    _ -> Error("Expected attribute required to be a boolean")
-  }
 }
