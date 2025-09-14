@@ -1,4 +1,5 @@
-import caffeine/phase_1/parser/utils/common
+import caffeine/phase_1/parser/utils/general_common
+import caffeine/phase_1/parser/utils/glaml_helpers
 import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
@@ -9,8 +10,8 @@ import gleam/result
 pub fn parse_query_template_filters_specification(
   file_path: String,
 ) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
-  common.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    common.iteratively_parse_collection(
+  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
+    glaml_helpers.iteratively_parse_collection(
       glaml.document_root(doc),
       parse_query_template_filter,
       "filters",
@@ -23,16 +24,16 @@ pub fn parse_query_template_filters_specification(
 fn parse_query_template_filter(
   filter: glaml.Node,
 ) -> Result(intermediate_representation.QueryTemplateFilter, String) {
-  use attribute_name <- result.try(common.extract_string_from_node(
+  use attribute_name <- result.try(glaml_helpers.extract_string_from_node(
     filter,
     "attribute_name",
   ))
-  use attribute_type <- result.try(common.extract_string_from_node(
+  use attribute_type <- result.try(glaml_helpers.extract_string_from_node(
     filter,
     "attribute_type",
   ))
-  use required <- result.try(common.extract_bool_from_node(filter, "required"))
-  use accepted_type <- result.try(common.string_to_accepted_type(attribute_type))
+  use required <- result.try(glaml_helpers.extract_bool_from_node(filter, "required"))
+  use accepted_type <- result.try(general_common.string_to_accepted_type(attribute_type))
 
   Ok(intermediate_representation.QueryTemplateFilter(
     attribute_name: attribute_name,

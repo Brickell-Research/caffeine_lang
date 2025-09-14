@@ -1,4 +1,4 @@
-import caffeine/phase_1/parser/utils/common
+import caffeine/phase_1/parser/utils/glaml_helpers
 import caffeine/types/specification_types.{
   type SliTypeUnresolved, SliTypeUnresolved,
 }
@@ -11,8 +11,8 @@ import gleam/result
 pub fn parse_unresolved_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypeUnresolved), String) {
-  common.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    common.iteratively_parse_collection(
+  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
+    glaml_helpers.iteratively_parse_collection(
       glaml.document_root(doc),
       parse_sli_type,
       "types",
@@ -23,8 +23,8 @@ pub fn parse_unresolved_sli_types_specification(
 // ==== Private ====
 /// Parses a single unresolved SLI type.
 fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
-  use name <- result.try(common.extract_string_from_node(type_node, "name"))
-  use query_template_type <- result.try(common.extract_string_from_node(
+  use name <- result.try(glaml_helpers.extract_string_from_node(type_node, "name"))
+  use query_template_type <- result.try(glaml_helpers.extract_string_from_node(
     type_node,
     "query_template_type",
   ))

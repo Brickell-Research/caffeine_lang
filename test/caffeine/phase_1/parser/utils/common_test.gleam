@@ -1,10 +1,11 @@
-import caffeine/phase_1/parser/utils/common
+import caffeine/phase_1/parser/utils/general_common
+import caffeine/phase_1/parser/utils/glaml_helpers
 import caffeine/types/intermediate_representation
 import glaml
 
 pub fn extract_some_node_by_key_exists_test() {
   let actual =
-    common.extract_some_node_by_key(
+    glaml_helpers.extract_some_node_by_key(
       glaml.NodeMap([#(glaml.NodeStr("key"), glaml.NodeStr("value"))]),
       "key",
     )
@@ -13,7 +14,7 @@ pub fn extract_some_node_by_key_exists_test() {
 
 pub fn extract_some_node_by_key_does_not_exist_test() {
   let actual =
-    common.extract_some_node_by_key(
+    glaml_helpers.extract_some_node_by_key(
       glaml.NodeMap([#(glaml.NodeStr("key"), glaml.NodeStr("value"))]),
       "key_not_found",
     )
@@ -22,7 +23,7 @@ pub fn extract_some_node_by_key_does_not_exist_test() {
 
 pub fn extract_service_and_team_name_from_file_path_test() {
   let actual =
-    common.extract_service_and_team_name_from_file_path(
+    general_common.extract_service_and_team_name_from_file_path(
       "test/artifacts/platform/reliable_service.yaml",
     )
   assert actual == Ok(#("platform", "reliable_service"))
@@ -30,14 +31,14 @@ pub fn extract_service_and_team_name_from_file_path_test() {
 
 pub fn extract_service_and_team_name_from_file_path_invalid_test() {
   let actual =
-    common.extract_service_and_team_name_from_file_path("reliable_service.yaml")
+    general_common.extract_service_and_team_name_from_file_path("reliable_service.yaml")
   assert actual
     == Error("Invalid file path: expected at least 'team/service.yaml'")
 }
 
 pub fn parse_yaml_file_test() {
   let actual =
-    common.parse_yaml_file("test/artifacts/platform/simple_yaml_load_test.yaml")
+    glaml_helpers.parse_yaml_file("test/artifacts/platform/simple_yaml_load_test.yaml")
   assert actual
     == Ok([
       glaml.Document(
@@ -48,7 +49,7 @@ pub fn parse_yaml_file_test() {
 
 pub fn parse_yaml_file_invalid_test() {
   let actual =
-    common.parse_yaml_file("test/artifacts/platform/non_existent.yaml")
+    glaml_helpers.parse_yaml_file("test/artifacts/platform/non_existent.yaml")
   assert actual
     == Error(
       "Failed to parse YAML file: test/artifacts/platform/non_existent.yaml",
@@ -56,6 +57,6 @@ pub fn parse_yaml_file_invalid_test() {
 }
 
 pub fn string_to_accepted_type_test() {
-  let actual = common.string_to_accepted_type("Boolean")
+  let actual = general_common.string_to_accepted_type("Boolean")
   assert actual == Ok(intermediate_representation.Boolean)
 }

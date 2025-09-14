@@ -1,11 +1,9 @@
-import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
 import gleam/int
-import gleam/list
 import gleam/result
-import gleam/string
 
+// ==== Public ====
 /// Parses a YAML file into a list of glaml documents. This is a helper method for dealing with yaml files.
 pub fn parse_yaml_file(
   file_path: String,
@@ -22,18 +20,6 @@ pub fn extract_some_node_by_key(
   case glaml.select_sugar(slo, key) {
     Ok(node) -> Ok(node)
     Error(_) -> Error("Missing " <> key)
-  }
-}
-
-/// Extracts the service and team name from a file path. This is a helper method for dealing with file paths
-/// and the specific format we're expecting as per logic to simplify and minimalize the information that actually
-/// goes into yaml files.
-pub fn extract_service_and_team_name_from_file_path(
-  file_path: String,
-) -> Result(#(String, String), String) {
-  case file_path |> string.split("/") |> list.reverse {
-    [file, team, ..] -> Ok(#(team, string.replace(file, ".yaml", "")))
-    _ -> Error("Invalid file path: expected at least 'team/service.yaml'")
   }
 }
 
@@ -130,6 +116,22 @@ pub fn extract_string_list_from_node(
   }
 }
 
+/// Iteratively parses a collection of nodes.
+pub fn iteratively_parse_collection(
+  root: glaml.Node,
+  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
+  use services_node <- result.try(
+    glaml.select_sugar(root, key)
+    |> result.map_error(fn(_) { "Missing " <> key }),
+  )
+
+  do_parse_collection(services_node, 0, actual_parse_fn)
+}
+
+// ==== Private ====
+/// Internal helper for extracting string lists from glaml nodes.
 fn do_extract_string_list(
   list_node: glaml.Node,
   index: Int,
@@ -146,20 +148,6 @@ fn do_extract_string_list(
     }
     Error(_) -> Ok([])
   }
-}
-
-/// Iteratively parses a collection of nodes.
-pub fn iteratively_parse_collection(
-  root: glaml.Node,
-  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
-  key: String,
-) -> Result(List(a), String) {
-  use services_node <- result.try(
-    glaml.select_sugar(root, key)
-    |> result.map_error(fn(_) { "Missing " <> key }),
-  )
-
-  do_parse_collection(services_node, 0, actual_parse_fn)
 }
 
 /// Internal parser for list of nodes, iterates over the list.
@@ -180,20 +168,5 @@ fn do_parse_collection(
     }
     // TODO: fix this super hacky way of iterating over SLOs.
     Error(_) -> Ok([])
-  }
-}
-
-/// Converts a string to an accepted type.
-pub fn string_to_accepted_type(
-  string: String,
-) -> Result(intermediate_representation.AcceptedTypes, String) {
-  case string {
-    "Boolean" -> Ok(intermediate_representation.Boolean)
-    "Decimal" -> Ok(intermediate_representation.Decimal)
-    "Integer" -> Ok(intermediate_representation.Integer)
-    "String" -> Ok(intermediate_representation.String)
-    "List(String)" ->
-      Ok(intermediate_representation.List(intermediate_representation.String))
-    _ -> Error("Unknown attribute type: " <> string)
   }
 }

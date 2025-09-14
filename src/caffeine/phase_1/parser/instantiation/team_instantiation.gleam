@@ -1,4 +1,5 @@
-import caffeine/phase_1/parser/utils/common
+import caffeine/phase_1/parser/utils/general_common
+import caffeine/phase_1/parser/utils/glaml_helpers
 import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
@@ -15,7 +16,7 @@ pub fn parse_team_instantiation(
 ) -> Result(intermediate_representation.Team, String) {
   use params <- result.try(extract_params_from_file_path(file_path))
 
-  common.parse_specification(file_path, params, parse_instantiation_from_doc)
+  glaml_helpers.parse_specification(file_path, params, parse_instantiation_from_doc)
 }
 
 // ==== Private ====
@@ -24,7 +25,7 @@ fn extract_params_from_file_path(
   file_path: String,
 ) -> Result(dict.Dict(String, String), String) {
   use #(team_name, service_name) <- result.try(
-    common.extract_service_and_team_name_from_file_path(file_path),
+    general_common.extract_service_and_team_name_from_file_path(file_path),
   )
   let params =
     dict.from_list([#("team_name", team_name), #("service_name", service_name)])
@@ -83,9 +84,9 @@ fn parse_slo(
   slo: glaml.Node,
   service_name: String,
 ) -> Result(intermediate_representation.Slo, String) {
-  use sli_type <- result.try(common.extract_string_from_node(slo, "sli_type"))
+  use sli_type <- result.try(glaml_helpers.extract_string_from_node(slo, "sli_type"))
   use filters <- result.try(extract_filters(slo))
-  use threshold <- result.try(common.extract_float_from_node(slo, "threshold"))
+  use threshold <- result.try(glaml_helpers.extract_float_from_node(slo, "threshold"))
 
   Ok(intermediate_representation.Slo(
     sli_type:,
@@ -97,7 +98,7 @@ fn parse_slo(
 
 /// Extracts filters from an SLO node as a dictionary of key-value pairs.
 fn extract_filters(slo: glaml.Node) -> Result(dict.Dict(String, String), String) {
-  use filters_node <- result.try(common.extract_some_node_by_key(slo, "filters"))
+  use filters_node <- result.try(glaml_helpers.extract_some_node_by_key(slo, "filters"))
 
   case filters_node {
     glaml.NodeMap(entries) -> {
