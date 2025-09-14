@@ -18,7 +18,11 @@ pub fn organization_test() {
     intermediate_representation.SliType(
       filters: [some_sli_filter],
       name: "http_status_code",
-      query_template: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
+      query_template: intermediate_representation.GoodOverBadQueryTemplate(
+        numerator_query: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
+        denominator_query: "SELECT count(1) FROM http_requests",
+        name: "good_over_bad",
+      ),
     )
   let service_definition =
     intermediate_representation.Service(

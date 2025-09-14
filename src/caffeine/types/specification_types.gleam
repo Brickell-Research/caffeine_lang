@@ -4,5 +4,9 @@ pub type ServiceUnresolved {
 }
 
 pub type SliTypeUnresolved {
-  SliTypeUnresolved(name: String, query_template: String, filters: List(String))
+  SliTypeUnresolved(
+    name: String,
+    query_template_type: String,
+    filters: List(String),
+  )
 }

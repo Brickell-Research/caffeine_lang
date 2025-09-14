@@ -32,7 +32,19 @@ pub type Service {
 /// A SliType is a named entity that represents the generic (as possible) definition of an SLI
 /// that combines the query template and the filters.
 pub type SliType {
-  SliType(filters: List(SliFilter), name: String, query_template: String)
+  SliType(
+    filters: List(SliFilter),
+    name: String,
+    query_template: QueryTemplateType,
+  )
+}
+
+pub type QueryTemplateType {
+  GoodOverBadQueryTemplate(
+    numerator_query: String,
+    denominator_query: String,
+    name: String,
+  )
 }
 
 /// A SliFilter is a single definition of a filter that can be applied to an SLI's query

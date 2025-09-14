@@ -2,7 +2,7 @@ import caffeine/phase_3/semantic.{
   InvalidSloThresholdError, UndefinedServiceError, UndefinedSliTypeError,
 }
 import caffeine/types/intermediate_representation.{
-  type Team, Organization, Service, SliType, Slo, Team,
+  type Team, GoodOverBadQueryTemplate, Organization, Service, SliType, Slo, Team,
 }
 import gleam/dict
 
@@ -63,7 +63,16 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
     Organization(
       service_definitions: [
         Service(name: "team1", supported_sli_types: [
-          SliType(filters: [], name: "availability", query_template: ""),
+          SliType(filters: [], name: "availability", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
+          SliType(filters: [], name: "latency", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
         ]),
       ],
       teams: [team_1()],
@@ -121,10 +130,28 @@ pub fn perform_semantic_analysis_test() {
     Organization(
       service_definitions: [
         Service(name: "team1", supported_sli_types: [
-          SliType(filters: [], name: "availability", query_template: ""),
+          SliType(filters: [], name: "availability", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
+          SliType(filters: [], name: "latency", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
         ]),
         Service(name: "team2", supported_sli_types: [
-          SliType(filters: [], name: "availability", query_template: ""),
+          SliType(filters: [], name: "availability", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
+          SliType(filters: [], name: "latency", query_template: GoodOverBadQueryTemplate(
+            numerator_query: "numerator",
+            denominator_query: "denominator",
+            name: "good_over_bad",
+          )),
         ]),
       ],
       teams: [team_1()],

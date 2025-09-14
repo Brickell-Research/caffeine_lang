@@ -100,12 +100,12 @@ pub fn parse_sli_types_test() {
   let expected_sli_types = [
     SliTypeUnresolved(
       name: "latency",
-      query_template: "avg:(latency by {team_name, accepted_status_codes})",
+      query_template_type: "good_over_bad",
       filters: ["team_name", "accepted_status_codes"],
     ),
     SliTypeUnresolved(
       name: "error_rate",
-      query_template: "avg:(error_rate by {number_of_users})",
+      query_template_type: "good_over_bad",
       filters: ["number_of_users"],
     ),
   ]
@@ -130,7 +130,7 @@ pub fn parse_sli_types_missing_query_template_test() {
     specification.parse_sli_types_specification(
       "test/artifacts/specifications/sli_types_missing_query_template.yaml",
     )
-  assert actual == Error("Missing query_template")
+  assert actual == Error("Missing query_template_type")
 }
 
 pub fn parse_sli_types_missing_filters_test() {
