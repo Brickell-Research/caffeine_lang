@@ -1,3 +1,4 @@
+import caffeine/types/intermediate_representation
 import glaml
 import gleam/dict
 import gleam/int
@@ -144,5 +145,55 @@ fn do_extract_string_list(
       }
     }
     Error(_) -> Ok([])
+  }
+}
+
+/// Iteratively parses a collection of nodes.
+pub fn iteratively_parse_collection(
+  root: glaml.Node,
+  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
+  use services_node <- result.try(
+    glaml.select_sugar(root, key)
+    |> result.map_error(fn(_) { "Missing " <> key }),
+  )
+
+  do_parse_collection(services_node, 0, actual_parse_fn)
+}
+
+/// Internal parser for list of nodes, iterates over the list.
+fn do_parse_collection(
+  services: glaml.Node,
+  index: Int,
+  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
+) -> Result(List(a), String) {
+  case glaml.select_sugar(services, "#" <> int.to_string(index)) {
+    Ok(service_node) -> {
+      use service <- result.try(actual_parse_fn(service_node))
+      use rest <- result.try(do_parse_collection(
+        services,
+        index + 1,
+        actual_parse_fn,
+      ))
+      Ok([service, ..rest])
+    }
+    // TODO: fix this super hacky way of iterating over SLOs.
+    Error(_) -> Ok([])
+  }
+}
+
+/// Converts a string to an accepted type.
+pub fn string_to_accepted_type(
+  string: String,
+) -> Result(intermediate_representation.AcceptedTypes, String) {
+  case string {
+    "Boolean" -> Ok(intermediate_representation.Boolean)
+    "Decimal" -> Ok(intermediate_representation.Decimal)
+    "Integer" -> Ok(intermediate_representation.Integer)
+    "String" -> Ok(intermediate_representation.String)
+    "List(String)" ->
+      Ok(intermediate_representation.List(intermediate_representation.String))
+    _ -> Error("Unknown attribute type: " <> string)
   }
 }

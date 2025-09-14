@@ -1,4 +1,5 @@
 import caffeine/phase_1/parser/utils/common
+import caffeine/types/intermediate_representation
 import glaml
 
 pub fn extract_some_node_by_key_exists_test() {
@@ -52,4 +53,9 @@ pub fn parse_yaml_file_invalid_test() {
     == Error(
       "Failed to parse YAML file: test/artifacts/platform/non_existent.yaml",
     )
+}
+
+pub fn string_to_accepted_type_test() {
+  let actual = common.string_to_accepted_type("Boolean")
+  assert actual == Ok(intermediate_representation.Boolean)
 }

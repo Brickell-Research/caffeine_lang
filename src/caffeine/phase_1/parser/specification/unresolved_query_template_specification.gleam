@@ -4,7 +4,6 @@ import caffeine/types/specification_types.{
 }
 import glaml
 import gleam/dict
-import gleam/int
 import gleam/result
 
 // ==== Public ====
@@ -23,43 +22,15 @@ pub fn parse_unresolved_query_template_types_specification(
 /// Given a document, returns a list of unresolved query template types.
 fn parse_query_template_types_from_doc(
   doc: glaml.Document,
-  params: dict.Dict(String, String),
+  _params: dict.Dict(String, String),
 ) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  use query_template_types <- result.try(parse_query_template_types(
+  use query_template_types <- result.try(common.iteratively_parse_collection(
     glaml.document_root(doc),
-    params,
+    parse_query_template_type,
+    "query_template_types",
   ))
 
   Ok(query_template_types)
-}
-
-/// Top level parser for list of unresolved query template types.
-fn parse_query_template_types(
-  root: glaml.Node,
-  _params: dict.Dict(String, String),
-) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  use types_node <- result.try(
-    glaml.select_sugar(root, "query_template_types")
-    |> result.map_error(fn(_) { "Missing query_template_types" }),
-  )
-
-  do_parse_query_template_types(types_node, 0)
-}
-
-/// Internal parser for list of unresolved query template types, iterates over the list.
-fn do_parse_query_template_types(
-  types: glaml.Node,
-  index: Int,
-) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  case glaml.select_sugar(types, "#" <> int.to_string(index)) {
-    Ok(type_node) -> {
-      use query_template_type <- result.try(parse_query_template_type(type_node))
-      use rest <- result.try(do_parse_query_template_types(types, index + 1))
-      Ok([query_template_type, ..rest])
-    }
-    // TODO: fix this super hacky way of iterating over query template types.
-    Error(_) -> Ok([])
-  }
 }
 
 /// Parses a single unresolved query template type.

@@ -42,6 +42,7 @@ fn parse_instantiation_from_doc(
   let assert Ok(service_name) = dict.get(params, "service_name")
   let assert Ok(team_name) = dict.get(params, "team_name")
 
+  // TODO: figure out how to refactor to use common.iteratively_parse_collection
   use slos <- result.try(parse_slos(glaml.document_root(doc), service_name))
 
   Ok(intermediate_representation.Team(name: team_name, slos: slos))

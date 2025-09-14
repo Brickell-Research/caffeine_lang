@@ -4,7 +4,6 @@ import caffeine/types/specification_types.{
 }
 import glaml
 import gleam/dict
-import gleam/int
 import gleam/result
 
 // ==== Public ====
@@ -19,78 +18,24 @@ pub fn parse_unresolved_services_specification(
 /// Given a document, returns a list of unresolved services.
 fn parse_services_from_doc(
   doc: glaml.Document,
-  params: dict.Dict(String, String),
+  _params: dict.Dict(String, String),
 ) -> Result(List(ServiceUnresolved), String) {
-  use services <- result.try(parse_services(glaml.document_root(doc), params))
+  use services <- result.try(common.iteratively_parse_collection(
+    glaml.document_root(doc),
+    parse_service,
+    "services",
+  ))
 
   Ok(services)
 }
 
-/// Top level parser for list of unresolved services.
-fn parse_services(
-  root: glaml.Node,
-  _params: dict.Dict(String, String),
-) -> Result(List(ServiceUnresolved), String) {
-  use services_node <- result.try(
-    glaml.select_sugar(root, "services")
-    |> result.map_error(fn(_) { "Missing services" }),
-  )
-
-  do_parse_services(services_node, 0)
-}
-
-/// Internal parser for list of unresolved services, iterates over the list.
-fn do_parse_services(
-  services: glaml.Node,
-  index: Int,
-) -> Result(List(ServiceUnresolved), String) {
-  case glaml.select_sugar(services, "#" <> int.to_string(index)) {
-    Ok(service_node) -> {
-      use service <- result.try(parse_service(service_node))
-      use rest <- result.try(do_parse_services(services, index + 1))
-      Ok([service, ..rest])
-    }
-    // TODO: fix this super hacky way of iterating over SLOs.
-    Error(_) -> Ok([])
-  }
-}
-
 /// Parses a single unresolved service.
 fn parse_service(service: glaml.Node) -> Result(ServiceUnresolved, String) {
-  use sli_types <- result.try(extract_sli_types(service))
-  use name <- result.try(common.extract_string_from_node(service, "name"))
-
-  Ok(ServiceUnresolved(name: name, sli_types: sli_types))
-}
-
-/// Extracts SLI types from a service node.
-fn extract_sli_types(service: glaml.Node) -> Result(List(String), String) {
-  use sli_types_node <- result.try(common.extract_some_node_by_key(
+  use sli_types <- result.try(common.extract_string_list_from_node(
     service,
     "sli_types",
   ))
-  do_extract_sli_types(sli_types_node, 0)
-}
+  use name <- result.try(common.extract_string_from_node(service, "name"))
 
-/// Internal parser for list of SLI types, iterates over the list.
-fn do_extract_sli_types(
-  sli_types_node: glaml.Node,
-  index: Int,
-) -> Result(List(String), String) {
-  case glaml.select_sugar(sli_types_node, "#" <> int.to_string(index)) {
-    Ok(sli_type_node) -> {
-      use sli_type <- result.try(extract_sli_type(sli_type_node))
-      use rest <- result.try(do_extract_sli_types(sli_types_node, index + 1))
-      Ok([sli_type, ..rest])
-    }
-    Error(_) -> Ok([])
-  }
-}
-
-/// Extracts a single SLI type string from a node.
-fn extract_sli_type(sli_type_node: glaml.Node) -> Result(String, String) {
-  case sli_type_node {
-    glaml.NodeStr(value) -> Ok(value)
-    _ -> Error("Expected sli type to be a string")
-  }
+  Ok(ServiceUnresolved(name: name, sli_types: sli_types))
 }

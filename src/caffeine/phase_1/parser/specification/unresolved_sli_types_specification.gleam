@@ -4,7 +4,6 @@ import caffeine/types/specification_types.{
 }
 import glaml
 import gleam/dict
-import gleam/int
 import gleam/result
 
 // ==== Public ====
@@ -19,40 +18,15 @@ pub fn parse_unresolved_sli_types_specification(
 /// Given a document, returns a list of unresolved SLI types.
 fn parse_sli_types_from_doc(
   doc: glaml.Document,
-  params: dict.Dict(String, String),
-) -> Result(List(SliTypeUnresolved), String) {
-  use sli_types <- result.try(parse_sli_types(glaml.document_root(doc), params))
-
-  Ok(sli_types)
-}
-
-/// Top level parser for list of unresolved SLI types.
-fn parse_sli_types(
-  root: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(List(SliTypeUnresolved), String) {
-  use types_node <- result.try(
-    glaml.select_sugar(root, "types")
-    |> result.map_error(fn(_) { "Missing types" }),
-  )
+  use sli_types <- result.try(common.iteratively_parse_collection(
+    glaml.document_root(doc),
+    parse_sli_type,
+    "types",
+  ))
 
-  do_parse_sli_types(types_node, 0)
-}
-
-/// Internal parser for list of unresolved SLI types, iterates over the list.
-fn do_parse_sli_types(
-  types: glaml.Node,
-  index: Int,
-) -> Result(List(SliTypeUnresolved), String) {
-  case glaml.select_sugar(types, "#" <> int.to_string(index)) {
-    Ok(type_node) -> {
-      use sli_type <- result.try(parse_sli_type(type_node))
-      use rest <- result.try(do_parse_sli_types(types, index + 1))
-      Ok([sli_type, ..rest])
-    }
-    // TODO: fix this super hacky way of iterating over SLI types.
-    Error(_) -> Ok([])
-  }
+  Ok(sli_types)
 }
 
 /// Parses a single unresolved SLI type.
