@@ -1,6 +1,6 @@
 import caffeine/phase_1/parser/utils/glaml_helpers
 import caffeine/types/specification_types.{
-  type QueryTemplateTypeUnresolved, GoodOverBadQueryTemplateUnresolved,
+  type QueryTemplateTypeUnresolved, QueryTemplateTypeUnresolved,
 }
 import glaml
 import gleam/dict
@@ -25,22 +25,17 @@ fn parse_query_template_type(
   type_node: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(QueryTemplateTypeUnresolved, String) {
-  use numerator_query <- result.try(glaml_helpers.extract_string_from_node(
+  use name <- result.try(glaml_helpers.extract_string_from_node(
     type_node,
-    "numerator_query",
+    "name",
   ))
-  use denominator_query <- result.try(glaml_helpers.extract_string_from_node(
+  use metric_attributes <- result.try(glaml_helpers.extract_string_list_from_node(
     type_node,
-    "denominator_query",
-  ))
-  use filters <- result.try(glaml_helpers.extract_string_list_from_node(
-    type_node,
-    "filters",
+    "metric_attributes",
   ))
 
-  Ok(GoodOverBadQueryTemplateUnresolved(
-    numerator_query: numerator_query,
-    denominator_query: denominator_query,
-    filters: filters,
+  Ok(QueryTemplateTypeUnresolved(
+    name: name,
+    metric_attributes: metric_attributes,
   ))
 }

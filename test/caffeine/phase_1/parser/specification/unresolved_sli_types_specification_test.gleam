@@ -3,8 +3,18 @@ import caffeine/types/specification_types.{SliTypeUnresolved}
 
 pub fn parse_sli_types_test() {
   let expected_sli_types = [
-    SliTypeUnresolved(name: "latency", query_template_type: "good_over_bad"),
-    SliTypeUnresolved(name: "error_rate", query_template_type: "good_over_bad"),
+    SliTypeUnresolved(
+      name: "latency",
+      query_template_type: "good_over_bad",
+      metric_attributes: ["numerator_query", "denominator_query"],
+      filters: ["team_name", "accepted_status_codes"],
+    ),
+    SliTypeUnresolved(
+      name: "error_rate",
+      query_template_type: "good_over_bad",
+      metric_attributes: ["numerator_query", "denominator_query"],
+      filters: ["number_of_users"],
+    ),
   ]
 
   let actual =

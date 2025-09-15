@@ -1,0 +1,6 @@
+types:
+  - name: latency
+    query_template_type: good_over_bad
+    filters:
+      - team_name
+      - accepted_status_codes

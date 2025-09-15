@@ -18,6 +18,7 @@ pub type Slo {
     threshold: Float,
     sli_type: String,
     service_name: String,
+    window_in_days: Int,
   )
 }
 
@@ -32,15 +33,16 @@ pub type Service {
 /// A SliType is a named entity that represents the generic (as possible) definition of an SLI
 /// that references a query template.
 pub type SliType {
-  SliType(name: String, query_template: QueryTemplateType)
+  SliType(
+    name: String,
+    query_template_type: QueryTemplateType,
+    metric_attributes: List(String),
+    filters: List(QueryTemplateFilter),
+  )
 }
 
 pub type QueryTemplateType {
-  GoodOverBadQueryTemplate(
-    numerator_query: String,
-    denominator_query: String,
-    filters: List(QueryTemplateFilter),
-  )
+  QueryTemplateType(metric_attributes: List(QueryTemplateFilter), name: String)
 }
 
 /// A QueryTemplateFilter is a single definition of a filter that can be applied to a query template
@@ -49,7 +51,6 @@ pub type QueryTemplateFilter {
   QueryTemplateFilter(
     attribute_name: String,
     attribute_type: AcceptedTypes,
-    required: Bool,
   )
 }
 

@@ -32,10 +32,6 @@ fn parse_query_template_filter(
     filter,
     "attribute_type",
   ))
-  use required <- result.try(glaml_helpers.extract_bool_from_node(
-    filter,
-    "required",
-  ))
   use accepted_type <- result.try(general_common.string_to_accepted_type(
     attribute_type,
   ))
@@ -43,6 +39,5 @@ fn parse_query_template_filter(
   Ok(intermediate_representation.QueryTemplateFilter(
     attribute_name: attribute_name,
     attribute_type: accepted_type,
-    required: required,
   ))
 }

@@ -69,6 +69,22 @@ pub fn extract_float_from_node(
   }
 }
 
+/// Extracts an integer from a glaml node.
+pub fn extract_int_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(Int, String) {
+  use query_template_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
+
+  case query_template_node {
+    glaml.NodeInt(value) -> Ok(value)
+    _ -> Error("Expected " <> key <> " to be an integer")
+  }
+}
+
 /// Extracts a boolean from a glaml node
 pub fn extract_bool_from_node(
   node: glaml.Node,

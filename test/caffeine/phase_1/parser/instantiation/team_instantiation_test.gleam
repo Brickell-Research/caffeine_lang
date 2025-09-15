@@ -20,6 +20,7 @@ pub fn parse_instantiation_multiple_slos_test() {
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "reliable_service",
+      window_in_days: 30,
     )
 
   let expected_slo_2 =
@@ -28,6 +29,7 @@ pub fn parse_instantiation_multiple_slos_test() {
       threshold: 99.99,
       sli_type: "http_status_code",
       service_name: "reliable_service",
+      window_in_days: 30,
     )
 
   let expected_team =

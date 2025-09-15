@@ -47,13 +47,18 @@ fn parse_slo(
     slo,
     "threshold",
   ))
+  use window_in_days <- result.try(glaml_helpers.extract_int_from_node(
+    slo,
+    "window_in_days",
+  ))
 
   let assert Ok(service_name) = dict.get(params, "service_name")
 
   Ok(intermediate_representation.Slo(
-    sli_type:,
-    filters:,
-    threshold:,
-    service_name:,
+    sli_type: sli_type,
+    filters: filters,
+    threshold: threshold,
+    service_name: service_name,
+    window_in_days: window_in_days,
   ))
 }

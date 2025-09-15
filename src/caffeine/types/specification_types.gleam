@@ -6,14 +6,18 @@ pub type ServiceUnresolved {
 
 /// Unresolved version of SliType used during parsing
 pub type SliTypeUnresolved {
-  SliTypeUnresolved(name: String, query_template_type: String)
+  SliTypeUnresolved(
+    name: String,
+    query_template_type: String,
+    metric_attributes: List(String),
+    filters: List(String),
+  )
 }
 
 /// Unresolved version of QueryTemplateType used during parsing
 pub type QueryTemplateTypeUnresolved {
-  GoodOverBadQueryTemplateUnresolved(
-    numerator_query: String,
-    denominator_query: String,
-    filters: List(String),
+  QueryTemplateTypeUnresolved(
+    name: String,
+    metric_attributes: List(String),
   )
 }

@@ -33,6 +33,19 @@ fn parse_sli_type(
     type_node,
     "query_template_type",
   ))
+  use metric_attributes <- result.try(glaml_helpers.extract_string_list_from_node(
+    type_node,
+    "metric_attributes",
+  ))
+  use filters <- result.try(glaml_helpers.extract_string_list_from_node(
+    type_node,
+    "filters",
+  ))
 
-  Ok(SliTypeUnresolved(name: name, query_template_type: query_template_type))
+  Ok(SliTypeUnresolved(
+    name: name,
+    query_template_type: query_template_type,
+    metric_attributes: metric_attributes,
+    filters: filters,
+  ))
 }

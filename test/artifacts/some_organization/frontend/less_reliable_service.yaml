@@ -3,3 +3,4 @@ slos:
     filters:
       "number_of_users": "100"
     threshold: 99.5
+    window_in_days: 30

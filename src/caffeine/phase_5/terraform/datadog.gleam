@@ -6,7 +6,7 @@ import gleam/string
 
 pub fn provider() -> String {
   "terraform {
-  required_providers {
+required_providers {
     datadog = {
       source  = \"DataDog/datadog\"
       version = \"~> 3.0\"
@@ -83,10 +83,9 @@ pub fn resource_type(
   query_template_type: intermediate_representation.QueryTemplateType,
 ) -> String {
   case query_template_type {
-    intermediate_representation.GoodOverBadQueryTemplate(
-      _numerator_query,
-      _denominator_query,
-      _filters,
+    intermediate_representation.QueryTemplateType(
+      _metric_attributes,
+      _name,
     ) -> "type        = \"metric\""
   }
 }

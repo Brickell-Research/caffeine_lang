@@ -1,7 +1,7 @@
 import caffeine/types/intermediate_representation
 import caffeine/types/specification_types.{
   type QueryTemplateTypeUnresolved, type ServiceUnresolved,
-  type SliTypeUnresolved, GoodOverBadQueryTemplateUnresolved,
+  type SliTypeUnresolved, QueryTemplateTypeUnresolved,
 }
 import gleam/list
 import gleam/result
@@ -33,7 +33,7 @@ pub fn link_and_validate_specification_sub_parts(
   use resolved_sli_types <- result.try(
     sli_types
     |> list.map(fn(sli_type) {
-      resolve_unresolved_sli_type(sli_type, resolved_query_template_types)
+      resolve_unresolved_sli_type(sli_type, resolved_query_template_types, query_template_filters)
     })
     |> result.all,
   )
@@ -56,28 +56,23 @@ pub fn resolve_unresolved_query_template_type(
   query_template_filters: List(intermediate_representation.QueryTemplateFilter),
 ) -> Result(intermediate_representation.QueryTemplateType, String) {
   case unresolved_query_template_type {
-    GoodOverBadQueryTemplateUnresolved(
-      numerator_query,
-      denominator_query,
-      filter_names,
-    ) -> {
-      // Resolve the filter names to actual filters
-      let resolved_filters =
-        filter_names
-        |> list.map(fn(filter_name) {
+    QueryTemplateTypeUnresolved(name, metric_attribute_names) -> {
+      // Resolve the metric attribute names to actual filters
+      let resolved_metric_attributes =
+        metric_attribute_names
+        |> list.map(fn(attribute_name) {
           fetch_by_attribute_name_query_template_filter(
             query_template_filters,
-            filter_name,
+            attribute_name,
           )
         })
         |> result.all
 
-      case resolved_filters {
-        Ok(filters) ->
-          Ok(intermediate_representation.GoodOverBadQueryTemplate(
-            numerator_query: numerator_query,
-            denominator_query: denominator_query,
-            filters: filters,
+      case resolved_metric_attributes {
+        Ok(metric_attributes) ->
+          Ok(intermediate_representation.QueryTemplateType(
+            name: name,
+            metric_attributes: metric_attributes,
           ))
         Error(error) -> Error(error)
       }
@@ -85,20 +80,35 @@ pub fn resolve_unresolved_query_template_type(
   }
 }
 
-/// This function takes an unresolved SliType and a list of QueryTemplateTypes and returns a resolved SliType.
+/// This function takes an unresolved SliType, a list of QueryTemplateTypes, and a list of QueryTemplateFilters and returns a resolved SliType.
 pub fn resolve_unresolved_sli_type(
   unresolved_sli_type: SliTypeUnresolved,
   query_template_types: List(intermediate_representation.QueryTemplateType),
+  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
 ) -> Result(intermediate_representation.SliType, String) {
   // find the query template type
-  use query_template <- result.try(fetch_by_name_query_template_type(
+  use query_template_type <- result.try(fetch_by_name_query_template_type(
     query_template_types,
     unresolved_sli_type.query_template_type,
   ))
 
+  // Resolve filter names to actual filter objects
+  use resolved_filters <- result.try(
+    unresolved_sli_type.filters
+    |> list.map(fn(filter_name) {
+      fetch_by_attribute_name_query_template_filter(
+        query_template_filters,
+        filter_name,
+      )
+    })
+    |> result.all,
+  )
+
   Ok(intermediate_representation.SliType(
     name: unresolved_sli_type.name,
-    query_template: query_template,
+    query_template_type: query_template_type,
+    metric_attributes: unresolved_sli_type.metric_attributes,
+    filters: resolved_filters,
   ))
 }
 
@@ -137,20 +147,12 @@ fn fetch_by_name_sli_type(
 }
 
 /// This function fetches a single QueryTemplateType by name.
-/// For now, we only support "good_over_bad" type, so we match by name string.
 fn fetch_by_name_query_template_type(
   values: List(intermediate_representation.QueryTemplateType),
   name: String,
 ) -> Result(intermediate_representation.QueryTemplateType, String) {
-  case name {
-    "good_over_bad" -> {
-      case values {
-        [first, ..] -> Ok(first)
-        [] -> Error("QueryTemplateType " <> name <> " not found")
-      }
-    }
-    _ -> Error("QueryTemplateType " <> name <> " not found")
-  }
+  list.find(values, fn(query_template_type) { query_template_type.name == name })
+  |> result.replace_error("QueryTemplateType " <> name <> " not found")
 }
 
 /// This function fetches a single QueryTemplateFilter by attribute name.
