@@ -1,20 +1,20 @@
 import caffeine/phase_1/parser/specification/query_template_filters_specification
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 
 pub fn parse_query_template_filters_test() {
   let expected_query_template_filters = [
-    intermediate_representation.QueryTemplateFilter(
+    ast.QueryTemplateFilter(
       attribute_name: "team_name",
-      attribute_type: intermediate_representation.String,
+      attribute_type: ast.String,
     ),
-    intermediate_representation.QueryTemplateFilter(
+    ast.QueryTemplateFilter(
       attribute_name: "number_of_users",
-      attribute_type: intermediate_representation.Integer,
+      attribute_type: ast.Integer,
     ),
-    intermediate_representation.QueryTemplateFilter(
+    ast.QueryTemplateFilter(
       attribute_name: "accepted_status_codes",
-      attribute_type: intermediate_representation.List(
-        intermediate_representation.String,
+      attribute_type: ast.List(
+        ast.String,
       ),
     ),
   ]

@@ -1,4 +1,4 @@
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import caffeine/types/specification_types.{
   type QueryTemplateTypeUnresolved, type ServiceUnresolved,
   type SliTypeUnresolved, QueryTemplateTypeUnresolved,
@@ -14,9 +14,9 @@ import gleam/result
 pub fn link_and_validate_specification_sub_parts(
   services: List(ServiceUnresolved),
   sli_types: List(SliTypeUnresolved),
-  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
+  query_template_filters: List(ast.QueryTemplateFilter),
   query_template_types_unresolved: List(QueryTemplateTypeUnresolved),
-) -> Result(List(intermediate_representation.Service), String) {
+) -> Result(List(ast.Service), String) {
   // First we need to resolve query template types by linking filters to them
   use resolved_query_template_types <- result.try(
     query_template_types_unresolved
@@ -53,8 +53,8 @@ pub fn link_and_validate_specification_sub_parts(
 /// This function takes an unresolved QueryTemplateType and a list of QueryTemplateFilters and returns a resolved QueryTemplateType.
 pub fn resolve_unresolved_query_template_type(
   unresolved_query_template_type: QueryTemplateTypeUnresolved,
-  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
-) -> Result(intermediate_representation.QueryTemplateType, String) {
+  query_template_filters: List(ast.QueryTemplateFilter),
+) -> Result(ast.QueryTemplateType, String) {
   case unresolved_query_template_type {
     QueryTemplateTypeUnresolved(name, metric_attribute_names) -> {
       // Resolve the metric attribute names to actual filters
@@ -70,7 +70,7 @@ pub fn resolve_unresolved_query_template_type(
 
       case resolved_metric_attributes {
         Ok(metric_attributes) ->
-          Ok(intermediate_representation.QueryTemplateType(
+          Ok(ast.QueryTemplateType(
             name: name,
             metric_attributes: metric_attributes,
           ))
@@ -83,9 +83,9 @@ pub fn resolve_unresolved_query_template_type(
 /// This function takes an unresolved SliType, a list of QueryTemplateTypes, and a list of QueryTemplateFilters and returns a resolved SliType.
 pub fn resolve_unresolved_sli_type(
   unresolved_sli_type: SliTypeUnresolved,
-  query_template_types: List(intermediate_representation.QueryTemplateType),
-  query_template_filters: List(intermediate_representation.QueryTemplateFilter),
-) -> Result(intermediate_representation.SliType, String) {
+  query_template_types: List(ast.QueryTemplateType),
+  query_template_filters: List(ast.QueryTemplateFilter),
+) -> Result(ast.SliType, String) {
   // find the query template type
   use query_template_type <- result.try(fetch_by_name_query_template_type(
     query_template_types,
@@ -104,7 +104,7 @@ pub fn resolve_unresolved_sli_type(
     |> result.all,
   )
 
-  Ok(intermediate_representation.SliType(
+  Ok(ast.SliType(
     name: unresolved_sli_type.name,
     query_template_type: query_template_type,
     metric_attributes: unresolved_sli_type.metric_attributes,
@@ -115,8 +115,8 @@ pub fn resolve_unresolved_sli_type(
 /// This function takes an unresolved Service and a list of SliTypes and returns a resolved Service.
 pub fn resolve_unresolved_service(
   unresolved_service: ServiceUnresolved,
-  sli_types: List(intermediate_representation.SliType),
-) -> Result(intermediate_representation.Service, String) {
+  sli_types: List(ast.SliType),
+) -> Result(ast.Service, String) {
   // fill in the sli types
 
   let resolved_sli_types =
@@ -128,7 +128,7 @@ pub fn resolve_unresolved_service(
 
   case resolved_sli_types {
     Ok(sli_types) ->
-      Ok(intermediate_representation.Service(
+      Ok(ast.Service(
         name: unresolved_service.name,
         supported_sli_types: sli_types,
       ))
@@ -139,27 +139,27 @@ pub fn resolve_unresolved_service(
 // ==== Private ====
 /// This function fetches a single SliType by name.
 fn fetch_by_name_sli_type(
-  values: List(intermediate_representation.SliType),
+  values: List(ast.SliType),
   name: String,
-) -> Result(intermediate_representation.SliType, String) {
+) -> Result(ast.SliType, String) {
   list.find(values, fn(value) { value.name == name })
   |> result.replace_error("SliType " <> name <> " not found")
 }
 
 /// This function fetches a single QueryTemplateType by name.
 fn fetch_by_name_query_template_type(
-  values: List(intermediate_representation.QueryTemplateType),
+  values: List(ast.QueryTemplateType),
   name: String,
-) -> Result(intermediate_representation.QueryTemplateType, String) {
+) -> Result(ast.QueryTemplateType, String) {
   list.find(values, fn(query_template_type) { query_template_type.name == name })
   |> result.replace_error("QueryTemplateType " <> name <> " not found")
 }
 
 /// This function fetches a single QueryTemplateFilter by attribute name.
 fn fetch_by_attribute_name_query_template_filter(
-  values: List(intermediate_representation.QueryTemplateFilter),
+  values: List(ast.QueryTemplateFilter),
   attribute_name: String,
-) -> Result(intermediate_representation.QueryTemplateFilter, String) {
+) -> Result(ast.QueryTemplateFilter, String) {
   case
     list.find(values, fn(filter) { filter.attribute_name == attribute_name })
   {

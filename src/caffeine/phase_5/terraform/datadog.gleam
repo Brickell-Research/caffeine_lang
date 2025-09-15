@@ -1,4 +1,4 @@
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/dict
 import gleam/float
 import gleam/list
@@ -41,8 +41,8 @@ pub fn provider_with_variables() -> String {
 }
 
 // pub fn slo_definition_to_tf(
-//   slo: intermediate_representation.Slo,
-//   sli_type: intermediate_representation.SliType,
+//   slo: ast.Slo,
+//   sli_type: ast.SliType,
 // ) -> String {
 //   todo
 // }
@@ -80,10 +80,10 @@ pub fn tf_resource_name(
 }
 
 pub fn resource_type(
-  query_template_type: intermediate_representation.QueryTemplateType,
+  query_template_type: ast.QueryTemplateType,
 ) -> String {
   case query_template_type {
-    intermediate_representation.QueryTemplateType(
+    ast.QueryTemplateType(
       _metric_attributes,
       _name,
     ) -> "type        = \"metric\""
@@ -113,11 +113,11 @@ pub fn resource_target_threshold(threshold: Float) -> String {
 
 // // TODO: we need to figure out when to resolve the filters
 // pub fn slo_specification(
-//   _query_template_type: intermediate_representation.QueryTemplateType,
+//   _query_template_type: ast.QueryTemplateType,
 // ) -> String {
 // todo
 // case query_template_type {
-//   intermediate_representation.GoodOverBadQueryTemplate(
+//   ast.GoodOverBadQueryTemplate(
 //     numerator_query,
 //     denominator_query,
 //   ) ->

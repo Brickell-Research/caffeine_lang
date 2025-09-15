@@ -12,7 +12,7 @@
 //// (13) Warn on unused sli types, sli filters, and services.
 //// (14) Normalize team names, service names, sli type names, sli filter names, and sli filter attribute names to lowercase.
 
-import caffeine/types/intermediate_representation.{type Organization, type Slo}
+import caffeine/types/ast.{type Organization, type Slo}
 import gleam/list
 
 pub type SemanticAnalysisError {

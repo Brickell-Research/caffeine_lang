@@ -1,4 +1,4 @@
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -9,14 +9,14 @@ import gleam/string
 /// Converts a string to an accepted type.
 pub fn string_to_accepted_type(
   string: String,
-) -> Result(intermediate_representation.AcceptedTypes, String) {
+) -> Result(ast.AcceptedTypes, String) {
   case string {
-    "Boolean" -> Ok(intermediate_representation.Boolean)
-    "Decimal" -> Ok(intermediate_representation.Decimal)
-    "Integer" -> Ok(intermediate_representation.Integer)
-    "String" -> Ok(intermediate_representation.String)
+    "Boolean" -> Ok(ast.Boolean)
+    "Decimal" -> Ok(ast.Decimal)
+    "Integer" -> Ok(ast.Integer)
+    "String" -> Ok(ast.String)
     "List(String)" ->
-      Ok(intermediate_representation.List(intermediate_representation.String))
+      Ok(ast.List(ast.String))
     _ -> Error("Unknown attribute type: " <> string)
   }
 }

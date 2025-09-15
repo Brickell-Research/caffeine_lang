@@ -1,5 +1,5 @@
 import caffeine/phase_1/parser/utils/general_common
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/dict
 
 pub fn extract_params_from_file_path_test() {
@@ -25,5 +25,5 @@ pub fn extract_params_from_file_path_invalid_test() {
 
 pub fn string_to_accepted_type_test() {
   let actual = general_common.string_to_accepted_type("Boolean")
-  assert actual == Ok(intermediate_representation.Boolean)
+  assert actual == Ok(ast.Boolean)
 }

@@ -1,5 +1,5 @@
 import caffeine/phase_5/terraform/datadog
-import caffeine/types/intermediate_representation.{QueryTemplateType}
+import caffeine/types/ast.{QueryTemplateType}
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {

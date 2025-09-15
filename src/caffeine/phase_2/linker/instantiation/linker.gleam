@@ -1,4 +1,4 @@
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
@@ -7,8 +7,8 @@ import gleam/option.{None, Some}
 /// Given a list of teams which map to single service SLOs, we want to aggregate all SLOs for a single team
 /// into a single team object.
 pub fn aggregate_teams_and_slos(
-  teams: List(intermediate_representation.Team),
-) -> List(intermediate_representation.Team) {
+  teams: List(ast.Team),
+) -> List(ast.Team) {
   let dict_of_teams =
     list.fold(teams, dict.new(), fn(acc, team) {
       dict.upsert(acc, team.name, fn(existing_teams) {
@@ -26,7 +26,7 @@ pub fn aggregate_teams_and_slos(
       |> list.flatten
 
     let aggregated_team =
-      intermediate_representation.Team(name: team_name, slos: all_slos)
+      ast.Team(name: team_name, slos: all_slos)
 
     [aggregated_team, ..acc]
   })

@@ -1,6 +1,6 @@
 import caffeine/phase_1/parser/utils/general_common
 import caffeine/phase_1/parser/utils/glaml_helpers
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import glaml
 import gleam/dict
 import gleam/result
@@ -9,7 +9,7 @@ import gleam/result
 /// Given a specification file, returns a list of query template filters.
 pub fn parse_query_template_filters_specification(
   file_path: String,
-) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
+) -> Result(List(ast.QueryTemplateFilter), String) {
   glaml_helpers.parse_specification(
     file_path,
     dict.new(),
@@ -23,7 +23,7 @@ pub fn parse_query_template_filters_specification(
 fn parse_query_template_filter(
   filter: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(intermediate_representation.QueryTemplateFilter, String) {
+) -> Result(ast.QueryTemplateFilter, String) {
   use attribute_name <- result.try(glaml_helpers.extract_string_from_node(
     filter,
     "attribute_name",
@@ -36,7 +36,7 @@ fn parse_query_template_filter(
     attribute_type,
   ))
 
-  Ok(intermediate_representation.QueryTemplateFilter(
+  Ok(ast.QueryTemplateFilter(
     attribute_name: attribute_name,
     attribute_type: accepted_type,
   ))

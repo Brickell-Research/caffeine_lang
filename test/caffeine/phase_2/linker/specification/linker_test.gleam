@@ -1,5 +1,5 @@
 import caffeine/phase_2/linker/specification/linker
-import caffeine/types/intermediate_representation.{
+import caffeine/types/ast.{
   Integer, QueryTemplateFilter, QueryTemplateType, Service, SliType,
 }
 import caffeine/types/specification_types.{

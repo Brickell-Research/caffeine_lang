@@ -12,7 +12,7 @@ import caffeine/phase_1/parser/specification/unresolved_sli_types_specification.
   parse_unresolved_sli_types_specification,
 }
 import caffeine/phase_2/linker/specification/linker as specification_linker
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/list
 import gleam/result
 import gleam/string
@@ -23,7 +23,7 @@ import simplifile
 pub fn link_specification_and_instantiation(
   specification_directory: String,
   instantiations_directory: String,
-) -> Result(intermediate_representation.Organization, String) {
+) -> Result(ast.Organization, String) {
   // ==== Specification ====
   use unresolved_services <- result.try(parse_unresolved_services_specification(
     specification_directory <> "/services.yaml",
@@ -68,7 +68,7 @@ pub fn link_specification_and_instantiation(
     }),
   )
 
-  Ok(intermediate_representation.Organization(
+  Ok(ast.Organization(
     service_definitions: linked_services,
     teams: instantiations,
   ))

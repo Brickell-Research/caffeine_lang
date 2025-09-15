@@ -1,5 +1,5 @@
 import caffeine/phase_2/linker/instantiation/linker
-import caffeine/types/intermediate_representation.{Slo, Team}
+import caffeine/types/ast.{Slo, Team}
 import gleam/dict
 import gleam/list
 import gleam/string

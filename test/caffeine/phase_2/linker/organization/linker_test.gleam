@@ -1,5 +1,5 @@
 import caffeine/phase_2/linker/organization/linker
-import caffeine/types/intermediate_representation.{
+import caffeine/types/ast.{
   Integer, Organization, QueryTemplateFilter, QueryTemplateType, Service,
   SliType, Team,
 }
@@ -39,7 +39,7 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_slo_reliable_service =
-    intermediate_representation.Slo(
+    ast.Slo(
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "reliable_service",
@@ -48,7 +48,7 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_slo_less_reliable_service =
-    intermediate_representation.Slo(
+    ast.Slo(
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "less_reliable_service",

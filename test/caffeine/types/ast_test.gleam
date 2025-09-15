@@ -1,4 +1,4 @@
-import caffeine/types/intermediate_representation
+import caffeine/types/ast
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -6,17 +6,17 @@ import gleam/string
 pub fn organization_test() {
   // ==== Specfication ====
   let some_query_template_filter =
-    intermediate_representation.QueryTemplateFilter(
+    ast.QueryTemplateFilter(
       attribute_name: "acceptable_status_codes",
-      attribute_type: intermediate_representation.List(
-        intermediate_representation.String,
+      attribute_type: ast.List(
+        ast.String,
       ),
     )
 
   let some_sli_type =
-    intermediate_representation.SliType(
+    ast.SliType(
       name: "http_status_code",
-      query_template_type: intermediate_representation.QueryTemplateType(
+      query_template_type: ast.QueryTemplateType(
         metric_attributes: [some_query_template_filter],
         name: "good_over_bad",
       ),
@@ -24,14 +24,14 @@ pub fn organization_test() {
       filters: [some_query_template_filter],
     )
   let service_definition =
-    intermediate_representation.Service(
+    ast.Service(
       name: "super_scalabale_web_service",
       supported_sli_types: [some_sli_type],
     )
 
   // ==== Instantiation ====
   let some_slo =
-    intermediate_representation.Slo(
+    ast.Slo(
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
       sli_type: "http_status_code",
@@ -40,12 +40,12 @@ pub fn organization_test() {
     )
 
   let platform_team_definition =
-    intermediate_representation.Team(name: "badass_platform_team", slos: [
+    ast.Team(name: "badass_platform_team", slos: [
       some_slo,
     ])
 
   let some_slo_2 =
-    intermediate_representation.Slo(
+    ast.Slo(
       filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
       sli_type: "http_status_code",
@@ -54,11 +54,11 @@ pub fn organization_test() {
     )
 
   let other_team_definition =
-    intermediate_representation.Team(name: "other_team", slos: [some_slo_2])
+    ast.Team(name: "other_team", slos: [some_slo_2])
 
   // ==== Organization ====
   let organization_definition =
-    intermediate_representation.Organization(
+    ast.Organization(
       teams: [platform_team_definition, other_team_definition],
       service_definitions: [service_definition],
     )
