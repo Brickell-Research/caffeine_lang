@@ -20,7 +20,7 @@ pub fn organization_test() {
         metric_attributes: [some_query_template_filter],
         name: "good_over_bad",
       ),
-      metric_attributes: ["numerator_query", "denominator_query"],
+      metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
       filters: [some_query_template_filter],
     )
   let service_definition =

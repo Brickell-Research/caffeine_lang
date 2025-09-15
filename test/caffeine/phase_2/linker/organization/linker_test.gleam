@@ -72,7 +72,7 @@ pub fn link_specification_and_instantiation_test() {
     SliType(
       name: "error_rate",
       query_template_type: expected_query_template_type,
-      metric_attributes: ["numerator_query", "denominator_query"],
+      metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
       filters: [expected_query_template_filter],
     )
 

@@ -36,7 +36,7 @@ pub type SliType {
   SliType(
     name: String,
     query_template_type: QueryTemplateType,
-    metric_attributes: List(String),
+    metric_attributes: dict.Dict(String, String),
     filters: List(QueryTemplateFilter),
   )
 }
@@ -48,10 +48,7 @@ pub type QueryTemplateType {
 /// A QueryTemplateFilter is a single definition of a filter that can be applied to a query template
 /// to narrow down its scope.
 pub type QueryTemplateFilter {
-  QueryTemplateFilter(
-    attribute_name: String,
-    attribute_type: AcceptedTypes,
-  )
+  QueryTemplateFilter(attribute_name: String, attribute_type: AcceptedTypes)
 }
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive

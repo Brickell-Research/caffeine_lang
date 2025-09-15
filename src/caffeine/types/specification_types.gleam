@@ -1,3 +1,5 @@
+import gleam/dict
+
 // ==== Unresolved Specification Parsing Types ====
 /// Unresolved version of Service used during parsing
 pub type ServiceUnresolved {
@@ -9,7 +11,7 @@ pub type SliTypeUnresolved {
   SliTypeUnresolved(
     name: String,
     query_template_type: String,
-    metric_attributes: List(String),
+    metric_attributes: dict.Dict(String, String),
     filters: List(String),
   )
 }

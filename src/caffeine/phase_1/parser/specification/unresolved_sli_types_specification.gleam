@@ -4,6 +4,7 @@ import caffeine/types/specification_types.{
 }
 import glaml
 import gleam/dict
+import gleam/list
 import gleam/result
 
 // ==== Public ====
@@ -33,7 +34,7 @@ fn parse_sli_type(
     type_node,
     "query_template_type",
   ))
-  use metric_attributes <- result.try(glaml_helpers.extract_string_list_from_node(
+  use metric_attributes_list <- result.try(glaml_helpers.extract_string_list_from_node(
     type_node,
     "metric_attributes",
   ))
@@ -41,6 +42,11 @@ fn parse_sli_type(
     type_node,
     "filters",
   ))
+
+  let metric_attributes = 
+    metric_attributes_list
+    |> list.map(fn(attr) { #(attr, "") })
+    |> dict.from_list
 
   Ok(SliTypeUnresolved(
     name: name,
