@@ -1,7 +1,14 @@
-name = "caffeine"
+name = "caffeine_lang"
 version = "0.0.1"
 description = "A simple hello world Gleam project"
 licences = ["GPL-3.0"]
+
+repository = { type = "github", user = "Brickell-Research", repo = "caffeine_lang" }
+links = [
+    { title = "Website", href = "https://github.com/Brickell-Research/caffeine_lang" },
+]
+
+target = "erlang"
 
 [dependencies]
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
@@ -9,6 +16,7 @@ simplifile = ">= 2.3.0 and < 3.0.0"
 glaml = ">= 3.0.2 and < 4.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
 birl = ">= 1.8.0 and < 2.0.0"
+lustre = ">= 5.3.5 and < 6.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.6.1 and < 2.0.0"

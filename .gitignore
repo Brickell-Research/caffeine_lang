@@ -103,7 +103,7 @@ Temporary Items
 .apdisk
 
 # Scribble/Racket documentation build files
-docs/caffeine/
+docs/caffeine_lang/
 docs/compiled/
 
 # Keep important files
