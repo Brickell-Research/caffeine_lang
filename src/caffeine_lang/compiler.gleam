@@ -1,16 +1,12 @@
-import birl
-import birl/duration
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/phase_3/semantic
 import caffeine_lang/phase_5/smoke_test
-import gleam/int
 import gleam/io
 
 pub fn compile(
   specification_directory: String,
   instantiation_directory: String,
 ) -> Nil {
-  let now = birl.now()
   io.println("1️⃣ Compiling...")
   io.println("\tSpecification directory: " <> specification_directory)
   io.println("\tInstantiation directory: " <> instantiation_directory)
@@ -33,12 +29,7 @@ pub fn compile(
               organization,
               "test/artifacts/some_organization",
             )
-          let duration = birl.difference(birl.now(), now)
-          io.println(
-            "🎉Generated successfully in: "
-            <> int.to_string(duration.blur_to(duration, duration.MilliSecond))
-            <> "ms",
-          )
+          io.println("🎉Generated successfully!")
         }
         Error(e) -> {
           case e {
