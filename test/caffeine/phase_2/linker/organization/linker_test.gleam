@@ -1,6 +1,6 @@
 import caffeine/phase_2/linker/organization/linker
 import caffeine/types/intermediate_representation.{
-  GoodOverBadQueryTemplate, Integer, Organization, QueryTemplateFilter, Service,
+  Integer, Organization, QueryTemplateFilter, QueryTemplateType, Service,
   SliType, Team,
 }
 import gleam/dict
@@ -44,6 +44,7 @@ pub fn link_specification_and_instantiation_test() {
       sli_type: "error_rate",
       service_name: "reliable_service",
       filters: dict.from_list([#("number_of_users", "100")]),
+      window_in_days: 30,
     )
 
   let expected_slo_less_reliable_service =
@@ -52,23 +53,27 @@ pub fn link_specification_and_instantiation_test() {
       sli_type: "error_rate",
       service_name: "less_reliable_service",
       filters: dict.from_list([#("number_of_users", "100")]),
+      window_in_days: 30,
     )
 
   let expected_query_template_filter =
     QueryTemplateFilter(
       attribute_name: "number_of_users",
       attribute_type: Integer,
-      required: True,
+    )
+
+  let expected_query_template_type =
+    QueryTemplateType(
+      name: "good_over_bad",
+      metric_attributes: [expected_query_template_filter],
     )
 
   let expected_sli_type =
     SliType(
       name: "error_rate",
-      query_template: GoodOverBadQueryTemplate(
-        numerator_query: "sum(rate(http_requests_total{status!~'5..'}[5m]))",
-        denominator_query: "sum(rate(http_requests_total[5m]))",
-        filters: [expected_query_template_filter],
-      ),
+      query_template_type: expected_query_template_type,
+      metric_attributes: ["numerator_query", "denominator_query"],
+      filters: [expected_query_template_filter],
     )
 
   let expected =

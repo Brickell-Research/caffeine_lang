@@ -1,5 +1,5 @@
-import caffeine/phase_4/terraform/datadog
-import caffeine/types/intermediate_representation.{GoodOverBadQueryTemplate}
+import caffeine/phase_5/terraform/datadog
+import caffeine/types/intermediate_representation.{QueryTemplateType}
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -81,10 +81,9 @@ pub fn resource_type_test() {
   let expected = "type        = \"metric\""
   let actual =
     datadog.resource_type(
-      GoodOverBadQueryTemplate(
-        numerator_query: "numerator",
-        denominator_query: "denominator",
-        filters: [],
+      QueryTemplateType(
+        metric_attributes: [],
+        name: "good_over_bad",
       ),
     )
   assert actual == expected

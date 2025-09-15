@@ -1,9 +1,9 @@
-import caffeine/phase_4/terraform/generator
+import caffeine/phase_5/terraform/generator
 
 pub fn build_provider_datadog_test() {
   let expected = {
     "terraform {
-  required_providers {
+required_providers {
     datadog = {
       source  = \"DataDog/datadog\"
       version = \"~> 3.0\"

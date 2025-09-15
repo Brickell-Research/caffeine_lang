@@ -11,6 +11,7 @@ pub fn aggregate_teams_and_slos_test() {
       threshold: 0.9,
       sli_type: "sli_type_a",
       service_name: "service_a",
+      window_in_days: 30,
     )
 
   let slo_b =
@@ -19,6 +20,7 @@ pub fn aggregate_teams_and_slos_test() {
       threshold: 0.8,
       sli_type: "sli_type_b",
       service_name: "service_b",
+      window_in_days: 30,
     )
 
   let slo_c =
@@ -27,6 +29,7 @@ pub fn aggregate_teams_and_slos_test() {
       threshold: 0.7,
       sli_type: "sli_type_c",
       service_name: "service_c",
+      window_in_days: 30,
     )
 
   let team_a_service_a = Team(name: "team_a", slos: [slo_a])

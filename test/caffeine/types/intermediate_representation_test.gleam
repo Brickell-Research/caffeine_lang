@@ -11,17 +11,17 @@ pub fn organization_test() {
       attribute_type: intermediate_representation.List(
         intermediate_representation.String,
       ),
-      required: True,
     )
 
   let some_sli_type =
     intermediate_representation.SliType(
       name: "http_status_code",
-      query_template: intermediate_representation.GoodOverBadQueryTemplate(
-        numerator_query: "SELECT count(1) FROM http_requests WHERE status_code IN {acceptable_status_codes}",
-        denominator_query: "SELECT count(1) FROM http_requests",
-        filters: [some_query_template_filter],
+      query_template_type: intermediate_representation.QueryTemplateType(
+        metric_attributes: [some_query_template_filter],
+        name: "good_over_bad",
       ),
+      metric_attributes: ["numerator_query", "denominator_query"],
+      filters: [some_query_template_filter],
     )
   let service_definition =
     intermediate_representation.Service(
@@ -36,6 +36,7 @@ pub fn organization_test() {
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",
+      window_in_days: 30,
     )
 
   let platform_team_definition =
@@ -49,6 +50,7 @@ pub fn organization_test() {
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",
+      window_in_days: 30,
     )
 
   let other_team_definition =

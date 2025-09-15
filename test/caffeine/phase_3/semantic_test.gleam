@@ -2,7 +2,7 @@ import caffeine/phase_3/semantic.{
   InvalidSloThresholdError, UndefinedServiceError, UndefinedSliTypeError,
 }
 import caffeine/types/intermediate_representation.{
-  type Team, Organization, Service, SliType, Slo, Team,
+  type Team, Organization, QueryTemplateType, Service, SliType, Slo, Team,
 }
 import gleam/dict
 
@@ -13,12 +13,14 @@ fn team_1() -> Team {
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team1",
+      window_in_days: 30,
     ),
     Slo(
       filters: dict.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team2",
+      window_in_days: 30,
     ),
   ])
 }
@@ -65,19 +67,21 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
         Service(name: "team1", supported_sli_types: [
           SliType(
             name: "availability",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
           SliType(
             name: "latency",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
         ]),
       ],
@@ -100,12 +104,14 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
           threshold: 101.0,
           sli_type: "availability",
           service_name: "team1",
+          window_in_days: 30,
         ),
         Slo(
           filters: dict.new(),
           threshold: -1.0,
           sli_type: "availability",
           service_name: "team1",
+          window_in_days: 30,
         ),
       ]),
     ])
@@ -138,37 +144,41 @@ pub fn perform_semantic_analysis_test() {
         Service(name: "team1", supported_sli_types: [
           SliType(
             name: "availability",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
           SliType(
             name: "latency",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
         ]),
         Service(name: "team2", supported_sli_types: [
           SliType(
             name: "availability",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
           SliType(
             name: "latency",
-            query_template: intermediate_representation.GoodOverBadQueryTemplate(
-              numerator_query: "numerator",
-              denominator_query: "denominator",
-              filters: [],
+            query_template_type: QueryTemplateType(
+              metric_attributes: [],
+              name: "good_over_bad",
             ),
+            metric_attributes: ["numerator_query", "denominator_query"],
+            filters: [],
           ),
         ]),
       ],
