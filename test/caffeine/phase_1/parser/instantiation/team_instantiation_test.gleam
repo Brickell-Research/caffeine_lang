@@ -72,7 +72,7 @@ pub fn parse_instantiation_missing_slos_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_slos.yaml",
     )
-  assert actual == Error("Missing SLOs")
+  assert actual == Error("Missing slos")
 }
 
 pub fn parse_instantiation_invalid_threshold_type_test() {

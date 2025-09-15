@@ -11,19 +11,24 @@ import gleam/result
 pub fn parse_unresolved_sli_types_specification(
   file_path: String,
 ) -> Result(List(SliTypeUnresolved), String) {
-  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    glaml_helpers.iteratively_parse_collection(
-      glaml.document_root(doc),
-      parse_sli_type,
-      "types",
-    )
-  })
+  glaml_helpers.parse_specification(
+    file_path,
+    dict.new(),
+    parse_sli_type,
+    "types",
+  )
 }
 
 // ==== Private ====
 /// Parses a single unresolved SLI type.
-fn parse_sli_type(type_node: glaml.Node) -> Result(SliTypeUnresolved, String) {
-  use name <- result.try(glaml_helpers.extract_string_from_node(type_node, "name"))
+fn parse_sli_type(
+  type_node: glaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(SliTypeUnresolved, String) {
+  use name <- result.try(glaml_helpers.extract_string_from_node(
+    type_node,
+    "name",
+  ))
   use query_template_type <- result.try(glaml_helpers.extract_string_from_node(
     type_node,
     "query_template_type",

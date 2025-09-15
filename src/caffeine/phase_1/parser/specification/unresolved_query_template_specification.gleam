@@ -11,19 +11,19 @@ import gleam/result
 pub fn parse_unresolved_query_template_types_specification(
   file_path: String,
 ) -> Result(List(QueryTemplateTypeUnresolved), String) {
-  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    glaml_helpers.iteratively_parse_collection(
-      glaml.document_root(doc),
-      parse_query_template_type,
-      "query_template_types",
-    )
-  })
+  glaml_helpers.parse_specification(
+    file_path,
+    dict.new(),
+    parse_query_template_type,
+    "query_template_types",
+  )
 }
 
 // ==== Private ====
 /// Parses a single unresolved query template type.
 fn parse_query_template_type(
   type_node: glaml.Node,
+  _params: dict.Dict(String, String),
 ) -> Result(QueryTemplateTypeUnresolved, String) {
   use numerator_query <- result.try(glaml_helpers.extract_string_from_node(
     type_node,

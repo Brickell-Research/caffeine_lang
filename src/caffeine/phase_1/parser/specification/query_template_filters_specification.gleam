@@ -10,19 +10,19 @@ import gleam/result
 pub fn parse_query_template_filters_specification(
   file_path: String,
 ) -> Result(List(intermediate_representation.QueryTemplateFilter), String) {
-  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    glaml_helpers.iteratively_parse_collection(
-      glaml.document_root(doc),
-      parse_query_template_filter,
-      "filters",
-    )
-  })
+  glaml_helpers.parse_specification(
+    file_path,
+    dict.new(),
+    parse_query_template_filter,
+    "filters",
+  )
 }
 
 // ==== Private ====
 /// Parses a single query template filter.
 fn parse_query_template_filter(
   filter: glaml.Node,
+  _params: dict.Dict(String, String),
 ) -> Result(intermediate_representation.QueryTemplateFilter, String) {
   use attribute_name <- result.try(glaml_helpers.extract_string_from_node(
     filter,
@@ -32,8 +32,13 @@ fn parse_query_template_filter(
     filter,
     "attribute_type",
   ))
-  use required <- result.try(glaml_helpers.extract_bool_from_node(filter, "required"))
-  use accepted_type <- result.try(general_common.string_to_accepted_type(attribute_type))
+  use required <- result.try(glaml_helpers.extract_bool_from_node(
+    filter,
+    "required",
+  ))
+  use accepted_type <- result.try(general_common.string_to_accepted_type(
+    attribute_type,
+  ))
 
   Ok(intermediate_representation.QueryTemplateFilter(
     attribute_name: attribute_name,

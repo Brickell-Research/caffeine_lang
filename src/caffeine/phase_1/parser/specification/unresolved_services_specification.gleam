@@ -11,18 +11,20 @@ import gleam/result
 pub fn parse_unresolved_services_specification(
   file_path: String,
 ) -> Result(List(specification_types.ServiceUnresolved), String) {
-  glaml_helpers.parse_specification(file_path, dict.new(), fn(doc, _params) {
-    glaml_helpers.iteratively_parse_collection(
-      glaml.document_root(doc),
-      parse_service,
-      "services",
-    )
-  })
+  glaml_helpers.parse_specification(
+    file_path,
+    dict.new(),
+    parse_service,
+    "services",
+  )
 }
 
 // ==== Private ====
 /// Parses a single unresolved service.
-fn parse_service(service: glaml.Node) -> Result(ServiceUnresolved, String) {
+fn parse_service(
+  service: glaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(ServiceUnresolved, String) {
   use sli_types <- result.try(glaml_helpers.extract_string_list_from_node(
     service,
     "sli_types",

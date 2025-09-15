@@ -1,57 +1,38 @@
 import glaml
 import gleam/dict
 import gleam/int
+import gleam/list
 import gleam/result
 
 // ==== Public ====
-/// Parses a YAML file into a list of glaml documents. This is a helper method for dealing with yaml files.
-pub fn parse_yaml_file(
-  file_path: String,
-) -> Result(List(glaml.Document), String) {
-  glaml.parse_file(file_path)
-  |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path })
-}
-
-/// Extracts a node's value by key. This is a helper method for dealing with glaml nodes.
-pub fn extract_some_node_by_key(
-  slo: glaml.Node,
-  key: String,
-) -> Result(glaml.Node, String) {
-  case glaml.select_sugar(slo, key) {
-    Ok(node) -> Ok(node)
-    Error(_) -> Error("Missing " <> key)
-  }
-}
-
-/// Applies a function to a glaml document. This is a helper method for dealing with glaml documents which
-/// may have been overkill for a helper method, however we can reuse this between the two parsers we have:
-/// (1) instantiation.gleam
-/// (2) specification.gleam
-pub fn apply_to_glaml_document(
-  docs: List(glaml.Document),
-  params: dict.Dict(String, String),
-  f: fn(glaml.Document, dict.Dict(String, String)) -> Result(value, String),
-) -> Result(value, String) {
-  case docs {
-    [first, ..] -> f(first, params)
-    _ -> Error("Empty YAML file: within apply_to_glaml_document")
-  }
-}
 
 /// Parses a specification file into a list of glaml documents according to the given parse function.
 pub fn parse_specification(
   file_path: String,
   params: dict.Dict(String, String),
-  parse_fn: fn(glaml.Document, dict.Dict(String, String)) -> Result(a, String),
-) -> Result(a, String) {
+  parse_fn: fn(glaml.Node, dict.Dict(String, String)) -> Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
   // TODO: consider enforcing constraints on file path, however for now, unnecessary.
 
   // parse the YAML file
-  use doc <- result.try(parse_yaml_file(file_path))
+  use doc <- result.try(
+    glaml.parse_file(file_path)
+    |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
+  )
+
+  let parse_fn_two = fn(doc, _params) {
+    iteratively_parse_collection(
+      glaml.document_root(doc),
+      params,
+      parse_fn,
+      key,
+    )
+  }
 
   // parse the intermediate representation, here just the sli_types
   case doc {
-    [first, ..] -> parse_fn(first, params)
+    [first, ..] -> parse_fn_two(first, params)
     _ -> Error("Empty YAML file: " <> file_path)
   }
 }
@@ -61,7 +42,10 @@ pub fn extract_string_from_node(
   node: glaml.Node,
   key: String,
 ) -> Result(String, String) {
-  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+  use query_template_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
 
   case query_template_node {
     glaml.NodeStr(value) -> Ok(value)
@@ -74,7 +58,10 @@ pub fn extract_float_from_node(
   node: glaml.Node,
   key: String,
 ) -> Result(Float, String) {
-  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+  use query_template_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
 
   case query_template_node {
     glaml.NodeFloat(value) -> Ok(value)
@@ -87,7 +74,10 @@ pub fn extract_bool_from_node(
   node: glaml.Node,
   key: String,
 ) -> Result(Bool, String) {
-  use query_template_node <- result.try(extract_some_node_by_key(node, key))
+  use query_template_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
 
   case query_template_node {
     glaml.NodeBool(value) -> Ok(value)
@@ -100,7 +90,10 @@ pub fn extract_string_list_from_node(
   node: glaml.Node,
   key: String,
 ) -> Result(List(String), String) {
-  use list_node <- result.try(extract_some_node_by_key(node, key))
+  use list_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
 
   // Try to access the first element to validate it's a list structure
   case glaml.select_sugar(list_node, "#0") {
@@ -116,10 +109,40 @@ pub fn extract_string_list_from_node(
   }
 }
 
+/// Extracts a dictionary of string key-value pairs from a glaml node.
+pub fn extract_dict_strings_from_node(
+  node: glaml.Node,
+  key: String,
+) -> Result(dict.Dict(String, String), String) {
+  use dict_node <- result.try(case glaml.select_sugar(node, key) {
+    Ok(node) -> Ok(node)
+    Error(_) -> Error("Missing " <> key)
+  })
+
+  case dict_node {
+    glaml.NodeMap(entries) -> {
+      entries
+      |> list.try_map(fn(entry) {
+        case entry {
+          #(glaml.NodeStr(dict_key), glaml.NodeStr(value)) ->
+            Ok(#(dict_key, value))
+          _ ->
+            Error("Expected " <> key <> " entries to be string key-value pairs")
+        }
+      })
+      |> result.map(dict.from_list)
+    }
+    _ -> Error("Expected " <> key <> " to be a map")
+  }
+}
+
+// ==== Private ====
 /// Iteratively parses a collection of nodes.
-pub fn iteratively_parse_collection(
+fn iteratively_parse_collection(
   root: glaml.Node,
-  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
+  params: dict.Dict(String, String),
+  actual_parse_fn: fn(glaml.Node, dict.Dict(String, String)) ->
+    Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
   use services_node <- result.try(
@@ -127,10 +150,33 @@ pub fn iteratively_parse_collection(
     |> result.map_error(fn(_) { "Missing " <> key }),
   )
 
-  do_parse_collection(services_node, 0, actual_parse_fn)
+  do_parse_collection(services_node, 0, params, actual_parse_fn)
 }
 
-// ==== Private ====
+/// Internal parser for list of nodes, iterates over the list.
+fn do_parse_collection(
+  services: glaml.Node,
+  index: Int,
+  params: dict.Dict(String, String),
+  actual_parse_fn: fn(glaml.Node, dict.Dict(String, String)) ->
+    Result(a, String),
+) -> Result(List(a), String) {
+  case glaml.select_sugar(services, "#" <> int.to_string(index)) {
+    Ok(service_node) -> {
+      use service <- result.try(actual_parse_fn(service_node, params))
+      use rest <- result.try(do_parse_collection(
+        services,
+        index + 1,
+        params,
+        actual_parse_fn,
+      ))
+      Ok([service, ..rest])
+    }
+    // TODO: fix this super hacky way of iterating over SLOs.
+    Error(_) -> Ok([])
+  }
+}
+
 /// Internal helper for extracting string lists from glaml nodes.
 fn do_extract_string_list(
   list_node: glaml.Node,
@@ -146,27 +192,6 @@ fn do_extract_string_list(
         _ -> Error("Expected list item to be a string")
       }
     }
-    Error(_) -> Ok([])
-  }
-}
-
-/// Internal parser for list of nodes, iterates over the list.
-fn do_parse_collection(
-  services: glaml.Node,
-  index: Int,
-  actual_parse_fn: fn(glaml.Node) -> Result(a, String),
-) -> Result(List(a), String) {
-  case glaml.select_sugar(services, "#" <> int.to_string(index)) {
-    Ok(service_node) -> {
-      use service <- result.try(actual_parse_fn(service_node))
-      use rest <- result.try(do_parse_collection(
-        services,
-        index + 1,
-        actual_parse_fn,
-      ))
-      Ok([service, ..rest])
-    }
-    // TODO: fix this super hacky way of iterating over SLOs.
     Error(_) -> Ok([])
   }
 }
