@@ -58,7 +58,7 @@ fn parse_slo(
 
   Ok(UnresolvedSlo(
     sli_type: sli_type,
-    filters: filters,
+    typed_instatiation_of_query_templatized_variables: filters,
     threshold: threshold,
     service_name: service_name,
     window_in_days: window_in_days,

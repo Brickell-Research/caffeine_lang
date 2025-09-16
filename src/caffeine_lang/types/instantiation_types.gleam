@@ -6,7 +6,7 @@ pub type UnresolvedTeam {
 
 pub type UnresolvedSlo {
   UnresolvedSlo(
-    filters: dict.Dict(String, String),
+    typed_instatiation_of_query_templatized_variables: dict.Dict(String, String),
     threshold: Float,
     sli_type: String,
     service_name: String,

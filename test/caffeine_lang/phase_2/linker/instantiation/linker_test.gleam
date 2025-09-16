@@ -1,7 +1,7 @@
 import caffeine_lang/phase_2/linker/instantiation/linker
 import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast.{
-  QueryTemplateFilter, QueryTemplateType, Service, SliType, Slo, Team,
+  BasicType, QueryTemplateType, Service, SliType, Slo, Team,
 }
 import caffeine_lang/types/generic_dictionary
 import caffeine_lang/types/instantiation_types.{UnresolvedSlo, UnresolvedTeam}
@@ -12,7 +12,7 @@ import gleam/string
 pub fn aggregate_teams_and_slos_test() {
   let slo_a =
     Slo(
-      filters: create_test_dictionary(),
+      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.9,
       sli_type: "sli_type_a",
       service_name: "service_a",
@@ -21,7 +21,7 @@ pub fn aggregate_teams_and_slos_test() {
 
   let slo_b =
     Slo(
-      filters: create_test_dictionary(),
+      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.8,
       sli_type: "sli_type_b",
       service_name: "service_b",
@@ -30,7 +30,7 @@ pub fn aggregate_teams_and_slos_test() {
 
   let slo_c =
     Slo(
-      filters: create_test_dictionary(),
+      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.7,
       sli_type: "sli_type_c",
       service_name: "service_c",
@@ -73,11 +73,11 @@ pub fn resolve_filters_test() {
       #("list_string_key", "[\"string_value\"]"),
     ])
   let specification_filters = [
-    ast.QueryTemplateFilter("string_key", accepted_types.String),
-    ast.QueryTemplateFilter("int_key", accepted_types.Integer),
-    ast.QueryTemplateFilter("decimal_key", accepted_types.Decimal),
-    ast.QueryTemplateFilter("boolean_key", accepted_types.Boolean),
-    ast.QueryTemplateFilter(
+    BasicType("string_key", accepted_types.String),
+    BasicType("int_key", accepted_types.Integer),
+    BasicType("decimal_key", accepted_types.Decimal),
+    BasicType("boolean_key", accepted_types.Boolean),
+    BasicType(
       "list_string_key",
       accepted_types.List(accepted_types.String),
     ),
@@ -122,10 +122,15 @@ pub fn resolve_filters_test() {
 
 pub fn resolve_slo_test() {
   let query_template_type_a =
-    QueryTemplateType(metric_attributes: [], name: "query_template_type_a")
+    QueryTemplateType(
+      specification_of_query_templates: [
+        BasicType("key", accepted_types.String),
+      ],
+      name: "query_template_type_a",
+    )
 
   let sli_type_a_filters = [
-    QueryTemplateFilter("key", accepted_types.String),
+    BasicType("key", accepted_types.String),
   ]
 
   let service_a_filters =
@@ -137,8 +142,8 @@ pub fn resolve_slo_test() {
     SliType(
       name: "sli_type_a",
       query_template_type: query_template_type_a,
-      filters: sli_type_a_filters,
-      metric_attributes: generic_dictionary.new(),
+      specification_of_query_templatized_variables: sli_type_a_filters,
+      typed_instatiation_of_query_templates: generic_dictionary.new(),
     )
 
   let service_a =
@@ -147,7 +152,7 @@ pub fn resolve_slo_test() {
   let actual =
     linker.resolve_slo(
       UnresolvedSlo(
-        filters: service_a_filters,
+        typed_instatiation_of_query_templatized_variables: service_a_filters,
         threshold: 0.9,
         sli_type: "sli_type_a",
         service_name: "service_a",
@@ -165,7 +170,7 @@ pub fn resolve_slo_test() {
 
   let expected =
     Ok(ast.Slo(
-      filters: expected_filters,
+      typed_instatiation_of_query_templatized_variables: expected_filters,
       threshold: 0.9,
       sli_type: "sli_type_a",
       service_name: "service_a",
@@ -176,12 +181,15 @@ pub fn resolve_slo_test() {
 }
 
 pub fn link_and_validate_instantiation_test() {
-  let query_template_type_a =
-    QueryTemplateType(metric_attributes: [], name: "query_template_type_a")
-
   let sli_type_a_filters = [
-    QueryTemplateFilter("key", accepted_types.String),
+    BasicType("key", accepted_types.String),
   ]
+
+  let query_template_type_a =
+    QueryTemplateType(
+      specification_of_query_templates: sli_type_a_filters,
+      name: "query_template_type_a",
+    )
 
   let service_a_filters =
     dict.from_list([
@@ -192,8 +200,8 @@ pub fn link_and_validate_instantiation_test() {
     SliType(
       name: "sli_type_a",
       query_template_type: query_template_type_a,
-      filters: sli_type_a_filters,
-      metric_attributes: generic_dictionary.new(),
+      specification_of_query_templatized_variables: sli_type_a_filters,
+      typed_instatiation_of_query_templates: generic_dictionary.new(),
     )
 
   let service_a =
@@ -203,7 +211,7 @@ pub fn link_and_validate_instantiation_test() {
     linker.link_and_validate_instantiation(
       UnresolvedTeam(name: "team_a", slos: [
         UnresolvedSlo(
-          filters: service_a_filters,
+          typed_instatiation_of_query_templatized_variables: service_a_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",
           service_name: "service_a",
@@ -224,7 +232,7 @@ pub fn link_and_validate_instantiation_test() {
     Ok(
       ast.Team(name: "team_a", slos: [
         ast.Slo(
-          filters: expected_filters,
+          typed_instatiation_of_query_templatized_variables: expected_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",
           service_name: "service_a",

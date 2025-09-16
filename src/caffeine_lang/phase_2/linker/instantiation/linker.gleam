@@ -67,13 +67,13 @@ pub fn resolve_slo(
     |> result.replace_error("SLI type not found: " <> unresolved_slo.sli_type),
   )
 
-  use filters <- result.try(resolve_filters(
-    unresolved_slo.filters,
-    sli_type.filters,
+  use typed_instatiation_of_query_templatized_variables <- result.try(resolve_filters(
+    unresolved_slo.typed_instatiation_of_query_templatized_variables,
+    sli_type.specification_of_query_templatized_variables,
   ))
 
   Ok(ast.Slo(
-    filters: filters,
+    typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: unresolved_slo.threshold,
     sli_type: sli_type.name,
     service_name: unresolved_slo.service_name,
@@ -83,7 +83,7 @@ pub fn resolve_slo(
 
 pub fn resolve_filters(
   unresolved_instantiated_filters: dict.Dict(String, String),
-  specification_filters: List(ast.QueryTemplateFilter),
+  specification_filters: List(ast.BasicType),
 ) -> Result(generic_dictionary.GenericDictionary, String) {
   let result_entries =
     unresolved_instantiated_filters

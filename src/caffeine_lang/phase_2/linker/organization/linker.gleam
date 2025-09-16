@@ -1,6 +1,6 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/phase_1/parser/specification/query_template_filters_specification.{
-  parse_query_template_filters_specification,
+import caffeine_lang/phase_1/parser/specification/basic_types_specification.{
+  parse_basic_types_specification,
 }
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification.{
   parse_unresolved_query_template_types_specification,
@@ -36,9 +36,9 @@ pub fn link_specification_and_instantiation(
     ),
   )
 
-  use query_template_filters <- result.try(
-    parse_query_template_filters_specification(
-      specification_directory <> "/query_template_filters.yaml",
+  use basic_types <- result.try(
+    parse_basic_types_specification(
+      specification_directory <> "/basic_types.yaml",
     ),
   )
 
@@ -52,7 +52,7 @@ pub fn link_specification_and_instantiation(
     specification_linker.link_and_validate_specification_sub_parts(
       unresolved_services,
       unresolved_sli_types,
-      query_template_filters,
+      basic_types,
       query_template_types_unresolved,
     ),
   )

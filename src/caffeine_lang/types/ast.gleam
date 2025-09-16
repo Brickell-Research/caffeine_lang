@@ -1,6 +1,23 @@
 import caffeine_lang/types/accepted_types.{type AcceptedTypes}
 import caffeine_lang/types/generic_dictionary.{type GenericDictionary}
 
+// ==== Useful Type Aliases ====
+/// A TypedInstantiationOfQueryTemplates is a dictionary of query template names to their typed instantiations.
+pub type TypedInstantiationOfQueryTemplates =
+  GenericDictionary
+
+/// A TypedInstantiationOfMetrics is a dictionary of metric names to their typed instantiations.
+pub type TypedInstantiationOfMetrics =
+  GenericDictionary
+
+/// A SpecificationOfQueryTemplates is a list of expected basic types by name and type.
+pub type SpecificationOfQueryTemplates =
+  List(BasicType)
+
+/// A SpecificationOfMetrics is a list of expected metric filters by name and type.
+pub type SpecificationOfMetrics =
+  List(BasicType)
+
 /// An organization represents the union of instantiations and specifications.
 pub type Organization {
   Organization(teams: List(Team), service_definitions: List(Service))
@@ -15,7 +32,7 @@ pub type Team {
 /// An SLO is an expectation set by stakeholders upon a metric emulating the user experience as best as possible.
 pub type Slo {
   Slo(
-    filters: GenericDictionary,
+    typed_instatiation_of_query_templatized_variables: TypedInstantiationOfQueryTemplates,
     threshold: Float,
     sli_type: String,
     service_name: String,
@@ -37,18 +54,20 @@ pub type SliType {
   SliType(
     name: String,
     query_template_type: QueryTemplateType,
-    metric_attributes: GenericDictionary,
-    filters: List(QueryTemplateFilter),
+    typed_instatiation_of_query_templates: TypedInstantiationOfQueryTemplates,
+    specification_of_query_templatized_variables: SpecificationOfQueryTemplates,
   )
 }
 
 pub type QueryTemplateType {
-  QueryTemplateType(metric_attributes: List(QueryTemplateFilter), name: String)
+  QueryTemplateType(
+    specification_of_query_templates: SpecificationOfQueryTemplates,
+    name: String,
+  )
 }
 
-/// A QueryTemplateFilter is a single definition of a filter that can be applied to a query template
-/// to narrow down its scope.
-pub type QueryTemplateFilter {
-  QueryTemplateFilter(attribute_name: String, attribute_type: AcceptedTypes)
+/// A BasicType represents a fundamental data type with a name and type.
+pub type BasicType {
+  BasicType(attribute_name: String, attribute_type: AcceptedTypes)
 }
 // ================================================

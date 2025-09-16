@@ -1,11 +1,12 @@
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/types/accepted_types.{Integer}
 import caffeine_lang/types/ast.{
-  Organization, QueryTemplateFilter, QueryTemplateType, Service, SliType, Team,
+  Organization, BasicType, QueryTemplateType, Service, SliType, Team,
 }
 import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/list
+import gleam/result
 import gleam/string
 
 pub fn get_instantiation_yaml_files_test() {
@@ -44,7 +45,7 @@ pub fn link_specification_and_instantiation_test() {
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "reliable_service",
-      filters: generic_dictionary.GenericDictionary(
+      typed_instatiation_of_query_templatized_variables: generic_dictionary.GenericDictionary(
         dict.from_list([
           #(
             "number_of_users",
@@ -60,7 +61,7 @@ pub fn link_specification_and_instantiation_test() {
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "less_reliable_service",
-      filters: generic_dictionary.GenericDictionary(
+      typed_instatiation_of_query_templatized_variables: generic_dictionary.GenericDictionary(
         dict.from_list([
           #(
             "number_of_users",
@@ -71,34 +72,37 @@ pub fn link_specification_and_instantiation_test() {
       window_in_days: 30,
     )
 
-  let expected_query_template_filter =
-    QueryTemplateFilter(
+  let expected_basic_type =
+    BasicType(
       attribute_name: "number_of_users",
       attribute_type: Integer,
     )
 
   let expected_query_template_type =
-    QueryTemplateType(name: "good_over_bad", metric_attributes: [
-      expected_query_template_filter,
-    ])
+    QueryTemplateType(
+      name: "good_over_bad",
+      specification_of_query_templates: [expected_basic_type],
+    )
+
+  let expected_typed_instatiation = 
+    generic_dictionary.from_string_dict(
+      dict.from_list([
+        #("numerator_query", ""),
+        #("denominator_query", "")
+      ]),
+      dict.from_list([
+        #("numerator_query", accepted_types.String),
+        #("denominator_query", accepted_types.String)
+      ])
+    )
+    |> result.unwrap(generic_dictionary.new())
 
   let expected_sli_type =
     SliType(
       name: "error_rate",
       query_template_type: expected_query_template_type,
-      metric_attributes: generic_dictionary.GenericDictionary(
-        dict.from_list([
-          #(
-            "numerator_query",
-            generic_dictionary.TypedValue("", accepted_types.String),
-          ),
-          #(
-            "denominator_query",
-            generic_dictionary.TypedValue("", accepted_types.String),
-          ),
-        ]),
-      ),
-      filters: [expected_query_template_filter],
+      typed_instatiation_of_query_templates: expected_typed_instatiation,
+      specification_of_query_templatized_variables: [expected_basic_type],
     )
 
   let expected =

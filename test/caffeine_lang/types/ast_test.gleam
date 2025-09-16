@@ -7,9 +7,9 @@ import gleam/result
 import gleam/string
 
 pub fn organization_test() {
-  // ==== Specfication ====
-  let some_query_template_filter =
-    ast.QueryTemplateFilter(
+  // ==== Specification ====
+  let _some_basic_type =
+    ast.BasicType(
       attribute_name: "acceptable_status_codes",
       attribute_type: accepted_types.List(
         accepted_types.String,
@@ -30,11 +30,11 @@ pub fn organization_test() {
     ast.SliType(
       name: "http_status_code",
       query_template_type: ast.QueryTemplateType(
-        metric_attributes: [some_query_template_filter],
+        specification_of_query_templates: [],
         name: "good_over_bad",
       ),
-      metric_attributes: metric_attrs,
-      filters: [some_query_template_filter],
+      typed_instatiation_of_query_templates: metric_attrs,
+      specification_of_query_templatized_variables: [],
     )
   let service_definition =
     ast.Service(
@@ -52,7 +52,7 @@ pub fn organization_test() {
 
   let some_slo =
     ast.Slo(
-      filters: filters,
+      typed_instatiation_of_query_templatized_variables: filters,
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",
@@ -66,7 +66,7 @@ pub fn organization_test() {
 
   let some_slo_2 =
     ast.Slo(
-      filters: filters,  // Reuse the same filters from above
+      typed_instatiation_of_query_templatized_variables: filters,  // Reuse the same filters from above
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",

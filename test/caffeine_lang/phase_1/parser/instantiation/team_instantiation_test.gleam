@@ -18,7 +18,7 @@ pub fn parse_instantiation_no_slos_test() {
 pub fn parse_instantiation_multiple_slos_test() {
   let expected_slo =
     UnresolvedSlo(
-      filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
+      typed_instatiation_of_query_templatized_variables: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "reliable_service",
@@ -27,7 +27,7 @@ pub fn parse_instantiation_multiple_slos_test() {
 
   let expected_slo_2 =
     UnresolvedSlo(
-      filters: dict.from_list([#("acceptable_status_codes", "[203, 204]")]),
+      typed_instatiation_of_query_templatized_variables: dict.from_list([#("acceptable_status_codes", "[203, 204]")]),
       threshold: 99.99,
       sli_type: "http_status_code",
       service_name: "reliable_service",

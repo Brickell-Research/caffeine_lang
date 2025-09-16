@@ -37,8 +37,8 @@ pub fn resolve_slo(
     sli_types
     |> list.find(fn(sli_type) { sli_type.name == slo.sli_type })
 
-  // Convert GenericDictionary to Dict(String, String)
-  let filters_dict = generic_dictionary.to_string_dict(slo.filters)
+  // Convert typed instantiation to Dict(String, String)
+  let filters_dict = generic_dictionary.to_string_dict(slo.typed_instatiation_of_query_templatized_variables)
 
   use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
 
@@ -56,7 +56,7 @@ pub fn resolve_sli(
   sli_type: SliType,
 ) -> Result(ResolvedSli, String) {
   let resolved_queries =
-    sli_type.metric_attributes
+    sli_type.typed_instatiation_of_query_templates
     |> generic_dictionary.to_string_dict
     |> dict.to_list
     |> list.map(fn(pair) {

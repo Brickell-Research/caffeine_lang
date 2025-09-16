@@ -1,6 +1,6 @@
 import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast
-import caffeine_lang/types/generic_dictionary.{from_string_dict}
+import caffeine_lang/types/generic_dictionary
 import caffeine_lang/types/specification_types.{
   type QueryTemplateTypeUnresolved, type ServiceUnresolved,
   type SliTypeUnresolved, QueryTemplateTypeUnresolved,
@@ -17,17 +17,14 @@ import gleam/result
 pub fn link_and_validate_specification_sub_parts(
   services: List(ServiceUnresolved),
   sli_types: List(SliTypeUnresolved),
-  query_template_filters: List(ast.QueryTemplateFilter),
+  basic_types: List(ast.BasicType),
   query_template_types_unresolved: List(QueryTemplateTypeUnresolved),
 ) -> Result(List(ast.Service), String) {
   // First we need to resolve query template types by linking filters to them
   use resolved_query_template_types <- result.try(
     query_template_types_unresolved
     |> list.map(fn(query_template_type) {
-      resolve_unresolved_query_template_type(
-        query_template_type,
-        query_template_filters,
-      )
+      resolve_unresolved_query_template_type(query_template_type, basic_types)
     })
     |> result.all,
   )
@@ -39,7 +36,7 @@ pub fn link_and_validate_specification_sub_parts(
       resolve_unresolved_sli_type(
         sli_type,
         resolved_query_template_types,
-        query_template_filters,
+        basic_types,
       )
     })
     |> result.all,
@@ -57,41 +54,35 @@ pub fn link_and_validate_specification_sub_parts(
   Ok(resolved_services)
 }
 
-/// This function takes an unresolved QueryTemplateType and a list of QueryTemplateFilters and returns a resolved QueryTemplateType.
+/// This function takes an unresolved QueryTemplateType and a list of BasicTypes and returns a resolved QueryTemplateType.
 pub fn resolve_unresolved_query_template_type(
   unresolved_query_template_type: QueryTemplateTypeUnresolved,
-  query_template_filters: List(ast.QueryTemplateFilter),
+  basic_types: List(ast.BasicType),
 ) -> Result(ast.QueryTemplateType, String) {
   case unresolved_query_template_type {
     QueryTemplateTypeUnresolved(name, metric_attribute_names) -> {
-      // Resolve the metric attribute names to actual filters
-      let resolved_metric_attributes =
+      // Find all the basic types that are used in this query template type
+      let filters =
         metric_attribute_names
         |> list.map(fn(attribute_name) {
-          fetch_by_attribute_name_query_template_filter(
-            query_template_filters,
-            attribute_name,
-          )
+          fetch_by_attribute_name_basic_type(basic_types, attribute_name)
         })
         |> result.all
+        |> result.unwrap([])
 
-      case resolved_metric_attributes {
-        Ok(metric_attributes) ->
-          Ok(ast.QueryTemplateType(
-            name: name,
-            metric_attributes: metric_attributes,
-          ))
-        Error(error) -> Error(error)
-      }
+      Ok(ast.QueryTemplateType(
+        name: name,
+        specification_of_query_templates: filters,
+      ))
     }
   }
 }
 
-/// This function takes an unresolved SliType, a list of QueryTemplateTypes, and a list of QueryTemplateFilters and returns a resolved SliType.
+/// This function takes an unresolved SliType, a list of QueryTemplateTypes, and a list of BasicTypes and returns a resolved SliType.
 pub fn resolve_unresolved_sli_type(
   unresolved_sli_type: SliTypeUnresolved,
   query_template_types: List(ast.QueryTemplateType),
-  query_template_filters: List(ast.QueryTemplateFilter),
+  basic_types: List(ast.BasicType),
 ) -> Result(ast.SliType, String) {
   // find the query template type
   use query_template_type <- result.try(fetch_by_name_query_template_type(
@@ -100,20 +91,17 @@ pub fn resolve_unresolved_sli_type(
   ))
 
   // Resolve filter names to actual filter objects
-  use resolved_filters <- result.try(
+  let filters =
     unresolved_sli_type.filters
-    |> list.map(fn(filter_name) {
-      fetch_by_attribute_name_query_template_filter(
-        query_template_filters,
-        filter_name,
-      )
+    |> list.map(fn(attribute_name) {
+      fetch_by_attribute_name_basic_type(basic_types, attribute_name)
     })
-    |> result.all,
-  )
+    |> result.all
+    |> result.unwrap([])
 
   // Convert metric_attributes to GenericDictionary
   let type_defs =
-    query_template_type.metric_attributes
+    query_template_type.specification_of_query_templates
     |> list.fold(dict.new(), fn(acc, filter) {
       dict.insert(acc, filter.attribute_name, filter.attribute_type)
     })
@@ -127,7 +115,7 @@ pub fn resolve_unresolved_sli_type(
   // Merge with type_defs, giving priority to type_defs
   let merged_type_defs = dict.merge(metric_attributes_dict, type_defs)
 
-  use metric_attributes <- result.try(from_string_dict(
+  use metric_attributes <- result.try(generic_dictionary.from_string_dict(
     unresolved_sli_type.metric_attributes,
     merged_type_defs,
   ))
@@ -135,8 +123,8 @@ pub fn resolve_unresolved_sli_type(
   Ok(ast.SliType(
     name: unresolved_sli_type.name,
     query_template_type: query_template_type,
-    metric_attributes: metric_attributes,
-    filters: resolved_filters,
+    specification_of_query_templatized_variables: filters,
+    typed_instatiation_of_query_templates: metric_attributes,
   ))
 }
 
@@ -183,15 +171,17 @@ fn fetch_by_name_query_template_type(
   |> result.replace_error("QueryTemplateType " <> name <> " not found")
 }
 
-/// This function fetches a single QueryTemplateFilter by attribute name.
-fn fetch_by_attribute_name_query_template_filter(
-  values: List(ast.QueryTemplateFilter),
+/// This function fetches a single BasicType by attribute name.
+fn fetch_by_attribute_name_basic_type(
+  values: List(ast.BasicType),
   attribute_name: String,
-) -> Result(ast.QueryTemplateFilter, String) {
+) -> Result(ast.BasicType, String) {
   case
-    list.find(values, fn(filter) { filter.attribute_name == attribute_name })
+    list.find(values, fn(basic_type) {
+      basic_type.attribute_name == attribute_name
+    })
   {
-    Ok(filter) -> Ok(filter)
-    Error(_) -> Error("QueryTemplateFilter " <> attribute_name <> " not found")
+    Ok(basic_type) -> Ok(basic_type)
+    Error(_) -> Error("BasicType " <> attribute_name <> " not found")
   }
 }

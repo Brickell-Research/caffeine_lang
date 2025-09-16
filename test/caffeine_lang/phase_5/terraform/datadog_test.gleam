@@ -1,5 +1,5 @@
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/ast.{QueryTemplateFilter, QueryTemplateType}
+import caffeine_lang/types/ast.{BasicType, QueryTemplateType}
 import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
 import caffeine_lang/types/accepted_types
 import gleam/dict
@@ -83,7 +83,7 @@ pub fn resource_type_test() {
   let expected = "type        = \"metric\""
   let actual =
     datadog.resource_type(QueryTemplateType(
-      metric_attributes: [],
+      specification_of_query_templates: [],
       name: "good_over_bad",
     ))
   assert actual == expected
@@ -100,12 +100,12 @@ pub fn slo_specification_test() {
       team_name: "badass_platform_team",
       sli: ResolvedSli(
         query_template_type: QueryTemplateType(
-          metric_attributes: [
-            QueryTemplateFilter(
+          specification_of_query_templates: [
+            BasicType(
               attribute_name: "numerator_query",
               attribute_type: accepted_types.String,
             ),
-            QueryTemplateFilter(
+            BasicType(
               attribute_name: "denominator_query",
               attribute_type: accepted_types.String,
             ),

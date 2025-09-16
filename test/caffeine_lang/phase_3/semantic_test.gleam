@@ -12,14 +12,14 @@ import caffeine_lang/types/accepted_types
 fn team_1() -> Team {
   Team(name: "team1", slos: [
     Slo(
-      filters: generic_dictionary.new(),
+      typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team1",
       window_in_days: 30,
     ),
     Slo(
-      filters: generic_dictionary.new(),
+      typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team2",
@@ -71,10 +71,10 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
           SliType(
             name: "availability",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -82,15 +82,15 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
           SliType(
             name: "latency",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -98,7 +98,7 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
         ]),
       ],
@@ -117,14 +117,14 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
     Organization(service_definitions: [], teams: [
       Team(name: "team1", slos: [
         Slo(
-          filters: generic_dictionary.new(),
+          typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
           threshold: 101.0,
           sli_type: "availability",
           service_name: "team1",
           window_in_days: 30,
         ),
         Slo(
-          filters: generic_dictionary.new(),
+          typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
           threshold: -1.0,
           sli_type: "availability",
           service_name: "team1",
@@ -162,10 +162,10 @@ pub fn perform_semantic_analysis_test() {
           SliType(
             name: "availability",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -173,15 +173,15 @@ pub fn perform_semantic_analysis_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
           SliType(
             name: "latency",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -189,17 +189,17 @@ pub fn perform_semantic_analysis_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
         ]),
         Service(name: "team2", supported_sli_types: [
           SliType(
             name: "availability",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -207,15 +207,15 @@ pub fn perform_semantic_analysis_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
           SliType(
             name: "latency",
             query_template_type: QueryTemplateType(
-              metric_attributes: [],
+              specification_of_query_templates: [],
               name: "good_over_bad",
             ),
-            metric_attributes: generic_dictionary.from_string_dict(
+            typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
@@ -223,7 +223,7 @@ pub fn perform_semantic_analysis_test() {
               ])
             )
             |> result.unwrap(generic_dictionary.new()),
-            filters: [],
+            specification_of_query_templatized_variables: [],
           ),
         ]),
       ],

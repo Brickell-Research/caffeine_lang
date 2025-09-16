@@ -1,6 +1,6 @@
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/types/ast.{
-  type SliType, type Slo, Organization, QueryTemplateFilter, QueryTemplateType,
+  type SliType, type Slo, Organization, BasicType, QueryTemplateType,
   Service, SliType, Slo, Team,
 }
 import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
@@ -27,7 +27,7 @@ fn example_filters() -> generic_dictionary.GenericDictionary {
 
 fn example_slo() -> Slo {
   Slo(
-    filters: example_filters(),
+    typed_instatiation_of_query_templatized_variables: example_filters(),
     threshold: 99.5,
     sli_type: "good_over_bad",
     service_name: "super_scalabale_web_service",
@@ -40,18 +40,18 @@ fn example_sli_type() -> SliType {
     name: "good_over_bad",
     query_template_type: QueryTemplateType(
       name: "good_over_bad",
-      metric_attributes: [
-        QueryTemplateFilter(
+      specification_of_query_templates: [
+        BasicType(
           attribute_name: "numerator_query",
           attribute_type: accepted_types.String,
         ),
-        QueryTemplateFilter(
+        BasicType(
           attribute_name: "denominator_query",
           attribute_type: accepted_types.String,
         ),
       ],
     ),
-    metric_attributes: 
+    typed_instatiation_of_query_templates: 
       generic_dictionary.from_string_dict(
         dict.from_list([
           #(
@@ -69,16 +69,16 @@ fn example_sli_type() -> SliType {
         ])
       )
       |> result.unwrap(generic_dictionary.new()),
-    filters: [
-      QueryTemplateFilter(
+    specification_of_query_templatized_variables: [
+      BasicType(
         attribute_name: "service",
         attribute_type: accepted_types.String,
       ),
-      QueryTemplateFilter(
+      BasicType(
         attribute_name: "environment",
         attribute_type: accepted_types.String,
       ),
-      QueryTemplateFilter(
+      BasicType(
         attribute_name: "requests_valid",
         attribute_type: accepted_types.Boolean,
       )
