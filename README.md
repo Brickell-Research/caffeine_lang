@@ -102,6 +102,7 @@ SLO's typed_instatiation_of_query_templatized_variables:
 * service_name --> "reliable_service"
 * environment --> "production"
 * requests_valid --> true
+```
 
 Resulting query:
 ```
