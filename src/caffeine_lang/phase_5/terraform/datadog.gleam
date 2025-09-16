@@ -1,4 +1,5 @@
 import caffeine_lang/types/ast
+import caffeine_lang/types/intermediate_representation.{type ResolvedSlo}
 import gleam/dict
 import gleam/float
 import gleam/list
@@ -79,14 +80,10 @@ pub fn tf_resource_name(
   <> " {"
 }
 
-pub fn resource_type(
-  query_template_type: ast.QueryTemplateType,
-) -> String {
+pub fn resource_type(query_template_type: ast.QueryTemplateType) -> String {
   case query_template_type {
-    ast.QueryTemplateType(
-      _metric_attributes,
-      _name,
-    ) -> "type        = \"metric\""
+    ast.QueryTemplateType(_metric_attributes, _name) ->
+      "type        = \"metric\""
   }
 }
 
@@ -111,19 +108,19 @@ pub fn resource_target_threshold(threshold: Float) -> String {
   "target = " <> float.to_string(threshold)
 }
 
-// // TODO: we need to figure out when to resolve the filters
-// pub fn slo_specification(
-//   _query_template_type: ast.QueryTemplateType,
-// ) -> String {
-// todo
-// case query_template_type {
-//   ast.GoodOverBadQueryTemplate(
-//     numerator_query,
-//     denominator_query,
-//   ) ->
-//     "query { numerator   = \"#{numerator_query}\" denominator = \"#{denominator_query}\" }"
-// }
-// }
+pub fn slo_specification(slo: ResolvedSlo) -> String {
+  let metric_attributes =
+    slo.sli.metric_attributes
+    |> dict.keys()
+    |> list.sort(fn(a, b) { string.compare(a, b) })
+    |> list.map(fn(key) {
+      let assert Ok(value) = dict.get(slo.sli.metric_attributes, key)
+      key <> " = " <> value
+    })
+    |> string.join("\n")
+
+  "query {\n" <> metric_attributes <> "\n}\n"
+}
 
 pub fn get_tags(tags: dict.Dict(String, String)) -> String {
   let formatted_tags =
