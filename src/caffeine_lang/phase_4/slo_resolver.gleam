@@ -1,8 +1,9 @@
 import caffeine_lang/types/ast.{type Organization, type SliType, type Slo}
+import caffeine_lang/types/generic_dictionary
 import caffeine_lang/types/intermediate_representation.{
   type ResolvedSli, type ResolvedSlo, ResolvedSli, ResolvedSlo,
 }
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
@@ -36,7 +37,10 @@ pub fn resolve_slo(
     sli_types
     |> list.find(fn(sli_type) { sli_type.name == slo.sli_type })
 
-  use resolve_sli <- result.try(resolve_sli(slo.filters, sli_type))
+  // Convert GenericDictionary to Dict(String, String)
+  let filters_dict = generic_dictionary.to_string_dict(slo.filters)
+
+  use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
 
   Ok(ResolvedSlo(
     window_in_days: slo.window_in_days,
@@ -48,11 +52,12 @@ pub fn resolve_slo(
 }
 
 pub fn resolve_sli(
-  filters: Dict(String, String),
+  filters: dict.Dict(String, String),
   sli_type: SliType,
 ) -> Result(ResolvedSli, String) {
   let resolved_queries =
     sli_type.metric_attributes
+    |> generic_dictionary.to_string_dict
     |> dict.to_list
     |> list.map(fn(pair) {
       let #(metric_attribute, template) = pair

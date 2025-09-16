@@ -1,6 +1,7 @@
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/ast.{QueryTemplateFilter, QueryTemplateType, String}
+import caffeine_lang/types/ast.{QueryTemplateFilter, QueryTemplateType}
 import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
+import caffeine_lang/types/accepted_types
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -102,11 +103,11 @@ pub fn slo_specification_test() {
           metric_attributes: [
             QueryTemplateFilter(
               attribute_name: "numerator_query",
-              attribute_type: String,
+              attribute_type: accepted_types.String,
             ),
             QueryTemplateFilter(
               attribute_name: "denominator_query",
-              attribute_type: String,
+              attribute_type: accepted_types.String,
             ),
           ],
           name: "good_over_bad",

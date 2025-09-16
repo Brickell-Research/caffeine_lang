@@ -1,8 +1,11 @@
+import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast
+import caffeine_lang/types/generic_dictionary.{from_string_dict}
 import caffeine_lang/types/specification_types.{
   type QueryTemplateTypeUnresolved, type ServiceUnresolved,
   type SliTypeUnresolved, QueryTemplateTypeUnresolved,
 }
+import gleam/dict
 import gleam/list
 import gleam/result
 
@@ -33,7 +36,11 @@ pub fn link_and_validate_specification_sub_parts(
   use resolved_sli_types <- result.try(
     sli_types
     |> list.map(fn(sli_type) {
-      resolve_unresolved_sli_type(sli_type, resolved_query_template_types, query_template_filters)
+      resolve_unresolved_sli_type(
+        sli_type,
+        resolved_query_template_types,
+        query_template_filters,
+      )
     })
     |> result.all,
   )
@@ -104,10 +111,31 @@ pub fn resolve_unresolved_sli_type(
     |> result.all,
   )
 
+  // Convert metric_attributes to GenericDictionary
+  let type_defs =
+    query_template_type.metric_attributes
+    |> list.fold(dict.new(), fn(acc, filter) {
+      dict.insert(acc, filter.attribute_name, filter.attribute_type)
+    })
+
+  // Ensure we have a default type for any attribute not in type_defs
+  let default_type = accepted_types.String
+  let metric_attributes_dict =
+    unresolved_sli_type.metric_attributes
+    |> dict.map_values(fn(_, _) { default_type })
+
+  // Merge with type_defs, giving priority to type_defs
+  let merged_type_defs = dict.merge(metric_attributes_dict, type_defs)
+
+  use metric_attributes <- result.try(from_string_dict(
+    unresolved_sli_type.metric_attributes,
+    merged_type_defs,
+  ))
+
   Ok(ast.SliType(
     name: unresolved_sli_type.name,
     query_template_type: query_template_type,
-    metric_attributes: unresolved_sli_type.metric_attributes,
+    metric_attributes: metric_attributes,
     filters: resolved_filters,
   ))
 }

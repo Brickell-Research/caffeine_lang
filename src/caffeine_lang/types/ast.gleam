@@ -1,4 +1,5 @@
-import gleam/dict
+import caffeine_lang/types/accepted_types.{type AcceptedTypes}
+import caffeine_lang/types/generic_dictionary.{type GenericDictionary}
 
 /// An organization represents the union of instantiations and specifications.
 pub type Organization {
@@ -14,7 +15,7 @@ pub type Team {
 /// An SLO is an expectation set by stakeholders upon a metric emulating the user experience as best as possible.
 pub type Slo {
   Slo(
-    filters: dict.Dict(String, String),
+    filters: GenericDictionary,
     threshold: Float,
     sli_type: String,
     service_name: String,
@@ -36,7 +37,7 @@ pub type SliType {
   SliType(
     name: String,
     query_template_type: QueryTemplateType,
-    metric_attributes: dict.Dict(String, String),
+    metric_attributes: GenericDictionary,
     filters: List(QueryTemplateFilter),
   )
 }
@@ -49,16 +50,5 @@ pub type QueryTemplateType {
 /// to narrow down its scope.
 pub type QueryTemplateFilter {
   QueryTemplateFilter(attribute_name: String, attribute_type: AcceptedTypes)
-}
-
-/// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
-/// to allow for nested filters. This may be a bug in the future since it seems it may
-/// infinitely recurse.
-pub type AcceptedTypes {
-  Boolean
-  Decimal
-  Integer
-  String
-  List(AcceptedTypes)
 }
 // ================================================

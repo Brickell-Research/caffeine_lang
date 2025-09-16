@@ -1,14 +1,17 @@
 import caffeine_lang/types/ast
+import caffeine_lang/types/generic_dictionary
+import caffeine_lang/types/instantiation_types.{
+  type UnresolvedSlo, type UnresolvedTeam,
+}
 import gleam/dict
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/result
 
 // ==== Public ====
 /// Given a list of teams which map to single service SLOs, we want to aggregate all SLOs for a single team
 /// into a single team object.
-pub fn aggregate_teams_and_slos(
-  teams: List(ast.Team),
-) -> List(ast.Team) {
+pub fn aggregate_teams_and_slos(teams: List(ast.Team)) -> List(ast.Team) {
   let dict_of_teams =
     list.fold(teams, dict.new(), fn(acc, team) {
       dict.upsert(acc, team.name, fn(existing_teams) {
@@ -25,9 +28,89 @@ pub fn aggregate_teams_and_slos(
       |> list.map(fn(team) { team.slos })
       |> list.flatten
 
-    let aggregated_team =
-      ast.Team(name: team_name, slos: all_slos)
+    let aggregated_team = ast.Team(name: team_name, slos: all_slos)
 
     [aggregated_team, ..acc]
   })
+}
+
+pub fn link_and_validate_instantiation(
+  unresolved_team: UnresolvedTeam,
+  services: List(ast.Service),
+) -> Result(ast.Team, String) {
+  let resolved_slos =
+    unresolved_team.slos
+    |> list.map(fn(unresolved_slo) {
+      resolve_slo(unresolved_slo, services)
+    })
+    |> result.all
+
+  resolved_slos
+  |> result.map(fn(slos) { ast.Team(name: unresolved_team.name, slos: slos) })
+}
+
+pub fn resolve_slo(
+  unresolved_slo: UnresolvedSlo,
+  services: List(ast.Service),
+) -> Result(ast.Slo, String) {
+  use service <- result.try(
+    list.find(services, fn(s) { s.name == unresolved_slo.service_name })
+    |> result.replace_error(
+      "Service not found: " <> unresolved_slo.service_name,
+    ),
+  )
+
+  use sli_type <- result.try(
+    list.find(service.supported_sli_types, fn(t) {
+      t.name == unresolved_slo.sli_type
+    })
+    |> result.replace_error("SLI type not found: " <> unresolved_slo.sli_type),
+  )
+
+  use filters <- result.try(resolve_filters(
+    unresolved_slo.filters,
+    sli_type.filters,
+  ))
+
+  Ok(ast.Slo(
+    filters: filters,
+    threshold: unresolved_slo.threshold,
+    sli_type: sli_type.name,
+    service_name: unresolved_slo.service_name,
+    window_in_days: unresolved_slo.window_in_days,
+  ))
+}
+
+pub fn resolve_filters(
+  unresolved_instantiated_filters: dict.Dict(String, String),
+  specification_filters: List(ast.QueryTemplateFilter),
+) -> Result(generic_dictionary.GenericDictionary, String) {
+  let result_entries =
+    unresolved_instantiated_filters
+    |> dict.keys
+    |> list.try_map(fn(key) {
+      case
+        specification_filters
+        |> list.find(fn(filter) { filter.attribute_name == key })
+      {
+        Ok(spec_type) -> {
+          case dict.get(unresolved_instantiated_filters, key) {
+            Ok(value) -> {
+              let typed_value =
+                generic_dictionary.TypedValue(
+                  value: value,
+                  type_def: spec_type.attribute_type,
+                )
+              Ok(#(key, typed_value))
+            }
+            Error(_) -> Error("Value not found for key: " <> key)
+          }
+        }
+        Error(_) -> Error("Filter not found in specification: " <> key)
+      }
+    })
+
+  result_entries
+  |> result.map(dict.from_list)
+  |> result.map(generic_dictionary.GenericDictionary)
 }

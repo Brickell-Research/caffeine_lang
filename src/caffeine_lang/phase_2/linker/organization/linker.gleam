@@ -11,6 +11,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_services_specificat
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification.{
   parse_unresolved_sli_types_specification,
 }
+import caffeine_lang/phase_2/linker/instantiation/linker as instantiation_linker
 import caffeine_lang/phase_2/linker/specification/linker as specification_linker
 import caffeine_lang/types/ast
 import gleam/list
@@ -68,10 +69,17 @@ pub fn link_specification_and_instantiation(
     }),
   )
 
-  Ok(ast.Organization(
-    service_definitions: linked_services,
-    teams: instantiations,
-  ))
+  use linked_teams <- result.try(
+    instantiations
+    |> list.try_map(fn(instantiation) {
+      instantiation_linker.link_and_validate_instantiation(
+        instantiation,
+        linked_services,
+      )
+    }),
+  )
+
+  Ok(ast.Organization(service_definitions: linked_services, teams: linked_teams))
 }
 
 /// This function returns a list of all YAML files in the given directory.

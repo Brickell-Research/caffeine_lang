@@ -1,6 +1,9 @@
 import caffeine_lang/types/ast
+import caffeine_lang/types/generic_dictionary
+import caffeine_lang/types/accepted_types
 import gleam/dict
 import gleam/list
+import gleam/result
 import gleam/string
 
 pub fn organization_test() {
@@ -8,10 +11,20 @@ pub fn organization_test() {
   let some_query_template_filter =
     ast.QueryTemplateFilter(
       attribute_name: "acceptable_status_codes",
-      attribute_type: ast.List(
-        ast.String,
+      attribute_type: accepted_types.List(
+        accepted_types.String,
       ),
     )
+
+  let metric_attrs = 
+    generic_dictionary.from_string_dict(
+      dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+      dict.from_list([
+        #("numerator_query", accepted_types.String),
+        #("denominator_query", accepted_types.String)
+      ])
+    )
+    |> result.unwrap(generic_dictionary.new())
 
   let some_sli_type =
     ast.SliType(
@@ -20,7 +33,7 @@ pub fn organization_test() {
         metric_attributes: [some_query_template_filter],
         name: "good_over_bad",
       ),
-      metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+      metric_attributes: metric_attrs,
       filters: [some_query_template_filter],
     )
   let service_definition =
@@ -30,9 +43,16 @@ pub fn organization_test() {
     )
 
   // ==== Instantiation ====
+  let filters = 
+    generic_dictionary.from_string_dict(
+      dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
+      dict.from_list([#("acceptable_status_codes", accepted_types.List(accepted_types.Integer))])
+    )
+    |> result.unwrap(generic_dictionary.new())
+
   let some_slo =
     ast.Slo(
-      filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
+      filters: filters,
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",
@@ -46,7 +66,7 @@ pub fn organization_test() {
 
   let some_slo_2 =
     ast.Slo(
-      filters: dict.from_list([#("acceptable_status_codes", "[200, 201]")]),
+      filters: filters,  // Reuse the same filters from above
       threshold: 99.5,
       sli_type: "http_status_code",
       service_name: "super_scalabale_web_service",

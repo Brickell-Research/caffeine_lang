@@ -1,20 +1,21 @@
 import caffeine_lang/phase_1/parser/specification/query_template_filters_specification
 import caffeine_lang/types/ast
+import caffeine_lang/types/accepted_types
 
 pub fn parse_query_template_filters_test() {
   let expected_query_template_filters = [
     ast.QueryTemplateFilter(
       attribute_name: "team_name",
-      attribute_type: ast.String,
+      attribute_type: accepted_types.String,
     ),
     ast.QueryTemplateFilter(
       attribute_name: "number_of_users",
-      attribute_type: ast.Integer,
+      attribute_type: accepted_types.Integer,
     ),
     ast.QueryTemplateFilter(
       attribute_name: "accepted_status_codes",
-      attribute_type: ast.List(
-        ast.String,
+      attribute_type: accepted_types.List(
+        accepted_types.String,
       ),
     ),
   ]

@@ -1,8 +1,9 @@
 import caffeine_lang/phase_2/linker/organization/linker
+import caffeine_lang/types/accepted_types.{Integer}
 import caffeine_lang/types/ast.{
-  Integer, Organization, QueryTemplateFilter, QueryTemplateType, Service,
-  SliType, Team,
+  Organization, QueryTemplateFilter, QueryTemplateType, Service, SliType, Team,
 }
+import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -43,7 +44,14 @@ pub fn link_specification_and_instantiation_test() {
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "reliable_service",
-      filters: dict.from_list([#("number_of_users", "100")]),
+      filters: generic_dictionary.GenericDictionary(
+        dict.from_list([
+          #(
+            "number_of_users",
+            generic_dictionary.TypedValue("100", accepted_types.Integer),
+          ),
+        ]),
+      ),
       window_in_days: 30,
     )
 
@@ -52,7 +60,14 @@ pub fn link_specification_and_instantiation_test() {
       threshold: 99.5,
       sli_type: "error_rate",
       service_name: "less_reliable_service",
-      filters: dict.from_list([#("number_of_users", "100")]),
+      filters: generic_dictionary.GenericDictionary(
+        dict.from_list([
+          #(
+            "number_of_users",
+            generic_dictionary.TypedValue("100", accepted_types.Integer),
+          ),
+        ]),
+      ),
       window_in_days: 30,
     )
 
@@ -63,16 +78,26 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_query_template_type =
-    QueryTemplateType(
-      name: "good_over_bad",
-      metric_attributes: [expected_query_template_filter],
-    )
+    QueryTemplateType(name: "good_over_bad", metric_attributes: [
+      expected_query_template_filter,
+    ])
 
   let expected_sli_type =
     SliType(
       name: "error_rate",
       query_template_type: expected_query_template_type,
-      metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+      metric_attributes: generic_dictionary.GenericDictionary(
+        dict.from_list([
+          #(
+            "numerator_query",
+            generic_dictionary.TypedValue("", accepted_types.String),
+          ),
+          #(
+            "denominator_query",
+            generic_dictionary.TypedValue("", accepted_types.String),
+          ),
+        ]),
+      ),
       filters: [expected_query_template_filter],
     )
 

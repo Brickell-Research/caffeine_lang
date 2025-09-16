@@ -5,18 +5,21 @@ import caffeine_lang/types/ast.{
   type Team, Organization, QueryTemplateType, Service, SliType, Slo, Team,
 }
 import gleam/dict
+import gleam/result
+import caffeine_lang/types/generic_dictionary
+import caffeine_lang/types/accepted_types
 
 fn team_1() -> Team {
   Team(name: "team1", slos: [
     Slo(
-      filters: dict.new(),
+      filters: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team1",
       window_in_days: 30,
     ),
     Slo(
-      filters: dict.new(),
+      filters: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team2",
@@ -71,7 +74,14 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
           SliType(
@@ -80,7 +90,14 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
         ]),
@@ -100,14 +117,14 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
     Organization(service_definitions: [], teams: [
       Team(name: "team1", slos: [
         Slo(
-          filters: dict.new(),
+          filters: generic_dictionary.new(),
           threshold: 101.0,
           sli_type: "availability",
           service_name: "team1",
           window_in_days: 30,
         ),
         Slo(
-          filters: dict.new(),
+          filters: generic_dictionary.new(),
           threshold: -1.0,
           sli_type: "availability",
           service_name: "team1",
@@ -148,7 +165,14 @@ pub fn perform_semantic_analysis_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
           SliType(
@@ -157,7 +181,14 @@ pub fn perform_semantic_analysis_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
         ]),
@@ -168,7 +199,14 @@ pub fn perform_semantic_analysis_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
           SliType(
@@ -177,7 +215,14 @@ pub fn perform_semantic_analysis_test() {
               metric_attributes: [],
               name: "good_over_bad",
             ),
-            metric_attributes: dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+            metric_attributes: generic_dictionary.from_string_dict(
+              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", accepted_types.String),
+                #("denominator_query", accepted_types.String)
+              ])
+            )
+            |> result.unwrap(generic_dictionary.new()),
             filters: [],
           ),
         ]),
