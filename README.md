@@ -14,7 +14,15 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 
 ## Installation
 
-TBD - we reccommend using within a CICD pipeline.
+**We recommend using within a CICD pipeline.**
+
+Within a GitHub Actions workflow, you can use the following action:
+```bash
+- name: Caffeine Language GitHub Action
+  uses: Brickell-Research/caffeine_lang_github_action@v0.0.1
+```
+
+[See the action in the Github Actions Marketplace](https://github.com/marketplace/actions/caffeine-language-github-action).
 
 ***
 
