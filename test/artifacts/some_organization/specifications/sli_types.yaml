@@ -1,8 +1,8 @@
 types:
   - name: error_rate
     query_template_type: good_over_bad
-    metric_attributes:
+    typed_instatiation_of_query_templates:
       numerator_query: "max:(successful_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})"
       denominator_query: "max:(total_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})"
-    filters:
+    specification_of_query_templatized_variables:
       - number_of_users

@@ -32,8 +32,8 @@ pub fn resolve_unresolved_sli_type_test() {
     SliTypeUnresolved(
       name: "a",
       query_template_type: "good_over_bad",
-      metric_attributes: unresolved_metric_attrs,
-      filters: ["a", "b"],
+      typed_instatiation_of_query_templates: unresolved_metric_attrs,
+      specification_of_query_templatized_variables: ["a", "b"],
     )
 
   // Call the function under test
@@ -98,8 +98,8 @@ pub fn resolve_unresolved_sli_type_error_test() {
       SliTypeUnresolved(
         name: "a",
         query_template_type: "nonexistent_template",
-        metric_attributes: unresolved_metric_attrs,
-        filters: ["a", "b"],
+        typed_instatiation_of_query_templates: unresolved_metric_attrs,
+        specification_of_query_templatized_variables: ["a", "b"],
       ),
       query_template_types,
       basic_types,
@@ -245,20 +245,20 @@ pub fn link_and_validate_specification_sub_parts_test() {
     SliTypeUnresolved(
       name: "a",
       query_template_type: "good_over_bad",
-      metric_attributes: dict.from_list([
+      typed_instatiation_of_query_templates: dict.from_list([
         #("numerator_query", ""),
         #("denominator_query", ""),
       ]),
-      filters: ["a", "b"],
+      specification_of_query_templatized_variables: ["a", "b"],
     ),
     SliTypeUnresolved(
       name: "b",
       query_template_type: "good_over_bad",
-      metric_attributes: dict.from_list([
+      typed_instatiation_of_query_templates: dict.from_list([
         #("numerator_query", ""),
         #("denominator_query", ""),
       ]),
-      filters: ["a", "b"],
+      specification_of_query_templatized_variables: ["a", "b"],
     ),
   ]
 
@@ -270,10 +270,13 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let unresolved_query_template_types = [
-    QueryTemplateTypeUnresolved(name: "good_over_bad", metric_attributes: [
-      "a",
-      "b",
-    ]),
+    QueryTemplateTypeUnresolved(
+      name: "good_over_bad",
+      specification_of_query_templates: [
+        "a",
+        "b",
+      ],
+    ),
   ]
 
   let resolved_query_template =

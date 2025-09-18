@@ -3,10 +3,13 @@ import caffeine_lang/types/specification_types.{QueryTemplateTypeUnresolved}
 
 pub fn parse_query_template_types_test() {
   let expected_query_template_types = [
-    QueryTemplateTypeUnresolved(name: "good_over_bad", metric_attributes: [
-      "team_name",
-      "accepted_status_codes",
-    ]),
+    QueryTemplateTypeUnresolved(
+      name: "good_over_bad",
+      specification_of_query_templates: [
+        "team_name",
+        "accepted_status_codes",
+      ],
+    ),
   ]
 
   let actual =
@@ -16,12 +19,12 @@ pub fn parse_query_template_types_test() {
   assert actual == Ok(expected_query_template_types)
 }
 
-pub fn parse_query_template_types_missing_metric_attributes_test() {
+pub fn parse_query_template_types_missing_specification_of_query_templates_test() {
   let actual =
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-      "test/artifacts/specifications/query_template_types_missing_metric_attributes.yaml",
+      "test/artifacts/specifications/query_template_types_missing_specification_of_query_templates.yaml",
     )
-  assert actual == Error("Missing metric_attributes")
+  assert actual == Error("Missing specification_of_query_templates")
 }
 
 pub fn parse_query_template_types_missing_name_test() {

@@ -11,12 +11,15 @@ pub type SliTypeUnresolved {
   SliTypeUnresolved(
     name: String,
     query_template_type: String,
-    metric_attributes: dict.Dict(String, String),
-    filters: List(String),
+    typed_instatiation_of_query_templates: dict.Dict(String, String),
+    specification_of_query_templatized_variables: List(String),
   )
 }
 
 /// Unresolved version of QueryTemplateType used during parsing
 pub type QueryTemplateTypeUnresolved {
-  QueryTemplateTypeUnresolved(name: String, metric_attributes: List(String))
+  QueryTemplateTypeUnresolved(
+    name: String,
+    specification_of_query_templates: List(String),
+  )
 }

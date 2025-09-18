@@ -1,16 +1,16 @@
 types:
   - name: latency
     query_template_type: good_over_bad
-    metric_attributes:
+    typed_instatiation_of_query_templates:
       numerator_query: ""
       denominator_query: ""
-    filters:
+    specification_of_query_templatized_variables:
       - team_name
       - accepted_status_codes
   - name: error_rate
     query_template_type: good_over_bad
-    metric_attributes:
+    typed_instatiation_of_query_templates:
       numerator_query: ""
       denominator_query: ""
-    filters:
+    specification_of_query_templatized_variables:
       - number_of_users

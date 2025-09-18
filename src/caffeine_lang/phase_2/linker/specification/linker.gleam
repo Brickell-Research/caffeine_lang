@@ -91,8 +91,8 @@ pub fn resolve_unresolved_sli_type(
   ))
 
   // Resolve filter names to actual filter objects
-  let filters =
-    unresolved_sli_type.filters
+  let specification_of_query_templatized_variables =
+    unresolved_sli_type.specification_of_query_templatized_variables
     |> list.map(fn(attribute_name) {
       fetch_by_attribute_name_basic_type(basic_types, attribute_name)
     })
@@ -108,22 +108,23 @@ pub fn resolve_unresolved_sli_type(
 
   // Ensure we have a default type for any attribute not in type_defs
   let default_type = accepted_types.String
-  let metric_attributes_dict =
-    unresolved_sli_type.metric_attributes
+  let typed_instatiation_of_query_templates =
+    unresolved_sli_type.typed_instatiation_of_query_templates
     |> dict.map_values(fn(_, _) { default_type })
 
   // Merge with type_defs, giving priority to type_defs
-  let merged_type_defs = dict.merge(metric_attributes_dict, type_defs)
+  let merged_type_defs =
+    dict.merge(typed_instatiation_of_query_templates, type_defs)
 
   use metric_attributes <- result.try(generic_dictionary.from_string_dict(
-    unresolved_sli_type.metric_attributes,
+    unresolved_sli_type.typed_instatiation_of_query_templates,
     merged_type_defs,
   ))
 
   Ok(ast.SliType(
     name: unresolved_sli_type.name,
     query_template_type: query_template_type,
-    specification_of_query_templatized_variables: filters,
+    specification_of_query_templatized_variables: specification_of_query_templatized_variables,
     typed_instatiation_of_query_templates: metric_attributes,
   ))
 }

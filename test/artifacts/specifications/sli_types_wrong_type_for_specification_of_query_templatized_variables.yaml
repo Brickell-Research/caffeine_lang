@@ -1,6 +1,7 @@
 types:
   - name: error_rate
     query_template_type: good_over_bad
-    metric_attributes:
+    typed_instatiation_of_query_templates:
       numerator_query: ""
       denominator_query: ""
+    specification_of_query_templatized_variables: "not_a_list"

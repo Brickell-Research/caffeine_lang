@@ -33,18 +33,23 @@ fn parse_sli_type(
     type_node,
     "query_template_type",
   ))
-  use metric_attributes <- result.try(
-    glaml_helpers.extract_dict_strings_from_node(type_node, "metric_attributes"),
+  use typed_instatiation_of_query_templates <- result.try(
+    glaml_helpers.extract_dict_strings_from_node(
+      type_node,
+      "typed_instatiation_of_query_templates",
+    ),
   )
-  use filters <- result.try(glaml_helpers.extract_string_list_from_node(
-    type_node,
-    "filters",
-  ))
+  use specification_of_query_templatized_variables <- result.try(
+    glaml_helpers.extract_string_list_from_node(
+      type_node,
+      "specification_of_query_templatized_variables",
+    ),
+  )
 
   Ok(SliTypeUnresolved(
     name: name,
     query_template_type: query_template_type,
-    metric_attributes: metric_attributes,
-    filters: filters,
+    typed_instatiation_of_query_templates: typed_instatiation_of_query_templates,
+    specification_of_query_templatized_variables: specification_of_query_templatized_variables,
   ))
 }

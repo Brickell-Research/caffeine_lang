@@ -7,20 +7,23 @@ pub fn parse_sli_types_test() {
     SliTypeUnresolved(
       name: "latency",
       query_template_type: "good_over_bad",
-      metric_attributes: dict.from_list([
+      typed_instatiation_of_query_templates: dict.from_list([
         #("numerator_query", ""),
         #("denominator_query", ""),
       ]),
-      filters: ["team_name", "accepted_status_codes"],
+      specification_of_query_templatized_variables: [
+        "team_name",
+        "accepted_status_codes",
+      ],
     ),
     SliTypeUnresolved(
       name: "error_rate",
       query_template_type: "good_over_bad",
-      metric_attributes: dict.from_list([
+      typed_instatiation_of_query_templates: dict.from_list([
         #("numerator_query", ""),
         #("denominator_query", ""),
       ]),
-      filters: ["number_of_users"],
+      specification_of_query_templatized_variables: ["number_of_users"],
     ),
   ]
 

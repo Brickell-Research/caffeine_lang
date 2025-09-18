@@ -1,3 +1,0 @@
-query_template_types:
-  - denominator_query: "sum(rate(http_requests_total[5m]))"
-    filters: ["team_name"]

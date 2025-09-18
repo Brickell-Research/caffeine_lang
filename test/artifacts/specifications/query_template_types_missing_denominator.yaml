@@ -1,3 +1,0 @@
-query_template_types:
-  - numerator_query: "sum(rate(http_requests_total{status!~'5..'}[5m]))"
-    filters: ["team_name"]
