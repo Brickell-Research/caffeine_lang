@@ -1,5 +1,7 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/types/instantiation_types.{UnresolvedSlo, UnresolvedTeam}
+import caffeine_lang/types/unresolved_parser_types.{
+  UnresolvedSlo, UnresolvedTeam,
+}
 import gleam/dict
 
 pub fn parse_instantiation_no_slos_test() {

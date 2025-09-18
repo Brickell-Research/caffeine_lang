@@ -4,7 +4,9 @@ import caffeine_lang/types/ast.{
   BasicType, QueryTemplateType, Service, SliType, Slo, Team,
 }
 import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/instantiation_types.{UnresolvedSlo, UnresolvedTeam}
+import caffeine_lang/types/unresolved_parser_types.{
+  UnresolvedSlo, UnresolvedTeam,
+}
 import gleam/dict
 import gleam/list
 import gleam/string

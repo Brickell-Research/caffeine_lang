@@ -2,7 +2,7 @@ import caffeine_lang/phase_2/linker/specification/linker
 import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast.{BasicType, QueryTemplateType, Service, SliType}
 import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/specification_types.{
+import caffeine_lang/types/unresolved_parser_types.{
   QueryTemplateTypeUnresolved, ServiceUnresolved, SliTypeUnresolved,
 }
 import gleam/dict

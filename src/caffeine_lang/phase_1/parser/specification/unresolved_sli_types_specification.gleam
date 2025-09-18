@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/types/specification_types.{
+import caffeine_lang/types/unresolved_parser_types.{
   type SliTypeUnresolved, SliTypeUnresolved,
 }
 import glaml

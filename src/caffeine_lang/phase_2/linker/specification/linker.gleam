@@ -1,7 +1,7 @@
 import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast
 import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/specification_types.{
+import caffeine_lang/types/unresolved_parser_types.{
   type QueryTemplateTypeUnresolved, type ServiceUnresolved,
   type SliTypeUnresolved, QueryTemplateTypeUnresolved,
 }

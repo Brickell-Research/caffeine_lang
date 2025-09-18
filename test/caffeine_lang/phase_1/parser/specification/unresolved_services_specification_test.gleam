@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
-import caffeine_lang/types/specification_types.{ServiceUnresolved}
+import caffeine_lang/types/unresolved_parser_types.{ServiceUnresolved}
 
 pub fn parse_services_test() {
   let expected_services = [

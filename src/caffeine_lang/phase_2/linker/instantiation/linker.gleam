@@ -1,6 +1,6 @@
 import caffeine_lang/types/ast
 import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/instantiation_types.{
+import caffeine_lang/types/unresolved_parser_types.{
   type UnresolvedSlo, type UnresolvedTeam,
 }
 import gleam/dict
