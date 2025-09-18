@@ -1,6 +1,7 @@
 slos:
-  - sli_type: "error_rate"
+  - sli_type: "success_rate"
     filters:
-      "number_of_users": "100"
-    threshold: 99.5
-    window_in_days: 30
+      "graphql_operation_name": "createappointment"
+      "environment": "production"
+    threshold: 99.9
+    window_in_days: 7

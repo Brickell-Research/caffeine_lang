@@ -58,13 +58,13 @@ pub fn resource_top_line(
   service_name: String,
   sli_type: String,
 ) -> String {
-  "resource \"datadog_service_level_objective\" "
+  "resource \"datadog_service_level_objective\" \""
   <> team_name
   <> "_"
   <> service_name
   <> "_"
   <> sli_type
-  <> " {"
+  <> "\" {"
 }
 
 pub fn tf_resource_name(
@@ -116,7 +116,8 @@ pub fn slo_specification(slo: ResolvedSlo) -> String {
     |> list.sort(fn(a, b) { string.compare(a, b) })
     |> list.map(fn(key) {
       let assert Ok(value) = dict.get(slo.sli.metric_attributes, key)
-      "    " <> key <> " = " <> value
+      let escaped_value = string.replace(value, "\"", "\\\"")
+      "    " <> key <> " = \"" <> escaped_value <> "\""
     })
     |> string.join("\n")
 

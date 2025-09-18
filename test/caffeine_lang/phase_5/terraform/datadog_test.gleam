@@ -3,7 +3,6 @@ import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast.{BasicType, QueryTemplateType}
 import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
 import gleam/dict
-import gleam/string
 
 pub fn set_resource_comment_header_test() {
   let expected = "# SLO created by EzSLO for team - Type: type"
@@ -117,7 +116,7 @@ resource \"datadog_service_level_objective\" badass_platform_team_super_scalabal
     denominator = #{denominator_query}
     numerator = #{numerator_query}
   }
-  
+
   thresholds {
     timeframe = \"30d\"
     target    = 99.5
@@ -153,6 +152,5 @@ resource \"datadog_service_level_objective\" badass_platform_team_super_scalabal
       ),
     ))
 
-  assert string.replace(string.replace(actual, "\n", ""), " ", "")
-    == string.replace(string.replace(expected, "\n", ""), " ", "")
+  assert actual == expected
 }

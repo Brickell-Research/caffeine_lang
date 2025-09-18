@@ -112,4 +112,11 @@ docs/compiled/
 !LICENSE
 !CNAME
 
-test/artifacts/some_organization/generated.txt
+
+# Terraform
+.terraform
+terraform.tfstate
+main.tf
+variables.tf
+providers.tf
+.terraform.lock.hcl

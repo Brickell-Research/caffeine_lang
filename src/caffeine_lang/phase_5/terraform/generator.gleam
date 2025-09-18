@@ -59,16 +59,34 @@ pub fn generate(
   slos: List(ResolvedSlo),
   output_directory: String,
 ) -> Result(Nil, simplifile.FileError) {
-  let content =
-    build_variables([Datadog])
-    <> "\n\n"
-    <> build_provider([Datadog])
-    <> "\n\n"
-    <> build_main(slos)
+  // variables
+  io.println(
+    "Writing variables to file " <> output_directory <> "/variables.tf",
+  )
+  let _ = simplifile.delete(output_directory <> "/variables.tf")
+  let _ = simplifile.create_file(output_directory <> "/variables.tf")
+  let _ =
+    simplifile.append(
+      output_directory <> "/variables.tf",
+      build_variables([Datadog]),
+    )
 
-  io.println("Writing to file " <> output_directory <> "/generated.txt")
-  let _ = simplifile.delete(output_directory <> "/generated.txt")
-  let _ = simplifile.create_file(output_directory <> "/generated.txt")
-  let _ = simplifile.append(output_directory <> "/generated.txt", content)
+  // providers
+  io.println(
+    "Writing providers to file " <> output_directory <> "/providers.tf",
+  )
+  let _ = simplifile.delete(output_directory <> "/providers.tf")
+  let _ = simplifile.create_file(output_directory <> "/providers.tf")
+  let _ =
+    simplifile.append(
+      output_directory <> "/providers.tf",
+      build_provider([Datadog]),
+    )
+
+  // main
+  io.println("Writing main to file " <> output_directory <> "/main.tf")
+  let _ = simplifile.delete(output_directory <> "/main.tf")
+  let _ = simplifile.create_file(output_directory <> "/main.tf")
+  let _ = simplifile.append(output_directory <> "/main.tf", build_main(slos))
   Ok(Nil)
 }

@@ -1,8 +1,9 @@
 types:
-  - name: error_rate
-    query_template_type: good_over_bad
+  - name: success_rate
+    query_template_type: valid_over_total
     typed_instatiation_of_query_templates:
-      numerator_query: "max:(successful_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})"
-      denominator_query: "max:(total_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})"
+      numerator: "sum:rotom.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$, status:info}.as_count()"
+      denominator: "sum:rotom.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$}.as_count()"
     specification_of_query_templatized_variables:
-      - number_of_users
+      - graphql_operation_name
+      - environment

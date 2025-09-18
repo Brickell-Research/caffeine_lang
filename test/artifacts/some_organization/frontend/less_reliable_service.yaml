@@ -1,6 +1,0 @@
-slos:
-  - sli_type: "error_rate"
-    filters:
-      "number_of_users": "100_000"
-    threshold: 99.5
-    window_in_days: 30

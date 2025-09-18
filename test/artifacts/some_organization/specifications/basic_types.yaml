@@ -1,3 +1,6 @@
 basic_types:
-  - attribute_name: number_of_users
-    attribute_type: Integer
+  - attribute_name: graphql_operation_name
+    attribute_type: String
+  - attribute_name: environment
+    attribute_type: String
+    

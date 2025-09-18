@@ -30,11 +30,7 @@ pub fn compile(
           case resolved_slos {
             Ok(resolved_slos) -> {
               io.println("5️⃣ Generating...")
-              let _generated =
-                generator.generate(
-                  resolved_slos,
-                  "test/artifacts/some_organization",
-                )
+              let _generated = generator.generate(resolved_slos, "./")
               io.println("🎉Generated successfully!")
             }
             Error(e) -> {
