@@ -3,7 +3,7 @@ slos:
     threshold: 99.5
     window_in_days: 30
   - sli_type: "http_status_code"
-    filters:
+    typed_instatiation_of_query_templatized_variables:
       "acceptable_status_codes": "[203, 204]"
     threshold: 99.99
     window_in_days: 30 

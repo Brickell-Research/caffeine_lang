@@ -31,7 +31,7 @@ pub fn resource_target_threshold_test() {
 
 pub fn resource_top_line_test() {
   let expected =
-    "resource \"datadog_service_level_objective\" team_service_type {"
+    "resource \"datadog_service_level_objective\" \"team_service_type\" {"
   let actual = datadog.resource_top_line("team", "service", "type")
   assert actual == expected
 }
@@ -74,7 +74,7 @@ pub fn resource_type_test() {
 
 pub fn slo_specification_test() {
   let expected =
-    "query {\n    denominator = #{denominator_query}\n    numerator = #{numerator_query}\n  }\n"
+    "query {\n    denominator = \"#{denominator_query}\"\n    numerator = \"#{numerator_query}\"\n  }\n"
   let actual =
     datadog.slo_specification(ResolvedSlo(
       window_in_days: 30,
@@ -107,14 +107,14 @@ pub fn slo_specification_test() {
 pub fn full_resource_body_test() {
   let expected =
     "# SLO created by EzSLO for badass_platform_team - Type: good_over_bad
-resource \"datadog_service_level_objective\" badass_platform_team_super_scalabale_web_service_good_over_bad {
+resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad\" {
   name = \"badass_platform_team_super_scalabale_web_service_good_over_bad\"
   type        = \"metric\"
   description = \"SLO created by caffeine\"
   
   query {
-    denominator = #{denominator_query}
-    numerator = #{numerator_query}
+    denominator = \"#{denominator_query}\"
+    numerator = \"#{numerator_query}\"
   }
 
   thresholds {

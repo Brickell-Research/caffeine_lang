@@ -41,10 +41,12 @@ fn parse_slo(
     slo,
     "sli_type",
   ))
-  use filters <- result.try(glaml_helpers.extract_dict_strings_from_node(
-    slo,
-    "filters",
-  ))
+  use typed_instatiation_of_query_templatized_variables <- result.try(
+    glaml_helpers.extract_dict_strings_from_node(
+      slo,
+      "typed_instatiation_of_query_templatized_variables",
+    ),
+  )
   use threshold <- result.try(glaml_helpers.extract_float_from_node(
     slo,
     "threshold",
@@ -58,7 +60,7 @@ fn parse_slo(
 
   Ok(UnresolvedSlo(
     sli_type: sli_type,
-    typed_instatiation_of_query_templatized_variables: filters,
+    typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: threshold,
     service_name: service_name,
     window_in_days: window_in_days,

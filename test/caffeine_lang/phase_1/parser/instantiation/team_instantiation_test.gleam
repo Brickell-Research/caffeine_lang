@@ -59,9 +59,10 @@ pub fn parse_instantiation_missing_sli_type_test() {
 pub fn parse_instantiation_missing_filters_test() {
   let actual =
     team_instantiation.parse_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_filters.yaml",
+      "test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     )
-  assert actual == Error("Missing filters")
+  assert actual
+    == Error("Missing typed_instatiation_of_query_templatized_variables")
 }
 
 pub fn parse_instantiation_missing_threshold_test() {
