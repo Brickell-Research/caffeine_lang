@@ -38,7 +38,10 @@ pub fn resolve_slo(
     |> list.find(fn(sli_type) { sli_type.name == slo.sli_type })
 
   // Convert typed instantiation to Dict(String, String)
-  let filters_dict = generic_dictionary.to_string_dict(slo.typed_instatiation_of_query_templatized_variables)
+  let filters_dict =
+    generic_dictionary.to_string_dict(
+      slo.typed_instatiation_of_query_templatized_variables,
+    )
 
   use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
 

@@ -77,10 +77,7 @@ pub fn resolve_filters_test() {
     BasicType("int_key", accepted_types.Integer),
     BasicType("decimal_key", accepted_types.Decimal),
     BasicType("boolean_key", accepted_types.Boolean),
-    BasicType(
-      "list_string_key",
-      accepted_types.List(accepted_types.String),
-    ),
+    BasicType("list_string_key", accepted_types.List(accepted_types.String)),
   ]
 
   let actual =

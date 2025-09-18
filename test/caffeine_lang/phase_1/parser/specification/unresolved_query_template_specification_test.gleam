@@ -3,10 +3,10 @@ import caffeine_lang/types/specification_types.{QueryTemplateTypeUnresolved}
 
 pub fn parse_query_template_types_test() {
   let expected_query_template_types = [
-    QueryTemplateTypeUnresolved(
-      name: "good_over_bad",
-      metric_attributes: ["team_name", "accepted_status_codes"],
-    ),
+    QueryTemplateTypeUnresolved(name: "good_over_bad", metric_attributes: [
+      "team_name",
+      "accepted_status_codes",
+    ]),
   ]
 
   let actual =

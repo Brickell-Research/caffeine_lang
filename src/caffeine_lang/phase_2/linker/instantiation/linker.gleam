@@ -40,9 +40,7 @@ pub fn link_and_validate_instantiation(
 ) -> Result(ast.Team, String) {
   let resolved_slos =
     unresolved_team.slos
-    |> list.map(fn(unresolved_slo) {
-      resolve_slo(unresolved_slo, services)
-    })
+    |> list.map(fn(unresolved_slo) { resolve_slo(unresolved_slo, services) })
     |> result.all
 
   resolved_slos
@@ -67,10 +65,12 @@ pub fn resolve_slo(
     |> result.replace_error("SLI type not found: " <> unresolved_slo.sli_type),
   )
 
-  use typed_instatiation_of_query_templatized_variables <- result.try(resolve_filters(
-    unresolved_slo.typed_instatiation_of_query_templatized_variables,
-    sli_type.specification_of_query_templatized_variables,
-  ))
+  use typed_instatiation_of_query_templatized_variables <- result.try(
+    resolve_filters(
+      unresolved_slo.typed_instatiation_of_query_templatized_variables,
+      sli_type.specification_of_query_templatized_variables,
+    ),
+  )
 
   Ok(ast.Slo(
     typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,

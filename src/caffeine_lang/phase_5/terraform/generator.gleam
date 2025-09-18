@@ -1,6 +1,9 @@
 import caffeine_lang/phase_5/terraform/datadog
+import caffeine_lang/types/intermediate_representation.{type ResolvedSlo}
+import gleam/io
 import gleam/list
 import gleam/string
+import simplifile
 
 pub type SupportedProvider {
   Datadog
@@ -40,27 +43,32 @@ fn do_build_variables(provider: SupportedProvider) -> String {
   }
 }
 
-// pub fn build_slo_definitions() -> String {
-//   todo
-// }
+pub fn build_slo_definitions(slos: List(ResolvedSlo)) -> String {
+  slos
+  |> list.map(datadog.full_resource_body)
+  |> string.join("\n\n")
+}
 
-// pub fn build_slo_dashboards() -> String {
-//   todo
-// }
+pub fn build_main(slos: List(ResolvedSlo)) -> String {
+  let backend = build_backend()
+  let slo_definitions = build_slo_definitions(slos)
+  backend <> "\n\n" <> slo_definitions
+}
 
-// pub fn build_main() -> String {
-//   let _backend = build_backend()
-//   let _slo_definitions = build_slo_definitions()
-//   let _slo_dashboards = build_slo_dashboards()
-//   todo
-// }
+pub fn generate(
+  slos: List(ResolvedSlo),
+  output_directory: String,
+) -> Result(Nil, simplifile.FileError) {
+  let content =
+    build_variables([Datadog])
+    <> "\n\n"
+    <> build_provider([Datadog])
+    <> "\n\n"
+    <> build_main(slos)
 
-pub fn generate() -> String {
-  // -- variables.tf --
-  build_variables([Datadog])
-
-  // -- providers.tf --
-  build_provider([Datadog])
-  // -- main.tf --
-  // build_main()
+  io.println("Writing to file " <> output_directory <> "/generated.txt")
+  let _ = simplifile.delete(output_directory <> "/generated.txt")
+  let _ = simplifile.create_file(output_directory <> "/generated.txt")
+  let _ = simplifile.append(output_directory <> "/generated.txt", content)
+  Ok(Nil)
 }

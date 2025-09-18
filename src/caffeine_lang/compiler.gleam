@@ -1,6 +1,7 @@
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/phase_3/semantic
-import caffeine_lang/phase_5/smoke_test
+import caffeine_lang/phase_4/slo_resolver
+import caffeine_lang/phase_5/terraform/generator
 import gleam/io
 
 pub fn compile(
@@ -23,13 +24,23 @@ pub fn compile(
       case result {
         Ok(_) -> {
           io.println("3️⃣ Semantic analysis successful!")
-          io.println("4️⃣ Generating...")
-          let _ =
-            smoke_test.generate(
-              organization,
-              "test/artifacts/some_organization",
-            )
-          io.println("🎉Generated successfully!")
+          io.println("4️⃣ Resolving SLOs...")
+          let resolved_slos = slo_resolver.resolve_slos(organization)
+          io.println("Resolved SLOs successfully!")
+          case resolved_slos {
+            Ok(resolved_slos) -> {
+              io.println("5️⃣ Generating...")
+              let _generated =
+                generator.generate(
+                  resolved_slos,
+                  "test/artifacts/some_organization",
+                )
+              io.println("🎉Generated successfully!")
+            }
+            Error(e) -> {
+              io.println_error(e)
+            }
+          }
         }
         Error(e) -> {
           case e {

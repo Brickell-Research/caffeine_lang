@@ -1,13 +1,13 @@
 import caffeine_lang/phase_3/semantic.{
   InvalidSloThresholdError, UndefinedServiceError, UndefinedSliTypeError,
 }
+import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast.{
   type Team, Organization, QueryTemplateType, Service, SliType, Slo, Team,
 }
+import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/result
-import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/accepted_types
 
 fn team_1() -> Team {
   Team(name: "team1", slos: [
@@ -75,13 +75,16 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
           SliType(
@@ -91,13 +94,16 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
         ]),
@@ -166,13 +172,16 @@ pub fn perform_semantic_analysis_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
           SliType(
@@ -182,13 +191,16 @@ pub fn perform_semantic_analysis_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
         ]),
@@ -200,13 +212,16 @@ pub fn perform_semantic_analysis_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
           SliType(
@@ -216,13 +231,16 @@ pub fn perform_semantic_analysis_test() {
               name: "good_over_bad",
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-              dict.from_list([#("numerator_query", ""), #("denominator_query", "")]),
+              dict.from_list([
+                #("numerator_query", ""),
+                #("denominator_query", ""),
+              ]),
               dict.from_list([
                 #("numerator_query", accepted_types.String),
-                #("denominator_query", accepted_types.String)
-              ])
+                #("denominator_query", accepted_types.String),
+              ]),
             )
-            |> result.unwrap(generic_dictionary.new()),
+              |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
         ]),

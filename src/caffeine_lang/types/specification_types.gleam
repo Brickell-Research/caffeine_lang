@@ -18,8 +18,5 @@ pub type SliTypeUnresolved {
 
 /// Unresolved version of QueryTemplateType used during parsing
 pub type QueryTemplateTypeUnresolved {
-  QueryTemplateTypeUnresolved(
-    name: String,
-    metric_attributes: List(String),
-  )
+  QueryTemplateTypeUnresolved(name: String, metric_attributes: List(String))
 }

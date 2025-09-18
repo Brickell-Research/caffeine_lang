@@ -1,8 +1,9 @@
 import caffeine_lang/phase_5/terraform/datadog
+import caffeine_lang/types/accepted_types
 import caffeine_lang/types/ast.{BasicType, QueryTemplateType}
 import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
-import caffeine_lang/types/accepted_types
 import gleam/dict
+import gleam/string
 
 pub fn set_resource_comment_header_test() {
   let expected = "# SLO created by EzSLO for team - Type: type"
@@ -43,32 +44,15 @@ pub fn resource_description_test() {
 }
 
 pub fn get_tags_test() {
-  let tags =
+  let _tags =
     dict.new()
     |> dict.insert("managed-by", "caffeine")
     |> dict.insert("team", "platform")
     |> dict.insert("environment", "production")
 
   let expected =
-    "tags = [\"environment:production\", \"managed-by:caffeine\", \"team:platform\"]"
-  let actual = datadog.get_tags(tags)
-  assert actual == expected
-}
-
-pub fn get_tags_empty_test() {
-  let tags = dict.new()
-  let expected = "tags = []"
-  let actual = datadog.get_tags(tags)
-  assert actual == expected
-}
-
-pub fn get_tags_single_test() {
-  let tags =
-    dict.new()
-    |> dict.insert("managed-by", "caffeine")
-
-  let expected = "tags = [\"managed-by:caffeine\"]"
-  let actual = datadog.get_tags(tags)
+    "tags = [\"managed-by:caffeine\", \"team:platform\", \"service:production\", \"sli:good_over_bad\"]"
+  let actual = datadog.get_tags("platform", "production", "good_over_bad")
   assert actual == expected
 }
 
@@ -91,7 +75,7 @@ pub fn resource_type_test() {
 
 pub fn slo_specification_test() {
   let expected =
-    "query {\ndenominator = #{denominator_query}\nnumerator = #{numerator_query}\n}\n"
+    "query {\n    denominator = #{denominator_query}\n    numerator = #{numerator_query}\n  }\n"
   let actual =
     datadog.slo_specification(ResolvedSlo(
       window_in_days: 30,
@@ -119,4 +103,56 @@ pub fn slo_specification_test() {
       ),
     ))
   assert actual == expected
+}
+
+pub fn full_resource_body_test() {
+  let expected =
+    "# SLO created by EzSLO for badass_platform_team - Type: good_over_bad
+resource \"datadog_service_level_objective\" badass_platform_team_super_scalabale_web_service_good_over_bad {
+  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad\"
+  type        = \"metric\"
+  description = \"SLO created by caffeine\"
+  
+  query {
+    denominator = #{denominator_query}
+    numerator = #{numerator_query}
+  }
+  
+  thresholds {
+    timeframe = \"30d\"
+    target    = 99.5
+  }
+
+  tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli:good_over_bad\"]
+}"
+
+  let actual =
+    datadog.full_resource_body(ResolvedSlo(
+      window_in_days: 30,
+      threshold: 99.5,
+      service_name: "super_scalabale_web_service",
+      team_name: "badass_platform_team",
+      sli: ResolvedSli(
+        query_template_type: QueryTemplateType(
+          specification_of_query_templates: [
+            BasicType(
+              attribute_name: "numerator_query",
+              attribute_type: accepted_types.String,
+            ),
+            BasicType(
+              attribute_name: "denominator_query",
+              attribute_type: accepted_types.String,
+            ),
+          ],
+          name: "good_over_bad",
+        ),
+        metric_attributes: dict.from_list([
+          #("numerator", "#{numerator_query}"),
+          #("denominator", "#{denominator_query}"),
+        ]),
+      ),
+    ))
+
+  assert string.replace(string.replace(actual, "\n", ""), " ", "")
+    == string.replace(string.replace(expected, "\n", ""), " ", "")
 }

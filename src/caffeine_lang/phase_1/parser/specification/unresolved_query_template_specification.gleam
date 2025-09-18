@@ -29,10 +29,9 @@ fn parse_query_template_type(
     type_node,
     "name",
   ))
-  use metric_attributes <- result.try(glaml_helpers.extract_string_list_from_node(
-    type_node,
-    "metric_attributes",
-  ))
+  use metric_attributes <- result.try(
+    glaml_helpers.extract_string_list_from_node(type_node, "metric_attributes"),
+  )
 
   Ok(QueryTemplateTypeUnresolved(
     name: name,

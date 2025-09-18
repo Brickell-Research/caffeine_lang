@@ -1,8 +1,6 @@
 import caffeine_lang/phase_2/linker/specification/linker
 import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{
-  BasicType, QueryTemplateType, Service, SliType,
-}
+import caffeine_lang/types/ast.{BasicType, QueryTemplateType, Service, SliType}
 import caffeine_lang/types/generic_dictionary
 import caffeine_lang/types/specification_types.{
   QueryTemplateTypeUnresolved, ServiceUnresolved, SliTypeUnresolved,
@@ -12,14 +10,8 @@ import gleam/result
 
 pub fn resolve_unresolved_sli_type_test() {
   let basic_types = [
-    BasicType(
-      attribute_name: "a",
-      attribute_type: accepted_types.Integer,
-    ),
-    BasicType(
-      attribute_name: "b",
-      attribute_type: accepted_types.Integer,
-    ),
+    BasicType(attribute_name: "a", attribute_type: accepted_types.Integer),
+    BasicType(attribute_name: "b", attribute_type: accepted_types.Integer),
   ]
   let query_template =
     QueryTemplateType(
@@ -86,14 +78,8 @@ pub fn resolve_unresolved_sli_type_test() {
 
 pub fn resolve_unresolved_sli_type_error_test() {
   let basic_types = [
-    BasicType(
-      attribute_name: "a",
-      attribute_type: accepted_types.Integer,
-    ),
-    BasicType(
-      attribute_name: "b",
-      attribute_type: accepted_types.Integer,
-    ),
+    BasicType(attribute_name: "a", attribute_type: accepted_types.Integer),
+    BasicType(attribute_name: "b", attribute_type: accepted_types.Integer),
   ]
   let query_template =
     QueryTemplateType(
@@ -246,15 +232,9 @@ pub fn resolve_unresolved_service_error_test() {
 
 pub fn link_and_validate_specification_sub_parts_test() {
   let basic_type_a =
-    BasicType(
-      attribute_name: "a",
-      attribute_type: accepted_types.Integer,
-    )
+    BasicType(attribute_name: "a", attribute_type: accepted_types.Integer)
   let basic_type_b =
-    BasicType(
-      attribute_name: "b",
-      attribute_type: accepted_types.Integer,
-    )
+    BasicType(attribute_name: "b", attribute_type: accepted_types.Integer)
 
   let query_template_filters = [
     basic_type_a,

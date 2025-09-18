@@ -1,9 +1,0 @@
-filters:
-  - attribute_name: team_name
-    attribute_type: String
-    required: true
-  - attribute_name: number_of_users
-    attribute_type: Integer
-    required: true
-  - attribute_name: accepted_status_codes
-    required: false

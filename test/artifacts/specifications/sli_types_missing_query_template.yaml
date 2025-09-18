@@ -1,5 +1,7 @@
 types:
-  - name: latency
+  - name: error_rate
+    metric_attributes:
+      numerator_query: ""
+      denominator_query: ""
     filters:
-      - team_name
-      - accepted_status_codes
+      - number_of_users

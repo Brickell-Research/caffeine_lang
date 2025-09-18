@@ -25,31 +25,29 @@ pub fn new_typed_value(value: String, type_def: AcceptedTypes) -> TypedValue {
 /// Creates a new GenericDictionary from string values and their type definitions
 pub fn from_string_dict(
   values: dict.Dict(String, String),
-  type_defs: dict.Dict(String, AcceptedTypes)
+  type_defs: dict.Dict(String, AcceptedTypes),
 ) -> Result(GenericDictionary, String) {
   let result_dict = dict.new()
-  
+
   let insert_typed = fn(acc, key, value) {
     case dict.get(type_defs, key) {
       Ok(type_def) -> {
         dict.insert(acc, key, new_typed_value(value, type_def))
       }
-      Error(_) -> acc // Skip keys without type definitions
+      Error(_) -> acc
+      // Skip keys without type definitions
     }
   }
-  
+
   let entries = dict.fold(values, result_dict, insert_typed)
   Ok(GenericDictionary(entries: entries))
 }
 
 /// Gets a typed value from the dictionary
-pub fn get(
-  dict: GenericDictionary,
-  key: String
-) -> Result(TypedValue, String) {
+pub fn get(dict: GenericDictionary, key: String) -> Result(TypedValue, String) {
   dict.entries
-    |> dict.get(key)
-    |> result.replace_error("Key not found: " <> key)
+  |> dict.get(key)
+  |> result.replace_error("Key not found: " <> key)
 }
 
 /// Gets the string value from a TypedValue
@@ -68,5 +66,5 @@ pub fn to_string_dict(dict: GenericDictionary) -> dict.Dict(String, String) {
     typed_value.value
   }
   dict.entries
-    |> dict.map_values(extract_value)
+  |> dict.map_values(extract_value)
 }

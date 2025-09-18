@@ -36,11 +36,9 @@ pub fn link_specification_and_instantiation(
     ),
   )
 
-  use basic_types <- result.try(
-    parse_basic_types_specification(
-      specification_directory <> "/basic_types.yaml",
-    ),
-  )
+  use basic_types <- result.try(parse_basic_types_specification(
+    specification_directory <> "/basic_types.yaml",
+  ))
 
   use query_template_types_unresolved <- result.try(
     parse_unresolved_query_template_types_specification(

@@ -1,6 +1,5 @@
 types:
-  - name: latency
+  - name: error_rate
     query_template_type: good_over_bad
     filters:
-      - team_name
-      - accepted_status_codes
+      - number_of_users

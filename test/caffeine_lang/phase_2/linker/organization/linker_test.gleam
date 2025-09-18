@@ -1,7 +1,7 @@
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/types/accepted_types.{Integer}
 import caffeine_lang/types/ast.{
-  Organization, BasicType, QueryTemplateType, Service, SliType, Team,
+  BasicType, Organization, QueryTemplateType, Service, SliType, Team,
 }
 import caffeine_lang/types/generic_dictionary
 import gleam/dict
@@ -65,7 +65,7 @@ pub fn link_specification_and_instantiation_test() {
         dict.from_list([
           #(
             "number_of_users",
-            generic_dictionary.TypedValue("100", accepted_types.Integer),
+            generic_dictionary.TypedValue("100_000", accepted_types.Integer),
           ),
         ]),
       ),
@@ -73,27 +73,29 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_basic_type =
-    BasicType(
-      attribute_name: "number_of_users",
-      attribute_type: Integer,
-    )
+    BasicType(attribute_name: "number_of_users", attribute_type: Integer)
 
   let expected_query_template_type =
-    QueryTemplateType(
-      name: "good_over_bad",
-      specification_of_query_templates: [expected_basic_type],
-    )
+    QueryTemplateType(name: "good_over_bad", specification_of_query_templates: [
+      expected_basic_type,
+    ])
 
-  let expected_typed_instatiation = 
+  let expected_typed_instatiation =
     generic_dictionary.from_string_dict(
       dict.from_list([
-        #("numerator_query", ""),
-        #("denominator_query", "")
+        #(
+          "numerator_query",
+          "max:(successful_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})",
+        ),
+        #(
+          "denominator_query",
+          "max:(total_requests from{service=\"frontend\", number_of_users=$$number_of_users$$})",
+        ),
       ]),
       dict.from_list([
         #("numerator_query", accepted_types.String),
-        #("denominator_query", accepted_types.String)
-      ])
+        #("denominator_query", accepted_types.String),
+      ]),
     )
     |> result.unwrap(generic_dictionary.new())
 
