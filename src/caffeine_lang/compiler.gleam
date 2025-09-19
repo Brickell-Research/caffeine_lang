@@ -7,10 +7,12 @@ import gleam/io
 pub fn compile(
   specification_directory: String,
   instantiation_directory: String,
+  output_directory: String,
 ) -> Nil {
   io.println("1️⃣ Compiling...")
   io.println("\tSpecification directory: " <> specification_directory)
   io.println("\tInstantiation directory: " <> instantiation_directory)
+  io.println("\tOutput directory: " <> output_directory)
   let organization_result =
     linker.link_specification_and_instantiation(
       specification_directory,
@@ -30,7 +32,8 @@ pub fn compile(
           case resolved_slos {
             Ok(resolved_slos) -> {
               io.println("5️⃣ Generating...")
-              let _generated = generator.generate(resolved_slos, "./")
+              let _generated =
+                generator.generate(resolved_slos, output_directory)
               io.println("🎉Generated successfully!")
             }
             Error(e) -> {

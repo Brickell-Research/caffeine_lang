@@ -7,7 +7,7 @@ fn print_usage() -> Nil {
   io.println("")
   io.println("Usage:")
   io.println(
-    "  caffeine compile <specification_directory> <instantiation_directory>",
+    "  caffeine compile <specification_directory> <instantiation_directory> <output_directory>",
   )
   io.println("")
   io.println("Arguments:")
@@ -17,21 +17,22 @@ fn print_usage() -> Nil {
   io.println(
     "  instantiation_directory   Directory containing instantiation files",
   )
+  io.println("  output_directory          Directory to output compiled files")
 }
 
 pub fn main() -> Nil {
   let args = argv.load().arguments
 
   case args {
-    ["compile", spec_dir, inst_dir] -> {
-      compiler.compile(spec_dir, inst_dir)
+    ["compile", spec_dir, inst_dir, output_dir] -> {
+      compiler.compile(spec_dir, inst_dir, output_dir)
     }
     ["compile"] -> {
-      io.println_error("Error: compile command requires 2 arguments")
+      io.println_error("Error: compile command requires 3 arguments")
       print_usage()
     }
     ["compile", ..] -> {
-      io.println_error("Error: compile command requires exactly 2 arguments")
+      io.println_error("Error: compile command requires exactly 3 arguments")
       print_usage()
     }
     ["--help"] | ["-h"] | [] -> {
