@@ -12,14 +12,8 @@ pub fn set_resource_comment_header_test() {
 
 pub fn resource_threshold_test() {
   let expected =
-    "thresholds {\n    timeframe = \"30d\"\n    target    = 0.95\n  }"
-  let actual = datadog.resource_threshold(0.95)
-  assert actual == expected
-}
-
-pub fn resource_time_frame_test() {
-  let expected = "timeframe = \"30d\""
-  let actual = datadog.resource_time_frame()
+    "thresholds {\n    timeframe = \"45d\"\n    target    = 0.95\n  }"
+  let actual = datadog.resource_threshold(0.95, 45)
   assert actual == expected
 }
 

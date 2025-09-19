@@ -2,6 +2,7 @@ import caffeine_lang/types/ast
 import caffeine_lang/types/intermediate_representation.{type ResolvedSlo}
 import gleam/dict
 import gleam/float
+import gleam/int
 import gleam/list
 import gleam/string
 
@@ -93,16 +94,11 @@ pub fn resource_description() -> String {
   "description = \"SLO created by caffeine\""
 }
 
-pub fn resource_threshold(threshold: Float) -> String {
+pub fn resource_threshold(threshold: Float, time_window_in_days: Int) -> String {
   "thresholds {
-    timeframe = \"30d\"
+    timeframe = \"" <> int.to_string(time_window_in_days) <> "d\"
     target    = " <> float.to_string(threshold) <> "
   }"
-}
-
-// TODO: allow this to be configurable
-pub fn resource_time_frame() -> String {
-  "timeframe = \"30d\""
 }
 
 pub fn resource_target_threshold(threshold: Float) -> String {
@@ -149,7 +145,7 @@ pub fn full_resource_body(slo: ResolvedSlo) -> String {
     )
   let resource_type = resource_type(slo.sli.query_template_type)
   let resource_description = resource_description()
-  let resource_threshold = resource_threshold(slo.threshold)
+  let resource_threshold = resource_threshold(slo.threshold, slo.window_in_days)
   let slo_specification = slo_specification(slo)
   let resource_name =
     resource_name(
