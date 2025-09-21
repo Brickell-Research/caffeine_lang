@@ -1,6 +1,6 @@
+import caffeine_lang/errors/semantic as semantic_errors
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/phase_3/semantic
-import caffeine_lang/phase_3/semantic/errors as semantic_errors
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/phase_5/terraform/generator
 import gleam/io

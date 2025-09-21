@@ -1,5 +1,5 @@
-import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/types/ast/query_template_type
+import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/float
 import gleam/int
@@ -107,7 +107,7 @@ pub fn resource_target_threshold(threshold: Float) -> String {
   "target = " <> float.to_string(threshold)
 }
 
-pub fn slo_specification(slo: resolved_types.ResolvedSlo) -> String {
+pub fn slo_specification(slo: resolved_slo.Slo) -> String {
   let metric_attributes =
     slo.sli.metric_attributes
     |> dict.keys()
@@ -136,7 +136,7 @@ pub fn get_tags(
   <> "\"]"
 }
 
-pub fn full_resource_body(slo: resolved_types.ResolvedSlo) -> String {
+pub fn full_resource_body(slo: resolved_slo.Slo) -> String {
   let comment_header =
     set_resource_comment_header(slo.team_name, slo.sli.query_template_type.name)
   let resource_top_line =

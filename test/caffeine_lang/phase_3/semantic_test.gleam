@@ -1,13 +1,13 @@
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/errors/semantic as semantic_errors
+import caffeine_lang/phase_3/semantic
 import caffeine_lang/types/ast/organization
-import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/ast/service
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/phase_3/semantic
-import caffeine_lang/phase_3/semantic/errors as semantic_errors
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
 import gleam/dict
 import gleam/result
 

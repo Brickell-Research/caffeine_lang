@@ -1,14 +1,15 @@
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/phase_4/slo_resolver
+import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
-import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/ast/service
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/phase_4/resolved/types as resolved_types
-import caffeine_lang/phase_4/slo_resolver
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/resolved/resolved_sli
+import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/result
 
@@ -105,7 +106,7 @@ pub fn resolve_sli_test() {
     ])
 
   let expected =
-    Ok(resolved_types.ResolvedSli(
+    Ok(resolved_sli.Sli(
       query_template_type: input_sli_type.query_template_type,
       metric_attributes: expected_metric_attrs,
     ))
@@ -125,12 +126,12 @@ pub fn resolve_slo_test() {
   let input_sli_type = example_sli_type()
 
   let expected =
-    Ok(resolved_types.ResolvedSlo(
+    Ok(resolved_slo.Slo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: resolved_types.ResolvedSli(
+      sli: resolved_sli.Sli(
         query_template_type: input_sli_type.query_template_type,
         metric_attributes: dict.from_list([
           #(
@@ -171,12 +172,12 @@ pub fn resolve_slos_test() {
 
   let expected =
     Ok([
-      resolved_types.ResolvedSlo(
+      resolved_slo.Slo(
         window_in_days: 30,
         threshold: 99.5,
         service_name: "super_scalabale_web_service",
         team_name: "badass_platform_team",
-        sli: resolved_types.ResolvedSli(
+        sli: resolved_sli.Sli(
           query_template_type: example_sli_type().query_template_type,
           metric_attributes: dict.from_list([
             #(

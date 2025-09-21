@@ -1,8 +1,9 @@
-import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/resolved/resolved_sli
+import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -71,12 +72,12 @@ pub fn slo_specification_test() {
   let expected =
     "query {\n    denominator = \"#{denominator_query}\"\n    numerator = \"#{numerator_query}\"\n  }\n"
   let actual =
-    datadog.slo_specification(resolved_types.ResolvedSlo(
+    datadog.slo_specification(resolved_slo.Slo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: resolved_types.ResolvedSli(
+      sli: resolved_sli.Sli(
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
@@ -121,12 +122,12 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
 }"
 
   let actual =
-    datadog.full_resource_body(resolved_types.ResolvedSlo(
+    datadog.full_resource_body(resolved_slo.Slo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: resolved_types.ResolvedSli(
+      sli: resolved_sli.Sli(
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
