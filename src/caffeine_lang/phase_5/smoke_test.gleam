@@ -1,9 +1,9 @@
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/ast/organization
 import gleam/io
 import simplifile
 
 pub fn generate(
-  _organization: ast_types.Organization,
+  _organization: organization.Organization,
   output_directory: String,
 ) -> Result(Nil, simplifile.FileError) {
   io.println("Writing to file " <> output_directory <> "/generated.txt")

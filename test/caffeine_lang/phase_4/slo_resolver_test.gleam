@@ -1,6 +1,12 @@
-import caffeine_lang/common_types/accepted_types
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/service
+import caffeine_lang/types/ast/sli_type
+import caffeine_lang/types/ast/slo
+import caffeine_lang/types/ast/query_template_type
+import caffeine_lang/types/ast/basic_type
 import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/phase_4/slo_resolver
 import gleam/dict
@@ -22,8 +28,8 @@ fn example_filters() -> generic_dictionary.GenericDictionary {
   |> result.unwrap(generic_dictionary.new())
 }
 
-fn example_slo() -> ast_types.Slo {
-  ast_types.Slo(
+fn example_slo() -> slo.Slo {
+  slo.Slo(
     typed_instatiation_of_query_templatized_variables: example_filters(),
     threshold: 99.5,
     sli_type: "good_over_bad",
@@ -32,17 +38,17 @@ fn example_slo() -> ast_types.Slo {
   )
 }
 
-fn example_sli_type() -> ast_types.SliType {
-  ast_types.SliType(
+fn example_sli_type() -> sli_type.SliType {
+  sli_type.SliType(
     name: "good_over_bad",
-    query_template_type: ast_types.QueryTemplateType(
+    query_template_type: query_template_type.QueryTemplateType(
       name: "good_over_bad",
       specification_of_query_templates: [
-        ast_types.BasicType(
+        basic_type.BasicType(
           attribute_name: "numerator_query",
           attribute_type: accepted_types.String,
         ),
-        ast_types.BasicType(
+        basic_type.BasicType(
           attribute_name: "denominator_query",
           attribute_type: accepted_types.String,
         ),
@@ -66,15 +72,15 @@ fn example_sli_type() -> ast_types.SliType {
     )
       |> result.unwrap(generic_dictionary.new()),
     specification_of_query_templatized_variables: [
-      ast_types.BasicType(
+      basic_type.BasicType(
         attribute_name: "service",
         attribute_type: accepted_types.String,
       ),
-      ast_types.BasicType(
+      basic_type.BasicType(
         attribute_name: "environment",
         attribute_type: accepted_types.String,
       ),
-      ast_types.BasicType(
+      basic_type.BasicType(
         attribute_name: "requests_valid",
         attribute_type: accepted_types.Boolean,
       ),
@@ -149,12 +155,12 @@ pub fn resolve_slo_test() {
 
 pub fn resolve_slos_test() {
   let input_organization =
-    ast_types.Organization(
+    organization.Organization(
       teams: [
-        ast_types.Team(name: "badass_platform_team", slos: [example_slo()]),
+        team.Team(name: "badass_platform_team", slos: [example_slo()]),
       ],
       service_definitions: [
-        ast_types.Service(
+        service.Service(
           name: "super_scalabale_web_service",
           supported_sli_types: [
             example_sli_type(),

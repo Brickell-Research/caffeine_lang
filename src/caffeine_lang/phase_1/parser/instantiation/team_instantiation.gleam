@@ -1,6 +1,7 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/phase_1/unresolved/types as unresolved_types
+import caffeine_lang/types/unresolved/unresolved_team
+import caffeine_lang/types/unresolved/unresolved_slo
 import glaml
 import gleam/dict
 import gleam/result
@@ -11,7 +12,7 @@ import gleam/result
 /// the same team and even the same service. Logic for this lives within the linking code.
 pub fn parse_team_instantiation(
   file_path: String,
-) -> Result(unresolved_types.UnresolvedTeam, String) {
+) -> Result(unresolved_team.Team, String) {
   use params <- result.try(general_common.extract_params_from_file_path(
     file_path,
   ))
@@ -19,13 +20,13 @@ pub fn parse_team_instantiation(
 
   use slos <- result.try(parse_slos_instantiation(file_path, params))
 
-  Ok(unresolved_types.UnresolvedTeam(name: team_name, slos: slos))
+  Ok(unresolved_team.Team(name: team_name, slos: slos))
 }
 
 pub fn parse_slos_instantiation(
   file_path: String,
   params: dict.Dict(String, String),
-) -> Result(List(unresolved_types.UnresolvedSlo), String) {
+) -> Result(List(unresolved_slo.Slo), String) {
   glaml_helpers.parse_specification(file_path, params, parse_slo, "slos")
 }
 
@@ -34,7 +35,7 @@ pub fn parse_slos_instantiation(
 fn parse_slo(
   slo: glaml.Node,
   params: dict.Dict(String, String),
-) -> Result(unresolved_types.UnresolvedSlo, String) {
+) -> Result(unresolved_slo.Slo, String) {
   use sli_type <- result.try(glaml_helpers.extract_string_from_node(
     slo,
     "sli_type",
@@ -56,7 +57,7 @@ fn parse_slo(
 
   let assert Ok(service_name) = dict.get(params, "service_name")
 
-  Ok(unresolved_types.UnresolvedSlo(
+  Ok(unresolved_slo.Slo(
     sli_type: sli_type,
     typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: threshold,

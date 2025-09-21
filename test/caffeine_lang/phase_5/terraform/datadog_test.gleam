@@ -1,7 +1,8 @@
-import caffeine_lang/common_types/accepted_types
-import caffeine_lang/phase_2/ast/types as ast_types
 import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/phase_5/terraform/datadog
+import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/ast/query_template_type
+import caffeine_lang/types/common/accepted_types
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -59,7 +60,7 @@ pub fn tf_resource_name_test() {
 pub fn resource_type_test() {
   let expected = "type        = \"metric\""
   let actual =
-    datadog.resource_type(ast_types.QueryTemplateType(
+    datadog.resource_type(query_template_type.QueryTemplateType(
       specification_of_query_templates: [],
       name: "good_over_bad",
     ))
@@ -76,13 +77,13 @@ pub fn slo_specification_test() {
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_types.ResolvedSli(
-        query_template_type: ast_types.QueryTemplateType(
+        query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
-            ast_types.BasicType(
+            basic_type.BasicType(
               attribute_name: "numerator_query",
               attribute_type: accepted_types.String,
             ),
-            ast_types.BasicType(
+            basic_type.BasicType(
               attribute_name: "denominator_query",
               attribute_type: accepted_types.String,
             ),
@@ -126,13 +127,13 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_types.ResolvedSli(
-        query_template_type: ast_types.QueryTemplateType(
+        query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
-            ast_types.BasicType(
+            basic_type.BasicType(
               attribute_name: "numerator_query",
               attribute_type: accepted_types.String,
             ),
-            ast_types.BasicType(
+            basic_type.BasicType(
               attribute_name: "denominator_query",
               attribute_type: accepted_types.String,
             ),

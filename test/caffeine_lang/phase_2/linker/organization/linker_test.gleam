@@ -1,6 +1,12 @@
-import caffeine_lang/common_types/accepted_types
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/service
+import caffeine_lang/types/ast/sli_type
+import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/ast/query_template_type
+import caffeine_lang/types/ast/slo
 import caffeine_lang/phase_2/linker/organization/linker
 import gleam/dict
 import gleam/list
@@ -39,7 +45,7 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_slo_reliable_service =
-    ast_types.Slo(
+    slo.Slo(
       threshold: 99.9,
       sli_type: "success_rate",
       service_name: "reliable_service",
@@ -61,20 +67,17 @@ pub fn link_specification_and_instantiation_test() {
       window_in_days: 7,
     )
 
-  let expected_basic_type_1 =
-    ast_types.BasicType(
+  let expected_basic_type_1 = basic_type.BasicType(
       attribute_name: "environment",
       attribute_type: accepted_types.String,
     )
 
-  let expected_basic_type_2 =
-    ast_types.BasicType(
+  let expected_basic_type_2 = basic_type.BasicType(
       attribute_name: "graphql_operation_name",
       attribute_type: accepted_types.String,
     )
 
-  let expected_query_template_type =
-    ast_types.QueryTemplateType(
+  let expected_query_template_type = query_template_type.QueryTemplateType(
       name: "valid_over_total",
       specification_of_query_templates: [
         expected_basic_type_2,
@@ -101,8 +104,7 @@ pub fn link_specification_and_instantiation_test() {
     )
     |> result.unwrap(generic_dictionary.new())
 
-  let expected_sli_type =
-    ast_types.SliType(
+  let expected_sli_type = sli_type.SliType(
       name: "success_rate",
       query_template_type: expected_query_template_type,
       typed_instatiation_of_query_templates: expected_typed_instatiation,
@@ -114,14 +116,14 @@ pub fn link_specification_and_instantiation_test() {
 
   let expected =
     Ok(
-      ast_types.Organization(
+      organization.Organization(
         service_definitions: [
-          ast_types.Service(name: "reliable_service", supported_sli_types: [
+          service.Service(name: "reliable_service", supported_sli_types: [
             expected_sli_type,
           ]),
         ],
         teams: [
-          ast_types.Team(name: "platform", slos: [expected_slo_reliable_service]),
+          team.Team(name: "platform", slos: [expected_slo_reliable_service]),
         ],
       ),
     )

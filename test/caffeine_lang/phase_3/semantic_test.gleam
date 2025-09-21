@@ -1,21 +1,26 @@
-import caffeine_lang/common_types/accepted_types
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/service
+import caffeine_lang/types/ast/sli_type
+import caffeine_lang/types/ast/slo
+import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/phase_3/semantic
 import caffeine_lang/phase_3/semantic/errors as semantic_errors
 import gleam/dict
 import gleam/result
 
-fn team_1() -> ast_types.Team {
-  ast_types.Team(name: "team1", slos: [
-    ast_types.Slo(
+fn team_1() -> team.Team {
+  team.Team(name: "team1", slos: [
+    slo.Slo(
       typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
       service_name: "team1",
       window_in_days: 30,
     ),
-    ast_types.Slo(
+    slo.Slo(
       typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
@@ -27,7 +32,7 @@ fn team_1() -> ast_types.Team {
 
 pub fn validate_services_from_instantiation_failure_test() {
   let organization =
-    ast_types.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_1()])
 
   let actual = semantic.validate_services_from_instantiation(organization)
   let expected =
@@ -40,10 +45,10 @@ pub fn validate_services_from_instantiation_failure_test() {
 
 pub fn validate_services_from_instantiation_success_test() {
   let organization =
-    ast_types.Organization(
+    organization.Organization(
       service_definitions: [
-        ast_types.Service(name: "team1", supported_sli_types: []),
-        ast_types.Service(name: "team2", supported_sli_types: []),
+        service.Service(name: "team1", supported_sli_types: []),
+        service.Service(name: "team2", supported_sli_types: []),
       ],
       teams: [team_1()],
     )
@@ -56,7 +61,7 @@ pub fn validate_services_from_instantiation_success_test() {
 
 pub fn validate_sli_types_exist_from_instantiation_failure_test() {
   let organization =
-    ast_types.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_1()])
 
   let actual =
     semantic.validate_sli_types_exist_from_instantiation(organization)
@@ -70,12 +75,12 @@ pub fn validate_sli_types_exist_from_instantiation_failure_test() {
 
 pub fn validate_sli_types_exist_from_instantiation_success_test() {
   let organization =
-    ast_types.Organization(
+    organization.Organization(
       service_definitions: [
-        ast_types.Service(name: "team1", supported_sli_types: [
-          ast_types.SliType(
+        service.Service(name: "team1", supported_sli_types: [
+          sli_type.SliType(
             name: "availability",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -92,9 +97,9 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
               |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
-          ast_types.SliType(
+          sli_type.SliType(
             name: "latency",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -125,16 +130,16 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
 
 pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
   let organization =
-    ast_types.Organization(service_definitions: [], teams: [
-      ast_types.Team(name: "team1", slos: [
-        ast_types.Slo(
+    organization.Organization(service_definitions: [], teams: [
+      team.Team(name: "team1", slos: [
+        slo.Slo(
           typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
           threshold: 101.0,
           sli_type: "availability",
           service_name: "team1",
           window_in_days: 30,
         ),
-        ast_types.Slo(
+        slo.Slo(
           typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
           threshold: -1.0,
           sli_type: "availability",
@@ -156,7 +161,7 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
 
 pub fn validate_slos_thresholds_reasonable_from_instantiation_success_test() {
   let organization =
-    ast_types.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_1()])
 
   let actual =
     semantic.validate_slos_thresholds_reasonable_from_instantiation(
@@ -169,12 +174,12 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_success_test() {
 
 pub fn perform_semantic_analysis_test() {
   let organization =
-    ast_types.Organization(
+    organization.Organization(
       service_definitions: [
-        ast_types.Service(name: "team1", supported_sli_types: [
-          ast_types.SliType(
+        service.Service(name: "team1", supported_sli_types: [
+          sli_type.SliType(
             name: "availability",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -191,9 +196,9 @@ pub fn perform_semantic_analysis_test() {
               |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
-          ast_types.SliType(
+          sli_type.SliType(
             name: "latency",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -211,10 +216,10 @@ pub fn perform_semantic_analysis_test() {
             specification_of_query_templatized_variables: [],
           ),
         ]),
-        ast_types.Service(name: "team2", supported_sli_types: [
-          ast_types.SliType(
+        service.Service(name: "team2", supported_sli_types: [
+          sli_type.SliType(
             name: "availability",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -231,9 +236,9 @@ pub fn perform_semantic_analysis_test() {
               |> result.unwrap(generic_dictionary.new()),
             specification_of_query_templatized_variables: [],
           ),
-          ast_types.SliType(
+          sli_type.SliType(
             name: "latency",
-            query_template_type: ast_types.QueryTemplateType(
+            query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
             ),
@@ -263,7 +268,7 @@ pub fn perform_semantic_analysis_test() {
 
 pub fn perform_semantic_analysis_failure_test() {
   let organization =
-    ast_types.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_1()])
 
   let actual = semantic.perform_semantic_analysis(organization)
   let expected =

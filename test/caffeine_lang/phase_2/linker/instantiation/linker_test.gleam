@@ -1,7 +1,13 @@
-import caffeine_lang/common_types/accepted_types
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_1/unresolved/types as unresolved_types
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/unresolved/unresolved_team
+import caffeine_lang/types/unresolved/unresolved_slo
+import caffeine_lang/types/ast/slo
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/service
+import caffeine_lang/types/ast/sli_type
+import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/phase_2/linker/instantiation/linker
 import gleam/dict
 import gleam/list
@@ -9,7 +15,7 @@ import gleam/string
 
 pub fn aggregate_teams_and_slos_test() {
   let slo_a =
-    ast_types.Slo(
+    slo.Slo(
       typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.9,
       sli_type: "sli_type_a",
@@ -18,7 +24,7 @@ pub fn aggregate_teams_and_slos_test() {
     )
 
   let slo_b =
-    ast_types.Slo(
+    slo.Slo(
       typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.8,
       sli_type: "sli_type_b",
@@ -27,7 +33,7 @@ pub fn aggregate_teams_and_slos_test() {
     )
 
   let slo_c =
-    ast_types.Slo(
+    slo.Slo(
       typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
       threshold: 0.7,
       sli_type: "sli_type_c",
@@ -35,17 +41,17 @@ pub fn aggregate_teams_and_slos_test() {
       window_in_days: 30,
     )
 
-  let team_a_service_a = ast_types.Team(name: "team_a", slos: [slo_a])
-  let team_a_service_b = ast_types.Team(name: "team_a", slos: [slo_b])
-  let team_b_service_c = ast_types.Team(name: "team_b", slos: [slo_c])
+  let team_a_service_a = team.Team(name: "team_a", slos: [slo_a])
+  let team_a_service_b = team.Team(name: "team_a", slos: [slo_b])
+  let team_b_service_c = team.Team(name: "team_b", slos: [slo_c])
 
   let teams = [team_a_service_a, team_a_service_b, team_b_service_c]
 
   let actual = linker.aggregate_teams_and_slos(teams)
 
   let expected = [
-    ast_types.Team(name: "team_a", slos: [slo_b, slo_a]),
-    ast_types.Team(name: "team_b", slos: [slo_c]),
+    team.Team(name: "team_a", slos: [slo_b, slo_a]),
+    team.Team(name: "team_b", slos: [slo_c]),
   ]
 
   assert list.sort(actual, fn(a, b) { string.compare(a.name, b.name) })
@@ -71,11 +77,11 @@ pub fn resolve_filters_test() {
       #("list_string_key", "[\"string_value\"]"),
     ])
   let specification_filters = [
-    ast_types.BasicType("string_key", accepted_types.String),
-    ast_types.BasicType("int_key", accepted_types.Integer),
-    ast_types.BasicType("decimal_key", accepted_types.Decimal),
-    ast_types.BasicType("boolean_key", accepted_types.Boolean),
-    ast_types.BasicType(
+    basic_type.BasicType("string_key", accepted_types.String),
+    basic_type.BasicType("int_key", accepted_types.Integer),
+    basic_type.BasicType("decimal_key", accepted_types.Decimal),
+    basic_type.BasicType("boolean_key", accepted_types.Boolean),
+    basic_type.BasicType(
       "list_string_key",
       accepted_types.List(accepted_types.String),
     ),
@@ -120,15 +126,15 @@ pub fn resolve_filters_test() {
 
 pub fn resolve_slo_test() {
   let query_template_type_a =
-    ast_types.QueryTemplateType(
+    query_template_type.QueryTemplateType(
       specification_of_query_templates: [
-        ast_types.BasicType("key", accepted_types.String),
+        basic_type.BasicType("key", accepted_types.String),
       ],
       name: "query_template_type_a",
     )
 
   let sli_type_a_filters = [
-    ast_types.BasicType("key", accepted_types.String),
+    basic_type.BasicType("key", accepted_types.String),
   ]
 
   let service_a_filters =
@@ -137,7 +143,7 @@ pub fn resolve_slo_test() {
     ])
 
   let service_a_sli_type =
-    ast_types.SliType(
+    sli_type.SliType(
       name: "sli_type_a",
       query_template_type: query_template_type_a,
       specification_of_query_templatized_variables: sli_type_a_filters,
@@ -145,13 +151,13 @@ pub fn resolve_slo_test() {
     )
 
   let service_a =
-    ast_types.Service(name: "service_a", supported_sli_types: [
+    service.Service(name: "service_a", supported_sli_types: [
       service_a_sli_type,
     ])
 
   let actual =
     linker.resolve_slo(
-      unresolved_types.UnresolvedSlo(
+      unresolved_slo.Slo(
         typed_instatiation_of_query_templatized_variables: service_a_filters,
         threshold: 0.9,
         sli_type: "sli_type_a",
@@ -169,7 +175,7 @@ pub fn resolve_slo_test() {
     )
 
   let expected =
-    Ok(ast_types.Slo(
+    Ok(slo.Slo(
       typed_instatiation_of_query_templatized_variables: expected_filters,
       threshold: 0.9,
       sli_type: "sli_type_a",
@@ -182,11 +188,11 @@ pub fn resolve_slo_test() {
 
 pub fn link_and_validate_instantiation_test() {
   let sli_type_a_filters = [
-    ast_types.BasicType("key", accepted_types.String),
+    basic_type.BasicType("key", accepted_types.String),
   ]
 
   let query_template_type_a =
-    ast_types.QueryTemplateType(
+    query_template_type.QueryTemplateType(
       specification_of_query_templates: sli_type_a_filters,
       name: "query_template_type_a",
     )
@@ -197,7 +203,7 @@ pub fn link_and_validate_instantiation_test() {
     ])
 
   let service_a_sli_type =
-    ast_types.SliType(
+    sli_type.SliType(
       name: "sli_type_a",
       query_template_type: query_template_type_a,
       specification_of_query_templatized_variables: sli_type_a_filters,
@@ -205,14 +211,14 @@ pub fn link_and_validate_instantiation_test() {
     )
 
   let service_a =
-    ast_types.Service(name: "service_a", supported_sli_types: [
+    service.Service(name: "service_a", supported_sli_types: [
       service_a_sli_type,
     ])
 
   let actual =
     linker.link_and_validate_instantiation(
-      unresolved_types.UnresolvedTeam(name: "team_a", slos: [
-        unresolved_types.UnresolvedSlo(
+      unresolved_team.Team(name: "team_a", slos: [
+        unresolved_slo.Slo(
           typed_instatiation_of_query_templatized_variables: service_a_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",
@@ -232,8 +238,8 @@ pub fn link_and_validate_instantiation_test() {
 
   let expected =
     Ok(
-      ast_types.Team(name: "team_a", slos: [
-        ast_types.Slo(
+      team.Team(name: "team_a", slos: [
+        slo.Slo(
           typed_instatiation_of_query_templatized_variables: expected_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",

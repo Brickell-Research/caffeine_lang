@@ -1,5 +1,5 @@
-import caffeine_lang/phase_2/ast/types as ast_types
 import caffeine_lang/phase_4/resolved/types as resolved_types
+import caffeine_lang/types/ast/query_template_type
 import gleam/dict
 import gleam/float
 import gleam/int
@@ -82,9 +82,11 @@ pub fn tf_resource_name(
   <> " {"
 }
 
-pub fn resource_type(query_template_type: ast_types.QueryTemplateType) -> String {
+pub fn resource_type(
+  query_template_type: query_template_type.QueryTemplateType,
+) -> String {
   case query_template_type {
-    ast_types.QueryTemplateType(_metric_attributes, _name) ->
+    query_template_type.QueryTemplateType(_metric_attributes, _name) ->
       "type        = \"metric\""
   }
 }

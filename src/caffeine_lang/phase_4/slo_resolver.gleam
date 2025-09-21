@@ -1,5 +1,7 @@
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/slo
+import caffeine_lang/types/ast/sli_type 
 import caffeine_lang/phase_4/resolved/types as resolved_types
 import gleam/dict
 import gleam/list
@@ -7,7 +9,7 @@ import gleam/result
 import gleam/string
 
 pub fn resolve_slos(
-  organization: ast_types.Organization,
+  organization: organization.Organization,
 ) -> Result(List(resolved_types.ResolvedSlo), String) {
   let sli_types =
     organization.service_definitions
@@ -27,9 +29,9 @@ pub fn resolve_slos(
 }
 
 pub fn resolve_slo(
-  slo: ast_types.Slo,
+  slo: slo.Slo,
   team_name: String,
-  sli_types: List(ast_types.SliType),
+  sli_types: List(sli_type.SliType),
 ) -> Result(resolved_types.ResolvedSlo, String) {
   let assert Ok(sli_type) =
     sli_types
@@ -54,7 +56,7 @@ pub fn resolve_slo(
 
 pub fn resolve_sli(
   filters: dict.Dict(String, String),
-  sli_type: ast_types.SliType,
+  sli_type: sli_type.SliType,
 ) -> Result(resolved_types.ResolvedSli, String) {
   let resolved_queries =
     sli_type.typed_instatiation_of_query_templates

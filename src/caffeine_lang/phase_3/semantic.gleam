@@ -12,13 +12,14 @@
 //// (13) Warn on unused sli types, sli filters, and services.
 //// (14) Normalize team names, service names, sli type names, sli filter names, and sli filter attribute names to lowercase.
 
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/slo 
 import caffeine_lang/phase_3/semantic/errors as semantic_errors
 import gleam/list
 
 fn slos_filtered_attribute(
-  organization: ast_types.Organization,
-  extract_fn: fn(ast_types.Slo) -> a,
+  organization: organization.Organization,
+  extract_fn: fn(slo.Slo) -> a,
   predicate_fn: fn(a) -> Bool,
 ) -> List(a) {
   organization.teams
@@ -29,7 +30,7 @@ fn slos_filtered_attribute(
 }
 
 pub fn validate_services_from_instantiation(
-  organization: ast_types.Organization,
+  organization: organization.Organization,
 ) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let defined_services =
     organization.service_definitions
@@ -51,7 +52,7 @@ pub fn validate_services_from_instantiation(
 
 // TODO: fix this - it is incorrect as an sli type is tied to a service.
 pub fn validate_sli_types_exist_from_instantiation(
-  organization: ast_types.Organization,
+  organization: organization.Organization,
 ) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let defined_sli_types =
     organization.service_definitions
@@ -78,7 +79,7 @@ pub fn validate_sli_types_exist_from_instantiation(
 
 /// Ensure that all SLO thresholds are between 0 and 100.
 pub fn validate_slos_thresholds_reasonable_from_instantiation(
-  organization: ast_types.Organization,
+  organization: organization.Organization,
 ) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let invalid_thresholds =
     slos_filtered_attribute(
@@ -95,7 +96,7 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation(
 }
 
 pub fn perform_semantic_analysis(
-  organization: ast_types.Organization,
+  organization: organization.Organization,
 ) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   case validate_services_from_instantiation(organization) {
     Ok(_) -> {

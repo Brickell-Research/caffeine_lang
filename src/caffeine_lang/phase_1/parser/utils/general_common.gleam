@@ -1,4 +1,4 @@
-import caffeine_lang/common_types/accepted_types
+import caffeine_lang/types/common/accepted_types
 import gleam/dict
 import gleam/list
 import gleam/result

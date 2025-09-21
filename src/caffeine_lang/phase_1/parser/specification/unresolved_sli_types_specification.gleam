@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/phase_1/unresolved/types as unresolved_types
+import caffeine_lang/types/unresolved/unresolved_sli_type
 import glaml
 import gleam/dict
 import gleam/result
@@ -8,7 +8,7 @@ import gleam/result
 /// Given a specification file, returns a list of unresolved SLI types.
 pub fn parse_unresolved_sli_types_specification(
   file_path: String,
-) -> Result(List(unresolved_types.SliTypeUnresolved), String) {
+) -> Result(List(unresolved_sli_type.SliType), String) {
   glaml_helpers.parse_specification(
     file_path,
     dict.new(),
@@ -22,7 +22,7 @@ pub fn parse_unresolved_sli_types_specification(
 fn parse_sli_type(
   type_node: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(unresolved_types.SliTypeUnresolved, String) {
+) -> Result(unresolved_sli_type.SliType, String) {
   use name <- result.try(glaml_helpers.extract_string_from_node(
     type_node,
     "name",
@@ -44,7 +44,7 @@ fn parse_sli_type(
     ),
   )
 
-  Ok(unresolved_types.SliTypeUnresolved(
+  Ok(unresolved_sli_type.SliType(
     name: name,
     query_template_type: query_template_type,
     typed_instatiation_of_query_templates: typed_instatiation_of_query_templates,

@@ -1,6 +1,10 @@
-import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_1/unresolved/types as unresolved_types
-import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/unresolved/unresolved_team
+import caffeine_lang/types/unresolved/unresolved_slo
+import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/ast/slo
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/service 
 import gleam/dict
 import gleam/list
 import gleam/option
@@ -10,8 +14,8 @@ import gleam/result
 /// Given a list of teams which map to single service SLOs, we want to aggregate all SLOs for a single team
 /// into a single team object.
 pub fn aggregate_teams_and_slos(
-  teams: List(ast_types.Team),
-) -> List(ast_types.Team) {
+  teams: List(team.Team),
+) -> List(team.Team) {
   let dict_of_teams =
     list.fold(teams, dict.new(), fn(acc, team) {
       dict.upsert(acc, team.name, fn(existing_teams) {
@@ -25,19 +29,18 @@ pub fn aggregate_teams_and_slos(
   dict.fold(dict_of_teams, [], fn(acc, team_name, teams_list) {
     let all_slos =
       teams_list
-      |> list.map(fn(team) { team.slos })
-      |> list.flatten
+      |> list.fold([], fn(acc, t) { list.append(acc, t.slos) })
 
-    let aggregated_team = ast_types.Team(name: team_name, slos: all_slos)
+    let aggregated_team = team.Team(name: team_name, slos: all_slos)
 
     [aggregated_team, ..acc]
   })
 }
 
 pub fn link_and_validate_instantiation(
-  unresolved_team: unresolved_types.UnresolvedTeam,
-  services: List(ast_types.Service),
-) -> Result(ast_types.Team, String) {
+  unresolved_team: unresolved_team.Team,
+  services: List(service.Service),
+) -> Result(team.Team, String) {
   let resolved_slos =
     unresolved_team.slos
     |> list.map(fn(unresolved_slo) { resolve_slo(unresolved_slo, services) })
@@ -45,14 +48,14 @@ pub fn link_and_validate_instantiation(
 
   resolved_slos
   |> result.map(fn(slos) {
-    ast_types.Team(name: unresolved_team.name, slos: slos)
+    team.Team(name: unresolved_team.name, slos: slos)
   })
 }
 
 pub fn resolve_slo(
-  unresolved_slo: unresolved_types.UnresolvedSlo,
-  services: List(ast_types.Service),
-) -> Result(ast_types.Slo, String) {
+  unresolved_slo: unresolved_slo.Slo,
+  services: List(service.Service),
+) -> Result(slo.Slo, String) {
   use service <- result.try(
     list.find(services, fn(s) { s.name == unresolved_slo.service_name })
     |> result.replace_error(
@@ -74,7 +77,7 @@ pub fn resolve_slo(
     ),
   )
 
-  Ok(ast_types.Slo(
+  Ok(slo.Slo(
     typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: unresolved_slo.threshold,
     sli_type: sli_type.name,
@@ -85,7 +88,7 @@ pub fn resolve_slo(
 
 pub fn resolve_filters(
   unresolved_instantiated_filters: dict.Dict(String, String),
-  specification_filters: List(ast_types.BasicType),
+  specification_filters: List(basic_type.BasicType),
 ) -> Result(generic_dictionary.GenericDictionary, String) {
   let result_entries =
     unresolved_instantiated_filters
