@@ -1,6 +1,6 @@
 import caffeine_lang/common_types/accepted_types
 import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/types as ast
+import caffeine_lang/phase_2/ast/types as ast_types
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -9,7 +9,7 @@ import gleam/string
 pub fn organization_test() {
   // ==== Specification ====
   let _some_basic_type =
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "acceptable_status_codes",
       attribute_type: accepted_types.List(accepted_types.String),
     )
@@ -25,9 +25,9 @@ pub fn organization_test() {
     |> result.unwrap(generic_dictionary.new())
 
   let some_sli_type =
-    ast.SliType(
+    ast_types.SliType(
       name: "http_status_code",
-      query_template_type: ast.QueryTemplateType(
+      query_template_type: ast_types.QueryTemplateType(
         specification_of_query_templates: [],
         name: "good_over_bad",
       ),
@@ -35,7 +35,7 @@ pub fn organization_test() {
       specification_of_query_templatized_variables: [],
     )
   let service_definition =
-    ast.Service(name: "super_scalabale_web_service", supported_sli_types: [
+    ast_types.Service(name: "super_scalabale_web_service", supported_sli_types: [
       some_sli_type,
     ])
 
@@ -53,7 +53,7 @@ pub fn organization_test() {
     |> result.unwrap(generic_dictionary.new())
 
   let some_slo =
-    ast.Slo(
+    ast_types.Slo(
       typed_instatiation_of_query_templatized_variables: filters,
       threshold: 99.5,
       sli_type: "http_status_code",
@@ -62,12 +62,12 @@ pub fn organization_test() {
     )
 
   let platform_team_definition =
-    ast.Team(name: "badass_platform_team", slos: [
+    ast_types.Team(name: "badass_platform_team", slos: [
       some_slo,
     ])
 
   let some_slo_2 =
-    ast.Slo(
+    ast_types.Slo(
       typed_instatiation_of_query_templatized_variables: filters,
       // Reuse the same filters from above
       threshold: 99.5,
@@ -76,11 +76,12 @@ pub fn organization_test() {
       window_in_days: 30,
     )
 
-  let other_team_definition = ast.Team(name: "other_team", slos: [some_slo_2])
+  let other_team_definition =
+    ast_types.Team(name: "other_team", slos: [some_slo_2])
 
   // ==== Organization ====
   let organization_definition =
-    ast.Organization(
+    ast_types.Organization(
       teams: [platform_team_definition, other_team_definition],
       service_definitions: [service_definition],
     )

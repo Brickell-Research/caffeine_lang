@@ -1,8 +1,8 @@
 import caffeine_lang/common_types/accepted_types
 import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/types as ast_types
+import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/phase_4/slo_resolver
-import caffeine_lang/phase_4/types as resolved_types
 import gleam/dict
 import gleam/result
 

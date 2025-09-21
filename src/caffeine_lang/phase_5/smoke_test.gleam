@@ -1,4 +1,4 @@
-import caffeine_lang/phase_2/types as ast_types
+import caffeine_lang/phase_2/ast/types as ast_types
 import gleam/io
 import simplifile
 

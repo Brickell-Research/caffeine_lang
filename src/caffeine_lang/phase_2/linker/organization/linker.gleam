@@ -3,9 +3,9 @@ import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
+import caffeine_lang/phase_2/ast/types as ast_types
 import caffeine_lang/phase_2/linker/instantiation/linker as instantiation_linker
 import caffeine_lang/phase_2/linker/specification/linker as specification_linker
-import caffeine_lang/phase_2/types as ast
 import gleam/list
 import gleam/result
 import gleam/string
@@ -16,11 +16,13 @@ import simplifile
 pub fn link_specification_and_instantiation(
   specification_directory: String,
   instantiations_directory: String,
-) -> Result(ast.Organization, String) {
+) -> Result(ast_types.Organization, String) {
   // ==== Specification ====
-  use unresolved_services <- result.try(unresolved_services_specification.parse_unresolved_services_specification(
-    specification_directory <> "/services.yaml",
-  ))
+  use unresolved_services <- result.try(
+    unresolved_services_specification.parse_unresolved_services_specification(
+      specification_directory <> "/services.yaml",
+    ),
+  )
 
   use unresolved_sli_types <- result.try(
     unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
@@ -28,9 +30,11 @@ pub fn link_specification_and_instantiation(
     ),
   )
 
-  use basic_types <- result.try(basic_types_specification.parse_basic_types_specification(
-    specification_directory <> "/basic_types.yaml",
-  ))
+  use basic_types <- result.try(
+    basic_types_specification.parse_basic_types_specification(
+      specification_directory <> "/basic_types.yaml",
+    ),
+  )
 
   use query_template_types_unresolved <- result.try(
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
@@ -69,7 +73,10 @@ pub fn link_specification_and_instantiation(
     }),
   )
 
-  Ok(ast.Organization(service_definitions: linked_services, teams: linked_teams))
+  Ok(ast_types.Organization(
+    service_definitions: linked_services,
+    teams: linked_teams,
+  ))
 }
 
 /// This function returns a list of all YAML files in the given directory.

@@ -1,6 +1,6 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/phase_1/types as unresolved_types
+import caffeine_lang/phase_1/unresolved/types as unresolved_types
 import glaml
 import gleam/dict
 import gleam/result

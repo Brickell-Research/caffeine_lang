@@ -1,6 +1,6 @@
 import caffeine_lang/common_types/accepted_types
-import caffeine_lang/phase_2/types as ast_types
-import caffeine_lang/phase_4/types as resolved_types
+import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/phase_4/resolved/types as resolved_types
 import caffeine_lang/phase_5/terraform/generator
 import gleam/dict
 

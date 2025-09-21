@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/phase_1/types as unresolved_types
+import caffeine_lang/phase_1/unresolved/types as unresolved_types
 import gleam/dict
 
 pub fn parse_instantiation_no_slos_test() {

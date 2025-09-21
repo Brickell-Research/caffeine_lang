@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
-import caffeine_lang/phase_1/types as unresolved_types
+import caffeine_lang/phase_1/unresolved/types as unresolved_types
 
 pub fn parse_query_template_types_test() {
   let expected_query_template_types = [

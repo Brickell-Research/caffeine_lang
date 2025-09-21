@@ -12,8 +12,8 @@
 //// (13) Warn on unused sli types, sli filters, and services.
 //// (14) Normalize team names, service names, sli type names, sli filter names, and sli filter attribute names to lowercase.
 
-import caffeine_lang/phase_2/types as ast_types
-import caffeine_lang/phase_3/errors
+import caffeine_lang/phase_2/ast/types as ast_types
+import caffeine_lang/phase_3/semantic/errors as semantic_errors
 import gleam/list
 
 fn slos_filtered_attribute(
@@ -30,7 +30,7 @@ fn slos_filtered_attribute(
 
 pub fn validate_services_from_instantiation(
   organization: ast_types.Organization,
-) -> Result(Bool, errors.SemanticAnalysisError) {
+) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let defined_services =
     organization.service_definitions
     |> list.map(fn(service_definition) { service_definition.name })
@@ -44,14 +44,15 @@ pub fn validate_services_from_instantiation(
 
   case undefined_services {
     [] -> Ok(True)
-    services -> Error(errors.UndefinedServiceError(service_names: services))
+    services ->
+      Error(semantic_errors.UndefinedServiceError(service_names: services))
   }
 }
 
 // TODO: fix this - it is incorrect as an sli type is tied to a service.
 pub fn validate_sli_types_exist_from_instantiation(
   organization: ast_types.Organization,
-) -> Result(Bool, errors.SemanticAnalysisError) {
+) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let defined_sli_types =
     organization.service_definitions
     |> list.map(fn(service_definition) {
@@ -70,14 +71,15 @@ pub fn validate_sli_types_exist_from_instantiation(
 
   case undefined_sli_types {
     [] -> Ok(True)
-    sli_types -> Error(errors.UndefinedSliTypeError(sli_type_names: sli_types))
+    sli_types ->
+      Error(semantic_errors.UndefinedSliTypeError(sli_type_names: sli_types))
   }
 }
 
 /// Ensure that all SLO thresholds are between 0 and 100.
 pub fn validate_slos_thresholds_reasonable_from_instantiation(
   organization: ast_types.Organization,
-) -> Result(Bool, errors.SemanticAnalysisError) {
+) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   let invalid_thresholds =
     slos_filtered_attribute(
       organization,
@@ -87,13 +89,14 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation(
 
   case invalid_thresholds {
     [] -> Ok(True)
-    thresholds -> Error(errors.InvalidSloThresholdError(thresholds: thresholds))
+    thresholds ->
+      Error(semantic_errors.InvalidSloThresholdError(thresholds: thresholds))
   }
 }
 
 pub fn perform_semantic_analysis(
   organization: ast_types.Organization,
-) -> Result(Bool, errors.SemanticAnalysisError) {
+) -> Result(Bool, semantic_errors.SemanticAnalysisError) {
   case validate_services_from_instantiation(organization) {
     Ok(_) -> {
       case validate_sli_types_exist_from_instantiation(organization) {

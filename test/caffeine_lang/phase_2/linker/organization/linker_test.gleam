@@ -1,7 +1,7 @@
 import caffeine_lang/common_types/accepted_types
 import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_2/ast/types as ast_types
 import caffeine_lang/phase_2/linker/organization/linker
-import caffeine_lang/phase_2/types as ast
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -39,7 +39,7 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_slo_reliable_service =
-    ast.Slo(
+    ast_types.Slo(
       threshold: 99.9,
       sli_type: "success_rate",
       service_name: "reliable_service",
@@ -62,19 +62,19 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_basic_type_1 =
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "environment",
       attribute_type: accepted_types.String,
     )
 
   let expected_basic_type_2 =
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "graphql_operation_name",
       attribute_type: accepted_types.String,
     )
 
   let expected_query_template_type =
-    ast.QueryTemplateType(
+    ast_types.QueryTemplateType(
       name: "valid_over_total",
       specification_of_query_templates: [
         expected_basic_type_2,
@@ -102,7 +102,7 @@ pub fn link_specification_and_instantiation_test() {
     |> result.unwrap(generic_dictionary.new())
 
   let expected_sli_type =
-    ast.SliType(
+    ast_types.SliType(
       name: "success_rate",
       query_template_type: expected_query_template_type,
       typed_instatiation_of_query_templates: expected_typed_instatiation,
@@ -114,14 +114,14 @@ pub fn link_specification_and_instantiation_test() {
 
   let expected =
     Ok(
-      ast.Organization(
+      ast_types.Organization(
         service_definitions: [
-          ast.Service(name: "reliable_service", supported_sli_types: [
+          ast_types.Service(name: "reliable_service", supported_sli_types: [
             expected_sli_type,
           ]),
         ],
         teams: [
-          ast.Team(name: "platform", slos: [expected_slo_reliable_service]),
+          ast_types.Team(name: "platform", slos: [expected_slo_reliable_service]),
         ],
       ),
     )

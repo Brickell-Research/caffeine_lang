@@ -1,18 +1,18 @@
 import caffeine_lang/common_types/accepted_types
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
-import caffeine_lang/phase_2/types as ast
+import caffeine_lang/phase_2/ast/types as ast_types
 
 pub fn parse_basic_types_test() {
   let expected_basic_types = [
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "team_name",
       attribute_type: accepted_types.String,
     ),
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "number_of_users",
       attribute_type: accepted_types.Integer,
     ),
-    ast.BasicType(
+    ast_types.BasicType(
       attribute_name: "accepted_status_codes",
       attribute_type: accepted_types.List(accepted_types.String),
     ),
