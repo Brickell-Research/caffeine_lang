@@ -1,5 +1,5 @@
+import caffeine_lang/phase_4/types.{type ResolvedSlo}
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/intermediate_representation.{type ResolvedSlo}
 import gleam/io
 import gleam/list
 import gleam/string

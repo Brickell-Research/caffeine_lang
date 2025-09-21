@@ -1,11 +1,11 @@
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_2/types.{
+  type Team, Organization, QueryTemplateType, Service, SliType, Slo, Team,
+}
 import caffeine_lang/phase_3/semantic.{
   InvalidSloThresholdError, UndefinedServiceError, UndefinedSliTypeError,
 }
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{
-  type Team, Organization, QueryTemplateType, Service, SliType, Slo, Team,
-}
-import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/result
 

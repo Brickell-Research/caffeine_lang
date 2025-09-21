@@ -1,7 +1,7 @@
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/phase_2/types.{BasicType, QueryTemplateType}
+import caffeine_lang/phase_4/types as resolved_types
 import caffeine_lang/phase_5/terraform/generator
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{BasicType, QueryTemplateType}
-import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
 import gleam/dict
 
 pub fn build_provider_datadog_test() {
@@ -106,12 +106,12 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
 }"
 
   let resolved_slo =
-    ResolvedSlo(
+    resolved_types.ResolvedSlo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: ResolvedSli(
+      sli: resolved_types.ResolvedSli(
         query_template_type: QueryTemplateType(
           specification_of_query_templates: [
             BasicType(

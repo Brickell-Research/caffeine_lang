@@ -1,6 +1,6 @@
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast
-import caffeine_lang/types/generic_dictionary
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_2/types as ast
 import gleam/dict
 import gleam/list
 import gleam/result

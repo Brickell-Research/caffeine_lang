@@ -1,12 +1,10 @@
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_1/types.{UnresolvedSlo, UnresolvedTeam}
 import caffeine_lang/phase_2/linker/instantiation/linker
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{
+import caffeine_lang/phase_2/types.{
   BasicType, QueryTemplateType, Service, SliType, Slo, Team,
-}
-import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/unresolved_parser_types.{
-  UnresolvedSlo, UnresolvedTeam,
-}
+} as ast
 import gleam/dict
 import gleam/list
 import gleam/string

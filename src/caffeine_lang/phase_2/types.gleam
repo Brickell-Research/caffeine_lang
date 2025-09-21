@@ -1,5 +1,5 @@
-import caffeine_lang/types/accepted_types.{type AcceptedTypes}
-import caffeine_lang/types/generic_dictionary.{type GenericDictionary}
+import caffeine_lang/common_types/accepted_types.{type AcceptedTypes}
+import caffeine_lang/common_types/generic_dictionary.{type GenericDictionary}
 
 // ==== Useful Type Aliases ====
 /// A TypedInstantiationOfQueryTemplates is a dictionary of query template names to their typed instantiations.

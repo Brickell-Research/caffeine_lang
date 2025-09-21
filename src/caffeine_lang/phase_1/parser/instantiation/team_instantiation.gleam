@@ -1,6 +1,6 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/types/unresolved_parser_types.{
+import caffeine_lang/phase_1/types.{
   type UnresolvedSlo, type UnresolvedTeam, UnresolvedSlo, UnresolvedTeam,
 }
 import glaml

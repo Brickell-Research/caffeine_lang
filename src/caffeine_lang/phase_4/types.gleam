@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast
+import caffeine_lang/phase_2/types as ast
 import gleam/dict
 
 /// An SLO intance with all the aggregated information from previous steps.

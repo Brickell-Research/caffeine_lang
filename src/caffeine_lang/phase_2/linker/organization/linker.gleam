@@ -13,7 +13,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specifica
 }
 import caffeine_lang/phase_2/linker/instantiation/linker as instantiation_linker
 import caffeine_lang/phase_2/linker/specification/linker as specification_linker
-import caffeine_lang/types/ast
+import caffeine_lang/phase_2/types as ast
 import gleam/list
 import gleam/result
 import gleam/string

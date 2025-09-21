@@ -1,5 +1,5 @@
+import caffeine_lang/common_types/accepted_types
 import caffeine_lang/phase_1/parser/utils/general_common
-import caffeine_lang/types/accepted_types
 import gleam/dict
 
 pub fn extract_params_from_file_path_test() {

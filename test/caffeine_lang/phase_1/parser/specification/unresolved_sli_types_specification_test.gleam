@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
-import caffeine_lang/types/unresolved_parser_types.{SliTypeUnresolved}
+import caffeine_lang/phase_1/types.{SliTypeUnresolved}
 import gleam/dict
 
 pub fn parse_sli_types_test() {

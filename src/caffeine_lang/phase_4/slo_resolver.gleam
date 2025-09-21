@@ -1,8 +1,6 @@
-import caffeine_lang/types/ast.{type Organization, type SliType, type Slo}
-import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/intermediate_representation.{
-  type ResolvedSli, type ResolvedSlo, ResolvedSli, ResolvedSlo,
-}
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_2/types.{type Organization, type SliType, type Slo}
+import caffeine_lang/phase_4/types.{type ResolvedSli, type ResolvedSlo} as resolved_types
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -45,7 +43,7 @@ pub fn resolve_slo(
 
   use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
 
-  Ok(ResolvedSlo(
+  Ok(resolved_types.ResolvedSlo(
     window_in_days: slo.window_in_days,
     threshold: slo.threshold,
     service_name: slo.service_name,
@@ -76,7 +74,7 @@ pub fn resolve_sli(
     })
     |> dict.from_list
 
-  Ok(ResolvedSli(
+  Ok(resolved_types.ResolvedSli(
     query_template_type: sli_type.query_template_type,
     metric_attributes: resolved_queries,
   ))

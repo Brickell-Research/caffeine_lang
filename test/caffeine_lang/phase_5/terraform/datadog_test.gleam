@@ -1,7 +1,7 @@
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/phase_2/types as ast
+import caffeine_lang/phase_4/types as resolved_types
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{BasicType, QueryTemplateType}
-import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
 import gleam/dict
 
 pub fn set_resource_comment_header_test() {
@@ -59,7 +59,7 @@ pub fn tf_resource_name_test() {
 pub fn resource_type_test() {
   let expected = "type        = \"metric\""
   let actual =
-    datadog.resource_type(QueryTemplateType(
+    datadog.resource_type(ast.QueryTemplateType(
       specification_of_query_templates: [],
       name: "good_over_bad",
     ))
@@ -70,19 +70,19 @@ pub fn slo_specification_test() {
   let expected =
     "query {\n    denominator = \"#{denominator_query}\"\n    numerator = \"#{numerator_query}\"\n  }\n"
   let actual =
-    datadog.slo_specification(ResolvedSlo(
+    datadog.slo_specification(resolved_types.ResolvedSlo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: ResolvedSli(
-        query_template_type: QueryTemplateType(
+      sli: resolved_types.ResolvedSli(
+        query_template_type: ast.QueryTemplateType(
           specification_of_query_templates: [
-            BasicType(
+            ast.BasicType(
               attribute_name: "numerator_query",
               attribute_type: accepted_types.String,
             ),
-            BasicType(
+            ast.BasicType(
               attribute_name: "denominator_query",
               attribute_type: accepted_types.String,
             ),
@@ -120,19 +120,19 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
 }"
 
   let actual =
-    datadog.full_resource_body(ResolvedSlo(
+    datadog.full_resource_body(resolved_types.ResolvedSlo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: ResolvedSli(
-        query_template_type: QueryTemplateType(
+      sli: resolved_types.ResolvedSli(
+        query_template_type: ast.QueryTemplateType(
           specification_of_query_templates: [
-            BasicType(
+            ast.BasicType(
               attribute_name: "numerator_query",
               attribute_type: accepted_types.String,
             ),
-            BasicType(
+            ast.BasicType(
               attribute_name: "denominator_query",
               attribute_type: accepted_types.String,
             ),

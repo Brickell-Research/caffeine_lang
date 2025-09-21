@@ -1,4 +1,4 @@
-import caffeine_lang/types/accepted_types.{
+import caffeine_lang/common_types/accepted_types.{
   type AcceptedTypes, Boolean, Decimal, Integer, List, String,
 }
 import gleam/dict

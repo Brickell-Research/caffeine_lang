@@ -1,11 +1,11 @@
-import caffeine_lang/phase_4/slo_resolver
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_2/types.{
   type SliType, type Slo, BasicType, Organization, QueryTemplateType, Service,
   SliType, Slo, Team,
 }
-import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/intermediate_representation.{ResolvedSli, ResolvedSlo}
+import caffeine_lang/phase_4/slo_resolver
+import caffeine_lang/phase_4/types.{ResolvedSli} as resolved_types
 import gleam/dict
 import gleam/result
 
@@ -122,12 +122,12 @@ pub fn resolve_slo_test() {
   let input_sli_type = example_sli_type()
 
   let expected =
-    Ok(ResolvedSlo(
+    Ok(resolved_types.ResolvedSlo(
       window_in_days: 30,
       threshold: 99.5,
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
-      sli: ResolvedSli(
+      sli: resolved_types.ResolvedSli(
         query_template_type: input_sli_type.query_template_type,
         metric_attributes: dict.from_list([
           #(
@@ -165,12 +165,12 @@ pub fn resolve_slos_test() {
 
   let expected =
     Ok([
-      ResolvedSlo(
+      resolved_types.ResolvedSlo(
         window_in_days: 30,
         threshold: 99.5,
         service_name: "super_scalabale_web_service",
         team_name: "badass_platform_team",
-        sli: ResolvedSli(
+        sli: resolved_types.ResolvedSli(
           query_template_type: example_sli_type().query_template_type,
           metric_attributes: dict.from_list([
             #(

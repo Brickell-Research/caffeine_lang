@@ -1,10 +1,10 @@
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
+import caffeine_lang/phase_1/types as unresolved_types
 import caffeine_lang/phase_2/linker/specification/linker
-import caffeine_lang/types/accepted_types
-import caffeine_lang/types/ast.{BasicType, QueryTemplateType, Service, SliType}
-import caffeine_lang/types/generic_dictionary
-import caffeine_lang/types/unresolved_parser_types.{
-  QueryTemplateTypeUnresolved, ServiceUnresolved, SliTypeUnresolved,
-}
+import caffeine_lang/phase_2/types.{
+  BasicType, QueryTemplateType, Service, SliType,
+} as ast
 import gleam/dict
 import gleam/result
 
@@ -29,7 +29,7 @@ pub fn resolve_unresolved_sli_type_test() {
 
   // Create expected resolved metric attributes (GenericDictionary)
   let unresolved_sli_type =
-    SliTypeUnresolved(
+    unresolved_types.SliTypeUnresolved(
       name: "a",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: unresolved_metric_attrs,
@@ -95,7 +95,7 @@ pub fn resolve_unresolved_sli_type_error_test() {
   // Call the function under test
   let result =
     linker.resolve_unresolved_sli_type(
-      SliTypeUnresolved(
+      unresolved_types.SliTypeUnresolved(
         name: "a",
         query_template_type: "nonexistent_template",
         typed_instatiation_of_query_templates: unresolved_metric_attrs,
@@ -167,7 +167,10 @@ pub fn resolve_unresolved_service_test() {
   // Call the function under test
   let result =
     linker.resolve_unresolved_service(
-      ServiceUnresolved(name: "test_service", sli_types: ["a", "b"]),
+      unresolved_types.ServiceUnresolved(name: "test_service", sli_types: [
+        "a",
+        "b",
+      ]),
       sli_types,
     )
 
@@ -224,7 +227,7 @@ pub fn resolve_unresolved_service_error_test() {
   ]
 
   assert linker.resolve_unresolved_service(
-      ServiceUnresolved(name: "a", sli_types: ["a", "b", "c"]),
+      unresolved_types.ServiceUnresolved(name: "a", sli_types: ["a", "b", "c"]),
       xs,
     )
     == Error("Failed to link sli types to service")
@@ -242,7 +245,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let unresolved_sli_types = [
-    SliTypeUnresolved(
+    unresolved_types.SliTypeUnresolved(
       name: "a",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: dict.from_list([
@@ -251,7 +254,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
       ]),
       specification_of_query_templatized_variables: ["a", "b"],
     ),
-    SliTypeUnresolved(
+    unresolved_types.SliTypeUnresolved(
       name: "b",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: dict.from_list([
@@ -263,14 +266,14 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let unresolved_services = [
-    ServiceUnresolved(name: "service_a", sli_types: [
+    unresolved_types.ServiceUnresolved(name: "service_a", sli_types: [
       "a",
       "b",
     ]),
   ]
 
   let unresolved_query_template_types = [
-    QueryTemplateTypeUnresolved(
+    unresolved_types.QueryTemplateTypeUnresolved(
       name: "good_over_bad",
       specification_of_query_templates: [
         "a",
@@ -297,7 +300,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
     |> result.unwrap(generic_dictionary.new())
 
   let expected_sli_types = [
-    SliType(
+    ast.SliType(
       name: "a",
       query_template_type: resolved_query_template,
       typed_instatiation_of_query_templates: expected_typed_instatiation,

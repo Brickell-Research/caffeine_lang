@@ -1,5 +1,5 @@
-import caffeine_lang/types/ast
-import caffeine_lang/types/intermediate_representation.{type ResolvedSlo}
+import caffeine_lang/phase_2/types as ast
+import caffeine_lang/phase_4/types.{type ResolvedSlo}
 import gleam/dict
 import gleam/float
 import gleam/int

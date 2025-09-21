@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast.{type Organization}
+import caffeine_lang/phase_2/types.{type Organization}
 import gleam/io
 import simplifile
 
