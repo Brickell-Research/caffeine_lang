@@ -38,8 +38,8 @@ pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
 pub fn do_parse_expr(input: String) -> Result(Exp, String) {
   let trimmed = string.trim(input)
 
-  // Handle parenthesized expressions
-  case string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")") {
+  // Check if it's a fully parenthesized expression with balanced parentheses
+  case string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")") && is_fully_parenthesized(trimmed) {
     True -> {
       let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
       use inner_exp <- result.try(do_parse_expr(inner))
@@ -79,17 +79,59 @@ fn find_operator(
   input: String,
   operator: String,
 ) -> Result(#(String, String), String) {
-  find_operator_at_level(input, operator, 0, 0)
+  find_rightmost_operator_at_level(input, operator, 0, 0, -1)
 }
 
-fn find_operator_at_level(
+fn is_fully_parenthesized(input: String) -> Bool {
+  // Check if the entire expression is wrapped in one set of parentheses
+  // by ensuring the parentheses balance and the first paren closes at the end
+  let length = string.length(input)
+  case length < 2 {
+    True -> False
+    False -> {
+      check_balanced_parens(input, 1, 1)
+    }
+  }
+}
+
+fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
+  case pos >= string.length(input) {
+    True -> count == 0  // Should end with count 0 (all parens closed)
+    False -> {
+      let char = string.slice(input, pos, 1)
+      let new_count = case char {
+        "(" -> count + 1
+        ")" -> count - 1
+        _ -> count
+      }
+      case new_count == 0 && pos < string.length(input) - 1 {
+        True -> False  // Parentheses closed before the end
+        False -> check_balanced_parens(input, pos + 1, new_count)
+      }
+    }
+  }
+}
+
+fn find_rightmost_operator_at_level(
   input: String,
   operator: String,
   start_pos: Int,
   paren_level: Int,
+  rightmost_pos: Int,
 ) -> Result(#(String, String), String) {
   case start_pos >= string.length(input) {
-    True -> Error("Operator not found")
+    True ->
+      case rightmost_pos {
+        -1 -> Error("Operator not found")
+        pos -> {
+          let left = string.trim(string.slice(input, 0, pos))
+          let right_start = pos + string.length(operator)
+          let right_length = string.length(input) - right_start
+          let right =
+            string.trim(string.slice(input, right_start, right_length))
+          Ok(#(left, right))
+        }
+      }
     False -> {
       let char = string.slice(input, start_pos, 1)
       let new_paren_level = case char {
@@ -102,24 +144,18 @@ fn find_operator_at_level(
         paren_level == 0
         && string.slice(input, start_pos, string.length(operator)) == operator
 
-      case is_target_operator {
-        True -> {
-          let left = string.trim(string.slice(input, 0, start_pos))
-          let right_start = start_pos + string.length(operator)
-          let right_length = string.length(input) - right_start
-          let right =
-            string.trim(string.slice(input, right_start, right_length))
-          Ok(#(left, right))
-        }
-        False -> {
-          find_operator_at_level(
-            input,
-            operator,
-            start_pos + 1,
-            new_paren_level,
-          )
-        }
+      let new_rightmost_pos = case is_target_operator {
+        True -> start_pos
+        False -> rightmost_pos
       }
+
+      find_rightmost_operator_at_level(
+        input,
+        operator,
+        start_pos + 1,
+        new_paren_level,
+        new_rightmost_pos,
+      )
     }
   }
 }
