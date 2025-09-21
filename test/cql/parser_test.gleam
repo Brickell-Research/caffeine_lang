@@ -1,5 +1,4 @@
-import caffeine_lang/cql/lang
-import caffeine_lang/cql/types.{
+import caffeine_lang/cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
   Sub, Word,
 }
@@ -12,7 +11,7 @@ pub fn parse_expr_simple_parenthesized_word_test() {
   let inner_expected_exp = Primary(expected_primary)
   let expected_exp = Ok(ExpContainer(Primary(PrimaryExp(inner_expected_exp))))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -27,7 +26,7 @@ pub fn parse_expr_simple_double_parenthesized_word_test() {
   let expected_exp =
     Ok(ExpContainer(Primary(PrimaryExp(second_innerexpected_exp))))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -44,7 +43,7 @@ pub fn parse_simple_addition_expr_test() {
   let expected_exp =
     Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Add)))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -61,7 +60,7 @@ pub fn parse_simple_subtraction_expr_test() {
   let expected_exp =
     Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Sub)))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -78,7 +77,7 @@ pub fn parse_simple_multiplication_expr_test() {
   let expected_exp =
     Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Mul)))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -95,7 +94,7 @@ pub fn parse_simple_division_expr_test() {
   let expected_exp =
     Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Div)))
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
@@ -122,7 +121,7 @@ pub fn parse_multiple_expr_for_order_of_precedence_test() {
       )),
     )
 
-  let actual = lang.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
   assert actual == expected_exp
 }
