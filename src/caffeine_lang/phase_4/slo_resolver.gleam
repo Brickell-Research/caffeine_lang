@@ -1,8 +1,9 @@
-import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/ast/organization
+import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/sli_type 
-import caffeine_lang/phase_4/resolved/types as resolved_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/resolved/resolved_sli
+import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -10,7 +11,7 @@ import gleam/string
 
 pub fn resolve_slos(
   organization: organization.Organization,
-) -> Result(List(resolved_types.ResolvedSlo), String) {
+) -> Result(List(resolved_slo.Slo), String) {
   let sli_types =
     organization.service_definitions
     |> list.flat_map(fn(service_definition) {
@@ -32,7 +33,7 @@ pub fn resolve_slo(
   slo: slo.Slo,
   team_name: String,
   sli_types: List(sli_type.SliType),
-) -> Result(resolved_types.ResolvedSlo, String) {
+) -> Result(resolved_slo.Slo, String) {
   let assert Ok(sli_type) =
     sli_types
     |> list.find(fn(sli_type) { sli_type.name == slo.sli_type })
@@ -45,7 +46,7 @@ pub fn resolve_slo(
 
   use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
 
-  Ok(resolved_types.ResolvedSlo(
+  Ok(resolved_slo.Slo(
     window_in_days: slo.window_in_days,
     threshold: slo.threshold,
     service_name: slo.service_name,
@@ -57,7 +58,7 @@ pub fn resolve_slo(
 pub fn resolve_sli(
   filters: dict.Dict(String, String),
   sli_type: sli_type.SliType,
-) -> Result(resolved_types.ResolvedSli, String) {
+) -> Result(resolved_sli.Sli, String) {
   let resolved_queries =
     sli_type.typed_instatiation_of_query_templates
     |> generic_dictionary.to_string_dict
@@ -76,7 +77,7 @@ pub fn resolve_sli(
     })
     |> dict.from_list
 
-  Ok(resolved_types.ResolvedSli(
+  Ok(resolved_sli.Sli(
     query_template_type: sli_type.query_template_type,
     metric_attributes: resolved_queries,
   ))
