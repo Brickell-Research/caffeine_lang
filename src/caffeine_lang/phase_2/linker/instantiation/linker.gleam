@@ -1,9 +1,9 @@
 import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_1/types.{type UnresolvedSlo, type UnresolvedTeam}
-import caffeine_lang/phase_2/types.{type Service} as ast_types
+import caffeine_lang/phase_1/types as unresolved_types
+import caffeine_lang/phase_2/types as ast_types
 import gleam/dict
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/result
 
 // ==== Public ====
@@ -16,8 +16,8 @@ pub fn aggregate_teams_and_slos(
     list.fold(teams, dict.new(), fn(acc, team) {
       dict.upsert(acc, team.name, fn(existing_teams) {
         case existing_teams {
-          Some(teams_list) -> [team, ..teams_list]
-          None -> [team]
+          option.Some(teams_list) -> [team, ..teams_list]
+          option.None -> [team]
         }
       })
     })
@@ -35,8 +35,8 @@ pub fn aggregate_teams_and_slos(
 }
 
 pub fn link_and_validate_instantiation(
-  unresolved_team: UnresolvedTeam,
-  services: List(Service),
+  unresolved_team: unresolved_types.UnresolvedTeam,
+  services: List(ast_types.Service),
 ) -> Result(ast_types.Team, String) {
   let resolved_slos =
     unresolved_team.slos
@@ -50,8 +50,8 @@ pub fn link_and_validate_instantiation(
 }
 
 pub fn resolve_slo(
-  unresolved_slo: UnresolvedSlo,
-  services: List(Service),
+  unresolved_slo: unresolved_types.UnresolvedSlo,
+  services: List(ast_types.Service),
 ) -> Result(ast_types.Slo, String) {
   use service <- result.try(
     list.find(services, fn(s) { s.name == unresolved_slo.service_name })

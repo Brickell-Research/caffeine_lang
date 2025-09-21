@@ -1,4 +1,4 @@
-import caffeine_lang/common_types/accepted_types.{type AcceptedTypes}
+import caffeine_lang/common_types/accepted_types
 import gleam/dict
 import gleam/result
 
@@ -9,7 +9,7 @@ pub type GenericDictionary {
 
 /// A value with its type information
 pub type TypedValue {
-  TypedValue(value: String, type_def: AcceptedTypes)
+  TypedValue(value: String, type_def: accepted_types.AcceptedTypes)
 }
 
 /// Creates a new empty GenericDictionary
@@ -18,14 +18,14 @@ pub fn new() -> GenericDictionary {
 }
 
 /// Creates a new typed value
-pub fn new_typed_value(value: String, type_def: AcceptedTypes) -> TypedValue {
+pub fn new_typed_value(value: String, type_def: accepted_types.AcceptedTypes) -> TypedValue {
   TypedValue(value: value, type_def: type_def)
 }
 
 /// Creates a new GenericDictionary from string values and their type definitions
 pub fn from_string_dict(
   values: dict.Dict(String, String),
-  type_defs: dict.Dict(String, AcceptedTypes),
+  type_defs: dict.Dict(String, accepted_types.AcceptedTypes),
 ) -> Result(GenericDictionary, String) {
   let result_dict = dict.new()
 
@@ -56,7 +56,7 @@ pub fn get_string_value(typed_value: TypedValue) -> String {
 }
 
 /// Gets the type definition from a TypedValue
-pub fn get_type_definition(typed_value: TypedValue) -> AcceptedTypes {
+pub fn get_type_definition(typed_value: TypedValue) -> accepted_types.AcceptedTypes {
   typed_value.type_def
 }
 

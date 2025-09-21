@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/phase_1/types.{UnresolvedSlo, UnresolvedTeam}
+import caffeine_lang/phase_1/types as unresolved_types
 import gleam/dict
 
 pub fn parse_instantiation_no_slos_test() {
@@ -15,7 +15,7 @@ pub fn parse_instantiation_no_slos_test() {
 
 pub fn parse_instantiation_multiple_slos_test() {
   let expected_slo =
-    UnresolvedSlo(
+    unresolved_types.UnresolvedSlo(
       typed_instatiation_of_query_templatized_variables: dict.from_list([
         #("acceptable_status_codes", "[200, 201]"),
       ]),
@@ -26,7 +26,7 @@ pub fn parse_instantiation_multiple_slos_test() {
     )
 
   let expected_slo_2 =
-    UnresolvedSlo(
+    unresolved_types.UnresolvedSlo(
       typed_instatiation_of_query_templatized_variables: dict.from_list([
         #("acceptable_status_codes", "[203, 204]"),
       ]),
@@ -37,7 +37,10 @@ pub fn parse_instantiation_multiple_slos_test() {
     )
 
   let expected_team =
-    UnresolvedTeam(name: "platform", slos: [expected_slo, expected_slo_2])
+    unresolved_types.UnresolvedTeam(name: "platform", slos: [
+      expected_slo,
+      expected_slo_2,
+    ])
 
   let actual =
     team_instantiation.parse_team_instantiation(

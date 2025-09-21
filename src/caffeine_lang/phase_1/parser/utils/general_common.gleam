@@ -1,6 +1,4 @@
-import caffeine_lang/common_types/accepted_types.{
-  type AcceptedTypes, Boolean, Decimal, Integer, List, String,
-}
+import caffeine_lang/common_types/accepted_types
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -9,13 +7,13 @@ import gleam/string
 // ==== Public ====
 
 /// Converts a string to an accepted type.
-pub fn string_to_accepted_type(string: String) -> Result(AcceptedTypes, String) {
+pub fn string_to_accepted_type(string: String) -> Result(accepted_types.AcceptedTypes, String) {
   case string {
-    "Boolean" -> Ok(Boolean)
-    "Decimal" -> Ok(Decimal)
-    "Integer" -> Ok(Integer)
-    "String" -> Ok(String)
-    "List(String)" -> Ok(List(String))
+    "Boolean" -> Ok(accepted_types.Boolean)
+    "Decimal" -> Ok(accepted_types.Decimal)
+    "Integer" -> Ok(accepted_types.Integer)
+    "String" -> Ok(accepted_types.String)
+    "List(String)" -> Ok(accepted_types.List(accepted_types.String))
     _ -> Error("Unknown attribute type: " <> string)
   }
 }

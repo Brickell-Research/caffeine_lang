@@ -1,16 +1,8 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/phase_1/parser/specification/basic_types_specification.{
-  parse_basic_types_specification,
-}
-import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification.{
-  parse_unresolved_query_template_types_specification,
-}
-import caffeine_lang/phase_1/parser/specification/unresolved_services_specification.{
-  parse_unresolved_services_specification,
-}
-import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification.{
-  parse_unresolved_sli_types_specification,
-}
+import caffeine_lang/phase_1/parser/specification/basic_types_specification
+import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
+import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
+import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
 import caffeine_lang/phase_2/linker/instantiation/linker as instantiation_linker
 import caffeine_lang/phase_2/linker/specification/linker as specification_linker
 import caffeine_lang/phase_2/types as ast
@@ -26,22 +18,22 @@ pub fn link_specification_and_instantiation(
   instantiations_directory: String,
 ) -> Result(ast.Organization, String) {
   // ==== Specification ====
-  use unresolved_services <- result.try(parse_unresolved_services_specification(
+  use unresolved_services <- result.try(unresolved_services_specification.parse_unresolved_services_specification(
     specification_directory <> "/services.yaml",
   ))
 
   use unresolved_sli_types <- result.try(
-    parse_unresolved_sli_types_specification(
+    unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
       specification_directory <> "/sli_types.yaml",
     ),
   )
 
-  use basic_types <- result.try(parse_basic_types_specification(
+  use basic_types <- result.try(basic_types_specification.parse_basic_types_specification(
     specification_directory <> "/basic_types.yaml",
   ))
 
   use query_template_types_unresolved <- result.try(
-    parse_unresolved_query_template_types_specification(
+    unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
       specification_directory <> "/query_template_types.yaml",
     ),
   )

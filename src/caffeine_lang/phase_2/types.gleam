@@ -1,14 +1,14 @@
-import caffeine_lang/common_types/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common_types/generic_dictionary.{type GenericDictionary}
+import caffeine_lang/common_types/accepted_types
+import caffeine_lang/common_types/generic_dictionary
 
 // ==== Useful Type Aliases ====
 /// A TypedInstantiationOfQueryTemplates is a dictionary of query template names to their typed instantiations.
 pub type TypedInstantiationOfQueryTemplates =
-  GenericDictionary
+  generic_dictionary.GenericDictionary
 
 /// A TypedInstantiationOfMetrics is a dictionary of metric names to their typed instantiations.
 pub type TypedInstantiationOfMetrics =
-  GenericDictionary
+  generic_dictionary.GenericDictionary
 
 /// A SpecificationOfQueryTemplates is a list of expected basic types by name and type.
 pub type SpecificationOfQueryTemplates =
@@ -68,6 +68,6 @@ pub type QueryTemplateType {
 
 /// A BasicType represents a fundamental data type with a name and type.
 pub type BasicType {
-  BasicType(attribute_name: String, attribute_type: AcceptedTypes)
+  BasicType(attribute_name: String, attribute_type: accepted_types.AcceptedTypes)
 }
 // ================================================

@@ -1,4 +1,5 @@
 import caffeine_lang/phase_2/linker/organization/linker
+import caffeine_lang/phase_3/errors
 import caffeine_lang/phase_3/semantic
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/phase_5/terraform/generator
@@ -43,13 +44,13 @@ pub fn compile(
         }
         Error(e) -> {
           case e {
-            semantic.UndefinedServiceError(_service_names) ->
+            errors.UndefinedServiceError(_service_names) ->
               io.println_error("Undefined service error.")
-            semantic.UndefinedSliTypeError(_sli_type_names) ->
+            errors.UndefinedSliTypeError(_sli_type_names) ->
               io.println_error("Undefined sli type error.")
-            semantic.InvalidSloThresholdError(_thresholds) ->
+            errors.InvalidSloThresholdError(_thresholds) ->
               io.println_error("Invalid sli threshold error.")
-            semantic.DuplicateServiceError(_service_names) ->
+            errors.DuplicateServiceError(_service_names) ->
               io.println_error("Duplicate service error.")
           }
         }

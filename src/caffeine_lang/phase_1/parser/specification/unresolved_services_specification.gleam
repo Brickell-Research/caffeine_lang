@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/phase_1/types.{type ServiceUnresolved, ServiceUnresolved}
+import caffeine_lang/phase_1/types as unresolved_types
 import glaml
 import gleam/dict
 import gleam/result
@@ -8,7 +8,7 @@ import gleam/result
 /// Given a specification file, returns a list of unresolved service specifications.
 pub fn parse_unresolved_services_specification(
   file_path: String,
-) -> Result(List(ServiceUnresolved), String) {
+) -> Result(List(unresolved_types.ServiceUnresolved), String) {
   glaml_helpers.parse_specification(
     file_path,
     dict.new(),
@@ -22,12 +22,12 @@ pub fn parse_unresolved_services_specification(
 fn parse_service(
   service: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(ServiceUnresolved, String) {
+) -> Result(unresolved_types.ServiceUnresolved, String) {
   use sli_types <- result.try(glaml_helpers.extract_string_list_from_node(
     service,
     "sli_types",
   ))
   use name <- result.try(glaml_helpers.extract_string_from_node(service, "name"))
 
-  Ok(ServiceUnresolved(name: name, sli_types: sli_types))
+  Ok(unresolved_types.ServiceUnresolved(name: name, sli_types: sli_types))
 }

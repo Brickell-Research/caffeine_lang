@@ -1,14 +1,14 @@
 import caffeine_lang/common_types/generic_dictionary
-import caffeine_lang/phase_2/types.{type Organization, type SliType, type Slo}
-import caffeine_lang/phase_4/types.{type ResolvedSli, type ResolvedSlo} as resolved_types
+import caffeine_lang/phase_2/types as ast
+import caffeine_lang/phase_4/types as resolved_types
 import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
 
 pub fn resolve_slos(
-  organization: Organization,
-) -> Result(List(ResolvedSlo), String) {
+  organization: ast.Organization,
+) -> Result(List(resolved_types.ResolvedSlo), String) {
   let sli_types =
     organization.service_definitions
     |> list.flat_map(fn(service_definition) {
@@ -27,10 +27,10 @@ pub fn resolve_slos(
 }
 
 pub fn resolve_slo(
-  slo: Slo,
+  slo: ast.Slo,
   team_name: String,
-  sli_types: List(SliType),
-) -> Result(ResolvedSlo, String) {
+  sli_types: List(ast.SliType),
+) -> Result(resolved_types.ResolvedSlo, String) {
   let assert Ok(sli_type) =
     sli_types
     |> list.find(fn(sli_type) { sli_type.name == slo.sli_type })
@@ -54,8 +54,8 @@ pub fn resolve_slo(
 
 pub fn resolve_sli(
   filters: dict.Dict(String, String),
-  sli_type: SliType,
-) -> Result(ResolvedSli, String) {
+  sli_type: ast.SliType,
+) -> Result(resolved_types.ResolvedSli, String) {
   let resolved_queries =
     sli_type.typed_instatiation_of_query_templates
     |> generic_dictionary.to_string_dict

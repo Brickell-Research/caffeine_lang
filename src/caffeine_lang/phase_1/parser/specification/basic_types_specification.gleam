@@ -1,6 +1,6 @@
 import caffeine_lang/common_types/accepted_types
 import caffeine_lang/phase_1/parser/utils/glaml_helpers as gh
-import caffeine_lang/phase_2/types.{type BasicType, BasicType}
+import caffeine_lang/phase_2/types as ast
 import glaml
 import gleam/dict
 import gleam/result
@@ -10,7 +10,7 @@ import gleam/string
 /// Given a specification file, returns a list of basic types.
 pub fn parse_basic_types_specification(
   file_path: String,
-) -> Result(List(BasicType), String) {
+) -> Result(List(ast.BasicType), String) {
   gh.parse_specification(file_path, dict.new(), parse_basic_type, "basic_types")
 }
 
@@ -19,7 +19,7 @@ pub fn parse_basic_types_specification(
 fn parse_basic_type(
   basic_type: glaml.Node,
   _params: dict.Dict(String, String),
-) -> Result(BasicType, String) {
+) -> Result(ast.BasicType, String) {
   use attribute_name <- result.try(gh.extract_string_from_node(
     basic_type,
     "attribute_name",
@@ -67,5 +67,5 @@ fn parse_basic_type(
   // If there was an error parsing the attribute type, return it
   use attribute_type <- result.try(attribute_type)
 
-  Ok(BasicType(attribute_name: attribute_name, attribute_type: attribute_type))
+  Ok(ast.BasicType(attribute_name: attribute_name, attribute_type: attribute_type))
 }

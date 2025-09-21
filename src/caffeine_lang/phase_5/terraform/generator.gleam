@@ -1,4 +1,4 @@
-import caffeine_lang/phase_4/types.{type ResolvedSlo}
+import caffeine_lang/phase_4/types as resolved_types
 import caffeine_lang/phase_5/terraform/datadog
 import gleam/io
 import gleam/list
@@ -43,20 +43,20 @@ fn do_build_variables(provider: SupportedProvider) -> String {
   }
 }
 
-pub fn build_slo_definitions(slos: List(ResolvedSlo)) -> String {
+pub fn build_slo_definitions(slos: List(resolved_types.ResolvedSlo)) -> String {
   slos
   |> list.map(datadog.full_resource_body)
   |> string.join("\n\n")
 }
 
-pub fn build_main(slos: List(ResolvedSlo)) -> String {
+pub fn build_main(slos: List(resolved_types.ResolvedSlo)) -> String {
   let backend = build_backend()
   let slo_definitions = build_slo_definitions(slos)
   backend <> "\n\n" <> slo_definitions
 }
 
 pub fn generate(
-  slos: List(ResolvedSlo),
+  slos: List(resolved_types.ResolvedSlo),
   output_directory: String,
 ) -> Result(Nil, simplifile.FileError) {
   // variables

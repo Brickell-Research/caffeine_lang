@@ -1,9 +1,9 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
-import caffeine_lang/phase_1/types.{QueryTemplateTypeUnresolved}
+import caffeine_lang/phase_1/types as unresolved_types
 
 pub fn parse_query_template_types_test() {
   let expected_query_template_types = [
-    QueryTemplateTypeUnresolved(
+    unresolved_types.QueryTemplateTypeUnresolved(
       name: "good_over_bad",
       specification_of_query_templates: [
         "team_name",

@@ -1,10 +1,10 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
-import caffeine_lang/phase_1/types.{SliTypeUnresolved}
+import caffeine_lang/phase_1/types as unresolved_types
 import gleam/dict
 
 pub fn parse_sli_types_test() {
   let expected_sli_types = [
-    SliTypeUnresolved(
+    unresolved_types.SliTypeUnresolved(
       name: "latency",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: dict.from_list([
@@ -16,7 +16,7 @@ pub fn parse_sli_types_test() {
         "accepted_status_codes",
       ],
     ),
-    SliTypeUnresolved(
+    unresolved_types.SliTypeUnresolved(
       name: "error_rate",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: dict.from_list([

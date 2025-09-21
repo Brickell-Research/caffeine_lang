@@ -1,5 +1,5 @@
-import caffeine_lang/phase_2/types as ast
-import caffeine_lang/phase_4/types.{type ResolvedSlo}
+import caffeine_lang/phase_2/types as ast_types
+import caffeine_lang/phase_4/types as resolved_types
 import gleam/dict
 import gleam/float
 import gleam/int
@@ -82,9 +82,9 @@ pub fn tf_resource_name(
   <> " {"
 }
 
-pub fn resource_type(query_template_type: ast.QueryTemplateType) -> String {
+pub fn resource_type(query_template_type: ast_types.QueryTemplateType) -> String {
   case query_template_type {
-    ast.QueryTemplateType(_metric_attributes, _name) ->
+    ast_types.QueryTemplateType(_metric_attributes, _name) ->
       "type        = \"metric\""
   }
 }
@@ -105,7 +105,7 @@ pub fn resource_target_threshold(threshold: Float) -> String {
   "target = " <> float.to_string(threshold)
 }
 
-pub fn slo_specification(slo: ResolvedSlo) -> String {
+pub fn slo_specification(slo: resolved_types.ResolvedSlo) -> String {
   let metric_attributes =
     slo.sli.metric_attributes
     |> dict.keys()
@@ -134,7 +134,7 @@ pub fn get_tags(
   <> "\"]"
 }
 
-pub fn full_resource_body(slo: ResolvedSlo) -> String {
+pub fn full_resource_body(slo: resolved_types.ResolvedSlo) -> String {
   let comment_header =
     set_resource_comment_header(slo.team_name, slo.sli.query_template_type.name)
   let resource_top_line =

@@ -1,13 +1,13 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
-import caffeine_lang/phase_1/types.{ServiceUnresolved}
+import caffeine_lang/phase_1/types as unresolved_types
 
 pub fn parse_services_test() {
   let expected_services = [
-    ServiceUnresolved(name: "reliable_service", sli_types: [
+    unresolved_types.ServiceUnresolved(name: "reliable_service", sli_types: [
       "latency",
       "error_rate",
     ]),
-    ServiceUnresolved(name: "unreliable_service", sli_types: [
+    unresolved_types.ServiceUnresolved(name: "unreliable_service", sli_types: [
       "error_rate",
     ]),
   ]

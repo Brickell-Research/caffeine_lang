@@ -1,4 +1,4 @@
-import caffeine_lang/common_types/accepted_types.{String}
+import caffeine_lang/common_types/accepted_types
 import caffeine_lang/common_types/generic_dictionary
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/phase_2/types as ast
@@ -62,12 +62,15 @@ pub fn link_specification_and_instantiation_test() {
     )
 
   let expected_basic_type_1 =
-    ast.BasicType(attribute_name: "environment", attribute_type: String)
+    ast.BasicType(
+      attribute_name: "environment",
+      attribute_type: accepted_types.String,
+    )
 
   let expected_basic_type_2 =
     ast.BasicType(
       attribute_name: "graphql_operation_name",
-      attribute_type: String,
+      attribute_type: accepted_types.String,
     )
 
   let expected_query_template_type =
