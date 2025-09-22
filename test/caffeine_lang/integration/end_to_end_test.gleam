@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
@@ -34,7 +36,11 @@ pub fn end_to_end_organization_test() {
             attribute_type: accepted_types.String,
           ),
         ],
-        query: ExpContainer(Primary(PrimaryWord(Word("")))),
+        query: ExpContainer(OperatorExpr(
+          Primary(PrimaryWord(Word("success_query"))),
+          Primary(PrimaryWord(Word("total_query"))),
+          Div,
+        )),
       ),
       typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
         dict.from_list([

@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -72,7 +74,7 @@ pub fn resource_type_test() {
 
 pub fn slo_specification_test() {
   let expected =
-    "query {\n    denominator = \"#{denominator_query}\"\n    numerator = \"#{numerator_query}\"\n  }\n"
+    "query {\n    numerator = \"#{numerator_query}\"\n    denominator = \"#{denominator_query}\"\n  }\n"
   let actual =
     datadog.slo_specification(resolved_slo.Slo(
       window_in_days: 30,
@@ -83,22 +85,30 @@ pub fn slo_specification_test() {
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
-              attribute_name: "numerator_query",
+              attribute_name: "numerator",
               attribute_type: accepted_types.String,
             ),
             basic_type.BasicType(
-              attribute_name: "denominator_query",
+              attribute_name: "denominator",
               attribute_type: accepted_types.String,
             ),
           ],
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: ExpContainer(OperatorExpr(
+            Primary(PrimaryWord(Word("#{numerator_query}"))),
+            Primary(PrimaryWord(Word("#{denominator_query}"))),
+            Div,
+          )),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
-        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+        resolved_query: ExpContainer(OperatorExpr(
+          Primary(PrimaryWord(Word("#{numerator_query}"))),
+          Primary(PrimaryWord(Word("#{denominator_query}"))),
+          Div,
+        )),
       ),
     ))
   assert actual == expected
@@ -113,8 +123,8 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
   description = \"SLO created by caffeine\"
   
   query {
-    denominator = \"#{denominator_query}\"
     numerator = \"#{numerator_query}\"
+    denominator = \"#{denominator_query}\"
   }
 
   thresholds {
@@ -144,13 +154,21 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
             ),
           ],
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: ExpContainer(OperatorExpr(
+            Primary(PrimaryWord(Word("#{numerator_query}"))),
+            Primary(PrimaryWord(Word("#{denominator_query}"))),
+            Div,
+          )),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
-        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+        resolved_query: ExpContainer(OperatorExpr(
+          Primary(PrimaryWord(Word("#{numerator_query}"))),
+          Primary(PrimaryWord(Word("#{denominator_query}"))),
+          Div,
+        )),
       ),
     ))
 

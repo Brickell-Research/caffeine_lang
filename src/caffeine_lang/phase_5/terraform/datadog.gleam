@@ -2,11 +2,8 @@ import caffeine_lang/cql/generator
 import caffeine_lang/cql/resolver
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/resolved/resolved_slo
-import gleam/dict
 import gleam/float
 import gleam/int
-import gleam/list
-import gleam/string
 
 pub fn provider() -> String {
   "terraform {

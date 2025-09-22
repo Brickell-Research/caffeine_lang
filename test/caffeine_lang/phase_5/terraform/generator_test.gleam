@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
 import caffeine_lang/phase_5/terraform/generator
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -96,8 +98,8 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
   description = \"SLO created by caffeine\"
   
   query {
-    denominator = \"#{denominator_query}\"
     numerator = \"#{numerator_query}\"
+    denominator = \"#{denominator_query}\"
   }
 
   thresholds {
@@ -127,13 +129,21 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
             ),
           ],
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: ExpContainer(OperatorExpr(
+            Primary(PrimaryWord(Word("#{numerator_query}"))),
+            Primary(PrimaryWord(Word("#{denominator_query}"))),
+            Div,
+          )),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
-        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+        resolved_query: ExpContainer(OperatorExpr(
+          Primary(PrimaryWord(Word("#{numerator_query}"))),
+          Primary(PrimaryWord(Word("#{denominator_query}"))),
+          Div,
+        )),
       ),
     )
 
