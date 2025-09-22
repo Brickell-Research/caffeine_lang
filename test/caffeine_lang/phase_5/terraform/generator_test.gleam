@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/phase_5/terraform/generator
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -117,20 +118,22 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
-              attribute_name: "numerator_query",
+              attribute_name: "numerator",
               attribute_type: accepted_types.String,
             ),
             basic_type.BasicType(
-              attribute_name: "denominator_query",
+              attribute_name: "denominator",
               attribute_type: accepted_types.String,
             ),
           ],
           name: "good_over_bad",
+          query: ExpContainer(Primary(PrimaryWord(Word("")))),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
+        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
       ),
     )
 

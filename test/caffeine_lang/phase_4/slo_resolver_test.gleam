@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
@@ -54,6 +55,7 @@ fn example_sli_type() -> sli_type.SliType {
           attribute_type: accepted_types.String,
         ),
       ],
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ),
     typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
       dict.from_list([
@@ -109,6 +111,7 @@ pub fn resolve_sli_test() {
     Ok(resolved_sli.Sli(
       query_template_type: input_sli_type.query_template_type,
       metric_attributes: expected_metric_attrs,
+      resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ))
 
   // Use the filters directly since resolve_sli now expects GenericDictionary
@@ -125,6 +128,21 @@ pub fn resolve_sli_test() {
 pub fn resolve_slo_test() {
   let input_sli_type = example_sli_type()
 
+  let expected_query_template_type = query_template_type.QueryTemplateType(
+    name: "good_over_bad",
+    specification_of_query_templates: [
+      basic_type.BasicType(
+        attribute_name: "numerator_query",
+        attribute_type: accepted_types.String,
+      ),
+      basic_type.BasicType(
+        attribute_name: "denominator_query",
+        attribute_type: accepted_types.String,
+      ),
+    ],
+    query: ExpContainer(Primary(PrimaryWord(Word("")))),
+  )
+
   let expected =
     Ok(resolved_slo.Slo(
       window_in_days: 30,
@@ -132,17 +150,12 @@ pub fn resolve_slo_test() {
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_sli.Sli(
-        query_template_type: input_sli_type.query_template_type,
+        query_template_type: expected_query_template_type,
         metric_attributes: dict.from_list([
-          #(
-            "numerator_query",
-            "max:latency(<100ms, {service=\"super_scalabale_web_service\",requests_valid=true,environment=production})",
-          ),
-          #(
-            "denominator_query",
-            "max:latency(<100ms, {service=\"super_scalabale_web_service\",requests_valid=true,environment=production})",
-          ),
+          #("numerator_query", "max:latency(<100ms, {service=\"super_scalabale_web_service\",requests_valid=true,environment=production})"),
+          #("denominator_query", "max:latency(<100ms, {service=\"super_scalabale_web_service\",requests_valid=true,environment=production})"),
         ]),
+        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
       ),
     ))
 
@@ -189,6 +202,7 @@ pub fn resolve_slos_test() {
               "max:latency(<100ms, {service=\"super_scalabale_web_service\",requests_valid=true,environment=production})",
             ),
           ]),
+          resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
         ),
       ),
     ])

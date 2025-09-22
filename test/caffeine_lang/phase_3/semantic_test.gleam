@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/errors/semantic as semantic_errors
 import caffeine_lang/phase_3/semantic
 import caffeine_lang/types/ast/organization
@@ -83,6 +84,7 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -102,6 +104,7 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -182,6 +185,7 @@ pub fn perform_semantic_analysis_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -201,6 +205,7 @@ pub fn perform_semantic_analysis_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -222,6 +227,7 @@ pub fn perform_semantic_analysis_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -241,6 +247,7 @@ pub fn perform_semantic_analysis_test() {
             query_template_type: query_template_type.QueryTemplateType(
               specification_of_query_templates: [],
               name: "good_over_bad",
+              query: ExpContainer(Primary(PrimaryWord(Word("")))),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([

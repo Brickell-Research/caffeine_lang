@@ -1,13 +1,14 @@
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/phase_2/linker/organization/linker
+import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
-import caffeine_lang/types/ast/team
+import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/ast/service
 import caffeine_lang/types/ast/sli_type
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/ast/slo
-import caffeine_lang/phase_2/linker/organization/linker
+import caffeine_lang/types/ast/team
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -67,22 +68,26 @@ pub fn link_specification_and_instantiation_test() {
       window_in_days: 7,
     )
 
-  let expected_basic_type_1 = basic_type.BasicType(
+  let expected_basic_type_1 =
+    basic_type.BasicType(
       attribute_name: "environment",
       attribute_type: accepted_types.String,
     )
 
-  let expected_basic_type_2 = basic_type.BasicType(
+  let expected_basic_type_2 =
+    basic_type.BasicType(
       attribute_name: "graphql_operation_name",
       attribute_type: accepted_types.String,
     )
 
-  let expected_query_template_type = query_template_type.QueryTemplateType(
+  let expected_query_template_type =
+    query_template_type.QueryTemplateType(
       name: "valid_over_total",
       specification_of_query_templates: [
         expected_basic_type_2,
         expected_basic_type_1,
       ],
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
 
   let expected_typed_instatiation =
@@ -104,7 +109,8 @@ pub fn link_specification_and_instantiation_test() {
     )
     |> result.unwrap(generic_dictionary.new())
 
-  let expected_sli_type = sli_type.SliType(
+  let expected_sli_type =
+    sli_type.SliType(
       name: "success_rate",
       query_template_type: expected_query_template_type,
       typed_instatiation_of_query_templates: expected_typed_instatiation,

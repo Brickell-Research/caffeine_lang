@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -64,6 +65,7 @@ pub fn resource_type_test() {
     datadog.resource_type(query_template_type.QueryTemplateType(
       specification_of_query_templates: [],
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ))
   assert actual == expected
 }
@@ -90,11 +92,13 @@ pub fn slo_specification_test() {
             ),
           ],
           name: "good_over_bad",
+          query: ExpContainer(Primary(PrimaryWord(Word("")))),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
+        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
       ),
     ))
   assert actual == expected
@@ -140,11 +144,13 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
             ),
           ],
           name: "good_over_bad",
+          query: ExpContainer(Primary(PrimaryWord(Word("")))),
         ),
         metric_attributes: dict.from_list([
           #("numerator", "#{numerator_query}"),
           #("denominator", "#{denominator_query}"),
         ]),
+        resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
       ),
     ))
 

@@ -1,5 +1,4 @@
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
 import caffeine_lang/types/ast/query_template_type
@@ -7,6 +6,8 @@ import caffeine_lang/types/ast/service
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -36,6 +37,7 @@ pub fn organization_test() {
       query_template_type: query_template_type.QueryTemplateType(
         specification_of_query_templates: [],
         name: "good_over_bad",
+        query: ExpContainer(Primary(PrimaryWord(Word("")))),
       ),
       typed_instatiation_of_query_templates: metric_attrs,
       specification_of_query_templatized_variables: [],
@@ -82,8 +84,7 @@ pub fn organization_test() {
       window_in_days: 30,
     )
 
-  let other_team_definition =
-    team.Team(name: "other_team", slos: [some_slo_2])
+  let other_team_definition = team.Team(name: "other_team", slos: [some_slo_2])
 
   // ==== Organization ====
   let organization_definition =

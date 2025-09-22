@@ -86,7 +86,7 @@ pub fn resource_type(
   query_template_type: query_template_type.QueryTemplateType,
 ) -> String {
   case query_template_type {
-    query_template_type.QueryTemplateType(_metric_attributes, _name) ->
+    query_template_type.QueryTemplateType(_metric_attributes, _name, _query) ->
       "type        = \"metric\""
   }
 }

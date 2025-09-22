@@ -1,13 +1,14 @@
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
-import caffeine_lang/types/unresolved/unresolved_sli_type
-import caffeine_lang/types/unresolved/unresolved_service
-import caffeine_lang/types/unresolved/unresolved_query_template_type
+import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/phase_2/linker/specification/linker
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/service
-import caffeine_lang/phase_2/linker/specification/linker
+import caffeine_lang/types/ast/sli_type
+import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/unresolved/unresolved_query_template_type
+import caffeine_lang/types/unresolved/unresolved_service
+import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/result
 
@@ -26,6 +27,7 @@ pub fn resolve_unresolved_sli_type_test() {
     query_template_type.QueryTemplateType(
       specification_of_query_templates: basic_types,
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
   let query_template_types = [query_template]
 
@@ -37,7 +39,8 @@ pub fn resolve_unresolved_sli_type_test() {
     ])
 
   // Create expected resolved metric attributes (GenericDictionary)
-  let unresolved_sli_type = unresolved_sli_type.SliType(
+  let unresolved_sli_type =
+    unresolved_sli_type.SliType(
       name: "a",
       query_template_type: "good_over_bad",
       typed_instatiation_of_query_templates: unresolved_metric_attrs,
@@ -99,6 +102,7 @@ pub fn resolve_unresolved_sli_type_error_test() {
     query_template_type.QueryTemplateType(
       specification_of_query_templates: basic_types,
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
   let query_template_types = [query_template]
 
@@ -129,6 +133,7 @@ pub fn resolve_unresolved_service_test() {
     query_template_type.QueryTemplateType(
       specification_of_query_templates: [],
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
 
   // Create test metric attributes as GenericDictionary for resolved SLI type
@@ -210,6 +215,7 @@ pub fn resolve_unresolved_service_error_test() {
     query_template_type.QueryTemplateType(
       specification_of_query_templates: [],
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
   let xs = [
     sli_type.SliType(
@@ -299,6 +305,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
         "a",
         "b",
       ],
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ),
   ]
 
@@ -306,6 +313,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
     query_template_type.QueryTemplateType(
       specification_of_query_templates: [basic_type_a, basic_type_b],
       name: "good_over_bad",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
     )
 
   // Create expected typed_instatiation_of_query_templates with the correct fields
@@ -335,10 +343,7 @@ pub fn link_and_validate_specification_sub_parts_test() {
   ]
 
   let expected_services = [
-    service.Service(
-      name: "service_a",
-      supported_sli_types: expected_sli_types,
-    ),
+    service.Service(name: "service_a", supported_sli_types: expected_sli_types),
   ]
 
   assert linker.link_and_validate_specification_sub_parts(

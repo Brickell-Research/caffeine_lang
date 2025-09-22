@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser.{parse_expr}
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import glaml
@@ -34,8 +35,16 @@ fn parse_query_template_type(
     ),
   )
 
+  use query_string <- result.try(glaml_helpers.extract_string_from_node(
+    type_node,
+    "query",
+  ))
+
+  use query <- result.try(parse_expr(query_string))
+
   Ok(unresolved_query_template_type.QueryTemplateType(
     name: name,
     specification_of_query_templates: specification_of_query_templates,
+    query: query,
   ))
 }

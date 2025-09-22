@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser
 import caffeine_lang/types/ast/query_template_type
 import gleam/dict
 
@@ -10,12 +11,14 @@ import gleam/dict
 ///   metric_attributes: {
 ///     numerator_query: "max:latency(<100ms, {service="super_scalabale_web_service",requests_valid=true})",
 ///     denominator_query: "max:latency(<100ms, {service="super_scalabale_web_service"})",
-///   }
+///   },
+///   resolved_query: ExpContainer(...)
 /// )
 /// ```
 pub type Sli {
   Sli(
     query_template_type: query_template_type.QueryTemplateType,
     metric_attributes: dict.Dict(String, String),
+    resolved_query: parser.ExpContainer,
   )
 }
