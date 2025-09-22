@@ -1,3 +1,4 @@
+import caffeine_lang/cql/parser
 import caffeine_lang/types/ast/organization
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
@@ -77,8 +78,82 @@ pub fn resolve_sli(
     })
     |> dict.from_list
 
+  // Resolve the CQL query by substituting words with resolved query values
+  use resolved_query <- result.try(resolve_cql_query(
+    sli_type.query_template_type.query,
+    resolved_queries,
+  ))
+
   Ok(resolved_sli.Sli(
     query_template_type: sli_type.query_template_type,
     metric_attributes: resolved_queries,
+    resolved_query: resolved_query,
   ))
+}
+
+fn resolve_cql_query(
+  query: parser.ExpContainer,
+  resolved_queries: dict.Dict(String, String),
+) -> Result(parser.ExpContainer, String) {
+  case query {
+    parser.ExpContainer(exp) -> {
+      use resolved_exp <- result.try(resolve_exp(exp, resolved_queries))
+      Ok(parser.ExpContainer(resolved_exp))
+    }
+  }
+}
+
+fn resolve_exp(
+  exp: parser.Exp,
+  resolved_queries: dict.Dict(String, String),
+) -> Result(parser.Exp, String) {
+  case exp {
+    parser.OperatorExpr(left, right, op) -> {
+      use resolved_left <- result.try(resolve_exp(left, resolved_queries))
+      use resolved_right <- result.try(resolve_exp(right, resolved_queries))
+      Ok(parser.OperatorExpr(resolved_left, resolved_right, op))
+    }
+    parser.Primary(primary) -> {
+      use resolved_primary <- result.try(resolve_primary(primary, resolved_queries))
+      Ok(parser.Primary(resolved_primary))
+    }
+  }
+}
+
+fn resolve_primary(
+  primary: parser.Primary,
+  resolved_queries: dict.Dict(String, String),
+) -> Result(parser.Primary, String) {
+  case primary {
+    parser.PrimaryWord(word) -> {
+      case word {
+        parser.Word(word_value) -> {
+          case dict.get(resolved_queries, word_value) {
+            Ok(resolved_value) -> {
+              // Parse the resolved value as a new expression
+              case parser.parse_expr(resolved_value) {
+                Ok(parsed_exp) -> {
+                  case parsed_exp {
+                    parser.ExpContainer(exp) -> Ok(parser.PrimaryExp(exp))
+                  }
+                }
+                Error(_) -> {
+                  // If parsing fails, treat as a literal word
+                  Ok(parser.PrimaryWord(parser.Word(resolved_value)))
+                }
+              }
+            }
+            Error(_) -> {
+              // Word not found in resolved queries, keep as is
+              Ok(parser.PrimaryWord(word))
+            }
+          }
+        }
+      }
+    }
+    parser.PrimaryExp(exp) -> {
+      use resolved_exp <- result.try(resolve_exp(exp, resolved_queries))
+      Ok(parser.PrimaryExp(resolved_exp))
+    }
+  }
 }

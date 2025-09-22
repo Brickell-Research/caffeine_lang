@@ -8,13 +8,13 @@ pub fn generate_datadog_query(primitive: Primitives) -> String {
   case primitive {
     GoodOverTotal(numerator, denominator) -> {
       "query {\n"
-      <> "  numerator = \""
+      <> "    numerator = \""
       <> numerator_exp_to_datadog_query(numerator)
       <> "\"\n"
-      <> "  denominator = \""
+      <> "    denominator = \""
       <> denominator_exp_to_datadog_query(denominator)
       <> "\"\n"
-      <> "}\n"
+      <> "  }\n"
     }
   }
 }

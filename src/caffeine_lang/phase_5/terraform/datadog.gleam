@@ -1,3 +1,5 @@
+import caffeine_lang/cql/generator
+import caffeine_lang/cql/resolver
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
@@ -108,18 +110,16 @@ pub fn resource_target_threshold(threshold: Float) -> String {
 }
 
 pub fn slo_specification(slo: resolved_slo.Slo) -> String {
-  let metric_attributes =
-    slo.sli.metric_attributes
-    |> dict.keys()
-    |> list.sort(fn(a, b) { string.compare(a, b) })
-    |> list.map(fn(key) {
-      let assert Ok(value) = dict.get(slo.sli.metric_attributes, key)
-      let escaped_value = string.replace(value, "\"", "\\\"")
-      "    " <> key <> " = \"" <> escaped_value <> "\""
-    })
-    |> string.join("\n")
-
-  "query {\n" <> metric_attributes <> "\n  }\n"
+  // Resolve the CQL query from the resolved SLI
+  case resolver.resolve_primitives(slo.sli.resolved_query) {
+    Ok(primitives) -> {
+      // Generate the Datadog query string from the resolved primitives
+      generator.generate_datadog_query(primitives)
+    }
+    Error(err) -> {
+      err
+    }
+  }
 }
 
 pub fn get_tags(

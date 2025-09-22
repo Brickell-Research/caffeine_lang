@@ -1,12 +1,12 @@
+import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/ast/query_template_type
+import caffeine_lang/types/ast/service
+import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import caffeine_lang/types/unresolved/unresolved_sli_type
-import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_query_template_type
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/types/ast/sli_type
-import caffeine_lang/types/ast/service
-import caffeine_lang/types/ast/query_template_type 
+import caffeine_lang/types/unresolved/unresolved_service
+import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -37,7 +37,11 @@ pub fn link_and_validate_specification_sub_parts(
   use resolved_sli_types <- result.try(
     unresolved_sli_types
     |> list.map(fn(sli_type) {
-      resolve_unresolved_sli_type(sli_type, resolved_query_template_types, basic_types)
+      resolve_unresolved_sli_type(
+        sli_type,
+        resolved_query_template_types,
+        basic_types,
+      )
     })
     |> result.all,
   )
@@ -60,7 +64,11 @@ pub fn resolve_unresolved_query_template_type(
   basic_types: List(basic_type.BasicType),
 ) -> Result(query_template_type.QueryTemplateType, String) {
   case unresolved_query_template_type {
-    unresolved_query_template_type.QueryTemplateType(name, metric_attribute_names) -> {
+    unresolved_query_template_type.QueryTemplateType(
+      name,
+      metric_attribute_names,
+      query,
+    ) -> {
       // Find all the basic types that are used in this query template type
       let filters =
         metric_attribute_names
@@ -73,6 +81,7 @@ pub fn resolve_unresolved_query_template_type(
       Ok(query_template_type.QueryTemplateType(
         name: name,
         specification_of_query_templates: filters,
+        query: query,
       ))
     }
   }
