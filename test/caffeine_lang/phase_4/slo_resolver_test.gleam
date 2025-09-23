@@ -675,11 +675,11 @@ pub fn resolve_sli_with_list_string_test() {
         |> result.unwrap(generic_dictionary.new()),
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
-          attribute_name: "tags",
+          attribute_name: "TAGS",
           attribute_type: accepted_types.List(accepted_types.String),
         ),
         basic_type.BasicType(
-          attribute_name: "service",
+          attribute_name: "SERVICE",
           attribute_type: accepted_types.String,
         ),
       ],
@@ -696,7 +696,7 @@ pub fn resolve_sli_with_list_string_test() {
         PrimaryExp(
           Primary(
             PrimaryWord(Word(
-              "sum:requests{tags=[\"production\", \"web\", \"critical\"],service=\"api_service\"}",
+              "sum:requests{tags=(production OR web OR critical),service=\"api_service\"}",
             )),
           ),
         ),
@@ -709,7 +709,7 @@ pub fn resolve_sli_with_list_string_test() {
       metric_attributes: dict.from_list([
         #(
           "tags_query",
-          "sum:requests{tags=[\"production\", \"web\", \"critical\"],service=\"api_service\"}",
+          "sum:requests{tags=(production OR web OR critical),service=\"api_service\"}",
         ),
       ]),
       resolved_query: expected_resolved_query,

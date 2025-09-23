@@ -2,6 +2,7 @@ import caffeine_lang/cql/parser
 import caffeine_lang/types/ast/organization
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
+import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
@@ -70,7 +71,10 @@ pub fn resolve_sli(
 
       list.fold(filter_names, template, fn(acc, name) {
         case dict.get(filters, name) {
-          Ok(value) -> string.replace(acc, "$$" <> name <> "$$", value)
+          Ok(value) -> {
+            let processed_value = process_filter_value(value, sli_type, name)
+            string.replace(acc, "$$" <> name <> "$$", processed_value)
+          }
           Error(_) -> acc
         }
       })
@@ -155,5 +159,69 @@ fn resolve_primary(
       use resolved_exp <- result.try(resolve_exp(exp, resolved_queries))
       Ok(parser.PrimaryExp(resolved_exp))
     }
+  }
+}
+
+fn process_filter_value(
+  value: String,
+  sli_type: sli_type.SliType,
+  filter_name: String,
+) -> String {
+  // Check if this filter is defined as a List type
+  case find_filter_type(sli_type, filter_name) {
+    Ok(accepted_types.List(_)) -> {
+      // Convert list value to OR expression with parentheses
+      convert_list_to_or_expression(value)
+    }
+    _ -> value
+  }
+}
+
+fn find_filter_type(
+  sli_type: sli_type.SliType,
+  filter_name: String,
+) -> Result(accepted_types.AcceptedTypes, String) {
+  sli_type.specification_of_query_templatized_variables
+  |> list.find(fn(basic_type) { basic_type.attribute_name == filter_name })
+  |> result.map(fn(basic_type) { basic_type.attribute_type })
+  |> result.replace_error("Filter type not found")
+}
+
+fn convert_list_to_or_expression(list_value: String) -> String {
+  // Parse JSON-like list format: ["item1", "item2", "item3"]
+  // Convert to: (item1 OR item2 OR item3)
+  case parse_list_value(list_value) {
+    Ok(items) -> {
+      case items {
+        [] -> list_value // Return original if empty
+        [single] -> single // No parentheses needed for single item
+        _ -> "(" <> string.join(items, " OR ") <> ")"
+      }
+    }
+    Error(_) -> list_value // Return original if parsing fails
+  }
+}
+
+fn parse_list_value(value: String) -> Result(List(String), String) {
+  // Simple parser for JSON-like list format
+  let trimmed = string.trim(value)
+  case string.starts_with(trimmed, "[") && string.ends_with(trimmed, "]") {
+    True -> {
+      let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
+      let items = string.split(inner, ",")
+      let cleaned_items = 
+        items
+        |> list.map(string.trim)
+        |> list.map(fn(item) {
+          // Remove quotes if present
+          case string.starts_with(item, "\"") && string.ends_with(item, "\"") {
+            True -> string.slice(item, 1, string.length(item) - 2)
+            False -> item
+          }
+        })
+        |> list.filter(fn(item) { item != "" })
+      Ok(cleaned_items)
+    }
+    False -> Error("Not a list format")
   }
 }

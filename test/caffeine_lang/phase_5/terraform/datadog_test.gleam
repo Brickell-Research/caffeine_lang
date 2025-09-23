@@ -1,5 +1,5 @@
 import caffeine_lang/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
@@ -172,5 +172,55 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
       ),
     ))
 
+  assert actual == expected
+}
+
+pub fn slo_specification_with_list_test() {
+  let expected =
+    "query {\n    numerator = \"sum:requests{tags:(production OR web OR critical)}\"\n    denominator = \"sum:requests{}\"\n  }\n"
+  let actual =
+    datadog.slo_specification(resolved_slo.Slo(
+      window_in_days: 30,
+      threshold: 99.5,
+      service_name: "web_service",
+      team_name: "platform_team",
+      sli: resolved_sli.Sli(
+        query_template_type: query_template_type.QueryTemplateType(
+          specification_of_query_templates: [
+            basic_type.BasicType(
+              attribute_name: "numerator",
+              attribute_type: accepted_types.String,
+            ),
+            basic_type.BasicType(
+              attribute_name: "denominator",
+              attribute_type: accepted_types.String,
+            ),
+          ],
+          name: "good_over_bad_with_list",
+          query: ExpContainer(OperatorExpr(
+            Primary(PrimaryWord(Word("numerator"))),
+            Primary(PrimaryWord(Word("denominator"))),
+            Div,
+          )),
+        ),
+        metric_attributes: dict.from_list([
+          #("numerator", "sum:requests{tags:(production OR web OR critical)}"),
+          #("denominator", "sum:requests{}"),
+        ]),
+        resolved_query: ExpContainer(OperatorExpr(
+          Primary(
+            PrimaryExp(
+              Primary(
+                PrimaryWord(Word(
+                  "sum:requests{tags:(production OR web OR critical)}",
+                )),
+              ),
+            ),
+          ),
+          Primary(PrimaryExp(Primary(PrimaryWord(Word("sum:requests{}"))))),
+          Div,
+        )),
+      ),
+    ))
   assert actual == expected
 }
