@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "0.0.8"
+version = "0.0.9"
 description = "A simple hello world Gleam project"
 licences = ["GPL-3.0"]
 
