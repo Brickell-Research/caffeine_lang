@@ -8,7 +8,6 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
-
 import startest/expect
 
 pub fn set_resource_comment_header_test() {

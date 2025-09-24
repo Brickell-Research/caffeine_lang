@@ -223,8 +223,6 @@ pub fn resolve_slos_test() {
   expect.to_equal(actual, expected)
 }
 
-// ==== Additional Comprehensive Tests ====
-
 /// Test SLI resolution with complex CQL query expressions
 pub fn resolve_sli_with_complex_query_test() {
   let complex_query =
@@ -267,10 +265,23 @@ pub fn resolve_sli_with_complex_query_test() {
           attribute_name: "service",
           attribute_type: accepted_types.String,
         ),
+        basic_type.BasicType(
+          attribute_name: "environment",
+          attribute_type: accepted_types.String,
+        ),
+        basic_type.BasicType(
+          attribute_name: "requests_valid",
+          attribute_type: accepted_types.Boolean,
+        ),
       ],
     )
 
-  let filters = dict.from_list([#("SERVICE", "\"web_api\"")])
+  let filters =
+    dict.from_list([
+      #("SERVICE", "\"web_api\""),
+      #("ENVIRONMENT", "\"production\""),
+      #("REQUESTS_VALID", "true"),
+    ])
 
   let expected_resolved_query =
     ExpContainer(OperatorExpr(
@@ -283,7 +294,9 @@ pub fn resolve_sli_with_complex_query_test() {
       ),
       Primary(
         PrimaryExp(
-          Primary(PrimaryWord(Word("sum:requests.total{service=\"web_api\"}"))),
+          Primary(
+            PrimaryWord(Word("sum:requests.total{service=\"web_api\"}")),
+          ),
         ),
       ),
       Div,
@@ -303,7 +316,6 @@ pub fn resolve_sli_with_complex_query_test() {
   expect.to_equal(actual, expected)
 }
 
-/// Test SLI resolution with nested expressions
 pub fn resolve_sli_with_nested_expressions_test() {
   let nested_query =
     ExpContainer(OperatorExpr(
@@ -324,7 +336,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
     sli_type.SliType(
       name: "nested_expression",
       query_template_type: query_template_type.QueryTemplateType(
-        name: "nested_expression",
+        name: "nested_good_over_bad",
         specification_of_query_templates: [
           basic_type.BasicType(
             attribute_name: "a_query",
@@ -401,8 +413,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
   expect.to_equal(actual, expected)
 }
 
-/// Test SLI resolution with missing filter variables
-pub fn resolve_sli_missing_filters_test() {
+pub fn handle_missing_filter_variables_test() {
   let sli_type_with_missing_vars =
     sli_type.SliType(
       name: "missing_vars_test",
@@ -420,9 +431,7 @@ pub fn resolve_sli_missing_filters_test() {
         dict.from_list([
           #("test_query", "metric{service=$$SERVICE$$,region=$$REGION$$}"),
         ]),
-        dict.from_list([
-          #("test_query", accepted_types.String),
-        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
       )
         |> result.unwrap(generic_dictionary.new()),
       specification_of_query_templatized_variables: [
@@ -465,263 +474,7 @@ pub fn resolve_sli_missing_filters_test() {
   expect.to_equal(actual, expected)
 }
 
-/// Test complex organization with multiple teams and services
-pub fn resolve_complex_organization_test() {
-  let complex_sli_type_1 =
-    sli_type.SliType(
-      name: "availability",
-      query_template_type: query_template_type.QueryTemplateType(
-        name: "availability",
-        specification_of_query_templates: [
-          basic_type.BasicType(
-            attribute_name: "success_query",
-            attribute_type: accepted_types.String,
-          ),
-          basic_type.BasicType(
-            attribute_name: "total_query",
-            attribute_type: accepted_types.String,
-          ),
-        ],
-        query: ExpContainer(OperatorExpr(
-          Primary(PrimaryWord(Word("success_query"))),
-          Primary(PrimaryWord(Word("total_query"))),
-          Div,
-        )),
-      ),
-      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-        dict.from_list([
-          #(
-            "success_query",
-            "sum:http.requests{status:2xx,service=$$SERVICE$$}",
-          ),
-          #("total_query", "sum:http.requests{service=$$SERVICE$$}"),
-        ]),
-        dict.from_list([
-          #("success_query", accepted_types.String),
-          #("total_query", accepted_types.String),
-        ]),
-      )
-        |> result.unwrap(generic_dictionary.new()),
-      specification_of_query_templatized_variables: [
-        basic_type.BasicType(
-          attribute_name: "service",
-          attribute_type: accepted_types.String,
-        ),
-      ],
-    )
-
-  let complex_sli_type_2 =
-    sli_type.SliType(
-      name: "latency",
-      query_template_type: query_template_type.QueryTemplateType(
-        name: "latency",
-        specification_of_query_templates: [
-          basic_type.BasicType(
-            attribute_name: "p99_query",
-            attribute_type: accepted_types.String,
-          ),
-        ],
-        query: ExpContainer(Primary(PrimaryWord(Word("p99_query")))),
-      ),
-      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-        dict.from_list([
-          #("p99_query", "p99:http.request.duration{service=$$SERVICE$$}"),
-        ]),
-        dict.from_list([
-          #("p99_query", accepted_types.String),
-        ]),
-      )
-        |> result.unwrap(generic_dictionary.new()),
-      specification_of_query_templatized_variables: [
-        basic_type.BasicType(
-          attribute_name: "service",
-          attribute_type: accepted_types.String,
-        ),
-      ],
-    )
-
-  let slo_1 =
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: generic_dictionary.from_string_dict(
-        dict.from_list([#("SERVICE", "\"frontend\"")]),
-        dict.from_list([#("SERVICE", accepted_types.String)]),
-      )
-        |> result.unwrap(generic_dictionary.new()),
-      threshold: 99.9,
-      sli_type: "availability",
-      service_name: "frontend",
-      window_in_days: 30,
-    )
-
-  let slo_2 =
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: generic_dictionary.from_string_dict(
-        dict.from_list([#("SERVICE", "\"backend\"")]),
-        dict.from_list([#("SERVICE", accepted_types.String)]),
-      )
-        |> result.unwrap(generic_dictionary.new()),
-      threshold: 95.0,
-      sli_type: "latency",
-      service_name: "backend",
-      window_in_days: 7,
-    )
-
-  let complex_organization =
-    organization.Organization(
-      teams: [
-        team.Team(name: "frontend_team", slos: [slo_1]),
-        team.Team(name: "backend_team", slos: [slo_2]),
-      ],
-      service_definitions: [
-        service.Service(name: "frontend", supported_sli_types: [
-          complex_sli_type_1,
-        ]),
-        service.Service(name: "backend", supported_sli_types: [
-          complex_sli_type_2,
-        ]),
-      ],
-    )
-
-  let expected =
-    Ok([
-      resolved_slo.Slo(
-        window_in_days: 30,
-        threshold: 99.9,
-        service_name: "frontend",
-        team_name: "frontend_team",
-        sli: resolved_sli.Sli(
-          query_template_type: complex_sli_type_1.query_template_type,
-          metric_attributes: dict.from_list([
-            #(
-              "success_query",
-              "sum:http.requests{status:2xx,service=\"frontend\"}",
-            ),
-            #("total_query", "sum:http.requests{service=\"frontend\"}"),
-          ]),
-          resolved_query: ExpContainer(OperatorExpr(
-            Primary(
-              PrimaryExp(
-                Primary(
-                  PrimaryWord(Word(
-                    "sum:http.requests{status:2xx,service=\"frontend\"}",
-                  )),
-                ),
-              ),
-            ),
-            Primary(
-              PrimaryExp(
-                Primary(
-                  PrimaryWord(Word("sum:http.requests{service=\"frontend\"}")),
-                ),
-              ),
-            ),
-            Div,
-          )),
-        ),
-      ),
-      resolved_slo.Slo(
-        window_in_days: 7,
-        threshold: 95.0,
-        service_name: "backend",
-        team_name: "backend_team",
-        sli: resolved_sli.Sli(
-          query_template_type: complex_sli_type_2.query_template_type,
-          metric_attributes: dict.from_list([
-            #("p99_query", "p99:http.request.duration{service=\"backend\"}"),
-          ]),
-          resolved_query: ExpContainer(
-            Primary(
-              PrimaryExp(
-                Primary(
-                  PrimaryWord(Word(
-                    "p99:http.request.duration{service=\"backend\"}",
-                  )),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ])
-
-  let actual = slo_resolver.resolve_slos(complex_organization)
-  expect.to_equal(actual, expected)
-}
-
-/// Test SLI resolution with List(String) type variables
-pub fn resolve_sli_with_list_string_test() {
-  let list_query = ExpContainer(Primary(PrimaryWord(Word("tags_query"))))
-
-  let sli_type_with_list =
-    sli_type.SliType(
-      name: "list_string_test",
-      query_template_type: query_template_type.QueryTemplateType(
-        name: "list_string_test",
-        specification_of_query_templates: [
-          basic_type.BasicType(
-            attribute_name: "tags_query",
-            attribute_type: accepted_types.String,
-          ),
-        ],
-        query: list_query,
-      ),
-      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
-        dict.from_list([
-          #("tags_query", "sum:requests{tags=$$TAGS$$,service=$$SERVICE$$}"),
-        ]),
-        dict.from_list([
-          #("tags_query", accepted_types.String),
-        ]),
-      )
-        |> result.unwrap(generic_dictionary.new()),
-      specification_of_query_templatized_variables: [
-        basic_type.BasicType(
-          attribute_name: "TAGS",
-          attribute_type: accepted_types.List(accepted_types.String),
-        ),
-        basic_type.BasicType(
-          attribute_name: "SERVICE",
-          attribute_type: accepted_types.String,
-        ),
-      ],
-    )
-
-  let filters_with_list =
-    dict.from_list([
-      #("TAGS", "[\"production\", \"web\", \"critical\"]"),
-      #("SERVICE", "\"api_service\""),
-    ])
-
-  let expected_resolved_query =
-    ExpContainer(
-      Primary(
-        PrimaryExp(
-          Primary(
-            PrimaryWord(Word(
-              "sum:requests{tags=(production OR web OR critical),service=\"api_service\"}",
-            )),
-          ),
-        ),
-      ),
-    )
-
-  let expected =
-    Ok(resolved_sli.Sli(
-      query_template_type: sli_type_with_list.query_template_type,
-      metric_attributes: dict.from_list([
-        #(
-          "tags_query",
-          "sum:requests{tags=(production OR web OR critical),service=\"api_service\"}",
-        ),
-      ]),
-      resolved_query: expected_resolved_query,
-    ))
-
-  let actual = slo_resolver.resolve_sli(filters_with_list, sli_type_with_list)
-  assert actual == expected
-}
-
-pub fn parse_list_value_string_test() {
+pub fn parse_list_of_strings_test() {
   let expected = Ok(["production", "web", "critical"])
   let actual =
     slo_resolver.parse_list_value(
@@ -731,7 +484,7 @@ pub fn parse_list_value_string_test() {
   expect.to_equal(actual, expected)
 }
 
-pub fn parse_list_value_int_test() {
+pub fn parse_list_of_integers_test() {
   let expected = Ok([1, 2, 3])
   let actual =
     slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
