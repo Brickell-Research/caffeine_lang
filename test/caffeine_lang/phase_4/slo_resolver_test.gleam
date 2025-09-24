@@ -685,10 +685,11 @@ pub fn resolve_sli_with_list_string_test() {
       ],
     )
 
-  let filters_with_list = dict.from_list([
-    #("TAGS", "[\"production\", \"web\", \"critical\"]"),
-    #("SERVICE", "\"api_service\""),
-  ])
+  let filters_with_list =
+    dict.from_list([
+      #("TAGS", "[\"production\", \"web\", \"critical\"]"),
+      #("SERVICE", "\"api_service\""),
+    ])
 
   let expected_resolved_query =
     ExpContainer(
@@ -716,5 +717,22 @@ pub fn resolve_sli_with_list_string_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters_with_list, sli_type_with_list)
+  assert actual == expected
+}
+
+pub fn parse_list_value_string_test() {
+  let expected = Ok(["production", "web", "critical"])
+  let actual =
+    slo_resolver.parse_list_value(
+      "[\"production\", \"web\", \"critical\"]",
+      slo_resolver.inner_parse_string,
+    )
+  assert actual == expected
+}
+
+pub fn parse_list_value_int_test() {
+  let expected = Ok([1, 2, 3])
+  let actual =
+    slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
   assert actual == expected
 }

@@ -7,3 +7,14 @@ types:
     specification_of_query_templatized_variables:
       - graphql_operation_name
       - environment
+
+  - name: http_requests_success_rate
+    query_template_type: valid_over_total
+    typed_instatiation_of_query_templates:
+      numerator: "sum:rotom.http_requests.hits{peer.hostname:$$peer_hostname$$, env:$$environment$$, http.status_code:$$http_status_codes$$, !http.status_code:$$status_codes_to_exclude$$}.as_count()"
+      denominator: "sum:rotom.http_requests.hits{peer.hostname:$$peer_hostname$$, env:$$environment$$, !http.status_code:$$status_codes_to_exclude$$}.as_count()"
+    specification_of_query_templatized_variables:
+      - peer_hostname
+      - environment
+      - http_status_codes
+      - status_codes_to_exclude

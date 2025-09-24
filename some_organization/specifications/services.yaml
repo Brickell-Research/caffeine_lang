@@ -2,3 +2,6 @@ services:
   - name: reliable_service
     sli_types:
       - success_rate
+  - name: third_party_services
+    sli_types:
+      - http_requests_success_rate

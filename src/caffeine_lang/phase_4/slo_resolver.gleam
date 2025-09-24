@@ -7,6 +7,7 @@ import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
@@ -118,7 +119,10 @@ fn resolve_exp(
       Ok(parser.OperatorExpr(resolved_left, resolved_right, op))
     }
     parser.Primary(primary) -> {
-      use resolved_primary <- result.try(resolve_primary(primary, resolved_queries))
+      use resolved_primary <- result.try(resolve_primary(
+        primary,
+        resolved_queries,
+      ))
       Ok(parser.Primary(resolved_primary))
     }
   }
@@ -169,11 +173,65 @@ fn process_filter_value(
 ) -> String {
   // Check if this filter is defined as a List type
   case find_filter_type(sli_type, filter_name) {
-    Ok(accepted_types.List(_)) -> {
-      // Convert list value to OR expression with parentheses
-      convert_list_to_or_expression(value)
+    Ok(accepted_types.List(inner_type)) -> {
+      case inner_type {
+        accepted_types.String -> {
+          case parse_list_value(value, inner_parse_string) {
+            Ok(parsed_list) -> convert_list_to_or_expression(parsed_list)
+            Error(_) -> value
+          }
+        }
+        accepted_types.Integer -> {
+          case parse_list_value(value, inner_parse_int) {
+            Ok(parsed_list) ->
+              convert_list_to_or_expression(list.map(parsed_list, int.to_string))
+            Error(_) -> value
+          }
+        }
+        _ -> value
+      }
     }
     _ -> value
+  }
+}
+
+pub fn convert_list_to_or_expression(items: List(String)) -> String {
+  case items {
+    [] -> ""
+    [single] -> single
+    multiple -> "(" <> string.join(multiple, " OR ") <> ")"
+  }
+}
+
+pub fn parse_list_value(
+  value: String,
+  inner_parse: fn(String) -> Result(a, String),
+) -> Result(List(a), String) {
+  let splitted = string.split(value, "]")
+  let splitted = string.split(string.join(splitted, ""), "[")
+
+  let result =
+    string.join(splitted, "")
+    |> string.split(",")
+    |> list.map(inner_parse)
+    |> result.all
+
+  result
+}
+
+pub fn inner_parse_string(value: String) -> Result(String, String) {
+  let splitted = string.split(value, "\"")
+  let result =
+    string.join(splitted, "")
+    |> string.trim
+
+  Ok(result)
+}
+
+pub fn inner_parse_int(value: String) -> Result(Int, String) {
+  case int.parse(string.trim(value)) {
+    Ok(int_value) -> Ok(int_value)
+    Error(_) -> Error("Invalid integer value: " <> value)
   }
 }
 
@@ -185,43 +243,4 @@ fn find_filter_type(
   |> list.find(fn(basic_type) { basic_type.attribute_name == filter_name })
   |> result.map(fn(basic_type) { basic_type.attribute_type })
   |> result.replace_error("Filter type not found")
-}
-
-fn convert_list_to_or_expression(list_value: String) -> String {
-  // Parse JSON-like list format: ["item1", "item2", "item3"]
-  // Convert to: (item1 OR item2 OR item3)
-  case parse_list_value(list_value) {
-    Ok(items) -> {
-      case items {
-        [] -> list_value // Return original if empty
-        [single] -> single // No parentheses needed for single item
-        _ -> "(" <> string.join(items, " OR ") <> ")"
-      }
-    }
-    Error(_) -> list_value // Return original if parsing fails
-  }
-}
-
-fn parse_list_value(value: String) -> Result(List(String), String) {
-  // Simple parser for JSON-like list format
-  let trimmed = string.trim(value)
-  case string.starts_with(trimmed, "[") && string.ends_with(trimmed, "]") {
-    True -> {
-      let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
-      let items = string.split(inner, ",")
-      let cleaned_items = 
-        items
-        |> list.map(string.trim)
-        |> list.map(fn(item) {
-          // Remove quotes if present
-          case string.starts_with(item, "\"") && string.ends_with(item, "\"") {
-            True -> string.slice(item, 1, string.length(item) - 2)
-            False -> item
-          }
-        })
-        |> list.filter(fn(item) { item != "" })
-      Ok(cleaned_items)
-    }
-    False -> Error("Not a list format")
-  }
 }
