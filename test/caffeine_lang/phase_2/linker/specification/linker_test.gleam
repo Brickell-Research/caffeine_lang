@@ -11,6 +11,7 @@ import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/result
+import startest/expect
 
 pub fn resolve_unresolved_sli_type_test() {
   let basic_types = [
@@ -72,18 +73,21 @@ pub fn resolve_unresolved_sli_type_test() {
         )
         |> result.unwrap(generic_dictionary.new())
 
-      assert resolved_sli_type.name == "a"
-      assert resolved_sli_type.query_template_type == query_template
+      expect.to_equal(resolved_sli_type.name, "a")
+      expect.to_equal(resolved_sli_type.query_template_type, query_template)
       // Compare the string representations of the metric attributes
-      assert generic_dictionary.to_string_dict(
+      expect.to_equal(
+        generic_dictionary.to_string_dict(
           resolved_sli_type.typed_instatiation_of_query_templates,
-        )
-        == generic_dictionary.to_string_dict(expected_typed_instatiation)
-      assert resolved_sli_type.specification_of_query_templatized_variables
-        == basic_types
-      True
+        ),
+        generic_dictionary.to_string_dict(expected_typed_instatiation),
+      )
+      expect.to_equal(
+        resolved_sli_type.specification_of_query_templatized_variables,
+        basic_types,
+      )
     }
-    Error(_) -> False
+    Error(err) -> expect.to_equal(err, "Should not fail")
   }
 }
 
@@ -124,7 +128,10 @@ pub fn resolve_unresolved_sli_type_error_test() {
     )
 
   // Verify the error message
-  assert result == Error("QueryTemplateType nonexistent_template not found")
+  expect.to_equal(
+    result,
+    Error("QueryTemplateType nonexistent_template not found"),
+  )
 }
 
 pub fn resolve_unresolved_service_test() {
@@ -196,17 +203,16 @@ pub fn resolve_unresolved_service_test() {
   // Verify the result
   case result {
     Ok(service) -> {
-      assert service.name == "test_service"
+      expect.to_equal(service.name, "test_service")
       case service.supported_sli_types {
         [first, second] -> {
-          assert first.name == "a"
-          assert second.name == "b"
-          True
+          expect.to_equal(first.name, "a")
+          expect.to_equal(second.name, "b")
         }
-        _ -> False
+        _ -> expect.to_equal(service.supported_sli_types, [])
       }
     }
-    Error(_) -> False
+    Error(err) -> expect.to_equal(err, "Should not fail")
   }
 }
 

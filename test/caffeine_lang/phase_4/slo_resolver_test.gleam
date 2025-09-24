@@ -16,6 +16,7 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/result
+import startest/expect
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
   generic_dictionary.from_string_dict(
@@ -125,7 +126,7 @@ pub fn resolve_sli_test() {
       input_sli_type,
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_slo_test() {
@@ -174,7 +175,7 @@ pub fn resolve_slo_test() {
       input_sli_type,
     ])
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_slos_test() {
@@ -219,7 +220,7 @@ pub fn resolve_slos_test() {
 
   let actual = slo_resolver.resolve_slos(input_organization)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 // ==== Additional Comprehensive Tests ====
@@ -299,7 +300,7 @@ pub fn resolve_sli_with_complex_query_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_with_query)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 /// Test SLI resolution with nested expressions
@@ -397,7 +398,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_nested)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 /// Test SLI resolution with missing filter variables
@@ -461,7 +462,7 @@ pub fn resolve_sli_missing_filters_test() {
 
   let actual =
     slo_resolver.resolve_sli(incomplete_filters, sli_type_with_missing_vars)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 /// Test complex organization with multiple teams and services
@@ -644,7 +645,7 @@ pub fn resolve_complex_organization_test() {
     ])
 
   let actual = slo_resolver.resolve_slos(complex_organization)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 /// Test SLI resolution with List(String) type variables
@@ -727,12 +728,12 @@ pub fn parse_list_value_string_test() {
       "[\"production\", \"web\", \"critical\"]",
       slo_resolver.inner_parse_string,
     )
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn parse_list_value_int_test() {
   let expected = Ok([1, 2, 3])
   let actual =
     slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

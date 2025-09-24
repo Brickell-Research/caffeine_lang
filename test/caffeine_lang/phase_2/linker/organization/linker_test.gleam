@@ -13,6 +13,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
+import startest/expect
 
 pub fn get_instantiation_yaml_files_test() {
   let actual = linker.get_instantiation_yaml_files("./test/artifacts")
@@ -31,8 +32,10 @@ pub fn get_instantiation_yaml_files_test() {
 
   case actual {
     Ok(files) -> {
-      assert list.sort(files, string.compare)
-        == list.sort(expected_files, string.compare)
+      expect.to_equal(
+        list.sort(files, string.compare),
+        list.sort(expected_files, string.compare),
+      )
     }
     Error(_) -> panic as "Failed to read instantiation files"
   }
@@ -134,5 +137,5 @@ pub fn link_specification_and_instantiation_test() {
       ),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

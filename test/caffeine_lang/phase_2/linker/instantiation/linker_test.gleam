@@ -13,6 +13,7 @@ import caffeine_lang/types/unresolved/unresolved_team
 import gleam/dict
 import gleam/list
 import gleam/string
+import startest/expect
 
 pub fn aggregate_teams_and_slos_test() {
   let slo_a =
@@ -122,7 +123,7 @@ pub fn resolve_filters_test() {
       ),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_slo_test() {
@@ -185,7 +186,7 @@ pub fn resolve_slo_test() {
       window_in_days: 30,
     ))
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn link_and_validate_instantiation_test() {
@@ -252,5 +253,5 @@ pub fn link_and_validate_instantiation_test() {
       ]),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

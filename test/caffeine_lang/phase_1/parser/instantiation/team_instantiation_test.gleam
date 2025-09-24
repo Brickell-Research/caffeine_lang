@@ -1,17 +1,15 @@
 import caffeine_lang/phase_1/parser/instantiation/team_instantiation
-import caffeine_lang/types/unresolved/unresolved_team
 import caffeine_lang/types/unresolved/unresolved_slo
+import caffeine_lang/types/unresolved/unresolved_team
 import gleam/dict
+import startest/expect
 
 pub fn parse_instantiation_no_slos_test() {
   let actual =
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/less_reliable_service.yaml",
     )
-  assert actual
-    == Error(
-      "Empty YAML file: test/artifacts/platform/less_reliable_service.yaml",
-    )
+  expect.to_equal(actual, Error("Empty YAML file: test/artifacts/platform/less_reliable_service.yaml"))
 }
 
 pub fn parse_instantiation_multiple_slos_test() {
@@ -47,7 +45,7 @@ pub fn parse_instantiation_multiple_slos_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service.yaml",
     )
-  assert actual == Ok(expected_team)
+  expect.to_equal(actual, Ok(expected_team))
 }
 
 pub fn parse_instantiation_missing_sli_type_test() {
@@ -55,7 +53,7 @@ pub fn parse_instantiation_missing_sli_type_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_sli_type.yaml",
     )
-  assert actual == Error("Missing sli_type")
+  expect.to_equal(actual, Error("Missing sli_type"))
 }
 
 pub fn parse_instantiation_missing_filters_test() {
@@ -63,8 +61,10 @@ pub fn parse_instantiation_missing_filters_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     )
-  assert actual
-    == Error("Missing typed_instatiation_of_query_templatized_variables")
+  expect.to_equal(
+    actual,
+    Error("Missing typed_instatiation_of_query_templatized_variables"),
+  )
 }
 
 pub fn parse_instantiation_missing_threshold_test() {
@@ -72,7 +72,7 @@ pub fn parse_instantiation_missing_threshold_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_threshold.yaml",
     )
-  assert actual == Error("Missing threshold")
+  expect.to_equal(actual, Error("Missing threshold"))
 }
 
 pub fn parse_instantiation_missing_slos_test() {
@@ -80,7 +80,7 @@ pub fn parse_instantiation_missing_slos_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_slos.yaml",
     )
-  assert actual == Error("Missing slos")
+  expect.to_equal(actual, Error("Missing slos"))
 }
 
 pub fn parse_instantiation_invalid_threshold_type_test() {
@@ -88,7 +88,7 @@ pub fn parse_instantiation_invalid_threshold_type_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
     )
-  assert actual == Error("Expected threshold to be a float")
+  expect.to_equal(actual, Error("Expected threshold to be a float"))
 }
 
 pub fn parse_instantiation_invalid_sli_type_type_test() {
@@ -96,5 +96,5 @@ pub fn parse_instantiation_invalid_sli_type_type_test() {
     team_instantiation.parse_team_instantiation(
       "test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
     )
-  assert actual == Error("Expected sli_type to be a string")
+  expect.to_equal(actual, Error("Expected sli_type to be a string"))
 }

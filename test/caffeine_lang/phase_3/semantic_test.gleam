@@ -11,6 +11,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import gleam/dict
 import gleam/result
+import startest/expect
 
 fn team_1() -> team.Team {
   team.Team(name: "team1", slos: [
@@ -41,7 +42,7 @@ pub fn validate_services_from_instantiation_failure_test() {
       semantic_errors.UndefinedServiceError(service_names: ["team1", "team2"]),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn validate_services_from_instantiation_success_test() {
@@ -57,7 +58,7 @@ pub fn validate_services_from_instantiation_success_test() {
   let actual = semantic.validate_services_from_instantiation(organization)
   let expected = Ok(True)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn validate_sli_types_exist_from_instantiation_failure_test() {
@@ -71,7 +72,7 @@ pub fn validate_sli_types_exist_from_instantiation_failure_test() {
       semantic_errors.UndefinedSliTypeError(sli_type_names: ["availability"]),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn validate_sli_types_exist_from_instantiation_success_test() {
@@ -128,7 +129,7 @@ pub fn validate_sli_types_exist_from_instantiation_success_test() {
     semantic.validate_sli_types_exist_from_instantiation(organization)
   let expected = Ok(True)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
@@ -159,7 +160,7 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_failure_test() {
   let expected =
     Error(semantic_errors.InvalidSloThresholdError(thresholds: [101.0, -1.0]))
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn validate_slos_thresholds_reasonable_from_instantiation_success_test() {
@@ -172,7 +173,7 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_success_test() {
     )
   let expected = Ok(True)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn perform_semantic_analysis_test() {
@@ -270,7 +271,7 @@ pub fn perform_semantic_analysis_test() {
   let actual = semantic.perform_semantic_analysis(organization)
   let expected = Ok(True)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn perform_semantic_analysis_failure_test() {
@@ -283,5 +284,5 @@ pub fn perform_semantic_analysis_failure_test() {
       semantic_errors.UndefinedServiceError(service_names: ["team1", "team2"]),
     )
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

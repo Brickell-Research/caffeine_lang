@@ -1,6 +1,7 @@
-import caffeine_lang/types/common/accepted_types
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
+import caffeine_lang/types/common/accepted_types
+import startest/expect
 
 pub fn parse_basic_types_test() {
   let expected_basic_types = [
@@ -22,7 +23,7 @@ pub fn parse_basic_types_test() {
     basic_types_specification.parse_basic_types_specification(
       "test/artifacts/specifications/basic_types.yaml",
     )
-  assert actual == Ok(expected_basic_types)
+  expect.to_equal(actual, Ok(expected_basic_types))
 }
 
 pub fn parse_basic_types_missing_attribute_type_test() {
@@ -30,7 +31,7 @@ pub fn parse_basic_types_missing_attribute_type_test() {
     basic_types_specification.parse_basic_types_specification(
       "test/artifacts/specifications/basic_types_missing_attribute_type.yaml",
     )
-  assert actual == Error("Missing attribute_type")
+  expect.to_equal(actual, Error("Missing attribute_type"))
 }
 
 pub fn parse_basic_types_missing_attribute_name_test() {
@@ -38,7 +39,7 @@ pub fn parse_basic_types_missing_attribute_name_test() {
     basic_types_specification.parse_basic_types_specification(
       "test/artifacts/specifications/basic_types_missing_attribute_name.yaml",
     )
-  assert actual == Error("Missing attribute_name")
+  expect.to_equal(actual, Error("Missing attribute_name"))
 }
 
 pub fn parse_basic_types_unrecognized_attribute_type_test() {
@@ -46,5 +47,5 @@ pub fn parse_basic_types_unrecognized_attribute_type_test() {
     basic_types_specification.parse_basic_types_specification(
       "test/artifacts/specifications/basic_types_unrecognized_attribute_type.yaml",
     )
-  assert actual == Error("Unknown attribute type: LargeNumber")
+  expect.to_equal(actual, Error("Unknown attribute type: LargeNumber"))
 }

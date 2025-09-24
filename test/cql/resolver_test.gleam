@@ -3,6 +3,7 @@ import caffeine_lang/cql/parser.{
   parse_expr,
 }
 import caffeine_lang/cql/resolver.{GoodOverTotal, resolve_primitives}
+import startest/expect
 
 pub fn resolve_primitives_good_over_total_test() {
   let input = "A / B"
@@ -16,7 +17,7 @@ pub fn resolve_primitives_good_over_total_test() {
   let assert Ok(parsed) = parse_expr(input)
   let actual = resolve_primitives(parsed)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_primitives_good_over_total_moderately_more_complex_test() {
@@ -46,7 +47,7 @@ pub fn resolve_primitives_invalid_test() {
   let assert Ok(parsed) = parse_expr(input)
   let actual = resolve_primitives(parsed)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_complex_good_over_total_test() {
@@ -87,5 +88,5 @@ pub fn resolve_complex_good_over_total_test() {
   let assert Ok(parsed) = parse_expr(input)
   let actual = resolve_primitives(parsed)
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

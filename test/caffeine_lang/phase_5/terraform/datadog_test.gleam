@@ -9,36 +9,38 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 
+import startest/expect
+
 pub fn set_resource_comment_header_test() {
   let expected = "# SLO created by EzSLO for team - Type: type"
   let actual = datadog.set_resource_comment_header("team", "type")
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resource_threshold_test() {
   let expected =
     "thresholds {\n    timeframe = \"45d\"\n    target    = 0.95\n  }"
   let actual = datadog.resource_threshold(0.95, 45)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resource_target_threshold_test() {
   let expected = "target = 0.95"
   let actual = datadog.resource_target_threshold(0.95)
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resource_top_line_test() {
   let expected =
     "resource \"datadog_service_level_objective\" \"team_service_type\" {"
   let actual = datadog.resource_top_line("team", "service", "type")
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resource_description_test() {
   let expected = "description = \"SLO created by caffeine\""
   let actual = datadog.resource_description()
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn get_tags_test() {
@@ -51,14 +53,14 @@ pub fn get_tags_test() {
   let expected =
     "tags = [\"managed-by:caffeine\", \"team:platform\", \"service:production\", \"sli:good_over_bad\"]"
   let actual = datadog.get_tags("platform", "production", "good_over_bad")
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn tf_resource_name_test() {
   let expected =
     "resource \"datadog_service_level_objective\" team_service_type {"
   let actual = datadog.tf_resource_name("team", "service", "type")
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn resource_type_test() {
@@ -69,7 +71,7 @@ pub fn resource_type_test() {
       name: "good_over_bad",
       query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ))
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn slo_specification_test() {
@@ -111,7 +113,7 @@ pub fn slo_specification_test() {
         )),
       ),
     ))
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn full_resource_body_test() {
@@ -172,7 +174,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
       ),
     ))
 
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }
 
 pub fn slo_specification_with_list_test() {
@@ -222,5 +224,5 @@ pub fn slo_specification_with_list_test() {
         )),
       ),
     ))
-  assert actual == expected
+  expect.to_equal(actual, expected)
 }

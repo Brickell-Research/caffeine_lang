@@ -1,6 +1,6 @@
 // Simple test without external dependencies
-import gleeunit
+import startest
 
 pub fn main() {
-  gleeunit.main()
+  startest.run(startest.default_config())
 }

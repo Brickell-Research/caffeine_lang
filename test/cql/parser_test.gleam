@@ -1,7 +1,8 @@
 import caffeine_lang/cql/parser.{
-  Add, Div, ExpContainer, Mul, OperatorExpr, Primary,
-  PrimaryExp, PrimaryWord, Sub, Word,
+  Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
+  Sub, Word,
 }
+import startest/expect
 
 pub fn parse_expr_simple_parenthesized_word_test() {
   let input = "(A)"
@@ -13,7 +14,7 @@ pub fn parse_expr_simple_parenthesized_word_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_expr_simple_double_parenthesized_word_test() {
@@ -28,7 +29,7 @@ pub fn parse_expr_simple_double_parenthesized_word_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_simple_addition_expr_test() {
@@ -45,7 +46,7 @@ pub fn parse_simple_addition_expr_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_simple_subtraction_expr_test() {
@@ -62,7 +63,7 @@ pub fn parse_simple_subtraction_expr_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_simple_multiplication_expr_test() {
@@ -79,7 +80,7 @@ pub fn parse_simple_multiplication_expr_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_simple_division_expr_test() {
@@ -96,7 +97,7 @@ pub fn parse_simple_division_expr_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_multiple_expr_for_order_of_precedence_test() {
@@ -123,7 +124,7 @@ pub fn parse_multiple_expr_for_order_of_precedence_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_multiple_expr_for_order_of_precedence_no_parentheses_test() {
@@ -148,7 +149,7 @@ pub fn parse_multiple_expr_for_order_of_precedence_no_parentheses_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_complex_nested_parentheses_test() {
@@ -189,7 +190,7 @@ pub fn parse_complex_nested_parentheses_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_mixed_operators_precedence_test() {
@@ -218,7 +219,7 @@ pub fn parse_mixed_operators_precedence_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_deeply_nested_expression_test() {
@@ -226,30 +227,32 @@ pub fn parse_deeply_nested_expression_test() {
 
   let expected_exp =
     Ok(
-      ExpContainer(Primary(
-        PrimaryExp(OperatorExpr(
-          Primary(PrimaryWord(Word("A"))),
-          Primary(
-            PrimaryExp(OperatorExpr(
-              Primary(PrimaryWord(Word("B"))),
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(PrimaryWord(Word("C"))),
-                  Primary(PrimaryWord(Word("D"))),
-                  Sub,
-                )),
-              ),
-              Mul,
-            )),
-          ),
-          Add,
-        )),
-      )),
+      ExpContainer(
+        Primary(
+          PrimaryExp(OperatorExpr(
+            Primary(PrimaryWord(Word("A"))),
+            Primary(
+              PrimaryExp(OperatorExpr(
+                Primary(PrimaryWord(Word("B"))),
+                Primary(
+                  PrimaryExp(OperatorExpr(
+                    Primary(PrimaryWord(Word("C"))),
+                    Primary(PrimaryWord(Word("D"))),
+                    Sub,
+                  )),
+                ),
+                Mul,
+              )),
+            ),
+            Add,
+          )),
+        ),
+      ),
     )
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }
 
 pub fn parse_complex_division_expression_test() {
@@ -286,5 +289,5 @@ pub fn parse_complex_division_expression_test() {
 
   let actual = parser.parse_expr(input)
 
-  assert actual == expected_exp
+  expect.to_equal(actual, expected_exp)
 }

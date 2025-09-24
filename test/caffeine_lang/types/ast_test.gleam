@@ -12,6 +12,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
+import startest/expect
 
 pub fn organization_test() {
   // ==== Specification ====
@@ -99,5 +100,5 @@ pub fn organization_test() {
     |> list.map(fn(team) { team.name })
     |> list.sort(string.compare)
 
-  assert actual_team_names == expected_team_names
+  expect.to_equal(actual_team_names, expected_team_names)
 }
