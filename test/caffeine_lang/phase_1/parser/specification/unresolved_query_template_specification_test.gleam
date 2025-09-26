@@ -1,8 +1,17 @@
 import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import startest.{describe, it}
 import startest/expect
+
+fn assert_parse_error(file_path: String, expected: String) {
+  common_parse_test_utils.assert_parse_error(
+    unresolved_query_template_specification.parse_unresolved_query_template_types_specification,
+    file_path,
+    expected,
+  )
+}
 
 pub fn unresolved_query_template_specification_tests() {
   describe("Unresolved Query Template Specification Parser", [
@@ -26,18 +35,16 @@ pub fn unresolved_query_template_specification_tests() {
         expect.to_equal(actual, Ok(expected_query_template_types))
       }),
       it("returns error when specification_of_query_templates is missing", fn() {
-        let actual =
-          unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-            "test/artifacts/specifications/query_template_types_missing_specification_of_query_templates.yaml",
-          )
-        expect.to_equal(actual, Error("Missing specification_of_query_templates"))
+        assert_parse_error(
+          "test/artifacts/specifications/query_template_types_missing_specification_of_query_templates.yaml",
+          "Missing specification_of_query_templates",
+        )
       }),
       it("returns error when name is missing", fn() {
-        let actual =
-          unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-            "test/artifacts/specifications/query_template_types_missing_name.yaml",
-          )
-        expect.to_equal(actual, Error("Missing name"))
+        assert_parse_error(
+          "test/artifacts/specifications/query_template_types_missing_name.yaml",
+          "Missing name",
+        )
       }),
     ]),
   ])

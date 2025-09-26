@@ -1,8 +1,17 @@
+import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/common/accepted_types
 import startest.{describe, it}
 import startest/expect
+
+fn assert_parse_error(file_path: String, expected: String) {
+  common_parse_test_utils.assert_parse_error(
+    basic_types_specification.parse_basic_types_specification,
+    file_path,
+    expected,
+  )
+}
 
 pub fn basic_types_specification_tests() {
   describe("Basic Types Specification Parser", [
@@ -30,25 +39,22 @@ pub fn basic_types_specification_tests() {
         expect.to_equal(actual, Ok(expected_basic_types))
       }),
       it("returns error when attribute_type is missing", fn() {
-        let actual =
-          basic_types_specification.parse_basic_types_specification(
-            "test/artifacts/specifications/basic_types_missing_attribute_type.yaml",
-          )
-        expect.to_equal(actual, Error("Missing attribute_type"))
+        assert_parse_error(
+          "test/artifacts/specifications/basic_types_missing_attribute_type.yaml",
+          "Missing attribute_type",
+        )
       }),
       it("returns error when attribute_name is missing", fn() {
-        let actual =
-          basic_types_specification.parse_basic_types_specification(
-            "test/artifacts/specifications/basic_types_missing_attribute_name.yaml",
-          )
-        expect.to_equal(actual, Error("Missing attribute_name"))
+        assert_parse_error(
+          "test/artifacts/specifications/basic_types_missing_attribute_name.yaml",
+          "Missing attribute_name",
+        )
       }),
       it("returns error for unrecognized attribute type", fn() {
-        let actual =
-          basic_types_specification.parse_basic_types_specification(
-            "test/artifacts/specifications/basic_types_unrecognized_attribute_type.yaml",
-          )
-        expect.to_equal(actual, Error("Unknown attribute type: LargeNumber"))
+        assert_parse_error(
+          "test/artifacts/specifications/basic_types_unrecognized_attribute_type.yaml",
+          "Unknown attribute type: LargeNumber",
+        )
       }),
     ]),
   ])

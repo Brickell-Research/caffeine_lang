@@ -1,8 +1,17 @@
+import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import startest.{describe, it}
 import startest/expect
+
+fn assert_parse_error(file_path: String, expected: String) {
+  common_parse_test_utils.assert_parse_error(
+    unresolved_sli_types_specification.parse_unresolved_sli_types_specification,
+    file_path,
+    expected,
+  )
+}
 
 pub fn unresolved_sli_types_specification_tests() {
   describe("Unresolved SLI Types Specification Parser", [
@@ -39,18 +48,16 @@ pub fn unresolved_sli_types_specification_tests() {
         expect.to_equal(actual, Ok(expected_sli_types))
       }),
       it("returns error when name is missing", fn() {
-        let actual =
-          unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
-            "test/artifacts/specifications/sli_types_missing_name.yaml",
-          )
-        expect.to_equal(actual, Error("Missing name"))
+        assert_parse_error(
+          "test/artifacts/specifications/sli_types_missing_name.yaml",
+          "Missing name",
+        )
       }),
       it("returns error when query_template_type is missing", fn() {
-        let actual =
-          unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
-            "test/artifacts/specifications/sli_types_missing_query_template.yaml",
-          )
-        expect.to_equal(actual, Error("Missing query_template_type"))
+        assert_parse_error(
+          "test/artifacts/specifications/sli_types_missing_query_template.yaml",
+          "Missing query_template_type",
+        )
       }),
     ]),
   ])

@@ -16,6 +16,14 @@ import gleam/string
 import startest.{describe, it}
 import startest/expect
 
+// ==== Test Helpers ===
+fn new_bt(
+  name: String,
+  attribute_type: accepted_types.AcceptedTypes,
+) -> basic_type.BasicType {
+  basic_type.BasicType(attribute_name: name, attribute_type: attribute_type)
+}
+
 pub fn organization_linker_tests() {
   describe("Organization Linker", [
     describe("get_instantiation_yaml_files", [
@@ -62,7 +70,10 @@ pub fn organization_linker_tests() {
               dict.from_list([
                 #(
                   "environment",
-                  generic_dictionary.TypedValue("production", accepted_types.String),
+                  generic_dictionary.TypedValue(
+                    "production",
+                    accepted_types.String,
+                  ),
                 ),
                 #(
                   "graphql_operation_name",
@@ -76,17 +87,10 @@ pub fn organization_linker_tests() {
             window_in_days: 7,
           )
 
-        let expected_basic_type_1 =
-          basic_type.BasicType(
-            attribute_name: "environment",
-            attribute_type: accepted_types.String,
-          )
+        let expected_basic_type_1 = new_bt("environment", accepted_types.String)
 
         let expected_basic_type_2 =
-          basic_type.BasicType(
-            attribute_name: "graphql_operation_name",
-            attribute_type: accepted_types.String,
-          )
+          new_bt("graphql_operation_name", accepted_types.String)
 
         let expected_query_template_type =
           query_template_type.QueryTemplateType(
@@ -137,7 +141,9 @@ pub fn organization_linker_tests() {
                 ]),
               ],
               teams: [
-                team.Team(name: "platform", slos: [expected_slo_reliable_service]),
+                team.Team(name: "platform", slos: [
+                  expected_slo_reliable_service,
+                ]),
               ],
             ),
           )

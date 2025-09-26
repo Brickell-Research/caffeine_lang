@@ -15,33 +15,33 @@ import gleam/list
 import gleam/string
 import startest/expect
 
+// ==== Test Helpers ====
+fn create_test_dictionary() -> generic_dictionary.GenericDictionary {
+  let values = dict.from_list([#("key", "value")])
+  let type_defs = dict.from_list([#("key", accepted_types.String)])
+  case generic_dictionary.from_string_dict(values, type_defs) {
+    Ok(d) -> d
+    Error(_) -> generic_dictionary.new()
+  }
+}
+
+fn slo_creator(sli_type: String, service_name: String) -> slo.Slo {
+  slo.Slo(
+    typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
+    threshold: 0.9,
+    sli_type: sli_type,
+    service_name: service_name,
+    window_in_days: 30,
+  )
+}
+
+// =================================================
+
+// ==== Tests ====
 pub fn aggregate_teams_and_slos_test() {
-  let slo_a =
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
-      threshold: 0.9,
-      sli_type: "sli_type_a",
-      service_name: "service_a",
-      window_in_days: 30,
-    )
-
-  let slo_b =
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
-      threshold: 0.8,
-      sli_type: "sli_type_b",
-      service_name: "service_b",
-      window_in_days: 30,
-    )
-
-  let slo_c =
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
-      threshold: 0.7,
-      sli_type: "sli_type_c",
-      service_name: "service_c",
-      window_in_days: 30,
-    )
+  let slo_a = slo_creator("sli_type_a", "service_a")
+  let slo_b = slo_creator("sli_type_b", "service_b")
+  let slo_c = slo_creator("sli_type_c", "service_c")
 
   let team_a_service_a = team.Team(name: "team_a", slos: [slo_a])
   let team_a_service_b = team.Team(name: "team_a", slos: [slo_b])
@@ -56,17 +56,77 @@ pub fn aggregate_teams_and_slos_test() {
     team.Team(name: "team_b", slos: [slo_c]),
   ]
 
-  assert list.sort(actual, fn(a, b) { string.compare(a.name, b.name) })
-    == list.sort(expected, fn(a, b) { string.compare(a.name, b.name) })
+  expect.to_equal(
+    list.sort(actual, fn(a, b) { string.compare(a.name, b.name) }),
+    list.sort(expected, fn(a, b) { string.compare(a.name, b.name) }),
+  )
 }
 
-fn create_test_dictionary() -> generic_dictionary.GenericDictionary {
-  let values = dict.from_list([#("key", "value")])
-  let type_defs = dict.from_list([#("key", accepted_types.String)])
-  case generic_dictionary.from_string_dict(values, type_defs) {
-    Ok(d) -> d
-    Error(_) -> generic_dictionary.new()
-  }
+pub fn link_and_validate_instantiation_test() {
+  let sli_type_a_filters = [
+    basic_type.BasicType("key", accepted_types.String),
+  ]
+
+  let query_template_type_a =
+    query_template_type.QueryTemplateType(
+      specification_of_query_templates: sli_type_a_filters,
+      name: "query_template_type_a",
+      query: ExpContainer(Primary(PrimaryWord(Word("")))),
+    )
+
+  let service_a_filters =
+    dict.from_list([
+      #("key", "value"),
+    ])
+
+  let service_a_sli_type =
+    sli_type.SliType(
+      name: "sli_type_a",
+      query_template_type: query_template_type_a,
+      specification_of_query_templatized_variables: sli_type_a_filters,
+      typed_instatiation_of_query_templates: generic_dictionary.new(),
+    )
+
+  let service_a =
+    service.Service(name: "service_a", supported_sli_types: [
+      service_a_sli_type,
+    ])
+
+  let actual =
+    linker.link_and_validate_instantiation(
+      unresolved_team.Team(name: "team_a", slos: [
+        unresolved_slo.Slo(
+          typed_instatiation_of_query_templatized_variables: service_a_filters,
+          threshold: 0.9,
+          sli_type: "sli_type_a",
+          service_name: "service_a",
+          window_in_days: 30,
+        ),
+      ]),
+      [service_a],
+    )
+
+  let expected_filters =
+    generic_dictionary.GenericDictionary(
+      dict.from_list([
+        #("key", generic_dictionary.TypedValue("value", accepted_types.String)),
+      ]),
+    )
+
+  let expected =
+    Ok(
+      team.Team(name: "team_a", slos: [
+        slo.Slo(
+          typed_instatiation_of_query_templatized_variables: expected_filters,
+          threshold: 0.9,
+          sli_type: "sli_type_a",
+          service_name: "service_a",
+          window_in_days: 30,
+        ),
+      ]),
+    )
+
+  expect.to_equal(actual, expected)
 }
 
 pub fn resolve_filters_test() {
@@ -88,7 +148,6 @@ pub fn resolve_filters_test() {
       accepted_types.List(accepted_types.String),
     ),
   ]
-
   let actual =
     linker.resolve_filters(instantiated_filters, specification_filters)
 
@@ -185,73 +244,6 @@ pub fn resolve_slo_test() {
       service_name: "service_a",
       window_in_days: 30,
     ))
-
-  expect.to_equal(actual, expected)
-}
-
-pub fn link_and_validate_instantiation_test() {
-  let sli_type_a_filters = [
-    basic_type.BasicType("key", accepted_types.String),
-  ]
-
-  let query_template_type_a =
-    query_template_type.QueryTemplateType(
-      specification_of_query_templates: sli_type_a_filters,
-      name: "query_template_type_a",
-      query: ExpContainer(Primary(PrimaryWord(Word("")))),
-    )
-
-  let service_a_filters =
-    dict.from_list([
-      #("key", "value"),
-    ])
-
-  let service_a_sli_type =
-    sli_type.SliType(
-      name: "sli_type_a",
-      query_template_type: query_template_type_a,
-      specification_of_query_templatized_variables: sli_type_a_filters,
-      typed_instatiation_of_query_templates: generic_dictionary.new(),
-    )
-
-  let service_a =
-    service.Service(name: "service_a", supported_sli_types: [
-      service_a_sli_type,
-    ])
-
-  let actual =
-    linker.link_and_validate_instantiation(
-      unresolved_team.Team(name: "team_a", slos: [
-        unresolved_slo.Slo(
-          typed_instatiation_of_query_templatized_variables: service_a_filters,
-          threshold: 0.9,
-          sli_type: "sli_type_a",
-          service_name: "service_a",
-          window_in_days: 30,
-        ),
-      ]),
-      [service_a],
-    )
-
-  let expected_filters =
-    generic_dictionary.GenericDictionary(
-      dict.from_list([
-        #("key", generic_dictionary.TypedValue("value", accepted_types.String)),
-      ]),
-    )
-
-  let expected =
-    Ok(
-      team.Team(name: "team_a", slos: [
-        slo.Slo(
-          typed_instatiation_of_query_templatized_variables: expected_filters,
-          threshold: 0.9,
-          sli_type: "sli_type_a",
-          service_name: "service_a",
-          window_in_days: 30,
-        ),
-      ]),
-    )
 
   expect.to_equal(actual, expected)
 }
