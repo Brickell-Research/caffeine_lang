@@ -13,8 +13,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import startest.{describe, it}
-import startest/expect
+import gleeunit/should
 
 // ==== Test Helpers ===
 fn new_bt(
@@ -24,10 +23,7 @@ fn new_bt(
   basic_type.BasicType(attribute_name: name, attribute_type: attribute_type)
 }
 
-pub fn organization_linker_tests() {
-  describe("Organization Linker", [
-    describe("get_instantiation_yaml_files", [
-      it("returns all YAML files from test artifacts directory", fn() {
+pub fn get_instantiation_yaml_files_returns_all_yaml_files_from_test_artifacts_directory_test() {
         let actual = linker.get_instantiation_yaml_files("./test/artifacts")
 
         let expected_files = [
@@ -42,19 +38,16 @@ pub fn organization_linker_tests() {
           "./test/artifacts/platform/simple_yaml_load_test.yaml",
         ]
 
-        case actual {
-          Ok(files) -> {
-            expect.to_equal(
-              list.sort(files, string.compare),
-              list.sort(expected_files, string.compare),
-            )
-          }
-          Error(_) -> panic as "Failed to read instantiation files"
-        }
-      }),
-    ]),
-    describe("link_specification_and_instantiation", [
-      it("successfully links specification and instantiation files", fn() {
+  case actual {
+    Ok(files) -> {
+      list.sort(files, string.compare)
+      |> should.equal(list.sort(expected_files, string.compare))
+    }
+    Error(_) -> panic as "Failed to read instantiation files"
+  }
+}
+
+pub fn link_specification_and_instantiation_successfully_links_specification_and_instantiation_files_test() {
         let actual =
           linker.link_specification_and_instantiation(
             "./test/artifacts/some_organization/specifications",
@@ -148,8 +141,6 @@ pub fn organization_linker_tests() {
             ),
           )
 
-        expect.to_equal(actual, expected)
-      }),
-    ]),
-  ])
+  actual
+  |> should.equal(expected)
 }

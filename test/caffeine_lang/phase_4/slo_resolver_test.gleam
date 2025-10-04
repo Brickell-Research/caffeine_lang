@@ -16,7 +16,7 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/result
-import startest/expect
+import gleeunit/should
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
   generic_dictionary.from_string_dict(
@@ -126,7 +126,8 @@ pub fn resolve_sli_test() {
       input_sli_type,
     )
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn resolve_slo_test() {
@@ -175,7 +176,8 @@ pub fn resolve_slo_test() {
       input_sli_type,
     ])
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn resolve_slos_test() {
@@ -220,7 +222,8 @@ pub fn resolve_slos_test() {
 
   let actual = slo_resolver.resolve_slos(input_organization)
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 /// Test SLI resolution with complex CQL query expressions
@@ -313,7 +316,9 @@ pub fn resolve_sli_with_complex_query_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_with_query)
-  expect.to_equal(actual, expected)
+  
+  actual
+  |> should.equal(expected)
 }
 
 pub fn resolve_sli_with_nested_expressions_test() {
@@ -410,7 +415,9 @@ pub fn resolve_sli_with_nested_expressions_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_nested)
-  expect.to_equal(actual, expected)
+  
+  actual
+  |> should.equal(expected)
 }
 
 pub fn handle_missing_filter_variables_test() {
@@ -471,7 +478,9 @@ pub fn handle_missing_filter_variables_test() {
 
   let actual =
     slo_resolver.resolve_sli(incomplete_filters, sli_type_with_missing_vars)
-  expect.to_equal(actual, expected)
+  
+  actual
+  |> should.equal(expected)
 }
 
 pub fn parse_list_of_strings_test() {
@@ -481,12 +490,16 @@ pub fn parse_list_of_strings_test() {
       "[\"production\", \"web\", \"critical\"]",
       slo_resolver.inner_parse_string,
     )
-  expect.to_equal(actual, expected)
+  
+  actual
+  |> should.equal(expected)
 }
 
 pub fn parse_list_of_integers_test() {
   let expected = Ok([1, 2, 3])
   let actual =
     slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
-  expect.to_equal(actual, expected)
+  
+  actual
+  |> should.equal(expected)
 }

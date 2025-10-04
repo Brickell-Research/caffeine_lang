@@ -16,7 +16,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import startest/expect
+import gleeunit/should
 
 /// End-to-end integration test using realistic organization data
 /// Tests the complete flow from SLO resolution to Datadog code generation
@@ -106,7 +106,8 @@ pub fn end_to_end_organization_test() {
   case resolved_slos_result {
     Ok(resolved_slos) -> {
       // Verify we got resolved SLOs
-      expect.to_equal(list.length(resolved_slos), 1)
+      list.length(resolved_slos)
+      |> should.equal(1)
 
       let resolved_slo = case resolved_slos {
         [slo] -> slo
@@ -114,20 +115,23 @@ pub fn end_to_end_organization_test() {
       }
 
       // Verify SLO resolution worked correctly
-      expect.to_equal(resolved_slo.service_name, "web_service")
-      expect.to_equal(resolved_slo.team_name, "platform_team")
-      expect.to_equal(resolved_slo.threshold, 99.9)
+      resolved_slo.service_name
+      |> should.equal("web_service")
+      resolved_slo.team_name
+      |> should.equal("platform_team")
+      resolved_slo.threshold
+      |> should.equal(99.9)
 
       // Verify metric attributes were resolved correctly
       let metric_attrs = resolved_slo.sli.metric_attributes
-      expect.to_equal(
-        dict.get(metric_attrs, "success_query"),
+      dict.get(metric_attrs, "success_query")
+      |> should.equal(
         Ok(
           "sum:http.requests{status:2xx,service=\"web_service\",env=\"production\"}",
         ),
       )
-      expect.to_equal(
-        dict.get(metric_attrs, "total_query"),
+      dict.get(metric_attrs, "total_query")
+      |> should.equal(
         Ok("sum:http.requests{service=\"web_service\",env=\"production\"}"),
       )
 
@@ -135,18 +139,27 @@ pub fn end_to_end_organization_test() {
       let datadog_resource = datadog.full_resource_body(resolved_slo)
 
       // Step 3: Verify the generated Datadog code makes sense
-      expect.to_be_true(string.length(datadog_resource) > 0)
-      expect.to_be_true(string.contains(datadog_resource, "web_service"))
-      expect.to_be_true(string.contains(datadog_resource, "platform_team"))
-      expect.to_be_true(string.contains(datadog_resource, "99.9"))
+      { string.length(datadog_resource) > 0 }
+      |> should.be_true()
+      string.contains(datadog_resource, "web_service")
+      |> should.be_true()
+      string.contains(datadog_resource, "platform_team")
+      |> should.be_true()
+      string.contains(datadog_resource, "99.9")
+      |> should.be_true()
 
       // Verify the resource contains resolved metric queries
-      expect.to_be_true(string.contains(datadog_resource, "sum:http.requests"))
-      expect.to_be_true(string.contains(datadog_resource, "production"))
+      string.contains(datadog_resource, "sum:http.requests")
+      |> should.be_true()
+      string.contains(datadog_resource, "production")
+      |> should.be_true()
 
       // Verify no unresolved template variables remain
-      expect.to_be_false(string.contains(datadog_resource, "$$"))
+      string.contains(datadog_resource, "$$")
+      |> should.be_false()
     }
-    Error(err) -> expect.to_equal(err, "Should not fail")
+    Error(err) -> 
+      err
+      |> should.equal("Should not fail")
   }
 }

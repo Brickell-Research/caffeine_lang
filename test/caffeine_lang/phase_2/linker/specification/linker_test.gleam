@@ -11,7 +11,7 @@ import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/result
-import startest/expect
+import gleeunit/should
 
 pub fn resolve_unresolved_sli_type_test() {
   let basic_types = [
@@ -73,21 +73,21 @@ pub fn resolve_unresolved_sli_type_test() {
         )
         |> result.unwrap(generic_dictionary.new())
 
-      expect.to_equal(resolved_sli_type.name, "a")
-      expect.to_equal(resolved_sli_type.query_template_type, query_template)
+      resolved_sli_type.name
+      |> should.equal("a")
+      resolved_sli_type.query_template_type
+      |> should.equal(query_template)
       // Compare the string representations of the metric attributes
-      expect.to_equal(
-        generic_dictionary.to_string_dict(
-          resolved_sli_type.typed_instatiation_of_query_templates,
-        ),
-        generic_dictionary.to_string_dict(expected_typed_instatiation),
+      generic_dictionary.to_string_dict(
+        resolved_sli_type.typed_instatiation_of_query_templates,
       )
-      expect.to_equal(
-        resolved_sli_type.specification_of_query_templatized_variables,
-        basic_types,
-      )
+      |> should.equal(generic_dictionary.to_string_dict(expected_typed_instatiation))
+      resolved_sli_type.specification_of_query_templatized_variables
+      |> should.equal(basic_types)
     }
-    Error(err) -> expect.to_equal(err, "Should not fail")
+    Error(err) -> 
+      err
+      |> should.equal("Should not fail")
   }
 }
 
@@ -128,10 +128,8 @@ pub fn resolve_unresolved_sli_type_error_test() {
     )
 
   // Verify the error message
-  expect.to_equal(
-    result,
-    Error("QueryTemplateType nonexistent_template not found"),
-  )
+  result
+  |> should.equal(Error("QueryTemplateType nonexistent_template not found"))
 }
 
 pub fn resolve_unresolved_service_test() {
@@ -203,16 +201,23 @@ pub fn resolve_unresolved_service_test() {
   // Verify the result
   case result {
     Ok(service) -> {
-      expect.to_equal(service.name, "test_service")
+      service.name
+      |> should.equal("test_service")
       case service.supported_sli_types {
         [first, second] -> {
-          expect.to_equal(first.name, "a")
-          expect.to_equal(second.name, "b")
+          first.name
+          |> should.equal("a")
+          second.name
+          |> should.equal("b")
         }
-        _ -> expect.to_equal(service.supported_sli_types, [])
+        _ -> 
+          service.supported_sli_types
+          |> should.equal([])
       }
     }
-    Error(err) -> expect.to_equal(err, "Should not fail")
+    Error(err) -> 
+      err
+      |> should.equal("Should not fail")
   }
 }
 

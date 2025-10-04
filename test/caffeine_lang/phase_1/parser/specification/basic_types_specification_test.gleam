@@ -1,22 +1,10 @@
-import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/common/accepted_types
-import startest.{describe, it}
-import startest/expect
+import gleam/result
+import gleeunit/should
 
-fn assert_parse_error(file_path: String, expected: String) {
-  common_parse_test_utils.assert_parse_error(
-    basic_types_specification.parse_basic_types_specification,
-    file_path,
-    expected,
-  )
-}
-
-pub fn basic_types_specification_tests() {
-  describe("Basic Types Specification Parser", [
-    describe("parse_basic_types_specification", [
-      it("parses valid basic types", fn() {
+pub fn parse_basic_types_specification_parses_valid_basic_types_test() {
         let expected_basic_types = [
           basic_type.BasicType(
             attribute_name: "team_name",
@@ -32,30 +20,65 @@ pub fn basic_types_specification_tests() {
           ),
         ]
 
-        let actual =
-          basic_types_specification.parse_basic_types_specification(
-            "test/artifacts/specifications/basic_types.yaml",
-          )
-        expect.to_equal(actual, Ok(expected_basic_types))
-      }),
-      it("returns error when attribute_type is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/basic_types_missing_attribute_type.yaml",
-          "Missing attribute_type",
-        )
-      }),
-      it("returns error when attribute_name is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/basic_types_missing_attribute_name.yaml",
-          "Missing attribute_name",
-        )
-      }),
-      it("returns error for unrecognized attribute type", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/basic_types_unrecognized_attribute_type.yaml",
-          "Unknown attribute type: LargeNumber",
-        )
-      }),
-    ]),
-  ])
+  let actual =
+    basic_types_specification.parse_basic_types_specification(
+      "test/artifacts/specifications/basic_types.yaml",
+    )
+  
+  actual
+  |> should.equal(Ok(expected_basic_types))
+}
+
+pub fn parse_basic_types_specification_returns_error_when_attribute_type_is_missing_test() {
+  let actual =
+    basic_types_specification.parse_basic_types_specification(
+      "test/artifacts/specifications/basic_types_missing_attribute_type.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing attribute_type")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_basic_types_specification_returns_error_when_attribute_name_is_missing_test() {
+  let actual =
+    basic_types_specification.parse_basic_types_specification(
+      "test/artifacts/specifications/basic_types_missing_attribute_name.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing attribute_name")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_basic_types_specification_returns_error_for_unrecognized_attribute_type_test() {
+  let actual =
+    basic_types_specification.parse_basic_types_specification(
+      "test/artifacts/specifications/basic_types_unrecognized_attribute_type.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Unknown attribute type: LargeNumber")
+    Ok(_) -> panic as "Expected error"
+  }
 }

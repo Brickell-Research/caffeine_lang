@@ -1,21 +1,9 @@
-import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/types/unresolved/unresolved_service
-import startest.{describe, it}
-import startest/expect
+import gleam/result
+import gleeunit/should
 
-fn assert_parse_error(file_path: String, expected: String) {
-  common_parse_test_utils.assert_parse_error(
-    unresolved_services_specification.parse_unresolved_services_specification,
-    file_path,
-    expected,
-  )
-}
-
-pub fn unresolved_services_specification_tests() {
-  describe("Unresolved Services Specification Parser", [
-    describe("parse_unresolved_services_specification", [
-      it("parses valid services", fn() {
+pub fn parse_unresolved_services_specification_parses_valid_services_test() {
         let expected_services = [
           unresolved_service.Service(name: "reliable_service", sli_types: [
             "latency",
@@ -26,24 +14,47 @@ pub fn unresolved_services_specification_tests() {
           ]),
         ]
 
-        let actual =
-          unresolved_services_specification.parse_unresolved_services_specification(
-            "test/artifacts/specifications/services.yaml",
-          )
-        expect.to_equal(actual, Ok(expected_services))
-      }),
-      it("returns error when sli_types is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/services_missing_sli_types.yaml",
-          "Missing sli_types",
-        )
-      }),
-      it("returns error when name is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/services_missing_name.yaml",
-          "Missing name",
-        )
-      }),
-    ]),
-  ])
+  let actual =
+    unresolved_services_specification.parse_unresolved_services_specification(
+      "test/artifacts/specifications/services.yaml",
+    )
+  
+  actual
+  |> should.equal(Ok(expected_services))
+}
+
+pub fn parse_unresolved_services_specification_returns_error_when_sli_types_is_missing_test() {
+  let actual =
+    unresolved_services_specification.parse_unresolved_services_specification(
+      "test/artifacts/specifications/services_missing_sli_types.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing sli_types")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_unresolved_services_specification_returns_error_when_name_is_missing_test() {
+  let actual =
+    unresolved_services_specification.parse_unresolved_services_specification(
+      "test/artifacts/specifications/services_missing_name.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing name")
+    Ok(_) -> panic as "Expected error"
+  }
 }

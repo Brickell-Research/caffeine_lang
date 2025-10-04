@@ -12,13 +12,9 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import startest.{describe, it}
-import startest/expect
+import gleeunit/should
 
-pub fn ast_types_tests() {
-  describe("AST Types", [
-    describe("Organization", [
-      it("creates organization with teams and services", fn() {
+pub fn creates_organization_with_teams_and_services_test() {
         // ==== Specification ====
         let _some_basic_type =
           basic_type.BasicType(
@@ -104,8 +100,6 @@ pub fn ast_types_tests() {
           |> list.map(fn(team) { team.name })
           |> list.sort(string.compare)
 
-        expect.to_equal(actual_team_names, expected_team_names)
-      }),
-    ]),
-  ])
+        actual_team_names
+        |> should.equal(expected_team_names)
 }

@@ -1,22 +1,10 @@
-import caffeine_lang/phase_1/parser/common_parse_test_utils
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
-import startest.{describe, it}
-import startest/expect
+import gleam/result
+import gleeunit/should
 
-fn assert_parse_error(file_path: String, expected: String) {
-  common_parse_test_utils.assert_parse_error(
-    unresolved_sli_types_specification.parse_unresolved_sli_types_specification,
-    file_path,
-    expected,
-  )
-}
-
-pub fn unresolved_sli_types_specification_tests() {
-  describe("Unresolved SLI Types Specification Parser", [
-    describe("parse_unresolved_sli_types_specification", [
-      it("parses valid SLI types", fn() {
+pub fn parse_unresolved_sli_types_specification_parses_valid_sli_types_test() {
         let expected_sli_types = [
           unresolved_sli_type.SliType(
             name: "latency",
@@ -41,24 +29,47 @@ pub fn unresolved_sli_types_specification_tests() {
           ),
         ]
 
-        let actual =
-          unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
-            "test/artifacts/specifications/sli_types.yaml",
-          )
-        expect.to_equal(actual, Ok(expected_sli_types))
-      }),
-      it("returns error when name is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/sli_types_missing_name.yaml",
-          "Missing name",
-        )
-      }),
-      it("returns error when query_template_type is missing", fn() {
-        assert_parse_error(
-          "test/artifacts/specifications/sli_types_missing_query_template.yaml",
-          "Missing query_template_type",
-        )
-      }),
-    ]),
-  ])
+  let actual =
+    unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
+      "test/artifacts/specifications/sli_types.yaml",
+    )
+  
+  actual
+  |> should.equal(Ok(expected_sli_types))
+}
+
+pub fn parse_unresolved_sli_types_specification_returns_error_when_name_is_missing_test() {
+  let actual =
+    unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
+      "test/artifacts/specifications/sli_types_missing_name.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing name")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_unresolved_sli_types_specification_returns_error_when_query_template_type_is_missing_test() {
+  let actual =
+    unresolved_sli_types_specification.parse_unresolved_sli_types_specification(
+      "test/artifacts/specifications/sli_types_missing_query_template.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing query_template_type")
+    Ok(_) -> panic as "Expected error"
+  }
 }

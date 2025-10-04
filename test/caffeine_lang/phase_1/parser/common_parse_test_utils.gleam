@@ -1,4 +1,4 @@
-import startest/expect
+import gleeunit/should
 
 pub fn assert_parse_error(
   parser: fn(String) -> Result(a, String),
@@ -6,5 +6,6 @@ pub fn assert_parse_error(
   expected: String,
 ) {
   let actual = parser(file_path)
-  expect.to_equal(actual, Error(expected))
+  actual
+  |> should.equal(Error(expected))
 }

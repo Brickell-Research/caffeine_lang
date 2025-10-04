@@ -8,7 +8,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
-import startest/expect
+import gleeunit/should
 
 pub fn build_provider_datadog_test() {
   let expected = {
@@ -29,7 +29,8 @@ provider \"datadog\" {
 
   let actual = generator.build_provider([generator.Datadog])
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn build_variables_datadog_test() {
@@ -51,7 +52,8 @@ variable \"DATADOG_APP_KEY\" {
 
   let actual = generator.build_variables([generator.Datadog])
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn build_backend_test() {
@@ -65,7 +67,8 @@ pub fn build_backend_test() {
 
   let actual = generator.build_backend()
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn build_main_empty_test() {
@@ -81,7 +84,8 @@ pub fn build_main_empty_test() {
 
   let actual = generator.build_main([])
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }
 
 pub fn build_main_one_slo_test() {
@@ -150,5 +154,6 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
 
   let actual = generator.build_main([resolved_slo])
 
-  expect.to_equal(actual, expected)
+  actual
+  |> should.equal(expected)
 }

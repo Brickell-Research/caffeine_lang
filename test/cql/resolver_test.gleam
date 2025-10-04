@@ -3,13 +3,9 @@ import caffeine_lang/cql/parser.{
   parse_expr,
 }
 import caffeine_lang/cql/resolver.{GoodOverTotal, resolve_primitives}
-import startest.{describe, it}
-import startest/expect
+import gleeunit/should
 
-pub fn cql_resolver_tests() {
-  describe("CQL Resolver", [
-    describe("resolve_primitives", [
-      it("resolves simple good over total expression", fn() {
+pub fn resolve_primitives_resolves_simple_good_over_total_expression_test() {
         let input = "A / B"
 
         let expected =
@@ -21,9 +17,11 @@ pub fn cql_resolver_tests() {
         let assert Ok(parsed) = parse_expr(input)
         let actual = resolve_primitives(parsed)
 
-        expect.to_equal(actual, expected)
-      }),
-      it("resolves moderately complex good over total expression", fn() {
+        actual
+        |> should.equal(expected)
+}
+
+pub fn resolve_primitives_resolves_moderately_complex_good_over_total_expression_test() {
         let input = "A + B / C"
 
         let expected =
@@ -39,9 +37,11 @@ pub fn cql_resolver_tests() {
         let assert Ok(parsed) = parse_expr(input)
         let actual = resolve_primitives(parsed)
 
-        expect.to_equal(actual, expected)
-      }),
-      it("returns error for invalid expression", fn() {
+        actual
+        |> should.equal(expected)
+}
+
+pub fn resolve_primitives_returns_error_for_invalid_expression_test() {
         let input = "A + B"
 
         let expected = Error("Invalid expression")
@@ -49,9 +49,11 @@ pub fn cql_resolver_tests() {
         let assert Ok(parsed) = parse_expr(input)
         let actual = resolve_primitives(parsed)
 
-        expect.to_equal(actual, expected)
-      }),
-      it("resolves complex nested good over total expression", fn() {
+        actual
+        |> should.equal(expected)
+}
+
+pub fn resolve_primitives_resolves_complex_nested_good_over_total_expression_test() {
         let input = "(A - G) + B / (C + (D + E) * F)"
 
         let expected =
@@ -89,8 +91,6 @@ pub fn cql_resolver_tests() {
         let assert Ok(parsed) = parse_expr(input)
         let actual = resolve_primitives(parsed)
 
-        expect.to_equal(actual, expected)
-      }),
-    ]),
-  ])
+        actual
+        |> should.equal(expected)
 }

@@ -2,288 +2,278 @@ import caffeine_lang/cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
   Sub, Word,
 }
-import startest.{describe, it}
-import startest/expect
+import gleeunit/should
 
-pub fn cql_parser_tests() {
-  describe("CQL Parser", [
-    describe("parse_expr", [
-      it("parses simple parenthesized word", fn() {
-        let input = "(A)"
+pub fn parse_expr_parses_simple_parenthesized_word_test() {
+  let input = "(A)"
 
-        let expected_word = Word("A")
-        let expected_primary = PrimaryWord(expected_word)
-        let inner_expected_exp = Primary(expected_primary)
-        let expected_exp = Ok(ExpContainer(Primary(PrimaryExp(inner_expected_exp))))
+  let expected_word = Word("A")
+  let expected_primary = PrimaryWord(expected_word)
+  let inner_expected_exp = Primary(expected_primary)
+  let expected_exp = Ok(ExpContainer(Primary(PrimaryExp(inner_expected_exp))))
 
-        let actual = parser.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses simple double parenthesized word", fn() {
-        let input = "((A))"
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let expected_word = Word("A")
-        let expected_primary = PrimaryWord(expected_word)
-        let inner_expected_exp = Primary(expected_primary)
-        let second_innerexpected_exp = Primary(PrimaryExp(inner_expected_exp))
-        let expected_exp =
-          Ok(ExpContainer(Primary(PrimaryExp(second_innerexpected_exp))))
+pub fn parse_expr_parses_simple_double_parenthesized_word_test() {
+  let input = "((A))"
 
-        let actual = parser.parse_expr(input)
+  let expected_word = Word("A")
+  let expected_primary = PrimaryWord(expected_word)
+  let inner_expected_exp = Primary(expected_primary)
+  let second_innerexpected_exp = Primary(PrimaryExp(inner_expected_exp))
+  let expected_exp =
+    Ok(ExpContainer(Primary(PrimaryExp(second_innerexpected_exp))))
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses simple addition expression", fn() {
-        let input = "A + B"
+  let actual = parser.parse_expr(input)
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
+pub fn parse_expr_parses_simple_addition_expression_test() {
+  let input = "A + B"
 
-        let expected_exp =
-          Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Add)))
+  let expected_word_a = Word("A")
+  let expected_word_b = Word("B")
 
-        let actual = parser.parse_expr(input)
+  let expected_primary_a = Primary(PrimaryWord(expected_word_a))
+  let expected_primary_b = Primary(PrimaryWord(expected_word_b))
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses simple subtraction expression", fn() {
-        let input = "A - B"
+  let expected_exp =
+    Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Add)))
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
+  let actual = parser.parse_expr(input)
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let expected_exp =
-          Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Sub)))
+pub fn parse_expr_parses_simple_subtraction_expression_test() {
+  let input = "A - B"
 
-        let actual = parser.parse_expr(input)
+  let expected_word_a = Word("A")
+  let expected_word_b = Word("B")
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses simple multiplication expression", fn() {
-        let input = "A * B"
+  let expected_primary_a = Primary(PrimaryWord(expected_word_a))
+  let expected_primary_b = Primary(PrimaryWord(expected_word_b))
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
+  let expected_exp =
+    Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Sub)))
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
+  let actual = parser.parse_expr(input)
 
-        let expected_exp =
-          Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Mul)))
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let actual = parser.parse_expr(input)
+pub fn parse_expr_parses_simple_multiplication_expression_test() {
+  let input = "A * B"
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses simple division expression", fn() {
-        let input = "A / B"
+  let expected_word_a = Word("A")
+  let expected_word_b = Word("B")
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
+  let expected_primary_a = Primary(PrimaryWord(expected_word_a))
+  let expected_primary_b = Primary(PrimaryWord(expected_word_b))
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
+  let expected_exp =
+    Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Mul)))
 
-        let expected_exp =
-          Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Div)))
+  let actual = parser.parse_expr(input)
 
-        let actual = parser.parse_expr(input)
+  actual
+  |> should.equal(expected_exp)
+}
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses expression with order of precedence using parentheses", fn() {
-        let input = "(A + B) / C"
+pub fn parse_expr_parses_simple_division_expression_test() {
+  let input = "A / B"
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
-        let expected_word_c = Word("C")
+  let expected_word_a = Word("A")
+  let expected_word_b = Word("B")
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
-        let expected_primary_c = Primary(PrimaryWord(expected_word_c))
+  let expected_primary_a = Primary(PrimaryWord(expected_word_a))
+  let expected_primary_b = Primary(PrimaryWord(expected_word_b))
 
-        let expected_exp =
-          Ok(
-            ExpContainer(OperatorExpr(
-              Primary(
-                PrimaryExp(OperatorExpr(expected_primary_a, expected_primary_b, Add)),
-              ),
-              expected_primary_c,
-              Div,
-            )),
-          )
+  let expected_exp =
+    Ok(ExpContainer(OperatorExpr(expected_primary_a, expected_primary_b, Div)))
 
-        let actual = parser.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses expression with order of precedence without parentheses", fn() {
-        let input = "A + B / C"
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let expected_word_a = Word("A")
-        let expected_word_b = Word("B")
-        let expected_word_c = Word("C")
+pub fn parse_expr_parses_expression_with_order_of_precedence_using_parentheses_test() {
+  let input = "(A + B) / C"
 
-        let expected_primary_a = Primary(PrimaryWord(expected_word_a))
-        let expected_primary_b = Primary(PrimaryWord(expected_word_b))
-        let expected_primary_c = Primary(PrimaryWord(expected_word_c))
+  let expected_word_a = Word("A")
+  let expected_word_b = Word("B")
+  let expected_word_c = Word("C")
 
-        let expected_exp =
-          Ok(
-            ExpContainer(OperatorExpr(
-              expected_primary_a,
-              OperatorExpr(expected_primary_b, expected_primary_c, Div),
-              Add,
-            )),
-          )
+  let expected_primary_a = Primary(PrimaryWord(expected_word_a))
+  let expected_primary_b = Primary(PrimaryWord(expected_word_b))
+  let expected_primary_c = Primary(PrimaryWord(expected_word_c))
 
-        let actual = parser.parse_expr(input)
+  let expected_exp =
+    Ok(
+      ExpContainer(OperatorExpr(
+        Primary(
+          PrimaryExp(OperatorExpr(expected_primary_a, expected_primary_b, Add)),
+        ),
+        expected_primary_c,
+        Div,
+      )),
+    )
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses complex nested parentheses", fn() {
-        let input = "((A + B) * C) / (D - (E + F))"
+  let actual = parser.parse_expr(input)
 
-        let expected_exp =
-          Ok(
-            ExpContainer(OperatorExpr(
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(
-                    PrimaryExp(OperatorExpr(
-                      Primary(PrimaryWord(Word("A"))),
-                      Primary(PrimaryWord(Word("B"))),
-                      Add,
-                    )),
-                  ),
-                  Primary(PrimaryWord(Word("C"))),
-                  Mul,
-                )),
-              ),
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(PrimaryWord(Word("D"))),
-                  Primary(
-                    PrimaryExp(OperatorExpr(
-                      Primary(PrimaryWord(Word("E"))),
-                      Primary(PrimaryWord(Word("F"))),
-                      Add,
-                    )),
-                  ),
-                  Sub,
-                )),
-              ),
-              Div,
-            )),
-          )
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let actual = parser.parse_expr(input)
+pub fn parse_expr_parses_complex_nested_parentheses_test() {
+  let input = "((A + B) * C) / (D - (E + F))"
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses mixed operators with precedence", fn() {
-        let input = "A * B + C / D - E"
-
-        let expected_exp =
-          Ok(
-            ExpContainer(OperatorExpr(
-              OperatorExpr(
+  let expected_exp =
+    Ok(
+      ExpContainer(OperatorExpr(
+        Primary(
+          PrimaryExp(OperatorExpr(
+            Primary(
+              PrimaryExp(OperatorExpr(
                 Primary(PrimaryWord(Word("A"))),
                 Primary(PrimaryWord(Word("B"))),
-                Mul,
-              ),
-              OperatorExpr(
-                OperatorExpr(
-                  Primary(PrimaryWord(Word("C"))),
-                  Primary(PrimaryWord(Word("D"))),
-                  Div,
-                ),
-                Primary(PrimaryWord(Word("E"))),
-                Sub,
-              ),
-              Add,
-            )),
-          )
-
-        let actual = parser.parse_expr(input)
-
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses deeply nested expression", fn() {
-        let input = "(A + (B * (C - D)))"
-
-        let expected_exp =
-          Ok(
-            ExpContainer(
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(PrimaryWord(Word("A"))),
-                  Primary(
-                    PrimaryExp(OperatorExpr(
-                      Primary(PrimaryWord(Word("B"))),
-                      Primary(
-                        PrimaryExp(OperatorExpr(
-                          Primary(PrimaryWord(Word("C"))),
-                          Primary(PrimaryWord(Word("D"))),
-                          Sub,
-                        )),
-                      ),
-                      Mul,
-                    )),
-                  ),
-                  Add,
-                )),
-              ),
+                Add,
+              )),
             ),
-          )
+            Primary(PrimaryWord(Word("C"))),
+            Mul,
+          )),
+        ),
+        Primary(
+          PrimaryExp(OperatorExpr(
+            Primary(PrimaryWord(Word("D"))),
+            Primary(
+              PrimaryExp(OperatorExpr(
+                Primary(PrimaryWord(Word("E"))),
+                Primary(PrimaryWord(Word("F"))),
+                Add,
+              )),
+            ),
+            Sub,
+          )),
+        ),
+        Div,
+      )),
+    )
 
-        let actual = parser.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
-        expect.to_equal(actual, expected_exp)
-      }),
-      it("parses complex division expression", fn() {
-        let input = "(X + Y * Z) / (A - B + C)"
+  actual
+  |> should.equal(expected_exp)
+}
 
-        let expected_exp =
-          Ok(
-            ExpContainer(OperatorExpr(
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(PrimaryWord(Word("X"))),
-                  OperatorExpr(
-                    Primary(PrimaryWord(Word("Y"))),
-                    Primary(PrimaryWord(Word("Z"))),
-                    Mul,
-                  ),
-                  Add,
-                )),
-              ),
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  OperatorExpr(
-                    Primary(PrimaryWord(Word("A"))),
-                    Primary(PrimaryWord(Word("B"))),
+pub fn parse_expr_parses_mixed_operators_with_precedence_test() {
+  let input = "A * B + C / D - E"
+
+  let expected_exp =
+    Ok(
+      ExpContainer(OperatorExpr(
+        OperatorExpr(
+          Primary(PrimaryWord(Word("A"))),
+          Primary(PrimaryWord(Word("B"))),
+          Mul,
+        ),
+        OperatorExpr(
+          OperatorExpr(
+            Primary(PrimaryWord(Word("C"))),
+            Primary(PrimaryWord(Word("D"))),
+            Div,
+          ),
+          Primary(PrimaryWord(Word("E"))),
+          Sub,
+        ),
+        Add,
+      )),
+    )
+
+  let actual = parser.parse_expr(input)
+
+  actual
+  |> should.equal(expected_exp)
+}
+
+pub fn parse_expr_parses_deeply_nested_expression_test() {
+  let input = "(A + (B * (C - D)))"
+
+  let expected_exp =
+    Ok(
+      ExpContainer(
+        Primary(
+          PrimaryExp(OperatorExpr(
+            Primary(PrimaryWord(Word("A"))),
+            Primary(
+              PrimaryExp(OperatorExpr(
+                Primary(PrimaryWord(Word("B"))),
+                Primary(
+                  PrimaryExp(OperatorExpr(
+                    Primary(PrimaryWord(Word("C"))),
+                    Primary(PrimaryWord(Word("D"))),
                     Sub,
-                  ),
-                  Primary(PrimaryWord(Word("C"))),
-                  Add,
-                )),
-              ),
-              Div,
-            )),
-          )
+                  )),
+                ),
+                Mul,
+              )),
+            ),
+            Add,
+          )),
+        ),
+      ),
+    )
 
-        let actual = parser.parse_expr(input)
+  let actual = parser.parse_expr(input)
 
-        expect.to_equal(actual, expected_exp)
-      }),
-    ]),
-  ])
+  actual
+  |> should.equal(expected_exp)
+}
+
+pub fn parse_expr_parses_complex_division_expression_test() {
+  let input = "(X + Y * Z) / (A - B + C)"
+
+  let expected_exp =
+    Ok(
+      ExpContainer(OperatorExpr(
+        Primary(
+          PrimaryExp(OperatorExpr(
+            Primary(PrimaryWord(Word("X"))),
+            OperatorExpr(
+              Primary(PrimaryWord(Word("Y"))),
+              Primary(PrimaryWord(Word("Z"))),
+              Mul,
+            ),
+            Add,
+          )),
+        ),
+        Primary(
+          PrimaryExp(OperatorExpr(
+            OperatorExpr(
+              Primary(PrimaryWord(Word("A"))),
+              Primary(PrimaryWord(Word("B"))),
+              Sub,
+            ),
+            Primary(PrimaryWord(Word("C"))),
+            Add,
+          )),
+        ),
+        Div,
+      )),
+    )
+
+  let actual = parser.parse_expr(input)
+
+  actual
+  |> should.equal(expected_exp)
 }
