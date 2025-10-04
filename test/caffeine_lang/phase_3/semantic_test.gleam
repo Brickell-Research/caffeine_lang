@@ -9,32 +9,14 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
+import fixtures/team_fixtures
 import gleam/dict
 import gleam/result
 import gleeunit/should
 
-fn team_1() -> team.Team {
-  team.Team(name: "team1", slos: [
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
-      threshold: 99.9,
-      sli_type: "availability",
-      service_name: "team1",
-      window_in_days: 30,
-    ),
-    slo.Slo(
-      typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
-      threshold: 99.9,
-      sli_type: "availability",
-      service_name: "team2",
-      window_in_days: 30,
-    ),
-  ])
-}
-
 pub fn validate_services_from_instantiation_returns_error_when_services_are_not_defined_test() {
   let organization =
-    organization.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_fixtures.team_1()])
 
   let actual = semantic.validate_services_from_instantiation(organization)
   let expected =
@@ -53,7 +35,7 @@ pub fn validate_services_from_instantiation_succeeds_when_all_services_are_defin
         service.Service(name: "team1", supported_sli_types: []),
         service.Service(name: "team2", supported_sli_types: []),
       ],
-      teams: [team_1()],
+      teams: [team_fixtures.team_1()],
     )
 
   let actual = semantic.validate_services_from_instantiation(organization)
@@ -65,7 +47,7 @@ pub fn validate_services_from_instantiation_succeeds_when_all_services_are_defin
 
 pub fn validate_sli_types_exist_from_instantiation_returns_error_when_sli_types_are_not_defined_test() {
   let organization =
-    organization.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_fixtures.team_1()])
 
   let actual =
     semantic.validate_sli_types_exist_from_instantiation(organization)
@@ -105,7 +87,7 @@ pub fn validate_sli_types_exist_from_instantiation_succeeds_when_all_sli_types_a
           ),
         ]),
       ],
-      teams: [team_1()],
+      teams: [team_fixtures.team_1()],
     )
 
   let actual =
@@ -145,7 +127,7 @@ pub fn validate_slos_thresholds_reasonable_from_instantiation_returns_error_for_
 
 pub fn validate_slos_thresholds_reasonable_from_instantiation_succeeds_for_valid_thresholds_test() {
   let organization =
-    organization.Organization(service_definitions: [], teams: [team_1()])
+    organization.Organization(service_definitions: [], teams: [team_fixtures.team_1()])
 
   let actual =
     semantic.validate_slos_thresholds_reasonable_from_instantiation(
@@ -245,7 +227,7 @@ pub fn perform_semantic_analysis_fails_when_any_validation_fails_test() {
   let organization =
     organization.Organization(
       service_definitions: [],
-      teams: [team_1()],
+      teams: [team_fixtures.team_1()],
     )
 
   let actual = semantic.perform_semantic_analysis(organization)
