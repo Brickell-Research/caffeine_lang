@@ -297,9 +297,7 @@ pub fn resolve_sli_with_complex_query_test() {
       ),
       Primary(
         PrimaryExp(
-          Primary(
-            PrimaryWord(Word("sum:requests.total{service=\"web_api\"}")),
-          ),
+          Primary(PrimaryWord(Word("sum:requests.total{service=\"web_api\"}"))),
         ),
       ),
       Div,
@@ -316,7 +314,7 @@ pub fn resolve_sli_with_complex_query_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_with_query)
-  
+
   actual
   |> should.equal(expected)
 }
@@ -415,7 +413,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
     ))
 
   let actual = slo_resolver.resolve_sli(filters, sli_type_nested)
-  
+
   actual
   |> should.equal(expected)
 }
@@ -478,7 +476,7 @@ pub fn handle_missing_filter_variables_test() {
 
   let actual =
     slo_resolver.resolve_sli(incomplete_filters, sli_type_with_missing_vars)
-  
+
   actual
   |> should.equal(expected)
 }
@@ -490,7 +488,7 @@ pub fn parse_list_of_strings_test() {
       "[\"production\", \"web\", \"critical\"]",
       slo_resolver.inner_parse_string,
     )
-  
+
   actual
   |> should.equal(expected)
 }
@@ -499,7 +497,63 @@ pub fn parse_list_of_integers_test() {
   let expected = Ok([1, 2, 3])
   let actual =
     slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
-  
+
+  actual
+  |> should.equal(expected)
+}
+
+pub fn resolve_list_of_integers_test() {
+  // Create an SLI type with a List<Integer> filter
+  let sli_type_with_int_list =
+    sli_type.SliType(
+      name: "int_list_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "int_list_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{status_codes=$$status_codes$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "status_codes",
+          attribute_type: accepted_types.List(accepted_types.Integer),
+        ),
+      ],
+    )
+
+  // Provide a list of integers: [1, 10, 200]
+  // Note: filter name must match the specification (lowercase)
+  let filters = dict.from_list([#("status_codes", "[1, 10, 200]")])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      query_template_type: sli_type_with_int_list.query_template_type,
+      metric_attributes: dict.from_list([
+        // Should resolve to (1,10,200)
+        #("test_query", "metric{status_codes=(1,10,200)}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            Primary(PrimaryWord(Word("metric{status_codes=(1,10,200)}"))),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list)
+
   actual
   |> should.equal(expected)
 }

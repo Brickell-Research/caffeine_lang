@@ -199,7 +199,7 @@ pub fn convert_list_to_or_expression(items: List(String)) -> String {
   case items {
     [] -> ""
     [single] -> single
-    multiple -> "(" <> string.join(multiple, " OR ") <> ")"
+    multiple -> "(" <> string.join(multiple, ",") <> ")"
   }
 }
 
