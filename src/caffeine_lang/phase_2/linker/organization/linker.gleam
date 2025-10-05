@@ -1,4 +1,4 @@
-import caffeine_lang/phase_1/parser/instantiation/team_instantiation
+import caffeine_lang/phase_1/parser/instantiation/unresolved_team_instantiation
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
@@ -59,7 +59,7 @@ pub fn link_specification_and_instantiation(
   use instantiations <- result.try(
     instantiations_files
     |> list.try_map(fn(file) {
-      team_instantiation.parse_team_instantiation(file)
+      unresolved_team_instantiation.parse_unresolved_team_instantiation(file)
     }),
   )
 

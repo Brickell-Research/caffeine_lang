@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/phase_1/parser/utils/glaml_helpers
-import caffeine_lang/types/unresolved/unresolved_team
 import caffeine_lang/types/unresolved/unresolved_slo
+import caffeine_lang/types/unresolved/unresolved_team
 import glaml
 import gleam/dict
 import gleam/result
@@ -10,7 +10,7 @@ import gleam/result
 /// Parses an instantiation from a YAML file. This is a single team with at least one slo.
 /// Note that within a configutation repository, there can be multiple instantiations for
 /// the same team and even the same service. Logic for this lives within the linking code.
-pub fn parse_team_instantiation(
+pub fn parse_unresolved_team_instantiation(
   file_path: String,
 ) -> Result(unresolved_team.Team, String) {
   use params <- result.try(general_common.extract_params_from_file_path(

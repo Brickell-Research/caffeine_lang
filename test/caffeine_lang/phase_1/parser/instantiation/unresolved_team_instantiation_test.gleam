@@ -1,29 +1,31 @@
-import caffeine_lang/phase_1/parser/instantiation/team_instantiation
+import caffeine_lang/phase_1/parser/instantiation/unresolved_team_instantiation
 import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
 import gleam/dict
 import gleam/result
 import gleeunit/should
 
-pub fn parse_team_instantiation_returns_error_for_empty_yaml_file_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/less_reliable_service.yaml",
     )
-  
+
   actual
   |> result.is_error()
   |> should.be_true()
-  
+
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Empty YAML file: test/artifacts/platform/less_reliable_service.yaml")
+      |> should.equal(
+        "Empty YAML file: test/artifacts/platform/less_reliable_service.yaml",
+      )
     Ok(_) -> panic as "Expected error"
   }
 }
 
-pub fn parse_team_instantiation_parses_multiple_slos_successfully_test() {
+pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_test() {
   let expected_slo =
     unresolved_slo.Slo(
       typed_instatiation_of_query_templatized_variables: dict.from_list([
@@ -53,20 +55,20 @@ pub fn parse_team_instantiation_parses_multiple_slos_successfully_test() {
     ])
 
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service.yaml",
     )
-  
+
   actual
   |> should.equal(Ok(expected_team))
 }
 
-pub fn parse_team_instantiation_returns_error_when_sli_type_is_missing_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missing_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_sli_type.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -75,26 +77,28 @@ pub fn parse_team_instantiation_returns_error_when_sli_type_is_missing_test() {
   }
 }
 
-pub fn parse_team_instantiation_returns_error_when_filters_are_missing_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_when_filters_are_missing_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing typed_instatiation_of_query_templatized_variables")
+      |> should.equal(
+        "Missing typed_instatiation_of_query_templatized_variables",
+      )
     Ok(_) -> panic as "Expected error"
   }
 }
 
-pub fn parse_team_instantiation_returns_error_when_threshold_is_missing_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missing_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_threshold.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -103,12 +107,12 @@ pub fn parse_team_instantiation_returns_error_when_threshold_is_missing_test() {
   }
 }
 
-pub fn parse_team_instantiation_returns_error_when_slos_are_missing_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_when_slos_are_missing_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_slos.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -117,12 +121,12 @@ pub fn parse_team_instantiation_returns_error_when_slos_are_missing_test() {
   }
 }
 
-pub fn parse_team_instantiation_returns_error_for_invalid_threshold_type_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_threshold_type_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -131,12 +135,12 @@ pub fn parse_team_instantiation_returns_error_for_invalid_threshold_type_test() 
   }
 }
 
-pub fn parse_team_instantiation_returns_error_for_invalid_sli_type_type_test() {
+pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_sli_type_type_test() {
   let actual =
-    team_instantiation.parse_team_instantiation(
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
     )
-  
+
   case actual {
     Error(msg) ->
       msg
