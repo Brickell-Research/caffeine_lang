@@ -1,96 +1,53 @@
-import caffeine_lang/cql/parser.{
-  Add, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Sub, Word,
-  parse_expr,
-}
+import caffeine_lang/cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
 import caffeine_lang/cql/resolver.{GoodOverTotal, resolve_primitives}
+import cql/test_helpers.{parens, prim_word, simple_op_cont}
 import gleeunit/should
 
-pub fn resolve_primitives_resolves_simple_good_over_total_expression_test() {
-        let input = "A / B"
+pub fn resolve_primitives_test() {
+  // Simple good over bad
+  let assert Ok(parsed) = parse_expr("A / B")
 
-        let expected =
-          Ok(GoodOverTotal(
-            Primary(PrimaryWord(Word("A"))),
-            Primary(PrimaryWord(Word("B"))),
-          ))
+  resolve_primitives(parsed)
+  |> should.equal(Ok(GoodOverTotal(prim_word("A"), prim_word("B"))))
 
-        let assert Ok(parsed) = parse_expr(input)
-        let actual = resolve_primitives(parsed)
+  // Moderately more complex good over bad
+  let assert Ok(parsed) = parse_expr("A + B / C")
 
-        actual
-        |> should.equal(expected)
-}
+  resolve_primitives(parsed)
+  |> should.equal(
+    Ok(GoodOverTotal(simple_op_cont("A", "B", Add), prim_word("C"))),
+  )
 
-pub fn resolve_primitives_resolves_moderately_complex_good_over_total_expression_test() {
-        let input = "A + B / C"
+  // Nested and complex good over bad
+  let assert Ok(parsed) = parse_expr("(A - G) + B / (C + (D + E) * F)")
 
-        let expected =
-          Ok(GoodOverTotal(
-            OperatorExpr(
-              Primary(PrimaryWord(Word("A"))),
-              Primary(PrimaryWord(Word("B"))),
-              Add,
-            ),
-            Primary(PrimaryWord(Word("C"))),
-          ))
+  resolve_primitives(parsed)
+  |> should.equal(
+    Ok(GoodOverTotal(
+      OperatorExpr(parens(simple_op_cont("A", "G", Sub)), prim_word("B"), Add),
+      parens(OperatorExpr(
+        prim_word("C"),
+        OperatorExpr(parens(simple_op_cont("D", "E", Add)), prim_word("F"), Mul),
+        Add,
+      )),
+    )),
+  )
 
-        let assert Ok(parsed) = parse_expr(input)
-        let actual = resolve_primitives(parsed)
+  // Invalid expression, addition and no division
+  let assert Ok(parsed) = parse_expr("A + B")
 
-        actual
-        |> should.equal(expected)
-}
+  resolve_primitives(parsed)
+  |> should.equal(Error("Invalid expression"))
 
-pub fn resolve_primitives_returns_error_for_invalid_expression_test() {
-        let input = "A + B"
+  // More complex invalid expression
+  let assert Ok(parsed) = parse_expr("A + B / C + D")
 
-        let expected = Error("Invalid expression")
+  resolve_primitives(parsed)
+  |> should.equal(Error("Invalid expression"))
 
-        let assert Ok(parsed) = parse_expr(input)
-        let actual = resolve_primitives(parsed)
+  // Even more complex invalid expression
+  let assert Ok(parsed) = parse_expr("((A + B) - E) / C + D")
 
-        actual
-        |> should.equal(expected)
-}
-
-pub fn resolve_primitives_resolves_complex_nested_good_over_total_expression_test() {
-        let input = "(A - G) + B / (C + (D + E) * F)"
-
-        let expected =
-          Ok(GoodOverTotal(
-            OperatorExpr(
-              Primary(
-                PrimaryExp(OperatorExpr(
-                  Primary(PrimaryWord(Word("A"))),
-                  Primary(PrimaryWord(Word("G"))),
-                  Sub,
-                )),
-              ),
-              Primary(PrimaryWord(Word("B"))),
-              Add,
-            ),
-            Primary(
-              PrimaryExp(OperatorExpr(
-                Primary(PrimaryWord(Word("C"))),
-                OperatorExpr(
-                  Primary(
-                    PrimaryExp(OperatorExpr(
-                      Primary(PrimaryWord(Word("D"))),
-                      Primary(PrimaryWord(Word("E"))),
-                      Add,
-                    )),
-                  ),
-                  Primary(PrimaryWord(Word("F"))),
-                  Mul,
-                ),
-                Add,
-              )),
-            ),
-          ))
-
-        let assert Ok(parsed) = parse_expr(input)
-        let actual = resolve_primitives(parsed)
-
-        actual
-        |> should.equal(expected)
+  resolve_primitives(parsed)
+  |> should.equal(Error("Invalid expression"))
 }
