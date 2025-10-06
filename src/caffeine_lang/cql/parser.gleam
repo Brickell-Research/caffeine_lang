@@ -30,6 +30,7 @@ pub type Word {
   Word(value: String)
 }
 
+/// parse_expr
 pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
   use exp <- result.try(do_parse_expr(input))
   Ok(ExpContainer(exp))
@@ -39,7 +40,11 @@ pub fn do_parse_expr(input: String) -> Result(Exp, String) {
   let trimmed = string.trim(input)
 
   // Check if it's a fully parenthesized expression with balanced parentheses
-  case string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")") && is_fully_parenthesized(trimmed) {
+  case
+    string.starts_with(trimmed, "(")
+    && string.ends_with(trimmed, ")")
+    && is_fully_parenthesized(trimmed)
+  {
     True -> {
       let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
       use inner_exp <- result.try(do_parse_expr(inner))
@@ -96,7 +101,8 @@ fn is_fully_parenthesized(input: String) -> Bool {
 
 fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
   case pos >= string.length(input) {
-    True -> count == 0  // Should end with count 0 (all parens closed)
+    True -> count == 0
+    // Should end with count 0 (all parens closed)
     False -> {
       let char = string.slice(input, pos, 1)
       let new_count = case char {
@@ -105,7 +111,8 @@ fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
         _ -> count
       }
       case new_count == 0 && pos < string.length(input) - 1 {
-        True -> False  // Parentheses closed before the end
+        True -> False
+        // Parentheses closed before the end
         False -> check_balanced_parens(input, pos + 1, new_count)
       }
     }
