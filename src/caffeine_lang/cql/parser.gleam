@@ -39,12 +39,7 @@ pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
 pub fn do_parse_expr(input: String) -> Result(Exp, String) {
   let trimmed = string.trim(input)
 
-  // Check if it's a fully parenthesized expression with balanced parentheses
-  case
-    string.starts_with(trimmed, "(")
-    && string.ends_with(trimmed, ")")
-    && is_fully_parenthesized(trimmed)
-  {
+  case is_fully_parenthesized(trimmed) {
     True -> {
       let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
       use inner_exp <- result.try(do_parse_expr(inner))
@@ -56,6 +51,12 @@ pub fn do_parse_expr(input: String) -> Result(Exp, String) {
       try_operators(trimmed, operators)
     }
   }
+}
+
+fn is_fully_parenthesized(input: String) -> Bool {
+  string.starts_with(input, "(")
+  && string.ends_with(input, ")")
+  && { string.length(input) >= 2 && check_balanced_parens(input, 1, 1) }
 }
 
 fn try_operators(
@@ -85,18 +86,6 @@ fn find_operator(
   operator: String,
 ) -> Result(#(String, String), String) {
   find_rightmost_operator_at_level(input, operator, 0, 0, -1)
-}
-
-fn is_fully_parenthesized(input: String) -> Bool {
-  // Check if the entire expression is wrapped in one set of parentheses
-  // by ensuring the parentheses balance and the first paren closes at the end
-  let length = string.length(input)
-  case length < 2 {
-    True -> False
-    False -> {
-      check_balanced_parens(input, 1, 1)
-    }
-  }
 }
 
 fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
