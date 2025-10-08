@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{Add, Div, ExpContainer, Mul, OperatorExpr, Sub}
+import caffeine_lang/cql/parser.{
+  Add, Div, ExpContainer, Mul, OperatorExpr, Sub, is_balanced_parens,
+}
 import cql/test_helpers.{
   exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }
@@ -91,4 +93,21 @@ pub fn parse_expr_parses_test() {
       Div,
     )),
   )
+}
+
+pub fn is_balanced_parens_test() {
+  is_balanced_parens("", 0, 0)
+  |> should.be_true
+
+  is_balanced_parens("()", 0, 0)
+  |> should.be_true
+
+  is_balanced_parens("(()))", 0, 0)
+  |> should.be_false
+
+  is_balanced_parens("(()))", 0, 0)
+  |> should.be_false
+
+  is_balanced_parens("(a(b)(c)((())))", 11, 4)
+  |> should.be_true
 }

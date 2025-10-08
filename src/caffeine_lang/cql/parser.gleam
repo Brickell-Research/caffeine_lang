@@ -56,7 +56,7 @@ pub fn do_parse_expr(input: String) -> Result(Exp, String) {
 fn is_fully_parenthesized(input: String) -> Bool {
   string.starts_with(input, "(")
   && string.ends_with(input, ")")
-  && { string.length(input) >= 2 && check_balanced_parens(input, 1, 1) }
+  && { string.length(input) >= 2 && is_balanced_parens(input, 1, 1) }
 }
 
 fn try_operators(
@@ -64,10 +64,12 @@ fn try_operators(
   operators: List(#(String, Operator)),
 ) -> Result(Exp, String) {
   case operators {
+    // base case
     [] -> {
       let word = Word(input)
       Ok(Primary(PrimaryWord(word)))
     }
+    // recursive case
     [#(op_str, op), ..rest] -> {
       case find_operator(input, op_str) {
         Ok(#(left, right)) -> {
@@ -88,10 +90,9 @@ fn find_operator(
   find_rightmost_operator_at_level(input, operator, 0, 0, -1)
 }
 
-fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
+pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
   case pos >= string.length(input) {
     True -> count == 0
-    // Should end with count 0 (all parens closed)
     False -> {
       let char = string.slice(input, pos, 1)
       let new_count = case char {
@@ -101,8 +102,7 @@ fn check_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
       }
       case new_count == 0 && pos < string.length(input) - 1 {
         True -> False
-        // Parentheses closed before the end
-        False -> check_balanced_parens(input, pos + 1, new_count)
+        False -> is_balanced_parens(input, pos + 1, new_count)
       }
     }
   }
