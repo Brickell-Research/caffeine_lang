@@ -45,7 +45,7 @@ fn do_build_variables(provider: SupportedProvider) -> String {
 
 pub fn build_slo_definitions(slos: List(resolved_slo.Slo)) -> String {
   slos
-  |> list.map(datadog.full_resource_body)
+  |> list.index_map(datadog.full_resource_body)
   |> string.join("\n\n")
 }
 

@@ -125,18 +125,16 @@ pub fn end_to_end_organization_test() {
       // Verify metric attributes were resolved correctly
       let metric_attrs = resolved_slo.sli.metric_attributes
       dict.get(metric_attrs, "success_query")
-      |> should.equal(
-        Ok(
-          "sum:http.requests{status:2xx,service=\"web_service\",env=\"production\"}",
-        ),
-      )
+      |> should.equal(Ok(
+        "sum:http.requests{status:2xx,service=\"web_service\",env=\"production\"}",
+      ))
       dict.get(metric_attrs, "total_query")
-      |> should.equal(
-        Ok("sum:http.requests{service=\"web_service\",env=\"production\"}"),
-      )
+      |> should.equal(Ok(
+        "sum:http.requests{service=\"web_service\",env=\"production\"}",
+      ))
 
       // Step 2: Generate Datadog resource from resolved SLO
-      let datadog_resource = datadog.full_resource_body(resolved_slo)
+      let datadog_resource = datadog.full_resource_body(resolved_slo, 0)
 
       // Step 3: Verify the generated Datadog code makes sense
       { string.length(datadog_resource) > 0 }
@@ -158,7 +156,7 @@ pub fn end_to_end_organization_test() {
       string.contains(datadog_resource, "$$")
       |> should.be_false()
     }
-    Error(err) -> 
+    Error(err) ->
       err
       |> should.equal("Should not fail")
   }

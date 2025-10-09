@@ -97,8 +97,8 @@ pub fn build_main_one_slo_test() {
 }
 
 # SLO created by EzSLO for badass_platform_team - Type: good_over_bad
-resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad\" {
-  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad\"
+resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\" {
+  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\"
   type        = \"metric\"
   description = \"SLO created by caffeine\"
   

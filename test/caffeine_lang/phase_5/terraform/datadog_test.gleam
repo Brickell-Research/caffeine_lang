@@ -34,8 +34,8 @@ pub fn resource_target_threshold_test() {
 
 pub fn resource_top_line_test() {
   let expected =
-    "resource \"datadog_service_level_objective\" \"team_service_type\" {"
-  let actual = datadog.resource_top_line("team", "service", "type")
+    "resource \"datadog_service_level_objective\" \"team_service_type_0\" {"
+  let actual = datadog.resource_top_line("team", "service", "type", 0)
   actual
   |> should.equal(expected)
 }
@@ -63,8 +63,8 @@ pub fn get_tags_test() {
 
 pub fn tf_resource_name_test() {
   let expected =
-    "resource \"datadog_service_level_objective\" team_service_type {"
-  let actual = datadog.tf_resource_name("team", "service", "type")
+    "resource \"datadog_service_level_objective\" team_service_type_0 {"
+  let actual = datadog.tf_resource_name("team", "service", "type", 0)
   actual
   |> should.equal(expected)
 }
@@ -127,8 +127,8 @@ pub fn slo_specification_test() {
 pub fn full_resource_body_test() {
   let expected =
     "# SLO created by EzSLO for badass_platform_team - Type: good_over_bad
-resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad\" {
-  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad\"
+resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\" {
+  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\"
   type        = \"metric\"
   description = \"SLO created by caffeine\"
   
@@ -146,41 +146,44 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
 }"
 
   let actual =
-    datadog.full_resource_body(resolved_slo.Slo(
-      window_in_days: 30,
-      threshold: 99.5,
-      service_name: "super_scalabale_web_service",
-      team_name: "badass_platform_team",
-      sli: resolved_sli.Sli(
-        query_template_type: query_template_type.QueryTemplateType(
-          specification_of_query_templates: [
-            basic_type.BasicType(
-              attribute_name: "numerator_query",
-              attribute_type: accepted_types.String,
-            ),
-            basic_type.BasicType(
-              attribute_name: "denominator_query",
-              attribute_type: accepted_types.String,
-            ),
-          ],
-          name: "good_over_bad",
-          query: ExpContainer(OperatorExpr(
+    datadog.full_resource_body(
+      resolved_slo.Slo(
+        window_in_days: 30,
+        threshold: 99.5,
+        service_name: "super_scalabale_web_service",
+        team_name: "badass_platform_team",
+        sli: resolved_sli.Sli(
+          query_template_type: query_template_type.QueryTemplateType(
+            specification_of_query_templates: [
+              basic_type.BasicType(
+                attribute_name: "numerator_query",
+                attribute_type: accepted_types.String,
+              ),
+              basic_type.BasicType(
+                attribute_name: "denominator_query",
+                attribute_type: accepted_types.String,
+              ),
+            ],
+            name: "good_over_bad",
+            query: ExpContainer(OperatorExpr(
+              Primary(PrimaryWord(Word("#{numerator_query}"))),
+              Primary(PrimaryWord(Word("#{denominator_query}"))),
+              Div,
+            )),
+          ),
+          metric_attributes: dict.from_list([
+            #("numerator", "#{numerator_query}"),
+            #("denominator", "#{denominator_query}"),
+          ]),
+          resolved_query: ExpContainer(OperatorExpr(
             Primary(PrimaryWord(Word("#{numerator_query}"))),
             Primary(PrimaryWord(Word("#{denominator_query}"))),
             Div,
           )),
         ),
-        metric_attributes: dict.from_list([
-          #("numerator", "#{numerator_query}"),
-          #("denominator", "#{denominator_query}"),
-        ]),
-        resolved_query: ExpContainer(OperatorExpr(
-          Primary(PrimaryWord(Word("#{numerator_query}"))),
-          Primary(PrimaryWord(Word("#{denominator_query}"))),
-          Div,
-        )),
       ),
-    ))
+      0,
+    )
 
   actual
   |> should.equal(expected)

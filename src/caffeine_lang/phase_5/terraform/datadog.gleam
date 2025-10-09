@@ -49,14 +49,24 @@ fn resource_name(
   team_name: String,
   service_name: String,
   sli_type: String,
+  index: Int,
 ) -> String {
-  "name = \"" <> team_name <> "_" <> service_name <> "_" <> sli_type <> "\""
+  "name = \""
+  <> team_name
+  <> "_"
+  <> service_name
+  <> "_"
+  <> sli_type
+  <> "_"
+  <> int.to_string(index)
+  <> "\""
 }
 
 pub fn resource_top_line(
   team_name: String,
   service_name: String,
   sli_type: String,
+  index: Int,
 ) -> String {
   "resource \"datadog_service_level_objective\" \""
   <> team_name
@@ -64,6 +74,8 @@ pub fn resource_top_line(
   <> service_name
   <> "_"
   <> sli_type
+  <> "_"
+  <> int.to_string(index)
   <> "\" {"
 }
 
@@ -71,6 +83,7 @@ pub fn tf_resource_name(
   team_name: String,
   service_name: String,
   sli_type: String,
+  index: Int,
 ) -> String {
   "resource \"datadog_service_level_objective\" "
   <> team_name
@@ -78,6 +91,8 @@ pub fn tf_resource_name(
   <> service_name
   <> "_"
   <> sli_type
+  <> "_"
+  <> int.to_string(index)
   <> " {"
 }
 
@@ -133,7 +148,7 @@ pub fn get_tags(
   <> "\"]"
 }
 
-pub fn full_resource_body(slo: resolved_slo.Slo) -> String {
+pub fn full_resource_body(slo: resolved_slo.Slo, index: Int) -> String {
   let comment_header =
     set_resource_comment_header(slo.team_name, slo.sli.query_template_type.name)
   let resource_top_line =
@@ -141,6 +156,7 @@ pub fn full_resource_body(slo: resolved_slo.Slo) -> String {
       slo.team_name,
       slo.service_name,
       slo.sli.query_template_type.name,
+      index,
     )
   let resource_type = resource_type(slo.sli.query_template_type)
   let resource_description = resource_description()
@@ -151,6 +167,7 @@ pub fn full_resource_body(slo: resolved_slo.Slo) -> String {
       slo.team_name,
       slo.service_name,
       slo.sli.query_template_type.name,
+      index,
     )
   let tags =
     get_tags(slo.team_name, slo.service_name, slo.sli.query_template_type.name)
