@@ -112,7 +112,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
     target    = 99.5
   }
 
-  tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli:good_over_bad\"]
+  tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli:some_slo\", \"sli_type:good_over_bad\"]
 }"
 
   let resolved_slo =
@@ -122,7 +122,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_sli.Sli(
-        name: "foobar",
+        name: "some_slo",
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(

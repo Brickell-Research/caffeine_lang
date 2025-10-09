@@ -137,6 +137,7 @@ pub fn slo_specification(slo: resolved_slo.Slo) -> String {
 pub fn get_tags(
   team_name: String,
   service_name: String,
+  sli_name: String,
   sli_type: String,
 ) -> String {
   "tags = [\"managed-by:caffeine\", \"team:"
@@ -144,21 +145,40 @@ pub fn get_tags(
   <> "\", \"service:"
   <> service_name
   <> "\", \"sli:"
+  <> sli_name
+  <> "\", \"sli_type:"
   <> sli_type
   <> "\"]"
 }
 
 pub fn full_resource_body(slo: resolved_slo.Slo, index: Int) -> String {
-  let comment_header = set_resource_comment_header(slo.team_name, slo.sli.query_template_type.name)
+  let comment_header =
+    set_resource_comment_header(slo.team_name, slo.sli.query_template_type.name)
   let resource_top_line =
-    resource_top_line(slo.team_name, slo.service_name, slo.sli.query_template_type.name, index)
+    resource_top_line(
+      slo.team_name,
+      slo.service_name,
+      slo.sli.query_template_type.name,
+      index,
+    )
   let resource_type = resource_type(slo.sli.query_template_type)
   let resource_description = resource_description()
   let resource_threshold = resource_threshold(slo.threshold, slo.window_in_days)
   let slo_specification = slo_specification(slo)
   let resource_name =
-    resource_name(slo.team_name, slo.service_name, slo.sli.query_template_type.name, index)
-  let tags = get_tags(slo.team_name, slo.service_name, slo.sli.query_template_type.name)
+    resource_name(
+      slo.team_name,
+      slo.service_name,
+      slo.sli.query_template_type.name,
+      index,
+    )
+  let tags =
+    get_tags(
+      slo.team_name,
+      slo.service_name,
+      slo.sli.name,
+      slo.sli.query_template_type.name,
+    )
   comment_header
   <> "\n"
   <> resource_top_line
