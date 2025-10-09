@@ -53,6 +53,8 @@ some_organization/
 
 Here we have two _types_ of files, `instantiation` and `specification`. 
 
+### Instantiation
+
 **Instantiation**: define the SLO(s) for a service. Each service defines one or more SLOs in a `yaml` file with the name of the file being the name of the service and the parent directory being the name of the owning team. 
 
 As an example, `platform/reliable_service.yaml`:
@@ -68,6 +70,8 @@ slos:
 ```
 
 Here `threshold` and `window_in_days` are always required, `sli_type` refers to an sli type from the specification and `typed_instatiation_of_query_templatized_variables` is a series of mappings between expected attributes for the sli type and their values.
+
+### Specification
 
 **Specification**: define the templates available for defining SLI(s).
 
