@@ -45,10 +45,10 @@ some_organization/
 ├── frontend/
 │   └── unreliable_service.yaml
 ├── specifications/
-│   ├── basic_types.yaml
-│   ├── query_template_types.yaml
-│   ├── services.yaml
-│   └── sli_types.yaml
+    ├── basic_types.yaml
+    ├── query_template_types.yaml
+    ├── services.yaml
+    └── sli_types.yaml
 ```
 
 Here we have two _types_ of files, `instantiation` and `specification`. 
