@@ -22,11 +22,19 @@ Fundamentally we're writing a compiler here and we need to better structure this
 
 As this is a compiler, we'll leverage a typical multi-phase design.
 
-* **Step 1 (Lexical and Static Analysis)**: Parse YAML
+* **Phase 1 (Parsing)**: Parse YAML
   * validate format
-  * translate to Intermediate Systems Representation Language
-* **Step 2 (Type Checking and Sematic Analysis)**: Traverse IR
-* **Step 3**: Backend Code Generation (i.e. Datadog SLOs)
+  * translate to Unresolved Intermediate Representation
+* **Phase 2 (Linking)**: Link specifications and instantiations
+  * resolve symbolic references
+  * produce fully resolved Organization IR
+* **Phase 3 (Semantic Analysis)**: Type checking and semantic analysis
+  * validate IR objects
+  * ensure correctness
+* **Phase 4 (Resolution)**: Resolve SLO queries
+  * instantiate query templates with filters
+  * produce optimized resolved SLOs
+* **Phase 5 (Code Generation)**: Backend reliability artifact generation (i.e. Datadog SLOs, Terraform)
 
 #### Intermediate Representation Language
 
@@ -40,35 +48,46 @@ struct Organization {
 -- Mid Level --
 struct Team {
   name: String
-  slos: List<SLO>
+  slos: List<Slo>
 }
 
 struct Service {
-  name:                 String
-  supported_slos_types: List<SLOType>
+  name:              String
+  supported_sli_types: List<SliType>
 }
 
 -- Low Level --
-struct SLO {
-  filters:   Hash<String, Any>
-  threshold: Decimal
-  slo_type:      SLOType
+struct Slo {
+  typed_instatiation_of_query_templatized_variables: TypedInstantiationOfQueryTemplates
+  threshold:      Float
+  sli_type:       String
+  service_name:   String
+  window_in_days: Int
 }
 
-struct SLOType {
-  filters:        List<SLIFilterSpecification>
-  name:           String
-  query_template: String
+struct SliType {
+  name:                                            String
+  query_template_type:                             QueryTemplateType
+  typed_instatiation_of_query_templates:           TypedInstantiationOfQueryTemplates
+  specification_of_query_templatized_variables:    SpecificationOfQueryTemplates
 }
 
-struct SLIFilter {
+struct QueryTemplateType {
+  specification_of_query_templates: SpecificationOfQueryTemplates
+  name:                             String
+  query:                            ExpContainer
+}
+
+struct BasicType {
   attribute_name: String
-  attribute_type: AcceptedType
-  required:       Boolean
+  attribute_type: AcceptedTypes
 }
+
+-- Type Aliases --
+type SpecificationOfQueryTemplates = List<BasicType>
 
 -- Core Level --
-enum AcceptedType = Boolean | Decimal | Integer | List<AcceptedTypes> | String
+enum AcceptedTypes = Boolean | Decimal | Integer | String | List<AcceptedTypes>
 ```
 
 #### Full Example
@@ -76,37 +95,51 @@ enum AcceptedType = Boolean | Decimal | Integer | List<AcceptedTypes> | String
 On the frontend a user defines the SLO(s) in YAML. We'll continue leveraging the directory structure to specify the team name and
 the service.
 
-`foobar_team/authentication.yaml`
+`platform/reliable_service.yaml`
+
 ```yaml
-slos_groups:
-  - name: "User Sign Ups"
-    slos:
-      - type: http_success_rate
-        target: 99.9
-        good_and_valid_status_codes:
-          - "200"
-          - "409"
+slos:
+  - sli_type: "success_rate"
+    typed_instatiation_of_query_templatized_variables:
+      "graphql_operation_name": "createappointment"
+      "environment": "production"
+    threshold: 99.9
+    window_in_days: 7
 ```
 
-Furthermore, within the directory of these specifications we'd also have the following configuration:
-```ruby
-## Specification of System
-# SLI filters
-good_requests_filter = SLIFilter {
-  attribute_name: "good_and_valid_status_codes",
-  attribute_type: List<Integer>,
-  required:       true
-}
-view_filter = SLIFilter {
-  attribute_name: "view",
-  attribute_type: String,
-  required:       true
-}
-http_method_filter = SLIFilter {
-  attribute_name: "method",
-  attribute_type: String,
-  required:       true
-}
+Furthermore, within the `specifications/` directory we'd also have the following configuration files:
+
+`specifications/basic_types.yaml`
+
+```yaml
+basic_types:
+  - attribute_name: graphql_operation_name
+    attribute_type: String
+  - attribute_name: environment
+    attribute_type: String
+```
+
+`specifications/sli_types.yaml`
+
+```yaml
+types:
+  - name: success_rate
+    query_template_type: valid_over_total
+    typed_instatiation_of_query_templates:
+      numerator: "sum:rotom.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$, status:info}.as_count()"
+      denominator: "sum:rotom.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$}.as_count()"
+    specification_of_query_templatized_variables:
+      - graphql_operation_name
+      - environment
+```
+
+`specifications/services.yaml`
+
+```yaml
+services:
+  - name: reliable_service
+    sli_types:
+      - success_rate
 ```
 
 From this we have the following IR:
@@ -115,33 +148,36 @@ From this we have the following IR:
 ```ruby
 ## Instantiations
 # An SLO
-authentication_signup_success_rate = SLO {
-  filters:   { good_and_valid_status_codes: [200, 401], view: "/v1/users/members", method: "post" },
-  threshold: 99.9,
-  type:      http_success_rate_type
+reliable_service_success_rate = Slo {
+  typed_instatiation_of_query_templatized_variables: { graphql_operation_name: "createappointment", environment: "production" },
+  threshold:      99.9,
+  sli_type:       "success_rate",
+  service_name:   "reliable_service",
+  window_in_days: 7
 }
 # A team which owns SLOs and implicitly is a "collective" owner of a system
-foobar_team = Team {
-  name: "Foobar",
-  slos: [authentication_signup_success_rate],
+platform_team = Team {
+  name: "platform",
+  slos: [reliable_service_success_rate],
 }
 
 ## Highest level view of system
 # An org
 org = Organization {
-  known_teams: [foobar_team]
+  teams: [platform_team],
+  service_definitions: [reliable_service]
 }
 ```
 
 After type checking this, we'd then go on to generate whatever `reliability artifacts` the user desires.
 
 
-### Typed Ruby
+### Gleam
 
-We will be leveraging this from the beginning to get a combination of static and runtime type checking. By doing this, we can attempt to end up in a state of stronger type guarantees (i.e. no `T.untyped`...). 
+We will be leveraging Gleam from the beginning to get strong static type checking and functional programming guarantees. Gleam provides type safety without runtime overhead, immutability by default, and excellent error messages - all critical for building a reliable compiler.
 
 ### Frontend User Configuration
 
-Today relevant configurations are hidden from the user and shipped as part of the gem itself. This is not only less extensible, but a layer of abstraction we don't desire - while the average folks may not need to know the details of slo types, folks will and so having these live next to slo specifications makes more sense than within a totally separate repository. Furthermore, config changes will no longer require gem releases.
+Today relevant configurations are hidden from the user and shipped as part of the gem itself. This is not only less extensible, but a layer of abstraction we don't desire - while the average folks may not need to know the details of sli types, folks will and so having these live next to slo specifications makes more sense than within a totally separate repository. Furthermore, config changes will no longer require gem releases.
 
 ***
