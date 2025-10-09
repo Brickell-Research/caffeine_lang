@@ -22,7 +22,7 @@ Within a GitHub Actions workflow, you can use the following action:
   uses: Brickell-Research/caffeine_lang_github_action@vmain
 ```
 
-[See the action in the Github Actions Marketplace](https://github.com/marketplace/actions/caffeine-language-github-action).
+[See the action in the Github Actions Marketplace](https://github.com/marketplace/actions/caffeine-language-action).
 
 ***
 
