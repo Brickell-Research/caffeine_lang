@@ -137,17 +137,17 @@ pub fn slo_specification(slo: resolved_slo.Slo) -> String {
 pub fn get_tags(
   team_name: String,
   service_name: String,
-  sli_name: String,
   sli_type: String,
+  query_type: String,
 ) -> String {
   "tags = [\"managed-by:caffeine\", \"team:"
   <> team_name
   <> "\", \"service:"
   <> service_name
-  <> "\", \"sli:"
-  <> sli_name
   <> "\", \"sli_type:"
   <> sli_type
+  <> "\", \"query_type:"
+  <> query_type
   <> "\"]"
 }
 

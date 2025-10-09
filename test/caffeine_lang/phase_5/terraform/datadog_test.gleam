@@ -55,7 +55,7 @@ pub fn get_tags_test() {
     |> dict.insert("environment", "production")
 
   let expected =
-    "tags = [\"managed-by:caffeine\", \"team:platform\", \"service:production\", \"sli:some_slo\", \"sli_type:good_over_bad\"]"
+    "tags = [\"managed-by:caffeine\", \"team:platform\", \"service:production\", \"sli_type:some_slo\", \"query_type:good_over_bad\"]"
   let actual =
     datadog.get_tags("platform", "production", "some_slo", "good_over_bad")
   actual
@@ -144,7 +144,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
     target    = 99.5
   }
 
-  tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli:some_slo\", \"sli_type:good_over_bad\"]
+  tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli_type:some_slo\", \"query_type:good_over_bad\"]
 }"
 
   let actual =
