@@ -19,7 +19,7 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 Within a GitHub Actions workflow, you can use the following action:
 ```bash
 - name: Caffeine Language GitHub Action
-  uses: Brickell-Research/caffeine_lang_github_action@v0.0.1
+  uses: Brickell-Research/caffeine_lang_github_action@vmain
 ```
 
 [See the action in the Github Actions Marketplace](https://github.com/marketplace/actions/caffeine-language-github-action).
