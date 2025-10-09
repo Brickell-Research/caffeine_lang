@@ -10,7 +10,11 @@ pub fn generate_datadog_query_test() {
 
   generator.generate_datadog_query(resolved)
   |> should.equal(
-    "query {\n    numerator = \"A + B\"\n    denominator = \"C\"\n  }\n",
+    "query {
+    numerator = \"A + B\"
+    denominator = \"C\"
+  }
+",
   )
 
   // Nested and complex good over bad expression
@@ -19,6 +23,10 @@ pub fn generate_datadog_query_test() {
 
   generator.generate_datadog_query(resolved)
   |> should.equal(
-    "query {\n    numerator = \"A - G + B\"\n    denominator = \"C + (D + E) * F\"\n  }\n",
+    "query {
+    numerator = \"A - G + B\"
+    denominator = \"C + (D + E) * F\"
+  }
+",
   )
 }
