@@ -91,6 +91,7 @@ pub fn slo_specification_test() {
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_sli.Sli(
+        name: "foobar",
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
@@ -153,6 +154,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
         service_name: "super_scalabale_web_service",
         team_name: "badass_platform_team",
         sli: resolved_sli.Sli(
+          name: "foobar",
           query_template_type: query_template_type.QueryTemplateType(
             specification_of_query_templates: [
               basic_type.BasicType(
@@ -199,6 +201,7 @@ pub fn slo_specification_with_list_test() {
       service_name: "web_service",
       team_name: "platform_team",
       sli: resolved_sli.Sli(
+        name: "good_over_bad_with_list",
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(

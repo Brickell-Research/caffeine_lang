@@ -113,6 +113,7 @@ pub fn resolve_sli_test() {
 
   let expected =
     Ok(resolved_sli.Sli(
+      name: "good_over_bad",
       query_template_type: input_sli_type.query_template_type,
       metric_attributes: expected_metric_attrs,
       resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
@@ -156,6 +157,7 @@ pub fn resolve_slo_test() {
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_sli.Sli(
+        name: "good_over_bad",
         query_template_type: expected_query_template_type,
         metric_attributes: dict.from_list([
           #(
@@ -204,6 +206,7 @@ pub fn resolve_slos_test() {
         service_name: "super_scalabale_web_service",
         team_name: "badass_platform_team",
         sli: resolved_sli.Sli(
+          name: "good_over_bad",
           query_template_type: example_sli_type().query_template_type,
           metric_attributes: dict.from_list([
             #(
@@ -305,6 +308,7 @@ pub fn resolve_sli_with_complex_query_test() {
 
   let expected =
     Ok(resolved_sli.Sli(
+      name: "complex_ratio",
       query_template_type: sli_type_with_query.query_template_type,
       metric_attributes: dict.from_list([
         #("numerator_query", "sum:requests.success{service=\"web_api\"}"),
@@ -337,7 +341,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
 
   let sli_type_nested =
     sli_type.SliType(
-      name: "nested_expression",
+      name: "nested_good_over_bad",
       query_template_type: query_template_type.QueryTemplateType(
         name: "nested_good_over_bad",
         specification_of_query_templates: [
@@ -402,6 +406,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
 
   let expected =
     Ok(resolved_sli.Sli(
+      name: "nested_good_over_bad",
       query_template_type: sli_type_nested.query_template_type,
       metric_attributes: dict.from_list([
         #("a_query", "metric_a{env=prod}"),
@@ -456,6 +461,7 @@ pub fn handle_missing_filter_variables_test() {
 
   let expected =
     Ok(resolved_sli.Sli(
+      name: "missing_vars_test",
       query_template_type: sli_type_with_missing_vars.query_template_type,
       metric_attributes: dict.from_list([
         // REGION should remain as $$REGION$$ since it's not provided
@@ -538,6 +544,7 @@ pub fn resolve_list_of_integers_test() {
 
   let expected =
     Ok(resolved_sli.Sli(
+      name: "int_list_test",
       query_template_type: sli_type_with_int_list.query_template_type,
       metric_attributes: dict.from_list([
         // Should resolve to (1,10,200)

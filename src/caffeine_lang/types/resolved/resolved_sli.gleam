@@ -17,6 +17,7 @@ import gleam/dict
 /// ```
 pub type Sli {
   Sli(
+    name: String,
     query_template_type: query_template_type.QueryTemplateType,
     metric_attributes: dict.Dict(String, String),
     resolved_query: parser.ExpContainer,

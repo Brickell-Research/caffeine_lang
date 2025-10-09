@@ -90,6 +90,7 @@ pub fn resolve_sli(
   ))
 
   Ok(resolved_sli.Sli(
+    name: sli_type.name,
     query_template_type: sli_type.query_template_type,
     metric_attributes: resolved_queries,
     resolved_query: resolved_query,

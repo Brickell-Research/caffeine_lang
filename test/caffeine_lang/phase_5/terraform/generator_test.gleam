@@ -122,6 +122,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
       service_name: "super_scalabale_web_service",
       team_name: "badass_platform_team",
       sli: resolved_sli.Sli(
+        name: "foobar",
         query_template_type: query_template_type.QueryTemplateType(
           specification_of_query_templates: [
             basic_type.BasicType(
