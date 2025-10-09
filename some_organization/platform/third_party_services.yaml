@@ -1,9 +1,0 @@
-slos:
-  - sli_type: "http_requests_success_rate"
-    typed_instatiation_of_query_templatized_variables:
-      "peer_hostname": "apero.com"
-      "http_status_codes": "[200, 201]"
-      "environment": "production"
-      "status_codes_to_exclude": "[500, 501]"
-    threshold: 99.9
-    window_in_days: 7
