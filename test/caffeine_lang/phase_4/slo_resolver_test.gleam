@@ -564,3 +564,119 @@ pub fn resolve_list_of_integers_test() {
   actual
   |> should.equal(expected)
 }
+
+pub fn parse_empty_list_test() {
+  let result =
+    slo_resolver.parse_list_value("[]", slo_resolver.inner_parse_string)
+
+  result
+  |> should.be_error()
+}
+
+pub fn parse_single_item_list_test() {
+  let expected = Ok(["production"])
+  let actual =
+    slo_resolver.parse_list_value(
+      "[\"production\"]",
+      slo_resolver.inner_parse_string,
+    )
+
+  actual
+  |> should.equal(expected)
+}
+
+pub fn convert_single_item_list_to_or_expression_test() {
+  let result = slo_resolver.convert_list_to_or_expression(["100"])
+  result
+  |> should.equal("(100)")
+}
+
+pub fn resolve_single_item_list_test() {
+  let sli_type_with_int_list =
+    sli_type.SliType(
+      name: "single_item_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "single_item_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{status_code=$$status_code$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "status_code",
+          attribute_type: accepted_types.List(accepted_types.Integer),
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([#("status_code", "[200]")])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      name: "single_item_test",
+      query_template_type: sli_type_with_int_list.query_template_type,
+      metric_attributes: dict.from_list([
+        #("test_query", "metric{status_code=(200)}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            Primary(PrimaryWord(Word("metric{status_code=(200)}"))),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list)
+
+  actual
+  |> should.equal(expected)
+}
+
+pub fn resolve_empty_list_fails_test() {
+  let sli_type_with_int_list =
+    sli_type.SliType(
+      name: "empty_list_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "empty_list_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{status_code=$$status_code$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "status_code",
+          attribute_type: accepted_types.List(accepted_types.Integer),
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([#("status_code", "[]")])
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list)
+
+  actual
+  |> should.be_error()
+}

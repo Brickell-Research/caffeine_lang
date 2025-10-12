@@ -62,26 +62,33 @@ pub fn resolve_sli(
   filters: dict.Dict(String, String),
   sli_type: sli_type.SliType,
 ) -> Result(resolved_sli.Sli, String) {
-  let resolved_queries =
+  use resolved_queries <- result.try(
     sli_type.typed_instatiation_of_query_templates
     |> generic_dictionary.to_string_dict
     |> dict.to_list
-    |> list.map(fn(pair) {
+    |> list.try_map(fn(pair) {
       let #(metric_attribute, template) = pair
       let filter_names = dict.keys(filters)
 
-      list.fold(filter_names, template, fn(acc, name) {
-        case dict.get(filters, name) {
-          Ok(value) -> {
-            let processed_value = process_filter_value(value, sli_type, name)
-            string.replace(acc, "$$" <> name <> "$$", processed_value)
+      use processed <- result.try(
+        list.try_fold(filter_names, template, fn(acc, name) {
+          case dict.get(filters, name) {
+            Ok(value) -> {
+              use processed_value <- result.try(process_filter_value(
+                value,
+                sli_type,
+                name,
+              ))
+              Ok(string.replace(acc, "$$" <> name <> "$$", processed_value))
+            }
+            Error(_) -> Ok(acc)
           }
-          Error(_) -> acc
-        }
-      })
-      |> fn(processed) { #(metric_attribute, processed) }
+        }),
+      )
+      Ok(#(metric_attribute, processed))
     })
-    |> dict.from_list
+    |> result.map(dict.from_list),
+  )
 
   // Resolve the CQL query by substituting words with resolved query values
   use resolved_query <- result.try(resolve_cql_query(
@@ -171,35 +178,52 @@ fn process_filter_value(
   value: String,
   sli_type: sli_type.SliType,
   filter_name: String,
-) -> String {
+) -> Result(String, String) {
   // Check if this filter is defined as a List type
   case find_filter_type(sli_type, filter_name) {
     Ok(accepted_types.List(inner_type)) -> {
       case inner_type {
         accepted_types.String -> {
           case parse_list_value(value, inner_parse_string) {
-            Ok(parsed_list) -> convert_list_to_or_expression(parsed_list)
-            Error(_) -> value
+            Ok(parsed_list) -> {
+              case parsed_list {
+                [] ->
+                  Error("Empty list not allowed for filter: " <> filter_name)
+                _ -> Ok(convert_list_to_or_expression(parsed_list))
+              }
+            }
+            Error(err) -> Error(err)
           }
         }
         accepted_types.Integer -> {
           case parse_list_value(value, inner_parse_int) {
-            Ok(parsed_list) ->
-              convert_list_to_or_expression(list.map(parsed_list, int.to_string))
-            Error(_) -> value
+            Ok(parsed_list) -> {
+              case parsed_list {
+                [] ->
+                  Error("Empty list not allowed for filter: " <> filter_name)
+                _ ->
+                  Ok(
+                    convert_list_to_or_expression(list.map(
+                      parsed_list,
+                      int.to_string,
+                    )),
+                  )
+              }
+            }
+            Error(err) -> Error(err)
           }
         }
-        _ -> value
+        _ -> Ok(value)
       }
     }
-    _ -> value
+    _ -> Ok(value)
   }
 }
 
 pub fn convert_list_to_or_expression(items: List(String)) -> String {
   case items {
-    [] -> ""
-    [single] -> single
+    [] -> "[]"
+    [single] -> "(" <> single <> ")"
     multiple -> "(" <> string.join(multiple, ",") <> ")"
   }
 }
@@ -211,13 +235,18 @@ pub fn parse_list_value(
   let splitted = string.split(value, "]")
   let splitted = string.split(string.join(splitted, ""), "[")
 
-  let result =
-    string.join(splitted, "")
-    |> string.split(",")
-    |> list.map(inner_parse)
-    |> result.all
+  let content = string.join(splitted, "") |> string.trim
 
-  result
+  // Handle empty list case
+  case content {
+    "" -> Error("Empty list not allowed for filter")
+    _ -> {
+      content
+      |> string.split(",")
+      |> list.map(inner_parse)
+      |> result.all
+    }
+  }
 }
 
 pub fn inner_parse_string(value: String) -> Result(String, String) {
