@@ -7,14 +7,43 @@ import gleam/string
 // ==== Public ====
 
 /// Converts a string to an accepted type.
-pub fn string_to_accepted_type(string: String) -> Result(accepted_types.AcceptedTypes, String) {
-  case string {
+pub fn string_to_accepted_type(
+  string_val: String,
+) -> Result(accepted_types.AcceptedTypes, String) {
+  let accepted_types = [
+    "String",
+    "Integer",
+    "Boolean",
+    "Decimal",
+    "List(String)",
+    "List(Integer)",
+    "List(Boolean)",
+    "List(Decimal)",
+  ]
+  case string_val {
+    "String" -> Ok(accepted_types.String)
+    "Integer" -> Ok(accepted_types.Integer)
     "Boolean" -> Ok(accepted_types.Boolean)
     "Decimal" -> Ok(accepted_types.Decimal)
-    "Integer" -> Ok(accepted_types.Integer)
-    "String" -> Ok(accepted_types.String)
     "List(String)" -> Ok(accepted_types.List(accepted_types.String))
-    _ -> Error("Unknown attribute type: " <> string)
+    "List(Integer)" -> Ok(accepted_types.List(accepted_types.Integer))
+    "List(Boolean)" -> Ok(accepted_types.List(accepted_types.Boolean))
+    "List(Decimal)" -> Ok(accepted_types.List(accepted_types.Decimal))
+    _ -> {
+      case string.starts_with(string_val, "List(List(") {
+        True ->
+          Error(
+            "Only one level of recursion is allowed for lists: " <> string_val,
+          )
+        False ->
+          Error(
+            "Unknown attribute type: "
+            <> string_val
+            <> ". Supported: "
+            <> string.join(accepted_types, ", "),
+          )
+      }
+    }
   }
 }
 
