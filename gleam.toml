@@ -1,6 +1,6 @@
 name = "caffeine_lang"
 version = "0.0.12"
-description = "A simple hello world Gleam project"
+description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
 repository = { type = "github", user = "Brickell-Research", repo = "caffeine_lang" }
