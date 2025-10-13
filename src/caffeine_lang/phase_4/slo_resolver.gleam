@@ -367,6 +367,42 @@ fn process_filter_value(
     Ok(accepted_types.Optional(inner_type)) -> {
       // For optional types, process the inner type
       case inner_type {
+        accepted_types.NonEmptyList(list_inner_type) -> {
+          // Handle Optional(NonEmptyList(...))
+          case list_inner_type {
+            accepted_types.String -> {
+              case parse_list_value(value, inner_parse_string) {
+                Ok(parsed_list) -> {
+                  case parsed_list {
+                    [] ->
+                      Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
+                    _ -> Ok(convert_list_to_or_expression(parsed_list, field_name))
+                  }
+                }
+                Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+              }
+            }
+            accepted_types.Integer -> {
+              case parse_list_value(value, inner_parse_int) {
+                Ok(parsed_list) -> {
+                  case parsed_list {
+                    [] ->
+                      Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
+                    _ ->
+                      Ok(
+                        convert_list_to_or_expression(
+                          list.map(parsed_list, int.to_string),
+                          field_name,
+                        ),
+                      )
+                  }
+                }
+                Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+              }
+            }
+            _ -> Ok(field_name <> ":" <> value)
+          }
+        }
         accepted_types.String -> Ok(field_name <> ":" <> value)
         accepted_types.Integer -> Ok(field_name <> ":" <> value)
         accepted_types.Boolean -> Ok(field_name <> ":" <> value)

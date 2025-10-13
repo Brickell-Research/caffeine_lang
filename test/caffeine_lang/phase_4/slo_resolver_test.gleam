@@ -1052,3 +1052,57 @@ pub fn resolve_multiple_wildcard_list_test() {
   actual
   |> should.equal(expected)
 }
+
+// Test Optional(NonEmptyList(Integer)) handling
+pub fn resolve_optional_nonempty_list_integers_test() {
+  let sli_type_with_optional_list =
+    sli_type.SliType(
+      name: "optional_list_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "optional_list_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{$$http_status_codes->http_status_codes$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "http_status_codes",
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([#("http_status_codes", "[200, 201, 202, 204]")])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      name: "test_slo",
+      query_template_type: sli_type_with_optional_list.query_template_type,
+      metric_attributes: dict.from_list([
+        #("test_query", "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            Primary(PrimaryWord(Word("metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}"))),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_optional_list, "test_slo")
+
+  actual
+  |> should.equal(expected)
+}
