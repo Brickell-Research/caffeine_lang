@@ -79,20 +79,16 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missin
   }
 }
 
-pub fn parse_unresolved_team_instantiation_returns_error_when_filters_are_missing_test() {
+pub fn parse_unresolved_team_instantiation_returns_ok_when_filters_are_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
       "test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     )
 
-  case actual {
-    Error(msg) ->
-      msg
-      |> should.equal(
-        "Missing typed_instatiation_of_query_templatized_variables",
-      )
-    Ok(_) -> panic as "Expected error"
-  }
+  // Should succeed with empty dict when typed_instatiation_of_query_templatized_variables is missing
+  actual
+  |> result.is_ok()
+  |> should.be_true()
 }
 
 pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missing_test() {

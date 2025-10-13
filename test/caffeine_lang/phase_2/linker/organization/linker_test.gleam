@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
@@ -65,13 +67,13 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
         dict.from_list([
           #(
             "environment",
-            generic_dictionary.TypedValue("production", accepted_types.String),
+            generic_dictionary.TypedValue("production", accepted_types.Optional(accepted_types.String)),
           ),
           #(
             "graphql_operation_name",
             generic_dictionary.TypedValue(
               "createappointment",
-              accepted_types.String,
+              accepted_types.Optional(accepted_types.String),
             ),
           ),
         ]),
@@ -79,10 +81,10 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
       window_in_days: 7,
     )
 
-  let expected_basic_type_1 = new_bt("environment", accepted_types.String)
+  let expected_basic_type_1 = new_bt("environment", accepted_types.Optional(accepted_types.String))
 
   let expected_basic_type_2 =
-    new_bt("graphql_operation_name", accepted_types.String)
+    new_bt("graphql_operation_name", accepted_types.Optional(accepted_types.String))
 
   let expected_query_template_type =
     query_template_type.QueryTemplateType(
@@ -91,7 +93,11 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
         expected_basic_type_2,
         expected_basic_type_1,
       ],
-      query: ExpContainer(Primary(PrimaryWord(Word("")))),
+      query: ExpContainer(OperatorExpr(
+        Primary(PrimaryWord(Word("numerator"))),
+        Primary(PrimaryWord(Word("denominator"))),
+        Div,
+      )),
     )
 
   let expected_typed_instatiation =
@@ -99,11 +105,11 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
       dict.from_list([
         #(
           "numerator",
-          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()",
+          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, $$team->team$$, status:info}.as_count()",
         ),
         #(
           "denominator",
-          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()",
+          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, $$team->team$$}.as_count()",
         ),
       ]),
       dict.from_list([
@@ -121,6 +127,7 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
       specification_of_query_templatized_variables: [
         expected_basic_type_2,
         expected_basic_type_1,
+        new_bt("team", accepted_types.Optional(accepted_types.String)),
       ],
     )
 

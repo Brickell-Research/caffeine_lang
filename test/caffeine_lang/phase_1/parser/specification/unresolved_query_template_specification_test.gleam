@@ -1,4 +1,6 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_lang/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import gleam/result
@@ -12,7 +14,11 @@ pub fn parse_unresolved_query_template_types_specification_parses_valid_query_te
               "team_name",
               "accepted_status_codes",
             ],
-            query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            query: ExpContainer(OperatorExpr(
+              Primary(PrimaryWord(Word("numerator"))),
+              Primary(PrimaryWord(Word("denominator"))),
+              Div,
+            )),
           ),
         ]
 
@@ -57,6 +63,24 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_na
     Error(msg) ->
       msg
       |> should.equal("Missing name")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_unresolved_query_template_types_specification_returns_error_when_query_is_empty_test() {
+  let actual =
+    unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
+      "test/artifacts/specifications/query_template_types_missing_query.yaml",
+    )
+  
+  actual
+  |> result.is_error()
+  |> should.be_true()
+  
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Empty query string is not allowed")
     Ok(_) -> panic as "Expected error"
   }
 }

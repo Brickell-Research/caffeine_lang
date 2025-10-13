@@ -40,6 +40,12 @@ fn parse_query_template_type(
     "query",
   ))
 
+  // Validate that query string is not empty
+  use query_string <- result.try(case query_string {
+    "" -> Error("Empty query string is not allowed")
+    _ -> Ok(query_string)
+  })
+
   use query <- result.try(parse_expr(query_string))
 
   Ok(unresolved_query_template_type.QueryTemplateType(

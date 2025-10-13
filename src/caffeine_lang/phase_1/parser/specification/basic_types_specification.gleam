@@ -37,14 +37,13 @@ fn parse_basic_type(
     "Integer" -> Ok(accepted_types.Integer)
     "String" -> Ok(accepted_types.String)
     _ -> {
-      // Try to parse list type (e.g., "List(String)")
+      // Try to parse List or Optional types
       case string.split(type_str, on: "(") {
         ["List", inner_type_str] -> {
           // Remove the closing parenthesis and any whitespace
           let inner_type_name =
             inner_type_str
             |> string.slice(0, string.length(inner_type_str) - 1)
-            // Remove last character ')'
             |> string.trim()
 
           let inner_type = case inner_type_name {
@@ -56,6 +55,25 @@ fn parse_basic_type(
           }
           case inner_type {
             Ok(inner_type) -> Ok(accepted_types.List(inner_type))
+            Error(e) -> Error(e)
+          }
+        }
+        ["Optional", inner_type_str] -> {
+          // Remove the closing parenthesis and any whitespace
+          let inner_type_name =
+            inner_type_str
+            |> string.slice(0, string.length(inner_type_str) - 1)
+            |> string.trim()
+
+          let inner_type = case inner_type_name {
+            "Boolean" -> Ok(accepted_types.Boolean)
+            "Decimal" -> Ok(accepted_types.Decimal)
+            "Integer" -> Ok(accepted_types.Integer)
+            "String" -> Ok(accepted_types.String)
+            _ -> Error("Unknown attribute type: " <> inner_type_name)
+          }
+          case inner_type {
+            Ok(inner_type) -> Ok(accepted_types.Optional(inner_type))
             Error(e) -> Error(e)
           }
         }

@@ -126,29 +126,33 @@ pub fn extract_string_list_from_node(
 }
 
 /// Extracts a dictionary of string key-value pairs from a glaml node.
+/// Returns an empty dict if the key is missing (allowing optional empty dicts).
 pub fn extract_dict_strings_from_node(
   node: glaml.Node,
   key: String,
 ) -> Result(dict.Dict(String, String), String) {
-  use dict_node <- result.try(case glaml.select_sugar(node, key) {
-    Ok(node) -> Ok(node)
-    Error(_) -> Error("Missing " <> key)
-  })
-
-  case dict_node {
-    glaml.NodeMap(entries) -> {
-      entries
-      |> list.try_map(fn(entry) {
-        case entry {
-          #(glaml.NodeStr(dict_key), glaml.NodeStr(value)) ->
-            Ok(#(dict_key, value))
-          _ ->
-            Error("Expected " <> key <> " entries to be string key-value pairs")
+  case glaml.select_sugar(node, key) {
+    Ok(dict_node) -> {
+      case dict_node {
+        glaml.NodeMap(entries) -> {
+          entries
+          |> list.try_map(fn(entry) {
+            case entry {
+              #(glaml.NodeStr(dict_key), glaml.NodeStr(value)) ->
+                Ok(#(dict_key, value))
+              _ ->
+                Error("Expected " <> key <> " entries to be string key-value pairs")
+            }
+          })
+          |> result.map(dict.from_list)
         }
-      })
-      |> result.map(dict.from_list)
+        _ -> Error("Expected " <> key <> " to be a map")
+      }
     }
-    _ -> Error("Expected " <> key <> " to be a map")
+    Error(_) -> {
+      // If the key is missing, return an empty dict (allows optional empty instantiation)
+      Ok(dict.new())
+    }
   }
 }
 

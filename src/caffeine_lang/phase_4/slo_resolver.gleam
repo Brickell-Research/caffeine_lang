@@ -175,7 +175,10 @@ fn process_template_string(
   let parts = string.split(template, "$$")
   
   // Process parts: odd indices are template variables, even indices are literal text
-  process_template_parts(parts, [], filters, sli_type, False)
+  use result <- result.try(process_template_parts(parts, [], filters, sli_type, False))
+  
+  // Clean up any remaining comma issues
+  Ok(cleanup_empty_optionals(result))
 }
 
 // Helper to process template parts alternating between literal text and variables
@@ -206,6 +209,23 @@ fn process_template_parts(
       }
     }
   }
+}
+
+// Clean up hanging commas and spaces from empty optional fields
+// This handles edge cases where multiple consecutive optional fields are missing
+fn cleanup_empty_optionals(query: String) -> String {
+  query
+  // Remove multiple consecutive ", , " patterns (handles 2+ missing optionals)
+  |> string.replace(", , , ", ", ")
+  |> string.replace(", , ", ", ")
+  // Remove leading comma after opening brace (all initial optionals missing)
+  |> string.replace("{, ", "{")
+  // Remove trailing comma before closing brace (all trailing optionals missing)
+  |> string.replace(", }", "}")
+  // Remove trailing comma before closing paren
+  |> string.replace(", )", ")")
+  // Handle case where only commas remain in braces
+  |> string.replace("{,}", "{}")
 }
 
 // Parse and process a single template variable
