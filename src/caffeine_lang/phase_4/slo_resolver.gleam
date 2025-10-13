@@ -254,7 +254,7 @@ fn process_template_variable(
           
           // Apply negation if needed
           case is_negated {
-            True -> Ok("!(" <> processed_value <> ")")
+            True -> Ok("NOT (" <> processed_value <> ")")
             False -> Ok(processed_value)
           }
         }
@@ -275,7 +275,7 @@ fn process_template_variable(
           
           // Apply negation if needed
           case is_negated {
-            True -> Ok("!(" <> processed_value <> ")")
+            True -> Ok("NOT (" <> processed_value <> ")")
             False -> Ok(processed_value)
           }
         }

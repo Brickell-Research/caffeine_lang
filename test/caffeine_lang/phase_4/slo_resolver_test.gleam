@@ -1106,3 +1106,111 @@ pub fn resolve_optional_nonempty_list_integers_test() {
   actual
   |> should.equal(expected)
 }
+
+// Test NOT negation with Optional(NonEmptyList(Integer))
+pub fn resolve_negated_optional_nonempty_list_test() {
+  let sli_type_with_negated_list =
+    sli_type.SliType(
+      name: "negated_list_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "negated_list_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{$$status_codes->status_codes_to_exclude$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "status_codes_to_exclude",
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      name: "test_slo",
+      query_template_type: sli_type_with_negated_list.query_template_type,
+      metric_attributes: dict.from_list([
+        #("test_query", "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            Primary(PrimaryWord(Word("metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}"))),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_negated_list, "test_slo")
+
+  actual
+  |> should.equal(expected)
+}
+
+// Test NOT negation syntax with template variable
+pub fn resolve_not_negation_syntax_test() {
+  let sli_type_with_not =
+    sli_type.SliType(
+      name: "not_syntax_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "not_syntax_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{$$NOT[status_codes->status_codes_to_exclude]$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "status_codes_to_exclude",
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      name: "test_slo",
+      query_template_type: sli_type_with_not.query_template_type,
+      metric_attributes: dict.from_list([
+        #("test_query", "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            Primary(PrimaryWord(Word("metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}"))),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_not, "test_slo")
+
+  actual
+  |> should.equal(expected)
+}
