@@ -4,6 +4,7 @@ import caffeine_lang/cql/parser.{
 }
 import caffeine_lang/cql/resolver.{type Primitives, GoodOverTotal}
 import gleam/option.{type Option, None, Some}
+import gleam/string
 
 // Datadog
 pub fn generate_datadog_query(primitive: Primitives) -> String {
@@ -37,15 +38,57 @@ fn denominator_exp_to_datadog_query(exp: Exp) -> String {
   }
 }
 
-fn exp_to_string(exp: Exp) -> String {
+pub fn exp_to_string(exp: Exp) -> String {
   case exp {
     parser.Primary(primary:) -> primary_to_string(primary, None)
-    parser.OperatorExpr(numerator:, denominator:, operator:) ->
-      exp_to_string_with_context(numerator, Some(operator), True)
-      <> " "
-      <> operator_to_datadog_query(operator)
-      <> " "
-      <> exp_to_string_with_context(denominator, Some(operator), False)
+    parser.OperatorExpr(numerator:, denominator:, operator:) -> {
+      // Check if this entire expression tree is a path (all divisions with path-like components)
+      case operator, is_path_expression(exp) {
+        parser.Div, True -> {
+          // This is a path, render without spaces
+          exp_to_string_no_spaces(exp)
+        }
+        _, _ -> {
+          // Normal expression with spaces
+          let left = exp_to_string_with_context(numerator, Some(operator), True)
+          let right = exp_to_string_with_context(denominator, Some(operator), False)
+          let op = operator_to_datadog_query(operator)
+          left <> " " <> op <> " " <> right
+        }
+      }
+    }
+  }
+}
+
+// Check if an expression is a path (all divisions with simple word components)
+fn is_path_expression(exp: Exp) -> Bool {
+  case exp {
+    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> is_path_component(w)
+    parser.OperatorExpr(left, right, parser.Div) -> 
+      is_path_expression(left) && is_path_expression(right)
+    _ -> False
+  }
+}
+
+// Check if a word is a path component (no underscores, simple alphanumeric)
+fn is_path_component(s: String) -> Bool {
+  // Path components don't have:
+  // - underscores (metric names like metric_a have these)
+  // - spaces
+  // - both { and } (complete metric queries like metric{a:b} have these)
+  
+  let has_complete_braces = string.contains(s, "{") && string.contains(s, "}")
+  
+  !string.contains(s, "_") && !string.contains(s, " ") && !has_complete_braces
+}
+
+// Convert expression to string without spaces (for paths)
+fn exp_to_string_no_spaces(exp: Exp) -> String {
+  case exp {
+    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> w
+    parser.OperatorExpr(left, right, parser.Div) ->
+      exp_to_string_no_spaces(left) <> "/" <> exp_to_string_no_spaces(right)
+    _ -> exp_to_string(exp)
   }
 }
 
