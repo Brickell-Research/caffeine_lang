@@ -78,7 +78,7 @@ pub fn parse_basic_types_specification_returns_error_for_unrecognized_attribute_
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Unknown attribute type: LargeNumber")
+      |> should.equal("Unknown attribute type: LargeNumber. Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))")
     Ok(_) -> panic as "Expected error"
   }
 }

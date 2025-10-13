@@ -4,4 +4,4 @@ basic_types:
   - attribute_name: number_of_users
     attribute_type: Integer
   - attribute_name: accepted_status_codes
-    attribute_type: List(String)
+    attribute_type: NonEmptyList(String)

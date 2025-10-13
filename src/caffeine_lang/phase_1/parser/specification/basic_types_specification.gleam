@@ -1,10 +1,9 @@
-import caffeine_lang/types/common/accepted_types
 import caffeine_lang/phase_1/parser/utils/glaml_helpers as gh
+import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/ast/basic_type
 import glaml
 import gleam/dict
 import gleam/result
-import gleam/string
 
 // ==== Public ====
 /// Given a specification file, returns a list of basic types.
@@ -31,59 +30,10 @@ fn parse_basic_type(
     "attribute_type",
   ))
 
-  let attribute_type = case type_str {
-    "Boolean" -> Ok(accepted_types.Boolean)
-    "Decimal" -> Ok(accepted_types.Decimal)
-    "Integer" -> Ok(accepted_types.Integer)
-    "String" -> Ok(accepted_types.String)
-    _ -> {
-      // Try to parse List or Optional types
-      case string.split(type_str, on: "(") {
-        ["List", inner_type_str] -> {
-          // Remove the closing parenthesis and any whitespace
-          let inner_type_name =
-            inner_type_str
-            |> string.slice(0, string.length(inner_type_str) - 1)
-            |> string.trim()
-
-          let inner_type = case inner_type_name {
-            "Boolean" -> Ok(accepted_types.Boolean)
-            "Decimal" -> Ok(accepted_types.Decimal)
-            "Integer" -> Ok(accepted_types.Integer)
-            "String" -> Ok(accepted_types.String)
-            _ -> Error("Unknown attribute type: " <> inner_type_name)
-          }
-          case inner_type {
-            Ok(inner_type) -> Ok(accepted_types.NonEmptyList(inner_type))
-            Error(e) -> Error(e)
-          }
-        }
-        ["Optional", inner_type_str] -> {
-          // Remove the closing parenthesis and any whitespace
-          let inner_type_name =
-            inner_type_str
-            |> string.slice(0, string.length(inner_type_str) - 1)
-            |> string.trim()
-
-          let inner_type = case inner_type_name {
-            "Boolean" -> Ok(accepted_types.Boolean)
-            "Decimal" -> Ok(accepted_types.Decimal)
-            "Integer" -> Ok(accepted_types.Integer)
-            "String" -> Ok(accepted_types.String)
-            _ -> Error("Unknown attribute type: " <> inner_type_name)
-          }
-          case inner_type {
-            Ok(inner_type) -> Ok(accepted_types.Optional(inner_type))
-            Error(e) -> Error(e)
-          }
-        }
-        _ -> Error("Unknown attribute type: " <> type_str)
-      }
-    }
-  }
-
-  // If there was an error parsing the attribute type, return it
-  use attribute_type <- result.try(attribute_type)
+  // Use the centralized type parser that handles all type combinations
+  use attribute_type <- result.try(general_common.string_to_accepted_type(
+    type_str,
+  ))
 
   Ok(basic_type.BasicType(
     attribute_name: attribute_name,
