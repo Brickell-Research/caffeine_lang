@@ -47,7 +47,7 @@ pub fn resolve_slo(
       slo.typed_instatiation_of_query_templatized_variables,
     )
 
-  use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type))
+  use resolve_sli <- result.try(resolve_sli(filters_dict, sli_type, slo.name))
 
   Ok(resolved_slo.Slo(
     window_in_days: slo.window_in_days,
@@ -61,6 +61,7 @@ pub fn resolve_slo(
 pub fn resolve_sli(
   filters: dict.Dict(String, String),
   sli_type: sli_type.SliType,
+  slo_name: String,
 ) -> Result(resolved_sli.Sli, String) {
   use resolved_queries <- result.try(
     sli_type.typed_instatiation_of_query_templates
@@ -68,23 +69,13 @@ pub fn resolve_sli(
     |> dict.to_list
     |> list.try_map(fn(pair) {
       let #(metric_attribute, template) = pair
-      let filter_names = dict.keys(filters)
-
-      use processed <- result.try(
-        list.try_fold(filter_names, template, fn(acc, name) {
-          case dict.get(filters, name) {
-            Ok(value) -> {
-              use processed_value <- result.try(process_filter_value(
-                value,
-                sli_type,
-                name,
-              ))
-              Ok(string.replace(acc, "$$" <> name <> "$$", processed_value))
-            }
-            Error(_) -> Ok(acc)
-          }
-        }),
-      )
+      
+      // Process all template variables in the template string
+      use processed <- result.try(process_template_string(
+        template,
+        filters,
+        sli_type,
+      ))
       Ok(#(metric_attribute, processed))
     })
     |> result.map(dict.from_list),
@@ -97,7 +88,7 @@ pub fn resolve_sli(
   ))
 
   Ok(resolved_sli.Sli(
-    name: sli_type.name,
+    name: slo_name,
     query_template_type: sli_type.query_template_type,
     metric_attributes: resolved_queries,
     resolved_query: resolved_query,
@@ -174,12 +165,149 @@ fn resolve_primary(
   }
 }
 
+// Process a complete template string, finding and replacing all template variables
+fn process_template_string(
+  template: String,
+  filters: dict.Dict(String, String),
+  sli_type: sli_type.SliType,
+) -> Result(String, String) {
+  // Find all template variables by splitting on $$
+  let parts = string.split(template, "$$")
+  
+  // Process parts: odd indices are template variables, even indices are literal text
+  process_template_parts(parts, [], filters, sli_type, False)
+}
+
+// Helper to process template parts alternating between literal text and variables
+fn process_template_parts(
+  parts: List(String),
+  acc: List(String),
+  filters: dict.Dict(String, String),
+  sli_type: sli_type.SliType,
+  is_variable: Bool,
+) -> Result(String, String) {
+  case parts {
+    [] -> Ok(string.join(list.reverse(acc), ""))
+    [part, ..rest] -> {
+      case is_variable {
+        False -> {
+          // This is literal text, keep as is
+          process_template_parts(rest, [part, ..acc], filters, sli_type, True)
+        }
+        True -> {
+          // This is a template variable, process it
+          use replacement <- result.try(process_template_variable(
+            part,
+            filters,
+            sli_type,
+          ))
+          process_template_parts(rest, [replacement, ..acc], filters, sli_type, False)
+        }
+      }
+    }
+  }
+}
+
+// Parse and process a single template variable
+fn process_template_variable(
+  template_var: String,
+  filters: dict.Dict(String, String),
+  sli_type: sli_type.SliType,
+) -> Result(String, String) {
+  // Parse the template variable to extract components
+  use #(field_name, var_name, is_negated) <- result.try(parse_template_variable(
+    template_var,
+  ))
+  
+  // Check if this is an optional type
+  case find_filter_type(sli_type, var_name) {
+    Ok(accepted_types.Optional(_)) -> {
+      // For optional types, if not provided, return empty string
+      case dict.get(filters, var_name) {
+        Ok(value) -> {
+          use processed_value <- result.try(process_filter_value(
+            value,
+            sli_type,
+            var_name,
+            field_name,
+          ))
+          
+          // Apply negation if needed
+          case is_negated {
+            True -> Ok("!(" <> processed_value <> ")")
+            False -> Ok(processed_value)
+          }
+        }
+        Error(_) -> Ok("")
+      }
+    }
+    _ -> {
+      // For non-optional types, require the value
+      case dict.get(filters, var_name) {
+        Ok(value) -> {
+          // Process the value based on its type
+          use processed_value <- result.try(process_filter_value(
+            value,
+            sli_type,
+            var_name,
+            field_name,
+          ))
+          
+          // Apply negation if needed
+          case is_negated {
+            True -> Ok("!(" <> processed_value <> ")")
+            False -> Ok(processed_value)
+          }
+        }
+        Error(_) ->
+          Error(
+            "Template variable '" <> var_name <> "' not found in filters",
+          )
+      }
+    }
+  }
+}
+
+// Parse template variable string to extract field name, variable name, and negation flag
+// Input: "$$field->var$$" or "$$NOT[field->var]$$"
+// Output: #(field_name, var_name, is_negated)
+fn parse_template_variable(
+  template_var: String,
+) -> Result(#(String, String, Bool), String) {
+  // Remove $$ markers
+  let content = 
+    template_var
+    |> string.replace("$$", "")
+  
+  // Check for NOT prefix
+  let #(content, is_negated) = case string.starts_with(content, "NOT[") {
+    True -> {
+      let inner = 
+        content
+        |> string.replace("NOT[", "")
+        |> string.replace("]", "")
+      #(inner, True)
+    }
+    False -> #(content, False)
+  }
+  
+  // Split by -> to get field and variable name
+  case string.split(content, "->") {
+    [field_name, var_name] -> Ok(#(field_name, var_name, is_negated))
+    _ ->
+      Error(
+        "Invalid template variable format: " <> template_var <> ". Expected $$field->var$$ or $$NOT[field->var]$$",
+      )
+  }
+}
+
 fn process_filter_value(
   value: String,
   sli_type: sli_type.SliType,
   filter_name: String,
+  field_name: String,
 ) -> Result(String, String) {
-  // Check if this filter is defined as a List type
+  // Check the filter type
   case find_filter_type(sli_type, filter_name) {
     Ok(accepted_types.List(inner_type)) -> {
       case inner_type {
@@ -189,7 +317,7 @@ fn process_filter_value(
               case parsed_list {
                 [] ->
                   Error("Empty list not allowed for filter: " <> filter_name)
-                _ -> Ok(convert_list_to_or_expression(parsed_list))
+                _ -> Ok(convert_list_to_or_expression(parsed_list, field_name))
               }
             }
             Error(err) -> Error(err)
@@ -203,28 +331,41 @@ fn process_filter_value(
                   Error("Empty list not allowed for filter: " <> filter_name)
                 _ ->
                   Ok(
-                    convert_list_to_or_expression(list.map(
-                      parsed_list,
-                      int.to_string,
-                    )),
+                    convert_list_to_or_expression(
+                      list.map(parsed_list, int.to_string),
+                      field_name,
+                    ),
                   )
               }
             }
             Error(err) -> Error(err)
           }
         }
-        _ -> Ok(value)
+        _ -> Ok(field_name <> ":" <> value)
       }
     }
-    _ -> Ok(value)
+    Ok(accepted_types.Optional(inner_type)) -> {
+      // For optional types, process the inner type
+      case inner_type {
+        accepted_types.String -> Ok(field_name <> ":" <> value)
+        accepted_types.Integer -> Ok(field_name <> ":" <> value)
+        accepted_types.Boolean -> Ok(field_name <> ":" <> value)
+        accepted_types.Decimal -> Ok(field_name <> ":" <> value)
+        _ -> Ok(field_name <> ":" <> value)
+      }
+    }
+    _ -> Ok(field_name <> ":" <> value)
   }
 }
 
-pub fn convert_list_to_or_expression(items: List(String)) -> String {
+pub fn convert_list_to_or_expression(items: List(String), field_name: String) -> String {
   case items {
     [] -> "[]"
-    [single] -> "(" <> single <> ")"
-    multiple -> "(" <> string.join(multiple, ",") <> ")"
+    [single] -> field_name <> ":" <> single
+    _multiple -> {
+      let or_parts = list.map(items, fn(item) { field_name <> ":" <> item })
+      "(" <> string.join(or_parts, " OR ") <> ")"
+    }
   }
 }
 

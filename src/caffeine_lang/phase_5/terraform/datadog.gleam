@@ -48,17 +48,14 @@ pub fn set_resource_comment_header(team: String, sli_type: String) -> String {
 fn resource_name(
   team_name: String,
   service_name: String,
-  sli_type: String,
-  index: Int,
+  slo_name: String,
 ) -> String {
   "name = \""
   <> team_name
   <> "_"
   <> service_name
   <> "_"
-  <> sli_type
-  <> "_"
-  <> int.to_string(index)
+  <> slo_name
   <> "\""
 }
 
@@ -169,8 +166,7 @@ pub fn full_resource_body(slo: resolved_slo.Slo, index: Int) -> String {
     resource_name(
       slo.team_name,
       slo.service_name,
-      slo.sli.query_template_type.name,
-      index,
+      slo.sli.name,
     )
   let tags =
     get_tags(

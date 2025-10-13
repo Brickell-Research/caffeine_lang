@@ -1,5 +1,6 @@
 slos:
-  - sli_type: "success_rate"
+  - name: "createappointment_production"
+    sli_type: "success_rate"
     typed_instatiation_of_query_templatized_variables:
       "graphql_operation_name": "createappointment"
       "environment": "production"

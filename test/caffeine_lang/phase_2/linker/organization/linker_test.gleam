@@ -31,6 +31,7 @@ pub fn get_instantiation_yaml_files_returns_all_yaml_files_from_test_artifacts_d
     "./test/artifacts/platform/reliable_service.yaml",
     "./test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
     "./test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
+    "./test/artifacts/platform/reliable_service_missing_name.yaml",
     "./test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     "./test/artifacts/platform/reliable_service_missing_sli_type.yaml",
     "./test/artifacts/platform/reliable_service_missing_slos.yaml",
@@ -56,6 +57,7 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
 
   let expected_slo_reliable_service =
     slo.Slo(
+      name: "createappointment_production",
       threshold: 99.9,
       sli_type: "success_rate",
       service_name: "reliable_service",
@@ -97,11 +99,11 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
       dict.from_list([
         #(
           "numerator",
-          "sum.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$, status:info}.as_count()",
+          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()",
         ),
         #(
           "denominator",
-          "sum.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$}.as_count()",
+          "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()",
         ),
       ]),
       dict.from_list([

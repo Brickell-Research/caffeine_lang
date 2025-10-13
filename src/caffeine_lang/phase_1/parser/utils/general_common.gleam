@@ -19,6 +19,14 @@ pub fn string_to_accepted_type(
     "List(Integer)",
     "List(Boolean)",
     "List(Decimal)",
+    "Optional(String)",
+    "Optional(Integer)",
+    "Optional(Boolean)",
+    "Optional(Decimal)",
+    "Optional(List(String))",
+    "Optional(List(Integer))",
+    "Optional(List(Boolean))",
+    "Optional(List(Decimal))",
   ]
   case string_val {
     "String" -> Ok(accepted_types.String)
@@ -29,6 +37,18 @@ pub fn string_to_accepted_type(
     "List(Integer)" -> Ok(accepted_types.List(accepted_types.Integer))
     "List(Boolean)" -> Ok(accepted_types.List(accepted_types.Boolean))
     "List(Decimal)" -> Ok(accepted_types.List(accepted_types.Decimal))
+    "Optional(String)" -> Ok(accepted_types.Optional(accepted_types.String))
+    "Optional(Integer)" -> Ok(accepted_types.Optional(accepted_types.Integer))
+    "Optional(Boolean)" -> Ok(accepted_types.Optional(accepted_types.Boolean))
+    "Optional(Decimal)" -> Ok(accepted_types.Optional(accepted_types.Decimal))
+    "Optional(List(String))" ->
+      Ok(accepted_types.Optional(accepted_types.List(accepted_types.String)))
+    "Optional(List(Integer))" ->
+      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Integer)))
+    "Optional(List(Boolean))" ->
+      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Boolean)))
+    "Optional(List(Decimal))" ->
+      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Decimal)))
     _ -> {
       case string.starts_with(string_val, "List(List(") {
         True ->
@@ -36,12 +56,20 @@ pub fn string_to_accepted_type(
             "Only one level of recursion is allowed for lists: " <> string_val,
           )
         False ->
-          Error(
-            "Unknown attribute type: "
-            <> string_val
-            <> ". Supported: "
-            <> string.join(accepted_types, ", "),
-          )
+          case string.starts_with(string_val, "Optional(List(List(") {
+            True ->
+              Error(
+                "Only one level of recursion is allowed for lists, even in optional: "
+                <> string_val,
+              )
+            False ->
+              Error(
+                "Unknown attribute type: "
+                <> string_val
+                <> ". Supported: "
+                <> string.join(accepted_types, ", "),
+              )
+          }
       }
     }
   }

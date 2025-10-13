@@ -2,8 +2,8 @@ types:
   - name: success_rate
     query_template_type: valid_over_total
     typed_instatiation_of_query_templates:
-      numerator: "sum.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$, status:info}.as_count()"
-      denominator: "sum.graphql.hits_and_errors{env:$$environment$$, graphql.operation_name:$$graphql_operation_name$$}.as_count()"
+      numerator: "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()"
+      denominator: "sum.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()"
     specification_of_query_templatized_variables:
       - graphql_operation_name
       - environment

@@ -7,4 +7,5 @@ pub type AcceptedTypes {
   Integer
   String
   List(AcceptedTypes)
+  Optional(AcceptedTypes)
 }

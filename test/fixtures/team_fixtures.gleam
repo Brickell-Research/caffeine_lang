@@ -29,6 +29,7 @@ pub fn team_with_availability_slo(
 ) -> team.Team {
   team.Team(name: team_name, slos: [
     slo.Slo(
+      name: team_name <> "_" <> service_name <> "_availability",
       typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
@@ -42,6 +43,7 @@ pub fn team_with_availability_slo(
 pub fn team_1() -> team.Team {
   team.Team(name: "team1", slos: [
     slo.Slo(
+      name: "team1_slo_1",
       typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",
@@ -49,6 +51,7 @@ pub fn team_1() -> team.Team {
       window_in_days: 30,
     ),
     slo.Slo(
+      name: "team1_slo_2",
       typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
       threshold: 99.9,
       sli_type: "availability",

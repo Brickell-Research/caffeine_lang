@@ -36,6 +36,7 @@ fn parse_slo(
   slo: glaml.Node,
   params: dict.Dict(String, String),
 ) -> Result(unresolved_slo.Slo, String) {
+  use name <- result.try(glaml_helpers.extract_string_from_node(slo, "name"))
   use sli_type <- result.try(glaml_helpers.extract_string_from_node(
     slo,
     "sli_type",
@@ -58,6 +59,7 @@ fn parse_slo(
   let assert Ok(service_name) = dict.get(params, "service_name")
 
   Ok(unresolved_slo.Slo(
+    name: name,
     sli_type: sli_type,
     typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: threshold,

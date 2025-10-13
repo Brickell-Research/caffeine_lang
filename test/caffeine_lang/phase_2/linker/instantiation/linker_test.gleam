@@ -25,8 +25,9 @@ fn create_test_dictionary() -> generic_dictionary.GenericDictionary {
   }
 }
 
-fn slo_creator(sli_type: String, service_name: String) -> slo.Slo {
+fn slo_creator(name: String, sli_type: String, service_name: String) -> slo.Slo {
   slo.Slo(
+    name: name,
     typed_instatiation_of_query_templatized_variables: create_test_dictionary(),
     threshold: 0.9,
     sli_type: sli_type,
@@ -39,9 +40,9 @@ fn slo_creator(sli_type: String, service_name: String) -> slo.Slo {
 
 // ==== Tests ====
 pub fn aggregate_teams_and_slos_test() {
-  let slo_a = slo_creator("sli_type_a", "service_a")
-  let slo_b = slo_creator("sli_type_b", "service_b")
-  let slo_c = slo_creator("sli_type_c", "service_c")
+  let slo_a = slo_creator("slo_a", "sli_type_a", "service_a")
+  let slo_b = slo_creator("slo_b", "sli_type_b", "service_b")
+  let slo_c = slo_creator("slo_c", "sli_type_c", "service_c")
 
   let team_a_service_a = team.Team(name: "team_a", slos: [slo_a])
   let team_a_service_b = team.Team(name: "team_a", slos: [slo_b])
@@ -94,6 +95,7 @@ pub fn link_and_validate_instantiation_test() {
     linker.link_and_validate_instantiation(
       unresolved_team.Team(name: "team_a", slos: [
         unresolved_slo.Slo(
+          name: "test_slo",
           typed_instatiation_of_query_templatized_variables: service_a_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",
@@ -115,6 +117,7 @@ pub fn link_and_validate_instantiation_test() {
     Ok(
       team.Team(name: "team_a", slos: [
         slo.Slo(
+          name: "test_slo",
           typed_instatiation_of_query_templatized_variables: expected_filters,
           threshold: 0.9,
           sli_type: "sli_type_a",
@@ -220,6 +223,7 @@ pub fn resolve_slo_test() {
   let actual =
     linker.resolve_slo(
       unresolved_slo.Slo(
+        name: "test_slo",
         typed_instatiation_of_query_templatized_variables: service_a_filters,
         threshold: 0.9,
         sli_type: "sli_type_a",
@@ -238,6 +242,7 @@ pub fn resolve_slo_test() {
 
   let expected =
     Ok(slo.Slo(
+      name: "test_slo",
       typed_instatiation_of_query_templatized_variables: expected_filters,
       threshold: 0.9,
       sli_type: "sli_type_a",

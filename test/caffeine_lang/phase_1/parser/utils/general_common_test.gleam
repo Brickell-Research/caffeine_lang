@@ -46,7 +46,7 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
 
   general_common.string_to_accepted_type("Unknown")
   |> should.equal(Error(
-    "Unknown attribute type: Unknown. Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal)",
+    "Unknown attribute type: Unknown. Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
   ))
 
   // Container types
@@ -69,6 +69,49 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
 
   general_common.string_to_accepted_type("List(Unknown)")
   |> should.equal(Error(
-    "Unknown attribute type: List(Unknown). Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal)",
+    "Unknown attribute type: List(Unknown). Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
+  ))
+
+  // Optional types
+  general_common.string_to_accepted_type("Optional(Boolean)")
+  |> should.equal(Ok(accepted_types.Optional(accepted_types.Boolean)))
+
+  general_common.string_to_accepted_type("Optional(Integer)")
+  |> should.equal(Ok(accepted_types.Optional(accepted_types.Integer)))
+
+  general_common.string_to_accepted_type("Optional(Decimal)")
+  |> should.equal(Ok(accepted_types.Optional(accepted_types.Decimal)))
+
+  general_common.string_to_accepted_type("Optional(String)")
+  |> should.equal(Ok(accepted_types.Optional(accepted_types.String)))
+
+  general_common.string_to_accepted_type("Optional(List(Boolean))")
+  |> should.equal(
+    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Boolean))),
+  )
+
+  general_common.string_to_accepted_type("Optional(List(Integer))")
+  |> should.equal(
+    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Integer))),
+  )
+
+  general_common.string_to_accepted_type("Optional(List(Decimal))")
+  |> should.equal(
+    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Decimal))),
+  )
+
+  general_common.string_to_accepted_type("Optional(List(String))")
+  |> should.equal(
+    Ok(accepted_types.Optional(accepted_types.List(accepted_types.String))),
+  )
+
+  general_common.string_to_accepted_type("Optional(List(List(Boolean)))")
+  |> should.equal(Error(
+    "Only one level of recursion is allowed for lists, even in optional: Optional(List(List(Boolean)))",
+  ))
+
+  general_common.string_to_accepted_type("Optional(List(Unknown))")
+  |> should.equal(Error(
+    "Unknown attribute type: Optional(List(Unknown)). Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
   ))
 }

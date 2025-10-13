@@ -28,6 +28,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_tes
 pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_test() {
   let expected_slo =
     unresolved_slo.Slo(
+      name: "success_codes",
       typed_instatiation_of_query_templatized_variables: dict.from_list([
         #("acceptable_status_codes", "[200, 201]"),
       ]),
@@ -39,6 +40,7 @@ pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_tes
 
   let expected_slo_2 =
     unresolved_slo.Slo(
+      name: "alternate_success_codes",
       typed_instatiation_of_query_templatized_variables: dict.from_list([
         #("acceptable_status_codes", "[203, 204]"),
       ]),
@@ -145,6 +147,20 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_sli_type_ty
     Error(msg) ->
       msg
       |> should.equal("Expected sli_type to be a string")
+    Ok(_) -> panic as "Expected error"
+  }
+}
+
+pub fn parse_unresolved_team_instantiation_returns_error_when_name_is_missing_test() {
+  let actual =
+    unresolved_team_instantiation.parse_unresolved_team_instantiation(
+      "test/artifacts/platform/reliable_service_missing_name.yaml",
+    )
+
+  case actual {
+    Error(msg) ->
+      msg
+      |> should.equal("Missing name")
     Ok(_) -> panic as "Expected error"
   }
 }

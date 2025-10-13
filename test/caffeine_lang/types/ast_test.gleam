@@ -63,6 +63,7 @@ pub fn creates_organization_with_teams_and_services_test() {
 
   let some_slo =
     slo.Slo(
+      name: "test_slo",
       typed_instatiation_of_query_templatized_variables: filters,
       threshold: 99.5,
       sli_type: "http_status_code",
@@ -77,6 +78,7 @@ pub fn creates_organization_with_teams_and_services_test() {
 
   let some_slo_2 =
     slo.Slo(
+      name: "test_slo_2",
       typed_instatiation_of_query_templatized_variables: filters,
       // Reuse the same filters from above
       threshold: 99.5,

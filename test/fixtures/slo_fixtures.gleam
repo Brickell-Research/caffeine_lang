@@ -6,6 +6,7 @@ import gleam/dict
 /// Creates a basic SLO for testing with default values
 pub fn basic_slo() -> slo.Slo {
   slo.Slo(
+    name: "basic_slo",
     typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
     threshold: 99.9,
     sli_type: "availability",
@@ -17,6 +18,7 @@ pub fn basic_slo() -> slo.Slo {
 /// Creates an SLO with custom threshold
 pub fn slo_with_threshold(threshold: Float) -> slo.Slo {
   slo.Slo(
+    name: "threshold_slo",
     typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
     threshold: threshold,
     sli_type: "availability",
@@ -31,6 +33,7 @@ pub fn slo_with_service_and_type(
   sli_type: String,
 ) -> slo.Slo {
   slo.Slo(
+    name: service_name <> "_" <> sli_type,
     typed_instatiation_of_query_templatized_variables: generic_dictionary.new(),
     threshold: 99.9,
     sli_type: sli_type,
@@ -54,6 +57,7 @@ pub fn slo_with_filters(
   }
 
   slo.Slo(
+    name: service_name <> "_" <> sli_type,
     typed_instatiation_of_query_templatized_variables: typed_filters,
     threshold: 99.9,
     sli_type: sli_type,

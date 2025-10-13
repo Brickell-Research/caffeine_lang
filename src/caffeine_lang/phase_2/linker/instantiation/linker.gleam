@@ -78,6 +78,7 @@ pub fn resolve_slo(
   )
 
   Ok(slo.Slo(
+    name: unresolved_slo.name,
     typed_instatiation_of_query_templatized_variables: typed_instatiation_of_query_templatized_variables,
     threshold: unresolved_slo.threshold,
     sli_type: sli_type.name,

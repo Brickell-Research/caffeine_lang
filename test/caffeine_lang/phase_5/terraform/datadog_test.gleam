@@ -130,7 +130,7 @@ pub fn full_resource_body_test() {
   let expected =
     "# SLO created by EzSLO for badass_platform_team - Type: good_over_bad
 resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\" {
-  name = \"badass_platform_team_super_scalabale_web_service_good_over_bad_0\"
+  name = \"badass_platform_team_super_scalabale_web_service_some_slo\"
   type        = \"metric\"
   description = \"SLO created by caffeine\"
   

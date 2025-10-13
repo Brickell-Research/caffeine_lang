@@ -1,8 +1,10 @@
 slos:
-  - sli_type: "http_status_code"
+  - name: "test_slo_1"
+    sli_type: "http_status_code"
     threshold: 99.5
     window_in_days: 30
-  - sli_type: "http_status_code"
+  - name: "test_slo_2"
+    sli_type: "http_status_code"
     typed_instatiation_of_query_templatized_variables:
       "acceptable_status_codes": "[203, 204]"
     threshold: 99.99

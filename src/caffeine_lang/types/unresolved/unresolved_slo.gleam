@@ -3,6 +3,7 @@ import gleam/dict
 /// SLO used during parsing
 pub type Slo {
   Slo(
+    name: String,
     typed_instatiation_of_query_templatized_variables: dict.Dict(String, String),
     threshold: Float,
     sli_type: String,
