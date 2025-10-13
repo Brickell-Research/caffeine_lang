@@ -230,11 +230,14 @@ fn cleanup_empty_optionals(query: String) -> String {
 }
 
 // Convert comma-separated tags to AND-separated tags for Datadog queries
-// Datadog requires AND operators when mixing with OR expressions
+// Datadog requires AND operators when there are OR expressions in the query
 fn convert_commas_to_and(query: String) -> String {
-  // Replace ", " with " AND " only within curly braces {}
-  // This converts {tag1:val1, tag2:val2} to {tag1:val1 AND tag2:val2}
-  convert_commas_in_braces(query, "", False)
+  // Only convert if the query contains OR expressions (parentheses with OR)
+  // Otherwise, Datadog accepts comma-separated tags
+  case string.contains(query, " OR ") {
+    True -> convert_commas_in_braces(query, "", False)
+    False -> query
+  }
 }
 
 // Helper function to replace commas with AND only inside curly braces
@@ -255,15 +258,16 @@ fn convert_commas_in_braces(
     Ok(#(",", rest)) -> {
       case inside_braces {
         True -> {
-          // Inside braces, check if followed by space
+          // Inside braces, replace comma with " AND "
+          // Check if followed by space to avoid double spaces
           case string.pop_grapheme(rest) {
             Ok(#(" ", rest2)) -> {
               // Replace ", " with " AND "
               convert_commas_in_braces(rest2, acc <> " AND ", True)
             }
             _ -> {
-              // Just a comma without space, keep it
-              convert_commas_in_braces(rest, acc <> ",", True)
+              // Replace "," with " AND " (no space after comma)
+              convert_commas_in_braces(rest, acc <> " AND ", True)
             }
           }
         }

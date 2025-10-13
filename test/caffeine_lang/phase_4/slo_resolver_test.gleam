@@ -1161,6 +1161,85 @@ pub fn resolve_negated_optional_nonempty_list_test() {
   |> should.equal(expected)
 }
 
+// Test that slashes in paths are preserved correctly
+pub fn resolve_path_with_slashes_test() {
+  let sli_type_with_path =
+    sli_type.SliType(
+      name: "path_test",
+      query_template_type: query_template_type.QueryTemplateType(
+        name: "path_test",
+        specification_of_query_templates: [
+          basic_type.BasicType(
+            attribute_name: "test_query",
+            attribute_type: accepted_types.String,
+          ),
+        ],
+        query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+      ),
+      typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
+        dict.from_list([
+          #("test_query", "metric{$$env->environment$$,$$path->http_path$$}"),
+        ]),
+        dict.from_list([#("test_query", accepted_types.String)]),
+      )
+        |> result.unwrap(generic_dictionary.new()),
+      specification_of_query_templatized_variables: [
+        basic_type.BasicType(
+          attribute_name: "environment",
+          attribute_type: accepted_types.String,
+        ),
+        basic_type.BasicType(
+          attribute_name: "http_path",
+          attribute_type: accepted_types.String,
+        ),
+      ],
+    )
+
+  let filters = dict.from_list([
+    #("environment", "production"),
+    #("http_path", "/v1/users/passwords/reset"),
+  ])
+
+  let expected =
+    Ok(resolved_sli.Sli(
+      name: "test_slo",
+      query_template_type: sli_type_with_path.query_template_type,
+      metric_attributes: dict.from_list([
+        #("test_query", "metric{env:production,path:/v1/users/passwords/reset}"),
+      ]),
+      resolved_query: ExpContainer(
+        Primary(
+          PrimaryExp(
+            // The CQL parser will treat /v1/users/passwords/reset as division operators
+            // This is expected behavior - paths with slashes will be parsed as math expressions
+            OperatorExpr(
+              OperatorExpr(
+                OperatorExpr(
+                  OperatorExpr(
+                    Primary(PrimaryWord(Word("metric{env:production,path:"))),
+                    Primary(PrimaryWord(Word("v1"))),
+                    Div,
+                  ),
+                  Primary(PrimaryWord(Word("users"))),
+                  Div,
+                ),
+                Primary(PrimaryWord(Word("passwords"))),
+                Div,
+              ),
+              Primary(PrimaryWord(Word("reset}"))),
+              Div,
+            ),
+          ),
+        ),
+      ),
+    ))
+
+  let actual = slo_resolver.resolve_sli(filters, sli_type_with_path, "test_slo")
+
+  actual
+  |> should.equal(expected)
+}
+
 // Test NOT negation syntax with template variable
 pub fn resolve_not_negation_syntax_test() {
   let sli_type_with_not =
