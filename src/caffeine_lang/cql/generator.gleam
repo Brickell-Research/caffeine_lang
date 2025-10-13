@@ -74,8 +74,15 @@ fn is_path_expression_helper(exp: Exp, is_leftmost: Bool) -> Bool {
         False -> is_path_component(w)  // Other components must be path segments
       }
     }
-    parser.OperatorExpr(left, right, parser.Div) -> 
+    parser.OperatorExpr(left, right, parser.Div) -> {
+      // For divisions, check if both sides are path-like
+      // The leftmost flag only applies to the leftmost leaf of the entire tree
       is_path_expression_helper(left, is_leftmost) && is_path_expression_helper(right, False)
+    }
+    parser.Primary(parser.PrimaryExp(inner_exp)) -> {
+      // Unwrap PrimaryExp and check the inner expression
+      is_path_expression_helper(inner_exp, is_leftmost)
+    }
     _ -> False
   }
 }
@@ -91,6 +98,7 @@ fn is_path_component(s: String) -> Bool {
   // - dots (field names like http.url_details.path)
   // - colons (field names end with :)
   // - wildcards (*)
+  // - closing braces } (end of query block)
   
   let has_complete_braces = string.contains(s, "{") && string.contains(s, "}")
   
@@ -116,14 +124,16 @@ fn exp_to_string_with_context(
     parser.Primary(primary:) -> primary_to_string(primary, parent_op)
     parser.OperatorExpr(numerator:, denominator:, operator:) -> {
       // Check if this is a path expression to avoid adding spaces
+      // This is important when the division is part of a larger expression (e.g., with AND)
       case operator, is_path_expression(exp) {
         parser.Div, True -> exp_to_string_no_spaces(exp)
-        _, _ ->
-          exp_to_string_with_context(numerator, Some(operator), True)
-          <> " "
-          <> operator_to_datadog_query(operator)
-          <> " "
-          <> exp_to_string_with_context(denominator, Some(operator), False)
+        _, _ -> {
+          // Not a path, render with spaces
+          let left = exp_to_string_with_context(numerator, Some(operator), True)
+          let right = exp_to_string_with_context(denominator, Some(operator), False)
+          let op = operator_to_datadog_query(operator)
+          left <> " " <> op <> " " <> right
+        }
       }
     }
   }

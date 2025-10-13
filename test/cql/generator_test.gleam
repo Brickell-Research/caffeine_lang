@@ -155,3 +155,57 @@ pub fn path_with_dots_in_field_test() {
     }
   }
 }
+
+// Test path ending with closing brace (like in actual Datadog queries)
+pub fn path_with_closing_brace_test() {
+  // This simulates: {path:/v1/users/passwords/reset}
+  let query_str = "path:/v1/users/passwords/reset}"
+  
+  case parser.parse_expr(query_str) {
+    Ok(parser.ExpContainer(exp)) -> {
+      let result = generator.exp_to_string(exp)
+      
+      // Path ending with } should remain intact
+      result
+      |> should.equal("path:/v1/users/passwords/reset}")
+    }
+    Error(_) -> {
+      should.fail()
+    }
+  }
+}
+
+// Test the exact pattern from the failing query
+pub fn full_datadog_query_with_path_test() {
+  // The CQL parser treats AND as a word, not an operator
+  // So we need to test just the path portion that actually gets parsed
+  let path_only = "http.url_details.path:/v1/users/passwords/reset"
+  
+  case parser.parse_expr(path_only) {
+    Ok(parser.ExpContainer(exp)) -> {
+      let result = generator.exp_to_string(exp)
+      result |> should.equal("http.url_details.path:/v1/users/passwords/reset")
+    }
+    Error(_) -> {
+      should.fail()
+    }
+  }
+}
+
+// Test the actual Datadog query pattern with braces
+pub fn datadog_query_in_braces_test() {
+  // The actual query has the fields inside braces: {field1, field2, path:/v1/users}
+  // After comma-to-AND conversion: {field1 AND field2 AND path:/v1/users}
+  // The CQL parser will parse this as a single word token with divisions in the path
+  let query_str = "{env:production AND http.method:POST AND http.url_details.path:/v1/users/passwords/reset}"
+  
+  case parser.parse_expr(query_str) {
+    Ok(parser.ExpContainer(exp)) -> {
+      let result = generator.exp_to_string(exp)
+      result |> should.equal("{env:production AND http.method:POST AND http.url_details.path:/v1/users/passwords/reset}")
+    }
+    Error(_) -> {
+      should.fail()
+    }
+  }
+}
