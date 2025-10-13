@@ -54,7 +54,7 @@ fn parse_basic_type(
             _ -> Error("Unknown attribute type: " <> inner_type_name)
           }
           case inner_type {
-            Ok(inner_type) -> Ok(accepted_types.List(inner_type))
+            Ok(inner_type) -> Ok(accepted_types.NonEmptyList(inner_type))
             Error(e) -> Error(e)
           }
         }

@@ -46,30 +46,30 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
 
   general_common.string_to_accepted_type("Unknown")
   |> should.equal(Error(
-    "Unknown attribute type: Unknown. Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
+    "Unknown attribute type: Unknown. Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))",
   ))
 
   // Container types
-  general_common.string_to_accepted_type("List(Boolean)")
-  |> should.equal(Ok(accepted_types.List(accepted_types.Boolean)))
+  general_common.string_to_accepted_type("NonEmptyList(Boolean)")
+  |> should.equal(Ok(accepted_types.NonEmptyList(accepted_types.Boolean)))
 
-  general_common.string_to_accepted_type("List(Integer)")
-  |> should.equal(Ok(accepted_types.List(accepted_types.Integer)))
+  general_common.string_to_accepted_type("NonEmptyList(Integer)")
+  |> should.equal(Ok(accepted_types.NonEmptyList(accepted_types.Integer)))
 
-  general_common.string_to_accepted_type("List(Decimal)")
-  |> should.equal(Ok(accepted_types.List(accepted_types.Decimal)))
+  general_common.string_to_accepted_type("NonEmptyList(Decimal)")
+  |> should.equal(Ok(accepted_types.NonEmptyList(accepted_types.Decimal)))
 
-  general_common.string_to_accepted_type("List(String)")
-  |> should.equal(Ok(accepted_types.List(accepted_types.String)))
+  general_common.string_to_accepted_type("NonEmptyList(String)")
+  |> should.equal(Ok(accepted_types.NonEmptyList(accepted_types.String)))
 
   general_common.string_to_accepted_type("List(List(Boolean))")
   |> should.equal(Error(
     "Only one level of recursion is allowed for lists: List(List(Boolean))",
   ))
 
-  general_common.string_to_accepted_type("List(Unknown)")
+  general_common.string_to_accepted_type("NonEmptyList(Unknown)")
   |> should.equal(Error(
-    "Unknown attribute type: List(Unknown). Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
+    "Unknown attribute type: NonEmptyList(Unknown). Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))",
   ))
 
   // Optional types
@@ -85,24 +85,24 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
   general_common.string_to_accepted_type("Optional(String)")
   |> should.equal(Ok(accepted_types.Optional(accepted_types.String)))
 
-  general_common.string_to_accepted_type("Optional(List(Boolean))")
+  general_common.string_to_accepted_type("Optional(NonEmptyList(Boolean))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Boolean))),
+    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Boolean))),
   )
 
-  general_common.string_to_accepted_type("Optional(List(Integer))")
+  general_common.string_to_accepted_type("Optional(NonEmptyList(Integer))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Integer))),
+    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer))),
   )
 
-  general_common.string_to_accepted_type("Optional(List(Decimal))")
+  general_common.string_to_accepted_type("Optional(NonEmptyList(Decimal))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.List(accepted_types.Decimal))),
+    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Decimal))),
   )
 
-  general_common.string_to_accepted_type("Optional(List(String))")
+  general_common.string_to_accepted_type("Optional(NonEmptyList(String))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.List(accepted_types.String))),
+    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.String))),
   )
 
   general_common.string_to_accepted_type("Optional(List(List(Boolean)))")
@@ -110,8 +110,8 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
     "Only one level of recursion is allowed for lists, even in optional: Optional(List(List(Boolean)))",
   ))
 
-  general_common.string_to_accepted_type("Optional(List(Unknown))")
+  general_common.string_to_accepted_type("Optional(NonEmptyList(Unknown))")
   |> should.equal(Error(
-    "Unknown attribute type: Optional(List(Unknown)). Supported: String, Integer, Boolean, Decimal, List(String), List(Integer), List(Boolean), List(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(List(String)), Optional(List(Integer)), Optional(List(Boolean)), Optional(List(Decimal))",
+    "Unknown attribute type: Optional(NonEmptyList(Unknown)). Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))",
   ))
 }

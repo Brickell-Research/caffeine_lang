@@ -329,18 +329,18 @@ fn process_filter_value(
 ) -> Result(String, String) {
   // Check the filter type
   case find_filter_type(sli_type, filter_name) {
-    Ok(accepted_types.List(inner_type)) -> {
+    Ok(accepted_types.NonEmptyList(inner_type)) -> {
       case inner_type {
         accepted_types.String -> {
           case parse_list_value(value, inner_parse_string) {
             Ok(parsed_list) -> {
               case parsed_list {
                 [] ->
-                  Error("Empty list not allowed for filter: " <> filter_name)
+                  Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
                 _ -> Ok(convert_list_to_or_expression(parsed_list, field_name))
               }
             }
-            Error(err) -> Error(err)
+            Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
           }
         }
         accepted_types.Integer -> {
@@ -348,7 +348,7 @@ fn process_filter_value(
             Ok(parsed_list) -> {
               case parsed_list {
                 [] ->
-                  Error("Empty list not allowed for filter: " <> filter_name)
+                  Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
                 _ ->
                   Ok(
                     convert_list_to_or_expression(
@@ -358,7 +358,7 @@ fn process_filter_value(
                   )
               }
             }
-            Error(err) -> Error(err)
+            Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
           }
         }
         _ -> Ok(field_name <> ":" <> value)
@@ -400,12 +400,18 @@ pub fn parse_list_value(
 
   // Handle empty list case
   case content {
-    "" -> Error("Empty list not allowed for filter")
+    "" -> Error("Empty list not allowed: list must contain at least one value")
     _ -> {
-      content
-      |> string.split(",")
-      |> list.map(inner_parse)
-      |> result.all
+      let parse_result =
+        content
+        |> string.split(",")
+        |> list.map(inner_parse)
+        |> result.all
+      
+      case parse_result {
+        Error(parse_error) -> Error("Failed to parse list values: " <> parse_error)
+        Ok(parsed_list) -> Ok(parsed_list)
+      }
     }
   }
 }

@@ -6,6 +6,6 @@ pub type AcceptedTypes {
   Decimal
   Integer
   String
-  List(AcceptedTypes)
+  NonEmptyList(AcceptedTypes)
   Optional(AcceptedTypes)
 }

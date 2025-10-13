@@ -10,45 +10,27 @@ import gleam/string
 pub fn string_to_accepted_type(
   string_val: String,
 ) -> Result(accepted_types.AcceptedTypes, String) {
-  let accepted_types = [
-    "String",
-    "Integer",
-    "Boolean",
-    "Decimal",
-    "List(String)",
-    "List(Integer)",
-    "List(Boolean)",
-    "List(Decimal)",
-    "Optional(String)",
-    "Optional(Integer)",
-    "Optional(Boolean)",
-    "Optional(Decimal)",
-    "Optional(List(String))",
-    "Optional(List(Integer))",
-    "Optional(List(Boolean))",
-    "Optional(List(Decimal))",
-  ]
   case string_val {
     "String" -> Ok(accepted_types.String)
     "Integer" -> Ok(accepted_types.Integer)
     "Boolean" -> Ok(accepted_types.Boolean)
     "Decimal" -> Ok(accepted_types.Decimal)
-    "List(String)" -> Ok(accepted_types.List(accepted_types.String))
-    "List(Integer)" -> Ok(accepted_types.List(accepted_types.Integer))
-    "List(Boolean)" -> Ok(accepted_types.List(accepted_types.Boolean))
-    "List(Decimal)" -> Ok(accepted_types.List(accepted_types.Decimal))
+    "NonEmptyList(String)" -> Ok(accepted_types.NonEmptyList(accepted_types.String))
+    "NonEmptyList(Integer)" -> Ok(accepted_types.NonEmptyList(accepted_types.Integer))
+    "NonEmptyList(Boolean)" -> Ok(accepted_types.NonEmptyList(accepted_types.Boolean))
+    "NonEmptyList(Decimal)" -> Ok(accepted_types.NonEmptyList(accepted_types.Decimal))
     "Optional(String)" -> Ok(accepted_types.Optional(accepted_types.String))
     "Optional(Integer)" -> Ok(accepted_types.Optional(accepted_types.Integer))
     "Optional(Boolean)" -> Ok(accepted_types.Optional(accepted_types.Boolean))
     "Optional(Decimal)" -> Ok(accepted_types.Optional(accepted_types.Decimal))
-    "Optional(List(String))" ->
-      Ok(accepted_types.Optional(accepted_types.List(accepted_types.String)))
-    "Optional(List(Integer))" ->
-      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Integer)))
-    "Optional(List(Boolean))" ->
-      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Boolean)))
-    "Optional(List(Decimal))" ->
-      Ok(accepted_types.Optional(accepted_types.List(accepted_types.Decimal)))
+    "Optional(NonEmptyList(String))" ->
+      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.String)))
+    "Optional(NonEmptyList(Integer))" ->
+      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)))
+    "Optional(NonEmptyList(Boolean))" ->
+      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Boolean)))
+    "Optional(NonEmptyList(Decimal))" ->
+      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Decimal)))
     _ -> {
       case string.starts_with(string_val, "List(List(") {
         True ->
@@ -66,8 +48,7 @@ pub fn string_to_accepted_type(
               Error(
                 "Unknown attribute type: "
                 <> string_val
-                <> ". Supported: "
-                <> string.join(accepted_types, ", "),
+                <> ". Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))",
               )
           }
       }

@@ -19,7 +19,7 @@ pub fn creates_organization_with_teams_and_services_test() {
   let _some_basic_type =
     basic_type.BasicType(
       attribute_name: "acceptable_status_codes",
-      attribute_type: accepted_types.List(accepted_types.String),
+      attribute_type: accepted_types.NonEmptyList(accepted_types.String),
     )
 
   let metric_attrs =
@@ -55,7 +55,7 @@ pub fn creates_organization_with_teams_and_services_test() {
       dict.from_list([
         #(
           "acceptable_status_codes",
-          accepted_types.List(accepted_types.Integer),
+          accepted_types.NonEmptyList(accepted_types.Integer),
         ),
       ]),
     )

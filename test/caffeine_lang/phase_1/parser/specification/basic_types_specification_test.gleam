@@ -16,7 +16,7 @@ pub fn parse_basic_types_specification_parses_valid_basic_types_test() {
           ),
           basic_type.BasicType(
             attribute_name: "accepted_status_codes",
-            attribute_type: accepted_types.List(accepted_types.String),
+            attribute_type: accepted_types.NonEmptyList(accepted_types.String),
           ),
         ]
 

@@ -13,6 +13,7 @@ import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
+import gleam/string
 import caffeine_lang/types/resolved/resolved_slo
 import gleam/dict
 import gleam/result
@@ -518,7 +519,7 @@ pub fn resolve_list_of_integers_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "status_codes",
-          attribute_type: accepted_types.List(accepted_types.Integer),
+          attribute_type: accepted_types.NonEmptyList(accepted_types.Integer),
         ),
       ],
     )
@@ -554,8 +555,53 @@ pub fn parse_empty_list_test() {
   let result =
     slo_resolver.parse_list_value("[]", slo_resolver.inner_parse_string)
 
+  case result {
+    Error(msg) -> {
+      // Should specifically mention empty list
+      msg
+      |> string.contains("Empty list not allowed")
+      |> should.be_true()
+      
+      msg
+      |> string.contains("at least one value")
+      |> should.be_true()
+    }
+    Ok(_) -> panic as "Expected error for empty list"
+  }
+}
+
+pub fn parse_list_with_invalid_integer_test() {
+  let result =
+    slo_resolver.parse_list_value("[1, abc, 3]", slo_resolver.inner_parse_int)
+
+  case result {
+    Error(msg) -> {
+      // Should mention parsing failure, not empty list
+      msg
+      |> string.contains("Failed to parse list values")
+      |> should.be_true()
+    }
+    Ok(_) -> panic as "Expected error for invalid integer"
+  }
+}
+
+pub fn parse_list_with_null_string_test() {
+  // Test that empty string after parsing is handled
+  let result =
+    slo_resolver.parse_list_value("[\"\"]", slo_resolver.inner_parse_string)
+
+  // Empty strings are allowed in the list, just not empty lists
   result
-  |> should.be_error()
+  |> should.equal(Ok([""]))
+}
+
+pub fn parse_malformed_list_missing_bracket_test() {
+  let result =
+    slo_resolver.parse_list_value("[1, 2, 3", slo_resolver.inner_parse_int)
+
+  // Should still parse since we strip brackets
+  result
+  |> should.equal(Ok([1, 2, 3]))
 }
 
 pub fn parse_single_item_list_test() {
@@ -600,7 +646,7 @@ pub fn resolve_single_item_list_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "status_code",
-          attribute_type: accepted_types.List(accepted_types.Integer),
+          attribute_type: accepted_types.NonEmptyList(accepted_types.Integer),
         ),
       ],
     )
@@ -653,7 +699,7 @@ pub fn resolve_empty_list_fails_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "status_code",
-          attribute_type: accepted_types.List(accepted_types.Integer),
+          attribute_type: accepted_types.NonEmptyList(accepted_types.Integer),
         ),
       ],
     )

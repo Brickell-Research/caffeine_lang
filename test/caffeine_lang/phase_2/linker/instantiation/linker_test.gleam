@@ -147,7 +147,7 @@ pub fn resolve_filters_test() {
     basic_type.BasicType("boolean_key", accepted_types.Boolean),
     basic_type.BasicType(
       "list_string_key",
-      accepted_types.List(accepted_types.String),
+      accepted_types.NonEmptyList(accepted_types.String),
     ),
   ]
   let actual =
@@ -177,7 +177,7 @@ pub fn resolve_filters_test() {
             "list_string_key",
             generic_dictionary.TypedValue(
               "[\"string_value\"]",
-              accepted_types.List(accepted_types.String),
+              accepted_types.NonEmptyList(accepted_types.String),
             ),
           ),
         ]),
