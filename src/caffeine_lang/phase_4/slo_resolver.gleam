@@ -381,7 +381,15 @@ fn process_filter_value(
 pub fn convert_list_to_or_expression(items: List(String), field_name: String) -> String {
   case items {
     [] -> "[]"
-    [single] -> field_name <> ":" <> single
+    [single] -> {
+      // Check if the value contains special characters that could be parsed as operators
+      // If so, wrap in parentheses to prevent CQL parsing issues
+      let value = field_name <> ":" <> single
+      case string.contains(single, "*") || string.contains(single, "+") || string.contains(single, "-") || string.contains(single, "/") {
+        True -> "(" <> value <> ")"
+        False -> value
+      }
+    }
     _multiple -> {
       let or_parts = list.map(items, fn(item) { field_name <> ":" <> item })
       "(" <> string.join(or_parts, " OR ") <> ")"
