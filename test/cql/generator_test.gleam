@@ -136,3 +136,22 @@ pub fn division_with_braces_test() {
   result
   |> should.equal("metric{a:b} / metric{c:d}")
 }
+
+// Test path with dots in field name (like http.url_details.path)
+pub fn path_with_dots_in_field_test() {
+  // Parse the actual string to see what the parser generates
+  let query_str = "http.url_details.path:/v1/users/members"
+  
+  case parser.parse_expr(query_str) {
+    Ok(parser.ExpContainer(exp)) -> {
+      let result = generator.exp_to_string(exp)
+      
+      // Path with dots in field name should remain intact
+      result
+      |> should.equal("http.url_details.path:/v1/users/members")
+    }
+    Error(_) -> {
+      should.fail()
+    }
+  }
+}

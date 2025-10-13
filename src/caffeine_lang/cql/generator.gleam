@@ -61,11 +61,21 @@ pub fn exp_to_string(exp: Exp) -> String {
 }
 
 // Check if an expression is a path (all divisions with simple word components)
+// Excludes the leftmost component if it ends with colon (field name)
 fn is_path_expression(exp: Exp) -> Bool {
+  is_path_expression_helper(exp, True)
+}
+
+fn is_path_expression_helper(exp: Exp, is_leftmost: Bool) -> Bool {
   case exp {
-    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> is_path_component(w)
+    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> {
+      case is_leftmost && string.ends_with(w, ":") {
+        True -> True  // Field names ending with : are allowed on the left
+        False -> is_path_component(w)  // Other components must be path segments
+      }
+    }
     parser.OperatorExpr(left, right, parser.Div) -> 
-      is_path_expression(left) && is_path_expression(right)
+      is_path_expression_helper(left, is_leftmost) && is_path_expression_helper(right, False)
     _ -> False
   }
 }
@@ -76,6 +86,11 @@ fn is_path_component(s: String) -> Bool {
   // - underscores (metric names like metric_a have these)
   // - spaces
   // - both { and } (complete metric queries like metric{a:b} have these)
+  // 
+  // Path components CAN have:
+  // - dots (field names like http.url_details.path)
+  // - colons (field names end with :)
+  // - wildcards (*)
   
   let has_complete_braces = string.contains(s, "{") && string.contains(s, "}")
   
@@ -99,12 +114,18 @@ fn exp_to_string_with_context(
 ) -> String {
   case exp {
     parser.Primary(primary:) -> primary_to_string(primary, parent_op)
-    parser.OperatorExpr(numerator:, denominator:, operator:) ->
-      exp_to_string_with_context(numerator, Some(operator), True)
-      <> " "
-      <> operator_to_datadog_query(operator)
-      <> " "
-      <> exp_to_string_with_context(denominator, Some(operator), False)
+    parser.OperatorExpr(numerator:, denominator:, operator:) -> {
+      // Check if this is a path expression to avoid adding spaces
+      case operator, is_path_expression(exp) {
+        parser.Div, True -> exp_to_string_no_spaces(exp)
+        _, _ ->
+          exp_to_string_with_context(numerator, Some(operator), True)
+          <> " "
+          <> operator_to_datadog_query(operator)
+          <> " "
+          <> exp_to_string_with_context(denominator, Some(operator), False)
+      }
+    }
   }
 }
 
