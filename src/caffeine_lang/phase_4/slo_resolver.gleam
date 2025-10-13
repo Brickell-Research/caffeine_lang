@@ -177,8 +177,9 @@ fn process_template_string(
   // Process parts: odd indices are template variables, even indices are literal text
   use result <- result.try(process_template_parts(parts, [], filters, sli_type, False))
   
-  // Clean up any remaining comma issues
-  Ok(cleanup_empty_optionals(result))
+  // Clean up any remaining comma issues and convert to AND syntax
+  let cleaned = cleanup_empty_optionals(result)
+  Ok(convert_commas_to_and(cleaned))
 }
 
 // Helper to process template parts alternating between literal text and variables
@@ -226,6 +227,61 @@ fn cleanup_empty_optionals(query: String) -> String {
   |> string.replace(", )", ")")
   // Handle case where only commas remain in braces
   |> string.replace("{,}", "{}")
+}
+
+// Convert comma-separated tags to AND-separated tags for Datadog queries
+// Datadog requires AND operators when mixing with OR expressions
+fn convert_commas_to_and(query: String) -> String {
+  // Replace ", " with " AND " only within curly braces {}
+  // This converts {tag1:val1, tag2:val2} to {tag1:val1 AND tag2:val2}
+  convert_commas_in_braces(query, "", False)
+}
+
+// Helper function to replace commas with AND only inside curly braces
+fn convert_commas_in_braces(
+  remaining: String,
+  acc: String,
+  inside_braces: Bool,
+) -> String {
+  case string.pop_grapheme(remaining) {
+    Ok(#("{", rest)) -> {
+      // Entering braces
+      convert_commas_in_braces(rest, acc <> "{", True)
+    }
+    Ok(#("}", rest)) -> {
+      // Exiting braces
+      convert_commas_in_braces(rest, acc <> "}", False)
+    }
+    Ok(#(",", rest)) -> {
+      case inside_braces {
+        True -> {
+          // Inside braces, check if followed by space
+          case string.pop_grapheme(rest) {
+            Ok(#(" ", rest2)) -> {
+              // Replace ", " with " AND "
+              convert_commas_in_braces(rest2, acc <> " AND ", True)
+            }
+            _ -> {
+              // Just a comma without space, keep it
+              convert_commas_in_braces(rest, acc <> ",", True)
+            }
+          }
+        }
+        False -> {
+          // Outside braces, keep comma as is
+          convert_commas_in_braces(rest, acc <> ",", False)
+        }
+      }
+    }
+    Ok(#(char, rest)) -> {
+      // Any other character, keep it
+      convert_commas_in_braces(rest, acc <> char, inside_braces)
+    }
+    Error(_) -> {
+      // End of string
+      acc
+    }
+  }
 }
 
 // Parse and process a single template variable
