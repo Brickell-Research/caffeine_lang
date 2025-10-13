@@ -61,48 +61,37 @@ pub fn exp_to_string(exp: Exp) -> String {
 }
 
 // Check if an expression is a path (all divisions with simple word components)
-// Excludes the leftmost component if it ends with colon (field name)
+// A path expression starts with a field name ending in colon (like http.url_details.path:)
 fn is_path_expression(exp: Exp) -> Bool {
-  is_path_expression_helper(exp, True)
-}
-
-fn is_path_expression_helper(exp: Exp, is_leftmost: Bool) -> Bool {
-  case exp {
-    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> {
-      case is_leftmost && string.ends_with(w, ":") {
-        True -> True  // Field names ending with : are allowed on the left
-        False -> is_path_component(w)  // Other components must be path segments
+  // First check if the leftmost component is a field name (ends with :)
+  case get_leftmost_word(exp) {
+    Some(w) -> {
+      case string.ends_with(w, ":") {
+        True -> all_divisions(exp)
+        False -> False
       }
     }
-    parser.OperatorExpr(left, right, parser.Div) -> {
-      // For divisions, check if both sides are path-like
-      // The leftmost flag only applies to the leftmost leaf of the entire tree
-      is_path_expression_helper(left, is_leftmost) && is_path_expression_helper(right, False)
-    }
-    parser.Primary(parser.PrimaryExp(inner_exp)) -> {
-      // Unwrap PrimaryExp and check the inner expression
-      is_path_expression_helper(inner_exp, is_leftmost)
-    }
-    _ -> False
+    None -> False
   }
 }
 
-// Check if a word is a path component (no underscores, simple alphanumeric)
-fn is_path_component(s: String) -> Bool {
-  // Path components don't have:
-  // - underscores (metric names like metric_a have these)
-  // - spaces
-  // - both { and } (complete metric queries like metric{a:b} have these)
-  // 
-  // Path components CAN have:
-  // - dots (field names like http.url_details.path)
-  // - colons (field names end with :)
-  // - wildcards (*)
-  // - closing braces } (end of query block)
-  
-  let has_complete_braces = string.contains(s, "{") && string.contains(s, "}")
-  
-  !string.contains(s, "_") && !string.contains(s, " ") && !has_complete_braces
+// Get the leftmost word in an expression tree
+fn get_leftmost_word(exp: Exp) -> Option(String) {
+  case exp {
+    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> Some(w)
+    parser.Primary(parser.PrimaryExp(inner_exp)) -> get_leftmost_word(inner_exp)
+    parser.OperatorExpr(left, _, _) -> get_leftmost_word(left)
+  }
+}
+
+// Check if an expression is all divisions (no other operators)
+fn all_divisions(exp: Exp) -> Bool {
+  case exp {
+    parser.Primary(_) -> True
+    parser.OperatorExpr(left, right, parser.Div) -> 
+      all_divisions(left) && all_divisions(right)
+    _ -> False
+  }
 }
 
 // Convert expression to string without spaces (for paths)
