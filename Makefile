@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix test build docs ci watch
+.PHONY: lint lint-fix test build docs ci watch watch-cql watch-glaml-extended watch-all
 
 # Check code formatting
 lint:
@@ -23,9 +23,21 @@ ci: lint build test
 docs:
 	@echo "Documentation generation not configured yet"
 
-# Watch for changes and run tests automatically
+# Watch for changes and run tests automatically (main project only)
 watch:
-	@./watch.sh 
+	@./watch.sh
+
+# Watch CQL package for changes
+watch-cql:
+	@./watch.sh cql
+
+# Watch glaml_extended package for changes  
+watch-glaml-extended:
+	@./watch.sh glaml_extended
+
+# Watch all packages for changes
+watch-all:
+	@./watch.sh all 
 
 # Generate a report of the codebase
 lines-of-code:
