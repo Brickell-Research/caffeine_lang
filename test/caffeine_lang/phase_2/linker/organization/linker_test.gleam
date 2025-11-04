@@ -1,6 +1,3 @@
-import caffeine_lang/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
 import caffeine_lang/phase_2/linker/organization/linker
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
@@ -11,6 +8,7 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
+import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/list
 import gleam/result

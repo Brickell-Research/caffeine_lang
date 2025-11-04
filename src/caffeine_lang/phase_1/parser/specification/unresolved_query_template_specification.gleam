@@ -1,6 +1,6 @@
-import caffeine_lang/cql/parser.{parse_expr}
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/unresolved/unresolved_query_template_type
+import cql/parser.{parse_expr}
 import glaml
 import glaml_extended/extractors as glaml_extended_helpers
 import gleam/dict

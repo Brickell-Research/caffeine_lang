@@ -1,6 +1,3 @@
-import caffeine_lang/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/phase_5/terraform/datadog
 import caffeine_lang/types/ast/basic_type
@@ -12,6 +9,7 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
+import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -49,7 +47,10 @@ pub fn end_to_end_organization_test() {
             "success_query",
             "sum:http.requests{status:2xx,$$service->SERVICE$$,$$env->ENV$$}",
           ),
-          #("total_query", "sum:http.requests{$$service->SERVICE$$,$$env->ENV$$}"),
+          #(
+            "total_query",
+            "sum:http.requests{$$service->SERVICE$$,$$env->ENV$$}",
+          ),
         ]),
         dict.from_list([
           #("success_query", accepted_types.String),
@@ -192,7 +193,10 @@ pub fn end_to_end_with_optional_test() {
             "success_query",
             "sum:http.requests{status:2xx,$$service->SERVICE$$,$$env->ENV$$,$$optional_tag->TAG$$}",
           ),
-          #("total_query", "sum:http.requests{$$service->SERVICE$$,$$env->ENV$$}"),
+          #(
+            "total_query",
+            "sum:http.requests{$$service->SERVICE$$,$$env->ENV$$}",
+          ),
         ]),
         dict.from_list([
           #("success_query", accepted_types.String),

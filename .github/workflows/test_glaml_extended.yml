@@ -1,0 +1,56 @@
+name: Glaml Extended Package Test
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'lib/glaml_extended/**'
+      - '.github/workflows/test_glaml_extended.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'lib/glaml_extended/**'
+      - '.github/workflows/test_glaml_extended.yml'
+
+jobs:
+  test:
+    name: Test Glaml Extended on Gleam ${{ matrix.gleam-version }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        gleam-version: ["1.12.0"]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup BEAM (Erlang + Gleam + rebar3)
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: '27'
+        gleam-version: ${{ matrix.gleam-version }}
+        rebar3-version: '3.25.0'
+        
+    - name: Cache Gleam dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/gleam
+          lib/glaml_extended/build
+        key: ${{ runner.os }}-gleam-glaml-extended-${{ matrix.gleam-version }}-${{ hashFiles('lib/glaml_extended/manifest.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-gleam-glaml-extended-${{ matrix.gleam-version }}-
+          ${{ runner.os }}-gleam-glaml-extended-
+          
+    - name: Download dependencies
+      run: gleam deps download
+      working-directory: lib/glaml_extended
+      
+    - name: Compile
+      run: gleam build
+      working-directory: lib/glaml_extended
+      
+    - name: Run tests
+      run: gleam test
+      working-directory: lib/glaml_extended

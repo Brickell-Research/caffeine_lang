@@ -1,4 +1,3 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/phase_2/linker/specification/linker
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -9,6 +8,7 @@ import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_sli_type
+import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/result
 import gleeunit/should
@@ -81,11 +81,13 @@ pub fn resolve_unresolved_sli_type_test() {
       generic_dictionary.to_string_dict(
         resolved_sli_type.typed_instatiation_of_query_templates,
       )
-      |> should.equal(generic_dictionary.to_string_dict(expected_typed_instatiation))
+      |> should.equal(generic_dictionary.to_string_dict(
+        expected_typed_instatiation,
+      ))
       resolved_sli_type.specification_of_query_templatized_variables
       |> should.equal(basic_types)
     }
-    Error(err) -> 
+    Error(err) ->
       err
       |> should.equal("Should not fail")
   }
@@ -210,12 +212,12 @@ pub fn resolve_unresolved_service_test() {
           second.name
           |> should.equal("b")
         }
-        _ -> 
+        _ ->
           service.supported_sli_types
           |> should.equal([])
       }
     }
-    Error(err) -> 
+    Error(err) ->
       err
       |> should.equal("Should not fail")
   }

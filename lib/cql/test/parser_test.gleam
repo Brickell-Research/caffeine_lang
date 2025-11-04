@@ -1,10 +1,10 @@
-import caffeine_lang/cql/parser.{
+import cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Sub, is_balanced_parens,
 }
-import caffeine_lang/cql/test_helpers.{
+import gleeunit/should
+import test_helpers.{
   exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }
-import gleeunit/should
 
 pub fn parse_expr_parses_test() {
   // simple parenthesized word test

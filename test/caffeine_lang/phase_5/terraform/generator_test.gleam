@@ -1,12 +1,10 @@
-import caffeine_lang/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
 import caffeine_lang/phase_5/terraform/generator
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
+import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleeunit/should
 

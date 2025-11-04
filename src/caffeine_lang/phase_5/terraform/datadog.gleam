@@ -1,7 +1,7 @@
-import caffeine_lang/cql/generator
-import caffeine_lang/cql/resolver
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/resolved/resolved_slo
+import cql/generator
+import cql/resolver
 import gleam/float
 import gleam/int
 
@@ -50,13 +50,7 @@ fn resource_name(
   service_name: String,
   slo_name: String,
 ) -> String {
-  "name = \""
-  <> team_name
-  <> "_"
-  <> service_name
-  <> "_"
-  <> slo_name
-  <> "\""
+  "name = \"" <> team_name <> "_" <> service_name <> "_" <> slo_name <> "\""
 }
 
 pub fn resource_top_line(
@@ -163,11 +157,7 @@ pub fn full_resource_body(slo: resolved_slo.Slo, index: Int) -> String {
   let resource_threshold = resource_threshold(slo.threshold, slo.window_in_days)
   let slo_specification = slo_specification(slo)
   let resource_name =
-    resource_name(
-      slo.team_name,
-      slo.service_name,
-      slo.sli.name,
-    )
+    resource_name(slo.team_name, slo.service_name, slo.sli.name)
   let tags =
     get_tags(
       slo.team_name,

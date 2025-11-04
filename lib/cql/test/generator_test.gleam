@@ -1,6 +1,6 @@
-import caffeine_lang/cql/generator
-import caffeine_lang/cql/parser
-import caffeine_lang/cql/resolver
+import cql/generator
+import cql/parser
+import cql/resolver
 import gleeunit/should
 
 pub fn generate_datadog_query_test() {

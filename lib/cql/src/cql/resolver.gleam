@@ -1,6 +1,4 @@
-import caffeine_lang/cql/parser.{
-  type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr,
-}
+import cql/parser.{type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr}
 
 pub type Primitives {
   // good over total requires a top level division operator

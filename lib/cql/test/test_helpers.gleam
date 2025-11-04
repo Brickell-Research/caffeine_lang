@@ -1,4 +1,4 @@
-import caffeine_lang/cql/parser.{
+import cql/parser.{
   ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
 

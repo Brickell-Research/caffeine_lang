@@ -1,7 +1,7 @@
-import caffeine_lang/cql/parser.{
+import cql/parser.{
   type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord,
 }
-import caffeine_lang/cql/resolver.{type Primitives, GoodOverTotal}
+import cql/resolver.{type Primitives, GoodOverTotal}
 import gleam/option.{type Option, None, Some}
 import gleam/string
 

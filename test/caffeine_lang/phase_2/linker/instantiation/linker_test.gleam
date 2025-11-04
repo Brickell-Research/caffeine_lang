@@ -1,4 +1,3 @@
-import caffeine_lang/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import caffeine_lang/phase_2/linker/instantiation/linker
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/query_template_type
@@ -10,6 +9,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
+import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -58,7 +58,9 @@ pub fn aggregate_teams_and_slos_test() {
   ]
 
   list.sort(actual, fn(a, b) { string.compare(a.name, b.name) })
-  |> should.equal(list.sort(expected, fn(a, b) { string.compare(a.name, b.name) }))
+  |> should.equal(
+    list.sort(expected, fn(a, b) { string.compare(a.name, b.name) }),
+  )
 }
 
 pub fn link_and_validate_instantiation_test() {

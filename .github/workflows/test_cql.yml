@@ -1,14 +1,20 @@
-name: Test
+name: CQL Package Test
 
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'lib/cql/**'
+      - '.github/workflows/test_cql.yml'
   pull_request:
     branches: [ main, master ]
+    paths:
+      - 'lib/cql/**'
+      - '.github/workflows/test_cql.yml'
 
 jobs:
   test:
-    name: Test on Gleam ${{ matrix.gleam-version }}
+    name: Test CQL on Gleam ${{ matrix.gleam-version }}
     runs-on: ubuntu-latest
     
     strategy:
@@ -31,17 +37,20 @@ jobs:
       with:
         path: |
           ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-${{ matrix.gleam-version }}-${{ hashFiles('manifest.toml') }}
+          lib/cql/build
+        key: ${{ runner.os }}-gleam-cql-${{ matrix.gleam-version }}-${{ hashFiles('lib/cql/manifest.toml') }}
         restore-keys: |
-          ${{ runner.os }}-gleam-${{ matrix.gleam-version }}-
-          ${{ runner.os }}-gleam-
+          ${{ runner.os }}-gleam-cql-${{ matrix.gleam-version }}-
+          ${{ runner.os }}-gleam-cql-
           
     - name: Download dependencies
       run: gleam deps download
+      working-directory: lib/cql
       
     - name: Compile
       run: gleam build
+      working-directory: lib/cql
       
     - name: Run tests
       run: gleam test
+      working-directory: lib/cql

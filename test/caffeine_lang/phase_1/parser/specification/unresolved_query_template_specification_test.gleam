@@ -1,8 +1,6 @@
-import caffeine_lang/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/types/unresolved/unresolved_query_template_type
+import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/result
 import gleeunit/should
 

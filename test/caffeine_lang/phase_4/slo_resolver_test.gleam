@@ -1,7 +1,3 @@
-import caffeine_lang/cql/parser.{
-  Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
-  Sub, Word,
-}
 import caffeine_lang/phase_4/slo_resolver
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/ast/organization
@@ -13,10 +9,14 @@ import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
-import gleam/string
 import caffeine_lang/types/resolved/resolved_slo
+import cql/parser.{
+  Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
+  Sub, Word,
+}
 import gleam/dict
 import gleam/result
+import gleam/string
 import gleeunit/should
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
@@ -260,10 +260,7 @@ pub fn resolve_sli_with_complex_query_test() {
       ),
       typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
         dict.from_list([
-          #(
-            "numerator_query",
-            "sum:requests.success{$$service->SERVICE$$}",
-          ),
+          #("numerator_query", "sum:requests.success{$$service->SERVICE$$}"),
           #("denominator_query", "sum:requests.total{$$service->SERVICE$$}"),
         ]),
         dict.from_list([
@@ -323,7 +320,8 @@ pub fn resolve_sli_with_complex_query_test() {
       resolved_query: expected_resolved_query,
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_query, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_query, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -466,7 +464,11 @@ pub fn handle_missing_filter_variables_test() {
   let incomplete_filters = dict.from_list([#("SERVICE", "\"api_service\"")])
 
   let actual =
-    slo_resolver.resolve_sli(incomplete_filters, sli_type_with_missing_vars, "test_slo")
+    slo_resolver.resolve_sli(
+      incomplete_filters,
+      sli_type_with_missing_vars,
+      "test_slo",
+    )
 
   // Should fail because REGION is not provided
   actual
@@ -534,18 +536,26 @@ pub fn resolve_list_of_integers_test() {
       query_template_type: sli_type_with_int_list.query_template_type,
       metric_attributes: dict.from_list([
         // Should resolve to (1,10,200)
-        #("test_query", "metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}"),
+        #(
+          "test_query",
+          "metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}",
+        ),
       ]),
       resolved_query: ExpContainer(
         Primary(
           PrimaryExp(
-            Primary(PrimaryWord(Word("metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}"))),
+            Primary(
+              PrimaryWord(Word(
+                "metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}",
+              )),
+            ),
           ),
         ),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -561,7 +571,7 @@ pub fn parse_empty_list_test() {
       msg
       |> string.contains("Empty list not allowed")
       |> should.be_true()
-      
+
       msg
       |> string.contains("at least one value")
       |> should.be_true()
@@ -617,7 +627,8 @@ pub fn parse_single_item_list_test() {
 }
 
 pub fn convert_single_item_list_to_or_expression_test() {
-  let result = slo_resolver.convert_list_to_or_expression(["100"], "status_code")
+  let result =
+    slo_resolver.convert_list_to_or_expression(["100"], "status_code")
   result
   |> should.equal("status_code:100")
 }
@@ -662,14 +673,13 @@ pub fn resolve_single_item_list_test() {
       ]),
       resolved_query: ExpContainer(
         Primary(
-          PrimaryExp(
-            Primary(PrimaryWord(Word("metric{status_code:200}"))),
-          ),
+          PrimaryExp(Primary(PrimaryWord(Word("metric{status_code:200}")))),
         ),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -706,7 +716,8 @@ pub fn resolve_empty_list_fails_test() {
 
   let filters = dict.from_list([#("status_code", "[]")])
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
   |> should.be_error()
@@ -752,15 +763,12 @@ pub fn resolve_optional_with_value_test() {
         #("test_query", "metric{foobar:10}"),
       ]),
       resolved_query: ExpContainer(
-        Primary(
-          PrimaryExp(
-            Primary(PrimaryWord(Word("metric{foobar:10}"))),
-          ),
-        ),
+        Primary(PrimaryExp(Primary(PrimaryWord(Word("metric{foobar:10}"))))),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -807,15 +815,12 @@ pub fn resolve_optional_without_value_test() {
         #("test_query", "metric{}"),
       ]),
       resolved_query: ExpContainer(
-        Primary(
-          PrimaryExp(
-            Primary(PrimaryWord(Word("metric{}"))),
-          ),
-        ),
+        Primary(PrimaryExp(Primary(PrimaryWord(Word("metric{}"))))),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -873,7 +878,8 @@ pub fn resolve_optional_string_test() {
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -896,7 +902,10 @@ pub fn resolve_mixed_required_and_optional_test() {
       ),
       typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
         dict.from_list([
-          #("test_query", "metric{$$service->service$$,$$env->environment$$,$$optional_tag->tag$$}"),
+          #(
+            "test_query",
+            "metric{$$service->service$$,$$env->environment$$,$$optional_tag->tag$$}",
+          ),
         ]),
         dict.from_list([#("test_query", accepted_types.String)]),
       )
@@ -917,23 +926,31 @@ pub fn resolve_mixed_required_and_optional_test() {
       ],
     )
 
-  let filters = dict.from_list([
-    #("service", "\"web_api\""),
-    #("environment", "\"production\""),
-    #("tag", "\"v1.0\""),
-  ])
+  let filters =
+    dict.from_list([
+      #("service", "\"web_api\""),
+      #("environment", "\"production\""),
+      #("tag", "\"v1.0\""),
+    ])
 
   let expected =
     Ok(resolved_sli.Sli(
       name: "test_slo",
       query_template_type: sli_type_mixed.query_template_type,
       metric_attributes: dict.from_list([
-        #("test_query", "metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}"),
+        #(
+          "test_query",
+          "metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}",
+        ),
       ]),
       resolved_query: ExpContainer(
         Primary(
           PrimaryExp(
-            Primary(PrimaryWord(Word("metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}"))),
+            Primary(
+              PrimaryWord(Word(
+                "metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}",
+              )),
+            ),
           ),
         ),
       ),
@@ -985,15 +1002,12 @@ pub fn resolve_single_wildcard_list_test() {
         #("test_query", "metric{(foo:2*)}"),
       ]),
       resolved_query: ExpContainer(
-        Primary(
-          PrimaryExp(
-            Primary(PrimaryWord(Word("metric{(foo:2*)}"))),
-          ),
-        ),
+        Primary(PrimaryExp(Primary(PrimaryWord(Word("metric{(foo:2*)}"))))),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_wildcard, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_wildcard, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -1040,14 +1054,13 @@ pub fn resolve_multiple_wildcard_list_test() {
       ]),
       resolved_query: ExpContainer(
         Primary(
-          PrimaryExp(
-            Primary(PrimaryWord(Word("metric{(foo:2* OR foo:4*)}"))),
-          ),
+          PrimaryExp(Primary(PrimaryWord(Word("metric{(foo:2* OR foo:4*)}")))),
         ),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_wildcards, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_wildcards, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -1078,7 +1091,9 @@ pub fn resolve_optional_nonempty_list_integers_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "http_status_codes",
-          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(
+            accepted_types.Integer,
+          )),
         ),
       ],
     )
@@ -1090,18 +1105,26 @@ pub fn resolve_optional_nonempty_list_integers_test() {
       name: "test_slo",
       query_template_type: sli_type_with_optional_list.query_template_type,
       metric_attributes: dict.from_list([
-        #("test_query", "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}"),
+        #(
+          "test_query",
+          "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}",
+        ),
       ]),
       resolved_query: ExpContainer(
         Primary(
           PrimaryExp(
-            Primary(PrimaryWord(Word("metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}"))),
+            Primary(
+              PrimaryWord(Word(
+                "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}",
+              )),
+            ),
           ),
         ),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_optional_list, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_optional_list, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -1132,30 +1155,41 @@ pub fn resolve_negated_optional_nonempty_list_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "status_codes_to_exclude",
-          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(
+            accepted_types.Integer,
+          )),
         ),
       ],
     )
 
-  let filters = dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
+  let filters =
+    dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
 
   let expected =
     Ok(resolved_sli.Sli(
       name: "test_slo",
       query_template_type: sli_type_with_negated_list.query_template_type,
       metric_attributes: dict.from_list([
-        #("test_query", "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}"),
+        #(
+          "test_query",
+          "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}",
+        ),
       ]),
       resolved_query: ExpContainer(
         Primary(
           PrimaryExp(
-            Primary(PrimaryWord(Word("metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}"))),
+            Primary(
+              PrimaryWord(Word(
+                "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}",
+              )),
+            ),
           ),
         ),
       ),
     ))
 
-  let actual = slo_resolver.resolve_sli(filters, sli_type_with_negated_list, "test_slo")
+  let actual =
+    slo_resolver.resolve_sli(filters, sli_type_with_negated_list, "test_slo")
 
   actual
   |> should.equal(expected)
@@ -1195,10 +1229,11 @@ pub fn resolve_path_with_slashes_test() {
       ],
     )
 
-  let filters = dict.from_list([
-    #("environment", "production"),
-    #("http_path", "/v1/users/passwords/reset"),
-  ])
+  let filters =
+    dict.from_list([
+      #("environment", "production"),
+      #("http_path", "/v1/users/passwords/reset"),
+    ])
 
   let expected =
     Ok(resolved_sli.Sli(
@@ -1208,29 +1243,27 @@ pub fn resolve_path_with_slashes_test() {
         #("test_query", "metric{env:production,path:/v1/users/passwords/reset}"),
       ]),
       resolved_query: ExpContainer(
-        Primary(
-          PrimaryExp(
-            // The CQL parser will treat /v1/users/passwords/reset as division operators
-            // This is expected behavior - paths with slashes will be parsed as math expressions
+        Primary(PrimaryExp(
+          // The CQL parser will treat /v1/users/passwords/reset as division operators
+          // This is expected behavior - paths with slashes will be parsed as math expressions
+          OperatorExpr(
             OperatorExpr(
               OperatorExpr(
                 OperatorExpr(
-                  OperatorExpr(
-                    Primary(PrimaryWord(Word("metric{env:production,path:"))),
-                    Primary(PrimaryWord(Word("v1"))),
-                    Div,
-                  ),
-                  Primary(PrimaryWord(Word("users"))),
+                  Primary(PrimaryWord(Word("metric{env:production,path:"))),
+                  Primary(PrimaryWord(Word("v1"))),
                   Div,
                 ),
-                Primary(PrimaryWord(Word("passwords"))),
+                Primary(PrimaryWord(Word("users"))),
                 Div,
               ),
-              Primary(PrimaryWord(Word("reset}"))),
+              Primary(PrimaryWord(Word("passwords"))),
               Div,
             ),
+            Primary(PrimaryWord(Word("reset}"))),
+            Div,
           ),
-        ),
+        )),
       ),
     ))
 
@@ -1257,7 +1290,10 @@ pub fn resolve_not_negation_syntax_test() {
       ),
       typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
         dict.from_list([
-          #("test_query", "metric{$$NOT[status_codes->status_codes_to_exclude]$$}"),
+          #(
+            "test_query",
+            "metric{$$NOT[status_codes->status_codes_to_exclude]$$}",
+          ),
         ]),
         dict.from_list([#("test_query", accepted_types.String)]),
       )
@@ -1265,24 +1301,34 @@ pub fn resolve_not_negation_syntax_test() {
       specification_of_query_templatized_variables: [
         basic_type.BasicType(
           attribute_name: "status_codes_to_exclude",
-          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)),
+          attribute_type: accepted_types.Optional(accepted_types.NonEmptyList(
+            accepted_types.Integer,
+          )),
         ),
       ],
     )
 
-  let filters = dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
+  let filters =
+    dict.from_list([#("status_codes_to_exclude", "[400, 401, 404, 429]")])
 
   let expected =
     Ok(resolved_sli.Sli(
       name: "test_slo",
       query_template_type: sli_type_with_not.query_template_type,
       metric_attributes: dict.from_list([
-        #("test_query", "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}"),
+        #(
+          "test_query",
+          "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}",
+        ),
       ]),
       resolved_query: ExpContainer(
         Primary(
           PrimaryExp(
-            Primary(PrimaryWord(Word("metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}"))),
+            Primary(
+              PrimaryWord(Word(
+                "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}",
+              )),
+            ),
           ),
         ),
       ),

@@ -1,4 +1,3 @@
-import caffeine_lang/cql/parser
 import caffeine_lang/types/ast/organization
 import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/slo
@@ -6,6 +5,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
+import cql/parser
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -69,7 +69,7 @@ pub fn resolve_sli(
     |> dict.to_list
     |> list.try_map(fn(pair) {
       let #(metric_attribute, template) = pair
-      
+
       // Process all template variables in the template string
       use processed <- result.try(process_template_string(
         template,
@@ -173,10 +173,16 @@ fn process_template_string(
 ) -> Result(String, String) {
   // Find all template variables by splitting on $$
   let parts = string.split(template, "$$")
-  
+
   // Process parts: odd indices are template variables, even indices are literal text
-  use result <- result.try(process_template_parts(parts, [], filters, sli_type, False))
-  
+  use result <- result.try(process_template_parts(
+    parts,
+    [],
+    filters,
+    sli_type,
+    False,
+  ))
+
   // Clean up any remaining comma issues and convert to AND syntax
   let cleaned = cleanup_empty_optionals(result)
   Ok(convert_commas_to_and(cleaned))
@@ -205,7 +211,13 @@ fn process_template_parts(
             filters,
             sli_type,
           ))
-          process_template_parts(rest, [replacement, ..acc], filters, sli_type, False)
+          process_template_parts(
+            rest,
+            [replacement, ..acc],
+            filters,
+            sli_type,
+            False,
+          )
         }
       }
     }
@@ -298,7 +310,7 @@ fn process_template_variable(
   use #(field_name, var_name, is_negated) <- result.try(parse_template_variable(
     template_var,
   ))
-  
+
   // Check if this is an optional type
   case find_filter_type(sli_type, var_name) {
     Ok(accepted_types.Optional(_)) -> {
@@ -311,7 +323,7 @@ fn process_template_variable(
             var_name,
             field_name,
           ))
-          
+
           // Apply negation if needed
           case is_negated {
             True -> Ok("NOT (" <> processed_value <> ")")
@@ -332,7 +344,7 @@ fn process_template_variable(
             var_name,
             field_name,
           ))
-          
+
           // Apply negation if needed
           case is_negated {
             True -> Ok("NOT (" <> processed_value <> ")")
@@ -340,9 +352,7 @@ fn process_template_variable(
           }
         }
         Error(_) ->
-          Error(
-            "Template variable '" <> var_name <> "' not found in filters",
-          )
+          Error("Template variable '" <> var_name <> "' not found in filters")
       }
     }
   }
@@ -355,14 +365,14 @@ fn parse_template_variable(
   template_var: String,
 ) -> Result(#(String, String, Bool), String) {
   // Remove $$ markers
-  let content = 
+  let content =
     template_var
     |> string.replace("$$", "")
-  
+
   // Check for NOT prefix
   let #(content, is_negated) = case string.starts_with(content, "NOT[") {
     True -> {
-      let inner = 
+      let inner =
         content
         |> string.replace("NOT[", "")
         |> string.replace("]", "")
@@ -370,13 +380,15 @@ fn parse_template_variable(
     }
     False -> #(content, False)
   }
-  
+
   // Split by -> to get field and variable name
   case string.split(content, "->") {
     [field_name, var_name] -> Ok(#(field_name, var_name, is_negated))
     _ ->
       Error(
-        "Invalid template variable format: " <> template_var <> ". Expected $$field->var$$ or $$NOT[field->var]$$",
+        "Invalid template variable format: "
+        <> template_var
+        <> ". Expected $$field->var$$ or $$NOT[field->var]$$",
       )
   }
 }
@@ -396,11 +408,21 @@ fn process_filter_value(
             Ok(parsed_list) -> {
               case parsed_list {
                 [] ->
-                  Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
+                  Error(
+                    "Empty list not allowed for NonEmptyList field '"
+                    <> filter_name
+                    <> "': must contain at least one value",
+                  )
                 _ -> Ok(convert_list_to_or_expression(parsed_list, field_name))
               }
             }
-            Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+            Error(err) ->
+              Error(
+                "Error parsing NonEmptyList field '"
+                <> filter_name
+                <> "': "
+                <> err,
+              )
           }
         }
         accepted_types.Integer -> {
@@ -408,17 +430,25 @@ fn process_filter_value(
             Ok(parsed_list) -> {
               case parsed_list {
                 [] ->
-                  Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
-                _ ->
-                  Ok(
-                    convert_list_to_or_expression(
-                      list.map(parsed_list, int.to_string),
-                      field_name,
-                    ),
+                  Error(
+                    "Empty list not allowed for NonEmptyList field '"
+                    <> filter_name
+                    <> "': must contain at least one value",
                   )
+                _ ->
+                  Ok(convert_list_to_or_expression(
+                    list.map(parsed_list, int.to_string),
+                    field_name,
+                  ))
               }
             }
-            Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+            Error(err) ->
+              Error(
+                "Error parsing NonEmptyList field '"
+                <> filter_name
+                <> "': "
+                <> err,
+              )
           }
         }
         _ -> Ok(field_name <> ":" <> value)
@@ -435,11 +465,22 @@ fn process_filter_value(
                 Ok(parsed_list) -> {
                   case parsed_list {
                     [] ->
-                      Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
-                    _ -> Ok(convert_list_to_or_expression(parsed_list, field_name))
+                      Error(
+                        "Empty list not allowed for NonEmptyList field '"
+                        <> filter_name
+                        <> "': must contain at least one value",
+                      )
+                    _ ->
+                      Ok(convert_list_to_or_expression(parsed_list, field_name))
                   }
                 }
-                Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+                Error(err) ->
+                  Error(
+                    "Error parsing NonEmptyList field '"
+                    <> filter_name
+                    <> "': "
+                    <> err,
+                  )
               }
             }
             accepted_types.Integer -> {
@@ -447,17 +488,25 @@ fn process_filter_value(
                 Ok(parsed_list) -> {
                   case parsed_list {
                     [] ->
-                      Error("Empty list not allowed for NonEmptyList field '" <> filter_name <> "': must contain at least one value")
-                    _ ->
-                      Ok(
-                        convert_list_to_or_expression(
-                          list.map(parsed_list, int.to_string),
-                          field_name,
-                        ),
+                      Error(
+                        "Empty list not allowed for NonEmptyList field '"
+                        <> filter_name
+                        <> "': must contain at least one value",
                       )
+                    _ ->
+                      Ok(convert_list_to_or_expression(
+                        list.map(parsed_list, int.to_string),
+                        field_name,
+                      ))
                   }
                 }
-                Error(err) -> Error("Error parsing NonEmptyList field '" <> filter_name <> "': " <> err)
+                Error(err) ->
+                  Error(
+                    "Error parsing NonEmptyList field '"
+                    <> filter_name
+                    <> "': "
+                    <> err,
+                  )
               }
             }
             _ -> Ok(field_name <> ":" <> value)
@@ -474,14 +523,22 @@ fn process_filter_value(
   }
 }
 
-pub fn convert_list_to_or_expression(items: List(String), field_name: String) -> String {
+pub fn convert_list_to_or_expression(
+  items: List(String),
+  field_name: String,
+) -> String {
   case items {
     [] -> "[]"
     [single] -> {
       // Check if the value contains special characters that could be parsed as operators
       // If so, wrap in parentheses to prevent CQL parsing issues
       let value = field_name <> ":" <> single
-      case string.contains(single, "*") || string.contains(single, "+") || string.contains(single, "-") || string.contains(single, "/") {
+      case
+        string.contains(single, "*")
+        || string.contains(single, "+")
+        || string.contains(single, "-")
+        || string.contains(single, "/")
+      {
         True -> "(" <> value <> ")"
         False -> value
       }
@@ -511,9 +568,10 @@ pub fn parse_list_value(
         |> string.split(",")
         |> list.map(inner_parse)
         |> result.all
-      
+
       case parse_result {
-        Error(parse_error) -> Error("Failed to parse list values: " <> parse_error)
+        Error(parse_error) ->
+          Error("Failed to parse list values: " <> parse_error)
         Ok(parsed_list) -> Ok(parsed_list)
       }
     }
