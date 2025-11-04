@@ -1,5 +1,5 @@
 name = "gleamy_spec"
-version = "0.1.0"
+version = "0.0.1"
 description = "A behavior-driven development test framework for Gleam, inspired by Ruby's RSpec"
 
 target = "erlang"
