@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/types/unresolved/unresolved_service
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn parse_unresolved_services_specification_parses_valid_services_test() {
   let expected_services = [

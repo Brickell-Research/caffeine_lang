@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/common/accepted_types
 import gleam/dict
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn extract_params_from_file_path_extracts_team_and_service_names_from_valid_file_path_test() {
   let actual =

@@ -14,7 +14,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleeunit/should
+import gleamy_spec/should
 
 /// End-to-end integration test using realistic organization data
 /// Tests the complete flow from SLO resolution to Datadog code generation

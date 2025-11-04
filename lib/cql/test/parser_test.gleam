@@ -1,7 +1,7 @@
 import cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Sub, is_balanced_parens,
 }
-import gleeunit/should
+import gleamy_spec/should
 import test_helpers.{
   exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }

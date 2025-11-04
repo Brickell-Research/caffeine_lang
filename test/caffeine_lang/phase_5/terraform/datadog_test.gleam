@@ -8,7 +8,7 @@ import cql/parser.{
   Div, ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
 import gleam/dict
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn set_resource_comment_header_test() {
   let expected = "# SLO created by EzSLO for team - Type: type"

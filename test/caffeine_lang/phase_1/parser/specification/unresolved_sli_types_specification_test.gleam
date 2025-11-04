@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specifica
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn parse_unresolved_sli_types_specification_parses_valid_sli_types_test() {
   let expected_sli_types = [

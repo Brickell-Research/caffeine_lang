@@ -12,7 +12,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn creates_organization_with_teams_and_services_test() {
   // ==== Specification ====

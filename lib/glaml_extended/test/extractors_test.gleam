@@ -1,7 +1,7 @@
 import glaml
 import glaml_extended/extractors
 import gleam/dict
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn extract_string_from_node_test() {
   let yaml = "name: test_value"

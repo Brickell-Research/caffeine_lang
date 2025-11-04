@@ -1,5 +1,5 @@
-import gleeunit
+import gleamy_spec
 
 pub fn main() {
-  gleeunit.main()
+  gleamy_spec.main()
 }

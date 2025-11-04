@@ -3,10 +3,9 @@
 
 packages = [
   { name = "gleam_stdlib", version = "0.65.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "7C69C71D8C493AE11A5184828A77110EB05A7786EBF8B25B36A72F879C3EE107" },
-  { name = "gleamy_spec", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleeunit"], source = "local", path = "../gleamy_spec" },
   { name = "gleeunit", version = "1.8.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "7AE0F64B26CC065ED705FF7CA5F4EDAB8015E72A883736FE251E46FACCCE1E08" },
 ]
 
 [requirements]
 gleam_stdlib = { version = ">= 0.63.0 and < 1.0.0" }
-gleamy_spec = { path = "../gleamy_spec" }
+gleeunit = { version = ">= 1.0.0" }

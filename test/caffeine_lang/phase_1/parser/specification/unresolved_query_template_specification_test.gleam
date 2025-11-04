@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_query_template_spec
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn parse_unresolved_query_template_types_specification_parses_valid_query_template_types_test() {
   let expected_query_template_types = [

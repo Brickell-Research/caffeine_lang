@@ -11,6 +11,7 @@ packages = [
   { name = "gleam_json", version = "3.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_json", source = "hex", outer_checksum = "874FA3C3BB6E22DD2BB111966BD40B3759E9094E05257899A7C08F5DE77EC049" },
   { name = "gleam_otp", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "BA6A294E295E428EC1562DC1C11EA7530DCB981E8359134BEABC8493B7B2258E" },
   { name = "gleam_stdlib", version = "0.65.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "7C69C71D8C493AE11A5184828A77110EB05A7786EBF8B25B36A72F879C3EE107" },
+  { name = "gleamy_spec", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleeunit"], source = "local", path = "lib/gleamy_spec" },
   { name = "gleeunit", version = "1.8.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "7AE0F64B26CC065ED705FF7CA5F4EDAB8015E72A883736FE251E46FACCCE1E08" },
   { name = "houdini", version = "1.2.0", build_tools = ["gleam"], requirements = [], otp_app = "houdini", source = "hex", outer_checksum = "5DB1053F1AF828049C2B206D4403C18970ABEF5C18671CA3C2D2ED0DD64F6385" },
   { name = "lustre", version = "5.4.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_json", "gleam_otp", "gleam_stdlib", "houdini"], otp_app = "lustre", source = "hex", outer_checksum = "40E097BABCE65FB7C460C073078611F7F5802EB07E1A9BFB5C229F71B60F8E50" },
@@ -24,6 +25,6 @@ cql = { path = "./lib/cql" }
 glaml = { version = "~> 3.0.0" }
 glaml_extended = { path = "./lib/glaml_extended" }
 gleam_stdlib = { version = ">= 0.63.0 and < 1.0.0" }
-gleeunit = { version = ">= 1.0.0" }
+gleamy_spec = { path = "./lib/gleamy_spec" }
 lustre = { version = ">= 5.3.5 and < 6.0.0" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }

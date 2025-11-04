@@ -20,4 +20,4 @@ glaml_extended = { path = "./lib/glaml_extended" }
 cql = { path = "./lib/cql" }
 
 [dev-dependencies]
-gleeunit = ">= 1.0.0"
+gleamy_spec = { path = "./lib/gleamy_spec" }

@@ -3,7 +3,7 @@ import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
 import gleam/dict
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_test() {
   let actual =

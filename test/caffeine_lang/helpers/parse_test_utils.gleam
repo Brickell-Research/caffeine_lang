@@ -1,4 +1,4 @@
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn assert_parse_error(
   parser: fn(String) -> Result(a, String),

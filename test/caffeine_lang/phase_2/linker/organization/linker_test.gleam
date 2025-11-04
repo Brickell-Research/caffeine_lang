@@ -13,7 +13,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleeunit/should
+import gleamy_spec/should
 
 // ==== Test Helpers ===
 fn new_bt(

@@ -1,6 +1,6 @@
 import cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
 import cql/resolver.{GoodOverTotal, resolve_primitives}
-import gleeunit/should
+import gleamy_spec/should
 import test_helpers.{parens, prim_word, simple_op_cont}
 
 fn parse_then_resolve_primitives(

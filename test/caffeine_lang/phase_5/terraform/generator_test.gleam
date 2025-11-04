@@ -6,7 +6,7 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn build_provider_datadog_test() {
   let expected = {

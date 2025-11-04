@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/common/accepted_types
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn parse_basic_types_specification_parses_valid_basic_types_test() {
   let expected_basic_types = [

@@ -17,7 +17,7 @@ import cql/parser.{
 import gleam/dict
 import gleam/result
 import gleam/string
-import gleeunit/should
+import gleamy_spec/should
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
   generic_dictionary.from_string_dict(

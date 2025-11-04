@@ -1,7 +1,7 @@
 import cql/generator
 import cql/parser
 import cql/resolver
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn generate_datadog_query_test() {
   // Good over bad expression

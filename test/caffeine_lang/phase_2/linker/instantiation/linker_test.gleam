@@ -13,7 +13,7 @@ import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/list
 import gleam/string
-import gleeunit/should
+import gleamy_spec/should
 
 // ==== Test Helpers ====
 fn create_test_dictionary() -> generic_dictionary.GenericDictionary {

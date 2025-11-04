@@ -11,7 +11,7 @@ import caffeine_lang/types/unresolved/unresolved_sli_type
 import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/result
-import gleeunit/should
+import gleamy_spec/should
 
 pub fn resolve_unresolved_sli_type_test() {
   let basic_types = [
