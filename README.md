@@ -1,6 +1,8 @@
 # caffeine
 
-[![Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test.yml)
+[![Caffeine Language Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml)
+[![CQL Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_cql.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_cql.yml)
+[![Glaml Extended Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Gleam](https://img.shields.io/badge/Gleam-FFAFF3?style=for-the-badge&logo=gleam&logoColor=black)](https://gleam.run/)
 
