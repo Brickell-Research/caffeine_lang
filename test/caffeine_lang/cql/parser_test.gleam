@@ -1,7 +1,7 @@
 import caffeine_lang/cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Sub, is_balanced_parens,
 }
-import cql/test_helpers.{
+import caffeine_lang/cql/test_helpers.{
   exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }
 import gleeunit/should
@@ -109,5 +109,48 @@ pub fn is_balanced_parens_test() {
   |> should.be_false
 
   is_balanced_parens("(a(b)(c)((())))", 11, 4)
+  |> should.be_true
+}
+
+pub fn find_rightmost_operator_at_level_test() {
+  // ==== SUCCESS CASES ====
+  let actual =
+    parser.find_rightmost_operator_at_level("(A + B) / C", "/", 0, 0, -1)
+  let expected = Ok(#("(A + B)", "C"))
+  actual |> should.equal(expected)
+
+  let actual =
+    parser.find_rightmost_operator_at_level("(A - B) / D * C", "*", 0, 0, -1)
+  let expected = Ok(#("(A - B) / D", "C"))
+  actual |> should.equal(expected)
+
+  let actual =
+    parser.find_rightmost_operator_at_level("A - B / (D * C)", "-", 0, 0, -1)
+  let expected = Ok(#("A", "B / (D * C)"))
+  actual |> should.equal(expected)
+
+  // ==== ERROR CASES ====
+  let actual =
+    parser.find_rightmost_operator_at_level("(A + B) / C", "+", 0, 0, -1)
+  actual |> should.be_error
+}
+
+pub fn is_last_char_test() {
+  parser.is_last_char("", 0)
+  |> should.be_true
+
+  parser.is_last_char("a", 0)
+  |> should.be_true
+
+  parser.is_last_char("()", 0)
+  |> should.be_false
+
+  parser.is_last_char("(()))", -1)
+  |> should.be_false
+
+  parser.is_last_char("(()))", 100)
+  |> should.be_false
+
+  parser.is_last_char("(a(b)(c)((())))", 14)
   |> should.be_true
 }

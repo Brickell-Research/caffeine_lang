@@ -26,19 +26,20 @@ fn new_bt(
 }
 
 pub fn get_instantiation_yaml_files_returns_all_yaml_files_from_test_artifacts_directory_test() {
-  let actual = linker.get_instantiation_yaml_files("./test/artifacts")
+  let actual =
+    linker.get_instantiation_yaml_files("./test/caffeine_lang/artifacts")
 
   let expected_files = [
-    "./test/artifacts/platform/less_reliable_service.yaml",
-    "./test/artifacts/platform/reliable_service.yaml",
-    "./test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
-    "./test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
-    "./test/artifacts/platform/reliable_service_missing_name.yaml",
-    "./test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
-    "./test/artifacts/platform/reliable_service_missing_sli_type.yaml",
-    "./test/artifacts/platform/reliable_service_missing_slos.yaml",
-    "./test/artifacts/platform/reliable_service_missing_threshold.yaml",
-    "./test/artifacts/platform/simple_yaml_load_test.yaml",
+    "./test/caffeine_lang/artifacts/platform/less_reliable_service.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_missing_name.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_missing_sli_type.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_missing_slos.yaml",
+    "./test/caffeine_lang/artifacts/platform/reliable_service_missing_threshold.yaml",
+    "./test/caffeine_lang/artifacts/platform/simple_yaml_load_test.yaml",
   ]
 
   case actual {
@@ -53,8 +54,8 @@ pub fn get_instantiation_yaml_files_returns_all_yaml_files_from_test_artifacts_d
 pub fn link_specification_and_instantiation_successfully_links_specification_and_instantiation_files_test() {
   let actual =
     linker.link_specification_and_instantiation(
-      "./test/artifacts/some_organization/specifications",
-      "./test/artifacts/some_organization",
+      "./test/caffeine_lang/artifacts/some_organization/specifications",
+      "./test/caffeine_lang/artifacts/some_organization",
     )
 
   let expected_slo_reliable_service =
@@ -67,7 +68,10 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
         dict.from_list([
           #(
             "environment",
-            generic_dictionary.TypedValue("production", accepted_types.Optional(accepted_types.String)),
+            generic_dictionary.TypedValue(
+              "production",
+              accepted_types.Optional(accepted_types.String),
+            ),
           ),
           #(
             "graphql_operation_name",
@@ -81,10 +85,14 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
       window_in_days: 7,
     )
 
-  let expected_basic_type_1 = new_bt("environment", accepted_types.Optional(accepted_types.String))
+  let expected_basic_type_1 =
+    new_bt("environment", accepted_types.Optional(accepted_types.String))
 
   let expected_basic_type_2 =
-    new_bt("graphql_operation_name", accepted_types.Optional(accepted_types.String))
+    new_bt(
+      "graphql_operation_name",
+      accepted_types.Optional(accepted_types.String),
+    )
 
   let expected_query_template_type =
     query_template_type.QueryTemplateType(

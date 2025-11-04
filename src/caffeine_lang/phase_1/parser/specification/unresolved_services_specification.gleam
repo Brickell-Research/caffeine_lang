@@ -1,6 +1,7 @@
-import caffeine_lang/phase_1/parser/utils/glaml_helpers
+import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/unresolved/unresolved_service
 import glaml
+import glaml_extended/helpers as glaml_extended_helpers
 import gleam/dict
 import gleam/result
 
@@ -9,7 +10,7 @@ import gleam/result
 pub fn parse_unresolved_services_specification(
   file_path: String,
 ) -> Result(List(unresolved_service.Service), String) {
-  glaml_helpers.parse_specification(
+  general_common.parse_specification(
     file_path,
     dict.new(),
     parse_service,
@@ -23,11 +24,13 @@ fn parse_service(
   service: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(unresolved_service.Service, String) {
-  use sli_types <- result.try(glaml_helpers.extract_string_list_from_node(
+  use sli_types <- result.try(
+    glaml_extended_helpers.extract_string_list_from_node(service, "sli_types"),
+  )
+  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
     service,
-    "sli_types",
+    "name",
   ))
-  use name <- result.try(glaml_helpers.extract_string_from_node(service, "name"))
 
   Ok(unresolved_service.Service(name: name, sli_types: sli_types))
 }

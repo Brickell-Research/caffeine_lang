@@ -7,26 +7,26 @@ import gleam/result
 import gleeunit/should
 
 pub fn parse_unresolved_query_template_types_specification_parses_valid_query_template_types_test() {
-        let expected_query_template_types = [
-          unresolved_query_template_type.QueryTemplateType(
-            name: "good_over_bad",
-            specification_of_query_templates: [
-              "team_name",
-              "accepted_status_codes",
-            ],
-            query: ExpContainer(OperatorExpr(
-              Primary(PrimaryWord(Word("numerator"))),
-              Primary(PrimaryWord(Word("denominator"))),
-              Div,
-            )),
-          ),
-        ]
+  let expected_query_template_types = [
+    unresolved_query_template_type.QueryTemplateType(
+      name: "good_over_bad",
+      specification_of_query_templates: [
+        "team_name",
+        "accepted_status_codes",
+      ],
+      query: ExpContainer(OperatorExpr(
+        Primary(PrimaryWord(Word("numerator"))),
+        Primary(PrimaryWord(Word("denominator"))),
+        Div,
+      )),
+    ),
+  ]
 
   let actual =
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-      "test/artifacts/specifications/query_template_types.yaml",
+      "test/caffeine_lang/artifacts/specifications/query_template_types.yaml",
     )
-  
+
   actual
   |> should.equal(Ok(expected_query_template_types))
 }
@@ -34,13 +34,13 @@ pub fn parse_unresolved_query_template_types_specification_parses_valid_query_te
 pub fn parse_unresolved_query_template_types_specification_returns_error_when_specification_of_query_templates_is_missing_test() {
   let actual =
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-      "test/artifacts/specifications/query_template_types_missing_specification_of_query_templates.yaml",
+      "test/caffeine_lang/artifacts/specifications/query_template_types_missing_specification_of_query_templates.yaml",
     )
-  
+
   actual
   |> result.is_error()
   |> should.be_true()
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -52,13 +52,13 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_sp
 pub fn parse_unresolved_query_template_types_specification_returns_error_when_name_is_missing_test() {
   let actual =
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-      "test/artifacts/specifications/query_template_types_missing_name.yaml",
+      "test/caffeine_lang/artifacts/specifications/query_template_types_missing_name.yaml",
     )
-  
+
   actual
   |> result.is_error()
   |> should.be_true()
-  
+
   case actual {
     Error(msg) ->
       msg
@@ -70,13 +70,13 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_na
 pub fn parse_unresolved_query_template_types_specification_returns_error_when_query_is_empty_test() {
   let actual =
     unresolved_query_template_specification.parse_unresolved_query_template_types_specification(
-      "test/artifacts/specifications/query_template_types_missing_query.yaml",
+      "test/caffeine_lang/artifacts/specifications/query_template_types_missing_query.yaml",
     )
-  
+
   actual
   |> result.is_error()
   |> should.be_true()
-  
+
   case actual {
     Error(msg) ->
       msg

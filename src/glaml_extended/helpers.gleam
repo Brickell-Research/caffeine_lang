@@ -4,39 +4,6 @@ import gleam/int
 import gleam/list
 import gleam/result
 
-// ==== Public ====
-
-/// Parses a specification file into a list of glaml documents according to the given parse function.
-pub fn parse_specification(
-  file_path: String,
-  params: dict.Dict(String, String),
-  parse_fn: fn(glaml.Node, dict.Dict(String, String)) -> Result(a, String),
-  key: String,
-) -> Result(List(a), String) {
-  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
-
-  // parse the YAML file
-  use doc <- result.try(
-    glaml.parse_file(file_path)
-    |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
-  )
-
-  let parse_fn_two = fn(doc, _params) {
-    iteratively_parse_collection(
-      glaml.document_root(doc),
-      params,
-      parse_fn,
-      key,
-    )
-  }
-
-  // parse the intermediate representation, here just the sli_types
-  case doc {
-    [first, ..] -> parse_fn_two(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
-}
-
 /// Extracts a string from a glaml node.
 pub fn extract_string_from_node(
   node: glaml.Node,
@@ -141,7 +108,9 @@ pub fn extract_dict_strings_from_node(
               #(glaml.NodeStr(dict_key), glaml.NodeStr(value)) ->
                 Ok(#(dict_key, value))
               _ ->
-                Error("Expected " <> key <> " entries to be string key-value pairs")
+                Error(
+                  "Expected " <> key <> " entries to be string key-value pairs",
+                )
             }
           })
           |> result.map(dict.from_list)
@@ -156,9 +125,8 @@ pub fn extract_dict_strings_from_node(
   }
 }
 
-// ==== Private ====
 /// Iteratively parses a collection of nodes.
-fn iteratively_parse_collection(
+pub fn iteratively_parse_collection(
   root: glaml.Node,
   params: dict.Dict(String, String),
   actual_parse_fn: fn(glaml.Node, dict.Dict(String, String)) ->

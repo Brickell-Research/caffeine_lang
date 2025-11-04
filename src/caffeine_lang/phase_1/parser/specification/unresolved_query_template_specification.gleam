@@ -1,7 +1,8 @@
 import caffeine_lang/cql/parser.{parse_expr}
-import caffeine_lang/phase_1/parser/utils/glaml_helpers
+import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import glaml
+import glaml_extended/helpers as glaml_extended_helpers
 import gleam/dict
 import gleam/result
 
@@ -10,7 +11,7 @@ import gleam/result
 pub fn parse_unresolved_query_template_types_specification(
   file_path: String,
 ) -> Result(List(unresolved_query_template_type.QueryTemplateType), String) {
-  glaml_helpers.parse_specification(
+  general_common.parse_specification(
     file_path,
     dict.new(),
     parse_query_template_type,
@@ -24,21 +25,20 @@ fn parse_query_template_type(
   type_node: glaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(unresolved_query_template_type.QueryTemplateType, String) {
-  use name <- result.try(glaml_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
     type_node,
     "name",
   ))
   use specification_of_query_templates <- result.try(
-    glaml_helpers.extract_string_list_from_node(
+    glaml_extended_helpers.extract_string_list_from_node(
       type_node,
       "specification_of_query_templates",
     ),
   )
 
-  use query_string <- result.try(glaml_helpers.extract_string_from_node(
-    type_node,
-    "query",
-  ))
+  use query_string <- result.try(
+    glaml_extended_helpers.extract_string_from_node(type_node, "query"),
+  )
 
   // Validate that query string is not empty
   use query_string <- result.try(case query_string {

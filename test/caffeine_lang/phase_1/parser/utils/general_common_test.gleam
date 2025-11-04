@@ -6,7 +6,7 @@ import gleeunit/should
 pub fn extract_params_from_file_path_extracts_team_and_service_names_from_valid_file_path_test() {
   let actual =
     general_common.extract_params_from_file_path(
-      "test/artifacts/platform/reliable_service.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service.yaml",
     )
 
   actual
@@ -87,22 +87,36 @@ pub fn string_to_accepted_type_converts_string_to_boolean_type_test() {
 
   general_common.string_to_accepted_type("Optional(NonEmptyList(Boolean))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Boolean))),
+    Ok(
+      accepted_types.Optional(accepted_types.NonEmptyList(
+        accepted_types.Boolean,
+      )),
+    ),
   )
 
   general_common.string_to_accepted_type("Optional(NonEmptyList(Integer))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer))),
+    Ok(
+      accepted_types.Optional(accepted_types.NonEmptyList(
+        accepted_types.Integer,
+      )),
+    ),
   )
 
   general_common.string_to_accepted_type("Optional(NonEmptyList(Decimal))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Decimal))),
+    Ok(
+      accepted_types.Optional(accepted_types.NonEmptyList(
+        accepted_types.Decimal,
+      )),
+    ),
   )
 
   general_common.string_to_accepted_type("Optional(NonEmptyList(String))")
   |> should.equal(
-    Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.String))),
+    Ok(
+      accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.String)),
+    ),
   )
 
   general_common.string_to_accepted_type("Optional(List(List(Boolean)))")

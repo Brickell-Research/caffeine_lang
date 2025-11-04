@@ -1,6 +1,5 @@
 import caffeine_lang/cql/parser.{
-  type Exp, type Operator, type Primary, Add, Div, Mul, PrimaryExp, PrimaryWord,
-  Sub,
+  type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord,
 }
 import caffeine_lang/cql/resolver.{type Primitives, GoodOverTotal}
 import gleam/option.{type Option, None, Some}
@@ -51,7 +50,8 @@ pub fn exp_to_string(exp: Exp) -> String {
         _, _ -> {
           // Normal expression with spaces
           let left = exp_to_string_with_context(numerator, Some(operator), True)
-          let right = exp_to_string_with_context(denominator, Some(operator), False)
+          let right =
+            exp_to_string_with_context(denominator, Some(operator), False)
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }
@@ -88,7 +88,7 @@ fn get_leftmost_word(exp: Exp) -> Option(String) {
 fn all_divisions(exp: Exp) -> Bool {
   case exp {
     parser.Primary(_) -> True
-    parser.OperatorExpr(left, right, parser.Div) -> 
+    parser.OperatorExpr(left, right, parser.Div) ->
       all_divisions(left) && all_divisions(right)
     _ -> False
   }
@@ -119,7 +119,8 @@ fn exp_to_string_with_context(
         _, _ -> {
           // Not a path, render with spaces
           let left = exp_to_string_with_context(numerator, Some(operator), True)
-          let right = exp_to_string_with_context(denominator, Some(operator), False)
+          let right =
+            exp_to_string_with_context(denominator, Some(operator), False)
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }
@@ -128,38 +129,13 @@ fn exp_to_string_with_context(
   }
 }
 
-fn primary_to_string(primary: Primary, parent_op: Option(Operator)) -> String {
+fn primary_to_string(primary: Primary, _parent_op: Option(Operator)) -> String {
   case primary {
     PrimaryWord(word:) -> word.value
     PrimaryExp(exp:) -> {
-      // Check if parentheses are needed
-      let needs_parens = case exp, parent_op {
-        // If there's no parent operator, we don't need parens
-        _, None -> False
-        // If the inner expression is just a primary, check if it needs parens
-        parser.Primary(_), _ -> False
-        // If inner is an operator expression, check precedence
-        parser.OperatorExpr(operator: inner_op, ..), Some(parent) ->
-          needs_parentheses(inner_op, parent)
-      }
-      case needs_parens {
-        True -> "(" <> exp_to_string(exp) <> ")"
-        False -> exp_to_string(exp)
-      }
+      // Always preserve explicit parentheses from the original input
+      "(" <> exp_to_string(exp) <> ")"
     }
-  }
-}
-
-fn needs_parentheses(inner_op: Operator, parent_op: Operator) -> Bool {
-  let inner_prec = operator_precedence(inner_op)
-  let parent_prec = operator_precedence(parent_op)
-  inner_prec < parent_prec
-}
-
-fn operator_precedence(op: Operator) -> Int {
-  case op {
-    Add | Sub -> 1
-    Mul | Div -> 2
   }
 }
 

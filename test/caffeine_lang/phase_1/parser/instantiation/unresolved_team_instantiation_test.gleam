@@ -8,7 +8,7 @@ import gleeunit/should
 pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/less_reliable_service.yaml",
+      "test/caffeine_lang/artifacts/platform/less_reliable_service.yaml",
     )
 
   actual
@@ -19,7 +19,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_tes
     Error(msg) ->
       msg
       |> should.equal(
-        "Empty YAML file: test/artifacts/platform/less_reliable_service.yaml",
+        "Empty YAML file: test/caffeine_lang/artifacts/platform/less_reliable_service.yaml",
       )
     Ok(_) -> panic as "Expected error"
   }
@@ -58,7 +58,7 @@ pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_tes
 
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service.yaml",
     )
 
   actual
@@ -68,7 +68,7 @@ pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_tes
 pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_sli_type.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_missing_sli_type.yaml",
     )
 
   case actual {
@@ -82,7 +82,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missin
 pub fn parse_unresolved_team_instantiation_returns_ok_when_filters_are_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_missing_typed_instatiation_of_query_templatized_variables.yaml",
     )
 
   // Should succeed with empty dict when typed_instatiation_of_query_templatized_variables is missing
@@ -94,7 +94,7 @@ pub fn parse_unresolved_team_instantiation_returns_ok_when_filters_are_missing_t
 pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_threshold.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_missing_threshold.yaml",
     )
 
   case actual {
@@ -108,7 +108,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missi
 pub fn parse_unresolved_team_instantiation_returns_error_when_slos_are_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_slos.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_missing_slos.yaml",
     )
 
   case actual {
@@ -122,7 +122,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_slos_are_missing_t
 pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_threshold_type_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_invalid_threshold_type.yaml",
     )
 
   case actual {
@@ -136,7 +136,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_threshold_t
 pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_sli_type_type_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_invalid_sli_type_type.yaml",
     )
 
   case actual {
@@ -150,7 +150,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_sli_type_ty
 pub fn parse_unresolved_team_instantiation_returns_error_when_name_is_missing_test() {
   let actual =
     unresolved_team_instantiation.parse_unresolved_team_instantiation(
-      "test/artifacts/platform/reliable_service_missing_name.yaml",
+      "test/caffeine_lang/artifacts/platform/reliable_service_missing_name.yaml",
     )
 
   case actual {

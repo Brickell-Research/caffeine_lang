@@ -1,10 +1,43 @@
 import caffeine_lang/types/common/accepted_types
+import glaml
+import glaml_extended/helpers as glaml_extended_helpers
 import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
 
 // ==== Public ====
+
+/// Parses a specification file into a list of glaml documents according to the given parse function.
+pub fn parse_specification(
+  file_path: String,
+  params: dict.Dict(String, String),
+  parse_fn: fn(glaml.Node, dict.Dict(String, String)) -> Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
+  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
+
+  // parse the YAML file
+  use doc <- result.try(
+    glaml.parse_file(file_path)
+    |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
+  )
+
+  let parse_fn_two = fn(doc, _params) {
+    glaml_extended_helpers.iteratively_parse_collection(
+      glaml.document_root(doc),
+      params,
+      parse_fn,
+      key,
+    )
+  }
+
+  // parse the intermediate representation, here just the sli_types
+  case doc {
+    [first, ..] -> parse_fn_two(first, params)
+    _ -> Error("Empty YAML file: " <> file_path)
+  }
+}
 
 /// Converts a string to an accepted type.
 pub fn string_to_accepted_type(
@@ -15,22 +48,42 @@ pub fn string_to_accepted_type(
     "Integer" -> Ok(accepted_types.Integer)
     "Boolean" -> Ok(accepted_types.Boolean)
     "Decimal" -> Ok(accepted_types.Decimal)
-    "NonEmptyList(String)" -> Ok(accepted_types.NonEmptyList(accepted_types.String))
-    "NonEmptyList(Integer)" -> Ok(accepted_types.NonEmptyList(accepted_types.Integer))
-    "NonEmptyList(Boolean)" -> Ok(accepted_types.NonEmptyList(accepted_types.Boolean))
-    "NonEmptyList(Decimal)" -> Ok(accepted_types.NonEmptyList(accepted_types.Decimal))
+    "NonEmptyList(String)" ->
+      Ok(accepted_types.NonEmptyList(accepted_types.String))
+    "NonEmptyList(Integer)" ->
+      Ok(accepted_types.NonEmptyList(accepted_types.Integer))
+    "NonEmptyList(Boolean)" ->
+      Ok(accepted_types.NonEmptyList(accepted_types.Boolean))
+    "NonEmptyList(Decimal)" ->
+      Ok(accepted_types.NonEmptyList(accepted_types.Decimal))
     "Optional(String)" -> Ok(accepted_types.Optional(accepted_types.String))
     "Optional(Integer)" -> Ok(accepted_types.Optional(accepted_types.Integer))
     "Optional(Boolean)" -> Ok(accepted_types.Optional(accepted_types.Boolean))
     "Optional(Decimal)" -> Ok(accepted_types.Optional(accepted_types.Decimal))
     "Optional(NonEmptyList(String))" ->
-      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.String)))
+      Ok(
+        accepted_types.Optional(accepted_types.NonEmptyList(
+          accepted_types.String,
+        )),
+      )
     "Optional(NonEmptyList(Integer))" ->
-      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Integer)))
+      Ok(
+        accepted_types.Optional(accepted_types.NonEmptyList(
+          accepted_types.Integer,
+        )),
+      )
     "Optional(NonEmptyList(Boolean))" ->
-      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Boolean)))
+      Ok(
+        accepted_types.Optional(accepted_types.NonEmptyList(
+          accepted_types.Boolean,
+        )),
+      )
     "Optional(NonEmptyList(Decimal))" ->
-      Ok(accepted_types.Optional(accepted_types.NonEmptyList(accepted_types.Decimal)))
+      Ok(
+        accepted_types.Optional(accepted_types.NonEmptyList(
+          accepted_types.Decimal,
+        )),
+      )
     _ -> {
       case string.starts_with(string_val, "List(List(") {
         True ->

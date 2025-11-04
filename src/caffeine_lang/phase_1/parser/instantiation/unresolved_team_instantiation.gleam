@@ -1,8 +1,8 @@
 import caffeine_lang/phase_1/parser/utils/general_common
-import caffeine_lang/phase_1/parser/utils/glaml_helpers
 import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
 import glaml
+import glaml_extended/helpers as glaml_extended_helpers
 import gleam/dict
 import gleam/result
 
@@ -27,7 +27,7 @@ pub fn parse_slos_instantiation(
   file_path: String,
   params: dict.Dict(String, String),
 ) -> Result(List(unresolved_slo.Slo), String) {
-  glaml_helpers.parse_specification(file_path, params, parse_slo, "slos")
+  general_common.parse_specification(file_path, params, parse_slo, "slos")
 }
 
 // ==== Private ====
@@ -36,22 +36,25 @@ fn parse_slo(
   slo: glaml.Node,
   params: dict.Dict(String, String),
 ) -> Result(unresolved_slo.Slo, String) {
-  use name <- result.try(glaml_helpers.extract_string_from_node(slo, "name"))
-  use sli_type <- result.try(glaml_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
+    slo,
+    "name",
+  ))
+  use sli_type <- result.try(glaml_extended_helpers.extract_string_from_node(
     slo,
     "sli_type",
   ))
   use typed_instatiation_of_query_templatized_variables <- result.try(
-    glaml_helpers.extract_dict_strings_from_node(
+    glaml_extended_helpers.extract_dict_strings_from_node(
       slo,
       "typed_instatiation_of_query_templatized_variables",
     ),
   )
-  use threshold <- result.try(glaml_helpers.extract_float_from_node(
+  use threshold <- result.try(glaml_extended_helpers.extract_float_from_node(
     slo,
     "threshold",
   ))
-  use window_in_days <- result.try(glaml_helpers.extract_int_from_node(
+  use window_in_days <- result.try(glaml_extended_helpers.extract_int_from_node(
     slo,
     "window_in_days",
   ))
