@@ -1,6 +1,6 @@
 import caffeine_lang/types/common/accepted_types
 import glaml
-import glaml_extended/helpers as glaml_extended_helpers
+import glaml_extended/extractors as glaml_extended_helpers
 import gleam/dict
 import gleam/list
 import gleam/result

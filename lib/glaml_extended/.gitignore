@@ -1,0 +1,58 @@
+# Gleam build artifacts
+/build/
+
+# Gleam lock files (generated)
+*.lock
+
+# Manifest files (generated)
+manifest.toml
+
+# General artifacts
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE specific
+.idea/
+.vscode/
+*.sublime-*
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Cache directories
+.cache/
+
+# Keep important files
+!.gitkeep
+!README.md
+!LICENSE
+!gleam.toml

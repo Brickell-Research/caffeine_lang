@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/ast/basic_type
 import glaml
-import glaml_extended/helpers as glaml_extended_helpers
+import glaml_extended/extractors as glaml_extended_helpers
 import gleam/dict
 import gleam/result
 
