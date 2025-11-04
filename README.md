@@ -5,7 +5,10 @@
 [![Caffeine Language Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml)
 </br>
 [![CQL Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_cql.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_cql.yml)
-</br>[![Glaml Extended Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml)
+</br>
+[![Glaml Extended Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_glaml_extended.yml)
+</br>
+[![Gleamy Spec Extended Package Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_gleamy_spec.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_gleamy_spec.yml)
 
 <div align="center">
 <img src="images/caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
