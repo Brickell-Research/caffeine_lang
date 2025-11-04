@@ -5,8 +5,8 @@ description = "Extended utilities for working with glaml (YAML) parsing"
 target = "erlang"
 
 [dependencies]
-gleam_stdlib = { path = "../../build/packages/gleam_stdlib" }
-glaml = { path = "../../build/packages/glaml" }
+gleam_stdlib = ">= 0.63.0 and < 1.0.0"
+glaml = "~> 3.0.0"
 
 [dev-dependencies]
-gleeunit = { path = "../../build/packages/gleeunit" }
+gleeunit = ">= 1.0.0"
