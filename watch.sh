@@ -40,6 +40,24 @@ case $PACKAGE in
     done
     ;;
     
+  "gleamy_spec")
+    echo "Watching gleamy_spec package (lib/gleamy_spec/) for changes..."
+    echo "Press Ctrl+C to stop"
+    
+    # Run gleamy_spec tests once at startup
+    echo "🧪 Running gleamy_spec package tests (2 tests)..."
+    cd lib/gleamy_spec && gleam test && cd ../..
+    
+    # Watch for changes in gleamy_spec package
+    fswatch -o lib/gleamy_spec/src/ lib/gleamy_spec/test/ | while read num ; do
+      clear
+      echo "gleamy_spec package changes detected, running gleamy_spec tests..."
+      echo "=================================================================="
+      echo "🧪 Running gleamy_spec package tests (2 tests)..."
+      cd lib/gleamy_spec && gleam test && cd ../..
+    done
+    ;;
+    
   "all")
     echo "Watching all packages for changes..."
     echo "Press Ctrl+C to stop"
@@ -55,9 +73,12 @@ case $PACKAGE in
     echo ""
     echo "📦 glaml_extended package tests (7 tests):"
     cd lib/glaml_extended && gleam test && cd ../..
+    echo ""
+    echo "🧪 gleamy_spec package tests (2 tests):"
+    cd lib/gleamy_spec && gleam test && cd ../..
     
     # Watch for changes in all packages
-    fswatch -o src/ test/ lib/cql/src/ lib/cql/test/ lib/glaml_extended/src/ lib/glaml_extended/test/ | while read num ; do
+    fswatch -o src/ test/ lib/cql/src/ lib/cql/test/ lib/glaml_extended/src/ lib/glaml_extended/test/ lib/gleamy_spec/src/ lib/gleamy_spec/test/ | while read num ; do
       clear
       echo "Changes detected, running all tests..."
       echo "====================================="
@@ -70,9 +91,12 @@ case $PACKAGE in
       echo ""
       echo "📦 glaml_extended package tests (7 tests):"
       cd lib/glaml_extended && gleam test && cd ../..
+      echo ""
+      echo "🧪 gleamy_spec package tests (2 tests):"
+      cd lib/gleamy_spec && gleam test && cd ../..
       
       echo ""
-      echo "✅ All tests completed! (83 total tests)"
+      echo "✅ All tests completed! (85 total tests)"
     done
     ;;
     
