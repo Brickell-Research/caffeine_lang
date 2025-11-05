@@ -10,7 +10,7 @@ case $PACKAGE in
     
     # Run CQL tests once at startup
     echo "🔍 Running CQL package tests (16 tests)..."
-    cd lib/cql && gleam test && cd ../..
+    (cd lib/cql && gleam test)
     
     # Watch for changes in CQL package
     fswatch -o lib/cql/src/ lib/cql/test/ | while read num ; do
@@ -18,7 +18,7 @@ case $PACKAGE in
       echo "CQL package changes detected, running CQL tests..."
       echo "================================================="
       echo "🔍 Running CQL package tests (16 tests)..."
-      cd lib/cql && gleam test && cd ../..
+      (cd lib/cql && gleam test)
     done
     ;;
     
@@ -28,7 +28,7 @@ case $PACKAGE in
     
     # Run glaml_extended tests once at startup
     echo "📦 Running glaml_extended package tests (7 tests)..."
-    cd lib/glaml_extended && gleam test && cd ../..
+    (cd lib/glaml_extended && gleam test)
     
     # Watch for changes in glaml_extended package
     fswatch -o lib/glaml_extended/src/ lib/glaml_extended/test/ | while read num ; do
@@ -36,7 +36,7 @@ case $PACKAGE in
       echo "glaml_extended package changes detected, running glaml_extended tests..."
       echo "======================================================================"
       echo "📦 Running glaml_extended package tests (7 tests)..."
-      cd lib/glaml_extended && gleam test && cd ../..
+      (cd lib/glaml_extended && gleam test)
     done
     ;;
     
@@ -46,7 +46,7 @@ case $PACKAGE in
     
     # Run gleamy_spec tests once at startup
     echo "🧪 Running gleamy_spec package tests (2 tests)..."
-    cd lib/gleamy_spec && gleam test && cd ../..
+    (cd lib/gleamy_spec && gleam test)
     
     # Watch for changes in gleamy_spec package
     fswatch -o lib/gleamy_spec/src/ lib/gleamy_spec/test/ | while read num ; do
@@ -54,7 +54,7 @@ case $PACKAGE in
       echo "gleamy_spec package changes detected, running gleamy_spec tests..."
       echo "=================================================================="
       echo "🧪 Running gleamy_spec package tests (2 tests)..."
-      cd lib/gleamy_spec && gleam test && cd ../..
+      (cd lib/gleamy_spec && gleam test)
     done
     ;;
     
@@ -69,13 +69,13 @@ case $PACKAGE in
     gleam test --target erlang
     echo ""
     echo "🔍 CQL package tests (16 tests):"
-    cd lib/cql && gleam test && cd ../..
+    (cd lib/cql && gleam test)
     echo ""
     echo "📦 glaml_extended package tests (7 tests):"
-    cd lib/glaml_extended && gleam test && cd ../..
+    (cd lib/glaml_extended && gleam test)
     echo ""
     echo "🧪 gleamy_spec package tests (2 tests):"
-    cd lib/gleamy_spec && gleam test && cd ../..
+    (cd lib/gleamy_spec && gleam test)
     
     # Watch for changes in all packages
     fswatch -o src/ test/ lib/cql/src/ lib/cql/test/ lib/glaml_extended/src/ lib/glaml_extended/test/ lib/gleamy_spec/src/ lib/gleamy_spec/test/ | while read num ; do
@@ -87,13 +87,13 @@ case $PACKAGE in
       gleam test --target erlang
       echo ""
       echo "🔍 CQL package tests (16 tests):"
-      cd lib/cql && gleam test && cd ../..
+      (cd lib/cql && gleam test)
       echo ""
       echo "📦 glaml_extended package tests (7 tests):"
-      cd lib/glaml_extended && gleam test && cd ../..
+      (cd lib/glaml_extended && gleam test)
       echo ""
       echo "🧪 gleamy_spec package tests (2 tests):"
-      cd lib/gleamy_spec && gleam test && cd ../..
+      (cd lib/gleamy_spec && gleam test)
       
       echo ""
       echo "✅ All tests completed! (85 total tests)"
