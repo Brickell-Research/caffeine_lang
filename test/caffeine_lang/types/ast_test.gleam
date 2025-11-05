@@ -12,7 +12,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn creates_organization_with_teams_and_services_test() {
   // ==== Specification ====
@@ -103,5 +103,5 @@ pub fn creates_organization_with_teams_and_services_test() {
     |> list.sort(string.compare)
 
   actual_team_names
-  |> should.equal(expected_team_names)
+  |> gleeunit.equal(expected_team_names)
 }

@@ -11,7 +11,7 @@ import caffeine_lang/types/unresolved/unresolved_sli_type
 import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn resolve_unresolved_sli_type_test() {
   let basic_types = [
@@ -74,22 +74,22 @@ pub fn resolve_unresolved_sli_type_test() {
         |> result.unwrap(generic_dictionary.new())
 
       resolved_sli_type.name
-      |> should.equal("a")
+      |> gleeunit.equal("a")
       resolved_sli_type.query_template_type
-      |> should.equal(query_template)
+      |> gleeunit.equal(query_template)
       // Compare the string representations of the metric attributes
       generic_dictionary.to_string_dict(
         resolved_sli_type.typed_instatiation_of_query_templates,
       )
-      |> should.equal(generic_dictionary.to_string_dict(
+      |> gleeunit.equal(generic_dictionary.to_string_dict(
         expected_typed_instatiation,
       ))
       resolved_sli_type.specification_of_query_templatized_variables
-      |> should.equal(basic_types)
+      |> gleeunit.equal(basic_types)
     }
     Error(err) ->
       err
-      |> should.equal("Should not fail")
+      |> gleeunit.equal("Should not fail")
   }
 }
 
@@ -131,7 +131,7 @@ pub fn resolve_unresolved_sli_type_error_test() {
 
   // Verify the error message
   result
-  |> should.equal(Error("QueryTemplateType nonexistent_template not found"))
+  |> gleeunit.equal(Error("QueryTemplateType nonexistent_template not found"))
 }
 
 pub fn resolve_unresolved_service_test() {
@@ -204,22 +204,22 @@ pub fn resolve_unresolved_service_test() {
   case result {
     Ok(service) -> {
       service.name
-      |> should.equal("test_service")
+      |> gleeunit.equal("test_service")
       case service.supported_sli_types {
         [first, second] -> {
           first.name
-          |> should.equal("a")
+          |> gleeunit.equal("a")
           second.name
-          |> should.equal("b")
+          |> gleeunit.equal("b")
         }
         _ ->
           service.supported_sli_types
-          |> should.equal([])
+          |> gleeunit.equal([])
       }
     }
     Error(err) ->
       err
-      |> should.equal("Should not fail")
+      |> gleeunit.equal("Should not fail")
   }
 }
 

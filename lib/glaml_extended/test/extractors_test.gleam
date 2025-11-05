@@ -1,109 +1,134 @@
 import glaml
 import glaml_extended/extractors
 import gleam/dict
-import gleamy_spec/should
+import gleamy_spec/extensions.{describe, it}
+import gleamy_spec/gleeunit
 
-pub fn extract_string_from_node_test() {
-  let yaml = "name: test_value"
+fn yaml_to_root(yaml: String) -> glaml.Node {
   let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
-
-  extractors.extract_string_from_node(root, "name")
-  |> should.equal(Ok("test_value"))
-
-  extractors.extract_string_from_node(root, "missing")
-  |> should.be_error()
+  glaml.document_root(doc)
 }
 
-pub fn extract_int_from_node_test() {
-  let yaml = "count: 42"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+pub fn extractors_test() {
+  describe("extractors", fn() {
+    describe("extract_string_from_node", fn() {
+      let root = yaml_to_root("name: test_value")
 
-  extractors.extract_int_from_node(root, "count")
-  |> should.equal(Ok(42))
+      it("should extract a string from a node", fn() {
+        extractors.extract_string_from_node(root, "name")
+        |> gleeunit.equal(Ok("test_value"))
+      })
 
-  extractors.extract_int_from_node(root, "missing")
-  |> should.be_error()
-}
+      it("should return an error if the node is missing", fn() {
+        extractors.extract_string_from_node(root, "missing")
+        |> gleeunit.be_error()
+      })
+    })
 
-pub fn extract_float_from_node_test() {
-  let yaml = "threshold: 99.9"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+    describe("extract_int_from_node", fn() {
+      let root = yaml_to_root("count: 42")
 
-  extractors.extract_float_from_node(root, "threshold")
-  |> should.equal(Ok(99.9))
+      it("should extract an integer from a node", fn() {
+        extractors.extract_int_from_node(root, "count")
+        |> gleeunit.equal(Ok(42))
+      })
 
-  extractors.extract_float_from_node(root, "missing")
-  |> should.be_error()
-}
+      it("should return an error if the node is missing", fn() {
+        extractors.extract_int_from_node(root, "missing")
+        |> gleeunit.be_error()
+      })
+    })
 
-pub fn extract_bool_from_node_test() {
-  let yaml = "enabled: true"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+    describe("extract_float_from_node", fn() {
+      let root = yaml_to_root("threshold: 99.9")
 
-  extractors.extract_bool_from_node(root, "enabled")
-  |> should.equal(Ok(True))
+      it("should extract a float from a node", fn() {
+        extractors.extract_float_from_node(root, "threshold")
+        |> gleeunit.equal(Ok(99.9))
+      })
 
-  extractors.extract_bool_from_node(root, "missing")
-  |> should.be_error()
-}
+      it("should return an error if the node is missing", fn() {
+        extractors.extract_float_from_node(root, "missing")
+        |> gleeunit.be_error()
+      })
+    })
 
-pub fn extract_string_list_from_node_test() {
-  let yaml = "items:\n  - first\n  - second"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+    describe("extract_bool_from_node", fn() {
+      let root = yaml_to_root("enabled: true")
 
-  extractors.extract_string_list_from_node(root, "items")
-  |> should.equal(Ok(["first", "second"]))
+      it("should extract a boolean from a node", fn() {
+        extractors.extract_bool_from_node(root, "enabled")
+        |> gleeunit.equal(Ok(True))
+      })
 
-  extractors.extract_string_list_from_node(root, "missing")
-  |> should.be_error()
-}
+      it("should return an error if the node is missing", fn() {
+        extractors.extract_bool_from_node(root, "missing")
+        |> gleeunit.be_error()
+      })
+    })
 
-pub fn extract_dict_strings_from_node_test() {
-  let yaml = "labels:\n  env: production\n  team: platform"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+    describe("extract_string_list_from_node", fn() {
+      let root = yaml_to_root("items:\n  - first\n  - second")
 
-  let result = extractors.extract_dict_strings_from_node(root, "labels")
-  let assert Ok(dict_result) = result
+      it("should extract a list of strings from a node", fn() {
+        extractors.extract_string_list_from_node(root, "items")
+        |> gleeunit.equal(Ok(["first", "second"]))
+      })
 
-  dict.get(dict_result, "env")
-  |> should.equal(Ok("production"))
+      it("should return an error if the node is missing", fn() {
+        extractors.extract_string_list_from_node(root, "missing")
+        |> gleeunit.be_error()
+      })
+    })
 
-  dict.get(dict_result, "team")
-  |> should.equal(Ok("platform"))
+    describe("extract_dict_strings_from_node", fn() {
+      let root = yaml_to_root("labels:\n  env: production\n  team: platform")
+      let result = extractors.extract_dict_strings_from_node(root, "labels")
+      let assert Ok(dict_result) = result
 
-  // Missing key should return empty dict
-  extractors.extract_dict_strings_from_node(root, "missing")
-  |> should.equal(Ok(dict.new()))
-}
+      it(
+        "should extract a dictionary values of a string value from a node",
+        fn() {
+          dict.get(dict_result, "env")
+          |> gleeunit.equal(Ok("production"))
+        },
+      )
 
-pub fn iteratively_parse_collection_test() {
-  let yaml = "services:\n  - name: service1\n  - name: service2"
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  let root = glaml.document_root(doc)
+      it("should return an empty dict if the node is missing", fn() {
+        extractors.extract_dict_strings_from_node(root, "missing")
+        |> gleeunit.equal(Ok(dict.new()))
+      })
+    })
 
-  let parse_service = fn(node, _params) {
-    extractors.extract_string_from_node(node, "name")
-  }
+    describe("iteratively_parse_collection", fn() {
+      let root =
+        yaml_to_root("services:\n  - name: service1\n  - name: service2")
+      let parse_service = fn(node, _params) {
+        extractors.extract_string_from_node(node, "name")
+      }
 
-  extractors.iteratively_parse_collection(
-    root,
-    dict.new(),
-    parse_service,
-    "services",
-  )
-  |> should.equal(Ok(["service1", "service2"]))
+      it(
+        "should parse a collection of nodes and return a list of strings",
+        fn() {
+          extractors.iteratively_parse_collection(
+            root,
+            dict.new(),
+            parse_service,
+            "services",
+          )
+          |> gleeunit.equal(Ok(["service1", "service2"]))
+        },
+      )
 
-  extractors.iteratively_parse_collection(
-    root,
-    dict.new(),
-    parse_service,
-    "missing",
-  )
-  |> should.be_error()
+      it("should return an error if the node is missing", fn() {
+        extractors.iteratively_parse_collection(
+          root,
+          dict.new(),
+          parse_service,
+          "missing",
+        )
+        |> gleeunit.be_error()
+      })
+    })
+  })
 }

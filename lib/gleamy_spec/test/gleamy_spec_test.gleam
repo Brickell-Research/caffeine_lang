@@ -1,5 +1,6 @@
 import gleamy_spec
-import gleamy_spec/should
+import gleamy_spec/extensions.{describe}
+import gleamy_spec/gleeunit
 
 pub fn main() {
   gleamy_spec.main()
@@ -8,20 +9,41 @@ pub fn main() {
 pub fn basic_proxy_test() {
   // Test that our proxy works correctly
   1
-  |> should.equal(1)
+  |> gleeunit.equal(1)
 }
 
 pub fn should_module_test() {
   // Test that our should module re-exports work
   True
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   False
-  |> should.be_false()
+  |> gleeunit.be_false()
 
   Ok("success")
-  |> should.be_ok()
+  |> gleeunit.be_ok()
 
   Error("failure")
-  |> should.be_error()
+  |> gleeunit.be_error()
+}
+
+pub fn describe_module_test() {
+  // Single level describe block
+  describe("describe module", fn() {
+    Ok(1)
+    |> gleeunit.equal(Ok(1))
+  })
+
+  // Nested describe blocks
+  describe("outer describe", fn() {
+    describe("inner describe", fn() {
+      Ok(1)
+      |> gleeunit.equal(Ok(1))
+    })
+
+    describe("another inner describe", fn() {
+      Ok(2)
+      |> gleeunit.equal(Ok(2))
+    })
+  })
 }

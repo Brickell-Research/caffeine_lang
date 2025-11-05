@@ -1,4 +1,4 @@
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn assert_parse_error(
   parser: fn(String) -> Result(a, String),
@@ -7,5 +7,5 @@ pub fn assert_parse_error(
 ) {
   let actual = parser(file_path)
   actual
-  |> should.equal(Error(expected))
+  |> gleeunit.equal(Error(expected))
 }

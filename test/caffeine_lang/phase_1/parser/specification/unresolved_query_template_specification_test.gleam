@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_query_template_spec
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn parse_unresolved_query_template_types_specification_parses_valid_query_template_types_test() {
   let expected_query_template_types = [
@@ -26,7 +26,7 @@ pub fn parse_unresolved_query_template_types_specification_parses_valid_query_te
     )
 
   actual
-  |> should.equal(Ok(expected_query_template_types))
+  |> gleeunit.equal(Ok(expected_query_template_types))
 }
 
 pub fn parse_unresolved_query_template_types_specification_returns_error_when_specification_of_query_templates_is_missing_test() {
@@ -37,12 +37,12 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_sp
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing specification_of_query_templates")
+      |> gleeunit.equal("Missing specification_of_query_templates")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -55,12 +55,12 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_na
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing name")
+      |> gleeunit.equal("Missing name")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -73,12 +73,12 @@ pub fn parse_unresolved_query_template_types_specification_returns_error_when_qu
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Empty query string is not allowed")
+      |> gleeunit.equal("Empty query string is not allowed")
     Ok(_) -> panic as "Expected error"
   }
 }

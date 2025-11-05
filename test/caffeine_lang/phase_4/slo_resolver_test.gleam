@@ -17,7 +17,7 @@ import cql/parser.{
 import gleam/dict
 import gleam/result
 import gleam/string
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
   generic_dictionary.from_string_dict(
@@ -131,7 +131,7 @@ pub fn resolve_sli_test() {
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_slo_test() {
@@ -182,7 +182,7 @@ pub fn resolve_slo_test() {
     ])
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_slos_test() {
@@ -229,7 +229,7 @@ pub fn resolve_slos_test() {
   let actual = slo_resolver.resolve_slos(input_organization)
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 /// Test SLI resolution with complex CQL query expressions
@@ -324,7 +324,7 @@ pub fn resolve_sli_with_complex_query_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_query, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_sli_with_nested_expressions_test() {
@@ -424,7 +424,7 @@ pub fn resolve_sli_with_nested_expressions_test() {
   let actual = slo_resolver.resolve_sli(filters, sli_type_nested, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn handle_missing_filter_variables_test() {
@@ -472,7 +472,7 @@ pub fn handle_missing_filter_variables_test() {
 
   // Should fail because REGION is not provided
   actual
-  |> should.be_error()
+  |> gleeunit.be_error()
 }
 
 pub fn parse_list_of_strings_test() {
@@ -484,7 +484,7 @@ pub fn parse_list_of_strings_test() {
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn parse_list_of_integers_test() {
@@ -493,7 +493,7 @@ pub fn parse_list_of_integers_test() {
     slo_resolver.parse_list_value("[1, 2, 3]", slo_resolver.inner_parse_int)
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_list_of_integers_test() {
@@ -558,7 +558,7 @@ pub fn resolve_list_of_integers_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn parse_empty_list_test() {
@@ -570,11 +570,11 @@ pub fn parse_empty_list_test() {
       // Should specifically mention empty list
       msg
       |> string.contains("Empty list not allowed")
-      |> should.be_true()
+      |> gleeunit.be_true()
 
       msg
       |> string.contains("at least one value")
-      |> should.be_true()
+      |> gleeunit.be_true()
     }
     Ok(_) -> panic as "Expected error for empty list"
   }
@@ -589,7 +589,7 @@ pub fn parse_list_with_invalid_integer_test() {
       // Should mention parsing failure, not empty list
       msg
       |> string.contains("Failed to parse list values")
-      |> should.be_true()
+      |> gleeunit.be_true()
     }
     Ok(_) -> panic as "Expected error for invalid integer"
   }
@@ -602,7 +602,7 @@ pub fn parse_list_with_null_string_test() {
 
   // Empty strings are allowed in the list, just not empty lists
   result
-  |> should.equal(Ok([""]))
+  |> gleeunit.equal(Ok([""]))
 }
 
 pub fn parse_malformed_list_missing_bracket_test() {
@@ -611,7 +611,7 @@ pub fn parse_malformed_list_missing_bracket_test() {
 
   // Should still parse since we strip brackets
   result
-  |> should.equal(Ok([1, 2, 3]))
+  |> gleeunit.equal(Ok([1, 2, 3]))
 }
 
 pub fn parse_single_item_list_test() {
@@ -623,14 +623,14 @@ pub fn parse_single_item_list_test() {
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn convert_single_item_list_to_or_expression_test() {
   let result =
     slo_resolver.convert_list_to_or_expression(["100"], "status_code")
   result
-  |> should.equal("status_code:100")
+  |> gleeunit.equal("status_code:100")
 }
 
 pub fn resolve_single_item_list_test() {
@@ -682,7 +682,7 @@ pub fn resolve_single_item_list_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_empty_list_fails_test() {
@@ -720,7 +720,7 @@ pub fn resolve_empty_list_fails_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_int_list, "test_slo")
 
   actual
-  |> should.be_error()
+  |> gleeunit.be_error()
 }
 
 // Test Optional type with value provided
@@ -771,7 +771,7 @@ pub fn resolve_optional_with_value_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test Optional type with no value provided (should return empty string)
@@ -823,7 +823,7 @@ pub fn resolve_optional_without_value_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test Optional type with string value
@@ -882,7 +882,7 @@ pub fn resolve_optional_string_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_optional, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test Optional type with both required and optional fields
@@ -959,7 +959,7 @@ pub fn resolve_mixed_required_and_optional_test() {
   let actual = slo_resolver.resolve_sli(filters, sli_type_mixed, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test wildcard handling in single item list
@@ -1010,7 +1010,7 @@ pub fn resolve_single_wildcard_list_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_wildcard, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test wildcard handling in multiple item list
@@ -1063,7 +1063,7 @@ pub fn resolve_multiple_wildcard_list_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_wildcards, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test Optional(NonEmptyList(Integer)) handling
@@ -1127,7 +1127,7 @@ pub fn resolve_optional_nonempty_list_integers_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_optional_list, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test NOT negation with Optional(NonEmptyList(Integer))
@@ -1192,7 +1192,7 @@ pub fn resolve_negated_optional_nonempty_list_test() {
     slo_resolver.resolve_sli(filters, sli_type_with_negated_list, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test that slashes in paths are preserved correctly
@@ -1270,7 +1270,7 @@ pub fn resolve_path_with_slashes_test() {
   let actual = slo_resolver.resolve_sli(filters, sli_type_with_path, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 // Test NOT negation syntax with template variable
@@ -1337,5 +1337,5 @@ pub fn resolve_not_negation_syntax_test() {
   let actual = slo_resolver.resolve_sli(filters, sli_type_with_not, "test_slo")
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }

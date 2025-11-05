@@ -3,7 +3,7 @@ import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
 import gleam/dict
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_test() {
   let actual =
@@ -13,12 +13,12 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_empty_yaml_file_tes
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal(
+      |> gleeunit.equal(
         "Empty YAML file: test/caffeine_lang/artifacts/platform/less_reliable_service.yaml",
       )
     Ok(_) -> panic as "Expected error"
@@ -62,7 +62,7 @@ pub fn parse_unresolved_team_instantiation_parses_multiple_slos_successfully_tes
     )
 
   actual
-  |> should.equal(Ok(expected_team))
+  |> gleeunit.equal(Ok(expected_team))
 }
 
 pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missing_test() {
@@ -74,7 +74,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_sli_type_is_missin
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing sli_type")
+      |> gleeunit.equal("Missing sli_type")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -88,7 +88,7 @@ pub fn parse_unresolved_team_instantiation_returns_ok_when_filters_are_missing_t
   // Should succeed with empty dict when typed_instatiation_of_query_templatized_variables is missing
   actual
   |> result.is_ok()
-  |> should.be_true()
+  |> gleeunit.be_true()
 }
 
 pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missing_test() {
@@ -100,7 +100,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_threshold_is_missi
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing threshold")
+      |> gleeunit.equal("Missing threshold")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -114,7 +114,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_slos_are_missing_t
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing slos")
+      |> gleeunit.equal("Missing slos")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -128,7 +128,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_threshold_t
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Expected threshold to be a float")
+      |> gleeunit.equal("Expected threshold to be a float")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -142,7 +142,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_for_invalid_sli_type_ty
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Expected sli_type to be a string")
+      |> gleeunit.equal("Expected sli_type to be a string")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -156,7 +156,7 @@ pub fn parse_unresolved_team_instantiation_returns_error_when_name_is_missing_te
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing name")
+      |> gleeunit.equal("Missing name")
     Ok(_) -> panic as "Expected error"
   }
 }

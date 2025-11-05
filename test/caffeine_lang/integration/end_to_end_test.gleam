@@ -14,7 +14,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 /// End-to-end integration test using realistic organization data
 /// Tests the complete flow from SLO resolution to Datadog code generation
@@ -109,7 +109,7 @@ pub fn end_to_end_organization_test() {
     Ok(resolved_slos) -> {
       // Verify we got resolved SLOs
       list.length(resolved_slos)
-      |> should.equal(1)
+      |> gleeunit.equal(1)
 
       let resolved_slo = case resolved_slos {
         [slo] -> slo
@@ -118,20 +118,20 @@ pub fn end_to_end_organization_test() {
 
       // Verify SLO resolution worked correctly
       resolved_slo.service_name
-      |> should.equal("web_service")
+      |> gleeunit.equal("web_service")
       resolved_slo.team_name
-      |> should.equal("platform_team")
+      |> gleeunit.equal("platform_team")
       resolved_slo.threshold
-      |> should.equal(99.9)
+      |> gleeunit.equal(99.9)
 
       // Verify metric attributes were resolved correctly
       let metric_attrs = resolved_slo.sli.metric_attributes
       dict.get(metric_attrs, "success_query")
-      |> should.equal(Ok(
+      |> gleeunit.equal(Ok(
         "sum:http.requests{status:2xx,service:\"web_service\",env:\"production\"}",
       ))
       dict.get(metric_attrs, "total_query")
-      |> should.equal(Ok(
+      |> gleeunit.equal(Ok(
         "sum:http.requests{service:\"web_service\",env:\"production\"}",
       ))
 
@@ -140,27 +140,27 @@ pub fn end_to_end_organization_test() {
 
       // Step 3: Verify the generated Datadog code makes sense
       { string.length(datadog_resource) > 0 }
-      |> should.be_true()
+      |> gleeunit.be_true()
       string.contains(datadog_resource, "web_service")
-      |> should.be_true()
+      |> gleeunit.be_true()
       string.contains(datadog_resource, "platform_team")
-      |> should.be_true()
+      |> gleeunit.be_true()
       string.contains(datadog_resource, "99.9")
-      |> should.be_true()
+      |> gleeunit.be_true()
 
       // Verify the resource contains resolved metric queries
       string.contains(datadog_resource, "sum:http.requests")
-      |> should.be_true()
+      |> gleeunit.be_true()
       string.contains(datadog_resource, "production")
-      |> should.be_true()
+      |> gleeunit.be_true()
 
       // Verify no unresolved template variables remain
       string.contains(datadog_resource, "$$")
-      |> should.be_false()
+      |> gleeunit.be_false()
     }
     Error(err) ->
       err
-      |> should.equal("Should not fail")
+      |> gleeunit.equal("Should not fail")
   }
 }
 
@@ -259,7 +259,7 @@ pub fn end_to_end_with_optional_test() {
   case resolved_slos_result {
     Ok(resolved_slos) -> {
       list.length(resolved_slos)
-      |> should.equal(1)
+      |> gleeunit.equal(1)
 
       let resolved_slo = case resolved_slos {
         [slo] -> slo
@@ -269,11 +269,11 @@ pub fn end_to_end_with_optional_test() {
       // Verify metric attributes - optional tag should result in empty string
       let metric_attrs = resolved_slo.sli.metric_attributes
       dict.get(metric_attrs, "success_query")
-      |> should.equal(Ok(
+      |> gleeunit.equal(Ok(
         "sum:http.requests{status:2xx,service:\"web_service\",env:\"production\",}",
       ))
       dict.get(metric_attrs, "total_query")
-      |> should.equal(Ok(
+      |> gleeunit.equal(Ok(
         "sum:http.requests{service:\"web_service\",env:\"production\"}",
       ))
 
@@ -282,10 +282,10 @@ pub fn end_to_end_with_optional_test() {
 
       // Verify no unresolved template variables
       string.contains(datadog_resource, "$$")
-      |> should.be_false()
+      |> gleeunit.be_false()
     }
     Error(err) ->
       err
-      |> should.equal("Should not fail")
+      |> gleeunit.equal("Should not fail")
   }
 }

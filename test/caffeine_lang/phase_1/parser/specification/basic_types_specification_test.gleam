@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/common/accepted_types
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn parse_basic_types_specification_parses_valid_basic_types_test() {
   let expected_basic_types = [
@@ -26,7 +26,7 @@ pub fn parse_basic_types_specification_parses_valid_basic_types_test() {
     )
 
   actual
-  |> should.equal(Ok(expected_basic_types))
+  |> gleeunit.equal(Ok(expected_basic_types))
 }
 
 pub fn parse_basic_types_specification_returns_error_when_attribute_type_is_missing_test() {
@@ -37,12 +37,12 @@ pub fn parse_basic_types_specification_returns_error_when_attribute_type_is_miss
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing attribute_type")
+      |> gleeunit.equal("Missing attribute_type")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -55,12 +55,12 @@ pub fn parse_basic_types_specification_returns_error_when_attribute_name_is_miss
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing attribute_name")
+      |> gleeunit.equal("Missing attribute_name")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -73,12 +73,12 @@ pub fn parse_basic_types_specification_returns_error_for_unrecognized_attribute_
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal(
+      |> gleeunit.equal(
         "Unknown attribute type: LargeNumber. Supported: String, Integer, Boolean, Decimal, NonEmptyList(String), NonEmptyList(Integer), NonEmptyList(Boolean), NonEmptyList(Decimal), Optional(String), Optional(Integer), Optional(Boolean), Optional(Decimal), Optional(NonEmptyList(String)), Optional(NonEmptyList(Integer)), Optional(NonEmptyList(Boolean)), Optional(NonEmptyList(Decimal))",
       )
     Ok(_) -> panic as "Expected error"

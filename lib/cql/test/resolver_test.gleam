@@ -1,6 +1,6 @@
 import cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
 import cql/resolver.{GoodOverTotal, resolve_primitives}
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 import test_helpers.{parens, prim_word, simple_op_cont}
 
 fn parse_then_resolve_primitives(
@@ -15,17 +15,17 @@ pub fn resolve_primitives_test() {
   // ======== Valid Expressions ========
   // Simple good over bad
   parse_then_resolve_primitives("A / B")
-  |> should.equal(Ok(GoodOverTotal(prim_word("A"), prim_word("B"))))
+  |> gleeunit.equal(Ok(GoodOverTotal(prim_word("A"), prim_word("B"))))
 
   // Moderately more complex good over bad
   parse_then_resolve_primitives("(A + B) / C")
-  |> should.equal(
+  |> gleeunit.equal(
     Ok(GoodOverTotal(parens(simple_op_cont("A", "B", Add)), prim_word("C"))),
   )
 
   // Nested and complex good over bad
   parse_then_resolve_primitives("((A - G) + B) / (C + (D + E) * F)")
-  |> should.equal(
+  |> gleeunit.equal(
     Ok(GoodOverTotal(
       parens(OperatorExpr(
         parens(simple_op_cont("A", "G", Sub)),
@@ -43,13 +43,13 @@ pub fn resolve_primitives_test() {
   // ======== Invalid Expressions ========
   // Invalid expression, addition and no division
   parse_then_resolve_primitives("A + B")
-  |> should.equal(Error("Invalid expression"))
+  |> gleeunit.equal(Error("Invalid expression"))
 
   // More complex invalid expression
   parse_then_resolve_primitives("A + B / C + D")
-  |> should.equal(Error("Invalid expression"))
+  |> gleeunit.equal(Error("Invalid expression"))
 
   // Even more complex invalid expression
   parse_then_resolve_primitives("((A + B) - E) / C + D")
-  |> should.equal(Error("Invalid expression"))
+  |> gleeunit.equal(Error("Invalid expression"))
 }

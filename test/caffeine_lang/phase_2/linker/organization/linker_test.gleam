@@ -13,7 +13,7 @@ import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 // ==== Test Helpers ===
 fn new_bt(
@@ -43,7 +43,7 @@ pub fn get_instantiation_yaml_files_returns_all_yaml_files_from_test_artifacts_d
   case actual {
     Ok(files) -> {
       list.sort(files, string.compare)
-      |> should.equal(list.sort(expected_files, string.compare))
+      |> gleeunit.equal(list.sort(expected_files, string.compare))
     }
     Error(_) -> panic as "Failed to read instantiation files"
   }
@@ -154,5 +154,5 @@ pub fn link_specification_and_instantiation_successfully_links_specification_and
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }

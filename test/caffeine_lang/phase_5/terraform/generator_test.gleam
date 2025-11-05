@@ -6,7 +6,7 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn build_provider_datadog_test() {
   let expected = {
@@ -28,7 +28,7 @@ provider \"datadog\" {
   let actual = generator.build_provider([generator.Datadog])
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn build_variables_datadog_test() {
@@ -51,7 +51,7 @@ variable \"DATADOG_APP_KEY\" {
   let actual = generator.build_variables([generator.Datadog])
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn build_backend_test() {
@@ -66,7 +66,7 @@ pub fn build_backend_test() {
   let actual = generator.build_backend()
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn build_main_empty_test() {
@@ -83,7 +83,7 @@ pub fn build_main_empty_test() {
   let actual = generator.build_main([])
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn build_main_one_slo_test() {
@@ -154,5 +154,5 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
   let actual = generator.build_main([resolved_slo])
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }

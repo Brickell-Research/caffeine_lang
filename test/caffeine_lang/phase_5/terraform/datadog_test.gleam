@@ -8,13 +8,13 @@ import cql/parser.{
   Div, ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
 import gleam/dict
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn set_resource_comment_header_test() {
   let expected = "# SLO created by EzSLO for team - Type: type"
   let actual = datadog.set_resource_comment_header("team", "type")
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resource_threshold_test() {
@@ -22,14 +22,14 @@ pub fn resource_threshold_test() {
     "thresholds {\n    timeframe = \"45d\"\n    target    = 0.95\n  }"
   let actual = datadog.resource_threshold(0.95, 45)
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resource_target_threshold_test() {
   let expected = "target = 0.95"
   let actual = datadog.resource_target_threshold(0.95)
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resource_top_line_test() {
@@ -37,14 +37,14 @@ pub fn resource_top_line_test() {
     "resource \"datadog_service_level_objective\" \"team_service_type_0\" {"
   let actual = datadog.resource_top_line("team", "service", "type", 0)
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resource_description_test() {
   let expected = "description = \"SLO created by caffeine\""
   let actual = datadog.resource_description()
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn get_tags_test() {
@@ -59,7 +59,7 @@ pub fn get_tags_test() {
   let actual =
     datadog.get_tags("platform", "production", "some_slo", "good_over_bad")
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn tf_resource_name_test() {
@@ -67,7 +67,7 @@ pub fn tf_resource_name_test() {
     "resource \"datadog_service_level_objective\" team_service_type_0 {"
   let actual = datadog.tf_resource_name("team", "service", "type", 0)
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resource_type_test() {
@@ -79,7 +79,7 @@ pub fn resource_type_test() {
       query: ExpContainer(Primary(PrimaryWord(Word("")))),
     ))
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn slo_specification_test() {
@@ -123,7 +123,7 @@ pub fn slo_specification_test() {
       ),
     ))
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn full_resource_body_test() {
@@ -189,7 +189,7 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn slo_specification_with_list_test() {
@@ -241,5 +241,5 @@ pub fn slo_specification_with_list_test() {
       ),
     ))
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }

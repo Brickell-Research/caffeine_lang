@@ -13,7 +13,7 @@ import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/list
 import gleam/string
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 // ==== Test Helpers ====
 fn create_test_dictionary() -> generic_dictionary.GenericDictionary {
@@ -58,7 +58,7 @@ pub fn aggregate_teams_and_slos_test() {
   ]
 
   list.sort(actual, fn(a, b) { string.compare(a.name, b.name) })
-  |> should.equal(
+  |> gleeunit.equal(
     list.sort(expected, fn(a, b) { string.compare(a.name, b.name) }),
   )
 }
@@ -130,7 +130,7 @@ pub fn link_and_validate_instantiation_test() {
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_filters_test() {
@@ -187,7 +187,7 @@ pub fn resolve_filters_test() {
     )
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }
 
 pub fn resolve_slo_test() {
@@ -253,5 +253,5 @@ pub fn resolve_slo_test() {
     ))
 
   actual
-  |> should.equal(expected)
+  |> gleeunit.equal(expected)
 }

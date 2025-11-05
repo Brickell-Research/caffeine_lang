@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specifica
 import caffeine_lang/types/unresolved/unresolved_sli_type
 import gleam/dict
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn parse_unresolved_sli_types_specification_parses_valid_sli_types_test() {
   let expected_sli_types = [
@@ -35,7 +35,7 @@ pub fn parse_unresolved_sli_types_specification_parses_valid_sli_types_test() {
     )
 
   actual
-  |> should.equal(Ok(expected_sli_types))
+  |> gleeunit.equal(Ok(expected_sli_types))
 }
 
 pub fn parse_unresolved_sli_types_specification_returns_error_when_name_is_missing_test() {
@@ -46,12 +46,12 @@ pub fn parse_unresolved_sli_types_specification_returns_error_when_name_is_missi
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing name")
+      |> gleeunit.equal("Missing name")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -64,12 +64,12 @@ pub fn parse_unresolved_sli_types_specification_returns_error_when_query_templat
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing query_template_type")
+      |> gleeunit.equal("Missing query_template_type")
     Ok(_) -> panic as "Expected error"
   }
 }

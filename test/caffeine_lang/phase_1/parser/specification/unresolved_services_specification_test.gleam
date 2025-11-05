@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/types/unresolved/unresolved_service
 import gleam/result
-import gleamy_spec/should
+import gleamy_spec/gleeunit
 
 pub fn parse_unresolved_services_specification_parses_valid_services_test() {
   let expected_services = [
@@ -20,7 +20,7 @@ pub fn parse_unresolved_services_specification_parses_valid_services_test() {
     )
 
   actual
-  |> should.equal(Ok(expected_services))
+  |> gleeunit.equal(Ok(expected_services))
 }
 
 pub fn parse_unresolved_services_specification_returns_error_when_sli_types_is_missing_test() {
@@ -31,12 +31,12 @@ pub fn parse_unresolved_services_specification_returns_error_when_sli_types_is_m
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing sli_types")
+      |> gleeunit.equal("Missing sli_types")
     Ok(_) -> panic as "Expected error"
   }
 }
@@ -49,12 +49,12 @@ pub fn parse_unresolved_services_specification_returns_error_when_name_is_missin
 
   actual
   |> result.is_error()
-  |> should.be_true()
+  |> gleeunit.be_true()
 
   case actual {
     Error(msg) ->
       msg
-      |> should.equal("Missing name")
+      |> gleeunit.equal("Missing name")
     Ok(_) -> panic as "Expected error"
   }
 }
