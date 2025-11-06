@@ -7,12 +7,9 @@ import gleamy_spec/gleeunit
 pub fn extract_params_from_file_path_test() {
   describe("extract_params_from_file_path", fn() {
     it("should extract team and service names from valid file path", fn() {
-      let actual =
-        general_common.extract_params_from_file_path(
-          "test/caffeine_lang/artifacts/platform/reliable_service.yaml",
-        )
-
-      actual
+      general_common.extract_params_from_file_path(
+        "test/caffeine_lang/artifacts/platform/reliable_service.yaml",
+      )
       |> gleeunit.equal(
         Ok(
           dict.from_list([
@@ -24,10 +21,7 @@ pub fn extract_params_from_file_path_test() {
     })
 
     it("should return an error for invalid file path", fn() {
-      let actual =
-        general_common.extract_params_from_file_path("reliable_service.yaml")
-
-      actual
+      general_common.extract_params_from_file_path("reliable_service.yaml")
       |> gleeunit.equal(Error(
         "Invalid file path: expected at least 'team/service.yaml'",
       ))
