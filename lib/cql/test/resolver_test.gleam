@@ -1,5 +1,6 @@
 import cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
 import cql/resolver.{GoodOverTotal, resolve_primitives}
+import gleamy_spec/extensions.{describe, it}
 import gleamy_spec/gleeunit
 import test_helpers.{parens, prim_word, simple_op_cont}
 
@@ -12,44 +13,67 @@ fn parse_then_resolve_primitives(
 }
 
 pub fn resolve_primitives_test() {
-  // ======== Valid Expressions ========
-  // Simple good over bad
-  parse_then_resolve_primitives("A / B")
-  |> gleeunit.equal(Ok(GoodOverTotal(prim_word("A"), prim_word("B"))))
+  describe("resolve_primitives", fn() {
+    describe("valid expressions", fn() {
+      it("should resolve a simple good over bad expression", fn() {
+        parse_then_resolve_primitives("A / B")
+        |> gleeunit.equal(Ok(GoodOverTotal(prim_word("A"), prim_word("B"))))
+      })
 
-  // Moderately more complex good over bad
-  parse_then_resolve_primitives("(A + B) / C")
-  |> gleeunit.equal(
-    Ok(GoodOverTotal(parens(simple_op_cont("A", "B", Add)), prim_word("C"))),
-  )
+      it(
+        "should resolve a moderately more complex good over bad expression",
+        fn() {
+          parse_then_resolve_primitives("(A + B) / C")
+          |> gleeunit.equal(
+            Ok(GoodOverTotal(
+              parens(simple_op_cont("A", "B", Add)),
+              prim_word("C"),
+            )),
+          )
+        },
+      )
 
-  // Nested and complex good over bad
-  parse_then_resolve_primitives("((A - G) + B) / (C + (D + E) * F)")
-  |> gleeunit.equal(
-    Ok(GoodOverTotal(
-      parens(OperatorExpr(
-        parens(simple_op_cont("A", "G", Sub)),
-        prim_word("B"),
-        Add,
-      )),
-      parens(OperatorExpr(
-        prim_word("C"),
-        OperatorExpr(parens(simple_op_cont("D", "E", Add)), prim_word("F"), Mul),
-        Add,
-      )),
-    )),
-  )
+      it("should resolve a nested and complex good over bad expression", fn() {
+        parse_then_resolve_primitives("((A - G) + B) / (C + (D + E) * F)")
+        |> gleeunit.equal(
+          Ok(GoodOverTotal(
+            parens(OperatorExpr(
+              parens(simple_op_cont("A", "G", Sub)),
+              prim_word("B"),
+              Add,
+            )),
+            parens(OperatorExpr(
+              prim_word("C"),
+              OperatorExpr(
+                parens(simple_op_cont("D", "E", Add)),
+                prim_word("F"),
+                Mul,
+              ),
+              Add,
+            )),
+          )),
+        )
+      })
+    })
 
-  // ======== Invalid Expressions ========
-  // Invalid expression, addition and no division
-  parse_then_resolve_primitives("A + B")
-  |> gleeunit.equal(Error("Invalid expression"))
+    describe("invalid expressions", fn() {
+      it("should return an error for a simple expression", fn() {
+        parse_then_resolve_primitives("A + B")
+        |> gleeunit.equal(Error("Invalid expression"))
+      })
 
-  // More complex invalid expression
-  parse_then_resolve_primitives("A + B / C + D")
-  |> gleeunit.equal(Error("Invalid expression"))
+      it(
+        "should return an error for a moderately more complex expression",
+        fn() {
+          parse_then_resolve_primitives("A + B / C + D")
+          |> gleeunit.equal(Error("Invalid expression"))
+        },
+      )
 
-  // Even more complex invalid expression
-  parse_then_resolve_primitives("((A + B) - E) / C + D")
-  |> gleeunit.equal(Error("Invalid expression"))
+      it("should return an error for a nested and complex expression", fn() {
+        parse_then_resolve_primitives("((A + B) - E) / C + D")
+        |> gleeunit.equal(Error("Invalid expression"))
+      })
+    })
+  })
 }
