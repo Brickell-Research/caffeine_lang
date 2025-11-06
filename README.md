@@ -5,7 +5,7 @@
 [![Gleam](https://img.shields.io/badge/Gleam-FFAFF3?style=for-the-badge&logo=gleam&logoColor=black)](https://gleam.run/)
 
 <div align="center">
-<img src="images/caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
+<img src="images/temp_caffeine_icon.png" alt="Caffeine Icon" width="250" height="250">
 </div>
 
 Caffeine is a compiler for generating reliability artifacts from service expectation definitions.
