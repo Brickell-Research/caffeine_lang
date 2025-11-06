@@ -6,7 +6,7 @@ import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
 import gleam/dict
 import gleam/result
 

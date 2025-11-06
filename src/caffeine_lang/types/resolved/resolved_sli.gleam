@@ -1,5 +1,5 @@
 import caffeine_lang/types/ast/query_template_type
-import cql/parser
+import deps/cql/parser
 import gleam/dict
 
 /// An SLI intance with all the aggregated information from previous steps.

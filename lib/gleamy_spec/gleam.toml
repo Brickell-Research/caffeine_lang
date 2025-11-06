@@ -1,9 +1,0 @@
-name = "gleamy_spec"
-version = "0.0.1"
-description = "A behavior-driven development test framework for Gleam, inspired by Ruby's RSpec"
-
-target = "erlang"
-
-[dependencies]
-gleam_stdlib = ">= 0.63.0 and < 1.0.0"
-gleeunit = ">= 1.0.0"

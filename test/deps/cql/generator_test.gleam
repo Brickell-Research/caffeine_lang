@@ -1,8 +1,8 @@
-import cql/generator
-import cql/parser
-import cql/resolver
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
+import deps/cql/generator
+import deps/cql/parser
+import deps/cql/resolver
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 pub fn generate_datadog_query_test() {
   describe("generate_datadog_query", fn() {

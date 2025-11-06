@@ -1,8 +1,8 @@
 import caffeine_lang/phase_1/parser/specification/basic_types_specification
 import caffeine_lang/types/ast/basic_type
 import caffeine_lang/types/common/accepted_types
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 fn create_basic_type(
   attribute_name: String,

@@ -1,8 +1,8 @@
+import deps/glaml_extended/extractors
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import glaml
-import glaml_extended/extractors
 import gleam/dict
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 fn yaml_to_root(yaml: String) -> glaml.Node {
   let assert Ok([doc]) = glaml.parse_string(yaml)

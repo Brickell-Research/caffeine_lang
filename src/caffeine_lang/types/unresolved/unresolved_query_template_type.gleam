@@ -1,4 +1,4 @@
-import cql/parser.{type ExpContainer}
+import deps/cql/parser.{type ExpContainer}
 
 /// QueryTemplateType used during parsing
 pub type QueryTemplateType {

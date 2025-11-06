@@ -1,8 +1,8 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/types/common/accepted_types
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 pub fn extract_params_from_file_path_test() {
   describe("extract_params_from_file_path", fn() {

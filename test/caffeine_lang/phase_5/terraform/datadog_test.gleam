@@ -4,12 +4,12 @@ import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
-import cql/parser.{
+import deps/cql/parser.{
   Div, ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 pub fn datadog_test() {
   describe("datadog", fn() {

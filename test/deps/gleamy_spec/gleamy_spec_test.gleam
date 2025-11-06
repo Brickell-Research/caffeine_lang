@@ -1,10 +1,10 @@
-import gleamy_spec
-import gleamy_spec/extensions.{describe}
-import gleamy_spec/gleeunit
+// import deps/gleamy_spec
+import deps/gleamy_spec/extensions.{describe}
+import deps/gleamy_spec/gleeunit
 
-pub fn main() {
-  gleamy_spec.main()
-}
+// pub fn main() {
+//   gleamy_spec.main()
+// }
 
 pub fn basic_proxy_test() {
   // Test that our proxy works correctly

@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "0.0.23"
+version = "0.0.24"
 description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
@@ -16,8 +16,4 @@ simplifile = ">= 2.3.0 and < 3.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
 lustre = ">= 5.3.5 and < 6.0.0"
 glaml = "~> 3.0.0"
-glaml_extended = { path = "./lib/glaml_extended" }
-cql = { path = "./lib/cql" }
-
-[dev-dependencies]
-gleamy_spec = { path = "./lib/gleamy_spec" }
+gleeunit = ">= 1.0.0"

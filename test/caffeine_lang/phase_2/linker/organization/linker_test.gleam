@@ -8,13 +8,15 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
+import deps/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/string
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 // ==== Test Helpers ===
 fn new_bt(

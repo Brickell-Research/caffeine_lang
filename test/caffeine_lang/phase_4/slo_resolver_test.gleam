@@ -10,15 +10,15 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
-import cql/parser.{
+import deps/cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
   Sub, Word,
 }
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
 import gleam/result
 import gleam/string
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 fn example_filters() -> generic_dictionary.GenericDictionary {
   generic_dictionary.from_string_dict(

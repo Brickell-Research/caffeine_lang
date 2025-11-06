@@ -1,4 +1,6 @@
-import cql/parser.{type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr}
+import deps/cql/parser.{
+  type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr,
+}
 
 pub type Primitives {
   // good over total requires a top level division operator

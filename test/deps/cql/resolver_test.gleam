@@ -1,8 +1,8 @@
-import cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
-import cql/resolver.{GoodOverTotal, resolve_primitives}
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
-import test_helpers.{parens, prim_word, simple_op_cont}
+import deps/cql/parser.{Add, Mul, OperatorExpr, Sub, parse_expr}
+import deps/cql/resolver.{GoodOverTotal, resolve_primitives}
+import deps/cql/test_helpers.{parens, prim_word, simple_op_cont}
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 fn parse_then_resolve_primitives(
   expr: String,

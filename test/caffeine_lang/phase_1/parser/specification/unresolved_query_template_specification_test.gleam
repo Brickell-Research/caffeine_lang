@@ -1,8 +1,10 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/types/unresolved/unresolved_query_template_type
-import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
+import deps/cql/parser.{
+  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
+}
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 pub fn parse_unresolved_query_template_types_specification_test() {
   describe("parse_unresolved_query_template_types_specification", fn() {

@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/types/unresolved/unresolved_service
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 pub fn parse_unresolved_services_specification_test() {
   describe("parse_unresolved_services_specification", fn() {

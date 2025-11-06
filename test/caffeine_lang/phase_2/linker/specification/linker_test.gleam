@@ -8,11 +8,11 @@ import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_sli_type
-import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
 import gleam/result
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 pub fn linker_test() {
   describe("linker", fn() {

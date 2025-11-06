@@ -1,4 +1,4 @@
-import cql/parser.{
+import deps/cql/parser.{
   ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word,
 }
 

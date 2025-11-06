@@ -9,12 +9,12 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
-import cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 import gleam/dict
 import gleam/list
 import gleam/string
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
 
 // ==== Test Helpers ====
 fn create_test_dictionary() -> generic_dictionary.GenericDictionary {

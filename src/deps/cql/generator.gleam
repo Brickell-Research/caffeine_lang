@@ -1,7 +1,7 @@
-import cql/parser.{
+import deps/cql/parser.{
   type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord,
 }
-import cql/resolver.{type Primitives, GoodOverTotal}
+import deps/cql/resolver.{type Primitives, GoodOverTotal}
 import gleam/option.{type Option, None, Some}
 import gleam/string
 

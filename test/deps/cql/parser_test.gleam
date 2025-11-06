@@ -1,12 +1,12 @@
-import cql/parser.{
+import deps/cql/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Sub,
   find_rightmost_operator_at_level, is_balanced_parens, is_last_char, parse_expr,
 }
-import gleamy_spec/extensions.{describe, it}
-import gleamy_spec/gleeunit
-import test_helpers.{
+import deps/cql/test_helpers.{
   exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }
+import deps/gleamy_spec/extensions.{describe, it}
+import deps/gleamy_spec/gleeunit
 
 pub fn parse_expr_parses_test() {
   describe("parse_expr", fn() {
