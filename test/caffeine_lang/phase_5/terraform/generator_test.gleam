@@ -6,11 +6,14 @@ import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
 import cql/parser.{Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word}
 import gleam/dict
+import gleamy_spec/extensions.{describe, it}
 import gleamy_spec/gleeunit
 
-pub fn build_provider_datadog_test() {
-  let expected = {
-    "terraform {
+pub fn generator_test() {
+  describe("generator", fn() {
+    it("should build provider for datadog", fn() {
+      let expected = {
+        "terraform {
 required_providers {
     datadog = {
       source  = \"DataDog/datadog\"
@@ -23,17 +26,17 @@ provider \"datadog\" {
   api_key = var.DATADOG_API_KEY
   app_key = var.DATADOG_APP_KEY
 }"
-  }
+      }
 
-  let actual = generator.build_provider([generator.Datadog])
+      let actual = generator.build_provider([generator.Datadog])
 
-  actual
-  |> gleeunit.equal(expected)
-}
+      actual
+      |> gleeunit.equal(expected)
+    })
 
-pub fn build_variables_datadog_test() {
-  let expected = {
-    "variable \"DATADOG_API_KEY\" {
+    it("should build variables for datadog", fn() {
+      let expected = {
+        "variable \"DATADOG_API_KEY\" {
   type        = string
   description = \"Datadog API key\"
   sensitive   = true
@@ -46,49 +49,49 @@ variable \"DATADOG_APP_KEY\" {
   sensitive   = true
   default     = null
 }"
-  }
+      }
 
-  let actual = generator.build_variables([generator.Datadog])
+      let actual = generator.build_variables([generator.Datadog])
 
-  actual
-  |> gleeunit.equal(expected)
-}
+      actual
+      |> gleeunit.equal(expected)
+    })
 
-pub fn build_backend_test() {
-  let expected = {
-    "terraform {
+    it("should build backend", fn() {
+      let expected = {
+        "terraform {
   backend \"local\" {
     path = \"terraform.tfstate\"
   }
 }"
-  }
+      }
 
-  let actual = generator.build_backend()
+      let actual = generator.build_backend()
 
-  actual
-  |> gleeunit.equal(expected)
-}
+      actual
+      |> gleeunit.equal(expected)
+    })
 
-pub fn build_main_empty_test() {
-  let expected = {
-    "terraform {
+    it("should build main with empty slos", fn() {
+      let expected = {
+        "terraform {
   backend \"local\" {
     path = \"terraform.tfstate\"
   }
 }
 
 "
-  }
+      }
 
-  let actual = generator.build_main([])
+      let actual = generator.build_main([])
 
-  actual
-  |> gleeunit.equal(expected)
-}
+      actual
+      |> gleeunit.equal(expected)
+    })
 
-pub fn build_main_one_slo_test() {
-  let expected =
-    "terraform {
+    it("should build main with one slo", fn() {
+      let expected =
+        "terraform {
   backend \"local\" {
     path = \"terraform.tfstate\"
   }
@@ -113,46 +116,48 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
   tags = [\"managed-by:caffeine\", \"team:badass_platform_team\", \"service:super_scalabale_web_service\", \"sli_type:some_slo\", \"query_type:good_over_bad\"]
 }"
 
-  let resolved_slo =
-    resolved_slo.Slo(
-      window_in_days: 30,
-      threshold: 99.5,
-      service_name: "super_scalabale_web_service",
-      team_name: "badass_platform_team",
-      sli: resolved_sli.Sli(
-        name: "some_slo",
-        query_template_type: query_template_type.QueryTemplateType(
-          specification_of_query_templates: [
-            basic_type.BasicType(
-              attribute_name: "numerator",
-              attribute_type: accepted_types.String,
+      let resolved_slo =
+        resolved_slo.Slo(
+          window_in_days: 30,
+          threshold: 99.5,
+          service_name: "super_scalabale_web_service",
+          team_name: "badass_platform_team",
+          sli: resolved_sli.Sli(
+            name: "some_slo",
+            query_template_type: query_template_type.QueryTemplateType(
+              specification_of_query_templates: [
+                basic_type.BasicType(
+                  attribute_name: "numerator",
+                  attribute_type: accepted_types.String,
+                ),
+                basic_type.BasicType(
+                  attribute_name: "denominator",
+                  attribute_type: accepted_types.String,
+                ),
+              ],
+              name: "good_over_bad",
+              query: ExpContainer(OperatorExpr(
+                Primary(PrimaryWord(Word("#{numerator_query}"))),
+                Primary(PrimaryWord(Word("#{denominator_query}"))),
+                Div,
+              )),
             ),
-            basic_type.BasicType(
-              attribute_name: "denominator",
-              attribute_type: accepted_types.String,
-            ),
-          ],
-          name: "good_over_bad",
-          query: ExpContainer(OperatorExpr(
-            Primary(PrimaryWord(Word("#{numerator_query}"))),
-            Primary(PrimaryWord(Word("#{denominator_query}"))),
-            Div,
-          )),
-        ),
-        metric_attributes: dict.from_list([
-          #("numerator", "#{numerator_query}"),
-          #("denominator", "#{denominator_query}"),
-        ]),
-        resolved_query: ExpContainer(OperatorExpr(
-          Primary(PrimaryWord(Word("#{numerator_query}"))),
-          Primary(PrimaryWord(Word("#{denominator_query}"))),
-          Div,
-        )),
-      ),
-    )
+            metric_attributes: dict.from_list([
+              #("numerator", "#{numerator_query}"),
+              #("denominator", "#{denominator_query}"),
+            ]),
+            resolved_query: ExpContainer(OperatorExpr(
+              Primary(PrimaryWord(Word("#{numerator_query}"))),
+              Primary(PrimaryWord(Word("#{denominator_query}"))),
+              Div,
+            )),
+          ),
+        )
 
-  let actual = generator.build_main([resolved_slo])
+      let actual = generator.build_main([resolved_slo])
 
-  actual
-  |> gleeunit.equal(expected)
+      actual
+      |> gleeunit.equal(expected)
+    })
+  })
 }
