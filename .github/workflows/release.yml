@@ -95,9 +95,10 @@ jobs:
         run: rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl || true
       
       - name: Build standalone binary
-        run: mix release --target ${{ matrix.target }}
+        run: mix release
         env:
           MIX_ENV: prod
+          BURRITO_TARGET: ${{ matrix.target }}
       
       - name: Find binary path
         id: binary_path
