@@ -63,10 +63,10 @@ mix-deps:
 binary: mix-deps
 	gleam build
 	@rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl
-	ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release
+	@echo "Y" | ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release
 
 # Build standalone binaries for all platforms (macOS, Linux, Windows)
 binary-all: mix-deps
 	gleam build
 	@rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl
-	ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release --all-targets
+	@echo "Y" | ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release --all-targets

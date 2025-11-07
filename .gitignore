@@ -123,3 +123,4 @@ providers.tf
 
 deps*
 _build/*
+burrito_out/*
