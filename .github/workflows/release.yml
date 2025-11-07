@@ -78,6 +78,22 @@ jobs:
       - name: Build Gleam project
         run: gleam build
       
+      - name: Create symlinks for Gleam dependencies (required for Mix compilation)
+        run: |
+          mkdir -p _build/dev/lib
+          mkdir -p _build/prod/lib
+          for dep in glaml gleam_stdlib gleam_erlang gleam_json gleam_otp gleeunit houdini lustre simplifile argv filepath; do
+            if [ -d "build/dev/erlang/$dep" ]; then
+              rm -f _build/dev/lib/$dep
+              rm -f _build/prod/lib/$dep
+              ln -sfn ../../../build/dev/erlang/$dep _build/dev/lib/$dep
+              ln -sfn ../../../build/dev/erlang/$dep _build/prod/lib/$dep
+            fi
+          done
+      
+      - name: Clean Gleam artifact (required before Mix release)
+        run: rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl || true
+      
       - name: Build standalone binary
         run: mix release --target ${{ matrix.target }}
         env:
