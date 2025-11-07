@@ -120,3 +120,6 @@ main.tf
 variables.tf
 providers.tf
 .terraform.lock.hcl
+
+deps*
+_build/*

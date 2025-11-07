@@ -1,0 +1,127 @@
+name: Build and Release Binaries
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-binaries:
+    name: Build binaries for ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+            target: linux
+            binary_name: caffeine-linux-x86_64
+          - os: macos-latest
+            arch: aarch64
+            target: macos_arm
+            binary_name: caffeine-macos-aarch64
+          - os: windows-latest
+            arch: x86_64
+            target: win
+            binary_name: caffeine-windows-x86_64.exe
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup BEAM (Erlang + Gleam + rebar3)
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          gleam-version: '1.13.0'
+          rebar3-version: '3.25.0'
+          elixir-version: '1.17'
+      
+      - name: Cache Gleam dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-1.13.0-${{ hashFiles('manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gleam-1.13.0-
+            ${{ runner.os }}-gleam-
+      
+      - name: Download Gleam dependencies
+        run: gleam deps download
+      
+      - name: Install Mix dependencies
+        run: mix deps.get
+      
+      - name: Build Gleam project
+        run: gleam build
+      
+      - name: Build standalone binary
+        run: mix release --target ${{ matrix.target }}
+        env:
+          MIX_ENV: prod
+      
+      - name: Find binary path
+        id: binary_path
+        shell: bash
+        run: |
+          # Burrito creates binaries in different locations depending on the target
+          # Try common locations: bin/caffeine, caffeine (root of rel), or wrapped executables
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # Windows: look for .exe files
+            BINARY_PATH=$(find _build/prod/rel/caffeine -name "*.exe" -type f | grep -E "(caffeine|burrito)" | head -n 1)
+            if [[ -z "$BINARY_PATH" ]]; then
+              BINARY_PATH=$(find _build/prod/rel/caffeine -name "caffeine.exe" -type f | head -n 1)
+            fi
+          else
+            # Unix: look for executable files named caffeine or burrito-wrapped
+            BINARY_PATH=$(find _build/prod/rel/caffeine -type f -executable | grep -E "(caffeine|burrito)" | head -n 1)
+            if [[ -z "$BINARY_PATH" ]]; then
+              BINARY_PATH=$(find _build/prod/rel/caffeine -name "caffeine" -type f -executable | head -n 1)
+            fi
+            if [[ -z "$BINARY_PATH" ]]; then
+              # Fallback to bin directory
+              BINARY_PATH="_build/prod/rel/caffeine/bin/caffeine"
+            fi
+          fi
+          
+          if [[ -z "$BINARY_PATH" ]] || [[ ! -f "$BINARY_PATH" ]]; then
+            echo "Error: Binary not found. Listing _build/prod/rel/caffeine:"
+            find _build/prod/rel/caffeine -type f || true
+            exit 1
+          fi
+          
+          echo "path=$BINARY_PATH" >> $GITHUB_OUTPUT
+          echo "Found binary at: $BINARY_PATH"
+      
+      - name: Create release asset name
+        id: asset_name
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "name=${{ matrix.binary_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${{ matrix.binary_name }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Copy binary to workspace root
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            copy "${{ steps.binary_path.outputs.path }}" "${{ steps.asset_name.outputs.name }}"
+          else
+            cp "${{ steps.binary_path.outputs.path }}" "${{ steps.asset_name.outputs.name }}"
+            chmod +x "${{ steps.asset_name.outputs.name }}"
+          fi
+      
+      - name: Upload binary to release
+        shell: bash
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"${{ steps.asset_name.outputs.name }}" \
+            "${{ github.event.release.upload_url }}?name=${{ steps.asset_name.outputs.name }}"
+
