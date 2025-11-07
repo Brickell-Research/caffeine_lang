@@ -104,23 +104,38 @@ jobs:
       - name: Download Gleam dependencies
         run: gleam deps download
       
-      - name: Install mix_gleam archive directly (bypassing Hex)
+      - name: Temporarily modify mix.exs to skip archive requirement
         run: |
-          echo "Installing mix_gleam archive directly from Hex CDN..."
-          mkdir -p ~/.mix/archives
-          # Download mix_gleam archive directly from Hex CDN
-          curl -fL -o ~/.mix/archives/mix_gleam-0.6.0.ez "https://repo.hex.pm/installs/1.17.0/mix_gleam-0.6.0.ez" || \
-          curl -fL -o ~/.mix/archives/mix_gleam-0.6.0.ez "https://repo.hex.pm/installs/1.18.0/mix_gleam-0.6.0.ez" || \
-          curl -fL -o ~/.mix/archives/mix_gleam-0.6.0.ez "https://repo.hex.pm/installs/1.16.0/mix_gleam-0.6.0.ez"
-          if [ ! -f ~/.mix/archives/mix_gleam-0.6.0.ez ]; then
-            echo "Error: Failed to download mix_gleam archive"
-            exit 1
-          fi
-          echo "Verifying installation..."
-          ls -la ~/.mix/archives/mix_gleam-0.6.0.ez
+          # Create a backup
+          cp mix.exs mix.exs.backup
+          # Remove the archives requirement temporarily so we can install deps
+          sed -i 's/archives: \[mix_gleam: "~> 0.6"\]/archives: []/' mix.exs || \
+          sed -i.bak 's/archives: \[mix_gleam: "~> 0.6"\]/archives: []/' mix.exs
       
       - name: Install Mix dependencies
         run: mix deps.get
+      
+      - name: Build and install mix_gleam archive from dependency
+        run: |
+          echo "Building mix_gleam archive from dependency..."
+          cd deps/mix_gleam
+          mix archive.build
+          ARCHIVE_FILE=$(ls -t *.ez | head -1)
+          if [ -z "$ARCHIVE_FILE" ]; then
+            echo "Error: Failed to build archive"
+            exit 1
+          fi
+          echo "Installing archive: $ARCHIVE_FILE"
+          mix archive.install "$ARCHIVE_FILE" --force
+          cd ../..
+          echo "Verifying installation..."
+          mix archive | grep mix_gleam || (echo "Error: mix_gleam archive not found after installation" && exit 1)
+      
+      - name: Restore mix.exs
+        run: |
+          mv mix.exs.backup mix.exs || true
+          # Verify mix.exs is restored correctly
+          grep -q "archives:" mix.exs || echo "Warning: mix.exs may not have been restored correctly"
       
       - name: Install Gleam dependencies via Mix
         run: mix gleam.deps.get
