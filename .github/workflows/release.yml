@@ -58,8 +58,14 @@ jobs:
       - name: Download Gleam dependencies
         run: gleam deps download
       
+      - name: Install mix_gleam archive
+        run: mix archive.install hex mix_gleam
+      
       - name: Install Mix dependencies
         run: mix deps.get
+      
+      - name: Install Gleam dependencies via Mix
+        run: mix gleam.deps.get
       
       - name: Build Gleam project
         run: gleam build
