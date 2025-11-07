@@ -46,8 +46,12 @@ jobs:
       
       - name: Reinstall Hex for OTP 28 compatibility
         run: |
-          mix archive.uninstall hex.ez || true
+          # Remove any existing Hex archives
+          rm -rf ~/.mix/archives/hex*.ez || true
+          # Reinstall Hex for current OTP version
           mix local.hex --force
+          # Verify Hex works
+          mix hex.info || (echo "Hex installation failed" && exit 1)
       
       - name: Install Burrito dependencies (zig and xz)
         run: |
