@@ -49,15 +49,27 @@ jobs:
           if [[ "${{ runner.os }}" == "Linux" ]]; then
             sudo apt-get update
             sudo apt-get install -y xz-utils
-            # Install zig from official release
-            wget -q https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz
-            sudo tar -xf zig-linux-x86_64-0.12.0.tar.xz -C /usr/local
-            sudo ln -sf /usr/local/zig-linux-x86_64-0.12.0/zig /usr/local/bin/zig
-            rm zig-linux-x86_64-0.12.0.tar.xz
+            # Install zig 0.15.2 (required by Burrito)
+            wget -q https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz
+            sudo tar -xf zig-linux-x86_64-0.15.2.tar.xz -C /usr/local
+            sudo ln -sf /usr/local/zig-linux-x86_64-0.15.2/zig /usr/local/bin/zig
+            rm zig-linux-x86_64-0.15.2.tar.xz
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            brew install zig xz
+            # Install specific zig version required by Burrito
+            if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
+              wget -q https://ziglang.org/download/0.15.2/zig-macos-aarch64-0.15.2.tar.xz
+              tar -xf zig-macos-aarch64-0.15.2.tar.xz -C /usr/local
+              ln -sf /usr/local/zig-macos-aarch64-0.15.2/zig /usr/local/bin/zig
+              rm zig-macos-aarch64-0.15.2.tar.xz
+            else
+              wget -q https://ziglang.org/download/0.15.2/zig-macos-x86_64-0.15.2.tar.xz
+              tar -xf zig-macos-x86_64-0.15.2.tar.xz -C /usr/local
+              ln -sf /usr/local/zig-macos-x86_64-0.15.2/zig /usr/local/bin/zig
+              rm zig-macos-x86_64-0.15.2.tar.xz
+            fi
+            brew install xz || true
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
-            choco install zig xz -y
+            choco install zig --version=0.15.2 xz -y
           fi
           # Verify installation
           zig version || echo "Warning: zig not found in PATH"
