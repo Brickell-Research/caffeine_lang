@@ -49,34 +49,40 @@ jobs:
           set -e
           if [[ "${{ runner.os }}" == "Linux" ]]; then
             sudo apt-get update
-            sudo apt-get install -y xz-utils wget
+            sudo apt-get install -y xz-utils curl
             # Install zig 0.15.2 (required by Burrito)
             echo "Downloading zig 0.15.2..."
-            wget -q --show-progress https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz || {
-              echo "Failed to download zig, trying alternative URL..."
-              wget -q --show-progress https://github.com/ziglang/zig/releases/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz
-            }
+            ZIG_FILE="zig-linux-x86_64-0.15.2.tar.xz"
+            if ! curl -fL -o "$ZIG_FILE" "https://ziglang.org/download/0.15.2/$ZIG_FILE"; then
+              echo "Primary URL failed, trying GitHub releases..."
+              curl -fL -o "$ZIG_FILE" "https://github.com/ziglang/zig/releases/download/0.15.2/$ZIG_FILE"
+            fi
+            if [ ! -f "$ZIG_FILE" ]; then
+              echo "Error: Failed to download zig"
+              exit 1
+            fi
             echo "Extracting zig..."
-            sudo tar -xf zig-linux-x86_64-0.15.2.tar.xz -C /usr/local
+            sudo tar -xf "$ZIG_FILE" -C /usr/local
             sudo ln -sf /usr/local/zig-linux-x86_64-0.15.2/zig /usr/local/bin/zig
-            rm -f zig-linux-x86_64-0.15.2.tar.xz
+            rm -f "$ZIG_FILE"
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             # Install specific zig version required by Burrito
             if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
-              wget -q --show-progress https://ziglang.org/download/0.15.2/zig-macos-aarch64-0.15.2.tar.xz || {
-                wget -q --show-progress https://github.com/ziglang/zig/releases/download/0.15.2/zig-macos-aarch64-0.15.2.tar.xz
-              }
-              tar -xf zig-macos-aarch64-0.15.2.tar.xz -C /usr/local
-              ln -sf /usr/local/zig-macos-aarch64-0.15.2/zig /usr/local/bin/zig
-              rm -f zig-macos-aarch64-0.15.2.tar.xz
+              ZIG_FILE="zig-macos-aarch64-0.15.2.tar.xz"
             else
-              wget -q --show-progress https://ziglang.org/download/0.15.2/zig-macos-x86_64-0.15.2.tar.xz || {
-                wget -q --show-progress https://github.com/ziglang/zig/releases/download/0.15.2/zig-macos-x86_64-0.15.2.tar.xz
-              }
-              tar -xf zig-macos-x86_64-0.15.2.tar.xz -C /usr/local
-              ln -sf /usr/local/zig-macos-x86_64-0.15.2/zig /usr/local/bin/zig
-              rm -f zig-macos-x86_64-0.15.2.tar.xz
+              ZIG_FILE="zig-macos-x86_64-0.15.2.tar.xz"
             fi
+            if ! curl -fL -o "$ZIG_FILE" "https://ziglang.org/download/0.15.2/$ZIG_FILE"; then
+              echo "Primary URL failed, trying GitHub releases..."
+              curl -fL -o "$ZIG_FILE" "https://github.com/ziglang/zig/releases/download/0.15.2/$ZIG_FILE"
+            fi
+            if [ ! -f "$ZIG_FILE" ]; then
+              echo "Error: Failed to download zig"
+              exit 1
+            fi
+            tar -xf "$ZIG_FILE" -C /usr/local
+            ln -sf /usr/local/${ZIG_FILE%.tar.xz}/zig /usr/local/bin/zig
+            rm -f "$ZIG_FILE"
             brew install xz || true
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
             choco install zig --version=0.15.2 xz -y
