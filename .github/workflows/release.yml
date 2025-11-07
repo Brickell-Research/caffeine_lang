@@ -58,8 +58,16 @@ jobs:
       - name: Download Gleam dependencies
         run: gleam deps download
       
-      - name: Install mix_gleam archive
-        run: mix archive.install hex mix_gleam
+      - name: Install Hex (required for archive installation)
+        run: mix local.hex --force
+      
+      - name: Install mix_gleam archive (before Mix reads mix.exs)
+        run: |
+          echo "Installing mix_gleam archive..."
+          # Install archive before Mix tries to validate mix.exs
+          mix archive.install hex mix_gleam 0.6.0 --force
+          echo "Verifying installation..."
+          mix archive | grep mix_gleam || (echo "Archive not found after installation!" && exit 1)
       
       - name: Install Mix dependencies
         run: mix deps.get
