@@ -44,6 +44,11 @@ jobs:
           rebar3-version: '3.25.0'
           elixir-version: '1.17'
       
+      - name: Reinstall Hex for OTP 28 compatibility
+        run: |
+          mix archive.uninstall hex.ez || true
+          mix local.hex --force
+      
       - name: Install Burrito dependencies (zig and xz)
         run: |
           set -e
