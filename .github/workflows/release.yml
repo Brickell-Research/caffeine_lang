@@ -44,6 +44,25 @@ jobs:
           rebar3-version: '3.25.0'
           elixir-version: '1.17'
       
+      - name: Install Burrito dependencies (zig and xz)
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y xz-utils
+            # Install zig from official release
+            wget -q https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz
+            sudo tar -xf zig-linux-x86_64-0.12.0.tar.xz -C /usr/local
+            sudo ln -sf /usr/local/zig-linux-x86_64-0.12.0/zig /usr/local/bin/zig
+            rm zig-linux-x86_64-0.12.0.tar.xz
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            brew install zig xz
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            choco install zig xz -y
+          fi
+          # Verify installation
+          zig version || echo "Warning: zig not found in PATH"
+          xz --version || echo "Warning: xz not found in PATH"
+      
       - name: Cache Gleam dependencies
         uses: actions/cache@v4
         with:
