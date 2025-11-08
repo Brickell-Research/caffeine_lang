@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix test build docs ci watch watch-cql watch-glaml-extended watch-all binary binary-all mix-deps
+.PHONY: lint lint-fix test build docs ci watch watch-cql watch-glaml-extended watch-all
 
 # Check code formatting
 lint:
@@ -45,28 +45,3 @@ lines-of-code:
 
 run-example:
 	gleam run -- compile test/artifacts/some_organization/specifications test/artifacts/some_organization
-
-# Install Mix dependencies (required for building standalone binary)
-mix-deps:
-	gleam deps download
-	ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix deps.get
-	ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix gleam.deps.get
-	@mkdir -p _build/dev/lib
-	@for dep in glaml gleam_stdlib gleam_erlang gleam_json gleam_otp gleeunit houdini lustre simplifile argv filepath; do \
-		if [ -d "build/dev/erlang/$$dep" ]; then \
-			rm -f _build/dev/lib/$$dep; \
-			ln -sfn ../../../build/dev/erlang/$$dep _build/dev/lib/$$dep; \
-		fi \
-	done
-
-# Build standalone binary for current platform
-binary: mix-deps
-	gleam build
-	@rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl
-	@echo "Y" | ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release
-
-# Build standalone binaries for all platforms (macOS, Linux, Windows)
-binary-all: mix-deps
-	gleam build
-	@rm -f build/dev/erlang/caffeine_lang/_gleam_artefacts/gleam@@compile.erl
-	@echo "Y" | ERL_SSL_CACERTFILE=/etc/ssl/cert.pem mix release --all-targets
