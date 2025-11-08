@@ -1,0 +1,43 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-release:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-13, macos-14]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Enable Nix cache (faster builds)
+        uses: DeterminateSystems/magic-nix-cache-action@v6
+
+      - name: Build caffeine_lang
+        run: nix build .#caffeine
+
+      - name: Package closure
+        shell: bash
+        run: |
+          sys=$(nix eval --raw --impure --expr builtins.currentSystem || echo unknown)
+          out="caffeine_lang-${sys}.tar.gz"
+          tar -C result -czf "$out" .
+          shasum -a 256 "$out" > "$out.sha256"
+          echo "ASSET=$out" >> $GITHUB_ENV
+          echo "ASSET_SHA256=$out.sha256" >> $GITHUB_ENV
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET }}
+            ${{ env.ASSET_SHA256 }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
