@@ -39,9 +39,9 @@
             # Override the wrapper script to call main/0 instead of run/1
             postInstall = ''
               # Replace the generated wrapper with one that calls main/0
-              cat > $out/bin/caffeine_lang << 'EOF'
+              cat > $out/bin/caffeine_lang << EOF
 #!/bin/sh
-exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:main(), halt()" -noshell -extra "$@"
+exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:main(), halt()" -noshell -extra "\$@"
 EOF
               chmod +x $out/bin/caffeine_lang
             '';
