@@ -21,8 +21,7 @@ fn print_usage() -> Nil {
   io.println("  output_directory          Directory to output compiled files")
 }
 
-// Entry point for Erlang escript
-pub fn run(_args: dynamic.Dynamic) -> Nil {
+fn handle_args() -> Nil {
   let args = argv.load().arguments
 
   case args {
@@ -47,6 +46,11 @@ pub fn run(_args: dynamic.Dynamic) -> Nil {
   }
 }
 
+// Entry point for Erlang escript
+pub fn run(_args: dynamic.Dynamic) -> Nil {
+  handle_args()
+}
+
 pub fn main() -> Nil {
-  run(dynamic.from(Nil))
+  handle_args()
 }
