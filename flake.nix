@@ -19,11 +19,11 @@
           };
         in {
           # The package (derivation) that builds your Gleam app.
-          packages.caffeine = pkgs.buildGleamApplication {
+          packages.caffeine = (pkgs.buildGleamApplication {
             # If pname/version/target are in gleam.toml, you can omit them.
             # You can also override them here:
             pname = "caffeine_lang";
-            # version = "0.0.34";
+            # version = "0.0.36";
             # target = "erlang";
             src = ./.;
 
@@ -35,7 +35,15 @@
 
             # If rebar plugins are needed:
             # rebar3Package = pkgs.rebar3WithPlugins { plugins = with pkgs.beamPackages; [ pc ]; };
-          };
+          }).overrideAttrs (oldAttrs: {
+            # Override build to use 'gleam build' instead of 'gleam export erlang-shipment'
+            # to prevent tree-shaking of the run/1 entry point
+            buildPhase = ''
+              runHook preBuild
+              HOME=$TMPDIR gleam build --target erlang
+              runHook postBuild
+            '';
+          });
 
           # Make `nix build` with no attr select do the right thing.
           packages.default = self.packages.${system}.caffeine;
