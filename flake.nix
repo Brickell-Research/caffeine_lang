@@ -22,10 +22,13 @@
           packages.caffeine = pkgs.buildGleamApplication {
             # If pname/version/target are in gleam.toml, you can omit them.
             # You can also override them here:
-            # pname = "caffeine";
-            # version = "0.0.26";
+            pname = "caffeine_lang";
+            # version = "0.0.31";
             # target = "erlang";
             src = ./.;
+            
+            # Specify the main module for escript entry point
+            mainModule = "caffeine_lang@@main";
 
             # If you need native deps, add:
             # buildInputs = [ pkgs.openssl pkgs.zlib ];
