@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "0.0.29"
+version = "0.0.30"
 description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
@@ -9,6 +9,9 @@ links = [
 ]
 
 target = "erlang"
+
+[internal]
+  main_module = "caffeine_lang"
 
 [dependencies]
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
