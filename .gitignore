@@ -123,3 +123,6 @@ providers.tf
 
 deps*
 _build/*
+
+# Nix
+result*
