@@ -1,5 +1,6 @@
 import argv
 import caffeine_lang/compiler
+import gleam/dynamic
 import gleam/io
 
 fn print_usage() -> Nil {
@@ -43,4 +44,9 @@ pub fn main() -> Nil {
       print_usage()
     }
   }
+}
+
+// Entry point for Erlang escript
+pub fn run(_args: dynamic.Dynamic) -> Nil {
+  main()
 }
