@@ -23,7 +23,7 @@
             # If pname/version/target are in gleam.toml, you can omit them.
             # You can also override them here:
             # pname = "caffeine";
-            # version = "0.0.24";
+            # version = "0.0.25";
             # target = "erlang";
             src = ./.;
 
