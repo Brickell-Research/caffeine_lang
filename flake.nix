@@ -23,12 +23,9 @@
             # If pname/version/target are in gleam.toml, you can omit them.
             # You can also override them here:
             pname = "caffeine_lang";
-            # version = "0.0.31";
+            # version = "0.0.32";
             # target = "erlang";
             src = ./.;
-            
-            # Specify the main module for escript entry point
-            mainModule = "caffeine_lang@@main";
 
             # If you need native deps, add:
             # buildInputs = [ pkgs.openssl pkgs.zlib ];
@@ -38,6 +35,16 @@
 
             # If rebar plugins are needed:
             # rebar3Package = pkgs.rebar3WithPlugins { plugins = with pkgs.beamPackages; [ pc ]; };
+            
+            # Override the wrapper script to call main/0 instead of run/1
+            postInstall = ''
+              # Replace the generated wrapper with one that calls main/0
+              cat > $out/bin/caffeine_lang << 'EOF'
+#!/bin/sh
+exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:main(), halt()" -noshell -extra "$@"
+EOF
+              chmod +x $out/bin/caffeine_lang
+            '';
           };
 
           # Make `nix build` with no attr select do the right thing.
