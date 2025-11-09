@@ -23,17 +23,6 @@
             pname = "caffeine_lang";
             version = "0.0.39";
             src = ./.;
-          }).overrideAttrs (oldAttrs: {
-            # Override the wrapper script to call main/0 instead of run/1
-            # since run/1 gets tree-shaken but main/0 doesn't
-            postInstall = (oldAttrs.postInstall or "") + ''
-              # Replace wrapper to call main/0
-              cat > $out/bin/caffeine_lang << EOF
-#!/bin/sh
-exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:main(), halt()" -noshell -extra "\$@"
-EOF
-              chmod +x $out/bin/caffeine_lang
-            '';
           });
 
           # Make `nix build` with no attr select do the right thing.
