@@ -8,7 +8,7 @@ import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_query_template_type
 import caffeine_lang/types/unresolved/unresolved_service
 import caffeine_lang/types/unresolved/unresolved_sli_type
-import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -31,7 +31,9 @@ pub fn linker_test() {
         query_template_type.QueryTemplateType(
           specification_of_query_templates: basic_types,
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         )
       let query_template_types = [query_template]
 
@@ -113,7 +115,9 @@ pub fn linker_test() {
           query_template_type.QueryTemplateType(
             specification_of_query_templates: basic_types,
             name: "good_over_bad",
-            query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryWord(parser.Word(""))),
+            ),
           )
         let query_template_types = [query_template]
 
@@ -148,7 +152,9 @@ pub fn linker_test() {
         query_template_type.QueryTemplateType(
           specification_of_query_templates: [],
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         )
 
       // Create test metric attributes as GenericDictionary for resolved SLI type
@@ -244,7 +250,9 @@ pub fn linker_test() {
           query_template_type.QueryTemplateType(
             specification_of_query_templates: [],
             name: "good_over_bad",
-            query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryWord(parser.Word(""))),
+            ),
           )
         let xs = [
           sli_type.SliType(
@@ -341,7 +349,9 @@ pub fn linker_test() {
             "a",
             "b",
           ],
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         ),
       ]
 
@@ -349,7 +359,9 @@ pub fn linker_test() {
         query_template_type.QueryTemplateType(
           specification_of_query_templates: [basic_type_a, basic_type_b],
           name: "good_over_bad",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         )
 
       // Create expected typed_instatiation_of_query_templates with the correct fields

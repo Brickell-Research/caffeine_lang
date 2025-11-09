@@ -25,19 +25,7 @@ docs:
 
 # Watch for changes and run tests automatically (main project only)
 watch:
-	@./watch.sh
-
-# Watch CQL package for changes
-watch-cql:
-	@./watch.sh cql
-
-# Watch glaml_extended package for changes  
-watch-glaml-extended:
-	@./watch.sh glaml_extended
-
-# Watch all packages for changes
-watch-all:
-	@./watch.sh all 
+	@./watch.sh 
 
 # Generate a report of the codebase
 lines-of-code:

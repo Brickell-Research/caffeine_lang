@@ -1,8 +1,6 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
 import caffeine_lang/types/unresolved/unresolved_query_template_type
-import deps/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 
@@ -17,10 +15,10 @@ pub fn parse_unresolved_query_template_types_specification_test() {
               "team_name",
               "accepted_status_codes",
             ],
-            query: ExpContainer(OperatorExpr(
-              Primary(PrimaryWord(Word("numerator"))),
-              Primary(PrimaryWord(Word("denominator"))),
-              Div,
+            query: parser.ExpContainer(parser.OperatorExpr(
+              parser.Primary(parser.PrimaryWord(parser.Word("numerator"))),
+              parser.Primary(parser.PrimaryWord(parser.Word("denominator"))),
+              parser.Div,
             )),
           ),
         ]

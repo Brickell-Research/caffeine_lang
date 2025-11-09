@@ -4,9 +4,7 @@ import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
-import deps/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -138,20 +136,28 @@ resource \"datadog_service_level_objective\" \"badass_platform_team_super_scalab
                 ),
               ],
               name: "good_over_bad",
-              query: ExpContainer(OperatorExpr(
-                Primary(PrimaryWord(Word("#{numerator_query}"))),
-                Primary(PrimaryWord(Word("#{denominator_query}"))),
-                Div,
+              query: parser.ExpContainer(parser.OperatorExpr(
+                parser.Primary(
+                  parser.PrimaryWord(parser.Word("#{numerator_query}")),
+                ),
+                parser.Primary(
+                  parser.PrimaryWord(parser.Word("#{denominator_query}")),
+                ),
+                parser.Div,
               )),
             ),
             metric_attributes: dict.from_list([
               #("numerator", "#{numerator_query}"),
               #("denominator", "#{denominator_query}"),
             ]),
-            resolved_query: ExpContainer(OperatorExpr(
-              Primary(PrimaryWord(Word("#{numerator_query}"))),
-              Primary(PrimaryWord(Word("#{denominator_query}"))),
-              Div,
+            resolved_query: parser.ExpContainer(parser.OperatorExpr(
+              parser.Primary(
+                parser.PrimaryWord(parser.Word("#{numerator_query}")),
+              ),
+              parser.Primary(
+                parser.PrimaryWord(parser.Word("#{denominator_query}")),
+              ),
+              parser.Div,
             )),
           ),
         )

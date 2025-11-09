@@ -5,7 +5,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
-import deps/cql/parser
+import caffeine_query_language/parser
 import gleam/dict
 import gleam/int
 import gleam/list

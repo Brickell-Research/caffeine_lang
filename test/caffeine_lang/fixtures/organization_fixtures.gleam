@@ -6,7 +6,7 @@ import caffeine_lang/types/ast/sli_type
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_query_language/parser
 import gleam/dict
 import gleam/result
 
@@ -28,7 +28,9 @@ pub fn basic_query_template_type() -> query_template_type.QueryTemplateType {
   query_template_type.QueryTemplateType(
     specification_of_query_templates: [],
     name: "good_over_bad",
-    query: ExpContainer(Primary(PrimaryWord(Word("")))),
+    query: parser.ExpContainer(
+      parser.Primary(parser.PrimaryWord(parser.Word(""))),
+    ),
   )
 }
 

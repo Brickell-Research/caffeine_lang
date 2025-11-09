@@ -7,7 +7,7 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -41,7 +41,9 @@ pub fn creates_organization_with_teams_and_services_test() {
           query_template_type: query_template_type.QueryTemplateType(
             specification_of_query_templates: [],
             name: "good_over_bad",
-            query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryWord(parser.Word(""))),
+            ),
           ),
           typed_instatiation_of_query_templates: metric_attrs,
           specification_of_query_templatized_variables: [],

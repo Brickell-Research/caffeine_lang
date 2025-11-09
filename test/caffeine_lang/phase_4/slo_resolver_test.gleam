@@ -10,10 +10,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/resolved/resolved_sli
 import caffeine_lang/types/resolved/resolved_slo
-import deps/cql/parser.{
-  Add, Div, ExpContainer, Mul, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
-  Sub, Word,
-}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -62,7 +59,9 @@ fn example_sli_type() -> sli_type.SliType {
           attribute_type: accepted_types.String,
         ),
       ],
-      query: ExpContainer(Primary(PrimaryWord(Word("")))),
+      query: parser.ExpContainer(
+        parser.Primary(parser.PrimaryWord(parser.Word(""))),
+      ),
     ),
     typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
       dict.from_list([
@@ -122,7 +121,9 @@ pub fn slo_resolver_test() {
             name: "example_slo",
             query_template_type: input_sli_type.query_template_type,
             metric_attributes: expected_metric_attrs,
-            resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryWord(parser.Word(""))),
+            ),
           ))
 
         // Use the filters directly since resolve_sli now expects GenericDictionary
@@ -156,7 +157,9 @@ pub fn slo_resolver_test() {
                 attribute_type: accepted_types.String,
               ),
             ],
-            query: ExpContainer(Primary(PrimaryWord(Word("")))),
+            query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryWord(parser.Word(""))),
+            ),
           )
 
         let expected =
@@ -178,7 +181,9 @@ pub fn slo_resolver_test() {
                   "max:latency(<100ms, {service:\"super_scalabale_web_service\",requests_valid:true,environment:production})",
                 ),
               ]),
-              resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+              resolved_query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word(""))),
+              ),
             ),
           ))
 
@@ -229,7 +234,9 @@ pub fn slo_resolver_test() {
                     "max:latency(<100ms, {service:\"super_scalabale_web_service\",requests_valid:true,environment:production})",
                   ),
                 ]),
-                resolved_query: ExpContainer(Primary(PrimaryWord(Word("")))),
+                resolved_query: parser.ExpContainer(
+                  parser.Primary(parser.PrimaryWord(parser.Word(""))),
+                ),
               ),
             ),
           ])
@@ -244,10 +251,10 @@ pub fn slo_resolver_test() {
     describe("complex queries", fn() {
       it("should resolve sli with complex query", fn() {
         let complex_query =
-          ExpContainer(OperatorExpr(
-            Primary(PrimaryWord(Word("numerator_query"))),
-            Primary(PrimaryWord(Word("denominator_query"))),
-            Div,
+          parser.ExpContainer(parser.OperatorExpr(
+            parser.Primary(parser.PrimaryWord(parser.Word("numerator_query"))),
+            parser.Primary(parser.PrimaryWord(parser.Word("denominator_query"))),
+            parser.Div,
           ))
 
         let sli_type_with_query =
@@ -308,22 +315,26 @@ pub fn slo_resolver_test() {
           ])
 
         let expected_resolved_query =
-          ExpContainer(OperatorExpr(
-            Primary(
-              PrimaryExp(
-                Primary(
-                  PrimaryWord(Word("sum:requests.success{service:\"web_api\"}")),
+          parser.ExpContainer(parser.OperatorExpr(
+            parser.Primary(
+              parser.PrimaryExp(
+                parser.Primary(
+                  parser.PrimaryWord(parser.Word(
+                    "sum:requests.success{service:\"web_api\"}",
+                  )),
                 ),
               ),
             ),
-            Primary(
-              PrimaryExp(
-                Primary(
-                  PrimaryWord(Word("sum:requests.total{service:\"web_api\"}")),
+            parser.Primary(
+              parser.PrimaryExp(
+                parser.Primary(
+                  parser.PrimaryWord(parser.Word(
+                    "sum:requests.total{service:\"web_api\"}",
+                  )),
                 ),
               ),
             ),
-            Div,
+            parser.Div,
           ))
 
         let expected =
@@ -346,18 +357,18 @@ pub fn slo_resolver_test() {
 
       it("should resolve sli with nested expressions", fn() {
         let nested_query =
-          ExpContainer(OperatorExpr(
-            OperatorExpr(
-              Primary(PrimaryWord(Word("a_query"))),
-              Primary(PrimaryWord(Word("b_query"))),
-              Add,
+          parser.ExpContainer(parser.OperatorExpr(
+            parser.OperatorExpr(
+              parser.Primary(parser.PrimaryWord(parser.Word("a_query"))),
+              parser.Primary(parser.PrimaryWord(parser.Word("b_query"))),
+              parser.Add,
             ),
-            OperatorExpr(
-              Primary(PrimaryWord(Word("c_query"))),
-              Primary(PrimaryWord(Word("d_query"))),
-              Mul,
+            parser.OperatorExpr(
+              parser.Primary(parser.PrimaryWord(parser.Word("c_query"))),
+              parser.Primary(parser.PrimaryWord(parser.Word("d_query"))),
+              parser.Mul,
             ),
-            Sub,
+            parser.Sub,
           ))
 
         let sli_type_nested =
@@ -411,26 +422,42 @@ pub fn slo_resolver_test() {
         let filters = dict.from_list([#("ENV", "prod")])
 
         let expected_resolved_query =
-          ExpContainer(OperatorExpr(
-            OperatorExpr(
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric_a{env:prod}")))),
+          parser.ExpContainer(parser.OperatorExpr(
+            parser.OperatorExpr(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric_a{env:prod}")),
+                  ),
+                ),
               ),
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric_b{env:prod}")))),
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric_b{env:prod}")),
+                  ),
+                ),
               ),
-              Add,
+              parser.Add,
             ),
-            OperatorExpr(
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric_c{env:prod}")))),
+            parser.OperatorExpr(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric_c{env:prod}")),
+                  ),
+                ),
               ),
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric_d{env:prod}")))),
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric_d{env:prod}")),
+                  ),
+                ),
               ),
-              Mul,
+              parser.Mul,
             ),
-            Sub,
+            parser.Sub,
           ))
 
         let expected =
@@ -467,7 +494,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -548,7 +577,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -582,11 +613,11 @@ pub fn slo_resolver_test() {
                 "metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(
-                    PrimaryWord(Word(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
                       "metric{(status_codes:1 OR status_codes:10 OR status_codes:200)}",
                     )),
                   ),
@@ -699,7 +730,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -727,10 +760,12 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{status_code:200}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(PrimaryWord(Word("metric{status_code:200}"))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric{status_code:200}")),
+                  ),
                 ),
               ),
             ),
@@ -755,7 +790,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -797,7 +834,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -823,9 +862,13 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{foobar:10}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric{foobar:10}")))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric{foobar:10}")),
+                  ),
+                ),
               ),
             ),
           ))
@@ -849,7 +892,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -876,8 +921,12 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(PrimaryExp(Primary(PrimaryWord(Word("metric{}"))))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(parser.PrimaryWord(parser.Word("metric{}"))),
+                ),
+              ),
             ),
           ))
 
@@ -900,7 +949,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -930,10 +981,14 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{region:\"us_east_1\",}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(PrimaryWord(Word("metric{region:\"us_east_1\",}"))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
+                      "metric{region:\"us_east_1\",}",
+                    )),
+                  ),
                 ),
               ),
             ),
@@ -958,7 +1013,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1003,11 +1060,11 @@ pub fn slo_resolver_test() {
                 "metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(
-                    PrimaryWord(Word(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
                       "metric{service:\"web_api\",env:\"production\",optional_tag:\"v1.0\"}",
                     )),
                   ),
@@ -1037,7 +1094,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1065,9 +1124,13 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{(foo:2*)}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(Primary(PrimaryWord(Word("metric{(foo:2*)}")))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric{(foo:2*)}")),
+                  ),
+                ),
               ),
             ),
           ))
@@ -1091,7 +1154,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1119,10 +1184,12 @@ pub fn slo_resolver_test() {
             metric_attributes: dict.from_list([
               #("test_query", "metric{(foo:2* OR foo:4*)}"),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(PrimaryWord(Word("metric{(foo:2* OR foo:4*)}"))),
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word("metric{(foo:2* OR foo:4*)}")),
+                  ),
                 ),
               ),
             ),
@@ -1149,7 +1216,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1184,11 +1253,11 @@ pub fn slo_resolver_test() {
                 "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(
-                    PrimaryWord(Word(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
                       "metric{(http_status_codes:200 OR http_status_codes:201 OR http_status_codes:202 OR http_status_codes:204)}",
                     )),
                   ),
@@ -1220,7 +1289,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1255,11 +1326,11 @@ pub fn slo_resolver_test() {
                 "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(
-                    PrimaryWord(Word(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
                       "metric{(status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429)}",
                     )),
                   ),
@@ -1293,7 +1364,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1333,28 +1406,30 @@ pub fn slo_resolver_test() {
                 "metric{env:production,path:/v1/users/passwords/reset}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(PrimaryExp(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(parser.PrimaryExp(
                 // The CQL parser will treat /v1/users/passwords/reset as division operators
                 // This is expected behavior - paths with slashes will be parsed as math expressions
-                OperatorExpr(
-                  OperatorExpr(
-                    OperatorExpr(
-                      OperatorExpr(
-                        Primary(
-                          PrimaryWord(Word("metric{env:production,path:")),
+                parser.OperatorExpr(
+                  parser.OperatorExpr(
+                    parser.OperatorExpr(
+                      parser.OperatorExpr(
+                        parser.Primary(
+                          parser.PrimaryWord(parser.Word(
+                            "metric{env:production,path:",
+                          )),
                         ),
-                        Primary(PrimaryWord(Word("v1"))),
-                        Div,
+                        parser.Primary(parser.PrimaryWord(parser.Word("v1"))),
+                        parser.Div,
                       ),
-                      Primary(PrimaryWord(Word("users"))),
-                      Div,
+                      parser.Primary(parser.PrimaryWord(parser.Word("users"))),
+                      parser.Div,
                     ),
-                    Primary(PrimaryWord(Word("passwords"))),
-                    Div,
+                    parser.Primary(parser.PrimaryWord(parser.Word("passwords"))),
+                    parser.Div,
                   ),
-                  Primary(PrimaryWord(Word("reset}"))),
-                  Div,
+                  parser.Primary(parser.PrimaryWord(parser.Word("reset}"))),
+                  parser.Div,
                 ),
               )),
             ),
@@ -1381,7 +1456,9 @@ pub fn slo_resolver_test() {
                   attribute_type: accepted_types.String,
                 ),
               ],
-              query: ExpContainer(Primary(PrimaryWord(Word("test_query")))),
+              query: parser.ExpContainer(
+                parser.Primary(parser.PrimaryWord(parser.Word("test_query"))),
+              ),
             ),
             typed_instatiation_of_query_templates: generic_dictionary.from_string_dict(
               dict.from_list([
@@ -1416,11 +1493,11 @@ pub fn slo_resolver_test() {
                 "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}",
               ),
             ]),
-            resolved_query: ExpContainer(
-              Primary(
-                PrimaryExp(
-                  Primary(
-                    PrimaryWord(Word(
+            resolved_query: parser.ExpContainer(
+              parser.Primary(
+                parser.PrimaryExp(
+                  parser.Primary(
+                    parser.PrimaryWord(parser.Word(
                       "metric{NOT ((status_codes:400 OR status_codes:401 OR status_codes:404 OR status_codes:429))}",
                     )),
                   ),

@@ -1,7 +1,7 @@
 import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/resolved/resolved_slo
-import deps/cql/generator
-import deps/cql/resolver
+import caffeine_query_language/generator
+import caffeine_query_language/resolver
 import gleam/float
 import gleam/int
 

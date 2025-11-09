@@ -1,5 +1,5 @@
 import caffeine_lang/types/ast/specification_of_query_templates
-import deps/cql/parser.{type ExpContainer}
+import caffeine_query_language/parser.{type ExpContainer}
 
 pub type QueryTemplateType {
   QueryTemplateType(

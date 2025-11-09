@@ -8,9 +8,7 @@ import caffeine_lang/types/ast/slo
 import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import deps/cql/parser.{
-  Div, ExpContainer, OperatorExpr, Primary, PrimaryWord, Word,
-}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -104,10 +102,10 @@ pub fn linker_test() {
             expected_basic_type_2,
             expected_basic_type_1,
           ],
-          query: ExpContainer(OperatorExpr(
-            Primary(PrimaryWord(Word("numerator"))),
-            Primary(PrimaryWord(Word("denominator"))),
-            Div,
+          query: parser.ExpContainer(parser.OperatorExpr(
+            parser.Primary(parser.PrimaryWord(parser.Word("numerator"))),
+            parser.Primary(parser.PrimaryWord(parser.Word("denominator"))),
+            parser.Div,
           )),
         )
 

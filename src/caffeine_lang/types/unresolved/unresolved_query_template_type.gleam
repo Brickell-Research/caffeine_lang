@@ -1,4 +1,4 @@
-import deps/cql/parser.{type ExpContainer}
+import caffeine_query_language/parser.{type ExpContainer}
 
 /// QueryTemplateType used during parsing
 pub type QueryTemplateType {

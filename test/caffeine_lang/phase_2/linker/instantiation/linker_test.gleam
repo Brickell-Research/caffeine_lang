@@ -9,7 +9,7 @@ import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import caffeine_lang/types/unresolved/unresolved_slo
 import caffeine_lang/types/unresolved/unresolved_team
-import deps/cql/parser.{ExpContainer, Primary, PrimaryWord, Word}
+import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
@@ -75,7 +75,9 @@ pub fn linker_test() {
         query_template_type.QueryTemplateType(
           specification_of_query_templates: sli_type_a_filters,
           name: "query_template_type_a",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         )
 
       let service_a_filters =
@@ -206,7 +208,9 @@ pub fn linker_test() {
             basic_type.BasicType("key", accepted_types.String),
           ],
           name: "query_template_type_a",
-          query: ExpContainer(Primary(PrimaryWord(Word("")))),
+          query: parser.ExpContainer(
+            parser.Primary(parser.PrimaryWord(parser.Word(""))),
+          ),
         )
 
       let sli_type_a_filters = [
