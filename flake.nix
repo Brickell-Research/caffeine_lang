@@ -19,31 +19,42 @@
           };
         in {
           # The package (derivation) that builds your Gleam app.
-          packages.caffeine = (pkgs.buildGleamApplication {
-            # If pname/version/target are in gleam.toml, you can omit them.
-            # You can also override them here:
+          # We use a custom build instead of buildGleamApplication to avoid tree-shaking
+          packages.caffeine = pkgs.stdenv.mkDerivation {
             pname = "caffeine_lang";
-            # version = "0.0.36";
-            # target = "erlang";
+            version = "0.0.37";
             src = ./.;
 
-            # If you need native deps, add:
-            # buildInputs = [ pkgs.openssl pkgs.zlib ];
-
-            # Pick Erlang/OTP if you want a specific one (otherwise default from nixpkgs):
-            # erlangPackage = pkgs.erlang_26;
-
-            # If rebar plugins are needed:
-            # rebar3Package = pkgs.rebar3WithPlugins { plugins = with pkgs.beamPackages; [ pc ]; };
-          }).overrideAttrs (oldAttrs: {
-            # Override build to use 'gleam build' instead of 'gleam export erlang-shipment'
-            # to prevent tree-shaking of the run/1 entry point
+            nativeBuildInputs = [ pkgs.gleam pkgs.erlang pkgs.rebar3 ];
+            
             buildPhase = ''
               runHook preBuild
               HOME=$TMPDIR gleam build --target erlang
               runHook postBuild
             '';
-          });
+            
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib $out/bin
+              cp -r build/dev/erlang/*/ebin $out/lib/ 2>/dev/null || cp -r build/prod/erlang/*/ebin $out/lib/ 2>/dev/null || true
+              
+              # Copy all beam files preserving structure
+              find build -name "*.beam" -o -name "*.app" | while read -r file; do
+                rel_path=$(echo "$file" | sed 's|build/[^/]*/erlang/||')
+                target_dir=$(dirname "$out/lib/$rel_path")
+                mkdir -p "$target_dir"
+                cp "$file" "$target_dir/"
+              done
+              
+              # Create wrapper script
+              cat > $out/bin/caffeine_lang << EOF
+#!/bin/sh
+exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:run(caffeine_lang)" -noshell -extra "\$@"
+EOF
+              chmod +x $out/bin/caffeine_lang
+              runHook postInstall
+            '';
+          };
 
           # Make `nix build` with no attr select do the right thing.
           packages.default = self.packages.${system}.caffeine;
