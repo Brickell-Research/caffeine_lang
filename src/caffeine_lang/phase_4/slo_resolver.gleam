@@ -3,8 +3,8 @@ import caffeine_lang/phase_2/linker/sli_type
 import caffeine_lang/phase_2/linker/slo
 import caffeine_lang/phase_4/resolved_sli
 import caffeine_lang/phase_4/resolved_slo
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/accepted_types
+import caffeine_lang/types/generic_dictionary
 import caffeine_query_language/parser
 import gleam/dict
 import gleam/int

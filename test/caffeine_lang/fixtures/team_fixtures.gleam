@@ -1,6 +1,6 @@
 import caffeine_lang/phase_2/linker/slo
 import caffeine_lang/phase_2/linker/team
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/generic_dictionary
 
 /// Creates a basic team for testing with default values
 pub fn basic_team() -> team.Team {

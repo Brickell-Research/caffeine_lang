@@ -8,8 +8,8 @@ import caffeine_lang/phase_2/linker/team
 import caffeine_lang/phase_4/resolved_sli
 import caffeine_lang/phase_4/resolved_slo
 import caffeine_lang/phase_4/slo_resolver
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/accepted_types
+import caffeine_lang/types/generic_dictionary
 import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit

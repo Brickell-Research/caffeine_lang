@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/utils/general_common
-import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/accepted_types
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict

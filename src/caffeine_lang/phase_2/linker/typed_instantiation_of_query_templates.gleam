@@ -1,4 +1,4 @@
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/generic_dictionary
 
 /// A TypedInstantiationOfQueryTemplates is a dictionary of query template names to their typed instantiations.
 pub type TypedInstantiationOfQueryTemplates =

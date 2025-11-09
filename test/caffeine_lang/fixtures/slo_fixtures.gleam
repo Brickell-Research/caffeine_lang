@@ -1,6 +1,6 @@
 import caffeine_lang/phase_2/linker/slo
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/accepted_types
+import caffeine_lang/types/generic_dictionary
 import gleam/dict
 
 /// Creates a basic SLO for testing with default values

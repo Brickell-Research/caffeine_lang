@@ -1,4 +1,4 @@
-import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/accepted_types
 import deps/glaml_extended/extractors as glaml_extended_helpers
 import glaml
 import gleam/dict

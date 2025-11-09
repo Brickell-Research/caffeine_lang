@@ -1,4 +1,4 @@
-import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/accepted_types
 import gleam/dict
 import gleam/result
 
@@ -18,7 +18,10 @@ pub fn new() -> GenericDictionary {
 }
 
 /// Creates a new typed value
-pub fn new_typed_value(value: String, type_def: accepted_types.AcceptedTypes) -> TypedValue {
+pub fn new_typed_value(
+  value: String,
+  type_def: accepted_types.AcceptedTypes,
+) -> TypedValue {
   TypedValue(value: value, type_def: type_def)
 }
 
@@ -56,7 +59,9 @@ pub fn get_string_value(typed_value: TypedValue) -> String {
 }
 
 /// Gets the type definition from a TypedValue
-pub fn get_type_definition(typed_value: TypedValue) -> accepted_types.AcceptedTypes {
+pub fn get_type_definition(
+  typed_value: TypedValue,
+) -> accepted_types.AcceptedTypes {
   typed_value.type_def
 }
 

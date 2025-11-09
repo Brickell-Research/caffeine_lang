@@ -4,7 +4,7 @@ import caffeine_lang/phase_2/linker/basic_type
 import caffeine_lang/phase_2/linker/service
 import caffeine_lang/phase_2/linker/slo
 import caffeine_lang/phase_2/linker/team
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/list
 import gleam/option

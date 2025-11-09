@@ -1,4 +1,4 @@
-import caffeine_lang/types/common/accepted_types
+import caffeine_lang/types/accepted_types
 
 /// A BasicType represents a fundamental data type with a name and type.
 pub type BasicType {

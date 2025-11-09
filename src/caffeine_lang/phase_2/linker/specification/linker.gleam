@@ -5,8 +5,8 @@ import caffeine_lang/phase_2/linker/basic_type
 import caffeine_lang/phase_2/linker/query_template_type
 import caffeine_lang/phase_2/linker/service
 import caffeine_lang/phase_2/linker/sli_type
-import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/common/generic_dictionary
+import caffeine_lang/types/accepted_types
+import caffeine_lang/types/generic_dictionary
 import gleam/dict
 import gleam/list
 import gleam/result
