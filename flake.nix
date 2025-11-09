@@ -21,7 +21,7 @@
           # The package (derivation) that builds your Gleam app.
           packages.caffeine = (pkgs.buildGleamApplication {
             pname = "caffeine_lang";
-            version = "0.0.43";
+            version = "0.0.44";
             src = ./.;
           });
 
