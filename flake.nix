@@ -19,46 +19,22 @@
           };
         in {
           # The package (derivation) that builds your Gleam app.
-          # We use a custom build instead of buildGleamApplication to avoid tree-shaking
-          packages.caffeine = pkgs.stdenv.mkDerivation {
+          packages.caffeine = (pkgs.buildGleamApplication {
             pname = "caffeine_lang";
-            version = "0.0.38";
+            version = "0.0.39";
             src = ./.;
-
-            nativeBuildInputs = [ pkgs.gleam pkgs.erlang pkgs.rebar3 ];
-            
-            buildPhase = ''
-              runHook preBuild
-              HOME=$TMPDIR gleam build --target erlang
-              runHook postBuild
-            '';
-            
-            installPhase = ''
-              runHook preInstall
-              mkdir -p $out/lib $out/bin
-              
-              # Copy all packages preserving the structure: lib/<package>/ebin/
-              for pkg_dir in build/dev/erlang/*/; do
-                pkg_name=$(basename "$pkg_dir")
-                if [ -d "$pkg_dir/ebin" ]; then
-                  mkdir -p "$out/lib/$pkg_name"
-                  cp -r "$pkg_dir/ebin" "$out/lib/$pkg_name/"
-                  # Also copy include directories if they exist
-                  if [ -d "$pkg_dir/include" ]; then
-                    cp -r "$pkg_dir/include" "$out/lib/$pkg_name/" 2>/dev/null || true
-                  fi
-                fi
-              done
-              
-              # Create wrapper script
+          }).overrideAttrs (oldAttrs: {
+            # Override the wrapper script to call main/0 instead of run/1
+            # since run/1 gets tree-shaken but main/0 doesn't
+            postInstall = (oldAttrs.postInstall or "") + ''
+              # Replace wrapper to call main/0
               cat > $out/bin/caffeine_lang << EOF
 #!/bin/sh
-exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:run(caffeine_lang)" -noshell -extra "\$@"
+exec ${pkgs.erlang}/bin/erl -pa $out/lib/*/ebin -eval "caffeine_lang@@main:main(), halt()" -noshell -extra "\$@"
 EOF
               chmod +x $out/bin/caffeine_lang
-              runHook postInstall
             '';
-          };
+          });
 
           # Make `nix build` with no attr select do the right thing.
           packages.default = self.packages.${system}.caffeine;
