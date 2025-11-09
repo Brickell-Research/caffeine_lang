@@ -1,5 +1,5 @@
-import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/team
+import caffeine_lang/phase_2/linker/slo
+import caffeine_lang/phase_2/linker/team
 import caffeine_lang/types/common/generic_dictionary
 
 /// Creates a basic team for testing with default values

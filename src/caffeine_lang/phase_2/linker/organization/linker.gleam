@@ -4,8 +4,8 @@ import caffeine_lang/phase_1/parser/specification/unresolved_query_template_spec
 import caffeine_lang/phase_1/parser/specification/unresolved_services_specification
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
 import caffeine_lang/phase_2/linker/instantiation/linker as instantiation_linker
+import caffeine_lang/phase_2/linker/organization
 import caffeine_lang/phase_2/linker/specification/linker as specification_linker
-import caffeine_lang/types/ast/organization
 import gleam/list
 import gleam/result
 import gleam/string

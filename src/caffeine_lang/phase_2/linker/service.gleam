@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast/sli_type
+import caffeine_lang/phase_2/linker/sli_type
 
 /// A service is a named entity that supports a set of SLO types.
 pub type Service {

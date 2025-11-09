@@ -1,5 +1,5 @@
-import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/types/resolved/resolved_slo
+import caffeine_lang/phase_2/linker/query_template_type
+import caffeine_lang/phase_4/resolved_slo
 import caffeine_query_language/generator
 import caffeine_query_language/resolver
 import gleam/float

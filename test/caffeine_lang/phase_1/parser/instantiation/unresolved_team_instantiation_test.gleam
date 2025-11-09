@@ -1,6 +1,6 @@
 import caffeine_lang/phase_1/parser/instantiation/unresolved_team_instantiation
-import caffeine_lang/types/unresolved/unresolved_slo
-import caffeine_lang/types/unresolved/unresolved_team
+import caffeine_lang/phase_1/parser/unresolved_slo
+import caffeine_lang/phase_1/parser/unresolved_team
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict

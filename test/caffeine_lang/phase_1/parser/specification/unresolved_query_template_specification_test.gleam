@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_query_template_specification
-import caffeine_lang/types/unresolved/unresolved_query_template_type
+import caffeine_lang/phase_1/parser/unresolved_query_template_type
 import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit

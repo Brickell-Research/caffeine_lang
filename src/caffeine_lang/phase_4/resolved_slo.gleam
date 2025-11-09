@@ -1,4 +1,4 @@
-import caffeine_lang/types/resolved/resolved_sli
+import caffeine_lang/phase_4/resolved_sli
 
 /// An SLO intance with all the aggregated information from previous steps.
 ///

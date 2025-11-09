@@ -1,5 +1,5 @@
 import caffeine_lang/errors/semantic as semantic_errors
-import caffeine_lang/types/ast/organization
+import caffeine_lang/phase_2/linker/organization
 
 pub fn perform_semantic_analysis(
   _organization: organization.Organization,

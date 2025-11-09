@@ -1,5 +1,5 @@
+import caffeine_lang/phase_4/resolved_slo
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/resolved/resolved_slo
 import gleam/io
 import gleam/list
 import gleam/string

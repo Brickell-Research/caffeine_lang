@@ -1,15 +1,15 @@
+import caffeine_lang/phase_2/linker/basic_type
+import caffeine_lang/phase_2/linker/organization
+import caffeine_lang/phase_2/linker/query_template_type
+import caffeine_lang/phase_2/linker/service
+import caffeine_lang/phase_2/linker/sli_type
+import caffeine_lang/phase_2/linker/slo
+import caffeine_lang/phase_2/linker/team
+import caffeine_lang/phase_4/resolved_sli
+import caffeine_lang/phase_4/resolved_slo
 import caffeine_lang/phase_4/slo_resolver
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/types/ast/organization
-import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/types/ast/service
-import caffeine_lang/types/ast/sli_type
-import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/team
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import caffeine_lang/types/resolved/resolved_sli
-import caffeine_lang/types/resolved/resolved_slo
 import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit

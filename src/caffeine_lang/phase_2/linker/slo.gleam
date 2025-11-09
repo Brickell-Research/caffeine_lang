@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast/typed_instantiation_of_query_templates
+import caffeine_lang/phase_2/linker/typed_instantiation_of_query_templates
 
 /// An SLO is an expectation set by stakeholders upon a metric emulating the user experience as best as possible.
 pub type Slo {

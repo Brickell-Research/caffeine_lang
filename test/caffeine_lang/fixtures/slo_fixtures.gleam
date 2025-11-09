@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast/slo
+import caffeine_lang/phase_2/linker/slo
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
 import gleam/dict
@@ -48,10 +48,11 @@ pub fn slo_with_filters(
   service_name: String,
   sli_type: String,
 ) -> slo.Slo {
-  let type_map =
-    dict.map_values(filters, fn(_, _) { accepted_types.String })
+  let type_map = dict.map_values(filters, fn(_, _) { accepted_types.String })
 
-  let typed_filters = case generic_dictionary.from_string_dict(filters, type_map) {
+  let typed_filters = case
+    generic_dictionary.from_string_dict(filters, type_map)
+  {
     Ok(gd) -> gd
     Error(_) -> generic_dictionary.new()
   }

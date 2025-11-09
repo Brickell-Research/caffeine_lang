@@ -1,4 +1,4 @@
-import caffeine_lang/types/unresolved/unresolved_slo
+import caffeine_lang/phase_1/parser/unresolved_slo
 
 /// Team used during parsing
 pub type Team {

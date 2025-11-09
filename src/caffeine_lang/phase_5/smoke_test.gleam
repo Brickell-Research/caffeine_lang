@@ -1,4 +1,4 @@
-import caffeine_lang/types/ast/organization
+import caffeine_lang/phase_2/linker/organization
 import gleam/io
 import simplifile
 

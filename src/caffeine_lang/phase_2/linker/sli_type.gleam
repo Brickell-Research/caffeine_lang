@@ -1,6 +1,6 @@
-import caffeine_lang/types/ast/query_template_type
-import caffeine_lang/types/ast/typed_instantiation_of_query_templates
-import caffeine_lang/types/ast/specification_of_query_templates
+import caffeine_lang/phase_2/linker/query_template_type
+import caffeine_lang/phase_2/linker/specification_of_query_templates
+import caffeine_lang/phase_2/linker/typed_instantiation_of_query_templates
 
 /// A SliType is a named entity that represents the generic (as possible) definition of an SLI
 /// that references a query template.

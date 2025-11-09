@@ -1,10 +1,10 @@
-import caffeine_lang/types/ast/organization
-import caffeine_lang/types/ast/sli_type
-import caffeine_lang/types/ast/slo
+import caffeine_lang/phase_2/linker/organization
+import caffeine_lang/phase_2/linker/sli_type
+import caffeine_lang/phase_2/linker/slo
+import caffeine_lang/phase_4/resolved_sli
+import caffeine_lang/phase_4/resolved_slo
 import caffeine_lang/types/common/accepted_types
 import caffeine_lang/types/common/generic_dictionary
-import caffeine_lang/types/resolved/resolved_sli
-import caffeine_lang/types/resolved/resolved_slo
 import caffeine_query_language/parser
 import gleam/dict
 import gleam/int

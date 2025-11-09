@@ -1,9 +1,9 @@
+import caffeine_lang/phase_2/linker/basic_type
+import caffeine_lang/phase_2/linker/query_template_type
+import caffeine_lang/phase_4/resolved_sli
+import caffeine_lang/phase_4/resolved_slo
 import caffeine_lang/phase_5/terraform/datadog
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/types/ast/query_template_type
 import caffeine_lang/types/common/accepted_types
-import caffeine_lang/types/resolved/resolved_sli
-import caffeine_lang/types/resolved/resolved_slo
 import caffeine_query_language/parser
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit

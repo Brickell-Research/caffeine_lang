@@ -1,10 +1,10 @@
+import caffeine_lang/phase_1/parser/unresolved_slo
+import caffeine_lang/phase_1/parser/unresolved_team
+import caffeine_lang/phase_2/linker/basic_type
+import caffeine_lang/phase_2/linker/service
+import caffeine_lang/phase_2/linker/slo
+import caffeine_lang/phase_2/linker/team
 import caffeine_lang/types/common/generic_dictionary
-import caffeine_lang/types/unresolved/unresolved_team
-import caffeine_lang/types/unresolved/unresolved_slo
-import caffeine_lang/types/ast/basic_type
-import caffeine_lang/types/ast/slo
-import caffeine_lang/types/ast/team
-import caffeine_lang/types/ast/service 
 import gleam/dict
 import gleam/list
 import gleam/option
@@ -13,9 +13,7 @@ import gleam/result
 // ==== Public ====
 /// Given a list of teams which map to single service SLOs, we want to aggregate all SLOs for a single team
 /// into a single team object.
-pub fn aggregate_teams_and_slos(
-  teams: List(team.Team),
-) -> List(team.Team) {
+pub fn aggregate_teams_and_slos(teams: List(team.Team)) -> List(team.Team) {
   let dict_of_teams =
     list.fold(teams, dict.new(), fn(acc, team) {
       dict.upsert(acc, team.name, fn(existing_teams) {
@@ -47,9 +45,7 @@ pub fn link_and_validate_instantiation(
     |> result.all
 
   resolved_slos
-  |> result.map(fn(slos) {
-    team.Team(name: unresolved_team.name, slos: slos)
-  })
+  |> result.map(fn(slos) { team.Team(name: unresolved_team.name, slos: slos) })
 }
 
 pub fn resolve_slo(

@@ -1,5 +1,5 @@
 import caffeine_lang/phase_1/parser/specification/unresolved_sli_types_specification
-import caffeine_lang/types/unresolved/unresolved_sli_type
+import caffeine_lang/phase_1/parser/unresolved_sli_type
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
 import gleam/dict
