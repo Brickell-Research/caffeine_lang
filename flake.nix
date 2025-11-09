@@ -22,7 +22,7 @@
           # We use a custom build instead of buildGleamApplication to avoid tree-shaking
           packages.caffeine = pkgs.stdenv.mkDerivation {
             pname = "caffeine_lang";
-            version = "0.0.37";
+            version = "0.0.38";
             src = ./.;
 
             nativeBuildInputs = [ pkgs.gleam pkgs.erlang pkgs.rebar3 ];
@@ -36,14 +36,18 @@
             installPhase = ''
               runHook preInstall
               mkdir -p $out/lib $out/bin
-              cp -r build/dev/erlang/*/ebin $out/lib/ 2>/dev/null || cp -r build/prod/erlang/*/ebin $out/lib/ 2>/dev/null || true
               
-              # Copy all beam files preserving structure
-              find build -name "*.beam" -o -name "*.app" | while read -r file; do
-                rel_path=$(echo "$file" | sed 's|build/[^/]*/erlang/||')
-                target_dir=$(dirname "$out/lib/$rel_path")
-                mkdir -p "$target_dir"
-                cp "$file" "$target_dir/"
+              # Copy all packages preserving the structure: lib/<package>/ebin/
+              for pkg_dir in build/dev/erlang/*/; do
+                pkg_name=$(basename "$pkg_dir")
+                if [ -d "$pkg_dir/ebin" ]; then
+                  mkdir -p "$out/lib/$pkg_name"
+                  cp -r "$pkg_dir/ebin" "$out/lib/$pkg_name/"
+                  # Also copy include directories if they exist
+                  if [ -d "$pkg_dir/include" ]; then
+                    cp -r "$pkg_dir/include" "$out/lib/$pkg_name/" 2>/dev/null || true
+                  fi
+                fi
               done
               
               # Create wrapper script
