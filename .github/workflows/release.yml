@@ -24,10 +24,6 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v6
 
       # Optional: ensure the attribute builds cleanly first (keeps logs clearer)
-      - name: Build caffeine
-        run: nix build .#caffeine
-
-      # Produce a self-contained tarball bundle (no system-wide Nix required to run)
       - name: Bundle portable artifact
         shell: bash
         run: |
@@ -35,10 +31,13 @@ jobs:
           sys=$(nix eval --raw --impure --expr builtins.currentSystem || echo unknown)
           out="caffeine-${sys}.tar.gz"
 
-          # nix bundle uses bundlers; 'tarball' gives a portable archive with a run wrapper
-          nix bundle .#caffeine --bundler github:NixOS/bundlers#tarball --out-file "${out}"
+          # nix bundle writes to a symlink result by default, not --out-file
+          nix bundle .#caffeine --bundler github:NixOS/bundlers#tarball --out-link bundle-result
 
-          # Quick smoke test: extract and run --version (path inside bundle is ./bin/<name>)
+          # Rename the generated file to a predictable name
+          mv bundle-result "${out}"
+
+          # Quick smoke test
           tmpdir=$(mktemp -d)
           tar -C "$tmpdir" -xzf "${out}"
           if [[ -x "$tmpdir/bin/caffeine" ]]; then
