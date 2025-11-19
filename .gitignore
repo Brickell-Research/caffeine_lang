@@ -126,3 +126,12 @@ _build/*
 
 # Nix
 result*
+
+# JavaScript
+node_modules/
+package-lock.json
+package.json
+yarn.lock
+caffeine
+caffeine.zip
+caffeine.xz
