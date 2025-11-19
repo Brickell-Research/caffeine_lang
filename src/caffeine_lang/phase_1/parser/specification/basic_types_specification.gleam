@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/utils/general_common
 import caffeine_lang/phase_2/linker/basic_type
 import deps/glaml_extended/extractors as glaml_extended_helpers
-import glaml
+import deps/glaml_extended/yaml
 import gleam/dict
 import gleam/result
 
@@ -21,7 +21,7 @@ pub fn parse_basic_types_specification(
 // ==== Private ====
 /// Parses a single basic type.
 fn parse_basic_type(
-  basic_type: glaml.Node,
+  basic_type: yaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(basic_type.BasicType, String) {
   use attribute_name <- result.try(

@@ -121,7 +121,7 @@ variables.tf
 providers.tf
 .terraform.lock.hcl
 
-deps*
+/deps*
 _build/*
 
 # Nix

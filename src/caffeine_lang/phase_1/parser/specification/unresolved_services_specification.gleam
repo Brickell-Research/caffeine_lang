@@ -1,7 +1,7 @@
 import caffeine_lang/phase_1/parser/unresolved_service
 import caffeine_lang/phase_1/parser/utils/general_common
 import deps/glaml_extended/extractors as glaml_extended_helpers
-import glaml
+import deps/glaml_extended/yaml
 import gleam/dict
 import gleam/result
 
@@ -21,7 +21,7 @@ pub fn parse_unresolved_services_specification(
 // ==== Private ====
 /// Parses a single unresolved service.
 fn parse_service(
-  service: glaml.Node,
+  service: yaml.Node,
   _params: dict.Dict(String, String),
 ) -> Result(unresolved_service.Service, String) {
   use sli_types <- result.try(

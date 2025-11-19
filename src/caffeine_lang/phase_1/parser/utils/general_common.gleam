@@ -1,6 +1,6 @@
 import caffeine_lang/types/accepted_types
 import deps/glaml_extended/extractors as glaml_extended_helpers
-import glaml
+import deps/glaml_extended/yaml
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -12,20 +12,20 @@ import gleam/string
 pub fn parse_specification(
   file_path: String,
   params: dict.Dict(String, String),
-  parse_fn: fn(glaml.Node, dict.Dict(String, String)) -> Result(a, String),
+  parse_fn: fn(yaml.Node, dict.Dict(String, String)) -> Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
   // TODO: consider enforcing constraints on file path, however for now, unnecessary.
 
   // parse the YAML file
   use doc <- result.try(
-    glaml.parse_file(file_path)
+    yaml.parse_file(file_path)
     |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
   )
 
   let parse_fn_two = fn(doc, _params) {
     glaml_extended_helpers.iteratively_parse_collection(
-      glaml.document_root(doc),
+      yaml.document_root(doc),
       params,
       parse_fn,
       key,

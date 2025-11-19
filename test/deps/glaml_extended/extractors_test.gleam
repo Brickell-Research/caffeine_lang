@@ -1,12 +1,12 @@
 import deps/glaml_extended/extractors
 import deps/gleamy_spec/extensions.{describe, it}
 import deps/gleamy_spec/gleeunit
-import glaml
+import deps/glaml_extended/yaml
 import gleam/dict
 
-fn yaml_to_root(yaml: String) -> glaml.Node {
-  let assert Ok([doc]) = glaml.parse_string(yaml)
-  glaml.document_root(doc)
+fn yaml_to_root(yaml_str: String) -> yaml.Node {
+  let assert Ok([doc]) = yaml.parse_string(yaml_str)
+  yaml.document_root(doc)
 }
 
 pub fn extractors_test() {

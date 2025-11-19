@@ -2,7 +2,7 @@ import caffeine_lang/phase_1/parser/unresolved_slo
 import caffeine_lang/phase_1/parser/unresolved_team
 import caffeine_lang/phase_1/parser/utils/general_common
 import deps/glaml_extended/extractors as glaml_extended_helpers
-import glaml
+import deps/glaml_extended/yaml
 import gleam/dict
 import gleam/result
 
@@ -33,7 +33,7 @@ pub fn parse_slos_instantiation(
 // ==== Private ====
 /// Parses a single SLO.
 fn parse_slo(
-  slo: glaml.Node,
+  slo: yaml.Node,
   params: dict.Dict(String, String),
 ) -> Result(unresolved_slo.Slo, String) {
   use name <- result.try(glaml_extended_helpers.extract_string_from_node(
