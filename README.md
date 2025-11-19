@@ -14,10 +14,33 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 
 ## Installation
 
-**We recommend using within a CICD pipeline.**
+### Local Installation
+
+**Via curl (recommended):**
+
+```bash
+curl -fsSL https://github.com/Brickell-Research/caffeine/releases/latest/download/caffeine-$(uname -s)-$(uname -m) -o caffeine
+chmod +x caffeine
+```
+
+**Manual download:**
+
+Download the appropriate binary from the [releases page](https://github.com/Brickell-Research/caffeine/releases).
+
+**macOS users:** If you see a security warning ("cannot be opened because the developer cannot be verified"), run:
+
+```bash
+xattr -cr /path/to/caffeine
+```
+
+Or go to **System Settings → Privacy & Security** and click "Open Anyway".
+
+### CI/CD (Recommended)
+
+We recommend using Caffeine within a CI/CD pipeline for automated reliability artifact generation.
 
 Within a GitHub Actions workflow, you can use the following action:
-```bash
+```yaml
 - name: Caffeine Language GitHub Action
   uses: Brickell-Research/caffeine_lang_github_action@vmain
 ```
