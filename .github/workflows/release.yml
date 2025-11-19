@@ -98,6 +98,22 @@ jobs:
         # Windows archive
         zip caffeine-${VERSION}-windows-x64.zip caffeine-${VERSION}-windows-x64.exe
 
+    - name: Generate SHA256 checksums
+      run: |
+        cd dist
+        VERSION=${{ steps.version.outputs.version }}
+
+        sha256sum \
+          caffeine-${VERSION}-linux-x64.tar.gz \
+          caffeine-${VERSION}-linux-arm64.tar.gz \
+          caffeine-${VERSION}-macos-x64.tar.gz \
+          caffeine-${VERSION}-macos-arm64.tar.gz \
+          caffeine-${VERSION}-windows-x64.zip \
+          > caffeine-${VERSION}-checksums.sha256
+
+        echo "Generated checksums:"
+        cat caffeine-${VERSION}-checksums.sha256
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
@@ -108,3 +124,4 @@ jobs:
           dist/caffeine-${{ steps.version.outputs.version }}-macos-x64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-macos-arm64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-windows-x64.zip
+          dist/caffeine-${{ steps.version.outputs.version }}-checksums.sha256
