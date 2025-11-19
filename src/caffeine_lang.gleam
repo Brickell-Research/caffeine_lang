@@ -3,6 +3,13 @@ import caffeine_lang/compiler
 import gleam/dynamic
 import gleam/io
 
+/// Version must match gleam.toml
+const version = "0.1.4"
+
+fn print_version() -> Nil {
+  io.println("caffeine " <> version)
+}
+
 fn print_usage() -> Nil {
   io.println("Caffeine SLI/SLO compiler")
   io.println("")
@@ -38,6 +45,9 @@ fn handle_args() -> Nil {
     }
     ["--help"] | ["-h"] | [] -> {
       print_usage()
+    }
+    ["--version"] | ["-V"] -> {
+      print_version()
     }
     _ -> {
       io.println_error("Error: unknown command")
