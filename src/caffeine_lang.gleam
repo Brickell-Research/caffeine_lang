@@ -4,7 +4,7 @@ import gleam/dynamic
 import gleam/io
 
 /// Version must match gleam.toml
-const version = "0.1.4"
+const version = "0.1.5"
 
 fn print_version() -> Nil {
   io.println("caffeine " <> version)
