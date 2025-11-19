@@ -21,6 +21,8 @@ pub fn extract_string_from_node(
 }
 
 /// Extracts a float from a glaml node.
+/// Also accepts integers and converts them to floats (since YAML/JSON parsers
+/// often represent numbers like 99.0 as integers).
 pub fn extract_float_from_node(
   node: yaml.Node,
   key: String,
@@ -32,6 +34,7 @@ pub fn extract_float_from_node(
 
   case query_template_node {
     yaml.NodeFloat(value) -> Ok(value)
+    yaml.NodeInt(value) -> Ok(int.to_float(value))
     _ -> Error("Expected " <> key <> " to be a float")
   }
 }
