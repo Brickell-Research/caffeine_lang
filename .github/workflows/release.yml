@@ -43,7 +43,7 @@ jobs:
       run: gleam deps download
 
     - name: Build Gleam to JavaScript
-      run: gleam build
+      run: gleam build --target javascript
 
     - name: Extract version from gleam.toml
       id: version

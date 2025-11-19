@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
+  test-erlang:
     name: Test on Gleam ${{ matrix.gleam-version }}
     runs-on: ubuntu-latest
     
@@ -46,3 +46,46 @@ jobs:
       
     - name: Run tests
       run: gleam test
+
+  test-javascript:
+    name: Test JavaScript Target
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup BEAM (Erlang + Gleam + rebar3)
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: '27'
+        gleam-version: '1.13.0'
+        rebar3-version: '3.25.0'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Cache Gleam dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/gleam
+          build
+        key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-gleam-js-
+          ${{ runner.os }}-gleam-
+
+    - name: Download dependencies
+      run: gleam deps download
+
+    - name: Install npm dependencies
+      run: npm install
+
+    - name: Compile
+      run: gleam build --target javascript
+
+    - name: Run tests
+      run: gleam test --target javascript

@@ -8,7 +8,7 @@ links = [
     { title = "Website", href = "https://github.com/Brickell-Research/caffeine_lang" },
 ]
 
-target = "javascript"
+target = "erlang"
 
 [dependencies]
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
