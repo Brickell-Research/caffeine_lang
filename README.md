@@ -14,6 +14,13 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 
 ## Installation
 
+### Homebrew (macOS)
+
+```bash
+brew tap brickell-research/caffeine
+brew install caffeine_lang
+```
+
 ### Local Installation
 
 **Via curl (recommended):**
@@ -22,18 +29,6 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 curl -fsSL https://github.com/Brickell-Research/caffeine/releases/latest/download/caffeine-$(uname -s)-$(uname -m) -o caffeine
 chmod +x caffeine
 ```
-
-**Manual download:**
-
-Download the appropriate binary from the [releases page](https://github.com/Brickell-Research/caffeine/releases).
-
-**macOS users:** If you see a security warning ("cannot be opened because the developer cannot be verified"), run:
-
-```bash
-xattr -cr /path/to/caffeine
-```
-
-Or go to **System Settings → Privacy & Security** and click "Open Anyway".
 
 ### CI/CD (Recommended)
 
