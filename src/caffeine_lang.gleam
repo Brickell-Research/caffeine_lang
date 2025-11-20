@@ -4,18 +4,23 @@ import gleam/dynamic
 import gleam/io
 
 /// Version must match gleam.toml
-const version = "0.1.5"
+const version = "0.1.6"
 
 fn print_version() -> Nil {
   io.println("caffeine " <> version)
 }
 
 fn print_usage() -> Nil {
-  io.println("Caffeine SLI/SLO compiler")
+  io.println("Caffeine SLI/SLO compiler v" <> version)
   io.println("")
   io.println("Usage:")
   io.println(
     "  caffeine compile <specification_directory> <instantiation_directory> <output_directory>",
+  )
+  io.println("")
+  io.println("Commands:")
+  io.println(
+    "  compile    Compile specification and instantiation files to output directory",
   )
   io.println("")
   io.println("Arguments:")
@@ -26,6 +31,10 @@ fn print_usage() -> Nil {
     "  instantiation_directory   Directory containing instantiation files",
   )
   io.println("  output_directory          Directory to output compiled files")
+  io.println("")
+  io.println("Options:")
+  io.println("  -h, --help       Print this help message")
+  io.println("  -V, --version    Print version information")
 }
 
 fn handle_args() -> Nil {
