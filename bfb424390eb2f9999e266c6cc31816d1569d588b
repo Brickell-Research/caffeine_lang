@@ -1,0 +1,52 @@
+README.md
+  b57fdbf 17,20-21,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.20",
+  "base_commit_sha": "bfb424390eb2f9999e266c6cc31816d1569d588b",
+  "prompts": {
+    "b57fdbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "235bf2c2-96fd-44f7-8490-42ed762ff0be",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [
+        {
+          "type": "user",
+          "text": "update the readme to note that we can now just brew install for mac folks: brew tap brickell-research/caffeine\nbrew install caffeine_lang",
+          "timestamp": "2025-11-20T04:43:25.689Z"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/Users/rob/BrickellResearch/caffeine_lang/README.md"
+          },
+          "timestamp": "2025-11-20T04:43:29.160Z"
+        },
+        {
+          "type": "user",
+          "text": "     1→# caffeine\n     2→\n     3→[![Caffeine Language Test](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml/badge.svg)](https://github.com/Brickell-Research/caffeine_lang/actions/workflows/test_caffeine.yml)\n     4→[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)\n     5→[![Gleam](https://img.shields.io/badge/Gleam-FFAFF3?style=for-the-badge&logo=gleam&logoColor=black)](https://gleam.run/)\n     6→\n     7→<div align=\"center\">\n     8→<img src=\"images/temp_caffeine_icon.png\" alt=\"Caffeine Icon\" width=\"250\" height=\"250\">\n     9→</div>\n    10→\n    11→Caffeine is a compiler for generating reliability artifacts from service expectation definitions.\n    12→\n    13→***\n    14→\n    15→## Installation\n    16→\n    17→### Local Installation\n    18→\n    19→**Via curl (recommended):**\n    20→\n    21→```bash\n    22→curl -fsSL https://github.com/Brickell-Research/caffeine/releases/latest/download/caffeine-$(uname -s)-$(uname -m) -o caffeine\n    23→chmod +x caffeine\n    24→```\n    25→\n    26→**Manual download:**\n    27→\n    28→Download the appropriate binary from the [releases page](https://github.com/Brickell-Research/caffeine/releases).\n    29→\n    30→**macOS users:** If you see a security warning (\"cannot be opened because the developer cannot be verified\"), run:\n    31→\n    32→```bash\n    33→xattr -cr /path/to/caffeine\n    34→```\n    35→\n    36→Or go to **System Settings → Privacy & Security** and click \"Open Anyway\".\n    37→\n    38→### CI/CD (Recommended)\n    39→\n    40→We recommend using Caffeine within a CI/CD pipeline for automated reliability artifact generation.\n    41→\n    42→Within a GitHub Actions workflow, you can use the following action:\n    43→```yaml\n    44→- name: Caffeine Language GitHub Action\n    45→  uses: Brickell-Research/caffeine_lang_github_action@vmain\n    46→```\n    47→\n    48→[See the action in the Github Actions Marketplace](https://github.com/marketplace/actions/caffeine-language-action).\n    49→\n    50→***\n    51→\n    52→## Architecture & RFCs\n    53→\n    54→For detailed architectural decisions and design proposals, see our [RFCs directory](rfcs/):\n    55→\n    56→- [RFC 001: Extensible Architecture](rfcs/001_Extensible_Architecture.md) - Core architectural principles and design patterns\n    57→- [RFC 002: Caffeine Query Language](rfcs/002_Caffeine_Query_Language.md) - The Caffeine Query Language (CQL)\n    58→***\n    59→\n    60→## Quick Start\n    61→\n    62→Projects are structured as follows:\n    63→\n    64→```\n    65→some_organization/\n    66→├── platform/\n    67→│   └── reliable_service.yaml\n    68→├── frontend/\n    69→│   └── unreliable_service.yaml\n    70→├── specifications/\n    71→    ├── basic_types.yaml\n    72→    ├── query_template_types.yaml\n    73→    ├── services.yaml\n    74→    └── sli_types.yaml\n    75→```\n    76→\n    77→Here we have two _types_ of files, `instantiation` and `specification`. \n    78→\n    79→### Instantiation\n    80→\n    81→**Instantiation**: define the SLO(s) for a service. Each service defines one or more SLOs in a `yaml` file with the name of the file being the name of the service and the parent directory being the name of the owning team. \n    82→\n    83→As an example, `platform/reliable_service.yaml`:\n    84→```yaml\n    85→slos:\n    86→  - sli_type: \"http_requests_success_rate\"\n    87→    typed_instatiation_of_query_templatized_variables:\n    88→      \"peer_hostname\": \"api.google.com\"\n    89→      \"environment\": \"production\"\n    90→      \"http_status_codes\": \"[200, 201, 202, 204]\"\n    91→    threshold: 99.0\n    92→    window_in_days: 90\n    93→```\n    94→\n    95→Here `threshold` and `window_in_days` are always required, `sli_type` refers to an sli type from the specification and `typed_instatiation_of_query_templatized_variables` is a series of mappings between expected attributes for the sli type and their values.\n    96→\n    97→### Specification\n    98→\n    99→**Specification**: define the templates available for defining SLI(s).\n   100→\n   101→There are four types of specifications to define.\n   102→\n   103→**(1) basic types:** a mapping of attribute names to the expected type. These are names of expected parameters used by other parts of the specification. \n   104→\n   105→Example:\n   106→```yaml\n   107→basic_types:\n   108→  - attribute_name: peer_hostname\n   109→    attribute_type: String\n   110→  - attribute_name: environment\n   111→    attribute_type: String\n   112→  - attribute_name: http_status_codes\n   113→    attribute_type: List(Integer)\n   114→```\n   115→\n   116→\n   117→**(2) query template types:** a definition of a query template type. The query is a CQL expression and the specification of query templates is a list of basic type names that are expected to be used in the query.\n   118→\n   119→Example:\n   120→```yaml\n   121→query_template_types:\n   122→  - name: \"valid_over_total\"\n   123→    specification_of_query_templates: [\"peer_hostname\", \"environment\"]\n   124→    query: \"numerator / denominator\"\n   125→```\n   126→\n   127→\n   128→**(3) services:** a mapping of service names to supported sli types.\n   129→\n   130→Example:\n   131→```yaml\n   132→services:\n   133→  - name: reliable_service\n   134→    sli_types:\n   135→      - http_requests_success_rate\n   136→```\n   137→\n   138→**(4) sli types:** a definition of an SLI type that combines a query template type with specific query instantiations and the required templatized variables.\n   139→\n   140→Example:\n   141→```yaml\n   142→types:\n   143→  - name: http_requests_success_rate\n   144→    query_template_type: valid_over_total\n   145→    typed_instatiation_of_query_templates:\n   146→      numerator: \"sum.http_requests.hits{peer.hostname:$$peer_hostname$$ AND env:$$environment$$ AND http.status_code IN $$http_status_codes$$}.as_count()\"\n   147→      denominator: \"sum.http_requests.hits{peer.hostname:$$peer_hostname$$ AND env:$$environment$$}.as_count()\"\n   148→    specification_of_query_templatized_variables:\n   149→      - peer_hostname\n   150→      - environment\n   151→      - http_status_codes\n   152→```\n   153→\n   154→Once all of this is defined, execute the compiler as follows:\n   155→```gleam\n   156→compiler.compile(\"some_organization/specifications\", \"some_organization\", \"some_output_dir\")\n   157→```\n   158→\n   159→***\n   160→\n   161→## License\n   162→\n   163→This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.\n   164→\n   165→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "timestamp": "2025-11-20T04:43:29.227Z"
+        },
+        {
+          "type": "tool_use",
+          "name": "Edit",
+          "input": {
+            "file_path": "/Users/rob/BrickellResearch/caffeine_lang/README.md",
+            "new_string": "## Installation\n\n### Homebrew (macOS)\n\n```bash\nbrew tap brickell-research/caffeine\nbrew install caffeine_lang\n```\n\n### Local Installation",
+            "old_string": "## Installation\n\n### Local Installation"
+          },
+          "timestamp": "2025-11-20T04:43:36.534Z"
+        }
+      ],
+      "total_additions": 7,
+      "total_deletions": 12,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
