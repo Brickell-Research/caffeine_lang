@@ -1,0 +1,7 @@
+expectations:
+  - name: "Some operation succeeds in production"
+    blueprint: success_rate_graphql
+    threshold: 99.9
+    window_in_days: 10
+    
+

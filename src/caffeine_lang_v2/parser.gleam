@@ -7,6 +7,31 @@ import gleam/result
 import gleam/set
 import gleam/string
 
+/// expectations:
+/// - name: "Some operation succeeds in production"
+///   blueprint: success_rate_graphql
+///   inputs:
+///     gql_operation: "some_operation"
+///     environment: "production"
+///   threshold: 99.9
+///   window_in_days: 10
+/// - name: "Some other operation succeeds in production"
+///   blueprint: success_rate_graphql
+///   inputs:
+///     gql_operation: "some_other_operation"
+///     environment: "production"
+///   threshold: 99.0
+///   window_in_days: 30
+pub type ServiceExpectation {
+  ServiceExpectation(
+    name: String,
+    blueprint: String,
+    inputs: dict.Dict(String, String),
+    threshold: Float,
+    window_in_days: Int,
+  )
+}
+
 /// A blueprint is a named collection of inputs, queries, and a value.
 ///
 /// blueprints:
@@ -47,11 +72,6 @@ pub type AcceptedTypes {
   Optional(AcceptedTypes)
 }
 
-/// A basic type is an attribute name and a type.
-pub type BasicType {
-  BasicType(attribute_name: String, attribute_type: AcceptedTypes)
-}
-
 // ==== Public ====
 /// Parses a blueprint specification file into a list of blueprints.
 pub fn parse_blueprint_specification(
@@ -64,14 +84,43 @@ pub fn parse_blueprint_specification(
     "blueprints",
   ))
 
-  validate_required_uniqueness_checks(blueprints)
+  validate_required_uniqueness_checks_blueprints(blueprints)
+}
+
+/// Parses an expectation invocation file into a list of service expectations.
+pub fn parse_service_expectation_invocation(
+  file_path: String,
+) -> Result(List(ServiceExpectation), String) {
+  use service_expectations <- result.try(general_common.parse_specification(
+    file_path,
+    dict.new(),
+    parse_service_expectation,
+    "expectations",
+  ))
+
+  validate_required_uniqueness_checks_expectations(service_expectations)
 }
 
 // ==== Private ====
 /// 
-fn validate_required_uniqueness_checks(
+fn validate_required_uniqueness_checks_blueprints(
   blueprints: List(Blueprint),
 ) -> Result(List(Blueprint), String) {
+  let duplicate_names = find_duplicates(list.map(blueprints, fn(b) { b.name }))
+
+  case duplicate_names {
+    [] -> Ok(blueprints)
+    _ ->
+      Error(
+        "Duplicate blueprint names detected: "
+        <> string.join(duplicate_names, ", "),
+      )
+  }
+}
+
+fn validate_required_uniqueness_checks_expectations(
+  blueprints: List(ServiceExpectation),
+) -> Result(List(ServiceExpectation), String) {
   let duplicate_names = find_duplicates(list.map(blueprints, fn(b) { b.name }))
 
   case duplicate_names {
@@ -97,7 +146,6 @@ fn find_duplicates(items: List(String)) -> List(String) {
   set.to_list(duplicates)
 }
 
-/// Parses a single unresolved SLI type.
 fn parse_blueprint(
   type_node: yaml.Node,
   _params: dict.Dict(String, String),
@@ -122,12 +170,7 @@ fn parse_blueprint(
     inputs,
   ))
 
-  Ok(Blueprint(
-    name: name,
-    inputs: inputs_with_accepted_types,
-    queries: queries,
-    value: value,
-  ))
+  Ok(Blueprint(name:, inputs: inputs_with_accepted_types, queries:, value:))
 }
 
 fn dict_strings_to_basic_types(
@@ -163,4 +206,34 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, String) {
     "Optional(NonEmptyList(Decimal))" -> Ok(Optional(NonEmptyList(Decimal)))
     _ -> Error("Invalid type: " <> raw_accepted_type)
   }
+}
+
+fn parse_service_expectation(
+  type_node: yaml.Node,
+  _params: dict.Dict(String, String),
+) -> Result(ServiceExpectation, String) {
+  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
+    type_node,
+    "name",
+  ))
+
+  use blueprint <- result.try(glaml_extended_helpers.extract_string_from_node(
+    type_node,
+    "blueprint",
+  ))
+
+  use inputs <- result.try(
+    glaml_extended_helpers.extract_dict_strings_from_node(type_node, "inputs"),
+  )
+
+  use threshold <- result.try(glaml_extended_helpers.extract_float_from_node(
+    type_node,
+    "threshold",
+  ))
+  use window_in_days <- result.try(glaml_extended_helpers.extract_int_from_node(
+    type_node,
+    "window_in_days",
+  ))
+
+  Ok(ServiceExpectation(name:, blueprint:, inputs:, threshold:, window_in_days:))
 }
