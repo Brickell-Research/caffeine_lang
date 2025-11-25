@@ -83,7 +83,8 @@ pub fn yaml_test() {
       })
 
       it("should select item from list by index", fn() {
-        let assert Ok([doc]) = yaml.parse_string("items:\n  - first\n  - second")
+        let assert Ok([doc]) =
+          yaml.parse_string("items:\n  - first\n  - second")
         let root = yaml.document_root(doc)
         yaml.select_sugar(root, "items.#1")
         |> gleeunit.equal(Ok(yaml.NodeStr("second")))
@@ -105,6 +106,16 @@ pub fn yaml_test() {
 
       it("should handle empty path", fn() {
         let assert Ok([doc]) = yaml.parse_string("name: test")
+        let root = yaml.document_root(doc)
+        case yaml.select_sugar(root, "") {
+          Ok(yaml.NodeMap(_)) -> True
+          _ -> False
+        }
+        |> gleeunit.equal(True)
+      })
+
+      it("should error on empty for non-collections", fn() {
+        let assert Ok([doc]) = yaml.parse_string("name:")
         let root = yaml.document_root(doc)
         case yaml.select_sugar(root, "") {
           Ok(yaml.NodeMap(_)) -> True

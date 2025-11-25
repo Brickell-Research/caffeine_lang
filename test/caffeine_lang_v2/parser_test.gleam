@@ -28,7 +28,7 @@ pub fn file_path_base_expectations(file_path) {
   <> ".yml"
 }
 
-// ==== Tests ====
+// ==== Tests - Blueprints ====
 // ==== Happy Path ====
 // * ✅ single blueprint
 // * ✅ multiple blueprints
@@ -206,6 +206,7 @@ pub fn parse_blueprint_specification_wrong_type_test() {
   )
 }
 
+// ==== Test - Expectations ====
 // ==== Happy Path ====
 // * ✅ single
 // * ✅ multiple
@@ -267,7 +268,7 @@ pub fn parse_service_expectation_invocation_test() {
 // * ✅ threshold
 // * ✅ window_in_days
 pub fn parse_service_expectation_invocation_empty_test() {
-  // blueprints
+  // expectations
   let assert Ok(blueprints) =
     parser.parse_service_expectation_invocation(file_path_base_expectations(
       "empty_expectations",
