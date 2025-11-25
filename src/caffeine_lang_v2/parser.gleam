@@ -153,32 +153,30 @@ fn parse_blueprint(
     type_node,
     "name",
   ))
-  
+
   // inputs and queries are optional, default to empty dict if missing
   // but still error on type mismatches
-  use inputs <- result.try(case glaml_extended.extract_dict_strings_from_node(
-    type_node,
-    "inputs",
-  ) {
-    Ok(dict) -> Ok(dict)
-    Error(msg) ->
-      case string.starts_with(msg, "Missing") {
-        True -> Ok(dict.new())
-        False -> Error(msg)
-      }
-  })
+  use inputs <- result.try(
+    case glaml_extended.extract_dict_strings_from_node(type_node, "inputs") {
+      Ok(dict) -> Ok(dict)
+      Error(msg) ->
+        case string.starts_with(msg, "Missing") {
+          True -> Ok(dict.new())
+          False -> Error(msg)
+        }
+    },
+  )
 
-  use queries <- result.try(case glaml_extended.extract_dict_strings_from_node(
-    type_node,
-    "queries",
-  ) {
-    Ok(dict) -> Ok(dict)
-    Error(msg) ->
-      case string.starts_with(msg, "Missing") {
-        True -> Ok(dict.new())
-        False -> Error(msg)
-      }
-  })
+  use queries <- result.try(
+    case glaml_extended.extract_dict_strings_from_node(type_node, "queries") {
+      Ok(dict) -> Ok(dict)
+      Error(msg) ->
+        case string.starts_with(msg, "Missing") {
+          True -> Ok(dict.new())
+          False -> Error(msg)
+        }
+    },
+  )
   use value <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "value",
@@ -242,17 +240,16 @@ fn parse_service_expectation(
 
   // inputs is optional, default to empty dict if missing
   // but still error on type mismatches
-  use inputs <- result.try(case glaml_extended.extract_dict_strings_from_node(
-    type_node,
-    "inputs",
-  ) {
-    Ok(dict) -> Ok(dict)
-    Error(msg) ->
-      case string.starts_with(msg, "Missing") {
-        True -> Ok(dict.new())
-        False -> Error(msg)
-      }
-  })
+  use inputs <- result.try(
+    case glaml_extended.extract_dict_strings_from_node(type_node, "inputs") {
+      Ok(dict) -> Ok(dict)
+      Error(msg) ->
+        case string.starts_with(msg, "Missing") {
+          True -> Ok(dict.new())
+          False -> Error(msg)
+        }
+    },
+  )
 
   use threshold <- result.try(glaml_extended.extract_float_from_node(
     type_node,
