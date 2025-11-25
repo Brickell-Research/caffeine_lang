@@ -132,8 +132,7 @@ pub fn extract_dict_strings_from_node(
 pub fn iteratively_parse_collection(
   root: yaml.Node,
   params: dict.Dict(String, String),
-  actual_parse_fn: fn(yaml.Node, dict.Dict(String, String)) ->
-    Result(a, String),
+  actual_parse_fn: fn(yaml.Node, dict.Dict(String, String)) -> Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
   use services_node <- result.try(
@@ -149,8 +148,7 @@ fn do_parse_collection(
   services: yaml.Node,
   index: Int,
   params: dict.Dict(String, String),
-  actual_parse_fn: fn(yaml.Node, dict.Dict(String, String)) ->
-    Result(a, String),
+  actual_parse_fn: fn(yaml.Node, dict.Dict(String, String)) -> Result(a, String),
 ) -> Result(List(a), String) {
   case yaml.select_sugar(services, "#" <> int.to_string(index)) {
     Ok(service_node) -> {

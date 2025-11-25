@@ -1,0 +1,9 @@
+blueprints:
+  - name: success_rate_graphql
+    inputs:
+      gql_operation: NotARealType
+    queries:
+      numerator: 'sum.app.requests{operation:${gql_operation},status:success,environment:${environment}}.as_count()'
+      denominator: 'sum.app.requests{operation:${gql_operation},environment:${environment}}.as_count()'
+    value: "numerator / denominator"
+

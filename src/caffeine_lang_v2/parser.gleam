@@ -4,6 +4,8 @@ import deps/glaml_extended/yaml
 import gleam/dict
 import gleam/list
 import gleam/result
+import gleam/set
+import gleam/string
 
 /// A blueprint is a named collection of inputs, queries, and a value.
 ///
@@ -55,15 +57,46 @@ pub type BasicType {
 pub fn parse_blueprint_specification(
   file_path: String,
 ) -> Result(List(Blueprint), String) {
-  general_common.parse_specification(
+  use blueprints <- result.try(general_common.parse_specification(
     file_path,
     dict.new(),
     parse_blueprint,
     "blueprints",
-  )
+  ))
+
+  validate_required_uniqueness_checks(blueprints)
 }
 
 // ==== Private ====
+/// 
+fn validate_required_uniqueness_checks(
+  blueprints: List(Blueprint),
+) -> Result(List(Blueprint), String) {
+  let duplicate_names = find_duplicates(list.map(blueprints, fn(b) { b.name }))
+
+  case duplicate_names {
+    [] -> Ok(blueprints)
+    _ ->
+      Error(
+        "Duplicate blueprint names detected: "
+        <> string.join(duplicate_names, ", "),
+      )
+  }
+}
+
+fn find_duplicates(items: List(String)) -> List(String) {
+  let #(_seen, duplicates) =
+    list.fold(items, #(set.new(), set.new()), fn(acc, item) {
+      let #(seen, duplicates) = acc
+      case set.contains(seen, item) {
+        True -> #(seen, set.insert(duplicates, item))
+        False -> #(set.insert(seen, item), duplicates)
+      }
+    })
+
+  set.to_list(duplicates)
+}
+
 /// Parses a single unresolved SLI type.
 fn parse_blueprint(
   type_node: yaml.Node,
@@ -85,9 +118,16 @@ fn parse_blueprint(
     "value",
   ))
 
-  use foo <- result.try(dict_strings_to_basic_types(inputs))
+  use inputs_with_accepted_types <- result.try(dict_strings_to_basic_types(
+    inputs,
+  ))
 
-  Ok(Blueprint(name: name, inputs: foo, queries: queries, value: value))
+  Ok(Blueprint(
+    name: name,
+    inputs: inputs_with_accepted_types,
+    queries: queries,
+    value: value,
+  ))
 }
 
 fn dict_strings_to_basic_types(
