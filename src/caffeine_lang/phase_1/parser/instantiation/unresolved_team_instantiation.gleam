@@ -1,10 +1,10 @@
 import caffeine_lang/phase_1/parser/unresolved_slo
 import caffeine_lang/phase_1/parser/unresolved_team
 import caffeine_lang/phase_1/parser/utils/general_common
-import deps/glaml_extended/extractors as glaml_extended_helpers
-import deps/glaml_extended/yaml
+import glaml_extended
 import gleam/dict
 import gleam/result
+import gleam/string
 
 // ==== Public ====
 /// Parses an instantiation from a YAML file. This is a single team with at least one slo.
@@ -33,28 +33,38 @@ pub fn parse_slos_instantiation(
 // ==== Private ====
 /// Parses a single SLO.
 fn parse_slo(
-  slo: yaml.Node,
+  slo: glaml_extended.Node,
   params: dict.Dict(String, String),
 ) -> Result(unresolved_slo.Slo, String) {
-  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
-    slo,
-    "name",
-  ))
-  use sli_type <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended.extract_string_from_node(slo, "name"))
+  use sli_type <- result.try(glaml_extended.extract_string_from_node(
     slo,
     "sli_type",
   ))
+
+  // typed_instatiation_of_query_templatized_variables is optional, default to empty dict if missing
+  // but still error on type mismatches
   use typed_instatiation_of_query_templatized_variables <- result.try(
-    glaml_extended_helpers.extract_dict_strings_from_node(
-      slo,
-      "typed_instatiation_of_query_templatized_variables",
-    ),
+    case
+      glaml_extended.extract_dict_strings_from_node(
+        slo,
+        "typed_instatiation_of_query_templatized_variables",
+      )
+    {
+      Ok(dict) -> Ok(dict)
+      Error(msg) ->
+        case string.starts_with(msg, "Missing") {
+          True -> Ok(dict.new())
+          False -> Error(msg)
+        }
+    },
   )
-  use threshold <- result.try(glaml_extended_helpers.extract_float_from_node(
+
+  use threshold <- result.try(glaml_extended.extract_float_from_node(
     slo,
     "threshold",
   ))
-  use window_in_days <- result.try(glaml_extended_helpers.extract_int_from_node(
+  use window_in_days <- result.try(glaml_extended.extract_int_from_node(
     slo,
     "window_in_days",
   ))

@@ -1,6 +1,5 @@
 import caffeine_lang/phase_1/parser/utils/general_common
-import deps/glaml_extended/extractors as glaml_extended_helpers
-import deps/glaml_extended/yaml
+import glaml_extended
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -147,21 +146,40 @@ fn find_duplicates(items: List(String)) -> List(String) {
 }
 
 fn parse_blueprint(
-  type_node: yaml.Node,
+  type_node: glaml_extended.Node,
   _params: dict.Dict(String, String),
 ) -> Result(Blueprint, String) {
-  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "name",
   ))
-  use inputs <- result.try(
-    glaml_extended_helpers.extract_dict_strings_from_node(type_node, "inputs"),
-  )
+  
+  // inputs and queries are optional, default to empty dict if missing
+  // but still error on type mismatches
+  use inputs <- result.try(case glaml_extended.extract_dict_strings_from_node(
+    type_node,
+    "inputs",
+  ) {
+    Ok(dict) -> Ok(dict)
+    Error(msg) ->
+      case string.starts_with(msg, "Missing") {
+        True -> Ok(dict.new())
+        False -> Error(msg)
+      }
+  })
 
-  use queries <- result.try(
-    glaml_extended_helpers.extract_dict_strings_from_node(type_node, "queries"),
-  )
-  use value <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use queries <- result.try(case glaml_extended.extract_dict_strings_from_node(
+    type_node,
+    "queries",
+  ) {
+    Ok(dict) -> Ok(dict)
+    Error(msg) ->
+      case string.starts_with(msg, "Missing") {
+        True -> Ok(dict.new())
+        False -> Error(msg)
+      }
+  })
+  use value <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "value",
   ))
@@ -209,28 +227,38 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, String) {
 }
 
 fn parse_service_expectation(
-  type_node: yaml.Node,
+  type_node: glaml_extended.Node,
   _params: dict.Dict(String, String),
 ) -> Result(ServiceExpectation, String) {
-  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "name",
   ))
 
-  use blueprint <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use blueprint <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "blueprint",
   ))
 
-  use inputs <- result.try(
-    glaml_extended_helpers.extract_dict_strings_from_node(type_node, "inputs"),
-  )
+  // inputs is optional, default to empty dict if missing
+  // but still error on type mismatches
+  use inputs <- result.try(case glaml_extended.extract_dict_strings_from_node(
+    type_node,
+    "inputs",
+  ) {
+    Ok(dict) -> Ok(dict)
+    Error(msg) ->
+      case string.starts_with(msg, "Missing") {
+        True -> Ok(dict.new())
+        False -> Error(msg)
+      }
+  })
 
-  use threshold <- result.try(glaml_extended_helpers.extract_float_from_node(
+  use threshold <- result.try(glaml_extended.extract_float_from_node(
     type_node,
     "threshold",
   ))
-  use window_in_days <- result.try(glaml_extended_helpers.extract_int_from_node(
+  use window_in_days <- result.try(glaml_extended.extract_int_from_node(
     type_node,
     "window_in_days",
   ))

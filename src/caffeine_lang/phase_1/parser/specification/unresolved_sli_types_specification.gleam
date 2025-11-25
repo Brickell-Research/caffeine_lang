@@ -1,7 +1,6 @@
 import caffeine_lang/phase_1/parser/unresolved_sli_type
 import caffeine_lang/phase_1/parser/utils/general_common
-import deps/glaml_extended/extractors as glaml_extended_helpers
-import deps/glaml_extended/yaml
+import glaml_extended
 import gleam/dict
 import gleam/result
 
@@ -21,27 +20,27 @@ pub fn parse_unresolved_sli_types_specification(
 // ==== Private ====
 /// Parses a single unresolved SLI type.
 fn parse_sli_type(
-  type_node: yaml.Node,
+  type_node: glaml_extended.Node,
   _params: dict.Dict(String, String),
 ) -> Result(unresolved_sli_type.SliType, String) {
-  use name <- result.try(glaml_extended_helpers.extract_string_from_node(
+  use name <- result.try(glaml_extended.extract_string_from_node(
     type_node,
     "name",
   ))
   use query_template_type <- result.try(
-    glaml_extended_helpers.extract_string_from_node(
+    glaml_extended.extract_string_from_node(
       type_node,
       "query_template_type",
     ),
   )
   use typed_instatiation_of_query_templates <- result.try(
-    glaml_extended_helpers.extract_dict_strings_from_node(
+    glaml_extended.extract_dict_strings_from_node(
       type_node,
       "typed_instatiation_of_query_templates",
     ),
   )
   use specification_of_query_templatized_variables <- result.try(
-    glaml_extended_helpers.extract_string_list_from_node(
+    glaml_extended.extract_string_list_from_node(
       type_node,
       "specification_of_query_templatized_variables",
     ),

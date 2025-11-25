@@ -118,16 +118,27 @@ pub fn parse_blueprint_specification_empty_test() {
     ))
   blueprints |> should.equal(list.new())
 
+  // empty inputs and queries are OK (treated as empty dict)
+  let assert Ok([first, ..]) =
+    parser.parse_blueprint_specification(file_path_base_blueprints(
+      "empty_inputs",
+    ))
+  first.inputs |> should.equal(dict.new())
+
+  let assert Ok([first, ..]) =
+    parser.parse_blueprint_specification(file_path_base_blueprints(
+      "empty_queries",
+    ))
+  first.queries |> should.equal(dict.new())
+
   list.each(
     [
       #(
         "empty_file",
         "Empty YAML file: " <> file_path_base_blueprints("empty_file"),
       ),
-      #("empty_name", "Expected name to be a string"),
-      #("empty_inputs", "Expected inputs to be a map"),
-      #("empty_queries", "Expected queries to be a map"),
-      #("empty_value", "Expected value to be a string"),
+      #("empty_name", "Expected name to be non-empty"),
+      #("empty_value", "Expected value to be non-empty"),
     ],
     fn(testcase) { assert_error_on_parse_blueprint(testcase.0, testcase.1) },
   )
@@ -275,13 +286,19 @@ pub fn parse_service_expectation_invocation_empty_test() {
     ))
   blueprints |> should.equal(list.new())
 
+  // empty inputs is OK (treated as empty dict)
+  let assert Ok([first, ..]) =
+    parser.parse_service_expectation_invocation(file_path_base_expectations(
+      "empty_inputs",
+    ))
+  first.inputs |> should.equal(dict.new())
+
   list.each(
     [
-      #("empty_name", "Expected name to be a string"),
-      #("empty_blueprint", "Expected blueprint to be a string"),
-      #("empty_inputs", "Expected inputs to be a map"),
-      #("empty_threshold", "Expected threshold to be a float"),
-      #("empty_window_in_days", "Expected window_in_days to be an integer"),
+      #("empty_name", "Expected name to be non-empty"),
+      #("empty_blueprint", "Expected blueprint to be non-empty"),
+      #("empty_threshold", "Expected threshold to be non-empty"),
+      #("empty_window_in_days", "Expected window_in_days to be non-empty"),
     ],
     fn(testcase) { assert_error_on_parse_expectation(testcase.0, testcase.1) },
   )
