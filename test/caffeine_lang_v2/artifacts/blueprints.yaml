@@ -1,0 +1,18 @@
+blueprints:
+  - name: success_rate_graphql
+    inputs:
+      gql_operation: String
+      environment: String
+    queries:
+      numerator: 'sum.app.requests{operation:${gql_operation},status:success,environment:${environment}}.as_count()'
+      denominator: 'sum.app.requests{operation:${gql_operation},environment:${environment}}.as_count()'
+    value: "numerator / denominator"
+  - name: latency_http
+    inputs:
+      endpoint: String
+      status_codes: NonEmptyList(String)
+      percentile: Decimal
+    queries:
+      latency_query: 'percentile.app.latency{endpoint:${endpoint},status:${status_codes}}.at(${percentile})'
+    value: "latency_query"
+
