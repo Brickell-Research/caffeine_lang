@@ -27,16 +27,16 @@ fn parse_sli_type(
     type_node,
     "name",
   ))
-  use query_template_type <- result.try(
-    glaml_extended.extract_string_from_node(
-      type_node,
-      "query_template_type",
-    ),
-  )
+  use query_template_type <- result.try(glaml_extended.extract_string_from_node(
+    type_node,
+    "query_template_type",
+  ))
   use typed_instatiation_of_query_templates <- result.try(
     glaml_extended.extract_dict_strings_from_node(
       type_node,
       "typed_instatiation_of_query_templates",
+      // for backwards compatability - this feature postdates deprecation of v1
+      fail_on_key_duplication: False,
     ),
   )
   use specification_of_query_templatized_variables <- result.try(

@@ -22,7 +22,6 @@ pub fn parse_specification(
     glaml_extended.parse_file(file_path)
     |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
   )
-
   let parse_fn_two = fn(doc, _params) {
     glaml_extended.iteratively_parse_collection(
       glaml_extended.document_root(doc),

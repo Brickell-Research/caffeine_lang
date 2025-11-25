@@ -104,20 +104,13 @@ pub fn parse_blueprint_specification_test() {
 }
 
 // ==== Empty ====
-// * ✅ blueprint
-// * ✅ content (empty file)
-// * ✅ name
 // * ✅ inputs (empty dictionary)
 // * ✅ queries (empty dictionary)
+// * ✅ content (empty file)
+// * ✅ blueprint
+// * ✅ name
 // * ✅ value
 pub fn parse_blueprint_specification_empty_test() {
-  // blueprints
-  let assert Ok(blueprints) =
-    parser.parse_blueprint_specification(file_path_base_blueprints(
-      "empty_blueprints",
-    ))
-  blueprints |> should.equal(list.new())
-
   // empty inputs and queries are OK (treated as empty dict)
   let assert Ok([first, ..]) =
     parser.parse_blueprint_specification(file_path_base_blueprints(
@@ -137,6 +130,7 @@ pub fn parse_blueprint_specification_empty_test() {
         "empty_file",
         "Empty YAML file: " <> file_path_base_blueprints("empty_file"),
       ),
+      #("empty_blueprints", "blueprints is empty"),
       #("empty_name", "Expected name to be non-empty"),
       #("empty_value", "Expected value to be non-empty"),
     ],
@@ -153,30 +147,18 @@ pub fn parse_blueprint_specification_missing_test() {
   list.each(
     [
       #("missing_name", "Missing name"),
+      #("missing_inputs", "Missing inputs"),
+      #("missing_queries", "Missing queries"),
       #("missing_value", "Missing value"),
     ],
     fn(testcase) { assert_error_on_parse_blueprint(testcase.0, testcase.1) },
   )
-
-  // queries
-  let assert Ok([first, ..]) =
-    parser.parse_blueprint_specification(file_path_base_blueprints(
-      "missing_queries",
-    ))
-  first.queries |> should.equal(dict.new())
-
-  // inputs
-  let assert Ok([first, ..]) =
-    parser.parse_blueprint_specification(file_path_base_blueprints(
-      "missing_inputs",
-    ))
-  first.inputs |> should.equal(dict.new())
 }
 
 // ==== Duplicates ====
 // * ✅ name (all blueprints must be unique)
-// * ❌ inputs (all inputs must have unique labels) - LIMITATION: glaml silently overrides
-// * ❌ queries (all queries must have unique labels) - LIMITATION: glaml silently overrides
+// * ✅ inputs (all inputs must have unique labels) - LIMITATION: glaml silently overrides
+// * ✅ queries (all queries must have unique labels) - LIMITATION: glaml silently overrides
 pub fn parse_blueprint_specification_duplicates_test() {
   list.each(
     [
@@ -184,25 +166,28 @@ pub fn parse_blueprint_specification_duplicates_test() {
         "duplicate_names",
         "Duplicate blueprint names detected: success_rate_graphql",
       ),
+      #("duplicate_inputs", "Duplicate keys detected for inputs: gql_operation"),
+      #("duplicate_queries", "Duplicate keys detected for queries: numerator"),
     ],
     fn(testcase) { assert_error_on_parse_blueprint(testcase.0, testcase.1) },
   )
 }
 
 // ==== Wrong Types ====
-// * 🚧 blueprint
+// * ✅ blueprint
 // * ✅ name
-// * ✅ inputs
-//  * ✅ inputs is a map
-//  * ✅ each input's value is an Accepted Type
 // * ✅ queries
 //  * ✅ queries is a map
 //  * ✅ each query is a strings
+// * ✅ inputs
+//  * ✅ inputs is a map
+//  * ✅ each input's value is an Accepted Type
 // * ✅ value
 pub fn parse_blueprint_specification_wrong_type_test() {
   list.each(
     [
-      // #("wrong_type_blueprints", "Expected name to be a string"), # wrong
+      // wrong_type_blueprints is weird, but reasonable enough 🤷‍♂️
+      #("wrong_type_blueprints", "blueprints is empty"),
       #("wrong_type_name", "Expected name to be a string"),
       #("wrong_type_value", "Expected value to be a string"),
       #("wrong_type_queries", "Expected queries to be a map"),
@@ -272,20 +257,13 @@ pub fn parse_service_expectation_invocation_test() {
 }
 
 // ==== Empty ====
+// * ✅ inputs - (empty dictionary)
 // * ✅ expectations
 // * ✅ name
 // * ✅ blueprint
-// * ✅ inputs
 // * ✅ threshold
 // * ✅ window_in_days
 pub fn parse_service_expectation_invocation_empty_test() {
-  // expectations
-  let assert Ok(blueprints) =
-    parser.parse_service_expectation_invocation(file_path_base_expectations(
-      "empty_expectations",
-    ))
-  blueprints |> should.equal(list.new())
-
   // empty inputs is OK (treated as empty dict)
   let assert Ok([first, ..]) =
     parser.parse_service_expectation_invocation(file_path_base_expectations(
@@ -295,6 +273,7 @@ pub fn parse_service_expectation_invocation_empty_test() {
 
   list.each(
     [
+      #("empty_expectations", "expectations is empty"),
       #("empty_name", "Expected name to be non-empty"),
       #("empty_blueprint", "Expected blueprint to be non-empty"),
       #("empty_threshold", "Expected threshold to be non-empty"),
@@ -305,46 +284,34 @@ pub fn parse_service_expectation_invocation_empty_test() {
 }
 
 // ==== Missing ====
-// * ✅ expectations
 // * ✅ content (empty file)
+// * ✅ expectations
 // * ✅ name
 // * ✅ blueprint
+// * ✅ inputs
 // * ✅ threshold
 // * ✅ window_in_days
-// * ✅ inputs
 pub fn parse_service_expectation_invocation_missing_test() {
-  // expectations
-  let assert Ok(blueprints) =
-    parser.parse_service_expectation_invocation(file_path_base_expectations(
-      "empty_expectations",
-    ))
-  blueprints |> should.equal(list.new())
-
   list.each(
     [
       #(
         "empty_file",
         "Empty YAML file: " <> file_path_base_expectations("empty_file"),
       ),
+      #("empty_expectations", "expectations is empty"),
       #("missing_name", "Missing name"),
       #("missing_blueprint", "Missing blueprint"),
+      #("missing_inputs", "Missing inputs"),
       #("missing_threshold", "Missing threshold"),
       #("missing_window_in_days", "Missing window_in_days"),
     ],
     fn(testcase) { assert_error_on_parse_expectation(testcase.0, testcase.1) },
   )
-
-  // inputs
-  let assert Ok([first, ..]) =
-    parser.parse_service_expectation_invocation(file_path_base_expectations(
-      "missing_inputs",
-    ))
-  first.inputs |> should.equal(dict.new())
 }
 
 // ==== Duplicates ====
 // * ✅ name
-// * ❌ inputs (all inputs must have unique labels) - LIMITATION: glaml silently overrides
+// * ✅ inputs (all inputs must have unique labels) - LIMITATION: glaml silently overrides
 pub fn parse_service_expectation_invocation_duplicates_test() {
   list.each(
     [
@@ -352,13 +319,17 @@ pub fn parse_service_expectation_invocation_duplicates_test() {
         "duplicate_names",
         "Duplicate blueprint names detected: Some operation succeeds in production",
       ),
+      #(
+        "duplicate_inputs",
+        "Duplicate keys detected for inputs: environment, gql_operation",
+      ),
     ],
     fn(testcase) { assert_error_on_parse_expectation(testcase.0, testcase.1) },
   )
 }
 
 // ==== Wrong Types ====
-// * 🚧 expectations
+// * ✅ expectations
 // * ✅ name
 // * ✅ blueprint
 // * ✅ inputs (we will initially interpret all as String and later attempt to coalesce to the proper type)
@@ -367,7 +338,8 @@ pub fn parse_service_expectation_invocation_duplicates_test() {
 pub fn parse_service_expectation_invocation_wrong_type_test() {
   list.each(
     [
-      // #("wrong_type_expectations", "Expected name to be a string"), # wrong
+      // wrong_type_expectations is weird, but reasonable enough 🤷‍♂️
+      #("wrong_type_expectations", "expectations is empty"),
       #("wrong_type_name", "Expected name to be a string"),
       #("wrong_type_blueprint", "Expected blueprint to be a string"),
       #("wrong_type_inputs", "Expected inputs to be a map"),
@@ -377,5 +349,3 @@ pub fn parse_service_expectation_invocation_wrong_type_test() {
     fn(testcase) { assert_error_on_parse_expectation(testcase.0, testcase.1) },
   )
 }
-// ==== Directory Structure ====
-// ❌ tested at higher levels (maybe?)

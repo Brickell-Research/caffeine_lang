@@ -49,6 +49,8 @@ fn parse_slo(
       glaml_extended.extract_dict_strings_from_node(
         slo,
         "typed_instatiation_of_query_templatized_variables",
+        // for backwards compatability - this feature postdates deprecation of v1
+        fail_on_key_duplication: False,
       )
     {
       Ok(dict) -> Ok(dict)
