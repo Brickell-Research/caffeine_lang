@@ -1,4 +1,0 @@
-services:
-  - name: reliable_service
-    sli_types:
-      - success_rate

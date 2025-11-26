@@ -1,6 +1,0 @@
-types:
-  - name: error_rate
-    query_template_type: good_over_bad
-    typed_instatiation_of_query_templates:
-      numerator_query: ""
-      denominator_query: ""

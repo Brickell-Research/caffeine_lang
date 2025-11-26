@@ -1,4 +1,0 @@
-basic_types:
-  - attribute_type: String
-  - attribute_name: number_of_users
-    attribute_type: Integer
