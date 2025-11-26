@@ -1,4 +1,4 @@
-import caffeine_lang/phase_1/parser/utils/general_common
+import caffeine_lang_v2/common
 import glaml_extended
 import gleam/dict
 import gleam/list
@@ -42,7 +42,7 @@ pub type AcceptedTypes {
 pub fn parse_blueprint_specification(
   file_path: String,
 ) -> Result(List(Blueprint), String) {
-  use blueprints <- result.try(general_common.parse_specification(
+  use blueprints <- result.try(common.parse_specification(
     file_path,
     dict.new(),
     parse_blueprint,
@@ -56,7 +56,7 @@ pub fn parse_blueprint_specification(
 pub fn parse_service_expectation_invocation(
   file_path: String,
 ) -> Result(List(ServiceExpectation), String) {
-  use service_expectations <- result.try(general_common.parse_specification(
+  use service_expectations <- result.try(common.parse_specification(
     file_path,
     dict.new(),
     parse_service_expectation,
