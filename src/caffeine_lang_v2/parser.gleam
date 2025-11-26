@@ -6,21 +6,6 @@ import gleam/result
 import gleam/set
 import gleam/string
 
-/// expectations:
-/// - name: "Some operation succeeds in production"
-///   blueprint: success_rate_graphql
-///   inputs:
-///     gql_operation: "some_operation"
-///     environment: "production"
-///   threshold: 99.9
-///   window_in_days: 10
-/// - name: "Some other operation succeeds in production"
-///   blueprint: success_rate_graphql
-///   inputs:
-///     gql_operation: "some_other_operation"
-///     environment: "production"
-///   threshold: 99.0
-///   window_in_days: 30
 pub type ServiceExpectation {
   ServiceExpectation(
     name: String,
@@ -31,25 +16,6 @@ pub type ServiceExpectation {
   )
 }
 
-/// A blueprint is a named collection of inputs, queries, and a value.
-///
-/// blueprints:
-///   - name: success_rate_graphql
-///     inputs:
-///       gql_operation: String
-///     queries:
-///       numerator:   'sum.app.requests{operation:${gql_operation},status:info}.as_count()'
-///       denominator: 'sum.app.requests{operation:${gql_operation}}.as_count()'
-///     value: "numerator / denominator"
-///   - name: success_rate_http
-///     inputs:
-///       endpoint: String
-///       status_codes: List(String)
-///       environment: String
-///     queries:
-///       numerator:   'sum.app.requests{endpoint:${endpoint},status:${status_codes},environment:${environment}}.as_count()'
-///       denominator: 'sum.app.requests{endpoint:${endpoint,environment:${environment}}.as_count()'
-///     value: "numerator / denominator"
 pub type Blueprint {
   Blueprint(
     name: String,
