@@ -7,7 +7,6 @@ pub type Artifact {
   Artifact(
     name: String,
     version: String,
-    // TODO: make this an opaque type in order to enforce correct formatting
     base_params: dict.Dict(String, common.AcceptedTypes),
     params: dict.Dict(String, common.AcceptedTypes),
   )
@@ -22,7 +21,7 @@ pub fn parse(file_path: String) -> Result(List(Artifact), String) {
     "artifacts",
   ))
 
-  common.validate_uniqueness(artifacts, fn(e) { e.name })
+  common.validate_uniqueness(artifacts, fn(e) { e.name }, "artifact")
 }
 
 fn parse_artifact(

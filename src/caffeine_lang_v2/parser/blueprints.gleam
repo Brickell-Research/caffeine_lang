@@ -21,7 +21,7 @@ pub fn parse(file_path: String) -> Result(List(Blueprint), String) {
     "blueprints",
   ))
 
-  common.validate_uniqueness(blueprints, fn(e) { e.name })
+  common.validate_uniqueness(blueprints, fn(e) { e.name }, "blueprint")
 }
 
 fn parse_blueprint(

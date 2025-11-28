@@ -161,3 +161,35 @@ pub fn parse_wrong_type_test() {
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
   )
 }
+// // ==== Semantic ====
+// // * ❌ version not semantic versioning
+// //   * ❌ no dots
+// //   * ❌ too many dots
+// //   * ❌ non numbers with two dots
+// //   * ❌ happy path
+// pub fn parse_semantic_test() {
+//   let name = "foobar"
+//   let base_params = dict.new()
+//   let params = dict.new()
+
+//   artifacts.make_artifact(name, "0", base_params, params)
+//   |> should.equal(Error(
+//     "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received '0'.",
+//   ))
+
+//   artifacts.make_artifact(name, "0.0.0.0", base_params, params)
+//   |> should.equal(Error(
+//     "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received '0.0.0.0'.",
+//   ))
+
+//   artifacts.make_artifact(name, "A.0.0", base_params, params)
+//   |> should.equal(Error(
+//     "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received 'A.0.0'.",
+//   ))
+
+//   artifacts.make_artifact(name, "0.0.0", base_params, params)
+//   |> should.be_ok
+
+//   artifacts.make_artifact(name, "1.2.3", base_params, params)
+//   |> should.be_ok
+// }

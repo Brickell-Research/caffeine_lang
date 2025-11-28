@@ -115,17 +115,20 @@ pub fn find_duplicates(items: List(String)) -> List(String) {
 }
 
 pub fn validate_uniqueness(
-  expectations: List(a),
+  items: List(a),
   value_extractor_fn: fn(a) -> String,
+  type_name: String,
 ) -> Result(List(a), String) {
   let duplicate_names =
-    find_duplicates(list.map(expectations, fn(e) { value_extractor_fn(e) }))
+    find_duplicates(list.map(items, fn(e) { value_extractor_fn(e) }))
 
   case duplicate_names {
-    [] -> Ok(expectations)
+    [] -> Ok(items)
     _ ->
       Error(
-        "Duplicate expectation names detected: "
+        "Duplicate "
+        <> type_name
+        <> " names detected: "
         <> string.join(duplicate_names, ", "),
       )
   }

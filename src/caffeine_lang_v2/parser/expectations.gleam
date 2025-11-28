@@ -20,7 +20,7 @@ pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
     "expectations",
   ))
 
-  common.validate_uniqueness(service_expectations, fn(e) { e.name })
+  common.validate_uniqueness(service_expectations, fn(e) { e.name }, "expectation")
 }
 
 fn parse_service_expectation(
