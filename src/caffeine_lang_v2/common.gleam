@@ -1,5 +1,6 @@
 import glaml_extended
 import gleam/dict
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
@@ -21,7 +22,7 @@ pub fn parse_specification(
     |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
   )
   let parse_fn_two = fn(doc, _params) {
-    glaml_extended.iteratively_parse_collection(
+    iteratively_parse_collection(
       glaml_extended.document_root(doc),
       params,
       parse_fn,
@@ -131,5 +132,53 @@ pub fn validate_uniqueness(
         <> " names detected: "
         <> string.join(duplicate_names, ", "),
       )
+  }
+}
+
+/// Iteratively parses a collection of nodes.
+pub fn iteratively_parse_collection(
+  root: glaml_extended.Node,
+  params: dict.Dict(String, String),
+  actual_parse_fn: fn(glaml_extended.Node, dict.Dict(String, String)) ->
+    Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
+  use services_node <- result.try(
+    glaml_extended.select_sugar(root, key)
+    |> result.map_error(fn(_) { "Missing " <> key }),
+  )
+  do_parse_collection(services_node, 0, params, actual_parse_fn, key)
+}
+
+/// Internal parser for list of nodes, iterates over the list.
+fn do_parse_collection(
+  services: glaml_extended.Node,
+  index: Int,
+  params: dict.Dict(String, String),
+  actual_parse_fn: fn(glaml_extended.Node, dict.Dict(String, String)) ->
+    Result(a, String),
+  key: String,
+) -> Result(List(a), String) {
+  case glaml_extended.select_sugar(services, "#" <> int.to_string(index)) {
+    Ok(service_node) -> {
+      use service <- result.try(actual_parse_fn(service_node, params))
+      use rest <- result.try(do_parse_collection(
+        services,
+        index + 1,
+        params,
+        actual_parse_fn,
+        key,
+      ))
+      Ok([service, ..rest])
+    }
+    Error(error) -> {
+      case error, index {
+        glaml_extended.NodeNotFound(_), 0 -> Error(key <> " is empty")
+        glaml_extended.NodeNotFound(_), _ -> Ok([])
+        glaml_extended.SelectorParseError, _ -> Error(key <> " is unparsable")
+      }
+    }
+    // TODO: fix this super hacky way of iterating over SLOs.
+    // Error(_) -> Ok([])
   }
 }
