@@ -3,13 +3,40 @@ import glaml_extended
 import gleam/dict
 import gleam/result
 
-pub type Blueprint {
+pub opaque type Blueprint {
   Blueprint(
     name: String,
     artifact: String,
     params: dict.Dict(String, common.AcceptedTypes),
     inputs: dict.Dict(String, String),
   )
+}
+
+pub fn make_blueprint(
+  name name: String,
+  artifact artifact: String,
+  params params: dict.Dict(String, common.AcceptedTypes),
+  inputs inputs: dict.Dict(String, String),
+) -> Blueprint {
+  Blueprint(name:, artifact:, params:, inputs:)
+}
+
+pub fn get_name(blueprint: Blueprint) -> String {
+  blueprint.name
+}
+
+pub fn get_artifact(blueprint: Blueprint) -> String {
+  blueprint.artifact
+}
+
+pub fn get_params(
+  blueprint: Blueprint,
+) -> dict.Dict(String, common.AcceptedTypes) {
+  blueprint.params
+}
+
+pub fn get_inputs(blueprint: Blueprint) -> dict.Dict(String, String) {
+  blueprint.inputs
 }
 
 /// Parses a blueprint specification file into a list of blueprints.

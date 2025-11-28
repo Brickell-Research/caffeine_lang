@@ -3,12 +3,34 @@ import glaml_extended
 import gleam/dict
 import gleam/result
 
-pub type ServiceExpectation {
+pub opaque type ServiceExpectation {
   ServiceExpectation(
     name: String,
     blueprint: String,
     inputs: dict.Dict(String, String),
   )
+}
+
+pub fn make_service_expectation(
+  name name: String,
+  blueprint blueprint: String,
+  inputs inputs: dict.Dict(String, String),
+) -> ServiceExpectation {
+  ServiceExpectation(name:, blueprint:, inputs:)
+}
+
+pub fn get_name(service_expectation: ServiceExpectation) -> String {
+  service_expectation.name
+}
+
+pub fn get_blueprint(service_expectation: ServiceExpectation) -> String {
+  service_expectation.blueprint
+}
+
+pub fn get_inputs(
+  service_expectation: ServiceExpectation,
+) -> dict.Dict(String, String) {
+  service_expectation.inputs
 }
 
 /// Parses an expectation invocation file into a list of service expectations.
@@ -20,7 +42,11 @@ pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
     "expectations",
   ))
 
-  common.validate_uniqueness(service_expectations, fn(e) { e.name }, "expectation")
+  common.validate_uniqueness(
+    service_expectations,
+    fn(e) { e.name },
+    "expectation",
+  )
 }
 
 fn parse_service_expectation(

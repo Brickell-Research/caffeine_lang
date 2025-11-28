@@ -1,15 +1,51 @@
 import caffeine_lang_v2/common
 import glaml_extended
 import gleam/dict
+import gleam/int
+import gleam/list
 import gleam/result
+import gleam/string
 
-pub type Artifact {
+pub opaque type Artifact {
   Artifact(
     name: String,
     version: String,
     base_params: dict.Dict(String, common.AcceptedTypes),
     params: dict.Dict(String, common.AcceptedTypes),
   )
+}
+
+pub fn make_artifact(
+  name name: String,
+  version version: String,
+  base_params base_params: dict.Dict(String, common.AcceptedTypes),
+  params params: dict.Dict(String, common.AcceptedTypes),
+) -> Result(Artifact, String) {
+  let error_msg =
+    "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received '"
+    <> version
+    <> "'."
+
+  case string.split(version, ".") {
+    [major, minor, patch] -> {
+      use _ <- result.try(
+        list.try_map([major, minor, patch], int.parse)
+        |> result.replace_error(error_msg),
+      )
+      Ok(Artifact(name:, version:, base_params:, params:))
+    }
+    _ -> Error(error_msg)
+  }
+}
+
+pub fn get_base_params(
+  artifact: Artifact,
+) -> dict.Dict(String, common.AcceptedTypes) {
+  artifact.base_params
+}
+
+pub fn get_params(artifact: Artifact) -> dict.Dict(String, common.AcceptedTypes) {
+  artifact.params
 }
 
 /// Parses an artifact specification file into a list of artifacts.

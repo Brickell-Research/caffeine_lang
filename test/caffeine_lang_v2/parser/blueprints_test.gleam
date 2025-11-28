@@ -1,5 +1,5 @@
 import caffeine_lang_v2/common.{Float, NonEmptyList, String}
-import caffeine_lang_v2/parser/blueprints.{Blueprint}
+import caffeine_lang_v2/parser/blueprints
 import gleam/dict
 import gleam/list
 import gleeunit/should
@@ -23,7 +23,7 @@ pub fn file_path_base(file_path) {
 pub fn parse_test() {
   //single
   let expected_blueprints = [
-    Blueprint(
+    blueprints.make_blueprint(
       name: "success_rate_graphql",
       artifact: "datadog_sli",
       params: dict.from_list([
@@ -48,7 +48,7 @@ pub fn parse_test() {
 
   // multiple
   let expected_blueprints = [
-    Blueprint(
+    blueprints.make_blueprint(
       name: "success_rate_graphql",
       artifact: "datadog_sli",
       params: dict.from_list([
@@ -66,7 +66,7 @@ pub fn parse_test() {
         ),
       ]),
     ),
-    Blueprint(
+    blueprints.make_blueprint(
       name: "latency_http",
       artifact: "datadog_sli",
       params: dict.from_list([
@@ -97,10 +97,10 @@ pub fn parse_test() {
 pub fn parse_empty_test() {
   // empty params and inputs are OK (treated as empty dict)
   let assert Ok([first, ..]) = blueprints.parse(file_path_base("empty_params"))
-  first.params |> should.equal(dict.new())
+  blueprints.get_params(first) |> should.equal(dict.new())
 
   let assert Ok([first, ..]) = blueprints.parse(file_path_base("empty_inputs"))
-  first.inputs |> should.equal(dict.new())
+  blueprints.get_inputs(first) |> should.equal(dict.new())
 
   list.each(
     [

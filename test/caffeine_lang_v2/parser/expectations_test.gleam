@@ -1,4 +1,4 @@
-import caffeine_lang_v2/parser/expectations.{ServiceExpectation}
+import caffeine_lang_v2/parser/expectations
 import gleam/dict
 import gleam/list
 import gleeunit/should
@@ -22,7 +22,7 @@ pub fn file_path_base(file_path) {
 pub fn parse_test() {
   // single
   let expected_expectations = [
-    ServiceExpectation(
+    expectations.make_service_expectation(
       name: "Some operation succeeds in production",
       blueprint: "success_rate_graphql",
       inputs: dict.from_list([
@@ -37,7 +37,7 @@ pub fn parse_test() {
 
   // multiple
   let expected_expectations = [
-    ServiceExpectation(
+    expectations.make_service_expectation(
       name: "Some operation succeeds in production",
       blueprint: "success_rate_graphql",
       inputs: dict.from_list([
@@ -45,7 +45,7 @@ pub fn parse_test() {
         #("environment", "production"),
       ]),
     ),
-    ServiceExpectation(
+    expectations.make_service_expectation(
       name: "Some other operation succeeds in production",
       blueprint: "success_rate_graphql",
       inputs: dict.from_list([
@@ -68,7 +68,7 @@ pub fn parse_empty_test() {
   // empty inputs is OK (treated as empty dict)
   let assert Ok([first, ..]) =
     expectations.parse(file_path_base("empty_inputs"))
-  first.inputs |> should.equal(dict.new())
+  expectations.get_inputs(first) |> should.equal(dict.new())
 
   list.each(
     [
