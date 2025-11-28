@@ -1,9 +1,8 @@
 blueprints:
   - name: success_rate_graphql
-    inputs:
+    params:
       gql_operation: String
       environment: String
-    queries:
+    inputs:
       numerator: 'sum.app.requests{operation:${gql_operation},status:success,environment:${environment}}.as_count()'
       denominator: 'sum.app.requests{operation:${gql_operation},environment:${environment}}.as_count()'
-

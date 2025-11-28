@@ -1,18 +1,17 @@
 blueprints:
   - name: success_rate_graphql
-    inputs:
+    artifact: datadog_sli
+    params:
       gql_operation: String
       environment: String
-    queries:
+    inputs:
       numerator: 'sum.app.requests{operation:${gql_operation},status:success,environment:${environment}}.as_count()'
       denominator: 'sum.app.requests{operation:${gql_operation},environment:${environment}}.as_count()'
-    value: "numerator / denominator"
   - name: latency_http
-    inputs:
+    artifact: datadog_sli
+    params:
       endpoint: String
       status_codes: NonEmptyList(String)
-      percentile: Decimal
-    queries:
+      percentile: Float
+    inputs:
       latency_query: 'percentile.app.latency{endpoint:${endpoint},status:${status_codes}}.at(${percentile})'
-    value: "latency_query"
-

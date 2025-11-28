@@ -1,9 +1,9 @@
 blueprints:
   - name: success_rate_graphql
+    artifact: datadog_sli
+    params:
+      gql_operation: String
+      environment: String
     inputs:
-      gql_operation: NotARealType
-    queries:
-      numerator: 'sum.app.requests{operation:${gql_operation},status:success,environment:${environment}}.as_count()'
+      numerator: 10
       denominator: 'sum.app.requests{operation:${gql_operation},environment:${environment}}.as_count()'
-    value: "numerator / denominator"
-
