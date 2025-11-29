@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common.{Float, NonEmptyList, String}
+import caffeine_lang_v2/common/helpers.{Float, NonEmptyList, String}
 import caffeine_lang_v2/parser/blueprints
 import gleam/dict
 import gleam/list

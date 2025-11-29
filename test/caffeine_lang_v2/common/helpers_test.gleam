@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common
+import caffeine_lang_v2/common/helpers
 import gleam/dict
 import gleam/result
 import gleeunit/should
@@ -18,7 +18,7 @@ pub fn iteratively_parse_collection_success_test() {
       yay.extraction_error_to_string(extraction_error)
     })
   }
-  common.iteratively_parse_collection(
+  helpers.iteratively_parse_collection(
     root,
     dict.new(),
     parse_service,
@@ -35,7 +35,7 @@ pub fn iteratively_parse_collection_missing_key_test() {
       yay.extraction_error_to_string(extraction_error)
     })
   }
-  common.iteratively_parse_collection(
+  helpers.iteratively_parse_collection(
     root,
     dict.new(),
     parse_service,
@@ -52,7 +52,7 @@ pub fn iteratively_parse_collection_single_item_test() {
       yay.extraction_error_to_string(extraction_error)
     })
   }
-  common.iteratively_parse_collection(
+  helpers.iteratively_parse_collection(
     root,
     dict.new(),
     parse_service,
@@ -69,7 +69,7 @@ pub fn iteratively_parse_collection_parse_error_test() {
       yay.extraction_error_to_string(extraction_error)
     })
   }
-  common.iteratively_parse_collection(
+  helpers.iteratively_parse_collection(
     root,
     dict.new(),
     parse_service,
@@ -86,7 +86,7 @@ pub fn iteratively_parse_collection_with_params_test() {
     let assert Ok(prefix) = dict.get(p, "prefix")
     Ok(prefix <> name)
   }
-  common.iteratively_parse_collection(root, params, parse_service, "services")
+  helpers.iteratively_parse_collection(root, params, parse_service, "services")
   |> should.equal(Ok(["svc_service1", "svc_service2"]))
 }
 
@@ -98,6 +98,6 @@ pub fn iteratively_parse_collection_with_no_content_test() {
     let assert Ok(prefix) = dict.get(p, "prefix")
     Ok(prefix <> name)
   }
-  common.iteratively_parse_collection(root, params, parse_service, "services")
+  helpers.iteratively_parse_collection(root, params, parse_service, "services")
   |> should.equal(Error("services is empty"))
 }

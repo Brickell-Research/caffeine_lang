@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common.{Boolean, Float, Integer, String}
+import caffeine_lang_v2/common/helpers.{Boolean, Float, Integer, String}
 import caffeine_lang_v2/parser/artifacts
 import gleam/dict
 import gleam/list

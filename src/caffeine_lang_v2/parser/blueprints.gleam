@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common
+import caffeine_lang_v2/common/helpers
 import gleam/dict
 import gleam/result
 import yay
@@ -7,7 +7,7 @@ pub opaque type Blueprint {
   Blueprint(
     name: String,
     artifact: String,
-    params: dict.Dict(String, common.AcceptedTypes),
+    params: dict.Dict(String, helpers.AcceptedTypes),
     inputs: dict.Dict(String, String),
   )
 }
@@ -15,7 +15,7 @@ pub opaque type Blueprint {
 pub fn make_blueprint(
   name name: String,
   artifact artifact: String,
-  params params: dict.Dict(String, common.AcceptedTypes),
+  params params: dict.Dict(String, helpers.AcceptedTypes),
   inputs inputs: dict.Dict(String, String),
 ) -> Blueprint {
   Blueprint(name:, artifact:, params:, inputs:)
@@ -31,7 +31,7 @@ pub fn get_artifact(blueprint: Blueprint) -> String {
 
 pub fn get_params(
   blueprint: Blueprint,
-) -> dict.Dict(String, common.AcceptedTypes) {
+) -> dict.Dict(String, helpers.AcceptedTypes) {
   blueprint.params
 }
 
@@ -41,14 +41,14 @@ pub fn get_inputs(blueprint: Blueprint) -> dict.Dict(String, String) {
 
 /// Parses a blueprint specification file into a list of blueprints.
 pub fn parse(file_path: String) -> Result(List(Blueprint), String) {
-  use blueprints <- result.try(common.parse_specification(
+  use blueprints <- result.try(helpers.parse_specification(
     file_path,
     dict.new(),
     parse_blueprint,
     "blueprints",
   ))
 
-  common.validate_uniqueness(blueprints, fn(e) { e.name }, "blueprint")
+  helpers.validate_uniqueness(blueprints, fn(e) { e.name }, "blueprint")
 }
 
 fn parse_blueprint(
@@ -78,7 +78,7 @@ fn parse_blueprint(
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     })
-    |> result.try(common.dict_strings_to_accepted_types),
+    |> result.try(helpers.dict_strings_to_accepted_types),
   )
 
   use inputs <- result.try(

@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common
+import caffeine_lang_v2/common/helpers
 import gleam/dict
 import gleam/result
 import yay
@@ -35,14 +35,14 @@ pub fn get_inputs(
 
 /// Parses an expectation invocation file into a list of service expectations.
 pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
-  use service_expectations <- result.try(common.parse_specification(
+  use service_expectations <- result.try(helpers.parse_specification(
     file_path,
     dict.new(),
     parse_service_expectation,
     "expectations",
   ))
 
-  common.validate_uniqueness(
+  helpers.validate_uniqueness(
     service_expectations,
     fn(e) { e.name },
     "expectation",
