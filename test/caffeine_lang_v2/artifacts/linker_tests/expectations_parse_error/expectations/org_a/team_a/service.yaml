@@ -1,0 +1,3 @@
+expectations:
+  - name:
+    blueprint: success_rate_graphql

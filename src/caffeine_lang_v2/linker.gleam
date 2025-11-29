@@ -8,7 +8,7 @@ import gleam/string
 import simplifile
 
 pub fn standard_library_directory() -> String {
-  "caffeine_lang_v2/standard_library"
+  "src/caffeine_lang_v2/standard_library"
 }
 
 /// Link will fetch, then parse all configuration files, combining them into one single
@@ -46,12 +46,14 @@ fn fetch_expectations(
     expectations_directory,
   ))
 
-  expectations_files
-  |> list.map(fn(file_path) {
-    expectations.parse(expectations_directory <> "/" <> file_path)
-  })
-  |> result.all()
-  |> result.map(list.flatten)
+  case expectations_files {
+    [] -> Error("No expectation files found in: " <> expectations_directory)
+    _ ->
+      expectations_files
+      |> list.map(fn(file_path) { expectations.parse(file_path) })
+      |> result.all()
+      |> result.map(list.flatten)
+  }
 }
 
 // ==== Private ====
