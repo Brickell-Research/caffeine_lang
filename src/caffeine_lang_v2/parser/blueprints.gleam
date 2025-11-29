@@ -43,6 +43,20 @@ pub fn get_params(
   blueprint.params
 }
 
+pub fn set_params(
+  blueprint: Blueprint,
+  params: dict.Dict(String, helpers.AcceptedTypes),
+) -> Blueprint {
+  Blueprint(..blueprint, params:)
+}
+
+pub fn set_inputs(
+  blueprint: Blueprint,
+  inputs: dict.Dict(String, String),
+) -> Blueprint {
+  Blueprint(..blueprint, inputs:)
+}
+
 pub fn get_inputs(blueprint: Blueprint) -> dict.Dict(String, String) {
   blueprint.inputs
 }

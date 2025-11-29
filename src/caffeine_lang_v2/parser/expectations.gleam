@@ -38,6 +38,13 @@ pub fn get_blueprint(service_expectation: Expectation) -> String {
   service_expectation.blueprint
 }
 
+pub fn set_inputs(
+  service_expectation: Expectation,
+  inputs: dict.Dict(String, String),
+) -> Expectation {
+  Expectation(..service_expectation, inputs:)
+}
+
 pub fn get_inputs(service_expectation: Expectation) -> dict.Dict(String, String) {
   service_expectation.inputs
 }

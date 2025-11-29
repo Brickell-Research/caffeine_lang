@@ -55,6 +55,8 @@ fn default_expectation() -> Expectation {
   let inputs =
     dict.from_list([
       #("environment", "production"),
+      #("threshold", "99.9"),
+      #("window_in_days", "10"),
     ])
 
   expectation_helper("expectation_1", "blueprint_1", inputs)
@@ -127,13 +129,57 @@ pub fn blueprints_reference_validation_test() {
 
 // ## Inputs vs Artifact Params ##
 // * ❌ wrong type in inputs
-// * ❌ too few inputs
-// * ❌ too many inputs
-// * ❌ different input fields
+// * ✅ missing inputs
+// * ✅ extra inputs
+// * ✅ missing and extra inputs
+pub fn blueprints_input_test() {
+  let artifact = default_artifact()
+  let blueprint = default_blueprint()
+  let expectation = default_expectation()
+
+  // missing inputs
+  let empty_inputs = dict.new()
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_inputs(blueprint, empty_inputs),
+    ]),
+  )
+  |> should.equal(Error(
+    "Missing attributes in child: blueprint_1 against parent: artifact_1",
+  ))
+
+  // extra inputs
+  let extra_inputs =
+    dict.from_list([#("value", "production"), #("extra", "foobar")])
+
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_inputs(blueprint, extra_inputs),
+    ]),
+  )
+  |> should.equal(Error(
+    "Extra attributes in child: blueprint_1 against parent: artifact_1",
+  ))
+
+  // missing and extra inputs
+  let missing_and_extra_inputs = dict.from_list([#("extra", "foobar")])
+
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_inputs(blueprint, missing_and_extra_inputs),
+    ]),
+  )
+  |> should.equal(Error(
+    "Missing and extra attributes in child: blueprint_1 against parent: artifact_1",
+  ))
+}
+
 // ## Template Validation ##
 // * ❌ template variable references non-existent blueprint param (${undefined_var})
 // * ❌ invalid template syntax (malformed ${...})
 // * ❌ blueprint params key collision/shadowing with artifact's base_params
+// NOTE: Blueprint params can override artifact base_params - if the same key exists
+// in both, the blueprint's param takes precedence when resolving expectation inputs.
 // ## Sanity ##
 // * ✅ need at least one blueprint
 pub fn blueprints_sanity_test() {
@@ -184,11 +230,110 @@ pub fn expectations_reference_validation_test() {
 
 // ## Inputs vs Blueprint Params ##
 // * ❌ wrong type in inputs
-// * ❌ too few inputs
-// * ❌ too many inputs
-// * ❌ different input fields
+// * ✅ missing inputs - (TODO: account for artifact)
+// * ✅ extra inputs - (TODO: account for artifact)
+// * ✅ missing and extra inputs - (TODO: account for artifact)
+pub fn expectations_input_test() {
+  let artifact = default_artifact()
+  let blueprint = default_blueprint()
+  let expectation = default_expectation()
+
+  // missing inputs - general
+  let empty_inputs = dict.new()
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [expectations.set_inputs(expectation, empty_inputs)],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Missing attributes in child: expectation_1 against parent: blueprint_1",
+  ))
+
+  // missing inputs - only against blueprint
+  let missing_blueprint_params =
+    dict.from_list([
+      #("threshold", "99.9"),
+      #("window_in_days", "10"),
+    ])
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [
+        expectations.set_inputs(expectation, missing_blueprint_params),
+      ],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Missing attributes in child: expectation_1 against parent: blueprint_1",
+  ))
+
+  // missing inputs - only against artifact (base_params)
+  let missing_base_params =
+    dict.from_list([
+      #("environment", "production"),
+    ])
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [expectations.set_inputs(expectation, missing_base_params)],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Missing attributes in child: expectation_1 against parent: blueprint_1",
+  ))
+
+  // extra inputs
+  let extra_inputs =
+    dict.from_list([
+      #("threshold", "99.9"),
+      #("window_in_days", "10"),
+      #("environment", "production"),
+      #("extra", "foobar"),
+    ])
+
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [expectations.set_inputs(expectation, extra_inputs)],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Extra attributes in child: expectation_1 against parent: blueprint_1",
+  ))
+
+  // missing and extra inputs
+  let missing_and_extra_inputs = dict.from_list([#("extra", "foobar")])
+
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [
+        expectations.set_inputs(expectation, missing_and_extra_inputs),
+      ],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Missing and extra attributes in child: expectation_1 against parent: blueprint_1",
+  ))
+}
+
 // ## Additional Input Validation ##
-// * ❌ inputs for non-existent blueprint params (extra/unknown inputs)
 // * ❌ type coercion validation (e.g., "abc" when Integer expected)
 // ## Sanity ##
 // * ✅ need at least one expectation
