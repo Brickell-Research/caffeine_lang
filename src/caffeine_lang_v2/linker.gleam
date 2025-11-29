@@ -71,12 +71,9 @@ fn process_top_level_item(
 ) -> Result(List(String), String) {
   let item_path = base_directory <> "/" <> item_name
 
-  case is_directory(item_path), string.ends_with(item_name, "specifications") {
-    True, False ->
-      collect_yaml_files_from_subdirectory(item_path, accumulated_files)
-    True, True -> Ok(accumulated_files)
-    // Skip other directories
-    False, _ -> Ok(accumulated_files)
+  case is_directory(item_path) {
+    True -> collect_yaml_files_from_subdirectory(item_path, accumulated_files)
+    False -> Ok(accumulated_files)
     // Skip files at the top level
   }
 }
