@@ -3,8 +3,8 @@ import gleam/dict
 import gleam/result
 import yay
 
-pub opaque type ServiceExpectation {
-  ServiceExpectation(
+pub opaque type Expectation {
+  Expectation(
     name: String,
     blueprint: String,
     inputs: dict.Dict(String, String),
@@ -15,26 +15,24 @@ pub fn make_service_expectation(
   name name: String,
   blueprint blueprint: String,
   inputs inputs: dict.Dict(String, String),
-) -> ServiceExpectation {
-  ServiceExpectation(name:, blueprint:, inputs:)
+) -> Expectation {
+  Expectation(name:, blueprint:, inputs:)
 }
 
-pub fn get_name(service_expectation: ServiceExpectation) -> String {
+pub fn get_name(service_expectation: Expectation) -> String {
   service_expectation.name
 }
 
-pub fn get_blueprint(service_expectation: ServiceExpectation) -> String {
+pub fn get_blueprint(service_expectation: Expectation) -> String {
   service_expectation.blueprint
 }
 
-pub fn get_inputs(
-  service_expectation: ServiceExpectation,
-) -> dict.Dict(String, String) {
+pub fn get_inputs(service_expectation: Expectation) -> dict.Dict(String, String) {
   service_expectation.inputs
 }
 
 /// Parses an expectation invocation file into a list of service expectations.
-pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
+pub fn parse(file_path: String) -> Result(List(Expectation), String) {
   use service_expectations <- result.try(helpers.parse_specification(
     file_path,
     dict.new(),
@@ -52,7 +50,7 @@ pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
 fn parse_service_expectation(
   type_node: yay.Node,
   _params: dict.Dict(String, String),
-) -> Result(ServiceExpectation, String) {
+) -> Result(Expectation, String) {
   use name <- result.try(
     yay.extract_string_from_node(type_node, "name")
     |> result.map_error(fn(extraction_error) {
@@ -78,5 +76,5 @@ fn parse_service_expectation(
     }),
   )
 
-  Ok(ServiceExpectation(name:, blueprint:, inputs:))
+  Ok(Expectation(name:, blueprint:, inputs:))
 }

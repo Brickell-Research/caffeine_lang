@@ -1,11 +1,11 @@
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-import caffeine_lang_v2/parser/expectations.{type ServiceExpectation}
+import caffeine_lang_v2/parser/expectations.{type Expectation}
 
 pub type AST {
   AST(
     artifacts: List(Artifact),
     blueprints: List(Blueprint),
-    expectations: List(ServiceExpectation),
+    expectations: List(Expectation),
   )
 }

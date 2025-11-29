@@ -1,7 +1,7 @@
 import caffeine_lang_v2/common/ast.{type AST}
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-import caffeine_lang_v2/parser/expectations.{type ServiceExpectation}
+import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/list
 import gleam/result
 import gleam/string
@@ -41,7 +41,7 @@ fn fetch_blueprints(
 
 fn fetch_expectations(
   expectations_directory: String,
-) -> Result(List(ServiceExpectation), String) {
+) -> Result(List(Expectation), String) {
   use expectations_files <- result.try(get_instantiation_yaml_files(
     expectations_directory,
   ))
