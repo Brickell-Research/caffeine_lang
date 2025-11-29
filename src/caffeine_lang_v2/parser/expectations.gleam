@@ -1,7 +1,7 @@
 import caffeine_lang_v2/common
-import glaml_extended
 import gleam/dict
 import gleam/result
+import yay
 
 pub opaque type ServiceExpectation {
   ServiceExpectation(
@@ -50,24 +50,33 @@ pub fn parse(file_path: String) -> Result(List(ServiceExpectation), String) {
 }
 
 fn parse_service_expectation(
-  type_node: glaml_extended.Node,
+  type_node: yay.Node,
   _params: dict.Dict(String, String),
 ) -> Result(ServiceExpectation, String) {
-  use name <- result.try(glaml_extended.extract_string_from_node(
-    type_node,
-    "name",
-  ))
+  use name <- result.try(
+    yay.extract_string_from_node(type_node, "name")
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    }),
+  )
 
-  use blueprint <- result.try(glaml_extended.extract_string_from_node(
-    type_node,
-    "blueprint",
-  ))
+  use blueprint <- result.try(
+    yay.extract_string_from_node(type_node, "blueprint")
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    }),
+  )
 
-  use inputs <- result.try(glaml_extended.extract_dict_strings_from_node(
-    type_node,
-    "inputs",
-    fail_on_key_duplication: True,
-  ))
+  use inputs <- result.try(
+    yay.extract_dict_strings_from_node(
+      type_node,
+      "inputs",
+      fail_on_key_duplication: True,
+    )
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    }),
+  )
 
   Ok(ServiceExpectation(name:, blueprint:, inputs:))
 }

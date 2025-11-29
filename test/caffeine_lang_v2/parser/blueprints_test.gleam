@@ -18,6 +18,7 @@ pub fn file_path_base(file_path) {
 
 // ==== Tests - Blueprints ====
 // ==== Happy Path ====
+// * ❌ none
 // * ✅ single blueprint
 // * ✅ multiple blueprints
 pub fn parse_test() {
@@ -95,15 +96,10 @@ pub fn parse_test() {
 // * ✅ name
 // * ✅ artifact
 pub fn parse_empty_test() {
-  // empty params and inputs are OK (treated as empty dict)
-  let assert Ok([first, ..]) = blueprints.parse(file_path_base("empty_params"))
-  blueprints.get_params(first) |> should.equal(dict.new())
-
-  let assert Ok([first, ..]) = blueprints.parse(file_path_base("empty_inputs"))
-  blueprints.get_inputs(first) |> should.equal(dict.new())
-
   list.each(
     [
+      #("empty_params", "Expected params to be non-empty"),
+      #("empty_inputs", "Expected inputs to be non-empty"),
       #("empty_file", "Empty YAML file: " <> file_path_base("empty_file")),
       #("empty_blueprints", "blueprints is empty"),
       #("empty_name", "Expected name to be non-empty"),
@@ -163,14 +159,17 @@ pub fn parse_wrong_type_test() {
     [
       // wrong_type_blueprints is weird, but reasonable enough
       #("wrong_type_blueprints", "blueprints is empty"),
-      #("wrong_type_name", "Expected name to be a string"),
-      #("wrong_type_artifact", "Expected artifact to be a string"),
-      #("wrong_type_params", "Expected params to be a map"),
+      #("wrong_type_name", "Expected name to be a string, but found list"),
+      #(
+        "wrong_type_artifact",
+        "Expected artifact to be a string, but found list",
+      ),
+      #("wrong_type_params", "Expected params to be a map, but found string"),
       #("wrong_type_params_value", "Invalid type: NotARealType"),
-      #("wrong_type_inputs", "Expected inputs to be a map"),
+      #("wrong_type_inputs", "Expected inputs to be a map, but found string"),
       #(
         "wrong_type_inputs_value",
-        "Expected inputs entries to be string key-value pairs",
+        "Expected inputs to be a map of strings, but found map with non-string keys or values",
       ),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },

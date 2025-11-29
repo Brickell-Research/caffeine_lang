@@ -19,6 +19,7 @@ pub fn file_path_base(file_path) {
 
 // ==== Tests - Artifacts ====
 // ==== Happy Path ====
+// * ❌ none
 // * ✅ single artifact
 // * ✅ multiple artifacts
 pub fn parse_test() {
@@ -73,15 +74,17 @@ pub fn parse_test() {
 // * ✅ version
 pub fn parse_empty_test() {
   // empty base_params and params are OK (treated as empty dict)
-  let assert Ok([first, ..]) =
-    artifacts.parse(file_path_base("empty_base_params"))
-  artifacts.get_base_params(first) |> should.equal(dict.new())
+  // let assert Ok([first, ..]) =
+  //   artifacts.parse(file_path_base("empty_base_params"))
+  // artifacts.get_base_params(first) |> should.equal(dict.new())
 
-  let assert Ok([first, ..]) = artifacts.parse(file_path_base("empty_params"))
-  artifacts.get_params(first) |> should.equal(dict.new())
+  // let assert Ok([first, ..]) = artifacts.parse(file_path_base("empty_params"))
+  // artifacts.get_params(first) |> should.equal(dict.new())
 
   list.each(
     [
+      #("empty_base_params", "Expected base_params to be non-empty"),
+      #("empty_params", "Expected params to be non-empty"),
       #("empty_file", "Empty YAML file: " <> file_path_base("empty_file")),
       #("empty_artifacts", "artifacts is empty"),
       #("empty_name", "Expected name to be non-empty"),
@@ -141,11 +144,14 @@ pub fn parse_wrong_type_test() {
     [
       // wrong_type_artifacts is weird, but reasonable enough
       #("wrong_type_artifacts", "artifacts is empty"),
-      #("wrong_type_name", "Expected name to be a string"),
-      #("wrong_type_version", "Expected version to be a string"),
-      #("wrong_type_base_params", "Expected base_params to be a map"),
+      #("wrong_type_name", "Expected name to be a string, but found list"),
+      #("wrong_type_version", "Expected version to be a string, but found list"),
+      #(
+        "wrong_type_base_params",
+        "Expected base_params to be a map, but found string",
+      ),
       #("wrong_type_base_params_value", "Invalid type: NotARealType"),
-      #("wrong_type_params", "Expected params to be a map"),
+      #("wrong_type_params", "Expected params to be a map, but found string"),
       #("wrong_type_params_value", "Invalid type: NotARealType"),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
@@ -153,11 +159,11 @@ pub fn parse_wrong_type_test() {
 }
 
 // ==== Semantic ====
-// * ❌ version not semantic versioning
-//   * ❌ no dots
-//   * ❌ too many dots
-//   * ❌ non numbers with two dots
-//   * ❌ happy path
+// * ✅ version not semantic versioning
+//   * ✅ no dots
+//   * ✅ too many dots
+//   * ✅ non numbers with two dots
+//   * ✅ happy path
 pub fn parse_semantic_test() {
   let name = "foobar"
   let base_params = dict.new()

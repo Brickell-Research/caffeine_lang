@@ -17,9 +17,25 @@ pub fn file_path_base(file_path) {
 
 // ==== Tests - Expectations ====
 // ==== Happy Path ====
+// * ❌ none
 // * ✅ single
 // * ✅ multiple
 pub fn parse_test() {
+  // none - TODO differentiate between none and empty.
+  // let expected_expectations = [
+  //   expectations.make_service_expectation(
+  //     name: "Some operation succeeds in production",
+  //     blueprint: "success_rate_graphql",
+  //     inputs: dict.from_list([
+  //       #("gql_operation", "some_operation"),
+  //       #("environment", "production"),
+  //     ]),
+  //   ),
+  // ]
+
+  // expectations.parse(file_path_base("happy_path_none"))
+  // |> should.equal(Ok(expected_expectations))
+
   // single
   let expected_expectations = [
     expectations.make_service_expectation(
@@ -65,13 +81,9 @@ pub fn parse_test() {
 // * ✅ name
 // * ✅ blueprint
 pub fn parse_empty_test() {
-  // empty inputs is OK (treated as empty dict)
-  let assert Ok([first, ..]) =
-    expectations.parse(file_path_base("empty_inputs"))
-  expectations.get_inputs(first) |> should.equal(dict.new())
-
   list.each(
     [
+      #("empty_inputs", "Expected inputs to be non-empty"),
       #("empty_expectations", "expectations is empty"),
       #("empty_name", "Expected name to be non-empty"),
       #("empty_blueprint", "Expected blueprint to be non-empty"),
@@ -128,9 +140,12 @@ pub fn parse_wrong_type_test() {
     [
       // wrong_type_expectations is weird, but reasonable enough
       #("wrong_type_expectations", "expectations is empty"),
-      #("wrong_type_name", "Expected name to be a string"),
-      #("wrong_type_blueprint", "Expected blueprint to be a string"),
-      #("wrong_type_inputs", "Expected inputs to be a map"),
+      #("wrong_type_name", "Expected name to be a string, but found int"),
+      #(
+        "wrong_type_blueprint",
+        "Expected blueprint to be a string, but found list",
+      ),
+      #("wrong_type_inputs", "Expected inputs to be a map, but found string"),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
   )

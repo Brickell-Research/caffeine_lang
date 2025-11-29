@@ -1,33 +1,27 @@
-import glaml_extended
 import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
+import yay
 
 /// Parses a specification file into a list of glaml documents according to the given parse function.
 pub fn parse_specification(
   file_path: String,
   params: dict.Dict(String, String),
-  parse_fn: fn(glaml_extended.Node, dict.Dict(String, String)) ->
-    Result(a, String),
+  parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
   // TODO: consider enforcing constraints on file path, however for now, unnecessary.
 
   // parse the YAML file
   use doc <- result.try(
-    glaml_extended.parse_file(file_path)
+    yay.parse_file(file_path)
     |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
   )
   let parse_fn_two = fn(doc, _params) {
-    iteratively_parse_collection(
-      glaml_extended.document_root(doc),
-      params,
-      parse_fn,
-      key,
-    )
+    iteratively_parse_collection(yay.document_root(doc), params, parse_fn, key)
   }
 
   // parse the intermediate representation, here just the sli_types
@@ -137,14 +131,13 @@ pub fn validate_uniqueness(
 
 /// Iteratively parses a collection of nodes.
 pub fn iteratively_parse_collection(
-  root: glaml_extended.Node,
+  root: yay.Node,
   params: dict.Dict(String, String),
-  actual_parse_fn: fn(glaml_extended.Node, dict.Dict(String, String)) ->
-    Result(a, String),
+  actual_parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
   use services_node <- result.try(
-    glaml_extended.select_sugar(root, key)
+    yay.select_sugar(root, key)
     |> result.map_error(fn(_) { "Missing " <> key }),
   )
   do_parse_collection(services_node, 0, params, actual_parse_fn, key)
@@ -152,14 +145,13 @@ pub fn iteratively_parse_collection(
 
 /// Internal parser for list of nodes, iterates over the list.
 fn do_parse_collection(
-  services: glaml_extended.Node,
+  services: yay.Node,
   index: Int,
   params: dict.Dict(String, String),
-  actual_parse_fn: fn(glaml_extended.Node, dict.Dict(String, String)) ->
-    Result(a, String),
+  actual_parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
   key: String,
 ) -> Result(List(a), String) {
-  case glaml_extended.select_sugar(services, "#" <> int.to_string(index)) {
+  case yay.select_sugar(services, "#" <> int.to_string(index)) {
     Ok(service_node) -> {
       use service <- result.try(actual_parse_fn(service_node, params))
       use rest <- result.try(do_parse_collection(
@@ -173,9 +165,9 @@ fn do_parse_collection(
     }
     Error(error) -> {
       case error, index {
-        glaml_extended.NodeNotFound(_), 0 -> Error(key <> " is empty")
-        glaml_extended.NodeNotFound(_), _ -> Ok([])
-        glaml_extended.SelectorParseError, _ -> Error(key <> " is unparsable")
+        yay.NodeNotFound(_), 0 -> Error(key <> " is empty")
+        yay.NodeNotFound(_), _ -> Ok([])
+        yay.SelectorParseError, _ -> Error(key <> " is unparsable")
       }
     }
     // TODO: fix this super hacky way of iterating over SLOs.

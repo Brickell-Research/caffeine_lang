@@ -1,10 +1,10 @@
 import caffeine_lang_v2/common
-import glaml_extended
 import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
+import yay
 
 pub opaque type Artifact {
   Artifact(
@@ -61,34 +61,44 @@ pub fn parse(file_path: String) -> Result(List(Artifact), String) {
 }
 
 fn parse_artifact(
-  type_node: glaml_extended.Node,
+  type_node: yay.Node,
   _params: dict.Dict(String, String),
 ) -> Result(Artifact, String) {
-  use name <- result.try(glaml_extended.extract_string_from_node(
-    type_node,
-    "name",
-  ))
+  use name <- result.try(
+    yay.extract_string_from_node(type_node, "name")
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    }),
+  )
 
-  use version <- result.try(glaml_extended.extract_string_from_node(
-    type_node,
-    "version",
-  ))
+  use version <- result.try(
+    yay.extract_string_from_node(type_node, "version")
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    }),
+  )
 
   use base_params <- result.try(
-    glaml_extended.extract_dict_strings_from_node(
+    yay.extract_dict_strings_from_node(
       type_node,
       "base_params",
       fail_on_key_duplication: True,
     )
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    })
     |> result.try(common.dict_strings_to_accepted_types),
   )
 
   use params <- result.try(
-    glaml_extended.extract_dict_strings_from_node(
+    yay.extract_dict_strings_from_node(
       type_node,
       "params",
       fail_on_key_duplication: True,
     )
+    |> result.map_error(fn(extraction_error) {
+      yay.extraction_error_to_string(extraction_error)
+    })
     |> result.try(common.dict_strings_to_accepted_types),
   )
 
