@@ -100,7 +100,7 @@ pub fn artifacts_sanity_test() {
 // ==== Blueprints ====
 // ## Reference Validation ##
 // * ✅ artifact referenced by blueprint exists (success case)
-// * ❌ artifact referenced by blueprint does not exist (error case)
+// * ✅ artifact referenced by blueprint does not exist (error case)
 pub fn blueprints_reference_validation_test() {
   let artifact = default_artifact()
   let blueprint = default_blueprint()
@@ -113,6 +113,16 @@ pub fn blueprints_reference_validation_test() {
     ]),
   )
   |> should.equal(Ok(True))
+
+  // sad path: artifact referenced by blueprint DOES NOT exist
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_artifact(blueprint, "non-existent-artifact"),
+    ]),
+  )
+  |> should.equal(Error(
+    "At least one blueprint is referencing a non-existent artifact.",
+  ))
 }
 
 // ## Inputs vs Artifact Params ##
@@ -141,7 +151,7 @@ pub fn blueprints_sanity_test() {
 // ==== Expectations ====
 // ## Reference Validation ##
 // * ✅ blueprint referenced by expectation exists (success case)
-// * ❌ blueprint referenced by expectation does not exist (error case)
+// * ✅ blueprint referenced by expectation does not exist (error case)
 pub fn expectations_reference_validation_test() {
   let artifact = default_artifact()
   let blueprint = default_blueprint()
@@ -154,6 +164,22 @@ pub fn expectations_reference_validation_test() {
     ]),
   )
   |> should.equal(Ok(True))
+
+  // sad path: blueprint referenced by expectation DOES NOT exist
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [
+        expectations.set_blueprint(expectation, "non-existent-blueprint"),
+      ],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "At least one expectation is referencing a non-existent blueprint.",
+  ))
 }
 
 // ## Inputs vs Blueprint Params ##

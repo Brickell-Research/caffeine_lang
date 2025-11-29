@@ -19,8 +19,19 @@ pub fn make_service_expectation(
   Expectation(name:, blueprint:, inputs:)
 }
 
+pub fn set_name(service_expectation: Expectation, name: String) -> Expectation {
+  Expectation(..service_expectation, name:)
+}
+
 pub fn get_name(service_expectation: Expectation) -> String {
   service_expectation.name
+}
+
+pub fn set_blueprint(
+  service_expectation: Expectation,
+  blueprint: String,
+) -> Expectation {
+  Expectation(..service_expectation, blueprint:)
 }
 
 pub fn get_blueprint(service_expectation: Expectation) -> String {

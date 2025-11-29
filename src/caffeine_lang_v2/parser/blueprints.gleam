@@ -21,8 +21,16 @@ pub fn make_blueprint(
   Blueprint(name:, artifact:, params:, inputs:)
 }
 
+pub fn set_name(blueprint: Blueprint, name: String) -> Blueprint {
+  Blueprint(..blueprint, name:)
+}
+
 pub fn get_name(blueprint: Blueprint) -> String {
   blueprint.name
+}
+
+pub fn set_artifact(blueprint: Blueprint, artifact: String) -> Blueprint {
+  Blueprint(..blueprint, artifact:)
 }
 
 pub fn get_artifact(blueprint: Blueprint) -> String {

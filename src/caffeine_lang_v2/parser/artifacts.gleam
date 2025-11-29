@@ -38,13 +38,19 @@ pub fn make_artifact(
   }
 }
 
+pub fn get_name(artifact: Artifact) -> String {
+  artifact.name
+}
+
 pub fn get_base_params(
   artifact: Artifact,
 ) -> dict.Dict(String, helpers.AcceptedTypes) {
   artifact.base_params
 }
 
-pub fn get_params(artifact: Artifact) -> dict.Dict(String, helpers.AcceptedTypes) {
+pub fn get_params(
+  artifact: Artifact,
+) -> dict.Dict(String, helpers.AcceptedTypes) {
   artifact.params
 }
 
