@@ -38,6 +38,9 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
 
   use _ <- result.try(perform_shadowing_checks(artifacts_map, bluprts))
 
+  // Merge blueprint params with artifact base_params to create resolved blueprints.
+  // dict.merge(a, b) keeps values from b when keys conflict, but the shadowing check
+  // above already prevents key collisions, so the merge order doesn't matter here.
   let resolved_blueprints_map =
     abs_syn_tree.blueprints
     |> list.map(fn(blueprint) {
@@ -220,7 +223,7 @@ fn assert_inputs_sensible_for_params(
       set.difference(actual_input_attributes, expected_input_attributes)
       |> set.to_list
 
-    let error_msg_suffic =
+    let error_msg_suffix =
       " in child: "
       <> child |> get_child_name
       <> " against parent: "
@@ -229,9 +232,9 @@ fn assert_inputs_sensible_for_params(
     // TODO: better error messages
     use _ <- result.try(case missing_inputs, extra_inputs {
       [], [] -> Ok(True)
-      _, [] -> Error("Missing attributes" <> error_msg_suffic)
-      [], _ -> Error("Extra attributes" <> error_msg_suffic)
-      _, _ -> Error("Missing and extra attributes" <> error_msg_suffic)
+      _, [] -> Error("Missing attributes" <> error_msg_suffix)
+      [], _ -> Error("Extra attributes" <> error_msg_suffix)
+      _, _ -> Error("Missing and extra attributes" <> error_msg_suffix)
     })
 
     // combine the value and expected types into a pair
@@ -280,8 +283,8 @@ pub fn assert_value_is_as_expected(
     helpers.NonEmptyList(inner) ->
       assert_value_is_non_empty_list(raw_string_value, inner)
     helpers.Optional(inner) -> assert_value_is_optional(raw_string_value, inner)
-    helpers.Dict(key_type, value_type) ->
-      assert_value_is_dict(raw_string_value, key_type, value_type)
+    helpers.Dict(_key_type, value_type) ->
+      assert_value_is_dict(raw_string_value, value_type)
   }
 }
 
@@ -301,10 +304,15 @@ fn assert_value_is_integer(raw_string_value: String) -> Result(Bool, String) {
 }
 
 fn assert_value_is_float(raw_string_value: String) -> Result(Bool, String) {
+  // Accept both floats (10.5) and integers (10) as valid floats
   case float.parse(raw_string_value) {
-    Error(_) ->
-      Error("Received: " <> raw_string_value <> " and expected a Float")
     Ok(_) -> Ok(True)
+    Error(_) ->
+      case int.parse(raw_string_value) {
+        Ok(_) -> Ok(True)
+        Error(_) ->
+          Error("Received: " <> raw_string_value <> " and expected a Float")
+      }
   }
 }
 
@@ -343,7 +351,7 @@ fn assert_value_is_non_empty_list(
         yay.NodeSeq(items) -> {
           // Validate each item matches inner_type
           list.try_fold(items, True, fn(_, node) {
-            validate_node_type(node, inner_type, raw_string_value)
+            validate_node_type(node, inner_type, raw_string_value, "NonEmptyList")
           })
         }
         _ ->
@@ -379,9 +387,10 @@ fn assert_value_is_optional(
   }
 }
 
+// Note: key_type is not validated since YAML/JSON keys are always strings.
+// The AcceptedTypes definition allows Dict(String, T) only, so this is safe.
 fn assert_value_is_dict(
   raw_string_value: String,
-  _key_type: helpers.AcceptedTypes,
   value_type: helpers.AcceptedTypes,
 ) -> Result(Bool, String) {
   case yay.parse_string(raw_string_value) {
@@ -391,7 +400,14 @@ fn assert_value_is_dict(
           // Validate each value matches value_type
           list.try_fold(entries, True, fn(_, entry) {
             let #(_, value_node) = entry
-            case validate_node_type(value_node, value_type, raw_string_value) {
+            case
+              validate_node_type(
+                value_node,
+                value_type,
+                raw_string_value,
+                "Dict(String, ",
+              )
+            {
               Ok(_) -> Ok(True)
               Error(_) ->
                 Error(
@@ -415,6 +431,7 @@ fn validate_node_type(
   node: yay.Node,
   expected: helpers.AcceptedTypes,
   raw: String,
+  context: String,
 ) -> Result(Bool, String) {
   case node, expected {
     yay.NodeStr(_), helpers.String -> Ok(True)
@@ -427,7 +444,9 @@ fn validate_node_type(
       Error(
         "Received: "
         <> raw
-        <> " and expected a NonEmptyList("
+        <> " and expected a "
+        <> context
+        <> "("
         <> type_to_string(expected)
         <> ")",
       )

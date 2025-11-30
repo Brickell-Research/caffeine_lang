@@ -103,7 +103,7 @@ pub fn blueprints_do_not_overshadow_artifact_base_params_test() {
   let further_shadowing_params =
     dict.from_list([
       #("window_in_days", helpers.String),
-      #("thresold", helpers.String),
+      #("threshold", helpers.String),
     ])
 
   // overshadow a single param in a single blueprint
@@ -473,7 +473,7 @@ pub fn assert_raw_value_correct_type_test() {
   |> should.equal(Ok(True))
   // - happy path: integer is also valid float
   semantic_analyzer.assert_value_is_as_expected("10", helpers.Float)
-  |> should.equal(Error("Received: 10 and expected a Float"))
+  |> should.equal(Ok(True))
 
   // ## String ##
   // - sad path: no quotes
