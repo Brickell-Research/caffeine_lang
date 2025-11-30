@@ -227,7 +227,6 @@ pub fn blueprints_input_test() {
 // ## Template Validation ##
 // * ❌ template variable references non-existent blueprint param (${undefined_var})
 // * ❌ invalid template syntax (malformed ${...})
-// * ❌ blueprint params key collision/shadowing with artifact's base_params
 // ## Sanity ##
 // * ✅ need at least one blueprint
 pub fn blueprints_sanity_test() {
@@ -440,11 +439,6 @@ pub fn expectations_sanity_test() {
   )
   |> should.equal(Error("Expected at least one expectation."))
 }
-
-// ==== Cross-Cutting / Chain Validation ====
-// * ❌ full valid chain: Artifact → Blueprint → Expectation (success case)
-// * ❌ expectation names unique across all expectation files (linker handles per-file)
-// * ❌ blueprint names unique across all blueprint files (parser handles per-file)
 
 // ==== Type-Specific Validation ====
 // * ✅ Booleans
