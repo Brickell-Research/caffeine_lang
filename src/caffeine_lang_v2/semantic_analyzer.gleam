@@ -10,6 +10,7 @@ import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
+import yay
 
 pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
   let arts = abs_syn_tree.artifacts
@@ -251,9 +252,11 @@ pub fn assert_value_is_as_expected(
     helpers.Integer -> assert_value_is_integer(raw_string_value)
     helpers.Float -> assert_value_is_float(raw_string_value)
     helpers.String -> assert_value_is_string(raw_string_value)
-    helpers.NonEmptyList(_) -> Error("Unhandled for NonEmptyList")
-    helpers.Optional(_) -> Error("Unhandled for Optional")
-    helpers.Dict(_, _) -> Error("Unhandled for Dict")
+    helpers.NonEmptyList(inner) ->
+      assert_value_is_non_empty_list(raw_string_value, inner)
+    helpers.Optional(inner) -> assert_value_is_optional(raw_string_value, inner)
+    helpers.Dict(key_type, value_type) ->
+      assert_value_is_dict(raw_string_value, key_type, value_type)
   }
 }
 
@@ -298,5 +301,124 @@ fn assert_value_is_string(raw_string_value: String) -> Result(Bool, String) {
         <> raw_string_value
         <> " and expected a String. A string is defined as between two (and only two) double quotes",
       )
+  }
+}
+
+fn assert_value_is_non_empty_list(
+  raw_string_value: String,
+  inner_type: helpers.AcceptedTypes,
+) -> Result(Bool, String) {
+  case yay.parse_string(raw_string_value) {
+    Ok([doc]) -> {
+      case yay.document_root(doc) {
+        yay.NodeSeq([]) ->
+          Error(
+            "Received: " <> raw_string_value <> " and expected a NonEmptyList",
+          )
+        yay.NodeSeq(items) -> {
+          // Validate each item matches inner_type
+          list.try_fold(items, True, fn(_, node) {
+            validate_node_type(node, inner_type, raw_string_value)
+          })
+        }
+        _ ->
+          Error(
+            "Received: " <> raw_string_value <> " and expected a NonEmptyList",
+          )
+      }
+    }
+    _ ->
+      Error("Received: " <> raw_string_value <> " and expected a NonEmptyList")
+  }
+}
+
+fn assert_value_is_optional(
+  raw_string_value: String,
+  inner_type: helpers.AcceptedTypes,
+) -> Result(Bool, String) {
+  case raw_string_value {
+    "null" | "Null" | "NULL" -> Ok(True)
+    _ -> {
+      case assert_value_is_as_expected(raw_string_value, inner_type) {
+        Ok(_) -> Ok(True)
+        Error(_) ->
+          Error(
+            "Received: "
+            <> raw_string_value
+            <> " and expected a Optional("
+            <> type_to_string(inner_type)
+            <> ")",
+          )
+      }
+    }
+  }
+}
+
+fn assert_value_is_dict(
+  raw_string_value: String,
+  _key_type: helpers.AcceptedTypes,
+  value_type: helpers.AcceptedTypes,
+) -> Result(Bool, String) {
+  case yay.parse_string(raw_string_value) {
+    Ok([doc]) -> {
+      case yay.document_root(doc) {
+        yay.NodeMap(entries) -> {
+          // Validate each value matches value_type
+          list.try_fold(entries, True, fn(_, entry) {
+            let #(_, value_node) = entry
+            case validate_node_type(value_node, value_type, raw_string_value) {
+              Ok(_) -> Ok(True)
+              Error(_) ->
+                Error(
+                  "Received: "
+                  <> raw_string_value
+                  <> " and expected a Dict(String, "
+                  <> type_to_string(value_type)
+                  <> ")",
+                )
+            }
+          })
+        }
+        _ -> Error("Received: " <> raw_string_value <> " and expected a Dict")
+      }
+    }
+    _ -> Error("Received: " <> raw_string_value <> " and expected a Dict")
+  }
+}
+
+fn validate_node_type(
+  node: yay.Node,
+  expected: helpers.AcceptedTypes,
+  raw: String,
+) -> Result(Bool, String) {
+  case node, expected {
+    yay.NodeStr(_), helpers.String -> Ok(True)
+    yay.NodeInt(_), helpers.Integer -> Ok(True)
+    yay.NodeFloat(_), helpers.Float -> Ok(True)
+    yay.NodeInt(_), helpers.Float -> Ok(True)
+    // YAML/JSON parsers often represent floats as ints
+    yay.NodeBool(_), helpers.Boolean -> Ok(True)
+    _, _ ->
+      Error(
+        "Received: "
+        <> raw
+        <> " and expected a NonEmptyList("
+        <> type_to_string(expected)
+        <> ")",
+      )
+  }
+}
+
+fn type_to_string(t: helpers.AcceptedTypes) -> String {
+  case t {
+    helpers.Boolean -> "Boolean"
+    helpers.Integer -> "Integer"
+    helpers.Float -> "Float"
+    helpers.String -> "String"
+    helpers.NonEmptyList(inner) ->
+      "NonEmptyList(" <> type_to_string(inner) <> ")"
+    helpers.Optional(inner) -> "Optional(" <> type_to_string(inner) <> ")"
+    helpers.Dict(k, v) ->
+      "Dict(" <> type_to_string(k) <> ", " <> type_to_string(v) <> ")"
   }
 }
