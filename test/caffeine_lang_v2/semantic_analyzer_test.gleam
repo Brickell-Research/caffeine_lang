@@ -396,13 +396,12 @@ pub fn expectations_sanity_test() {
 // * ❌ blueprint names unique across all blueprint files (parser handles per-file)
 
 // ==== Type-Specific Validation ====
-// * ✅ expected Boolean, got other scalar
-// * ❌ expected Integer, got Float
-// * ❌ expected String, got numeric
-// * ❌ expected NonEmptyList(T), got scalar
-// * ❌ empty list for NonEmptyList(T)
-// * ❌ expected Optional(T), got wrong inner type
-// * ❌ expected Dict(String, T), got scalar
+// * ✅ Booleans
+// * ✅ Integers
+// * ✅ Floats
+// * ✅ NonEmptyList(T)'s
+// * ✅ Optional(T)'s
+// * ✅ Dict(String, T)'s
 pub fn assert_raw_value_correct_type_test() {
   // ## Bool ##
   // - sad path
