@@ -220,8 +220,6 @@ pub fn blueprints_input_test() {
 // * ❌ template variable references non-existent blueprint param (${undefined_var})
 // * ❌ invalid template syntax (malformed ${...})
 // * ❌ blueprint params key collision/shadowing with artifact's base_params
-// NOTE: Blueprint params can override artifact base_params - if the same key exists
-// in both, the blueprint's param takes precedence when resolving expectation inputs.
 // ## Sanity ##
 // * ✅ need at least one blueprint
 pub fn blueprints_sanity_test() {
@@ -390,22 +388,144 @@ pub fn expectations_sanity_test() {
   )
   |> should.equal(Error("Expected at least one expectation."))
 }
+
 // ==== Cross-Cutting / Chain Validation ====
 // * ❌ full valid chain: Artifact → Blueprint → Expectation (success case)
-// * ❌ base_params types propagate correctly through blueprint to expectation
 // * ❌ expectation input coercible to artifact base_params type
 // * ❌ expectation names unique across all expectation files (linker handles per-file)
 // * ❌ blueprint names unique across all blueprint files (parser handles per-file)
 
 // ==== Type-Specific Validation ====
-// * ❌ expected Boolean, got other scalar
+// * ✅ expected Boolean, got other scalar
 // * ❌ expected Integer, got Float
 // * ❌ expected String, got numeric
 // * ❌ expected NonEmptyList(T), got scalar
 // * ❌ empty list for NonEmptyList(T)
 // * ❌ expected Optional(T), got wrong inner type
 // * ❌ expected Dict(String, T), got scalar
+pub fn assert_raw_value_correct_type_test() {
+  // ## Bool ##
+  // - sad path
+  semantic_analyzer.assert_value_is_as_expected("10", helpers.Boolean)
+  |> should.equal(Error("Received: 10 and expected a Bool"))
+  // - happy path
+  semantic_analyzer.assert_value_is_as_expected("true", helpers.Boolean)
+  |> should.equal(Ok(True))
 
+  // ## Integer
+  // - sad path
+  semantic_analyzer.assert_value_is_as_expected("10.0", helpers.Integer)
+  |> should.equal(Error("Received: 10.0 and expected an Integer"))
+  // - happy path
+  semantic_analyzer.assert_value_is_as_expected("10", helpers.Integer)
+  |> should.equal(Ok(True))
+
+  // ## Float ##
+  // - sad path: string that's not a number
+  semantic_analyzer.assert_value_is_as_expected("abc", helpers.Float)
+  |> should.equal(Error("Received: abc and expected a Float"))
+  // - happy path: valid float
+  semantic_analyzer.assert_value_is_as_expected("10.5", helpers.Float)
+  |> should.equal(Ok(True))
+  // - happy path: integer is also valid float
+  semantic_analyzer.assert_value_is_as_expected("10", helpers.Float)
+  |> should.equal(Error("Received: 10 and expected a Float"))
+
+  // ## String ##
+  // - sad path: no quotes
+  semantic_analyzer.assert_value_is_as_expected("hello world", helpers.String)
+  |> should.equal(Error(
+    "Received: hello world and expected a String. A string is defined as between two (and only two) double quotes",
+  ))
+  // - sad path: only front quote
+  semantic_analyzer.assert_value_is_as_expected("\"hello world", helpers.String)
+  |> should.equal(Error(
+    "Received: \"hello world and expected a String. A string is defined as between two (and only two) double quotes",
+  ))
+  // - sad path: only end quote
+  semantic_analyzer.assert_value_is_as_expected("hello world\"", helpers.String)
+  |> should.equal(Error(
+    "Received: hello world\" and expected a String. A string is defined as between two (and only two) double quotes",
+  ))
+  // - sad path: more than two quotes
+  semantic_analyzer.assert_value_is_as_expected(
+    "\"hello\"world\"",
+    helpers.String,
+  )
+  |> should.equal(Error(
+    "Received: \"hello\"world\" and expected a String. A string is defined as between two (and only two) double quotes",
+  ))
+  // - happy path
+  semantic_analyzer.assert_value_is_as_expected(
+    "\"hello world\"",
+    helpers.String,
+  )
+  |> should.equal(Ok(True))
+
+  // ## NonEmptyList(T) ##
+  // - sad path: empty list
+  semantic_analyzer.assert_value_is_as_expected(
+    "[]",
+    helpers.NonEmptyList(helpers.String),
+  )
+  |> should.equal(Error("Received: [] and expected a NonEmptyList"))
+  // - sad path: wrong inner type
+  semantic_analyzer.assert_value_is_as_expected(
+    "[1, 2, 3]",
+    helpers.NonEmptyList(helpers.String),
+  )
+  |> should.equal(Error(
+    "Received: [1, 2, 3] and expected a NonEmptyList(String)",
+  ))
+  // - happy path: non-empty list with correct inner type
+  semantic_analyzer.assert_value_is_as_expected(
+    "[\"a\", \"b\"]",
+    helpers.NonEmptyList(helpers.String),
+  )
+  |> should.equal(Ok(True))
+
+  // ## Optional(T) ##
+  // - sad path: wrong inner type when value is present
+  semantic_analyzer.assert_value_is_as_expected(
+    "abc",
+    helpers.Optional(helpers.Integer),
+  )
+  |> should.equal(Error("Received: abc and expected a Optional(Integer)"))
+  // - happy path: valid inner type
+  semantic_analyzer.assert_value_is_as_expected(
+    "42",
+    helpers.Optional(helpers.Integer),
+  )
+  |> should.equal(Ok(True))
+  // - happy path: null/empty is valid for optional
+  semantic_analyzer.assert_value_is_as_expected(
+    "null",
+    helpers.Optional(helpers.Integer),
+  )
+  |> should.equal(Ok(True))
+
+  // ## Dict(String, T) ##
+  // - sad path: scalar instead of dict
+  semantic_analyzer.assert_value_is_as_expected(
+    "hello",
+    helpers.Dict(helpers.String, helpers.Integer),
+  )
+  |> should.equal(Error("Received: hello and expected a Dict"))
+  // - sad path: wrong value type in dict
+  semantic_analyzer.assert_value_is_as_expected(
+    "{\"key\": \"not_an_int\"}",
+    helpers.Dict(helpers.String, helpers.Integer),
+  )
+  |> should.equal(Error(
+    "Received: {\"key\": \"not_an_int\"} and expected a Dict(String, Integer)",
+  ))
+  // - happy path: valid dict with correct types
+  semantic_analyzer.assert_value_is_as_expected(
+    "{\"key\": 42}",
+    helpers.Dict(helpers.String, helpers.Integer),
+  )
+  |> should.equal(Ok(True))
+}
 // ==== Default/Optional Handling ====
 // * ❌ optional param omitted → uses default
 // * ❌ optional param provided → overrides default

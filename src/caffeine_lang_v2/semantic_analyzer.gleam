@@ -4,6 +4,8 @@ import caffeine_lang_v2/parser/artifacts.{type Artifact}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
 import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/dict
+import gleam/float
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
@@ -238,4 +240,63 @@ fn assert_inputs_sensible_for_params(
     }
   })
   |> string.join(", ")
+}
+
+pub fn assert_value_is_as_expected(
+  raw_string_value: String,
+  expected_type: helpers.AcceptedTypes,
+) -> Result(Bool, String) {
+  case expected_type {
+    helpers.Boolean -> assert_value_is_boolean(raw_string_value)
+    helpers.Integer -> assert_value_is_integer(raw_string_value)
+    helpers.Float -> assert_value_is_float(raw_string_value)
+    helpers.String -> assert_value_is_string(raw_string_value)
+    helpers.NonEmptyList(_) -> Error("Unhandled for NonEmptyList")
+    helpers.Optional(_) -> Error("Unhandled for Optional")
+    helpers.Dict(_, _) -> Error("Unhandled for Dict")
+  }
+}
+
+fn assert_value_is_boolean(raw_string_value: String) -> Result(Bool, String) {
+  case raw_string_value {
+    "true" | "True" | "false" | "False" -> Ok(True)
+    _ -> Error("Received: " <> raw_string_value <> " and expected a Bool")
+  }
+}
+
+fn assert_value_is_integer(raw_string_value: String) -> Result(Bool, String) {
+  case int.parse(raw_string_value) {
+    Error(_) ->
+      Error("Received: " <> raw_string_value <> " and expected an Integer")
+    Ok(_) -> Ok(True)
+  }
+}
+
+fn assert_value_is_float(raw_string_value: String) -> Result(Bool, String) {
+  case float.parse(raw_string_value) {
+    Error(_) ->
+      Error("Received: " <> raw_string_value <> " and expected a Float")
+    Ok(_) -> Ok(True)
+  }
+}
+
+// String is defined as between two (and only two) double quotes
+fn assert_value_is_string(raw_string_value: String) -> Result(Bool, String) {
+  let starts_with_quote = string.starts_with(raw_string_value, "\"")
+  let ends_with_quote = string.ends_with(raw_string_value, "\"")
+  let contains_extra_quotes =
+    raw_string_value
+    |> string.drop_start(1)
+    |> string.drop_end(1)
+    |> string.contains("\"")
+
+  case starts_with_quote, ends_with_quote, contains_extra_quotes {
+    True, True, False -> Ok(True)
+    _, _, _ ->
+      Error(
+        "Received: "
+        <> raw_string_value
+        <> " and expected a String. A string is defined as between two (and only two) double quotes",
+      )
+  }
 }
