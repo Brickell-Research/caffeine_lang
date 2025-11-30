@@ -6,55 +6,31 @@ import gleam/result
 import gleam/string
 import yay
 
-pub opaque type Artifact {
+pub type Artifact {
   Artifact(
     name: String,
-    version: String,
+    version: Semver,
     base_params: dict.Dict(String, helpers.AcceptedTypes),
     params: dict.Dict(String, helpers.AcceptedTypes),
   )
 }
 
-pub fn make_artifact(
-  name name: String,
-  version version: String,
-  base_params base_params: dict.Dict(String, helpers.AcceptedTypes),
-  params params: dict.Dict(String, helpers.AcceptedTypes),
-) -> Result(Artifact, String) {
-  let error_msg =
-    "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received '"
-    <> version
-    <> "'."
+pub opaque type Semver {
+  Semver(major: Int, minor: Int, patch: Int)
+}
 
-  case string.split(version, ".") {
-    [major, minor, patch] -> {
-      use _ <- result.try(
-        list.try_map([major, minor, patch], int.parse)
-        |> result.replace_error(error_msg),
+pub fn make_semver(version version: String) -> Result(Semver, String) {
+  case version |> string.split(".") |> list.try_map(int.parse) {
+    Ok([major, minor, patch]) -> Ok(Semver(major:, minor:, patch:))
+    _ ->
+      Error(
+        "Version must follow semantic versioning (X.Y.Z). See: https://semver.org/. Received '"
+        <> version
+        <> "'.",
       )
-      Ok(Artifact(name:, version:, base_params:, params:))
-    }
-    _ -> Error(error_msg)
   }
 }
 
-pub fn get_name(artifact: Artifact) -> String {
-  artifact.name
-}
-
-pub fn get_base_params(
-  artifact: Artifact,
-) -> dict.Dict(String, helpers.AcceptedTypes) {
-  artifact.base_params
-}
-
-pub fn get_params(
-  artifact: Artifact,
-) -> dict.Dict(String, helpers.AcceptedTypes) {
-  artifact.params
-}
-
-/// Parses an artifact specification file into a list of artifacts.
 pub fn parse(file_path: String) -> Result(List(Artifact), String) {
   use artifacts <- result.try(helpers.parse_specification(
     file_path,
@@ -77,12 +53,14 @@ fn parse_artifact(
     }),
   )
 
-  use version <- result.try(
+  use version_string <- result.try(
     yay.extract_string(type_node, "version")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
+
+  use version <- result.try(make_semver(version_string))
 
   use base_params <- result.try(
     yay.extract_string_map_with_duplicate_detection(

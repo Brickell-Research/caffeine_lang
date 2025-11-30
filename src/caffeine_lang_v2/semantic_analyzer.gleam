@@ -1,7 +1,7 @@
 import caffeine_lang_v2/common/ast.{type AST}
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
-import caffeine_lang_v2/parser/blueprints.{type Blueprint}
+import caffeine_lang_v2/parser/blueprints.{type Blueprint, Blueprint}
 import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/dict
 import gleam/float
@@ -19,12 +19,12 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
 
   let artifacts_map =
     abs_syn_tree.artifacts
-    |> list.map(fn(artifact) { #(artifacts.get_name(artifact), artifact) })
+    |> list.map(fn(artifact) { #(artifact.name, artifact) })
     |> dict.from_list
 
   let unresolved_blueprints_map =
     abs_syn_tree.blueprints
-    |> list.map(fn(blueprint) { #(blueprints.get_name(blueprint), blueprint) })
+    |> list.map(fn(blueprint) { #(blueprint.name, blueprint) })
     |> dict.from_list
 
   use _ <- result.try(perform_sanity_checks(arts, bluprts, expcts))
@@ -45,16 +45,13 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
     abs_syn_tree.blueprints
     |> list.map(fn(blueprint) {
       let assert Ok(refd_artifact) =
-        dict.get(artifacts_map, blueprints.get_artifact(blueprint))
+        dict.get(artifacts_map, blueprint.artifact)
 
       #(
-        blueprints.get_name(blueprint),
-        blueprints.set_params(
-          blueprint,
-          dict.merge(
-            blueprints.get_params(blueprint),
-            artifacts.get_base_params(refd_artifact),
-          ),
+        blueprint.name,
+        Blueprint(
+          ..blueprint,
+          params: dict.merge(blueprint.params, refd_artifact.base_params),
         ),
       )
     })
@@ -99,13 +96,9 @@ fn perform_reference_checks(
 
   // reference check for blueprint -> artifact and expectation -> blueprint
   let not_missing_expectation_to_blueprint_reference =
-    not_missing_refs(blueprints_map, expectations, fn(a) {
-      expectations.get_blueprint(a)
-    })
+    not_missing_refs(blueprints_map, expectations, fn(a) { a.blueprint })
   let not_missing_blueprint_to_artifact_reference =
-    not_missing_refs(artifacts_map, blueprints, fn(a) {
-      blueprints.get_artifact(a)
-    })
+    not_missing_refs(artifacts_map, blueprints, fn(a) { a.artifact })
 
   // TODO: better error messages
   case
@@ -130,18 +123,18 @@ fn perform_shadowing_checks(
     blueprints
     |> list.filter_map(fn(blueprint) {
       let assert Ok(refd_artifact) =
-        dict.get(artifacts_map, blueprints.get_artifact(blueprint))
+        dict.get(artifacts_map, blueprint.artifact)
 
       let base_params =
-        refd_artifact |> artifacts.get_base_params |> dict.keys |> set.from_list
+        refd_artifact.base_params |> dict.keys |> set.from_list
       let blueprint_params =
-        blueprint |> blueprints.get_params |> dict.keys |> set.from_list
+        blueprint.params |> dict.keys |> set.from_list
 
       let shadowing_exists =
         !{ set.intersection(base_params, blueprint_params) |> set.is_empty }
 
       case shadowing_exists {
-        True -> Ok(blueprints.get_name(blueprint))
+        True -> Ok(blueprint.name)
         False -> Error(Nil)
       }
     })
@@ -168,11 +161,11 @@ fn perform_input_validation_checks(
     assert_inputs_sensible_for_params(
       children: expectations,
       parents_map: blueprints_map,
-      get_parent_ref: expectations.get_blueprint,
-      get_params: blueprints.get_params,
-      get_inputs: expectations.get_inputs,
-      get_child_name: expectations.get_name,
-      get_parent_name: blueprints.get_name,
+      get_parent_ref: fn(e) { e.blueprint },
+      get_params: fn(b) { b.params },
+      get_inputs: fn(e) { e.inputs },
+      get_child_name: fn(e) { e.name },
+      get_parent_name: fn(b) { b.name },
     )
 
   // blueprints have exactly the right inputs for artifacts params
@@ -180,11 +173,11 @@ fn perform_input_validation_checks(
     assert_inputs_sensible_for_params(
       children: blueprints,
       parents_map: artifacts_map,
-      get_parent_ref: blueprints.get_artifact,
-      get_params: artifacts.get_params,
-      get_inputs: blueprints.get_inputs,
-      get_child_name: blueprints.get_name,
-      get_parent_name: artifacts.get_name,
+      get_parent_ref: fn(b) { b.artifact },
+      get_params: fn(a) { a.params },
+      get_inputs: fn(b) { b.inputs },
+      get_child_name: fn(b) { b.name },
+      get_parent_name: fn(a) { a.name },
     )
 
   case expectation_assertion_string, blueprint_assertion_string {

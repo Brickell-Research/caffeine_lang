@@ -3,7 +3,7 @@ import gleam/dict
 import gleam/result
 import yay
 
-pub opaque type Blueprint {
+pub type Blueprint {
   Blueprint(
     name: String,
     artifact: String,
@@ -19,46 +19,6 @@ pub fn make_blueprint(
   inputs inputs: dict.Dict(String, String),
 ) -> Blueprint {
   Blueprint(name:, artifact:, params:, inputs:)
-}
-
-pub fn set_name(blueprint: Blueprint, name: String) -> Blueprint {
-  Blueprint(..blueprint, name:)
-}
-
-pub fn get_name(blueprint: Blueprint) -> String {
-  blueprint.name
-}
-
-pub fn set_artifact(blueprint: Blueprint, artifact: String) -> Blueprint {
-  Blueprint(..blueprint, artifact:)
-}
-
-pub fn get_artifact(blueprint: Blueprint) -> String {
-  blueprint.artifact
-}
-
-pub fn get_params(
-  blueprint: Blueprint,
-) -> dict.Dict(String, helpers.AcceptedTypes) {
-  blueprint.params
-}
-
-pub fn set_params(
-  blueprint: Blueprint,
-  params: dict.Dict(String, helpers.AcceptedTypes),
-) -> Blueprint {
-  Blueprint(..blueprint, params:)
-}
-
-pub fn set_inputs(
-  blueprint: Blueprint,
-  inputs: dict.Dict(String, String),
-) -> Blueprint {
-  Blueprint(..blueprint, inputs:)
-}
-
-pub fn get_inputs(blueprint: Blueprint) -> dict.Dict(String, String) {
-  blueprint.inputs
 }
 
 /// Parses a blueprint specification file into a list of blueprints.

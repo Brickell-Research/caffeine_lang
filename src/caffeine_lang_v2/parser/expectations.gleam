@@ -3,7 +3,7 @@ import gleam/dict
 import gleam/result
 import yay
 
-pub opaque type Expectation {
+pub type Expectation {
   Expectation(
     name: String,
     blueprint: String,
@@ -17,36 +17,6 @@ pub fn make_service_expectation(
   inputs inputs: dict.Dict(String, String),
 ) -> Expectation {
   Expectation(name:, blueprint:, inputs:)
-}
-
-pub fn set_name(service_expectation: Expectation, name: String) -> Expectation {
-  Expectation(..service_expectation, name:)
-}
-
-pub fn get_name(service_expectation: Expectation) -> String {
-  service_expectation.name
-}
-
-pub fn set_blueprint(
-  service_expectation: Expectation,
-  blueprint: String,
-) -> Expectation {
-  Expectation(..service_expectation, blueprint:)
-}
-
-pub fn get_blueprint(service_expectation: Expectation) -> String {
-  service_expectation.blueprint
-}
-
-pub fn set_inputs(
-  service_expectation: Expectation,
-  inputs: dict.Dict(String, String),
-) -> Expectation {
-  Expectation(..service_expectation, inputs:)
-}
-
-pub fn get_inputs(service_expectation: Expectation) -> dict.Dict(String, String) {
-  service_expectation.inputs
 }
 
 /// Parses an expectation invocation file into a list of service expectations.

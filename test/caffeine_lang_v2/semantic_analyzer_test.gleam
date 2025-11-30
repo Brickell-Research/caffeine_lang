@@ -1,8 +1,8 @@
 import caffeine_lang_v2/common/ast
 import caffeine_lang_v2/common/helpers.{type AcceptedTypes}
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
-import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-import caffeine_lang_v2/parser/expectations.{type Expectation}
+import caffeine_lang_v2/parser/blueprints.{type Blueprint, Blueprint}
+import caffeine_lang_v2/parser/expectations.{type Expectation, Expectation}
 import caffeine_lang_v2/semantic_analyzer
 import gleam/dict
 import gleeunit/should
@@ -109,31 +109,29 @@ pub fn blueprints_do_not_overshadow_artifact_base_params_test() {
   // overshadow a single param in a single blueprint
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_params(blueprint, shadowing_params),
+      Blueprint(..blueprint, params: shadowing_params),
     ]),
   )
   |> should.equal(Error(
     "The following blueprints illegally overshadow one or more of their artifact's params: "
-    <> blueprints.get_name(blueprint),
+    <> blueprint.name,
   ))
 
   // overshadow a single param in a single blueprint and two params in a second blueprint
   let blueprint_2 =
-    blueprint
-    |> blueprints.set_name("blueprint_2")
-    |> blueprints.set_params(further_shadowing_params)
+    Blueprint(..blueprint, name: "blueprint_2", params: further_shadowing_params)
 
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_params(blueprint, shadowing_params),
+      Blueprint(..blueprint, params: shadowing_params),
       blueprint_2,
     ]),
   )
   |> should.equal(Error(
     "The following blueprints illegally overshadow one or more of their artifact's params: "
-    <> blueprints.get_name(blueprint)
+    <> blueprint.name
     <> ", "
-    <> blueprints.get_name(blueprint_2),
+    <> blueprint_2.name,
   ))
 }
 
@@ -157,7 +155,7 @@ pub fn blueprints_reference_validation_test() {
   // sad path: artifact referenced by blueprint DOES NOT exist
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_artifact(blueprint, "non-existent-artifact"),
+      Blueprint(..blueprint, artifact: "non-existent-artifact"),
     ]),
   )
   |> should.equal(Error(
@@ -179,7 +177,7 @@ pub fn blueprints_input_test() {
   let empty_inputs = dict.new()
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_inputs(blueprint, empty_inputs),
+      Blueprint(..blueprint, inputs: empty_inputs),
     ]),
   )
   |> should.equal(Error(
@@ -192,7 +190,7 @@ pub fn blueprints_input_test() {
 
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_inputs(blueprint, extra_inputs),
+      Blueprint(..blueprint, inputs: extra_inputs),
     ]),
   )
   |> should.equal(Error(
@@ -204,7 +202,7 @@ pub fn blueprints_input_test() {
 
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_inputs(blueprint, missing_and_extra_inputs),
+      Blueprint(..blueprint, inputs: missing_and_extra_inputs),
     ]),
   )
   |> should.equal(Error(
@@ -216,7 +214,7 @@ pub fn blueprints_input_test() {
 
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
-      blueprints.set_inputs(blueprint, wrong_type_in_input),
+      Blueprint(..blueprint, inputs: wrong_type_in_input),
     ]),
   )
   |> should.equal(Error(
@@ -262,7 +260,7 @@ pub fn expectations_reference_validation_test() {
   semantic_analyzer.perform(
     ast.AST(
       expectations: [
-        expectations.set_blueprint(expectation, "non-existent-blueprint"),
+        Expectation(..expectation, blueprint: "non-existent-blueprint"),
       ],
       artifacts: [artifact],
       blueprints: [
@@ -289,7 +287,7 @@ pub fn expectations_input_test() {
   let empty_inputs = dict.new()
   semantic_analyzer.perform(
     ast.AST(
-      expectations: [expectations.set_inputs(expectation, empty_inputs)],
+      expectations: [Expectation(..expectation, inputs: empty_inputs)],
       artifacts: [artifact],
       blueprints: [
         blueprint,
@@ -309,7 +307,7 @@ pub fn expectations_input_test() {
   semantic_analyzer.perform(
     ast.AST(
       expectations: [
-        expectations.set_inputs(expectation, missing_blueprint_params),
+        Expectation(..expectation, inputs: missing_blueprint_params),
       ],
       artifacts: [artifact],
       blueprints: [
@@ -328,7 +326,7 @@ pub fn expectations_input_test() {
     ])
   semantic_analyzer.perform(
     ast.AST(
-      expectations: [expectations.set_inputs(expectation, missing_base_params)],
+      expectations: [Expectation(..expectation, inputs: missing_base_params)],
       artifacts: [artifact],
       blueprints: [
         blueprint,
@@ -350,7 +348,7 @@ pub fn expectations_input_test() {
 
   semantic_analyzer.perform(
     ast.AST(
-      expectations: [expectations.set_inputs(expectation, extra_inputs)],
+      expectations: [Expectation(..expectation, inputs: extra_inputs)],
       artifacts: [artifact],
       blueprints: [
         blueprint,
@@ -367,7 +365,7 @@ pub fn expectations_input_test() {
   semantic_analyzer.perform(
     ast.AST(
       expectations: [
-        expectations.set_inputs(expectation, missing_and_extra_inputs),
+        Expectation(..expectation, inputs: missing_and_extra_inputs),
       ],
       artifacts: [artifact],
       blueprints: [
@@ -390,7 +388,7 @@ pub fn expectations_input_test() {
   semantic_analyzer.perform(
     ast.AST(
       expectations: [
-        expectations.set_inputs(expectation, wrong_type_in_inputs_for_artifact),
+        Expectation(..expectation, inputs: wrong_type_in_inputs_for_artifact),
       ],
       artifacts: [artifact],
       blueprints: [
@@ -413,7 +411,7 @@ pub fn expectations_input_test() {
   semantic_analyzer.perform(
     ast.AST(
       expectations: [
-        expectations.set_inputs(expectation, wrong_type_in_inputs_for_blueprint),
+        Expectation(..expectation, inputs: wrong_type_in_inputs_for_blueprint),
       ],
       artifacts: [artifact],
       blueprints: [
