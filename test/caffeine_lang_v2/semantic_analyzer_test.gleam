@@ -97,7 +97,49 @@ pub fn artifacts_sanity_test() {
 }
 
 // ## Cross-Field Validation ##
-// * ❌ base_params and params have no key collisions (same param name in both)
+// * ✅ base_params and params have no key collisions (same param name in both)
+pub fn blueprints_do_not_overshadow_artifact_base_params_test() {
+  let artifact = default_artifact()
+  let blueprint = default_blueprint()
+  let expectation = default_expectation()
+
+  let shadowing_params = dict.from_list([#("window_in_days", helpers.String)])
+  let further_shadowing_params =
+    dict.from_list([
+      #("window_in_days", helpers.String),
+      #("thresold", helpers.String),
+    ])
+
+  // overshadow a single param in a single blueprint
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_params(blueprint, shadowing_params),
+    ]),
+  )
+  |> should.equal(Error(
+    "The following blueprints illegally overshadow one or more of their artifact's params: "
+    <> blueprints.get_name(blueprint),
+  ))
+
+  // overshadow a single param in a single blueprint and two params in a second blueprint
+  let blueprint_2 =
+    blueprint
+    |> blueprints.set_name("blueprint_2")
+    |> blueprints.set_params(further_shadowing_params)
+
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_params(blueprint, shadowing_params),
+      blueprint_2,
+    ]),
+  )
+  |> should.equal(Error(
+    "The following blueprints illegally overshadow one or more of their artifact's params: "
+    <> blueprints.get_name(blueprint)
+    <> ", "
+    <> blueprints.get_name(blueprint_2),
+  ))
+}
 
 // ==== Blueprints ====
 // ## Reference Validation ##

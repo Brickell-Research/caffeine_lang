@@ -33,7 +33,9 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
     expcts,
   ))
 
-  let blueprints_map =
+  use _ <- result.try(perform_shadowing_checks(artifacts_map, bluprts))
+
+  let resolved_blueprints_map =
     abs_syn_tree.blueprints
     |> list.map(fn(blueprint) {
       let assert Ok(refd_artifact) =
@@ -54,7 +56,7 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
 
   perform_input_validation_checks(
     artifacts_map,
-    blueprints_map,
+    resolved_blueprints_map,
     bluprts,
     expcts,
   )
@@ -109,6 +111,43 @@ fn perform_reference_checks(
     _, False ->
       Error("At least one expectation is referencing a non-existent blueprint.")
     _, _ -> Ok(True)
+  }
+}
+
+// As of writing (11/29/25) we _do not_ allow param overrides/shadowing between the
+// artifacts and blueprints.
+fn perform_shadowing_checks(
+  artifacts_map: dict.Dict(String, Artifact),
+  blueprints: List(Blueprint),
+) -> Result(Bool, String) {
+  let illegally_shadowing_blueprints =
+    blueprints
+    |> list.filter_map(fn(blueprint) {
+      let assert Ok(refd_artifact) =
+        dict.get(artifacts_map, blueprints.get_artifact(blueprint))
+
+      let base_params =
+        refd_artifact |> artifacts.get_base_params |> dict.keys |> set.from_list
+      let blueprint_params =
+        blueprint |> blueprints.get_params |> dict.keys |> set.from_list
+
+      let shadowing_exists =
+        !{ set.intersection(base_params, blueprint_params) |> set.is_empty }
+
+      case shadowing_exists {
+        True -> Ok(blueprints.get_name(blueprint))
+        False -> Error(Nil)
+      }
+    })
+    |> string.join(", ")
+
+  case illegally_shadowing_blueprints {
+    "" -> Ok(True)
+    _ ->
+      Error(
+        "The following blueprints illegally overshadow one or more of their artifact's params: "
+        <> illegally_shadowing_blueprints,
+      )
   }
 }
 
