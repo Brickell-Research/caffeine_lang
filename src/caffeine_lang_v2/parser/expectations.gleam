@@ -70,21 +70,21 @@ fn parse_service_expectation(
   _params: dict.Dict(String, String),
 ) -> Result(Expectation, String) {
   use name <- result.try(
-    yay.extract_string_from_node(type_node, "name")
+    yay.extract_string(type_node, "name")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use blueprint <- result.try(
-    yay.extract_string_from_node(type_node, "blueprint")
+    yay.extract_string(type_node, "blueprint")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use inputs <- result.try(
-    yay.extract_dict_strings_from_node(
+    yay.extract_string_map_with_duplicate_detection(
       type_node,
       "inputs",
       fail_on_key_duplication: True,

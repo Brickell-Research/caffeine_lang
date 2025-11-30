@@ -71,21 +71,21 @@ fn parse_artifact(
   _params: dict.Dict(String, String),
 ) -> Result(Artifact, String) {
   use name <- result.try(
-    yay.extract_string_from_node(type_node, "name")
+    yay.extract_string(type_node, "name")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use version <- result.try(
-    yay.extract_string_from_node(type_node, "version")
+    yay.extract_string(type_node, "version")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use base_params <- result.try(
-    yay.extract_dict_strings_from_node(
+    yay.extract_string_map_with_duplicate_detection(
       type_node,
       "base_params",
       fail_on_key_duplication: True,
@@ -97,7 +97,7 @@ fn parse_artifact(
   )
 
   use params <- result.try(
-    yay.extract_dict_strings_from_node(
+    yay.extract_string_map_with_duplicate_detection(
       type_node,
       "params",
       fail_on_key_duplication: True,

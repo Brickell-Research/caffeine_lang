@@ -14,7 +14,7 @@ target = "erlang"
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
 simplifile = ">= 2.3.0 and < 3.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
-yay = ">= 1.0.0"
+yay = ">= 2.0.0"
 gleeunit = ">= 1.0.0"
 caffeine_query_language = ">= 0.0.2"
 

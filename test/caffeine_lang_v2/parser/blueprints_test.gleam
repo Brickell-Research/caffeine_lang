@@ -117,10 +117,10 @@ pub fn parse_empty_test() {
 pub fn parse_missing_test() {
   list.each(
     [
-      #("missing_name", "Missing name"),
-      #("missing_artifact", "Missing artifact"),
-      #("missing_params", "Missing params"),
-      #("missing_inputs", "Missing inputs"),
+      #("missing_name", "Missing name (failed at segment 0)"),
+      #("missing_artifact", "Missing artifact (failed at segment 0)"),
+      #("missing_params", "Missing params (failed at segment 0)"),
+      #("missing_inputs", "Missing inputs (failed at segment 0)"),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
   )
@@ -169,7 +169,7 @@ pub fn parse_wrong_type_test() {
       #("wrong_type_inputs", "Expected inputs to be a map, but found string"),
       #(
         "wrong_type_inputs_value",
-        "Expected inputs to be a map of strings, but found map with non-string keys or values",
+        "Expected inputs to be a map of strings, but found map with int value at key 'numerator'",
       ),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },

@@ -103,9 +103,9 @@ pub fn parse_missing_test() {
     [
       #("empty_file", "Empty YAML file: " <> file_path_base("empty_file")),
       #("empty_expectations", "expectations is empty"),
-      #("missing_name", "Missing name"),
-      #("missing_blueprint", "Missing blueprint"),
-      #("missing_inputs", "Missing inputs"),
+      #("missing_name", "Missing name (failed at segment 0)"),
+      #("missing_blueprint", "Missing blueprint (failed at segment 0)"),
+      #("missing_inputs", "Missing inputs (failed at segment 0)"),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
   )

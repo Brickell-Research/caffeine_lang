@@ -10,7 +10,7 @@ packages = [
   { name = "gleeunit", version = "1.9.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "DA9553CE58B67924B3C631F96FE3370C49EB6D6DC6B384EC4862CC4AAA718F3C" },
   { name = "simplifile", version = "2.3.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0A868DAC6063D9E983477981839810DC2E553285AB4588B87E3E9C96A7FB4CB4" },
   { name = "yamerl", version = "0.10.0", build_tools = ["rebar3"], requirements = [], otp_app = "yamerl", source = "hex", outer_checksum = "346ADB2963F1051DC837A2364E4ACF6EB7D80097C0F53CBDC3046EC8EC4B4E6E" },
-  { name = "yay", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "yamerl"], otp_app = "yay", source = "hex", outer_checksum = "5367D4BFC52CFF09B899F3AF9BB59E63EC077480B597082E7EF9A251163FFDBB" },
+  { name = "yay", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "yamerl"], otp_app = "yay", source = "hex", outer_checksum = "3C004E309331371E6EED465A75ED5D347D27794223BE5837924BC1E4BA719B0E" },
 ]
 
 [requirements]
@@ -20,4 +20,4 @@ gleam_stdlib = { version = ">= 0.63.0 and < 1.0.0" }
 gleamy_bench = { version = ">= 0.6.0 and < 1.0.0" }
 gleeunit = { version = ">= 1.0.0" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }
-yay = { version = ">= 1.0.0" }
+yay = { version = ">= 2.0.0" }

@@ -102,10 +102,10 @@ pub fn parse_empty_test() {
 pub fn parse_missing_test() {
   list.each(
     [
-      #("missing_name", "Missing name"),
-      #("missing_version", "Missing version"),
-      #("missing_base_params", "Missing base_params"),
-      #("missing_params", "Missing params"),
+      #("missing_name", "Missing name (failed at segment 0)"),
+      #("missing_version", "Missing version (failed at segment 0)"),
+      #("missing_base_params", "Missing base_params (failed at segment 0)"),
+      #("missing_params", "Missing params (failed at segment 0)"),
     ],
     fn(testcase) { assert_error_on_parse(testcase.0, testcase.1) },
   )

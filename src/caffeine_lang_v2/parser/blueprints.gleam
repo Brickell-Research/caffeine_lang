@@ -78,21 +78,21 @@ fn parse_blueprint(
   _params: dict.Dict(String, String),
 ) -> Result(Blueprint, String) {
   use name <- result.try(
-    yay.extract_string_from_node(type_node, "name")
+    yay.extract_string(type_node, "name")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use artifact <- result.try(
-    yay.extract_string_from_node(type_node, "artifact")
+    yay.extract_string(type_node, "artifact")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
 
   use params <- result.try(
-    yay.extract_dict_strings_from_node(
+    yay.extract_string_map_with_duplicate_detection(
       type_node,
       "params",
       fail_on_key_duplication: True,
@@ -104,7 +104,7 @@ fn parse_blueprint(
   )
 
   use inputs <- result.try(
-    yay.extract_dict_strings_from_node(
+    yay.extract_string_map_with_duplicate_detection(
       type_node,
       "inputs",
       fail_on_key_duplication: True,
