@@ -227,11 +227,36 @@ fn assert_inputs_sensible_for_params(
       <> refd_parent |> get_parent_name
 
     // TODO: better error messages
-    case missing_inputs, extra_inputs {
+    use _ <- result.try(case missing_inputs, extra_inputs {
       [], [] -> Ok(True)
       _, [] -> Error("Missing attributes" <> error_msg_suffic)
       [], _ -> Error("Extra attributes" <> error_msg_suffic)
       _, _ -> Error("Missing and extra attributes" <> error_msg_suffic)
+    })
+
+    // combine the value and expected types into a pair
+    let params = get_params(refd_parent)
+    let inputs = get_inputs(child)
+
+    let result =
+      params
+      |> dict.keys
+      |> list.filter_map(fn(attribute_name) {
+        // ok to assert both here since we proved they exist above
+        let assert Ok(value) = inputs |> dict.get(attribute_name)
+        let assert Ok(expected_type) = params |> dict.get(attribute_name)
+
+        case assert_value_is_as_expected(value, expected_type) {
+          Ok(_) -> Error(Nil)
+          Error(msg) ->
+            Ok("Incorrect type for " <> attribute_name <> ". " <> msg)
+        }
+      })
+      |> string.join(", ")
+
+    case result {
+      "" -> Ok(True)
+      msg -> Error(msg)
     }
   })
   |> list.filter_map(fn(res) {

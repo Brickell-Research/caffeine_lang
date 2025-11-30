@@ -36,7 +36,7 @@ fn default_blueprint() -> Blueprint {
   let params = dict.from_list([#("environment", helpers.String)])
   let inputs =
     dict.from_list([
-      #("value", "numerator / denominator"),
+      #("value", "\"numerator / denominator\""),
     ])
 
   blueprint_helper("blueprint_1", "artifact_1", inputs, params)
@@ -54,7 +54,7 @@ fn blueprint_helper(
 fn default_expectation() -> Expectation {
   let inputs =
     dict.from_list([
-      #("environment", "production"),
+      #("environment", "\"production\""),
       #("threshold", "99.9"),
       #("window_in_days", "10"),
     ])
@@ -71,10 +71,6 @@ fn expectation_helper(
 }
 
 // ==== Artifacts ====
-// ## SLO Specific - Queries (handled by CQL, outside of these checks) ##
-// * ❌ too few params compared to value
-// * ❌ too many params compared to value
-// * ❌ different params compared to value
 // ## SLO Specific - Sanity (technically input from lower configs) ##
 // * ✅ need at least one artifact
 // * ❌ threshold within a reasonable range
@@ -170,10 +166,10 @@ pub fn blueprints_reference_validation_test() {
 }
 
 // ## Inputs vs Artifact Params ##
-// * ❌ wrong type in inputs
 // * ✅ missing inputs
 // * ✅ extra inputs
 // * ✅ missing and extra inputs
+// * ✅ wrong type in inputs
 pub fn blueprints_input_test() {
   let artifact = default_artifact()
   let blueprint = default_blueprint()
@@ -192,7 +188,7 @@ pub fn blueprints_input_test() {
 
   // extra inputs
   let extra_inputs =
-    dict.from_list([#("value", "production"), #("extra", "foobar")])
+    dict.from_list([#("value", "\"production\""), #("extra", "foobar")])
 
   semantic_analyzer.perform(
     ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
@@ -213,6 +209,18 @@ pub fn blueprints_input_test() {
   )
   |> should.equal(Error(
     "Missing and extra attributes in child: blueprint_1 against parent: artifact_1",
+  ))
+
+  // wrong type in inputs
+  let wrong_type_in_input = dict.from_list([#("value", "10")])
+
+  semantic_analyzer.perform(
+    ast.AST(expectations: [expectation], artifacts: [artifact], blueprints: [
+      blueprints.set_inputs(blueprint, wrong_type_in_input),
+    ]),
+  )
+  |> should.equal(Error(
+    "Incorrect type for value. Received: 10 and expected a String. A string is defined as between two (and only two) double quotes",
   ))
 }
 
@@ -269,10 +277,10 @@ pub fn expectations_reference_validation_test() {
 }
 
 // ## Inputs vs Blueprint Params ##
-// * ❌ wrong type in inputs
-// * ✅ missing inputs - (TODO: account for artifact)
-// * ✅ extra inputs - (TODO: account for artifact)
-// * ✅ missing and extra inputs - (TODO: account for artifact)
+// * ✅ missing inputs 
+// * ✅ extra inputs
+// * ✅ missing and extra inputs
+// * ✅ wrong type in inputs
 pub fn expectations_input_test() {
   let artifact = default_artifact()
   let blueprint = default_blueprint()
@@ -317,7 +325,7 @@ pub fn expectations_input_test() {
   // missing inputs - only against artifact (base_params)
   let missing_base_params =
     dict.from_list([
-      #("environment", "production"),
+      #("environment", "\"production\""),
     ])
   semantic_analyzer.perform(
     ast.AST(
@@ -337,7 +345,7 @@ pub fn expectations_input_test() {
     dict.from_list([
       #("threshold", "99.9"),
       #("window_in_days", "10"),
-      #("environment", "production"),
+      #("environment", "\"production\""),
       #("extra", "foobar"),
     ])
 
@@ -371,10 +379,54 @@ pub fn expectations_input_test() {
   |> should.equal(Error(
     "Missing and extra attributes in child: expectation_1 against parent: blueprint_1",
   ))
+
+  // wrong type in inputs - artitact (base_params)
+  let wrong_type_in_inputs_for_artifact =
+    dict.from_list([
+      #("environment", "\"production\""),
+      #("threshold", "99.9"),
+      #("window_in_days", "foo"),
+    ])
+
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [
+        expectations.set_inputs(expectation, wrong_type_in_inputs_for_artifact),
+      ],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Incorrect type for window_in_days. Received: foo and expected a Optional(Integer)",
+  ))
+
+  // wrong type in inputs - blueprint
+  let wrong_type_in_inputs_for_blueprint =
+    dict.from_list([
+      #("environment", "21"),
+      #("threshold", "99.9"),
+      #("window_in_days", "10"),
+    ])
+
+  semantic_analyzer.perform(
+    ast.AST(
+      expectations: [
+        expectations.set_inputs(expectation, wrong_type_in_inputs_for_blueprint),
+      ],
+      artifacts: [artifact],
+      blueprints: [
+        blueprint,
+      ],
+    ),
+  )
+  |> should.equal(Error(
+    "Incorrect type for environment. Received: 21 and expected a String. A string is defined as between two (and only two) double quotes",
+  ))
 }
 
-// ## Additional Input Validation ##
-// * ❌ type coercion validation (e.g., "abc" when Integer expected)
 // ## Sanity ##
 // * ✅ need at least one expectation
 pub fn expectations_sanity_test() {
@@ -391,7 +443,6 @@ pub fn expectations_sanity_test() {
 
 // ==== Cross-Cutting / Chain Validation ====
 // * ❌ full valid chain: Artifact → Blueprint → Expectation (success case)
-// * ❌ expectation input coercible to artifact base_params type
 // * ❌ expectation names unique across all expectation files (linker handles per-file)
 // * ❌ blueprint names unique across all blueprint files (parser handles per-file)
 
