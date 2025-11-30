@@ -1,4 +1,0 @@
-query_template_types:
-  - name: "valid_over_total"
-    specification_of_query_templates: ["numerator", "denominator"]
-    query: ""

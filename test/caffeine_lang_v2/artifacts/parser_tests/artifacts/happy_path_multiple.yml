@@ -1,0 +1,19 @@
+artifacts:
+  - name: datadog_sli
+    version: "1.0.0"
+    base_params:
+      api_key: String
+      app_key: String
+    params:
+      numerator: String
+      denominator: String
+      threshold: Float
+      window_in_days: Integer
+  - name: prometheus_alert
+    version: "2.0.0"
+    base_params:
+      prometheus_url: String
+    params:
+      query: String
+      severity: String
+      enabled: Boolean

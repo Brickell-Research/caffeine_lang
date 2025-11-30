@@ -1,7 +1,0 @@
-types:
-  - name: error_rate
-    metric_attributes:
-      numerator_query: ""
-      denominator_query: ""
-    filters:
-      - number_of_users

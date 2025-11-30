@@ -7,7 +7,3 @@ expectations:
       environment: "some_operation"
       environment: "production"
       environment: "staging"
-    threshold: 99.9
-    window_in_days: 10
-    
-

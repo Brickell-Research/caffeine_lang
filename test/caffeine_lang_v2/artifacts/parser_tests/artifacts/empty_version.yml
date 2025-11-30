@@ -1,0 +1,7 @@
+artifacts:
+  - name: datadog_sli
+    version:
+    base_params:
+      api_key: String
+    params:
+      numerator: String
