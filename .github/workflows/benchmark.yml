@@ -1,0 +1,65 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  benchmark:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup BEAM (Erlang + Gleam + rebar3)
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          gleam-version: "1.13.0"
+          rebar3-version: "3.25.0"
+
+      - name: Cache Gleam dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-bench-${{ hashFiles('manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gleam-bench-
+            ${{ runner.os }}-gleam-
+
+      - name: Download dependencies
+        run: gleam deps download
+
+      - name: Build
+        run: gleam build
+
+      - name: Download baseline (if exists)
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: benchmark.yml
+          branch: main
+          name: benchmark-baseline
+          path: baseline
+        continue-on-error: true
+
+      - name: Run benchmarks
+        run: gleam run -m semantic_analyzer_bench -- --json current_benchmark.json
+
+      - name: Compare with baseline
+        if: hashFiles('baseline/benchmark.json') != ''
+        run: |
+          gleam run -m benchmark_compare -- baseline/benchmark.json current_benchmark.json 20
+
+      - name: Upload benchmark results
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline
+          path: current_benchmark.json
+          retention-days: 90
