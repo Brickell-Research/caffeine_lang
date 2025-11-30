@@ -31,6 +31,17 @@ pub fn make_semver(version version: String) -> Result(Semver, String) {
   }
 }
 
+pub fn make_artifact(
+  name name: String,
+  version version: String,
+  base_params base_params: dict.Dict(String, helpers.AcceptedTypes),
+  params params: dict.Dict(String, helpers.AcceptedTypes),
+) -> Result(Artifact, String) {
+  use semver <- result.try(make_semver(version:))
+
+  Ok(Artifact(name:, version: semver, base_params:, params:))
+}
+
 pub fn parse(file_path: String) -> Result(List(Artifact), String) {
   use artifacts <- result.try(helpers.parse_specification(
     file_path,
