@@ -1,4 +1,5 @@
 import caffeine_lang_v2/common/ast
+import caffeine_lang_v2/generator/datadog
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
 import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/dict
@@ -83,13 +84,7 @@ fn build_terraform_settings(
     provider_names
     |> list.map(fn(name) {
       case name {
-        "datadog" -> #(
-          "datadog",
-          terraform.ProviderRequirement(
-            source: "DataDog/datadog",
-            version: option.None,
-          ),
-        )
+        "datadog" -> #("datadog", datadog.build_provider_requirement())
         _ -> #(
           name,
           terraform.ProviderRequirement(source: name, version: option.None),
@@ -109,11 +104,7 @@ fn build_terraform_settings(
 /// Builds a provider block
 fn build_provider(provider_name: String) -> terraform.Provider {
   case provider_name {
-    "datadog" ->
-      terraform.simple_provider("datadog", [
-        #("api_key", hcl.ref("var.datadog_api_key")),
-        #("app_key", hcl.ref("var.datadog_app_key")),
-      ])
+    "datadog" -> datadog.build_provider()
     _ -> terraform.simple_provider(provider_name, [])
   }
 }

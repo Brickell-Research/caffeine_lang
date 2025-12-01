@@ -1,5 +1,5 @@
 import argv
-import caffeine_lang_v2/generator
+import caffeine_lang_v2/generator/generator
 import caffeine_lang_v2/linker
 import caffeine_lang_v2/semantic_analyzer
 import gleam/dynamic
