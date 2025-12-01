@@ -96,9 +96,9 @@ pub fn get_instantiation_yaml_files_test() {
 
   let expected =
     Ok([
-      directory <> "/org_b/team_c/service_b.yaml",
-      directory <> "/org_a/team_b/service_b.yaml",
       directory <> "/org_a/team_b/service_a.yaml",
+      directory <> "/org_a/team_b/service_b.yaml",
+      directory <> "/org_b/team_c/service_b.yaml",
     ])
 
   let actual = linker.get_instantiation_yaml_files(directory)

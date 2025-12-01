@@ -121,6 +121,7 @@ fn extract_yaml_files_with_full_paths(
 }
 
 /// This function returns a list of all YAML files in the given directory.
+/// Results are sorted for deterministic ordering across platforms.
 pub fn get_instantiation_yaml_files(
   base_directory: String,
 ) -> Result(List(String), String) {
@@ -130,4 +131,5 @@ pub fn get_instantiation_yaml_files(
   |> list.try_fold([], fn(accumulated_files, item_name) {
     process_top_level_item(base_directory, item_name, accumulated_files)
   })
+  |> result.map(list.sort(_, string.compare))
 }
