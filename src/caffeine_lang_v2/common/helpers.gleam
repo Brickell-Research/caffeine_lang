@@ -1,10 +1,17 @@
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
 import yay
+
+/// Take a list, turn into a dictionary leveraging name_fn to determin the keys
+pub fn obj_map(things: List(a), name_fn: fn(a) -> String) -> Dict(String, a) {
+  things
+  |> list.map(fn(thing) { #(thing |> name_fn, thing) })
+  |> dict.from_list
+}
 
 /// Parses a specification file into a list of glaml documents according to the given parse function.
 pub fn parse_specification(

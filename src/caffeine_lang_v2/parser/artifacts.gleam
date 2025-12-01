@@ -17,22 +17,34 @@ pub type Artifact {
 
 /// For more sensible pattern matching.
 /// TODO: expand when we support more than Datadog SLOs
+pub type AcceptedProviders {
+  Datadog
+}
+
+/// For more sensible pattern matching.
+/// TODO: expand when we support more than Datadog SLOs
 pub type AcceptedArtifactNames {
-  ServiceLevelObjective
+  // TODO: consider a refactor, this feels OOP-y and blasphemous
+  ServiceLevelObjective(providers: List(AcceptedProviders))
 }
 
 pub fn string_to_artifact_name(
   name: String,
 ) -> Result(AcceptedArtifactNames, String) {
   case name |> string.lowercase {
-    "slo" -> Ok(ServiceLevelObjective)
-    _ -> Error("Unsupported artifact: " <> name <> ". Supported artifacts include: slo.")
+    "slo" -> Ok(ServiceLevelObjective([Datadog]))
+    _ ->
+      Error(
+        "Unsupported artifact: "
+        <> name
+        <> ". Supported artifacts include: slo.",
+      )
   }
 }
 
 pub fn artifact_name_to_string(name: AcceptedArtifactNames) -> String {
   case name {
-    ServiceLevelObjective -> "slo"
+    ServiceLevelObjective(_) -> "slo"
   }
 }
 

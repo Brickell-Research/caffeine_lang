@@ -19,15 +19,11 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
 
   let artifacts_map =
     abs_syn_tree.artifacts
-    |> list.map(fn(artifact) {
-      #(artifact_name_to_string(artifact.name), artifact)
-    })
-    |> dict.from_list
+    |> helpers.obj_map(fn(a) { a.name |> artifacts.artifact_name_to_string })
 
   let unresolved_blueprints_map =
     abs_syn_tree.blueprints
-    |> list.map(fn(blueprint) { #(blueprint.name, blueprint) })
-    |> dict.from_list
+    |> helpers.obj_map(fn(b) { b.name })
 
   use _ <- result.try(perform_sanity_checks(arts, bluprts, expcts))
 
@@ -46,8 +42,7 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
   let resolved_blueprints_map =
     abs_syn_tree.blueprints
     |> list.map(fn(blueprint) {
-      let assert Ok(refd_artifact) =
-        dict.get(artifacts_map, blueprint.artifact)
+      let assert Ok(refd_artifact) = dict.get(artifacts_map, blueprint.artifact)
 
       #(
         blueprint.name,
@@ -124,13 +119,10 @@ fn perform_shadowing_checks(
   let illegally_shadowing_blueprints =
     blueprints
     |> list.filter_map(fn(blueprint) {
-      let assert Ok(refd_artifact) =
-        dict.get(artifacts_map, blueprint.artifact)
+      let assert Ok(refd_artifact) = dict.get(artifacts_map, blueprint.artifact)
 
-      let base_params =
-        refd_artifact.base_params |> dict.keys |> set.from_list
-      let blueprint_params =
-        blueprint.params |> dict.keys |> set.from_list
+      let base_params = refd_artifact.base_params |> dict.keys |> set.from_list
+      let blueprint_params = blueprint.params |> dict.keys |> set.from_list
 
       let shadowing_exists =
         !{ set.intersection(base_params, blueprint_params) |> set.is_empty }
@@ -346,7 +338,12 @@ fn assert_value_is_non_empty_list(
         yay.NodeSeq(items) -> {
           // Validate each item matches inner_type
           list.try_fold(items, True, fn(_, node) {
-            validate_node_type(node, inner_type, raw_string_value, "NonEmptyList")
+            validate_node_type(
+              node,
+              inner_type,
+              raw_string_value,
+              "NonEmptyList",
+            )
           })
         }
         _ ->
