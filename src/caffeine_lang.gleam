@@ -1,5 +1,6 @@
 import argv
-import caffeine_lang_v2/generator
+
+// import caffeine_lang_v2/generator
 import caffeine_lang_v2/linker
 import caffeine_lang_v2/semantic_analyzer
 
@@ -24,7 +25,7 @@ pub fn compile(
 
   use _ <- result.try(semantic_analyzer.perform(abstract_syntax_tree))
 
-  generator.generate(abstract_syntax_tree)
+  // generator.generate(abstract_syntax_tree)
 
   Ok(True)
 }

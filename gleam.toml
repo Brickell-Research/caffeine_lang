@@ -17,6 +17,7 @@ argv = ">= 1.0.2 and < 2.0.0"
 yay = ">= 2.0.0"
 gleeunit = ">= 1.0.0"
 caffeine_query_language = ">= 0.0.2"
+terra_madre = ">= 0.0.1"
 
 [dev-dependencies]
 gleamy_bench = ">= 0.6.0 and < 1.0.0"
