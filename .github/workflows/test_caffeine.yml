@@ -25,13 +25,10 @@ jobs:
     - name: Cache Gleam dependencies
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
+        path: ~/.cache/gleam
+        key: ${{ runner.os }}-gleam-deps-${{ hashFiles('manifest.toml') }}
         restore-keys: |
-          ${{ runner.os }}-gleam-erlang-
-          ${{ runner.os }}-gleam-
+          ${{ runner.os }}-gleam-deps-
 
     - name: Download dependencies
       run: gleam deps download
@@ -65,13 +62,10 @@ jobs:
     - name: Cache Gleam dependencies
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
+        path: ~/.cache/gleam
+        key: ${{ runner.os }}-gleam-deps-${{ hashFiles('manifest.toml') }}
         restore-keys: |
-          ${{ runner.os }}-gleam-js-
-          ${{ runner.os }}-gleam-
+          ${{ runner.os }}-gleam-deps-
 
     - name: Download dependencies
       run: gleam deps download
