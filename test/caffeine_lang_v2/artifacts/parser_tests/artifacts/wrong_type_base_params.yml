@@ -1,5 +1,5 @@
 artifacts:
-  - name: datadog_sli
+  - name: slo
     version: "1.0.0"
     base_params: "foobar"
     params:

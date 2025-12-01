@@ -8,11 +8,32 @@ import yay
 
 pub type Artifact {
   Artifact(
-    name: String,
+    name: AcceptedArtifactNames,
     version: Semver,
     base_params: dict.Dict(String, helpers.AcceptedTypes),
     params: dict.Dict(String, helpers.AcceptedTypes),
   )
+}
+
+/// For more sensible pattern matching.
+/// TODO: expand when we support more than Datadog SLOs
+pub type AcceptedArtifactNames {
+  ServiceLevelObjective
+}
+
+pub fn string_to_artifact_name(
+  name: String,
+) -> Result(AcceptedArtifactNames, String) {
+  case name |> string.lowercase {
+    "slo" -> Ok(ServiceLevelObjective)
+    _ -> Error("Unsupported artifact: " <> name <> ". Supported artifacts include: slo.")
+  }
+}
+
+pub fn artifact_name_to_string(name: AcceptedArtifactNames) -> String {
+  case name {
+    ServiceLevelObjective -> "slo"
+  }
 }
 
 pub opaque type Semver {
@@ -39,7 +60,9 @@ pub fn make_artifact(
 ) -> Result(Artifact, String) {
   use semver <- result.try(make_semver(version:))
 
-  Ok(Artifact(name:, version: semver, base_params:, params:))
+  use artifact_name <- result.try(string_to_artifact_name(name))
+
+  Ok(Artifact(name: artifact_name, version: semver, base_params:, params:))
 }
 
 pub fn parse(file_path: String) -> Result(List(Artifact), String) {
@@ -50,19 +73,25 @@ pub fn parse(file_path: String) -> Result(List(Artifact), String) {
     "artifacts",
   ))
 
-  helpers.validate_uniqueness(artifacts, fn(e) { e.name }, "artifact")
+  helpers.validate_uniqueness(
+    artifacts,
+    fn(e) { e.name |> artifact_name_to_string },
+    "artifact",
+  )
 }
 
 fn parse_artifact(
   type_node: yay.Node,
   _params: dict.Dict(String, String),
 ) -> Result(Artifact, String) {
-  use name <- result.try(
+  use string_name <- result.try(
     yay.extract_string(type_node, "name")
     |> result.map_error(fn(extraction_error) {
       yay.extraction_error_to_string(extraction_error)
     }),
   )
+
+  use name <- result.try(string_name |> string_to_artifact_name)
 
   use version_string <- result.try(
     yay.extract_string(type_node, "version")

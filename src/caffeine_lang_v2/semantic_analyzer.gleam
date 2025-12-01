@@ -1,6 +1,6 @@
 import caffeine_lang_v2/common/ast.{type AST}
 import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/parser/artifacts.{type Artifact}
+import caffeine_lang_v2/parser/artifacts.{type Artifact, artifact_name_to_string}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint, Blueprint}
 import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/dict
@@ -19,7 +19,9 @@ pub fn perform(abs_syn_tree: AST) -> Result(Bool, String) {
 
   let artifacts_map =
     abs_syn_tree.artifacts
-    |> list.map(fn(artifact) { #(artifact.name, artifact) })
+    |> list.map(fn(artifact) {
+      #(artifact_name_to_string(artifact.name), artifact)
+    })
     |> dict.from_list
 
   let unresolved_blueprints_map =
@@ -177,7 +179,7 @@ fn perform_input_validation_checks(
       get_params: fn(a) { a.params },
       get_inputs: fn(b) { b.inputs },
       get_child_name: fn(b) { b.name },
-      get_parent_name: fn(a) { a.name },
+      get_parent_name: fn(a) { artifact_name_to_string(a.name) },
     )
 
   case expectation_assertion_string, blueprint_assertion_string {

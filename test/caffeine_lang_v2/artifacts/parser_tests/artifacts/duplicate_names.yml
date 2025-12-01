@@ -1,11 +1,11 @@
 artifacts:
-  - name: datadog_sli
+  - name: slo
     version: "1.0.0"
     base_params:
       api_key: String
     params:
       numerator: String
-  - name: datadog_sli
+  - name: slo
     version: "2.0.0"
     base_params:
       api_key: String

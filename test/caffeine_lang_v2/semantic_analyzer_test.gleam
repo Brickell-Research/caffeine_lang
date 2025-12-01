@@ -18,7 +18,7 @@ fn default_artifact() -> Artifact {
       #("value", helpers.String),
     ])
 
-  artifact_helper("artifact_1", base_params, params)
+  artifact_helper("slo", base_params, params)
 }
 
 fn artifact_helper(
@@ -39,7 +39,7 @@ fn default_blueprint() -> Blueprint {
       #("value", "\"numerator / denominator\""),
     ])
 
-  blueprint_helper("blueprint_1", "artifact_1", inputs, params)
+  blueprint_helper("blueprint_1", "slo", inputs, params)
 }
 
 fn blueprint_helper(
@@ -181,7 +181,7 @@ pub fn blueprints_input_test() {
     ]),
   )
   |> should.equal(Error(
-    "Missing attributes in child: blueprint_1 against parent: artifact_1",
+    "Missing attributes in child: blueprint_1 against parent: slo",
   ))
 
   // extra inputs
@@ -194,7 +194,7 @@ pub fn blueprints_input_test() {
     ]),
   )
   |> should.equal(Error(
-    "Extra attributes in child: blueprint_1 against parent: artifact_1",
+    "Extra attributes in child: blueprint_1 against parent: slo",
   ))
 
   // missing and extra inputs
@@ -206,7 +206,7 @@ pub fn blueprints_input_test() {
     ]),
   )
   |> should.equal(Error(
-    "Missing and extra attributes in child: blueprint_1 against parent: artifact_1",
+    "Missing and extra attributes in child: blueprint_1 against parent: slo",
   ))
 
   // wrong type in inputs

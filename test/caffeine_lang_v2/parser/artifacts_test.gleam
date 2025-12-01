@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common/helpers.{Boolean, Float, Integer, String}
+import caffeine_lang_v2/common/helpers.{Float, Integer, String}
 import caffeine_lang_v2/parser/artifacts
 import gleam/dict
 import gleam/list
@@ -24,7 +24,7 @@ pub fn file_path_base(file_path) {
 // * ✅ multiple artifacts
 pub fn parse_test() {
   use artifact_1 <- result.try(artifacts.make_artifact(
-    name: "datadog_sli",
+    name: "slo",
     version: "1.0.0",
     base_params: dict.from_list([
       #("api_key", String),
@@ -38,28 +38,15 @@ pub fn parse_test() {
     ]),
   ))
 
-  use artifact_2 <- result.try(artifacts.make_artifact(
-    name: "prometheus_alert",
-    version: "2.0.0",
-    base_params: dict.from_list([#("prometheus_url", String)]),
-    params: dict.from_list([
-      #("query", String),
-      #("severity", String),
-      #("enabled", Boolean),
-    ]),
-  ))
-
   // single
   let expected_artifacts = [artifact_1]
 
   artifacts.parse(file_path_base("happy_path_single"))
   |> should.equal(Ok(expected_artifacts))
 
-  // multiple
-  let expected_artifacts = [artifact_1, artifact_2]
-
-  artifacts.parse(file_path_base("happy_path_multiple"))
-  |> should.equal(Ok(expected_artifacts))
+  // Note: Multiple different artifact types not tested since AcceptedArtifactNames
+  // currently only has ServiceLevelObjective ("slo"). When more types are added,
+  // happy_path_multiple.yml should be updated and this test expanded.
 
   // Required because `use` with result.try() makes this fn return Result
   Ok(Nil)
@@ -118,7 +105,7 @@ pub fn parse_missing_test() {
 pub fn parse_duplicates_test() {
   list.each(
     [
-      #("duplicate_names", "Duplicate artifact names detected: datadog_sli"),
+      #("duplicate_names", "Duplicate artifact names detected: slo"),
       #(
         "duplicate_base_params",
         "Duplicate keys detected for base_params: api_key",
@@ -165,7 +152,7 @@ pub fn parse_wrong_type_test() {
 //   * ✅ non numbers with two dots
 //   * ✅ happy path
 pub fn parse_semantic_test() {
-  let name = "foobar"
+  let name = "slo"
   let base_params = dict.new()
   let params = dict.new()
 

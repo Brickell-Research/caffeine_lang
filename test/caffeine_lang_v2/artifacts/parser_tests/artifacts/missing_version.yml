@@ -1,5 +1,5 @@
 artifacts:
-  - name: datadog_sli
+  - name: slo
     base_params:
       api_key: String
     params:
