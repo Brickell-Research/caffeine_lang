@@ -1,15 +1,13 @@
 import argv
-import simplifile
-
 import caffeine_lang_v2/generator
 import caffeine_lang_v2/linker
 import caffeine_lang_v2/semantic_analyzer
-
 import gleam/dynamic
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
+import simplifile
 
 fn get_version() -> String {
   let assert Ok(contents) = simplifile.read("gleam.toml")
