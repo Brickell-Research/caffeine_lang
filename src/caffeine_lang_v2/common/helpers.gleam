@@ -96,6 +96,7 @@ pub fn dict_strings_to_accepted_types(
 }
 
 /// Finds duplicate items in a list of strings.
+/// Results are sorted for deterministic ordering across platforms.
 pub fn find_duplicates(items: List(String)) -> List(String) {
   let #(_seen, duplicates) =
     list.fold(items, #(set.new(), set.new()), fn(acc, item) {
@@ -106,7 +107,7 @@ pub fn find_duplicates(items: List(String)) -> List(String) {
       }
     })
 
-  set.to_list(duplicates)
+  set.to_list(duplicates) |> list.sort(string.compare)
 }
 
 pub fn validate_uniqueness(

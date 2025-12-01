@@ -34,31 +34,16 @@ jobs:
   test-javascript:
     name: Test JavaScript Target
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup BEAM (Erlang + Gleam + rebar3)
-      uses: erlef/setup-beam@v1
+    - uses: actions/checkout@v4
+    - uses: erlef/setup-beam@v1
       with:
         otp-version: '27'
         gleam-version: '1.13.0'
         rebar3-version: '3.25.0'
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - uses: denoland/setup-deno@v2
       with:
-        node-version: '20'
-
-    - name: Download dependencies
-      run: gleam deps download
-
-    - name: Install npm dependencies
-      run: npm install
-
-    - name: Compile
-      run: gleam build --target javascript
-
-    - name: Run tests
-      run: gleam test --target javascript
+        deno-version: v2.x
+    - run: gleam deps download
+    - run: gleam build --target javascript
+    - run: gleam test --target javascript
