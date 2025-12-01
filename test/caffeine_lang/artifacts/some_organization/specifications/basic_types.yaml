@@ -1,9 +1,0 @@
-basic_types:
-  - attribute_name: graphql_operation_name
-    attribute_type: Optional(String)
-  - attribute_name: environment
-    attribute_type: Optional(String)
-  - attribute_name: team
-    attribute_type: Optional(String)
-    
-    

@@ -1,7 +1,0 @@
-blueprints:
-  - name: success_rate_graphql
-    inputs:
-      gql_operation: String
-      environment: String
-    value: "numerator / denominator"
-

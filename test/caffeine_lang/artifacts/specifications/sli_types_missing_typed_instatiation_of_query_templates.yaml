@@ -1,5 +1,0 @@
-types:
-  - name: error_rate
-    query_template_type: good_over_bad
-    filters:
-      - number_of_users

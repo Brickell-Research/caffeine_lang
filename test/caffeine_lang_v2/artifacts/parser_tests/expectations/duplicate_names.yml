@@ -4,13 +4,8 @@ expectations:
     inputs:
       gql_operation: "some_operation"
       environment: "production"
-    threshold: 99.9
-    window_in_days: 10
   - name: "Some operation succeeds in production"
     blueprint: success_rate_graphql
     inputs:
       gql_operation: "some_operation"
       environment: "production"
-    threshold: 99.9
-    window_in_days: 10  
-

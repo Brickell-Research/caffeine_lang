@@ -1,0 +1,6 @@
+artifacts:
+  - name: slo
+    base_params:
+      api_key: String
+    params:
+      numerator: String
