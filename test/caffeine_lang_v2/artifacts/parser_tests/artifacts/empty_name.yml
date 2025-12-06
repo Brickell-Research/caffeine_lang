@@ -1,7 +1,0 @@
-artifacts:
-  - name:
-    version: "1.0.0"
-    base_params:
-      api_key: String
-    params:
-      numerator: String

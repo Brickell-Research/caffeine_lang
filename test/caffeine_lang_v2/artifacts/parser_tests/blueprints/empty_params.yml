@@ -1,7 +1,0 @@
-blueprints:
-  - name: success_rate_graphql
-    artifact: datadog_sli
-    params:
-    inputs:
-      numerator: 'sum.app.requests{status:success}.as_count()'
-      denominator: 'sum.app.requests{}.as_count()'

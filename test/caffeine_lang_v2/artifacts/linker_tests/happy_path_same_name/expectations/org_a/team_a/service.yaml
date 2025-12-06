@@ -1,6 +1,0 @@
-expectations:
-  - name: "My expectation"
-    blueprint: success_rate_graphql
-    inputs:
-      gql_operation: "operation_a"
-      environment: "production"

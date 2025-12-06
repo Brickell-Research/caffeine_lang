@@ -1,7 +1,0 @@
-blueprints:
-  - name: success_rate_graphql
-    artifact: datadog_sli
-    params:
-      gql_operation: String
-      environment: String
-    inputs: "foobar"

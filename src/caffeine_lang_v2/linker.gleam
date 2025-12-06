@@ -1,7 +1,6 @@
-import caffeine_lang_v2/common/ast.{type AST}
-import caffeine_lang_v2/parser/artifacts.{type Artifact}
-import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-import caffeine_lang_v2/parser/expectations.{type Expectation}
+// import caffeine_lang_v2/parser/artifacts.{type Artifact}
+// import caffeine_lang_v2/parser/blueprints.{type Blueprint}
+// import caffeine_lang_v2/parser/expectations.{type Expectation}
 import gleam/list
 import gleam/result
 import gleam/string
@@ -19,42 +18,42 @@ pub fn standard_library_directory() -> String {
 /// an org's team's expectation directory and incorrectly placed yaml files will also
 /// be ignored.
 pub fn link(
-  blueprint_file_path: String,
-  expectations_directory: String,
-) -> Result(AST, String) {
-  use artifacts <- result.try(fetch_artifacts())
-  use blueprints <- result.try(fetch_blueprints(blueprint_file_path))
-  use expectations <- result.try(fetch_expectations(expectations_directory))
+  _blueprint_file_path: String,
+  _expectations_directory: String,
+) -> Result(String, String) {
+  // use _artifacts <- result.try(fetch_artifacts())
+  // use _blueprints <- result.try(fetch_blueprints(blueprint_file_path))
+  // use _expectations <- result.try(fetch_expectations(expectations_directory))
 
-  Ok(ast.AST(artifacts:, blueprints:, expectations:))
+  Error("Not implemented")
 }
 
-fn fetch_artifacts() -> Result(List(Artifact), String) {
-  artifacts.parse(standard_library_directory() <> "/artifacts.yaml")
-}
+// fn fetch_artifacts() -> Result(List(Artifact), String) {
+//   artifacts.parse(standard_library_directory() <> "/artifacts.yaml")
+// }
 
-fn fetch_blueprints(
-  blueprint_file_path: String,
-) -> Result(List(Blueprint), String) {
-  blueprints.parse(blueprint_file_path)
-}
+// fn fetch_blueprints(
+//   blueprint_file_path: String,
+// ) -> Result(List(Blueprint), String) {
+//   blueprints.parse(blueprint_file_path)
+// }
 
-fn fetch_expectations(
-  expectations_directory: String,
-) -> Result(List(Expectation), String) {
-  use expectations_files <- result.try(get_instantiation_yaml_files(
-    expectations_directory,
-  ))
+// fn fetch_expectations(
+//   expectations_directory: String,
+// ) -> Result(List(Expectation), String) {
+//   use expectations_files <- result.try(get_instantiation_yaml_files(
+//     expectations_directory,
+//   ))
 
-  case expectations_files {
-    [] -> Error("No expectation files found in: " <> expectations_directory)
-    _ ->
-      expectations_files
-      |> list.map(fn(file_path) { expectations.parse(file_path) })
-      |> result.all()
-      |> result.map(list.flatten)
-  }
-}
+//   case expectations_files {
+//     [] -> Error("No expectation files found in: " <> expectations_directory)
+//     _ ->
+//       expectations_files
+//       |> list.map(fn(file_path) { expectations.parse(file_path) })
+//       |> result.all()
+//       |> result.map(list.flatten)
+//   }
+// }
 
 // ==== Private ====
 fn read_directory_or_error(

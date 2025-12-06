@@ -1,4 +1,0 @@
-expectations:
-  - name: "Some operation succeeds in production"
-    blueprint: success_rate_graphql
-    inputs:

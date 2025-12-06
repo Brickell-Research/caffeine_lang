@@ -1,35 +1,8 @@
 import gleam/dict
-import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
-import yay
-
-/// Parses a specification file into a list of glaml documents according to the given parse function.
-pub fn parse_specification(
-  file_path: String,
-  params: dict.Dict(String, String),
-  parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
-  key: String,
-) -> Result(List(a), String) {
-  // TODO: consider enforcing constraints on file path, however for now, unnecessary.
-
-  // parse the YAML file
-  use doc <- result.try(
-    yay.parse_file(file_path)
-    |> result.map_error(fn(_) { "Failed to parse YAML file: " <> file_path }),
-  )
-  let parse_fn_two = fn(doc, _params) {
-    iteratively_parse_collection(yay.document_root(doc), params, parse_fn, key)
-  }
-
-  // parse the intermediate representation, here just the sli_types
-  case doc {
-    [first, ..] -> parse_fn_two(first, params)
-    _ -> Error("Empty YAML file: " <> file_path)
-  }
-}
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
 /// to allow for nested filters. This may be a bug in the future since it seems it may
@@ -126,51 +99,5 @@ pub fn validate_uniqueness(
         <> " names detected: "
         <> string.join(duplicate_names, ", "),
       )
-  }
-}
-
-/// Iteratively parses a collection of nodes.
-pub fn iteratively_parse_collection(
-  root: yay.Node,
-  params: dict.Dict(String, String),
-  actual_parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
-  key: String,
-) -> Result(List(a), String) {
-  use services_node <- result.try(
-    yay.select_sugar(root, key)
-    |> result.map_error(fn(_) { "Missing " <> key }),
-  )
-  do_parse_collection(services_node, 0, params, actual_parse_fn, key)
-}
-
-/// Internal parser for list of nodes, iterates over the list.
-fn do_parse_collection(
-  services: yay.Node,
-  index: Int,
-  params: dict.Dict(String, String),
-  actual_parse_fn: fn(yay.Node, dict.Dict(String, String)) -> Result(a, String),
-  key: String,
-) -> Result(List(a), String) {
-  case yay.select_sugar(services, "#" <> int.to_string(index)) {
-    Ok(service_node) -> {
-      use service <- result.try(actual_parse_fn(service_node, params))
-      use rest <- result.try(do_parse_collection(
-        services,
-        index + 1,
-        params,
-        actual_parse_fn,
-        key,
-      ))
-      Ok([service, ..rest])
-    }
-    Error(error) -> {
-      case error, index {
-        yay.NodeNotFound(_), 0 -> Error(key <> " is empty")
-        yay.NodeNotFound(_), _ -> Ok([])
-        yay.SelectorParseError, _ -> Error(key <> " is unparsable")
-      }
-    }
-    // TODO: fix this super hacky way of iterating over SLOs.
-    // Error(_) -> Ok([])
   }
 }

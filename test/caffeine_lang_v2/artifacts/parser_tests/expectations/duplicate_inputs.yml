@@ -1,9 +1,0 @@
-expectations:
-  - name: "Some operation succeeds in production"
-    blueprint: success_rate_graphql
-    inputs:
-      gql_operation: "some_operation"
-      gql_operation: "production"
-      environment: "some_operation"
-      environment: "production"
-      environment: "staging"
