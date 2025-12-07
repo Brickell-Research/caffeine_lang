@@ -109,7 +109,7 @@ pub fn parse_from_file_missing_test() {
 
 // ==== Duplicates ====
 // * ✅ name (all blueprints must be unique)
-// * ❌ cannot overshadow base_params with params
+// * ✅ cannot overshadow base_params with params
 pub fn parse_from_file_duplicates_test() {
   [
     #("duplicate_name", "Duplicate artifact names: success_rate"),

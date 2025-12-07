@@ -3,6 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -68,12 +69,16 @@ fn json_error_to_string(error: json.DecodeError) -> String {
     json.UnexpectedByte(val) -> "Unexpected byte: " <> val <> "."
     json.UnexpectedSequence(val) -> "Unexpected sequence: " <> val <> "."
     json.UnableToDecode(suberrors) -> {
-      "Incorrect types: " <> suberrors |> format_decode_error_message
+      "Incorrect types: "
+      <> suberrors |> format_decode_error_message(option.None)
     }
   }
 }
 
-pub fn format_decode_error_message(errors: List(decode.DecodeError)) -> String {
+pub fn format_decode_error_message(
+  errors: List(decode.DecodeError),
+  type_key_identifier: option.Option(String),
+) -> String {
   errors
   |> list.map(fn(error) {
     "expected ("
@@ -81,7 +86,18 @@ pub fn format_decode_error_message(errors: List(decode.DecodeError)) -> String {
     <> ") received ("
     <> error.found
     <> ") for ("
-    <> { error.path |> string.join(".") }
+    <> {
+      case { error.path |> string.join(".") }, type_key_identifier {
+        "", option.None -> "Unknown"
+        _, option.None -> {
+          error.path |> string.join(".")
+        }
+        "", option.Some(val) -> val
+        _, _ -> {
+          error.path |> string.join(".")
+        }
+      }
+    }
     <> ")"
   })
   |> string.join(", ")
@@ -90,30 +106,55 @@ pub fn format_decode_error_message(errors: List(decode.DecodeError)) -> String {
 pub fn validate_value_type(
   value: dynamic.Dynamic,
   expected_type: AcceptedTypes,
+  type_key_identifier: String,
 ) -> Result(dynamic.Dynamic, ParseError) {
   case expected_type {
     Boolean -> {
       case decode.run(value, decode.bool) {
         Ok(_) -> Ok(value)
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
     Integer -> {
       case decode.run(value, decode.int) {
         Ok(_) -> Ok(value)
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
     Float -> {
       case decode.run(value, decode.float) {
         Ok(_) -> Ok(value)
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
     String -> {
       case decode.run(value, decode.string) {
         Ok(_) -> Ok(value)
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
     Dict(_key_type, value_type) -> {
@@ -121,20 +162,36 @@ pub fn validate_value_type(
         Ok(dict_val) -> {
           dict_val
           |> dict.values
-          |> list.try_map(fn(v) { validate_value_type(v, value_type) })
+          |> list.try_map(fn(v) {
+            validate_value_type(v, value_type, type_key_identifier)
+          })
           |> result.map(fn(_) { value })
         }
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
     List(inner_type) -> {
       case decode.run(value, decode.list(decode.dynamic)) {
         Ok(list_val) -> {
           list_val
-          |> list.try_map(fn(v) { validate_value_type(v, inner_type) })
+          |> list.try_map(fn(v) {
+            validate_value_type(v, inner_type, type_key_identifier)
+          })
           |> result.map(fn(_) { value })
         }
-        Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
       }
     }
   }
@@ -180,7 +237,7 @@ pub fn inputs_validator(
       let #(key, value) = pair
       let assert Ok(expected_type) = params |> dict.get(key)
 
-      case validate_value_type(value, expected_type) {
+      case validate_value_type(value, expected_type, key) {
         Ok(_) -> Error(Nil)
         Error(errs) -> Ok(errs)
       }
