@@ -47,18 +47,16 @@ fn assert_error(file_name: String, error: helpers.ParseError) {
 // * ✅ none
 // * ✅ single expectation
 // * ✅ multiple expectations
-// Note: expectation names are prefixed with directory_filename from the source path
 pub fn parse_from_file_happy_path_test() {
   // none
   expectations.parse_from_file(path("happy_path_none"), blueprints())
   |> should.equal(Ok([]))
 
-  // single - name is prefixed with "expectations_happy_path_single"
   expectations.parse_from_file(path("happy_path_single"), blueprints())
   |> should.equal(
     Ok([
       middle_end.IntermediateRepresentation(
-        expectation_name: "expectations_happy_path_single_my_expectation",
+        expectation_name: "parser_expectations_happy_path_single_my_expectation",
         artifact_ref: "SLO",
         values: [
           middle_end.ValueTuple(
@@ -71,12 +69,12 @@ pub fn parse_from_file_happy_path_test() {
     ]),
   )
 
-  // multiple - names are prefixed with "expectations_happy_path_multiple"
+  // multiple - names are prefixed with "parser_expectations_happy_path_multiple"
   expectations.parse_from_file(path("happy_path_multiple"), blueprints())
   |> should.equal(
     Ok([
       middle_end.IntermediateRepresentation(
-        expectation_name: "expectations_happy_path_multiple_my_expectation",
+        expectation_name: "parser_expectations_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
         values: [
           middle_end.ValueTuple(
@@ -87,7 +85,7 @@ pub fn parse_from_file_happy_path_test() {
         ],
       ),
       middle_end.IntermediateRepresentation(
-        expectation_name: "expectations_happy_path_multiple_another_expectation",
+        expectation_name: "parser_expectations_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
         values: [
           middle_end.ValueTuple(

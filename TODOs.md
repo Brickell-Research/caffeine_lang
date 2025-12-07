@@ -2,6 +2,10 @@
 
 p0
 * ensure all the AI code is good code
+  * parsers
+	* artifact
+	* blueprints
+	* expectations
   * cql
   * middle end
   * generation

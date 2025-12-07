@@ -1,0 +1,22 @@
+{
+  "expectations": [
+    {
+    "name": "Success Rate of Clicking the big red button",
+    "blueprint_ref": "success_rate",
+    "inputs": {
+      "threshold": 99.5,
+      "window_in_days": 7
+    }
+  },
+  {
+    "name": "Latency of Clicking the big red button",
+    "blueprint_ref": "latency",
+    "inputs": {
+      "threshold": 99.0,
+      "window_in_days": 7,
+      "environment": "production",
+      "service": "member_app"
+    }
+  }
+]
+}

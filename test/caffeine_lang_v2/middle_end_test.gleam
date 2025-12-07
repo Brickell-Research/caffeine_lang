@@ -2,6 +2,7 @@ import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/middle_end
 import gleam/dict
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/list
 import gleeunit/should
 
@@ -281,4 +282,314 @@ pub fn execute_slo_datadog_missing_queries_test() {
 
   let assert Error(middle_end.QueryResolutionError(msg)) = result
   msg |> should.equal("Missing 'queries' field for SLO")
+}
+
+// ==== Tests - execute with template variables ====
+// * ✅ happy path - templates replaced with string values from IR
+// * ✅ happy path - no templates (queries unchanged)
+// * ✅ sad path - missing attribute
+fn make_slo_ir_with_string_values(
+  value: String,
+  queries: dict.Dict(String, String),
+  extra_strings: List(#(String, String)),
+) -> middle_end.IntermediateRepresentation {
+  let queries_value =
+    queries
+    |> dict.to_list
+    |> list.map(fn(pair) {
+      let #(k, v) = pair
+      #(dynamic.string(k), dynamic.string(v))
+    })
+    |> dynamic.properties
+
+  let base_values = [
+    middle_end.ValueTuple(
+      label: "vendor",
+      typ: helpers.String,
+      value: dynamic.string("datadog"),
+    ),
+    middle_end.ValueTuple(
+      label: "value",
+      typ: helpers.String,
+      value: dynamic.string(value),
+    ),
+    middle_end.ValueTuple(
+      label: "queries",
+      typ: helpers.Dict(helpers.String, helpers.String),
+      value: queries_value,
+    ),
+  ]
+
+  let extra_values =
+    extra_strings
+    |> list.map(fn(pair) {
+      let #(label, val) = pair
+      middle_end.ValueTuple(label:, typ: helpers.String, value: dynamic.string(val))
+    })
+
+  middle_end.IntermediateRepresentation(
+    expectation_name: "test_slo",
+    artifact_ref: "SLO",
+    values: list.append(base_values, extra_values),
+  )
+}
+
+pub fn execute_slo_datadog_replaces_templates_test() {
+  let queries =
+    dict.from_list([
+      #("numerator", "sum:requests.success{host:$$hostname->h$$}"),
+      #("denominator", "sum:requests.total{host:$$hostname->h$$}"),
+    ])
+  // hostname is a string value in the IR that will be used for template replacement
+  let ir =
+    make_slo_ir_with_string_values(
+      "numerator / denominator",
+      queries,
+      [#("hostname", "api.example.com")],
+    )
+
+  let result = middle_end.execute([ir])
+  result |> should.be_ok
+
+  let assert Ok([resolved_ir]) = result
+
+  // Find and check numerator_query
+  let assert Ok(num_vt) =
+    resolved_ir.values |> list.find(fn(vt) { vt.label == "numerator_query" })
+  let assert Ok(num_query) = decode.run(num_vt.value, decode.string)
+  num_query |> should.equal("sum:requests.success{host:api.example.com}")
+
+  // Find and check denominator_query
+  let assert Ok(denom_vt) =
+    resolved_ir.values |> list.find(fn(vt) { vt.label == "denominator_query" })
+  let assert Ok(denom_query) = decode.run(denom_vt.value, decode.string)
+  denom_query |> should.equal("sum:requests.total{host:api.example.com}")
+}
+
+pub fn execute_slo_datadog_no_templates_unchanged_test() {
+  // Queries without template variables
+  let queries =
+    dict.from_list([
+      #("numerator", "sum:requests.success{service:api}"),
+      #("denominator", "sum:requests.total{service:api}"),
+    ])
+
+  let ir = make_slo_ir_with_value_queries("datadog", "numerator / denominator", queries)
+
+  let result = middle_end.execute([ir])
+  result |> should.be_ok
+
+  let assert Ok([resolved_ir]) = result
+
+  // Queries should be unchanged since no templates
+  let assert Ok(num_vt) =
+    resolved_ir.values |> list.find(fn(vt) { vt.label == "numerator_query" })
+  let assert Ok(num_query) = decode.run(num_vt.value, decode.string)
+  num_query |> should.equal("sum:requests.success{service:api}")
+}
+
+pub fn execute_slo_datadog_missing_attribute_test() {
+  let queries =
+    dict.from_list([
+      #("numerator", "sum:requests{host:$$missing_attr->h$$}"),
+      #("denominator", "sum:total"),
+    ])
+  // No extra string values - missing_attr won't be found
+  let ir = make_slo_ir_with_string_values("numerator / denominator", queries, [])
+
+  let result = middle_end.execute([ir])
+  result |> should.be_error
+
+  let assert Error(middle_end.QueryResolutionError(msg)) = result
+  msg |> should.equal("Missing template attribute: missing_attr")
+}
+
+// ==== Tests - parse_template_variable ====
+// Happy paths:
+// * ✅ standard format
+// * ✅ underscores in both parts
+// * ✅ multiple arrows (first one is separator)
+// Sad paths:
+// * ✅ no arrow
+// * ✅ empty attribute
+// * ✅ empty template
+pub fn parse_template_variable_happy_path_test() {
+  // standard format
+  middle_end.parse_template_variable("peer_hostname->host")
+  |> should.equal(Ok(#("peer_hostname", "host")))
+
+  // underscores in both
+  middle_end.parse_template_variable("my_attr->my_template")
+  |> should.equal(Ok(#("my_attr", "my_template")))
+
+  // multiple arrows - first one is separator
+  middle_end.parse_template_variable("attr->template->extra")
+  |> should.equal(Ok(#("attr", "template->extra")))
+}
+
+pub fn parse_template_variable_sad_path_test() {
+  // no arrow
+  middle_end.parse_template_variable("noarrow")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+
+  // empty attribute
+  middle_end.parse_template_variable("->template")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("->template")))
+
+  // empty template
+  middle_end.parse_template_variable("attr->")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("attr->")))
+}
+
+// ==== Tests - extract_template_variables_from_string ====
+// Happy paths:
+// * ✅ single variable
+// * ✅ multiple variables
+// * ✅ no variables
+// * ✅ real query
+// * ✅ adjacent variables
+// Sad paths:
+// * ✅ unterminated variable
+// * ✅ invalid variable format (no arrow)
+// * ✅ empty variable
+// * ✅ single $ ignored
+// * ✅ empty attribute
+// * ✅ empty template
+pub fn extract_template_variables_happy_path_test() {
+  // single variable
+  middle_end.extract_template_variables_from_string("$$foo->bar$$")
+  |> should.equal(Ok(["foo->bar"]))
+
+  // multiple variables
+  middle_end.extract_template_variables_from_string(
+    "prefix $$a->x$$ middle $$b->y$$ suffix",
+  )
+  |> should.equal(Ok(["a->x", "b->y"]))
+
+  // no variables
+  middle_end.extract_template_variables_from_string("plain string")
+  |> should.equal(Ok([]))
+
+  // real query
+  middle_end.extract_template_variables_from_string(
+    "sum:hits{host:$$peer_hostname->host$$}",
+  )
+  |> should.equal(Ok(["peer_hostname->host"]))
+
+  // adjacent variables
+  middle_end.extract_template_variables_from_string("$$a->x$$$$b->y$$")
+  |> should.equal(Ok(["a->x", "b->y"]))
+
+  // single $ ignored
+  middle_end.extract_template_variables_from_string("$foo->bar$")
+  |> should.equal(Ok([]))
+}
+
+pub fn extract_template_variables_sad_path_test() {
+  // unterminated variable
+  middle_end.extract_template_variables_from_string("$$foo->bar")
+  |> should.equal(Error(middle_end.UnterminatedVariable("foo->bar")))
+
+  // invalid variable format (no arrow)
+  middle_end.extract_template_variables_from_string("$$noarrow$$")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+
+  // empty variable
+  middle_end.extract_template_variables_from_string("$$$$")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("")))
+
+  // empty attribute
+  middle_end.extract_template_variables_from_string("$$->template$$")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("->template")))
+
+  // empty template
+  middle_end.extract_template_variables_from_string("$$attr->$$")
+  |> should.equal(Error(middle_end.InvalidVariableFormat("attr->")))
+}
+
+// ==== Tests - replace_template_variables ====
+// Happy paths:
+// * ✅ single replacement
+// * ✅ multiple replacements
+// * ✅ no variables unchanged
+// * ✅ same variable twice
+// Sad paths:
+// * ✅ missing attribute in dict
+// * ✅ invalid variable format
+// * ✅ unterminated variable
+pub fn replace_template_variables_happy_path_test() {
+  // single replacement
+  middle_end.replace_template_variables(
+    "$$name->n$$",
+    dict.from_list([#("name", "alice")]),
+  )
+  |> should.equal(Ok("alice"))
+
+  // multiple replacements
+  middle_end.replace_template_variables(
+    "$$a->x$$ and $$b->y$$",
+    dict.from_list([#("a", "1"), #("b", "2")]),
+  )
+  |> should.equal(Ok("1 and 2"))
+
+  // no variables unchanged
+  middle_end.replace_template_variables("plain", dict.from_list([]))
+  |> should.equal(Ok("plain"))
+
+  // same variable twice
+  middle_end.replace_template_variables(
+    "$$x->a$$ $$x->b$$",
+    dict.from_list([#("x", "val")]),
+  )
+  |> should.equal(Ok("val val"))
+
+  // real query example
+  middle_end.replace_template_variables(
+    "sum:http.requests{host:$$peer_hostname->host$$ AND env:$$environment->env$$}",
+    dict.from_list([#("peer_hostname", "api.example.com"), #("environment", "prod")]),
+  )
+  |> should.equal(Ok("sum:http.requests{host:api.example.com AND env:prod}"))
+}
+
+pub fn replace_template_variables_sad_path_test() {
+  // missing attribute in dict
+  middle_end.replace_template_variables(
+    "$$missing->m$$",
+    dict.from_list([]),
+  )
+  |> should.equal(Error(middle_end.MissingAttribute("missing")))
+
+  // invalid variable format
+  middle_end.replace_template_variables(
+    "$$noarrow$$",
+    dict.from_list([]),
+  )
+  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+
+  // unterminated variable
+  middle_end.replace_template_variables(
+    "$$foo->bar",
+    dict.from_list([]),
+  )
+  |> should.equal(Error(middle_end.UnterminatedVariable("foo->bar")))
+}
+
+// ==== Tests - format_template_error ====
+pub fn format_template_error_test() {
+  [
+    #(
+      middle_end.InvalidVariableFormat("bad"),
+      "Invalid template variable format: bad",
+    ),
+    #(middle_end.MissingAttribute("foo"), "Missing template attribute: foo"),
+    #(
+      middle_end.UnterminatedVariable("bar->baz"),
+      "Unterminated template variable: $$bar->baz",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(error, expected) = pair
+    middle_end.format_template_error(error)
+    |> should.equal(expected)
+  })
 }

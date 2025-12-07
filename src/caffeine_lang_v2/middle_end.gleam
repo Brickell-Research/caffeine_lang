@@ -30,6 +30,21 @@ pub type ResolveError {
   MissingQueryKey(key: String)
 }
 
+pub type TemplateError {
+  InvalidVariableFormat(variable: String)
+  MissingAttribute(attribute: String)
+  UnterminatedVariable(partial: String)
+}
+
+/// Format a template error as a string
+pub fn format_template_error(error: TemplateError) -> String {
+  case error {
+    InvalidVariableFormat(var) -> "Invalid template variable format: " <> var
+    MissingAttribute(attr) -> "Missing template attribute: " <> attr
+    UnterminatedVariable(partial) -> "Unterminated template variable: $$" <> partial
+  }
+}
+
 /// Format a resolve error as a string
 pub fn format_resolve_error(error: ResolveError) -> String {
   case error {
@@ -93,10 +108,7 @@ fn substitute_exp(
   }
 }
 
-fn result_try(
-  result: Result(a, e),
-  next: fn(a) -> Result(b, e),
-) -> Result(b, e) {
+fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e) {
   case result {
     Ok(value) -> next(value)
     Error(err) -> Error(err)
@@ -164,10 +176,27 @@ fn resolve_slo_datadog(
     }),
   )
 
+  // Build attributes from all string values in the IR for template replacement
+  let attributes = extract_string_attributes(ir.values)
+
   // Resolve CQL expression
   use #(numerator_query, denominator_query) <- result_try(
     resolve_queries(value, queries)
     |> result_map_error(fn(e) { QueryResolutionError(format_resolve_error(e)) }),
+  )
+
+  // Apply template replacement to both queries
+  use numerator_query_resolved <- result_try(
+    replace_template_variables(numerator_query, attributes)
+    |> result_map_error(fn(e) {
+      QueryResolutionError(format_template_error(e))
+    }),
+  )
+  use denominator_query_resolved <- result_try(
+    replace_template_variables(denominator_query, attributes)
+    |> result_map_error(fn(e) {
+      QueryResolutionError(format_template_error(e))
+    }),
   )
 
   // Build new values with resolved queries, removing value and queries
@@ -178,12 +207,12 @@ fn resolve_slo_datadog(
       ValueTuple(
         label: "numerator_query",
         typ: helpers.String,
-        value: dynamic.string(numerator_query),
+        value: dynamic.string(numerator_query_resolved),
       ),
       ValueTuple(
         label: "denominator_query",
         typ: helpers.String,
-        value: dynamic.string(denominator_query),
+        value: dynamic.string(denominator_query_resolved),
       ),
     ])
 
@@ -212,4 +241,105 @@ fn get_string_dict_from_values(
     decode.run(vt.value, decode.dict(decode.string, decode.string))
     |> result_map_error(fn(_) { Nil })
   })
+}
+
+/// Extract all string-typed values from a list of ValueTuples as a dict
+/// This is used to build the attributes dict for template replacement
+fn extract_string_attributes(values: List(ValueTuple)) -> Dict(String, String) {
+  values
+  |> list.filter_map(fn(vt) {
+    case decode.run(vt.value, decode.string) {
+      Ok(str_value) -> Ok(#(vt.label, str_value))
+      Error(_) -> Error(Nil)
+    }
+  })
+  |> dict.from_list
+}
+
+/// Parse a template variable in the format "ATTRIBUTE_NAME->TEMPLATE_NAME"
+/// Returns the attribute name and template name as a tuple
+pub fn parse_template_variable(
+  variable: String,
+) -> Result(#(String, String), TemplateError) {
+  case string.split_once(variable, "->") {
+    Ok(#(attribute, template)) -> {
+      case attribute, template {
+        "", _ -> Error(InvalidVariableFormat(variable))
+        _, "" -> Error(InvalidVariableFormat(variable))
+        _, _ -> Ok(#(attribute, template))
+      }
+    }
+    Error(_) -> Error(InvalidVariableFormat(variable))
+  }
+}
+
+/// Extract all template variables from a templatized string
+/// Variables are in the format $$ATTRIBUTE_NAME->TEMPLATE_NAME$$
+/// Returns a list of variable strings (without the $$ delimiters)
+pub fn extract_template_variables_from_string(
+  templatized_string: String,
+) -> Result(List(String), TemplateError) {
+  extract_variables_recursive(templatized_string, [])
+}
+
+fn extract_variables_recursive(
+  remaining: String,
+  acc: List(String),
+) -> Result(List(String), TemplateError) {
+  case string.split_once(remaining, "$$") {
+    Error(_) -> Ok(list.reverse(acc))
+    Ok(#(_before, after_open)) -> {
+      case string.split_once(after_open, "$$") {
+        Error(_) -> Error(UnterminatedVariable(after_open))
+        Ok(#(variable, after_close)) -> {
+          // Validate the variable format
+          use _ <- result_try(
+            parse_template_variable(variable)
+            |> result_map_error(fn(e) { e }),
+          )
+          extract_variables_recursive(after_close, [variable, ..acc])
+        }
+      }
+    }
+  }
+}
+
+/// Replace template variables in a string with values from a dictionary
+/// The dictionary is keyed by attribute name
+pub fn replace_template_variables(
+  templatized_string: String,
+  replacements: Dict(String, String),
+) -> Result(String, TemplateError) {
+  replace_variables_recursive(templatized_string, replacements, "")
+}
+
+fn replace_variables_recursive(
+  remaining: String,
+  replacements: Dict(String, String),
+  acc: String,
+) -> Result(String, TemplateError) {
+  case string.split_once(remaining, "$$") {
+    Error(_) -> Ok(acc <> remaining)
+    Ok(#(before, after_open)) -> {
+      case string.split_once(after_open, "$$") {
+        Error(_) -> Error(UnterminatedVariable(after_open))
+        Ok(#(variable, after_close)) -> {
+          // Parse the variable to get attribute name
+          use #(attribute, _template) <- result_try(
+            parse_template_variable(variable),
+          )
+          // Look up the replacement value
+          use value <- result_try(
+            dict.get(replacements, attribute)
+            |> result_map_error(fn(_) { MissingAttribute(attribute) }),
+          )
+          replace_variables_recursive(
+            after_close,
+            replacements,
+            acc <> before <> value,
+          )
+        }
+      }
+    }
+  }
 }

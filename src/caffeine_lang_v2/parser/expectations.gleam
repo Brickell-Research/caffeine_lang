@@ -102,12 +102,12 @@ pub fn parse_from_file(
 }
 
 /// Extract a meaningful prefix from the source path
-/// e.g., "examples/org/platform_team/authentication.json" -> "platform_team_authentication"
+/// e.g., "examples/org/platform_team/authentication.json" -> "org_platform_team_authentication"
 fn extract_path_prefix(path: String) -> String {
   path
   |> string.split("/")
   |> list.reverse
-  |> list.take(2)
+  |> list.take(3)
   |> list.reverse
   |> list.map(fn(segment) {
     // Remove .json extension if present
