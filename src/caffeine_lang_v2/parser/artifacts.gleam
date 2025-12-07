@@ -6,7 +6,6 @@ import gleam/json
 import gleam/list
 import gleam/result
 import gleam/string
-import simplifile
 
 pub type Artifact {
   Artifact(
@@ -23,27 +22,20 @@ pub type Semver {
 }
 
 pub fn parse_from_file(file_path) -> Result(List(Artifact), helpers.ParseError) {
-  use json_string <- result.try(case simplifile.read(file_path) {
-    Ok(file_contents) -> Ok(file_contents)
-    Error(err) ->
-      Error(helpers.FileReadError(msg: simplifile.describe_error(err)))
-  })
+  use json_string <- result.try(helpers.json_from_file(file_path))
 
   use artifacts <- result.try(case parse_from_string(json_string) {
     Ok(artifacts) -> Ok(artifacts)
     Error(err) -> Error(helpers.format_json_decode_error(err))
   })
 
-  case
-    helpers.validate_relevant_uniqueness(
-      artifacts,
-      fn(a) { a.name },
-      "artifact names",
-    )
-  {
-    Ok(_) -> Ok(artifacts)
-    Error(err) -> Error(helpers.DuplicateError(err))
-  }
+  use _ <- result.try(helpers.validate_relevant_uniqueness(
+    artifacts,
+    fn(a) { a.name },
+    "artifact names",
+  ))
+
+  Ok(artifacts)
 }
 
 pub fn semantic_version_decoder() -> decode.Decoder(Semver) {

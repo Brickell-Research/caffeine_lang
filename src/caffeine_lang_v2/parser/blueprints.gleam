@@ -8,7 +8,6 @@ import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
-import simplifile
 
 pub type Blueprint {
   Blueprint(
@@ -23,11 +22,7 @@ pub fn parse_from_file(
   file_path: String,
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), helpers.ParseError) {
-  use json_string <- result.try(case simplifile.read(file_path) {
-    Ok(file_contents) -> Ok(file_contents)
-    Error(err) ->
-      Error(helpers.FileReadError(msg: simplifile.describe_error(err)))
-  })
+  use json_string <- result.try(helpers.json_from_file(file_path))
 
   use blueprints <- result.try(
     case blueprints_from_json(json_string, artifacts) {
@@ -39,58 +34,33 @@ pub fn parse_from_file(
   // map blueprints to artifacts since we'll reuse that numerous times
   // and we've already validated all artifact_refs
   let blueprint_artifact_collection =
-    blueprints
-    |> list.map(fn(blueprint) {
-      // already performed this check so can assert it
-      let assert Ok(artifact) =
-        artifacts
-        |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
-        |> list.first
-      #(blueprint, artifact)
-    })
-
-  let input_validations_error =
-    blueprint_artifact_collection
-    |> list.filter_map(fn(blueprint_artifact_pair) {
-      let #(blueprint, artifact) = blueprint_artifact_pair
-      let inputs = blueprint.inputs
-      let params = artifact.params
-
-      case helpers.inputs_validator(params:, inputs:) {
-        Ok(_) -> Error(Nil)
-        Error(msg) -> Ok(msg)
-      }
-    })
-    |> string.join(", ")
-
-  use _ <- result.try(case input_validations_error {
-    "" -> Ok(True)
-    _ ->
-      Error(helpers.JsonParserError(
-        "Input validation errors: " <> input_validations_error,
-      ))
-  })
+    helpers.map_reference_to_referrer_over_collection(
+      references: artifacts,
+      referrers: blueprints,
+      reference_name: fn(a) { a.name },
+      referrer_reference: fn(b) { b.artifact_ref },
+    )
 
   use _ <- result.try(
-    case
-      helpers.validate_relevant_uniqueness(
-        blueprints,
-        fn(b) { b.name },
-        "blueprint names",
-      )
-    {
-      Ok(_) -> Ok(blueprints)
-      Error(err) -> Error(helpers.DuplicateError(err))
-    },
+    helpers.validate_inputs_for_collection(
+      blueprint_artifact_collection,
+      fn(blueprint) { blueprint.inputs },
+      fn(artifact) { artifact.params },
+    ),
   )
 
-  // merge base_params and params
+  use _ <- result.try(helpers.validate_relevant_uniqueness(
+    blueprints,
+    fn(b) { b.name },
+    "blueprint names",
+  ))
+
   let overshadow_params_error =
     blueprint_artifact_collection
     |> list.filter_map(fn(blueprint_artifact_pair) {
       let #(blueprint, artifact) = blueprint_artifact_pair
 
-      case check_base_param_oversahdowing(blueprint, artifact) {
+      case check_base_param_overshadowing(blueprint, artifact) {
         Ok(_) -> Error(Nil)
         Error(msg) -> Ok(msg)
       }
@@ -106,6 +76,7 @@ pub fn parse_from_file(
       ))
   })
 
+  // at this point everything is validated, so we can merge base_params and params
   let merged_param_blueprints =
     blueprint_artifact_collection
     |> list.map(fn(blueprint_artifact_pair) {
@@ -120,7 +91,7 @@ pub fn parse_from_file(
   Ok(merged_param_blueprints)
 }
 
-fn check_base_param_oversahdowing(
+fn check_base_param_overshadowing(
   blueprint: Blueprint,
   artifact: Artifact,
 ) -> Result(Bool, String) {
@@ -140,22 +111,6 @@ fn check_base_param_oversahdowing(
   }
 }
 
-fn artifact_ref_decoder(artifacts: List(Artifact)) {
-  let artifact_names = artifacts |> list.map(fn(artifact) { artifact.name })
-
-  decode.new_primitive_decoder("ArtifactReference", fn(dyn) {
-    case decode.run(dyn, decode.string) {
-      Ok(x) -> {
-        case artifact_names |> list.contains(x) {
-          True -> Ok(x)
-          False -> Error("")
-        }
-      }
-      _ -> Error("")
-    }
-  })
-}
-
 pub fn blueprints_from_json(
   json_string: String,
   artifacts: List(Artifact),
@@ -164,7 +119,7 @@ pub fn blueprints_from_json(
     use name <- decode.field("name", decode.string)
     use artifact_ref <- decode.field(
       "artifact_ref",
-      artifact_ref_decoder(artifacts),
+      helpers.named_reference_decoder(artifacts, fn(a) { a.name }),
     )
     use params <- decode.field(
       "params",

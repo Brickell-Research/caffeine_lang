@@ -7,6 +7,7 @@ import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
+import simplifile
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
 /// to allow for nested filters. This may be a bug in the future since it seems it may
@@ -232,7 +233,7 @@ pub fn validate_relevant_uniqueness(
   things_to_validate_uniqueness_for: List(a),
   fetch_property: fn(a) -> String,
   thing_label: String,
-) -> Result(Bool, String) {
+) -> Result(Bool, ParseError) {
   let dupe_names =
     things_to_validate_uniqueness_for
     |> list.group(fn(thing) { fetch_property(thing) })
@@ -242,11 +243,83 @@ pub fn validate_relevant_uniqueness(
   case dupe_names {
     [] -> Ok(True)
     _ ->
-      Error(
+      Error(DuplicateError(
         "Duplicate "
         <> thing_label
         <> ": "
         <> { dupe_names |> string.join(", ") },
-      )
+      ))
   }
+}
+
+pub fn json_from_file(file_path) -> Result(String, ParseError) {
+  case simplifile.read(file_path) {
+    Ok(file_contents) -> Ok(file_contents)
+    Error(err) -> Error(FileReadError(msg: simplifile.describe_error(err)))
+  }
+}
+
+pub fn validate_inputs_for_collection(
+  input_param_collections: List(#(a, b)),
+  get_inputs: fn(a) -> Dict(String, Dynamic),
+  get_params: fn(b) -> Dict(String, AcceptedTypes),
+) -> Result(Bool, ParseError) {
+  let errors =
+    input_param_collections
+    |> list.filter_map(fn(collection) {
+      let #(input_collection, param_collection) = collection
+      case
+        inputs_validator(
+          params: get_params(param_collection),
+          inputs: get_inputs(input_collection),
+        )
+      {
+        Ok(_) -> Error(Nil)
+        Error(msg) -> Ok(msg)
+      }
+    })
+    |> string.join(", ")
+
+  case errors {
+    "" -> Ok(True)
+    _ -> Error(JsonParserError("Input validation errors: " <> errors))
+  }
+}
+
+pub fn named_reference_decoder(
+  collection: List(a),
+  name_extraction: fn(a) -> String,
+) {
+  let names = collection |> list.map(name_extraction)
+
+  decode.new_primitive_decoder("NamedReference", fn(dyn) {
+    case decode.run(dyn, decode.string) {
+      Ok(x) -> {
+        case names |> list.contains(x) {
+          True -> Ok(x)
+          False -> Error("")
+        }
+      }
+      _ -> Error("")
+    }
+  })
+}
+
+pub fn map_reference_to_referrer_over_collection(
+  references references: List(a),
+  referrers referrers: List(b),
+  reference_name reference_name: fn(a) -> String,
+  referrer_reference referrer_reference: fn(b) -> String,
+) {
+  referrers
+  |> list.map(fn(referrer) {
+    // already performed this check so can assert it
+    let assert Ok(reference) =
+      references
+      |> list.filter(fn(reference) {
+        { reference |> reference_name } == { referrer |> referrer_reference }
+      })
+      |> list.first
+    #(referrer, reference)
+  })
 }

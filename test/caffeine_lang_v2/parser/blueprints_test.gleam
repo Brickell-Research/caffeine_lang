@@ -145,7 +145,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_artifact_ref",
-      "Incorrect types: expected (ArtifactReference) received (List) for (blueprints.0.artifact_ref)",
+      "Incorrect types: expected (NamedReference) received (List) for (blueprints.0.artifact_ref)",
     ),
     #(
       "wrong_type_params_not_a_map",
@@ -179,7 +179,7 @@ pub fn parse_from_file_semantic_test() {
   [
     #(
       "semantic_artifact_ref",
-      "Incorrect types: expected (ArtifactReference) received (String) for (blueprints.0.artifact_ref)",
+      "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_ref)",
     ),
   ]
   |> list.each(fn(pair) {

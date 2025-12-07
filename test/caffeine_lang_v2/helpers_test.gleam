@@ -1,6 +1,7 @@
 import caffeine_lang_v2/common/helpers
 import gleam/dict
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/list
 import gleam/string
 import gleeunit/should
@@ -312,7 +313,80 @@ pub fn validate_relevant_uniqueness_test() {
     let result =
       helpers.validate_relevant_uniqueness(things, fetch_name, "names")
     result |> should.be_error
-    let assert Error(msg) = result
+    let assert Error(helpers.DuplicateError(msg)) = result
     string.contains(msg, expected_msg) |> should.be_true
   })
+}
+
+// ==== Validate Inputs For Collection Tests ====
+// * ✅ happy path - empty collection
+// * ✅ happy path - valid inputs
+// * ✅ sad path - invalid inputs
+pub fn validate_inputs_for_collection_test() {
+  // happy paths
+  [
+    [],
+    [
+      #(
+        dict.from_list([#("name", dynamic.string("foo"))]),
+        dict.from_list([#("name", helpers.String)]),
+      ),
+    ],
+  ]
+  |> list.each(fn(collection) {
+    helpers.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) { p })
+    |> should.equal(Ok(True))
+  })
+
+  // sad path
+  let collection = [
+    #(
+      dict.from_list([#("count", dynamic.string("not an int"))]),
+      dict.from_list([#("count", helpers.Integer)]),
+    ),
+  ]
+  helpers.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) { p })
+  |> should.be_error
+}
+
+// ==== Named Reference Decoder Tests ====
+// * ✅ happy path - name exists in collection
+// * ✅ sad path - name doesn't exist in collection
+pub fn named_reference_decoder_test() {
+  let collection = [#("alice", 1), #("bob", 2)]
+  let decoder = helpers.named_reference_decoder(collection, fn(x) { x.0 })
+
+  // happy path
+  decode.run(dynamic.string("alice"), decoder) |> should.be_ok
+
+  // sad path
+  decode.run(dynamic.string("charlie"), decoder) |> should.be_error
+}
+
+// ==== Map Reference To Referrer Over Collection Tests ====
+// * ✅ happy path - empty collection
+// * ✅ happy path - matches references to referrers
+pub fn map_reference_to_referrer_over_collection_test() {
+  // empty collection
+  helpers.map_reference_to_referrer_over_collection(
+    references: [],
+    referrers: [],
+    reference_name: fn(x: #(String, Int)) { x.0 },
+    referrer_reference: fn(x: #(String, Int)) { x.0 },
+  )
+  |> should.equal([])
+
+  // matches references to referrers
+  let references = [#("alice", 1), #("bob", 2)]
+  let referrers = [#("bob", 100), #("alice", 200)]
+  helpers.map_reference_to_referrer_over_collection(
+    references:,
+    referrers:,
+    reference_name: fn(x) { x.0 },
+    referrer_reference: fn(x) { x.0 },
+  )
+  |> should.equal([
+    #(#("bob", 100), #("bob", 2)),
+    #(#("alice", 200), #("alice", 1)),
+  ])
 }

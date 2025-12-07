@@ -143,7 +143,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_blueprint_ref",
-      "Incorrect types: expected (BlueprintReference) received (List) for (expectations.0.blueprint_ref)",
+      "Incorrect types: expected (NamedReference) received (List) for (expectations.0.blueprint_ref)",
     ),
     #(
       "wrong_type_inputs_not_a_map",
@@ -165,7 +165,7 @@ pub fn parse_from_file_semantic_test() {
   [
     #(
       "semantic_blueprint_ref",
-      "Incorrect types: expected (BlueprintReference) received (String) for (expectations.0.blueprint_ref)",
+      "Incorrect types: expected (NamedReference) received (String) for (expectations.0.blueprint_ref)",
     ),
   ]
   |> list.each(fn(pair) {

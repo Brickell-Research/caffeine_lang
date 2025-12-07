@@ -2,8 +2,6 @@
 
 p0
 * these error messages are not really consistently helpful
-* tons of verbose, code i.e. mapping blueprint to artifact like 3x
-* function consistency and reuse between parsers: artifacts, blueprints, and expectations
 
 -----------
 
