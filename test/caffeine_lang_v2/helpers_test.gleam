@@ -280,3 +280,39 @@ pub fn inputs_validator_test() {
     string.contains(msg, expected_substring) |> should.be_true
   })
 }
+
+// ==== Validate Relevant Uniqueness Tests ====
+// * ✅ happy path - no things to validate
+// * ✅ happy path - multiple things to validate
+// * ✅ sad path - one non-unique
+// * ✅ sad path - multiple non-unique
+pub fn validate_relevant_uniqueness_test() {
+  let fetch_name = fn(thing: #(String, Int)) { thing.0 }
+
+  // happy paths
+  [
+    [],
+    [#("alice", 1), #("bob", 2), #("charlie", 3)],
+  ]
+  |> list.each(fn(things) {
+    helpers.validate_relevant_uniqueness(things, fetch_name, "names")
+    |> should.equal(Ok(True))
+  })
+
+  // sad paths
+  [
+    #([#("alice", 1), #("alice", 2)], "Duplicate names: alice"),
+    #(
+      [#("alice", 1), #("bob", 2), #("alice", 3), #("bob", 4), #("chad", 5)],
+      "Duplicate names: ",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(things, expected_msg) = pair
+    let result =
+      helpers.validate_relevant_uniqueness(things, fetch_name, "names")
+    result |> should.be_error
+    let assert Error(msg) = result
+    string.contains(msg, expected_msg) |> should.be_true
+  })
+}

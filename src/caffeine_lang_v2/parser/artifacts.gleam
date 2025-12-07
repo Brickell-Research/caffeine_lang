@@ -22,22 +22,6 @@ pub type Semver {
   Semver(major: Int, minor: Int, patch: Int)
 }
 
-fn validate_relevant_uniqueness(
-  artifacts: List(Artifact),
-) -> Result(Bool, String) {
-  let dupe_names =
-    artifacts
-    |> list.group(fn(artifact) { artifact.name })
-    |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
-    |> dict.keys
-
-  case dupe_names {
-    [] -> Ok(True)
-    _ ->
-      Error("Duplicate artifact names: " <> { dupe_names |> string.join(", ") })
-  }
-}
-
 pub fn parse_from_file(file_path) -> Result(List(Artifact), helpers.ParseError) {
   use json_string <- result.try(case simplifile.read(file_path) {
     Ok(file_contents) -> Ok(file_contents)
@@ -50,7 +34,13 @@ pub fn parse_from_file(file_path) -> Result(List(Artifact), helpers.ParseError) 
     Error(err) -> Error(helpers.format_json_decode_error(err))
   })
 
-  case validate_relevant_uniqueness(artifacts) {
+  case
+    helpers.validate_relevant_uniqueness(
+      artifacts,
+      fn(a) { a.name },
+      "artifact names",
+    )
+  {
     Ok(_) -> Ok(artifacts)
     Error(err) -> Error(helpers.DuplicateError(err))
   }

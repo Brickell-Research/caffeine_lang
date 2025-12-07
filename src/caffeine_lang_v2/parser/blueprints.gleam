@@ -71,10 +71,18 @@ pub fn parse_from_file(
       ))
   })
 
-  use _ <- result.try(case validate_relevant_uniqueness(blueprints) {
-    Ok(_) -> Ok(blueprints)
-    Error(err) -> Error(helpers.DuplicateError(err))
-  })
+  use _ <- result.try(
+    case
+      helpers.validate_relevant_uniqueness(
+        blueprints,
+        fn(b) { b.name },
+        "blueprint names",
+      )
+    {
+      Ok(_) -> Ok(blueprints)
+      Error(err) -> Error(helpers.DuplicateError(err))
+    },
+  )
 
   // merge base_params and params
   let overshadow_params_error =
@@ -128,24 +136,6 @@ fn check_base_param_oversahdowing(
       Error(
         "Blueprint overshadowing base_params from artifact: "
         <> overshadowing_params |> string.join(", "),
-      )
-  }
-}
-
-fn validate_relevant_uniqueness(
-  blueprints: List(Blueprint),
-) -> Result(Bool, String) {
-  let dupe_names =
-    blueprints
-    |> list.group(fn(blueprint) { blueprint.name })
-    |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
-    |> dict.keys
-
-  case dupe_names {
-    [] -> Ok(True)
-    _ ->
-      Error(
-        "Duplicate blueprint names: " <> { dupe_names |> string.join(", ") },
       )
   }
 }

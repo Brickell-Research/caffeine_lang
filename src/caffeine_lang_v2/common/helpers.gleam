@@ -103,60 +103,37 @@ pub fn format_decode_error_message(
   |> string.join(", ")
 }
 
+fn validate_value_type_helper(
+  value: Dynamic,
+  decoder: decode.Decoder(a),
+  type_key_identifier: String,
+) {
+  case decode.run(value, decoder) {
+    Ok(_) -> Ok(value)
+    Error(err) ->
+      Error(
+        JsonParserError(format_decode_error_message(
+          err,
+          option.Some(type_key_identifier),
+        )),
+      )
+  }
+}
+
 pub fn validate_value_type(
   value: dynamic.Dynamic,
   expected_type: AcceptedTypes,
   type_key_identifier: String,
 ) -> Result(dynamic.Dynamic, ParseError) {
   case expected_type {
-    Boolean -> {
-      case decode.run(value, decode.bool) {
-        Ok(_) -> Ok(value)
-        Error(err) ->
-          Error(
-            JsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
-      }
-    }
-    Integer -> {
-      case decode.run(value, decode.int) {
-        Ok(_) -> Ok(value)
-        Error(err) ->
-          Error(
-            JsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
-      }
-    }
-    Float -> {
-      case decode.run(value, decode.float) {
-        Ok(_) -> Ok(value)
-        Error(err) ->
-          Error(
-            JsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
-      }
-    }
-    String -> {
-      case decode.run(value, decode.string) {
-        Ok(_) -> Ok(value)
-        Error(err) ->
-          Error(
-            JsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
-      }
-    }
+    Boolean ->
+      validate_value_type_helper(value, decode.bool, type_key_identifier)
+    Integer ->
+      validate_value_type_helper(value, decode.int, type_key_identifier)
+    Float ->
+      validate_value_type_helper(value, decode.float, type_key_identifier)
+    String ->
+      validate_value_type_helper(value, decode.string, type_key_identifier)
     Dict(_key_type, value_type) -> {
       case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
         Ok(dict_val) -> {
@@ -248,5 +225,28 @@ pub fn inputs_validator(
   case type_validation_errors {
     "" -> Ok(True)
     _ -> Error(type_validation_errors)
+  }
+}
+
+pub fn validate_relevant_uniqueness(
+  things_to_validate_uniqueness_for: List(a),
+  fetch_property: fn(a) -> String,
+  thing_label: String,
+) -> Result(Bool, String) {
+  let dupe_names =
+    things_to_validate_uniqueness_for
+    |> list.group(fn(thing) { fetch_property(thing) })
+    |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
+    |> dict.keys
+
+  case dupe_names {
+    [] -> Ok(True)
+    _ ->
+      Error(
+        "Duplicate "
+        <> thing_label
+        <> ": "
+        <> { dupe_names |> string.join(", ") },
+      )
   }
 }

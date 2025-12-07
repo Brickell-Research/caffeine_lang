@@ -72,10 +72,18 @@ pub fn parse_from_file(
       ))
   })
 
-  use _ <- result.try(case validate_relevant_uniqueness(expectations) {
-    Ok(_) -> Ok(expectations)
-    Error(err) -> Error(helpers.DuplicateError(err))
-  })
+  use _ <- result.try(
+    case
+      helpers.validate_relevant_uniqueness(
+        expectations,
+        fn(e) { e.name },
+        "expectation names",
+      )
+    {
+      Ok(_) -> Ok(expectations)
+      Error(err) -> Error(helpers.DuplicateError(err))
+    },
+  )
 
   // at this point we're completely validated
   let ir =
@@ -101,24 +109,6 @@ pub fn parse_from_file(
     })
 
   Ok(ir)
-}
-
-fn validate_relevant_uniqueness(
-  expectations: List(Expectation),
-) -> Result(Bool, String) {
-  let dupe_names =
-    expectations
-    |> list.group(fn(expectation) { expectation.name })
-    |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
-    |> dict.keys
-
-  case dupe_names {
-    [] -> Ok(True)
-    _ ->
-      Error(
-        "Duplicate expectation names: " <> { dupe_names |> string.join(", ") },
-      )
-  }
 }
 
 fn bueprint_ref_decoder(blueprints: List(Blueprint)) {
