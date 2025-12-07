@@ -1,0 +1,10 @@
+{
+  "artifacts": [
+    {
+      "name": 10,
+      "version": 11.0,
+      "base_params": { "threshold": "Optional(Float)", "window_in_days": "Optional(Integer)" },
+      "params": { "queries": "MadeUp1", "value": "String" }
+    }
+  ]
+}

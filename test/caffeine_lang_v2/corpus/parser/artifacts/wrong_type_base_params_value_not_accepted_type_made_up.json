@@ -1,0 +1,10 @@
+{
+  "artifacts": [
+    {
+      "name": "SLO",
+      "version": "0.0.1",
+      "base_params": { "threshold": "LolNotAType", "window_in_days": "Optional(Integer)" },
+      "params": { "queries": "Dict(String, String)", "value": "String" }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "artifacts": [
+    {
+      "name": "SLO",
+      "version": "0.0.1",
+      "params": { "queries": "String", "value": "String" }
+    }
+  ]
+}

@@ -1,3 +1,11 @@
+# Todos
+
+* can we clean up the tests to make more concise?
+* instead of artifacts.0.name for path for json, can we specify the name (assuming it parses)?
+* general investigation and thoughts on error messages
+
+-----------
+
 First we get all the files:
 * artifacts.yaml lives within the repo
 * blueprints.yaml, only one file, they specify the location
@@ -14,3 +22,8 @@ With that we:
 Finally we code gen:
 1. Terraform
 
+-----------
+
+## Blog Post
+
+* why extracted in yay is shit compared to json's decode

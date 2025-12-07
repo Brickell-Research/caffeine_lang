@@ -1,7 +1,6 @@
-import gleam/dict
+import gleam/dynamic/decode
+import gleam/json
 import gleam/list
-import gleam/result
-import gleam/set
 import gleam/string
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
@@ -15,10 +14,26 @@ pub type AcceptedTypes {
   Dict(AcceptedTypes, AcceptedTypes)
   NonEmptyList(AcceptedTypes)
   Optional(AcceptedTypes)
+  NoValue
+}
+
+pub fn accepted_types_decoder() -> decode.Decoder(AcceptedTypes) {
+  decode.new_primitive_decoder("AcceptedType", fn(dyn) {
+    case decode.run(dyn, decode.string) {
+      Ok(x) ->
+        case parse_accepted_type(x) {
+          Ok(x) -> Ok(x)
+          Error(_) -> Error(NoValue)
+        }
+      _ -> Error(NoValue)
+    }
+  })
 }
 
 /// Parses a raw string into an AcceptedType.
-pub fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, String) {
+fn parse_accepted_type(
+  raw_accepted_type,
+) -> Result(AcceptedTypes, AcceptedTypes) {
   case raw_accepted_type {
     // Basic types
     "Boolean" -> Ok(Boolean)
@@ -50,54 +65,41 @@ pub fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, String) {
     "Optional(Dict(String, Integer))" -> Ok(Optional(Dict(String, Integer)))
     "Optional(Dict(String, Float))" -> Ok(Optional(Dict(String, Float)))
     "Optional(Dict(String, Boolean))" -> Ok(Optional(Dict(String, Boolean)))
-    _ -> Error("Invalid type: " <> raw_accepted_type)
+    // TODO: hacky, fix thi
+    _ -> Error(NoValue)
   }
 }
 
-/// Converts a dictionary of string key-value pairs to a dictionary with AcceptedTypes values.
-pub fn dict_strings_to_accepted_types(
-  dict_strings: dict.Dict(String, String),
-) -> Result(dict.Dict(String, AcceptedTypes), String) {
-  dict_strings
-  |> dict.to_list()
-  |> list.try_fold(dict.new(), fn(accumulator, pair) {
-    let #(attribute, raw_accepted_type) = pair
-    use accepted_type <- result.try(parse_accepted_type(raw_accepted_type))
-
-    Ok(dict.insert(accumulator, attribute, accepted_type))
-  })
+pub type ParseError {
+  FileReadError(msg: String)
+  JsonParserError(msg: String)
+  DuplicateError(msg: String)
 }
 
-/// Finds duplicate items in a list of strings.
-pub fn find_duplicates(items: List(String)) -> List(String) {
-  let #(_seen, duplicates) =
-    list.fold(items, #(set.new(), set.new()), fn(acc, item) {
-      let #(seen, duplicates) = acc
-      case set.contains(seen, item) {
-        True -> #(seen, set.insert(duplicates, item))
-        False -> #(set.insert(seen, item), duplicates)
-      }
-    })
+pub fn format_json_decode_error(error: json.DecodeError) -> ParseError {
+  let msg = json_error_to_string(error)
 
-  set.to_list(duplicates)
+  JsonParserError(msg:)
 }
 
-pub fn validate_uniqueness(
-  items: List(a),
-  value_extractor_fn: fn(a) -> String,
-  type_name: String,
-) -> Result(List(a), String) {
-  let duplicate_names =
-    find_duplicates(list.map(items, fn(e) { value_extractor_fn(e) }))
-
-  case duplicate_names {
-    [] -> Ok(items)
-    _ ->
-      Error(
-        "Duplicate "
-        <> type_name
-        <> " names detected: "
-        <> string.join(duplicate_names, ", "),
-      )
+fn json_error_to_string(error: json.DecodeError) -> String {
+  case error {
+    json.UnexpectedEndOfInput -> "Unexpected end of input."
+    json.UnexpectedByte(val) -> "Unexpected byte: " <> val <> "."
+    json.UnexpectedSequence(val) -> "Unexpected sequence: " <> val <> "."
+    json.UnableToDecode(suberrors) -> {
+      "Incorrect types: "
+      <> suberrors
+      |> list.map(fn(err) {
+        "expected ("
+        <> err.expected
+        <> ") received ("
+        <> err.found
+        <> ") for ("
+        <> { err.path |> string.join(".") }
+        <> ")"
+      })
+      |> string.join(", ")
+    }
   }
 }
