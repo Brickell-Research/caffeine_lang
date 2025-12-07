@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "blueprint_ref": "success_rate",
+      "inputs": { "percentile": "not a float" }
+    }
+  ]
+}

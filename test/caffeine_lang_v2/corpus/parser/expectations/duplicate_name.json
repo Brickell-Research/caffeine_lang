@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "blueprint_ref": "success_rate",
+      "inputs": { "percentile": 99.9 }
+    },
+    {
+      "name": "my_expectation",
+      "blueprint_ref": "success_rate",
+      "inputs": { "percentile": 95.0 }
+    }
+  ]
+}
+

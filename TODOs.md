@@ -3,8 +3,6 @@
 p0
 * these error messages are not really consistently helpful
 * tons of verbose, code i.e. mapping blueprint to artifact like 3x
-
-p1
 * function consistency and reuse between parsers: artifacts, blueprints, and expectations
 
 -----------
@@ -37,4 +35,10 @@ Finally we code gen:
 ## Notes
 
 * no check for dupe dict keys, just overrides and technically illegal json per rfc/standard
-* plan to support `Optional` type, but not yet
+* plan to support `Optional` type, but not yeto
+
+-------------
+
+## Learnings
+
+* types over tuples

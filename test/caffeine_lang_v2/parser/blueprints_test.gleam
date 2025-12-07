@@ -112,7 +112,7 @@ pub fn parse_from_file_missing_test() {
 // * ✅ cannot overshadow base_params with params
 pub fn parse_from_file_duplicates_test() {
   [
-    #("duplicate_name", "Duplicate artifact names: success_rate"),
+    #("duplicate_name", "Duplicate blueprint names: success_rate"),
     #(
       "duplicate_overshadowing_base_param",
       "Overshadowed base_params in blueprint error: Blueprint overshadowing base_params from artifact: threshold",
@@ -130,7 +130,9 @@ pub fn parse_from_file_duplicates_test() {
 // * ✅ params
 //  * ✅ params is a map
 //  * ✅ each param's value is an Accepted Type
-// * ✅ inputs is a map
+// * ✅ inputs
+//  * ✅ inputs is a map
+//  * ✅ input value type validation
 pub fn parse_from_file_wrong_type_test() {
   [
     #(
@@ -160,6 +162,10 @@ pub fn parse_from_file_wrong_type_test() {
     #(
       "wrong_type_inputs_not_a_map",
       "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
+    ),
+    #(
+      "wrong_type_input_value",
+      "Input validation errors: expected (String) received (Int) for (value)",
     ),
   ]
   |> list.each(fn(pair) {

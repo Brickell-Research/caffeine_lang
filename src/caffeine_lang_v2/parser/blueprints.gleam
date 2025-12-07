@@ -137,14 +137,16 @@ fn validate_relevant_uniqueness(
 ) -> Result(Bool, String) {
   let dupe_names =
     blueprints
-    |> list.group(fn(artifact) { artifact.name })
+    |> list.group(fn(blueprint) { blueprint.name })
     |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
     |> dict.keys
 
   case dupe_names {
     [] -> Ok(True)
     _ ->
-      Error("Duplicate artifact names: " <> { dupe_names |> string.join(", ") })
+      Error(
+        "Duplicate blueprint names: " <> { dupe_names |> string.join(", ") },
+      )
   }
 }
 

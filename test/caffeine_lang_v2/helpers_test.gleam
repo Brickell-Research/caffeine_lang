@@ -83,62 +83,78 @@ pub fn validate_value_type_test() {
   // sad paths
   [
     // Basic types
-    #(some_string, helpers.Boolean, "expected (Bool) received (String) for ()"),
-    #(some_string, helpers.Integer, "expected (Int) received (String) for ()"),
-    #(some_string, helpers.Float, "expected (Float) received (String) for ()"),
-    #(some_bool, helpers.String, "expected (String) received (Bool) for ()"),
+    #(
+      some_string,
+      helpers.Boolean,
+      "expected (Bool) received (String) for (some_key)",
+    ),
+    #(
+      some_string,
+      helpers.Integer,
+      "expected (Int) received (String) for (some_key)",
+    ),
+    #(
+      some_string,
+      helpers.Float,
+      "expected (Float) received (String) for (some_key)",
+    ),
+    #(
+      some_bool,
+      helpers.String,
+      "expected (String) received (Bool) for (some_key)",
+    ),
     // Dict types
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.String),
-      "expected (String) received (Bool) for ()",
+      "expected (String) received (Bool) for (some_key)",
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.Integer),
-      "expected (Int) received (Bool) for ()",
+      "expected (Int) received (Bool) for (some_key)",
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.Float),
-      "expected (Float) received (Bool) for ()",
+      "expected (Float) received (Bool) for (some_key)",
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
       helpers.Dict(helpers.String, helpers.Boolean),
-      "expected (Bool) received (String) for ()",
+      "expected (Bool) received (String) for (some_key)",
     ),
     // List types
     #(
       dynamic.list([some_string, some_bool]),
       helpers.List(helpers.String),
-      "expected (String) received (Bool) for ()",
+      "expected (String) received (Bool) for (some_key)",
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
       helpers.List(helpers.Integer),
-      "expected (Int) received (Bool) for ()",
+      "expected (Int) received (Bool) for (some_key)",
     ),
     #(
       dynamic.list([some_bool, some_string]),
       helpers.List(helpers.Boolean),
-      "expected (Bool) received (String) for ()",
+      "expected (Bool) received (String) for (some_key)",
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
       helpers.List(helpers.Float),
-      "expected (Float) received (Bool) for ()",
+      "expected (Float) received (Bool) for (some_key)",
     ),
     // Wrong structure types
     #(
       some_string,
       helpers.List(helpers.String),
-      "expected (List) received (String) for ()",
+      "expected (List) received (String) for (some_key)",
     ),
     #(
       some_string,
       helpers.Dict(helpers.String, helpers.String),
-      "expected (Dict) received (String) for ()",
+      "expected (Dict) received (String) for (some_key)",
     ),
     // Multi-entry collection with one bad value
     #(
@@ -147,18 +163,18 @@ pub fn validate_value_type_test() {
         #(dynamic.string("key2"), some_bool),
       ]),
       helpers.Dict(helpers.String, helpers.String),
-      "expected (String) received (Bool) for ()",
+      "expected (String) received (Bool) for (some_key)",
     ),
     // List with first element wrong
     #(
       dynamic.list([some_bool, some_string]),
       helpers.List(helpers.String),
-      "expected (String) received (Bool) for ()",
+      "expected (String) received (Bool) for (some_key)",
     ),
   ]
   |> list.each(fn(tuple) {
     let #(value, expected_type, msg) = tuple
-    helpers.validate_value_type(value, expected_type, "")
+    helpers.validate_value_type(value, expected_type, "some_key")
     |> should.equal(Error(helpers.JsonParserError(msg)))
   })
 }
