@@ -1,6 +1,12 @@
 # Todos
 
 p0
+* ensure all the AI code is good code
+  * cql
+  * middle end
+  * generation
+
+p1
 * these error messages are not really consistently helpful
 
 -----------

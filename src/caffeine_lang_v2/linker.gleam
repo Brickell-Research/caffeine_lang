@@ -8,6 +8,11 @@ import gleam/result
 import gleam/string
 import simplifile
 
+pub type LinkerError {
+  ParseError(msg: String)
+  SemanticError(msg: String)
+}
+
 pub fn standard_library_directory() -> String {
   "src/caffeine_lang_v2/standard_library"
 }
@@ -22,15 +27,21 @@ pub fn standard_library_directory() -> String {
 pub fn link(
   blueprint_file_path: String,
   expectations_directory: String,
-) -> Result(List(IntermediateRepresentation), String) {
+) -> Result(List(IntermediateRepresentation), LinkerError) {
   use artifacts <- result_try(fetch_artifacts())
   use blueprints <- result_try(fetch_blueprints(blueprint_file_path, artifacts))
   use irs <- result_try(fetch_expectations(expectations_directory, blueprints))
 
-  Ok(irs)
+  // Apply semantic analysis / middle-end transformations
+  use analyzed_irs <- result_try(
+    middle_end.execute(irs)
+    |> result.map_error(format_semantic_error),
+  )
+
+  Ok(analyzed_irs)
 }
 
-fn fetch_artifacts() -> Result(List(artifacts.Artifact), String) {
+fn fetch_artifacts() -> Result(List(artifacts.Artifact), LinkerError) {
   artifacts.parse_from_file(standard_library_directory() <> "/artifacts.json")
   |> result.map_error(format_parse_error)
 }
@@ -38,7 +49,7 @@ fn fetch_artifacts() -> Result(List(artifacts.Artifact), String) {
 fn fetch_blueprints(
   blueprint_file_path: String,
   artifacts: List(artifacts.Artifact),
-) -> Result(List(blueprints.Blueprint), String) {
+) -> Result(List(blueprints.Blueprint), LinkerError) {
   blueprints.parse_from_file(blueprint_file_path, artifacts)
   |> result.map_error(format_parse_error)
 }
@@ -46,13 +57,17 @@ fn fetch_blueprints(
 fn fetch_expectations(
   expectations_directory: String,
   blueprints: List(blueprints.Blueprint),
-) -> Result(List(IntermediateRepresentation), String) {
-  use expectations_files <- result_try(get_instantiation_json_files(
-    expectations_directory,
-  ))
+) -> Result(List(IntermediateRepresentation), LinkerError) {
+  use expectations_files <- result_try(
+    get_instantiation_json_files(expectations_directory)
+    |> result.map_error(ParseError),
+  )
 
   case expectations_files {
-    [] -> Error("No expectation files found in: " <> expectations_directory)
+    [] ->
+      Error(ParseError(
+        "No expectation files found in: " <> expectations_directory,
+      ))
     _ ->
       expectations_files
       |> list.map(fn(file_path) {
@@ -64,11 +79,17 @@ fn fetch_expectations(
   }
 }
 
-fn format_parse_error(error: helpers.ParseError) -> String {
+fn format_parse_error(error: helpers.ParseError) -> LinkerError {
   case error {
-    helpers.FileReadError(msg) -> "File read error: " <> msg
-    helpers.JsonParserError(msg) -> "JSON parse error: " <> msg
-    helpers.DuplicateError(msg) -> "Duplicate error: " <> msg
+    helpers.FileReadError(msg) -> ParseError("File read error: " <> msg)
+    helpers.JsonParserError(msg) -> ParseError("JSON parse error: " <> msg)
+    helpers.DuplicateError(msg) -> ParseError("Duplicate error: " <> msg)
+  }
+}
+
+fn format_semantic_error(error: middle_end.SemanticError) -> LinkerError {
+  case error {
+    middle_end.QueryResolutionError(msg) -> SemanticError(msg)
   }
 }
 

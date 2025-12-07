@@ -11,20 +11,15 @@ import terra_madre/hcl
 import terra_madre/render
 
 // ==== Helpers ====
+// Note: The generator expects pre-resolved queries from the middle-end.
+// These helpers create IRs with already-resolved numerator_query/denominator_query.
 fn make_slo_ir(
   name: String,
   threshold: Float,
   window_in_days: Int,
-  numerator: String,
-  denominator: String,
-  value: String,
+  numerator_query: String,
+  denominator_query: String,
 ) -> middle_end.IntermediateRepresentation {
-  let queries_value =
-    dynamic.properties([
-      #(dynamic.string("numerator"), dynamic.string(numerator)),
-      #(dynamic.string("denominator"), dynamic.string(denominator)),
-    ])
-
   middle_end.IntermediateRepresentation(
     expectation_name: name,
     artifact_ref: "SLO",
@@ -40,14 +35,14 @@ fn make_slo_ir(
         value: dynamic.int(window_in_days),
       ),
       middle_end.ValueTuple(
-        label: "queries",
-        typ: helpers.Dict(helpers.String, helpers.String),
-        value: queries_value,
+        label: "numerator_query",
+        typ: helpers.String,
+        value: dynamic.string(numerator_query),
       ),
       middle_end.ValueTuple(
-        label: "value",
+        label: "denominator_query",
         typ: helpers.String,
-        value: dynamic.string(value),
+        value: dynamic.string(denominator_query),
       ),
     ],
   )
@@ -68,17 +63,14 @@ fn make_incomplete_ir(
       value: dynamic.int(30),
     ),
     middle_end.ValueTuple(
-      label: "queries",
-      typ: helpers.Dict(helpers.String, helpers.String),
-      value: dynamic.properties([
-        #(dynamic.string("numerator"), dynamic.string("query1")),
-        #(dynamic.string("denominator"), dynamic.string("query2")),
-      ]),
+      label: "numerator_query",
+      typ: helpers.String,
+      value: dynamic.string("sum:requests.success{service:api}"),
     ),
     middle_end.ValueTuple(
-      label: "value",
+      label: "denominator_query",
       typ: helpers.String,
-      value: dynamic.string("numerator / denominator"),
+      value: dynamic.string("sum:requests.total{service:api}"),
     ),
   ]
 
@@ -99,10 +91,8 @@ fn make_incomplete_ir(
 // * ✅ happy path - timeframe is correct for different windows
 // * ✅ sad path - missing threshold
 // * ✅ sad path - missing window_in_days
-// * ✅ sad path - missing queries
-// * ✅ sad path - missing value
-// * ✅ sad path - missing numerator in queries
-// * ✅ sad path - missing denominator in queries
+// * ✅ sad path - missing numerator_query
+// * ✅ sad path - missing denominator_query
 pub fn generate_slo_happy_path_test() {
   let ir =
     make_slo_ir(
@@ -111,7 +101,6 @@ pub fn generate_slo_happy_path_test() {
       30,
       "sum:requests.success{service:api}",
       "sum:requests.total{service:api}",
-      "numerator / denominator",
     )
 
   let result = datadog.generate_slo(ir)
@@ -142,7 +131,6 @@ pub fn generate_slo_sanitized_name_test() {
       30,
       "query1",
       "query2",
-      "numerator / denominator",
     )
 
   let result = datadog.generate_slo(ir)
@@ -156,8 +144,7 @@ pub fn generate_slo_timeframes_test() {
   [#(7, "7d"), #(30, "30d"), #(90, "90d")]
   |> list.each(fn(pair) {
     let #(days, expected_timeframe) = pair
-    let ir =
-      make_slo_ir("test", 99.9, days, "query1", "query2", "numerator / denominator")
+    let ir = make_slo_ir("test", 99.9, days, "query1", "query2")
 
     let result = datadog.generate_slo(ir)
     result |> should.be_ok
@@ -179,8 +166,8 @@ pub fn generate_slo_missing_values_test() {
   [
     #("threshold", common.MissingValue("threshold")),
     #("window_in_days", common.MissingValue("window_in_days")),
-    #("queries", common.MissingValue("queries")),
-    #("value", common.MissingValue("value")),
+    #("numerator_query", common.MissingValue("numerator_query")),
+    #("denominator_query", common.MissingValue("denominator_query")),
   ]
   |> list.each(fn(pair) {
     let #(missing_field, expected_error) = pair
@@ -189,76 +176,6 @@ pub fn generate_slo_missing_values_test() {
     datadog.generate_slo(ir)
     |> should.equal(Error(expected_error))
   })
-}
-
-pub fn generate_slo_missing_query_keys_test() {
-  // Missing numerator
-  let ir_missing_numerator =
-    middle_end.IntermediateRepresentation(
-      expectation_name: "test",
-      artifact_ref: "SLO",
-      values: [
-        middle_end.ValueTuple(
-          label: "threshold",
-          typ: helpers.Float,
-          value: dynamic.float(99.9),
-        ),
-        middle_end.ValueTuple(
-          label: "window_in_days",
-          typ: helpers.Integer,
-          value: dynamic.int(30),
-        ),
-        middle_end.ValueTuple(
-          label: "queries",
-          typ: helpers.Dict(helpers.String, helpers.String),
-          value: dynamic.properties([
-            #(dynamic.string("denominator"), dynamic.string("query2")),
-          ]),
-        ),
-        middle_end.ValueTuple(
-          label: "value",
-          typ: helpers.String,
-          value: dynamic.string("numerator / denominator"),
-        ),
-      ],
-    )
-
-  datadog.generate_slo(ir_missing_numerator)
-  |> should.equal(Error(common.MissingValue("queries.numerator")))
-
-  // Missing denominator
-  let ir_missing_denominator =
-    middle_end.IntermediateRepresentation(
-      expectation_name: "test",
-      artifact_ref: "SLO",
-      values: [
-        middle_end.ValueTuple(
-          label: "threshold",
-          typ: helpers.Float,
-          value: dynamic.float(99.9),
-        ),
-        middle_end.ValueTuple(
-          label: "window_in_days",
-          typ: helpers.Integer,
-          value: dynamic.int(30),
-        ),
-        middle_end.ValueTuple(
-          label: "queries",
-          typ: helpers.Dict(helpers.String, helpers.String),
-          value: dynamic.properties([
-            #(dynamic.string("numerator"), dynamic.string("query1")),
-          ]),
-        ),
-        middle_end.ValueTuple(
-          label: "value",
-          typ: helpers.String,
-          value: dynamic.string("numerator / denominator"),
-        ),
-      ],
-    )
-
-  datadog.generate_slo(ir_missing_denominator)
-  |> should.equal(Error(common.MissingValue("queries.denominator")))
 }
 
 // ==== Tests - generate_slos ====
@@ -272,8 +189,8 @@ pub fn generate_slos_test() {
 
   // multiple SLOs
   let irs = [
-    make_slo_ir("slo1", 99.9, 30, "q1", "q2", "numerator / denominator"),
-    make_slo_ir("slo2", 99.5, 7, "q3", "q4", "numerator / denominator"),
+    make_slo_ir("slo1", 99.9, 30, "q1", "q2"),
+    make_slo_ir("slo2", 99.5, 7, "q3", "q4"),
   ]
 
   let result = datadog.generate_slos(irs)
@@ -284,7 +201,7 @@ pub fn generate_slos_test() {
 
   // one failure fails all
   let irs_with_failure = [
-    make_slo_ir("slo1", 99.9, 30, "q1", "q2", "numerator / denominator"),
+    make_slo_ir("slo1", 99.9, 30, "q1", "q2"),
     make_incomplete_ir("threshold"),
   ]
 
@@ -302,7 +219,6 @@ pub fn generate_slo_renders_valid_hcl_test() {
       30,
       "sum:requests.success{service:api}.as_count()",
       "sum:requests.total{service:api}.as_count()",
-      "numerator / denominator",
     )
 
   let result = datadog.generate_slo(ir)
@@ -329,3 +245,4 @@ pub fn generate_slo_renders_valid_hcl_test() {
   rendered |> string.contains("99.9") |> should.be_true
   rendered |> string.contains("30d") |> should.be_true
 }
+

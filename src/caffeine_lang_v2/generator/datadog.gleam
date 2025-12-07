@@ -7,24 +7,15 @@ import terra_madre/hcl
 import terra_madre/terraform.{type Resource}
 
 /// Generate a Datadog SLO resource from an IntermediateRepresentation
+/// Expects pre-resolved numerator_query and denominator_query from middle-end
 pub fn generate_slo(
   ir: IntermediateRepresentation,
 ) -> Result(Resource, GeneratorError) {
-  // Extract required values
+  // Extract required values (queries are already resolved by middle-end)
   use threshold <- result_try(common.get_float_value(ir, "threshold"))
   use window_in_days <- result_try(common.get_int_value(ir, "window_in_days"))
-  use queries <- result_try(common.get_string_dict_value(ir, "queries"))
-  use _value <- result_try(common.get_string_value(ir, "value"))
-
-  // Get numerator and denominator from queries dict
-  use numerator <- result_try(
-    dict.get(queries, "numerator")
-    |> result_map_error(fn(_) { common.MissingValue("queries.numerator") }),
-  )
-  use denominator <- result_try(
-    dict.get(queries, "denominator")
-    |> result_map_error(fn(_) { common.MissingValue("queries.denominator") }),
-  )
+  use numerator <- result_try(common.get_string_value(ir, "numerator_query"))
+  use denominator <- result_try(common.get_string_value(ir, "denominator_query"))
 
   let resource_name = common.sanitize_resource_name(ir.expectation_name)
   let timeframe = common.days_to_timeframe(window_in_days)
@@ -87,15 +78,5 @@ fn result_try(
   case result {
     Ok(value) -> next(value)
     Error(err) -> Error(err)
-  }
-}
-
-fn result_map_error(
-  result: Result(a, e1),
-  mapper: fn(e1) -> e2,
-) -> Result(a, e2) {
-  case result {
-    Ok(value) -> Ok(value)
-    Error(err) -> Error(mapper(err))
   }
 }

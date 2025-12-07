@@ -6,9 +6,10 @@
       "inputs": {
         "queries": {
           "numerator": "numerator_query",
-          "denominator": "denominator_query"
+          "denominator_1": "denominator_query_1",
+          "denominator_2": "denominator_query_2"
         },
-        "value": "some_value",
+        "value": "numerator / (denominator_1 + denominator_2)",
         "vendor": "Datadog"
       },
       "params": {}

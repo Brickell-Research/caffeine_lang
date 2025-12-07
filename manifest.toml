@@ -19,4 +19,4 @@ gleam_stdlib = { version = ">= 0.63.0 and < 1.0.0" }
 gleamy_bench = { version = ">= 0.6.0 and < 1.0.0" }
 gleeunit = { version = ">= 1.0.0" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }
-terra_madre = { version = ">=0.0.1" }
+terra_madre = { version = ">=0.0.2" }

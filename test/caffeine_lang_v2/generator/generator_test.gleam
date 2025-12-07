@@ -8,16 +8,11 @@ import gleam/string
 import gleeunit/should
 
 // ==== Helpers ====
+// Note: These IRs represent post-middle-end state with pre-resolved queries
 fn make_slo_ir_with_vendor(
   name: String,
   vendor: String,
 ) -> middle_end.IntermediateRepresentation {
-  let queries_value =
-    dynamic.properties([
-      #(dynamic.string("numerator"), dynamic.string("query1")),
-      #(dynamic.string("denominator"), dynamic.string("query2")),
-    ])
-
   middle_end.IntermediateRepresentation(
     expectation_name: name,
     artifact_ref: "SLO",
@@ -38,14 +33,14 @@ fn make_slo_ir_with_vendor(
         value: dynamic.int(30),
       ),
       middle_end.ValueTuple(
-        label: "queries",
-        typ: helpers.Dict(helpers.String, helpers.String),
-        value: queries_value,
+        label: "numerator_query",
+        typ: helpers.String,
+        value: dynamic.string("sum:requests.success{service:api}"),
       ),
       middle_end.ValueTuple(
-        label: "value",
+        label: "denominator_query",
         typ: helpers.String,
-        value: dynamic.string("numerator / denominator"),
+        value: dynamic.string("sum:requests.total{service:api}"),
       ),
     ],
   )
@@ -134,12 +129,6 @@ pub fn generate_unknown_vendor_test() {
 }
 
 pub fn generate_missing_vendor_test() {
-  let queries_value =
-    dynamic.properties([
-      #(dynamic.string("numerator"), dynamic.string("query1")),
-      #(dynamic.string("denominator"), dynamic.string("query2")),
-    ])
-
   let ir =
     middle_end.IntermediateRepresentation(
       expectation_name: "test",
@@ -156,14 +145,14 @@ pub fn generate_missing_vendor_test() {
           value: dynamic.int(30),
         ),
         middle_end.ValueTuple(
-          label: "queries",
-          typ: helpers.Dict(helpers.String, helpers.String),
-          value: queries_value,
+          label: "numerator_query",
+          typ: helpers.String,
+          value: dynamic.string("sum:requests.success{service:api}"),
         ),
         middle_end.ValueTuple(
-          label: "value",
+          label: "denominator_query",
           typ: helpers.String,
-          value: dynamic.string("numerator / denominator"),
+          value: dynamic.string("sum:requests.total{service:api}"),
         ),
       ],
     )

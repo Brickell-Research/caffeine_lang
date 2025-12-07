@@ -43,7 +43,10 @@ pub fn compile(
   expectations_directory: String,
   output_directory: String,
 ) -> Result(Nil, String) {
-  use irs <- result_try(linker.link(blueprint_file_path, expectations_directory))
+  use irs <- result_try(
+    linker.link(blueprint_file_path, expectations_directory)
+    |> result.map_error(format_linker_error),
+  )
 
   use generated <- result_try(
     generator.generate(irs)
@@ -65,6 +68,13 @@ fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e)
   case result {
     Ok(value) -> next(value)
     Error(err) -> Error(err)
+  }
+}
+
+fn format_linker_error(error: linker.LinkerError) -> String {
+  case error {
+    linker.ParseError(msg) -> msg
+    linker.SemanticError(msg) -> "Semantic error: " <> msg
   }
 }
 

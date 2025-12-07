@@ -58,35 +58,33 @@ pub fn parse_from_file(
     "expectation names",
   ))
 
-  // at this point we're completely validated
-  let ir =
-    expectations_blueprint_collection
-    |> list.map(fn(expectation_and_blueprint_pair) {
-      let #(expectation, blueprint) = expectation_and_blueprint_pair
+  // at this point we're completely validated, now build IR
+  expectations_blueprint_collection
+  |> list.map(fn(expectation_and_blueprint_pair) {
+    let #(expectation, blueprint) = expectation_and_blueprint_pair
 
-      // Merge blueprint inputs with expectation inputs
-      // Expectation inputs override blueprint inputs for the same key
-      let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
+    // Merge blueprint inputs with expectation inputs
+    // Expectation inputs override blueprint inputs for the same key
+    let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
-      let value_tuples =
-        merged_inputs
-        |> dict.keys
-        |> list.map(fn(label) {
-          // safe assertions since we're already validated everything
-          let assert Ok(value) = merged_inputs |> dict.get(label)
-          let assert Ok(typ) = blueprint.params |> dict.get(label)
+    let value_tuples =
+      merged_inputs
+      |> dict.keys
+      |> list.map(fn(label) {
+        // safe assertions since we're already validated everything
+        let assert Ok(value) = merged_inputs |> dict.get(label)
+        let assert Ok(typ) = blueprint.params |> dict.get(label)
 
-          middle_end.ValueTuple(label:, typ:, value:)
-        })
+        middle_end.ValueTuple(label:, typ:, value:)
+      })
 
-      middle_end.IntermediateRepresentation(
-        expectation_name: expectation.name,
-        artifact_ref: blueprint.artifact_ref,
-        values: value_tuples,
-      )
-    })
-
-  Ok(ir)
+    middle_end.IntermediateRepresentation(
+      expectation_name: expectation.name,
+      artifact_ref: blueprint.artifact_ref,
+      values: value_tuples,
+    )
+  })
+  |> Ok
 }
 
 pub fn expectations_from_json(
