@@ -1,0 +1,10 @@
+{
+  "expectations": [{
+    "name": "Success Rate of Signin Calls",
+    "blueprint_ref": "success_rate",
+    "inputs": {
+      "threshold": 99.9,
+      "window_in_days": 30
+    }
+  }]
+}

@@ -1,0 +1,17 @@
+{
+  "blueprints": [
+    {
+      "name": "success_rate",
+      "artifact_ref": "SLO",
+      "inputs": {
+        "queries": {
+          "numerator": "numerator_query",
+          "denominator": "denominator_query"
+        },
+        "value": "some_value",
+        "vendor": "Datadog"
+      },
+      "params": {}
+    }
+  ]
+}

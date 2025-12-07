@@ -76,16 +76,20 @@ pub fn parse_from_file(
       ))
   })
 
-  // at this point everything is validated, so we can merge base_params and params
+  // at this point everything is validated, so we can merge base_params, params, and artifact params
   let merged_param_blueprints =
     blueprint_artifact_collection
     |> list.map(fn(blueprint_artifact_pair) {
       let #(blueprint, artifact) = blueprint_artifact_pair
 
-      Blueprint(
-        ..blueprint,
-        params: dict.merge(blueprint.params, artifact.base_params),
-      )
+      // Merge all params: artifact.params + artifact.base_params + blueprint.params
+      // Blueprint params override artifact params if there's overlap
+      let all_params =
+        artifact.params
+        |> dict.merge(artifact.base_params)
+        |> dict.merge(blueprint.params)
+
+      Blueprint(..blueprint, params: all_params)
     })
 
   Ok(merged_param_blueprints)

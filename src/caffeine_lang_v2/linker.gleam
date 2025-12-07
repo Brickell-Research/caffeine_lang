@@ -1,6 +1,8 @@
-// import caffeine_lang_v2/parser/artifacts.{type Artifact}
-// import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-// import caffeine_lang_v2/parser/expectations.{type Expectation}
+import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
+import caffeine_lang_v2/parser/artifacts
+import caffeine_lang_v2/parser/blueprints
+import caffeine_lang_v2/parser/expectations
 import gleam/list
 import gleam/result
 import gleam/string
@@ -12,48 +14,70 @@ pub fn standard_library_directory() -> String {
 
 /// Link will fetch, then parse all configuration files, combining them into one single
 /// abstract syntax tree (AST) object. In the future how we fetch these files will
-/// change to enble fetching from remote locations, via git, etc. but for now we
+/// change to enable fetching from remote locations, via git, etc. but for now we
 /// just support standard library artifacts, a single blueprint file, and a single
-/// expectations directory. Furthermore note that we will ignore non-yaml files within
-/// an org's team's expectation directory and incorrectly placed yaml files will also
+/// expectations directory. Furthermore note that we will ignore non-json files within
+/// an org's team's expectation directory and incorrectly placed json files will also
 /// be ignored.
 pub fn link(
-  _blueprint_file_path: String,
-  _expectations_directory: String,
-) -> Result(String, String) {
-  // use _artifacts <- result.try(fetch_artifacts())
-  // use _blueprints <- result.try(fetch_blueprints(blueprint_file_path))
-  // use _expectations <- result.try(fetch_expectations(expectations_directory))
+  blueprint_file_path: String,
+  expectations_directory: String,
+) -> Result(List(IntermediateRepresentation), String) {
+  use artifacts <- result_try(fetch_artifacts())
+  use blueprints <- result_try(fetch_blueprints(blueprint_file_path, artifacts))
+  use irs <- result_try(fetch_expectations(expectations_directory, blueprints))
 
-  Error("Not implemented")
+  Ok(irs)
 }
 
-// fn fetch_artifacts() -> Result(List(Artifact), String) {
-//   artifacts.parse(standard_library_directory() <> "/artifacts.yaml")
-// }
+fn fetch_artifacts() -> Result(List(artifacts.Artifact), String) {
+  artifacts.parse_from_file(standard_library_directory() <> "/artifacts.json")
+  |> result.map_error(format_parse_error)
+}
 
-// fn fetch_blueprints(
-//   blueprint_file_path: String,
-// ) -> Result(List(Blueprint), String) {
-//   blueprints.parse(blueprint_file_path)
-// }
+fn fetch_blueprints(
+  blueprint_file_path: String,
+  artifacts: List(artifacts.Artifact),
+) -> Result(List(blueprints.Blueprint), String) {
+  blueprints.parse_from_file(blueprint_file_path, artifacts)
+  |> result.map_error(format_parse_error)
+}
 
-// fn fetch_expectations(
-//   expectations_directory: String,
-// ) -> Result(List(Expectation), String) {
-//   use expectations_files <- result.try(get_instantiation_yaml_files(
-//     expectations_directory,
-//   ))
+fn fetch_expectations(
+  expectations_directory: String,
+  blueprints: List(blueprints.Blueprint),
+) -> Result(List(IntermediateRepresentation), String) {
+  use expectations_files <- result_try(get_instantiation_json_files(
+    expectations_directory,
+  ))
 
-//   case expectations_files {
-//     [] -> Error("No expectation files found in: " <> expectations_directory)
-//     _ ->
-//       expectations_files
-//       |> list.map(fn(file_path) { expectations.parse(file_path) })
-//       |> result.all()
-//       |> result.map(list.flatten)
-//   }
-// }
+  case expectations_files {
+    [] -> Error("No expectation files found in: " <> expectations_directory)
+    _ ->
+      expectations_files
+      |> list.map(fn(file_path) {
+        expectations.parse_from_file(file_path, blueprints)
+        |> result.map_error(format_parse_error)
+      })
+      |> result.all()
+      |> result.map(list.flatten)
+  }
+}
+
+fn format_parse_error(error: helpers.ParseError) -> String {
+  case error {
+    helpers.FileReadError(msg) -> "File read error: " <> msg
+    helpers.JsonParserError(msg) -> "JSON parse error: " <> msg
+    helpers.DuplicateError(msg) -> "Duplicate error: " <> msg
+  }
+}
+
+fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e) {
+  case result {
+    Ok(value) -> next(value)
+    Error(err) -> Error(err)
+  }
+}
 
 // ==== Private ====
 fn read_directory_or_error(
@@ -73,7 +97,7 @@ fn process_top_level_item(
   let item_path = base_directory <> "/" <> item_name
 
   case is_directory(item_path) {
-    True -> collect_yaml_files_from_subdirectory(item_path, accumulated_files)
+    True -> collect_json_files_from_subdirectory(item_path, accumulated_files)
     False -> Ok(accumulated_files)
     // Skip files at the top level
   }
@@ -86,7 +110,7 @@ fn is_directory(path: String) -> Bool {
   }
 }
 
-fn collect_yaml_files_from_subdirectory(
+fn collect_json_files_from_subdirectory(
   subdirectory_path: String,
   accumulated_files: List(String),
 ) -> Result(List(String), String) {
@@ -94,33 +118,33 @@ fn collect_yaml_files_from_subdirectory(
     subdirectory_path,
   ))
 
-  // Go one level deeper - iterate over nested directories and collect YAML files from each
+  // Go one level deeper - iterate over nested directories and collect JSON files from each
   items_in_subdirectory
   |> list.try_fold(accumulated_files, fn(acc, item_name) {
     let nested_path = subdirectory_path <> "/" <> item_name
     case is_directory(nested_path) {
       True -> {
         use files_in_nested <- result.try(read_directory_or_error(nested_path))
-        let yaml_files =
-          extract_yaml_files_with_full_paths(files_in_nested, nested_path)
-        Ok(list.append(acc, yaml_files))
+        let json_files =
+          extract_json_files_with_full_paths(files_in_nested, nested_path)
+        Ok(list.append(acc, json_files))
       }
       False -> Ok(acc)
     }
   })
 }
 
-fn extract_yaml_files_with_full_paths(
+fn extract_json_files_with_full_paths(
   files: List(String),
   directory_path: String,
 ) -> List(String) {
   files
-  |> list.filter(fn(file) { string.ends_with(file, ".yaml") })
+  |> list.filter(fn(file) { string.ends_with(file, ".json") })
   |> list.map(fn(file) { directory_path <> "/" <> file })
 }
 
-/// This function returns a list of all YAML files in the given directory.
-pub fn get_instantiation_yaml_files(
+/// This function returns a list of all JSON files in the given directory.
+pub fn get_instantiation_json_files(
   base_directory: String,
 ) -> Result(List(String), String) {
   use top_level_items <- result.try(read_directory_or_error(base_directory))

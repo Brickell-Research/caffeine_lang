@@ -47,6 +47,7 @@ pub fn parse_from_file_happy_path_test() {
         params: dict.from_list([
           #("percentile", helpers.Float),
           #("threshold", helpers.Float),
+          #("value", helpers.String),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
@@ -63,6 +64,7 @@ pub fn parse_from_file_happy_path_test() {
         params: dict.from_list([
           #("percentile", helpers.Float),
           #("threshold", helpers.Float),
+          #("value", helpers.String),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
@@ -71,6 +73,7 @@ pub fn parse_from_file_happy_path_test() {
         artifact_ref: "SLO",
         params: dict.from_list([
           #("threshold", helpers.Float),
+          #("value", helpers.String),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),

@@ -39,11 +39,16 @@ pub fn parse_from_file(
       referrer_reference: fn(e) { e.blueprint_ref },
     )
 
+  // Validate that expectation.inputs provides params NOT already provided by blueprint.inputs
   use _ <- result.try(
     helpers.validate_inputs_for_collection(
       expectations_blueprint_collection,
       fn(expectation) { expectation.inputs },
-      fn(blueprint) { blueprint.params },
+      fn(blueprint) {
+        let blueprint_input_keys = blueprint.inputs |> dict.keys
+        blueprint.params
+        |> dict.filter(fn(key, _) { !list.contains(blueprint_input_keys, key) })
+      },
     ),
   )
 
@@ -58,12 +63,17 @@ pub fn parse_from_file(
     expectations_blueprint_collection
     |> list.map(fn(expectation_and_blueprint_pair) {
       let #(expectation, blueprint) = expectation_and_blueprint_pair
+
+      // Merge blueprint inputs with expectation inputs
+      // Expectation inputs override blueprint inputs for the same key
+      let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
+
       let value_tuples =
-        expectation.inputs
+        merged_inputs
         |> dict.keys
         |> list.map(fn(label) {
           // safe assertions since we're already validated everything
-          let assert Ok(value) = expectation.inputs |> dict.get(label)
+          let assert Ok(value) = merged_inputs |> dict.get(label)
           let assert Ok(typ) = blueprint.params |> dict.get(label)
 
           middle_end.ValueTuple(label:, typ:, value:)
