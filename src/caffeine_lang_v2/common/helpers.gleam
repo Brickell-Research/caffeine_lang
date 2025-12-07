@@ -1,9 +1,10 @@
-import gleam/dict
-import gleam/dynamic
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
+import gleam/set
 import gleam/string
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
@@ -136,5 +137,59 @@ pub fn validate_value_type(
         Error(err) -> Error(JsonParserError(format_decode_error_message(err)))
       }
     }
+  }
+}
+
+pub fn inputs_validator(
+  params params: Dict(String, AcceptedTypes),
+  inputs inputs: Dict(String, Dynamic),
+) -> Result(Bool, String) {
+  let param_keys = params |> dict.keys |> set.from_list
+  let input_keys = inputs |> dict.keys |> set.from_list
+
+  let keys_only_in_params =
+    set.difference(param_keys, input_keys) |> set.to_list
+  let keys_only_in_inputs =
+    set.difference(input_keys, param_keys) |> set.to_list
+
+  // see if we have the same inputs and params
+  use _ <- result.try(case keys_only_in_params, keys_only_in_inputs {
+    [], [] -> Ok(True)
+    _, [] ->
+      Error(
+        "Missing keys in input: "
+        <> { keys_only_in_params |> string.join(", ") },
+      )
+    [], _ ->
+      Error(
+        "Extra keys in input: " <> { keys_only_in_inputs |> string.join(", ") },
+      )
+    _, _ ->
+      Error(
+        "Extra keys in input: "
+        <> { keys_only_in_inputs |> string.join(", ") }
+        <> " and missing keys in input: "
+        <> { keys_only_in_params |> string.join(", ") },
+      )
+  })
+
+  let type_validation_errors =
+    inputs
+    |> dict.to_list
+    |> list.filter_map(fn(pair) {
+      let #(key, value) = pair
+      let assert Ok(expected_type) = params |> dict.get(key)
+
+      case validate_value_type(value, expected_type) {
+        Ok(_) -> Error(Nil)
+        Error(errs) -> Ok(errs)
+      }
+    })
+    |> list.map(fn(err) { err.msg })
+    |> string.join(", ")
+
+  case type_validation_errors {
+    "" -> Ok(True)
+    _ -> Error(type_validation_errors)
   }
 }

@@ -1,6 +1,6 @@
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
-import gleam/dict.{type Dict}
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
@@ -36,18 +36,27 @@ pub fn parse_from_file(
     },
   )
 
-  let input_validations_error =
+  // map blueprints to artifacts since we'll reuse that numerous times
+  // and we've already validated all artifact_refs
+  let blueprint_artifact_collection =
     blueprints
-    |> list.filter_map(fn(blueprint) {
-      let inputs = blueprint.inputs
+    |> list.map(fn(blueprint) {
       // already performed this check so can assert it
       let assert Ok(artifact) =
         artifacts
         |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
         |> list.first
+      #(blueprint, artifact)
+    })
+
+  let input_validations_error =
+    blueprint_artifact_collection
+    |> list.filter_map(fn(blueprint_artifact_pair) {
+      let #(blueprint, artifact) = blueprint_artifact_pair
+      let inputs = blueprint.inputs
       let params = artifact.params
 
-      case inputs_validator(params:, inputs:) {
+      case helpers.inputs_validator(params:, inputs:) {
         Ok(_) -> Error(Nil)
         Error(msg) -> Ok(msg)
       }
@@ -69,13 +78,9 @@ pub fn parse_from_file(
 
   // merge base_params and params
   let overshadow_params_error =
-    blueprints
-    |> list.filter_map(fn(blueprint) {
-      // already performed this check so can assert it
-      let assert Ok(artifact) =
-        artifacts
-        |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
-        |> list.first
+    blueprint_artifact_collection
+    |> list.filter_map(fn(blueprint_artifact_pair) {
+      let #(blueprint, artifact) = blueprint_artifact_pair
 
       case check_base_param_oversahdowing(blueprint, artifact) {
         Ok(_) -> Error(Nil)
@@ -94,13 +99,9 @@ pub fn parse_from_file(
   })
 
   let merged_param_blueprints =
-    blueprints
-    |> list.map(fn(blueprint) {
-      // already performed this check so can assert it
-      let assert Ok(artifact) =
-        artifacts
-        |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
-        |> list.first
+    blueprint_artifact_collection
+    |> list.map(fn(blueprint_artifact_pair) {
+      let #(blueprint, artifact) = blueprint_artifact_pair
 
       Blueprint(
         ..blueprint,
@@ -161,60 +162,6 @@ fn artifact_ref_decoder(artifacts: List(Artifact)) {
       _ -> Error("")
     }
   })
-}
-
-fn inputs_validator(
-  params params: Dict(String, helpers.AcceptedTypes),
-  inputs inputs: Dict(String, dynamic.Dynamic),
-) -> Result(Bool, String) {
-  let param_keys = params |> dict.keys |> set.from_list
-  let input_keys = inputs |> dict.keys |> set.from_list
-
-  let keys_only_in_params =
-    set.difference(param_keys, input_keys) |> set.to_list
-  let keys_only_in_inputs =
-    set.difference(input_keys, param_keys) |> set.to_list
-
-  // see if we have the same inputs and params
-  use _ <- result.try(case keys_only_in_params, keys_only_in_inputs {
-    [], [] -> Ok(True)
-    _, [] ->
-      Error(
-        "Missing keys in input: "
-        <> { keys_only_in_params |> string.join(", ") },
-      )
-    [], _ ->
-      Error(
-        "Extra keys in input: " <> { keys_only_in_inputs |> string.join(", ") },
-      )
-    _, _ ->
-      Error(
-        "Extra keys in input: "
-        <> { keys_only_in_inputs |> string.join(", ") }
-        <> " and missing keys in input: "
-        <> { keys_only_in_params |> string.join(", ") },
-      )
-  })
-
-  let type_validation_errors =
-    inputs
-    |> dict.to_list
-    |> list.filter_map(fn(pair) {
-      let #(key, value) = pair
-      let assert Ok(expected_type) = params |> dict.get(key)
-
-      case helpers.validate_value_type(value, expected_type) {
-        Ok(_) -> Error(Nil)
-        Error(errs) -> Ok(errs)
-      }
-    })
-    |> list.map(fn(err) { err.msg })
-    |> string.join(", ")
-
-  case type_validation_errors {
-    "" -> Ok(True)
-    _ -> Error(type_validation_errors)
-  }
 }
 
 pub fn blueprints_from_json(

@@ -1,4 +1,5 @@
 import caffeine_lang_v2/common/helpers
+import gleam/dict
 import gleam/dynamic
 import gleam/list
 import gleeunit/should
@@ -142,4 +143,86 @@ pub fn validate_value_type_test() {
     helpers.validate_value_type(value, expected_type)
     |> should.equal(Error(helpers.JsonParserError(msg)))
   })
+}
+
+// ==== Inputs Validator ====
+// * ✅ happy path - no inputs
+// * ✅ happy path - some inputs
+// * ✅ missing inputs for params
+// * ✅ extra inputs
+// * ✅ missing and extra inputs
+// * ✅ type validation error - single
+// * ✅ type validation error - multiple
+pub fn inputs_validator_test() {
+  // happy path - no inputs
+  helpers.inputs_validator(params: dict.new(), inputs: dict.new())
+  |> should.equal(Ok(True))
+
+  // happy path - some inputs
+  helpers.inputs_validator(
+    params: dict.from_list([
+      #("name", helpers.String),
+      #("count", helpers.Integer),
+    ]),
+    inputs: dict.from_list([
+      #("name", dynamic.string("foo")),
+      #("count", dynamic.int(42)),
+    ]),
+  )
+  |> should.equal(Ok(True))
+
+  // missing inputs for params
+  helpers.inputs_validator(
+    params: dict.from_list([
+      #("name", helpers.String),
+      #("count", helpers.Integer),
+    ]),
+    inputs: dict.from_list([#("name", dynamic.string("foo"))]),
+  )
+  |> should.equal(Error("Missing keys in input: count"))
+
+  // extra inputs
+  helpers.inputs_validator(
+    params: dict.from_list([#("name", helpers.String)]),
+    inputs: dict.from_list([
+      #("name", dynamic.string("foo")),
+      #("extra", dynamic.int(42)),
+    ]),
+  )
+  |> should.equal(Error("Extra keys in input: extra"))
+
+  // missing and extra inputs
+  helpers.inputs_validator(
+    params: dict.from_list([
+      #("name", helpers.String),
+      #("required", helpers.Boolean),
+    ]),
+    inputs: dict.from_list([
+      #("name", dynamic.string("foo")),
+      #("extra", dynamic.int(42)),
+    ]),
+  )
+  |> should.equal(Error(
+    "Extra keys in input: extra and missing keys in input: required",
+  ))
+
+  // type validation error - single
+  helpers.inputs_validator(
+    params: dict.from_list([#("count", helpers.Integer)]),
+    inputs: dict.from_list([#("count", dynamic.string("not an int"))]),
+  )
+  |> should.equal(Error("expected (Int) received (String) for ()"))
+
+  // type validation error - multiple
+  helpers.inputs_validator(
+    params: dict.from_list([
+      #("count", helpers.Integer),
+      #("flag", helpers.Boolean),
+    ]),
+    inputs: dict.from_list([
+      #("count", dynamic.string("not an int")),
+      #("flag", dynamic.string("not a bool")),
+    ]),
+  )
+  |> should.be_error
 }

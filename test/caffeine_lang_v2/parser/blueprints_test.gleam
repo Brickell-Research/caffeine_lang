@@ -83,10 +83,6 @@ pub fn parse_from_file_happy_path_test() {
 // * ✅ artifact_ref
 // * ✅ params
 // * ✅ inputs
-//   * ✅ whole attribute
-//   * ✅ an expected attribute from artifact
-//   * ✅ too many inuts, more than expected
-//   * ✅ missing and an extra input
 pub fn parse_from_file_missing_test() {
   [
     #(
@@ -104,18 +100,6 @@ pub fn parse_from_file_missing_test() {
     #(
       "missing_inputs",
       "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.inputs)",
-    ),
-    #(
-      "missing_input_per_params",
-      "Input validation errors: Missing keys in input: value",
-    ),
-    #(
-      "missing_too_many_inputs",
-      "Input validation errors: Extra keys in input: pizza",
-    ),
-    #(
-      "missing_input_per_params_and_an_extra",
-      "Input validation errors: Extra keys in input: pizza and missing keys in input: value",
     ),
   ]
   |> list.each(fn(pair) {
@@ -146,9 +130,7 @@ pub fn parse_from_file_duplicates_test() {
 // * ✅ params
 //  * ✅ params is a map
 //  * ✅ each param's value is an Accepted Type
-// * ✅ inputs
-//  * ✅ inputs is a map
-//  * ✅ each input is the expected type per artifacts
+// * ✅ inputs is a map
 pub fn parse_from_file_wrong_type_test() {
   [
     #(
@@ -178,10 +160,6 @@ pub fn parse_from_file_wrong_type_test() {
     #(
       "wrong_type_inputs_not_a_map",
       "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
-    ),
-    #(
-      "wrong_type_input_value_not_expected_type",
-      "Input validation errors: expected (String) received (Int) for ()",
     ),
   ]
   |> list.each(fn(pair) {
