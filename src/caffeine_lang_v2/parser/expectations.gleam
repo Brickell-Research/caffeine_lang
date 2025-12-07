@@ -63,6 +63,9 @@ pub fn parse_from_file(
     "expectation names",
   ))
 
+  // Build unique name prefix from file path
+  let path_prefix = extract_path_prefix(file_path)
+
   // at this point we're completely validated, now build IR
   expectations_blueprint_collection
   |> list.map(fn(expectation_and_blueprint_pair) {
@@ -83,13 +86,37 @@ pub fn parse_from_file(
         middle_end.ValueTuple(label:, typ:, value:)
       })
 
+    // Build unique expectation name by combining path prefix with name
+    let unique_name = case path_prefix {
+      "" -> expectation.name
+      _ -> path_prefix <> "_" <> expectation.name
+    }
+
     middle_end.IntermediateRepresentation(
-      expectation_name: expectation.name,
+      expectation_name: unique_name,
       artifact_ref: blueprint.artifact_ref,
       values: value_tuples,
     )
   })
   |> Ok
+}
+
+/// Extract a meaningful prefix from the source path
+/// e.g., "examples/org/platform_team/authentication.json" -> "platform_team_authentication"
+fn extract_path_prefix(path: String) -> String {
+  path
+  |> string.split("/")
+  |> list.reverse
+  |> list.take(2)
+  |> list.reverse
+  |> list.map(fn(segment) {
+    // Remove .json extension if present
+    case string.ends_with(segment, ".json") {
+      True -> string.drop_end(segment, 5)
+      False -> segment
+    }
+  })
+  |> string.join("_")
 }
 
 fn check_input_overshadowing(

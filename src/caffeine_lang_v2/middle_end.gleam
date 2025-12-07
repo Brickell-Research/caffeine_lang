@@ -6,6 +6,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
+import gleam/string
 
 pub type ValueTuple {
   ValueTuple(label: String, typ: AcceptedTypes, value: Dynamic)
@@ -123,9 +124,16 @@ pub fn execute(
 fn execute_one(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, SemanticError) {
-  case ir.artifact_ref, get_vendor(ir) {
+  case ir.artifact_ref, get_vendor(ir) |> normalize_vendor {
     "SLO", Ok("datadog") -> resolve_slo_datadog(ir)
     _, _ -> Ok(ir)
+  }
+}
+
+fn normalize_vendor(vendor_result: Result(String, Nil)) -> Result(String, Nil) {
+  case vendor_result {
+    Ok(v) -> Ok(string.lowercase(v))
+    Error(e) -> Error(e)
   }
 }
 
