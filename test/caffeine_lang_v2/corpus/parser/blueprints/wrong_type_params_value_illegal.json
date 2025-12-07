@@ -1,5 +1,5 @@
 {
   "blueprints": [
-    { "name": "success_rate", "artifact_ref": "SLO", "params": {"foo": "Optional(Optional(String))"}, "inputs": {} }
+    { "name": "success_rate", "artifact_ref": "SLO", "params": {"foo": "List(List(String))"}, "inputs": {} }
   ]
 }

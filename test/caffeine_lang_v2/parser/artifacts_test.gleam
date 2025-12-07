@@ -37,7 +37,7 @@ pub fn parse_from_file_happy_path_test() {
         version: semver_0_0_1(),
         base_params: dict.from_list([
           #("threshold", helpers.Float),
-          #("window_in_days", helpers.Optional(helpers.Integer)),
+          #("window_in_days", helpers.Integer),
         ]),
         params: dict.from_list([
           #("queries", helpers.Dict(helpers.String, helpers.String)),
@@ -56,7 +56,7 @@ pub fn parse_from_file_happy_path_test() {
         version: semver_0_0_1(),
         base_params: dict.from_list([
           #("threshold", helpers.Float),
-          #("window_in_days", helpers.Optional(helpers.Integer)),
+          #("window_in_days", helpers.Integer),
         ]),
         params: dict.from_list([
           #("queries", helpers.Dict(helpers.String, helpers.String)),
@@ -67,7 +67,7 @@ pub fn parse_from_file_happy_path_test() {
         name: "Dependency",
         version: semver_0_0_1(),
         base_params: dict.from_list([
-          #("relationship", helpers.NonEmptyList(helpers.String)),
+          #("relationship", helpers.List(helpers.String)),
         ]),
         params: dict.from_list([
           #("isHard", helpers.Boolean),

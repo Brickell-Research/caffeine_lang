@@ -3,7 +3,7 @@
     {
       "name": "SLO",
       "version": "0.0.1",
-      "base_params": { "threshold": "Optional(Integer", "window_in_days": "Optional(Integer)" },
+      "base_params": { "threshold": "Intege", "window_in_days": "Integer" },
       "params": { "queries": "Dict(String, String)", "value": "String" }
     }
   ]

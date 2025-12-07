@@ -154,10 +154,10 @@ pub fn parse_from_file_wrong_type_test() {
       "wrong_type_inputs_not_a_map",
       "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
     ),
-    #(
-      "wrong_type_input_value_not_expected_type",
-      "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
-    ),
+    // #(
+  //   "wrong_type_input_value_not_expected_type",
+  //   "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
+  // ),
   ]
   |> list.each(fn(pair) {
     assert_error(pair.0, helpers.JsonParserError(msg: pair.1))

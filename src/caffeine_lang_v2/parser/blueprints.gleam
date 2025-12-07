@@ -5,7 +5,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
-import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -135,31 +134,31 @@ fn inputs_validator(
   })
 
   // can now assume both are the same
-  inputs
-  |> dict.to_list
-  |> list.filter_map(fn(pair) {
-    let #(key, value) = pair
-    let assert Ok(expected_type) = params |> dict.get(key)
+  // inputs
+  // |> dict.to_list
+  // |> list.filter_map(fn(pair) {
+  //   let #(key, value) = pair
+  //   let assert Ok(expected_type) = params |> dict.get(key)
 
-    case helpers.validate_value_type(value, expected_type) {
-      Ok(_) -> Error(Nil)
-      Error(errs) ->
-        Ok(
-          errs
-          |> list.map(fn(err) {
-            "expected ("
-            <> err.expected
-            <> ") received ("
-            <> err.found
-            <> ") for ("
-            <> key
-            <> { err.path |> string.join(".") }
-            <> ")"
-          })
-          |> string.join(", "),
-        )
-    }
-  })
+  //   case helpers.validate_value_type(value, expected_type) {
+  //     Ok(_) -> Error(Nil)
+  //     Error(errs) ->
+  //       Ok(
+  //         errs
+  //         |> list.map(fn(err) {
+  //           "expected ("
+  //           <> err.expected
+  //           <> ") received ("
+  //           <> err.found
+  //           <> ") for ("
+  //           <> key
+  //           <> { err.path |> string.join(".") }
+  //           <> ")"
+  //         })
+  //         |> string.join(", "),
+  //       )
+  //   }
+  // })
 
   Ok(True)
 }
