@@ -1,0 +1,5 @@
+{
+  "blueprints": [
+    { "name": "success_rate", "artifact_ref": "SLO", "params": {"foo": "Stringg"}, "inputs": {} }
+  ]
+}

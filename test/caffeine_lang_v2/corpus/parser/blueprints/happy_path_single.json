@@ -1,0 +1,10 @@
+{
+  "blueprints": [
+    {
+      "name": "success_rate",
+      "artifact_ref": "SLO",
+      "params": { "percentile": "Float" },
+      "inputs": { "threshold": 10.0 }
+    }
+  ]
+}

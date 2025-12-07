@@ -69,7 +69,7 @@ pub fn semantic_version_decoder() -> decode.Decoder(Semver) {
   })
 }
 
-pub fn parse_from_string(
+fn parse_from_string(
   json_string: String,
 ) -> Result(List(Artifact), json.DecodeError) {
   let artifact_decoder = {
