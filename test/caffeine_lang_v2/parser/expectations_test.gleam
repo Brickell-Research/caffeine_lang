@@ -23,6 +23,20 @@ fn blueprints() -> List(Blueprint) {
   ]
 }
 
+fn blueprints_with_inputs() -> List(Blueprint) {
+  [
+    blueprints.Blueprint(
+      name: "success_rate_with_defaults",
+      artifact_ref: "SLO",
+      params: dict.from_list([
+        #("vendor", helpers.String),
+        #("threshold", helpers.Float),
+      ]),
+      inputs: dict.from_list([#("vendor", dynamic.string("datadog"))]),
+    ),
+  ]
+}
+
 fn assert_error(file_name: String, error: helpers.ParseError) {
   expectations.parse_from_file(path(file_name), blueprints())
   |> should.equal(Error(error))
@@ -171,4 +185,18 @@ pub fn parse_from_file_semantic_test() {
   |> list.each(fn(pair) {
     assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
   })
+}
+
+// ==== Overshadowing ====
+// * ✅ expectation inputs cannot overshadow blueprint inputs
+pub fn parse_from_file_overshadowing_test() {
+  expectations.parse_from_file(
+    path("overshadowing_blueprint_input"),
+    blueprints_with_inputs(),
+  )
+  |> should.equal(
+    Error(helpers.DuplicateError(
+      msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
+    )),
+  )
 }

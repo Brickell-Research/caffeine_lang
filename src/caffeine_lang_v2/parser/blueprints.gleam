@@ -83,7 +83,6 @@ pub fn parse_from_file(
       let #(blueprint, artifact) = blueprint_artifact_pair
 
       // Merge all params: artifact.params + artifact.base_params + blueprint.params
-      // Blueprint params override artifact params if there's overlap
       let all_params =
         artifact.params
         |> dict.merge(artifact.base_params)

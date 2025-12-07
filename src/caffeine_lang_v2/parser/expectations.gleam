@@ -7,6 +7,8 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
+import gleam/set
+import gleam/string
 
 pub type Expectation {
   Expectation(
@@ -38,6 +40,9 @@ pub fn parse_from_file(
       reference_name: fn(b) { b.name },
       referrer_reference: fn(e) { e.blueprint_ref },
     )
+
+  // Validate that expectation inputs don't overshadow blueprint inputs
+  use _ <- result.try(check_input_overshadowing(expectations_blueprint_collection))
 
   // Validate that expectation.inputs provides params NOT already provided by blueprint.inputs
   use _ <- result.try(
@@ -85,6 +90,48 @@ pub fn parse_from_file(
     )
   })
   |> Ok
+}
+
+fn check_input_overshadowing(
+  expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+) -> Result(Bool, helpers.ParseError) {
+  let overshadow_errors =
+    expectations_blueprint_collection
+    |> list.filter_map(fn(pair) {
+      let #(expectation, blueprint) = pair
+      case check_expectation_input_overshadowing(expectation, blueprint) {
+        Ok(_) -> Error(Nil)
+        Error(msg) -> Ok(msg)
+      }
+    })
+    |> string.join(", ")
+
+  case overshadow_errors {
+    "" -> Ok(True)
+    _ -> Error(helpers.DuplicateError(msg: overshadow_errors))
+  }
+}
+
+fn check_expectation_input_overshadowing(
+  expectation: Expectation,
+  blueprint: Blueprint,
+) -> Result(Bool, String) {
+  let expectation_input_keys = expectation.inputs |> dict.keys |> set.from_list
+  let blueprint_input_keys = blueprint.inputs |> dict.keys |> set.from_list
+  let overshadowing_keys =
+    set.intersection(expectation_input_keys, blueprint_input_keys)
+    |> set.to_list
+
+  case overshadowing_keys {
+    [] -> Ok(True)
+    _ ->
+      Error(
+        "Expectation '"
+        <> expectation.name
+        <> "' overshadowing inputs from blueprint: "
+        <> overshadowing_keys |> string.join(", "),
+      )
+  }
 }
 
 pub fn expectations_from_json(
