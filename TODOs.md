@@ -1,8 +1,11 @@
 # Todos
 
-* can we clean up the tests to make more concise?
-* instead of artifacts.0.name for path for json, can we specify the name (assuming it parses)?
-* general investigation and thoughts on error messages
+p0
+* these error messages are not really consistently helpful
+* tons of verbose, code i.e. mapping blueprint to artifact like 3x
+
+p1
+* function consistency and reuse between parsers: artifacts, blueprints, and expectations
 
 -----------
 
@@ -27,3 +30,11 @@ Finally we code gen:
 ## Blog Post
 
 * why extracted in yay is shit compared to json's decode
+* love sets!
+
+------------
+
+## Notes
+
+* no check for dupe dict keys, just overrides and technically illegal json per rfc/standard
+* plan to support `Optional` type, but not yet

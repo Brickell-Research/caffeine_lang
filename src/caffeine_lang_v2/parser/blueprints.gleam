@@ -45,7 +45,7 @@ pub fn parse_from_file(
         artifacts
         |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
         |> list.first
-      let params = artifact.base_params
+      let params = artifact.params
 
       case inputs_validator(params:, inputs:) {
         Ok(_) -> Error(Nil)
@@ -62,9 +62,72 @@ pub fn parse_from_file(
       ))
   })
 
-  case validate_relevant_uniqueness(blueprints) {
+  use _ <- result.try(case validate_relevant_uniqueness(blueprints) {
     Ok(_) -> Ok(blueprints)
     Error(err) -> Error(helpers.DuplicateError(err))
+  })
+
+  // merge base_params and params
+  let overshadow_params_error =
+    blueprints
+    |> list.filter_map(fn(blueprint) {
+      // already performed this check so can assert it
+      let assert Ok(artifact) =
+        artifacts
+        |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
+        |> list.first
+
+      case check_base_param_oversahdowing(blueprint, artifact) {
+        Ok(_) -> Error(Nil)
+        Error(msg) -> Ok(msg)
+      }
+    })
+    |> string.join(", ")
+
+  use _ <- result.try(case overshadow_params_error {
+    "" -> Ok(True)
+    _ ->
+      Error(helpers.DuplicateError(
+        "Overshadowed base_params in blueprint error: "
+        <> overshadow_params_error,
+      ))
+  })
+
+  let merged_param_blueprints =
+    blueprints
+    |> list.map(fn(blueprint) {
+      // already performed this check so can assert it
+      let assert Ok(artifact) =
+        artifacts
+        |> list.filter(fn(artifact) { artifact.name == blueprint.artifact_ref })
+        |> list.first
+
+      Blueprint(
+        ..blueprint,
+        params: dict.merge(blueprint.params, artifact.base_params),
+      )
+    })
+
+  Ok(merged_param_blueprints)
+}
+
+fn check_base_param_oversahdowing(
+  blueprint: Blueprint,
+  artifact: Artifact,
+) -> Result(Bool, String) {
+  let blueprint_param_names = blueprint.params |> dict.keys |> set.from_list
+  let artifact_param_names = artifact.base_params |> dict.keys |> set.from_list
+  let overshadowing_params = {
+    set.intersection(blueprint_param_names, artifact_param_names) |> set.to_list
+  }
+
+  case overshadowing_params {
+    [] -> Ok(True)
+    _ ->
+      Error(
+        "Blueprint overshadowing base_params from artifact: "
+        <> overshadowing_params |> string.join(", "),
+      )
   }
 }
 
@@ -133,34 +196,25 @@ fn inputs_validator(
       )
   })
 
-  // can now assume both are the same
-  // inputs
-  // |> dict.to_list
-  // |> list.filter_map(fn(pair) {
-  //   let #(key, value) = pair
-  //   let assert Ok(expected_type) = params |> dict.get(key)
+  let type_validation_errors =
+    inputs
+    |> dict.to_list
+    |> list.filter_map(fn(pair) {
+      let #(key, value) = pair
+      let assert Ok(expected_type) = params |> dict.get(key)
 
-  //   case helpers.validate_value_type(value, expected_type) {
-  //     Ok(_) -> Error(Nil)
-  //     Error(errs) ->
-  //       Ok(
-  //         errs
-  //         |> list.map(fn(err) {
-  //           "expected ("
-  //           <> err.expected
-  //           <> ") received ("
-  //           <> err.found
-  //           <> ") for ("
-  //           <> key
-  //           <> { err.path |> string.join(".") }
-  //           <> ")"
-  //         })
-  //         |> string.join(", "),
-  //       )
-  //   }
-  // })
+      case helpers.validate_value_type(value, expected_type) {
+        Ok(_) -> Error(Nil)
+        Error(errs) -> Ok(errs)
+      }
+    })
+    |> list.map(fn(err) { err.msg })
+    |> string.join(", ")
 
-  Ok(True)
+  case type_validation_errors {
+    "" -> Ok(True)
+    _ -> Error(type_validation_errors)
+  }
 }
 
 pub fn blueprints_from_json(

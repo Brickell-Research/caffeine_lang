@@ -44,8 +44,11 @@ pub fn parse_from_file_happy_path_test() {
       blueprints.Blueprint(
         name: "success_rate",
         artifact_ref: "SLO",
-        params: dict.from_list([#("percentile", helpers.Float)]),
-        inputs: dict.from_list([#("threshold", dynamic.float(10.0))]),
+        params: dict.from_list([
+          #("percentile", helpers.Float),
+          #("threshold", helpers.Float),
+        ]),
+        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
     ]),
   )
@@ -57,14 +60,19 @@ pub fn parse_from_file_happy_path_test() {
       blueprints.Blueprint(
         name: "success_rate",
         artifact_ref: "SLO",
-        params: dict.from_list([#("percentile", helpers.Float)]),
-        inputs: dict.from_list([#("threshold", dynamic.float(10.0))]),
+        params: dict.from_list([
+          #("percentile", helpers.Float),
+          #("threshold", helpers.Float),
+        ]),
+        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
       blueprints.Blueprint(
         name: "latency_p99",
         artifact_ref: "SLO",
-        params: dict.from_list([]),
-        inputs: dict.from_list([#("threshold", dynamic.float(10.0))]),
+        params: dict.from_list([
+          #("threshold", helpers.Float),
+        ]),
+        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
     ]),
   )
@@ -74,10 +82,11 @@ pub fn parse_from_file_happy_path_test() {
 // * ✅ name
 // * ✅ artifact_ref
 // * ✅ params
-// * ❌ inputs
+// * ✅ inputs
 //   * ✅ whole attribute
-//   * ❌ an expected attribute from artifact
-//   * ❌ too many, more than expected
+//   * ✅ an expected attribute from artifact
+//   * ✅ too many inuts, more than expected
+//   * ✅ missing and an extra input
 pub fn parse_from_file_missing_test() {
   [
     #(
@@ -96,6 +105,18 @@ pub fn parse_from_file_missing_test() {
       "missing_inputs",
       "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.inputs)",
     ),
+    #(
+      "missing_input_per_params",
+      "Input validation errors: Missing keys in input: value",
+    ),
+    #(
+      "missing_too_many_inputs",
+      "Input validation errors: Extra keys in input: pizza",
+    ),
+    #(
+      "missing_input_per_params_and_an_extra",
+      "Input validation errors: Extra keys in input: pizza and missing keys in input: value",
+    ),
   ]
   |> list.each(fn(pair) {
     assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
@@ -108,6 +129,10 @@ pub fn parse_from_file_missing_test() {
 pub fn parse_from_file_duplicates_test() {
   [
     #("duplicate_name", "Duplicate artifact names: success_rate"),
+    #(
+      "duplicate_overshadowing_base_param",
+      "Overshadowed base_params in blueprint error: Blueprint overshadowing base_params from artifact: threshold",
+    ),
   ]
   |> list.each(fn(pair) {
     assert_error(pair.0, helpers.DuplicateError(msg: pair.1))
@@ -121,9 +146,9 @@ pub fn parse_from_file_duplicates_test() {
 // * ✅ params
 //  * ✅ params is a map
 //  * ✅ each param's value is an Accepted Type
-// * ❌ inputs
+// * ✅ inputs
 //  * ✅ inputs is a map
-//  * ❌ each input is the expected type per artifacts
+//  * ✅ each input is the expected type per artifacts
 pub fn parse_from_file_wrong_type_test() {
   [
     #(
@@ -154,10 +179,10 @@ pub fn parse_from_file_wrong_type_test() {
       "wrong_type_inputs_not_a_map",
       "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
     ),
-    // #(
-  //   "wrong_type_input_value_not_expected_type",
-  //   "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
-  // ),
+    #(
+      "wrong_type_input_value_not_expected_type",
+      "Input validation errors: expected (String) received (Int) for ()",
+    ),
   ]
   |> list.each(fn(pair) {
     assert_error(pair.0, helpers.JsonParserError(msg: pair.1))

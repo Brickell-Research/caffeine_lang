@@ -4,13 +4,13 @@
       "name": "success_rate",
       "artifact_ref": "SLO",
       "params": { "percentile": "Float" },
-      "inputs": { "threshold": 10.0 }
+      "inputs": { "value": "foobar" }
     },
     {
       "name": "latency_p99",
       "artifact_ref": "SLO",
       "params": {},
-      "inputs": { "threshold": 10.0 }
+      "inputs": { "value": "foobar" }
     }
   ]
 }
