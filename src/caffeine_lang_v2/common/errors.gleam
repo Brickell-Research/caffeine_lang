@@ -62,7 +62,8 @@ pub fn format_template_error(error: TemplateError) -> String {
   case error {
     InvalidVariableFormat(var) -> "Invalid template variable format: " <> var
     MissingAttribute(attr) -> "Missing template attribute: " <> attr
-    UnterminatedVariable(partial) -> "Unterminated template variable: $$" <> partial
+    UnterminatedVariable(partial) ->
+      "Unterminated template variable: $$" <> partial
   }
 }
 
@@ -146,4 +147,12 @@ pub fn format_decode_error_message(
     <> ")"
   })
   |> string.join(", ")
+}
+
+pub fn parser_error_to_linker_error(error: ParseError) -> LinkerError {
+  case error {
+    FileReadError(msg) -> LinkerParseError("File read error: " <> msg)
+    JsonParserError(msg) -> LinkerParseError("JSON parse error: " <> msg)
+    DuplicateError(msg) -> LinkerParseError("Duplicate error: " <> msg)
+  }
 }

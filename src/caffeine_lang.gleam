@@ -1,7 +1,8 @@
 import argv
 import caffeine_lang_v2/common/errors
+import caffeine_lang_v2/common/helpers.{result_try}
 import caffeine_lang_v2/generator/generator
-import caffeine_lang_v2/linker
+import caffeine_lang_v2/parser/linker
 import gleam/io
 import gleam/result
 import simplifile
@@ -62,13 +63,6 @@ pub fn compile(
 
   io.println("Generated terraform to: " <> output_file)
   Ok(Nil)
-}
-
-fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e) {
-  case result {
-    Ok(value) -> next(value)
-    Error(err) -> Error(err)
-  }
 }
 
 fn format_linker_error(error: errors.LinkerError) -> String {

@@ -1,8 +1,5 @@
-import caffeine_lang_v2/common/errors.{
-  type LinkerError, type ParseError as CommonParseError, type SemanticError,
-  DuplicateError, FileReadError, JsonParserError, LinkerParseError,
-  LinkerSemanticError, QueryResolutionError,
-}
+import caffeine_lang_v2/common/errors.{type LinkerError, LinkerParseError}
+import caffeine_lang_v2/common/helpers.{result_try}
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import caffeine_lang_v2/parser/artifacts
 import caffeine_lang_v2/parser/blueprints
@@ -17,7 +14,7 @@ pub fn standard_library_directory() -> String {
 }
 
 /// Link will fetch, then parse all configuration files, combining them into one single
-/// abstract syntax tree (AST) object. In the future how we fetch these files will
+/// list of intermeidate representation objects. In the future how we fetch these files will
 /// change to enable fetching from remote locations, via git, etc. but for now we
 /// just support standard library artifacts, a single blueprint file, and a single
 /// expectations directory. Furthermore note that we will ignore non-json files within
@@ -29,20 +26,14 @@ pub fn link(
 ) -> Result(List(IntermediateRepresentation), LinkerError) {
   use artifacts <- result_try(fetch_artifacts())
   use blueprints <- result_try(fetch_blueprints(blueprint_file_path, artifacts))
-  use irs <- result_try(fetch_expectations(expectations_directory, blueprints))
+  use ir <- result_try(fetch_expectations(expectations_directory, blueprints))
 
-  // Apply semantic analysis / middle-end transformations
-  use analyzed_irs <- result_try(
-    middle_end.execute(irs)
-    |> result.map_error(format_semantic_error),
-  )
-
-  Ok(analyzed_irs)
+  Ok(ir)
 }
 
 fn fetch_artifacts() -> Result(List(artifacts.Artifact), LinkerError) {
   artifacts.parse_from_file(standard_library_directory() <> "/artifacts.json")
-  |> result.map_error(format_parse_error)
+  |> result.map_error(errors.parser_error_to_linker_error)
 }
 
 fn fetch_blueprints(
@@ -50,7 +41,7 @@ fn fetch_blueprints(
   artifacts: List(artifacts.Artifact),
 ) -> Result(List(blueprints.Blueprint), LinkerError) {
   blueprints.parse_from_file(blueprint_file_path, artifacts)
-  |> result.map_error(format_parse_error)
+  |> result.map_error(errors.parser_error_to_linker_error)
 }
 
 fn fetch_expectations(
@@ -71,35 +62,13 @@ fn fetch_expectations(
       expectations_files
       |> list.map(fn(file_path) {
         expectations.parse_from_file(file_path, blueprints)
-        |> result.map_error(format_parse_error)
+        |> result.map_error(errors.parser_error_to_linker_error)
       })
       |> result.all()
       |> result.map(list.flatten)
   }
 }
 
-fn format_parse_error(error: CommonParseError) -> LinkerError {
-  case error {
-    FileReadError(msg) -> LinkerParseError("File read error: " <> msg)
-    JsonParserError(msg) -> LinkerParseError("JSON parse error: " <> msg)
-    DuplicateError(msg) -> LinkerParseError("Duplicate error: " <> msg)
-  }
-}
-
-fn format_semantic_error(error: SemanticError) -> LinkerError {
-  case error {
-    QueryResolutionError(msg) -> LinkerSemanticError(msg)
-  }
-}
-
-fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e) {
-  case result {
-    Ok(value) -> next(value)
-    Error(err) -> Error(err)
-  }
-}
-
-// ==== Private ====
 fn read_directory_or_error(
   directory_path: String,
 ) -> Result(List(String), String) {
@@ -116,17 +85,11 @@ fn process_top_level_item(
 ) -> Result(List(String), String) {
   let item_path = base_directory <> "/" <> item_name
 
-  case is_directory(item_path) {
-    True -> collect_json_files_from_subdirectory(item_path, accumulated_files)
-    False -> Ok(accumulated_files)
+  case simplifile.is_directory(item_path) {
+    Ok(True) ->
+      collect_json_files_from_subdirectory(item_path, accumulated_files)
+    _ -> Ok(accumulated_files)
     // Skip files at the top level
-  }
-}
-
-fn is_directory(path: String) -> Bool {
-  case simplifile.is_directory(path) {
-    Ok(True) -> True
-    _ -> False
   }
 }
 
@@ -142,14 +105,14 @@ fn collect_json_files_from_subdirectory(
   items_in_subdirectory
   |> list.try_fold(accumulated_files, fn(acc, item_name) {
     let nested_path = subdirectory_path <> "/" <> item_name
-    case is_directory(nested_path) {
-      True -> {
+    case simplifile.is_directory(nested_path) {
+      Ok(True) -> {
         use files_in_nested <- result.try(read_directory_or_error(nested_path))
         let json_files =
           extract_json_files_with_full_paths(files_in_nested, nested_path)
         Ok(list.append(acc, json_files))
       }
-      False -> Ok(acc)
+      _ -> Ok(acc)
     }
   })
 }

@@ -4,7 +4,7 @@ import caffeine_lang_v2/common/errors.{
   QueryResolutionError, UnterminatedVariable, format_resolve_error,
   format_template_error,
 }
-import caffeine_lang_v2/common/helpers.{type AcceptedTypes}
+import caffeine_lang_v2/common/helpers.{type AcceptedTypes, result_try}
 import caffeine_query_language/generator as cql_generator
 import caffeine_query_language/parser as cql_parser
 import caffeine_query_language/resolver as cql_resolver
@@ -77,13 +77,6 @@ fn substitute_exp(
       let op_str = cql_generator.operator_to_datadog_query(op)
       Ok(left_str <> " " <> op_str <> " " <> right_str)
     }
-  }
-}
-
-fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e) {
-  case result {
-    Ok(value) -> next(value)
-    Error(err) -> Error(err)
   }
 }
 

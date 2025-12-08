@@ -1,4 +1,5 @@
 import caffeine_lang_v2/common/errors.{type GeneratorError}
+import caffeine_lang_v2/common/helpers.{result_try}
 import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import gleam/dict
@@ -71,13 +72,3 @@ pub fn generate_slos(
   |> list.try_map(generate_slo)
 }
 
-// Helper to work around Gleam's use syntax with Result
-fn result_try(
-  result: Result(a, e),
-  next: fn(a) -> Result(b, e),
-) -> Result(b, e) {
-  case result {
-    Ok(value) -> next(value)
-    Error(err) -> Error(err)
-  }
-}

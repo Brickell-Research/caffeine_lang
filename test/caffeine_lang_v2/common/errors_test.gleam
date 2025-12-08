@@ -89,3 +89,28 @@ pub fn format_decode_error_message_test() {
   })
 }
 
+// ==== Parser Error to Linker Error ====
+// * ✅ FileReadError -> LinkerParseError
+// * ✅ JsonParserError -> LinkerParseError
+// * ✅ DuplicateError -> LinkerParseError
+pub fn parser_error_to_linker_error_test() {
+  [
+    #(
+      errors.FileReadError("foo"),
+      errors.LinkerParseError("File read error: foo"),
+    ),
+    #(
+      errors.JsonParserError("foo"),
+      errors.LinkerParseError("JSON parse error: foo"),
+    ),
+    #(
+      errors.DuplicateError("foo"),
+      errors.LinkerParseError("Duplicate error: foo"),
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    errors.parser_error_to_linker_error(input)
+    |> should.equal(expected)
+  })
+}

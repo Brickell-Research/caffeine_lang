@@ -60,6 +60,18 @@ pub fn json_from_file(file_path) -> Result(String, ParseError) {
   }
 }
 
+/// A helper for chaining Result operations with the `use` syntax.
+/// Equivalent to `result.try` but defined here for convenient use with `use`.
+pub fn result_try(
+  result: Result(a, e),
+  next: fn(a) -> Result(b, e),
+) -> Result(b, e) {
+  case result {
+    Ok(value) -> next(value)
+    Error(err) -> Error(err)
+  }
+}
+
 /// Maps each referrer to its corresponding reference by matching names.
 /// Returns a list of tuples pairing each referrer with its matched reference.
 pub fn map_reference_to_referrer_over_collection(

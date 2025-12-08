@@ -75,3 +75,28 @@ pub fn map_reference_to_referrer_over_collection_test() {
     #(#("alice", 200), #("alice", 1)),
   ])
 }
+
+// ==== result_try Tests ====
+// * ✅ ok value chains to next function
+// * ✅ error short-circuits
+pub fn result_try_test() {
+  // ok value chains to next function
+  helpers.result_try(Ok(1), fn(x) { Ok(x + 1) })
+  |> should.equal(Ok(2))
+
+  // chained ok values
+  helpers.result_try(Ok(5), fn(x) {
+    helpers.result_try(Ok(x * 2), fn(y) { Ok(y + 3) })
+  })
+  |> should.equal(Ok(13))
+
+  // error short-circuits
+  helpers.result_try(Error("failed"), fn(_) { Ok(42) })
+  |> should.equal(Error("failed"))
+
+  // error in chain short-circuits
+  helpers.result_try(Ok(1), fn(_) {
+    helpers.result_try(Error("mid-chain error"), fn(y) { Ok(y + 1) })
+  })
+  |> should.equal(Error("mid-chain error"))
+}
