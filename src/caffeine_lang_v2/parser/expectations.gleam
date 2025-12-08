@@ -1,4 +1,7 @@
+import caffeine_lang_v2/common/decoders
+import caffeine_lang_v2/common/errors.{type ParseError, DuplicateError}
 import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/common/validations
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
 import gleam/dict
@@ -7,7 +10,6 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
-import gleam/set
 import gleam/string
 
 pub type Expectation {
@@ -21,13 +23,15 @@ pub type Expectation {
 pub fn parse_from_file(
   file_path: String,
   blueprints: List(Blueprint),
-) -> Result(List(IntermediateRepresentation), helpers.ParseError) {
+) -> Result(List(IntermediateRepresentation), ParseError) {
+  // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
+  // actually parse
   use expectations <- result.try(
     case expectations_from_json(json_string, blueprints) {
       Ok(expectations) -> Ok(expectations)
-      Error(err) -> Error(helpers.format_json_decode_error(err))
+      Error(err) -> Error(errors.format_json_decode_error(err))
     },
   )
 
@@ -41,12 +45,14 @@ pub fn parse_from_file(
       referrer_reference: fn(e) { e.blueprint_ref },
     )
 
-  // Validate that expectation inputs don't overshadow blueprint inputs
-  use _ <- result.try(check_input_overshadowing(expectations_blueprint_collection))
+  // validate that expectation inputs don't overshadow blueprint inputs
+  use _ <- result.try(check_input_overshadowing(
+    expectations_blueprint_collection,
+  ))
 
-  // Validate that expectation.inputs provides params NOT already provided by blueprint.inputs
+  // validate that expectation.inputs provides params NOT already provided by blueprint.inputs
   use _ <- result.try(
-    helpers.validate_inputs_for_collection(
+    validations.validate_inputs_for_collection(
       expectations_blueprint_collection,
       fn(expectation) { expectation.inputs },
       fn(blueprint) {
@@ -57,13 +63,14 @@ pub fn parse_from_file(
     ),
   )
 
-  use _ <- result.try(helpers.validate_relevant_uniqueness(
+  // validate unique names within a file
+  use _ <- result.try(validations.validate_relevant_uniqueness(
     expectations,
     fn(e) { e.name },
     "expectation names",
   ))
 
-  // Build unique name prefix from file path
+  // build unique name prefix from file path
   let path_prefix = extract_path_prefix(file_path)
 
   // at this point we're completely validated, now build IR
@@ -71,7 +78,7 @@ pub fn parse_from_file(
   |> list.map(fn(expectation_and_blueprint_pair) {
     let #(expectation, blueprint) = expectation_and_blueprint_pair
 
-    // Merge blueprint inputs with expectation inputs
+    // merge blueprint inputs with expectation inputs
     // Expectation inputs override blueprint inputs for the same key
     let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
@@ -86,7 +93,7 @@ pub fn parse_from_file(
         middle_end.ValueTuple(label:, typ:, value:)
       })
 
-    // Build unique expectation name by combining path prefix with name
+    // build unique expectation name by combining path prefix with name
     let unique_name = case path_prefix {
       "" -> expectation.name
       _ -> path_prefix <> "_" <> expectation.name
@@ -121,12 +128,20 @@ fn extract_path_prefix(path: String) -> String {
 
 fn check_input_overshadowing(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
-) -> Result(Bool, helpers.ParseError) {
+) -> Result(Bool, ParseError) {
   let overshadow_errors =
     expectations_blueprint_collection
     |> list.filter_map(fn(pair) {
       let #(expectation, blueprint) = pair
-      case check_expectation_input_overshadowing(expectation, blueprint) {
+      case
+        validations.check_collection_key_overshadowing(
+          expectation.inputs,
+          blueprint.inputs,
+          "Expectation '"
+            <> expectation.name
+            <> "' overshadowing inputs from blueprint: ",
+        )
+      {
         Ok(_) -> Error(Nil)
         Error(msg) -> Ok(msg)
       }
@@ -135,33 +150,11 @@ fn check_input_overshadowing(
 
   case overshadow_errors {
     "" -> Ok(True)
-    _ -> Error(helpers.DuplicateError(msg: overshadow_errors))
+    _ -> Error(DuplicateError(msg: overshadow_errors))
   }
 }
 
-fn check_expectation_input_overshadowing(
-  expectation: Expectation,
-  blueprint: Blueprint,
-) -> Result(Bool, String) {
-  let expectation_input_keys = expectation.inputs |> dict.keys |> set.from_list
-  let blueprint_input_keys = blueprint.inputs |> dict.keys |> set.from_list
-  let overshadowing_keys =
-    set.intersection(expectation_input_keys, blueprint_input_keys)
-    |> set.to_list
-
-  case overshadowing_keys {
-    [] -> Ok(True)
-    _ ->
-      Error(
-        "Expectation '"
-        <> expectation.name
-        <> "' overshadowing inputs from blueprint: "
-        <> overshadowing_keys |> string.join(", "),
-      )
-  }
-}
-
-pub fn expectations_from_json(
+fn expectations_from_json(
   json_string: String,
   blueprints: List(Blueprint),
 ) -> Result(List(Expectation), json.DecodeError) {
@@ -169,7 +162,7 @@ pub fn expectations_from_json(
     use name <- decode.field("name", decode.string)
     use blueprint_ref <- decode.field(
       "blueprint_ref",
-      helpers.named_reference_decoder(blueprints, fn(b) { b.name }),
+      decoders.named_reference_decoder(blueprints, fn(b) { b.name }),
     )
     use inputs <- decode.field(
       "inputs",

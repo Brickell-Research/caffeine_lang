@@ -1,3 +1,4 @@
+import caffeine_lang_v2/common/errors.{type ParseError}
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/parser/artifacts
 import gleam/dict
@@ -9,7 +10,7 @@ fn path(file_name: String) {
   "test/caffeine_lang_v2/corpus/parser/artifacts/" <> file_name <> ".json"
 }
 
-fn assert_error(file_name: String, error: helpers.ParseError) {
+fn assert_error(file_name: String, error: ParseError) {
   artifacts.parse_from_file(path(file_name))
   |> should.equal(Error(error))
 }
@@ -112,7 +113,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -123,7 +124,7 @@ pub fn parse_from_file_duplicates_test() {
     #("duplicate_names", "Duplicate artifact names: SLO"),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
   })
 }
 
@@ -178,7 +179,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -203,6 +204,6 @@ pub fn parse_from_file_semver_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }

@@ -1,5 +1,5 @@
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/generator/generator
 import caffeine_lang_v2/middle_end
 import gleam/dynamic
@@ -61,7 +61,7 @@ pub fn parse_vendor_test() {
 
   // sad path
   generator.parse_vendor("unknown")
-  |> should.equal(Error(common.InvalidArtifact("Unknown vendor: unknown")))
+  |> should.equal(Error(errors.InvalidArtifact("Unknown vendor: unknown")))
 }
 
 // ==== Tests - generate ====
@@ -118,14 +118,14 @@ pub fn generate_unknown_artifact_test() {
     )
 
   generator.generate([ir])
-  |> should.equal(Error(common.InvalidArtifact("UnknownArtifact")))
+  |> should.equal(Error(errors.InvalidArtifact("UnknownArtifact")))
 }
 
 pub fn generate_unknown_vendor_test() {
   let ir = make_slo_ir_with_vendor("test", "unknown_vendor")
 
   generator.generate([ir])
-  |> should.equal(Error(common.InvalidArtifact("Unknown vendor: unknown_vendor")))
+  |> should.equal(Error(errors.InvalidArtifact("Unknown vendor: unknown_vendor")))
 }
 
 pub fn generate_missing_vendor_test() {
@@ -158,7 +158,7 @@ pub fn generate_missing_vendor_test() {
     )
 
   generator.generate([ir])
-  |> should.equal(Error(common.MissingValue("vendor")))
+  |> should.equal(Error(errors.MissingValue("vendor")))
 }
 
 // ==== Tests - generate_resources ====

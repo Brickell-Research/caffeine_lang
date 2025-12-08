@@ -1,5 +1,5 @@
 import argv
-import caffeine_lang_v2/generator/common
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/generator/generator
 import caffeine_lang_v2/linker
 import gleam/io
@@ -50,7 +50,7 @@ pub fn compile(
 
   use generated <- result_try(
     generator.generate(irs)
-    |> result.map_error(common.format_error),
+    |> result.map_error(errors.format_generator_error),
   )
 
   // Write output to file
@@ -71,10 +71,10 @@ fn result_try(result: Result(a, e), next: fn(a) -> Result(b, e)) -> Result(b, e)
   }
 }
 
-fn format_linker_error(error: linker.LinkerError) -> String {
+fn format_linker_error(error: errors.LinkerError) -> String {
   case error {
-    linker.ParseError(msg) -> msg
-    linker.SemanticError(msg) -> "Semantic error: " <> msg
+    errors.LinkerParseError(msg) -> msg
+    errors.LinkerSemanticError(msg) -> "Semantic error: " <> msg
   }
 }
 

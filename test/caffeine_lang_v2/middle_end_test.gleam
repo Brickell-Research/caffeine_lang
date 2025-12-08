@@ -1,3 +1,4 @@
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/middle_end
 import gleam/dict
@@ -85,7 +86,7 @@ pub fn resolve_queries_invalid_cql_test() {
     let result = middle_end.resolve_queries(value, queries)
     result |> should.be_error
 
-    let assert Error(middle_end.ResolveError(_)) = result
+    let assert Error(errors.CqlResolveError(_)) = result
   })
 }
 
@@ -94,24 +95,24 @@ pub fn resolve_queries_missing_query_key_test() {
 
   // denominator key missing from queries dict
   middle_end.resolve_queries("numerator / denominator", queries)
-  |> should.equal(Error(middle_end.MissingQueryKey("denominator")))
+  |> should.equal(Error(errors.MissingQueryKey("denominator")))
 
   // numerator key missing
   let queries2 = dict.from_list([#("denominator", "query2")])
   middle_end.resolve_queries("numerator / denominator", queries2)
-  |> should.equal(Error(middle_end.MissingQueryKey("numerator")))
+  |> should.equal(Error(errors.MissingQueryKey("numerator")))
 }
 
 // ==== Tests - format_resolve_error ====
 pub fn format_resolve_error_test() {
   [
-    #(middle_end.ParseError("bad syntax"), "CQL parse error: bad syntax"),
-    #(middle_end.ResolveError("not a division"), "CQL resolve error: not a division"),
-    #(middle_end.MissingQueryKey("foo"), "Missing query key: foo"),
+    #(errors.CqlParseError("bad syntax"), "CQL parse error: bad syntax"),
+    #(errors.CqlResolveError("not a division"), "CQL resolve error: not a division"),
+    #(errors.MissingQueryKey("foo"), "Missing query key: foo"),
   ]
   |> list.each(fn(pair) {
     let #(error, expected) = pair
-    middle_end.format_resolve_error(error)
+    errors.format_resolve_error(error)
     |> should.equal(expected)
   })
 }
@@ -254,7 +255,7 @@ pub fn execute_slo_datadog_missing_value_test() {
   let result = middle_end.execute([ir])
   result |> should.be_error
 
-  let assert Error(middle_end.QueryResolutionError(msg)) = result
+  let assert Error(errors.QueryResolutionError(msg)) = result
   msg |> should.equal("Missing 'value' field for SLO")
 }
 
@@ -280,7 +281,7 @@ pub fn execute_slo_datadog_missing_queries_test() {
   let result = middle_end.execute([ir])
   result |> should.be_error
 
-  let assert Error(middle_end.QueryResolutionError(msg)) = result
+  let assert Error(errors.QueryResolutionError(msg)) = result
   msg |> should.equal("Missing 'queries' field for SLO")
 }
 
@@ -400,7 +401,7 @@ pub fn execute_slo_datadog_missing_attribute_test() {
   let result = middle_end.execute([ir])
   result |> should.be_error
 
-  let assert Error(middle_end.QueryResolutionError(msg)) = result
+  let assert Error(errors.QueryResolutionError(msg)) = result
   msg |> should.equal("Missing template attribute: missing_attr")
 }
 
@@ -430,15 +431,15 @@ pub fn parse_template_variable_happy_path_test() {
 pub fn parse_template_variable_sad_path_test() {
   // no arrow
   middle_end.parse_template_variable("noarrow")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+  |> should.equal(Error(errors.InvalidVariableFormat("noarrow")))
 
   // empty attribute
   middle_end.parse_template_variable("->template")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("->template")))
+  |> should.equal(Error(errors.InvalidVariableFormat("->template")))
 
   // empty template
   middle_end.parse_template_variable("attr->")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("attr->")))
+  |> should.equal(Error(errors.InvalidVariableFormat("attr->")))
 }
 
 // ==== Tests - extract_template_variables_from_string ====
@@ -488,23 +489,23 @@ pub fn extract_template_variables_happy_path_test() {
 pub fn extract_template_variables_sad_path_test() {
   // unterminated variable
   middle_end.extract_template_variables_from_string("$$foo->bar")
-  |> should.equal(Error(middle_end.UnterminatedVariable("foo->bar")))
+  |> should.equal(Error(errors.UnterminatedVariable("foo->bar")))
 
   // invalid variable format (no arrow)
   middle_end.extract_template_variables_from_string("$$noarrow$$")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+  |> should.equal(Error(errors.InvalidVariableFormat("noarrow")))
 
   // empty variable
   middle_end.extract_template_variables_from_string("$$$$")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("")))
+  |> should.equal(Error(errors.InvalidVariableFormat("")))
 
   // empty attribute
   middle_end.extract_template_variables_from_string("$$->template$$")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("->template")))
+  |> should.equal(Error(errors.InvalidVariableFormat("->template")))
 
   // empty template
   middle_end.extract_template_variables_from_string("$$attr->$$")
-  |> should.equal(Error(middle_end.InvalidVariableFormat("attr->")))
+  |> should.equal(Error(errors.InvalidVariableFormat("attr->")))
 }
 
 // ==== Tests - replace_template_variables ====
@@ -557,39 +558,19 @@ pub fn replace_template_variables_sad_path_test() {
     "$$missing->m$$",
     dict.from_list([]),
   )
-  |> should.equal(Error(middle_end.MissingAttribute("missing")))
+  |> should.equal(Error(errors.MissingAttribute("missing")))
 
   // invalid variable format
   middle_end.replace_template_variables(
     "$$noarrow$$",
     dict.from_list([]),
   )
-  |> should.equal(Error(middle_end.InvalidVariableFormat("noarrow")))
+  |> should.equal(Error(errors.InvalidVariableFormat("noarrow")))
 
   // unterminated variable
   middle_end.replace_template_variables(
     "$$foo->bar",
     dict.from_list([]),
   )
-  |> should.equal(Error(middle_end.UnterminatedVariable("foo->bar")))
-}
-
-// ==== Tests - format_template_error ====
-pub fn format_template_error_test() {
-  [
-    #(
-      middle_end.InvalidVariableFormat("bad"),
-      "Invalid template variable format: bad",
-    ),
-    #(middle_end.MissingAttribute("foo"), "Missing template attribute: foo"),
-    #(
-      middle_end.UnterminatedVariable("bar->baz"),
-      "Unterminated template variable: $$bar->baz",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    let #(error, expected) = pair
-    middle_end.format_template_error(error)
-    |> should.equal(expected)
-  })
+  |> should.equal(Error(errors.UnterminatedVariable("foo->bar")))
 }

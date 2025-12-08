@@ -1,3 +1,4 @@
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/middle_end
@@ -36,11 +37,11 @@ pub fn get_string_value_test() {
 
   // sad paths
   [
-    #(make_ir([]), "missing", common.MissingValue("missing")),
+    #(make_ir([]), "missing", errors.MissingValue("missing")),
     #(
       make_ir([make_value_tuple("count", helpers.Integer, dynamic.int(42))]),
       "count",
-      common.TypeError("count", "String", "Integer"),
+      errors.TypeError("count", "String", "Integer"),
     ),
   ]
   |> list.each(fn(tuple) {
@@ -65,11 +66,11 @@ pub fn get_float_value_test() {
 
   // sad paths
   [
-    #(make_ir([]), "missing", common.MissingValue("missing")),
+    #(make_ir([]), "missing", errors.MissingValue("missing")),
     #(
       make_ir([make_value_tuple("name", helpers.String, dynamic.string("foo"))]),
       "name",
-      common.TypeError("name", "Float", "String"),
+      errors.TypeError("name", "Float", "String"),
     ),
   ]
   |> list.each(fn(tuple) {
@@ -94,11 +95,11 @@ pub fn get_int_value_test() {
 
   // sad paths
   [
-    #(make_ir([]), "missing", common.MissingValue("missing")),
+    #(make_ir([]), "missing", errors.MissingValue("missing")),
     #(
       make_ir([make_value_tuple("name", helpers.String, dynamic.string("foo"))]),
       "name",
-      common.TypeError("name", "Integer", "String"),
+      errors.TypeError("name", "Integer", "String"),
     ),
   ]
   |> list.each(fn(tuple) {
@@ -134,11 +135,11 @@ pub fn get_string_dict_value_test() {
 
   // sad paths
   [
-    #(make_ir([]), "missing", common.MissingValue("missing")),
+    #(make_ir([]), "missing", errors.MissingValue("missing")),
     #(
       make_ir([make_value_tuple("name", helpers.String, dynamic.string("foo"))]),
       "name",
-      common.TypeError("name", "Dict(String, String)", "String"),
+      errors.TypeError("name", "Dict(String, String)", "String"),
     ),
   ]
   |> list.each(fn(tuple) {
@@ -211,17 +212,17 @@ pub fn accepted_type_to_string_test() {
 // * ✅ RenderError
 pub fn format_error_test() {
   [
-    #(common.MissingValue("threshold"), "Missing required value: threshold"),
+    #(errors.MissingValue("threshold"), "Missing required value: threshold"),
     #(
-      common.TypeError("count", "Integer", "String"),
+      errors.TypeError("count", "Integer", "String"),
       "Type error for 'count': expected Integer, found String",
     ),
-    #(common.InvalidArtifact("Unknown"), "Unknown artifact type: Unknown"),
-    #(common.RenderError("failed to render"), "Render error: failed to render"),
+    #(errors.InvalidArtifact("Unknown"), "Unknown artifact type: Unknown"),
+    #(errors.RenderError("failed to render"), "Render error: failed to render"),
   ]
   |> list.each(fn(pair) {
     let #(error, expected) = pair
-    common.format_error(error)
+    errors.format_generator_error(error)
     |> should.equal(expected)
   })
 }

@@ -1,4 +1,7 @@
+import caffeine_lang_v2/common/decoders
+import caffeine_lang_v2/common/errors.{type ParseError, DuplicateError}
 import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/common/validations
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -6,7 +9,6 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
-import gleam/set
 import gleam/string
 
 pub type Blueprint {
@@ -21,13 +23,15 @@ pub type Blueprint {
 pub fn parse_from_file(
   file_path: String,
   artifacts: List(Artifact),
-) -> Result(List(Blueprint), helpers.ParseError) {
+) -> Result(List(Blueprint), ParseError) {
+  // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
+  // actually parse
   use blueprints <- result.try(
     case blueprints_from_json(json_string, artifacts) {
       Ok(blueprints) -> Ok(blueprints)
-      Error(err) -> Error(helpers.format_json_decode_error(err))
+      Error(err) -> Error(errors.format_json_decode_error(err))
     },
   )
 
@@ -41,26 +45,36 @@ pub fn parse_from_file(
       referrer_reference: fn(b) { b.artifact_ref },
     )
 
+  // validate exactly the right number of inputs and each input is the
+  // correct type as per the param
   use _ <- result.try(
-    helpers.validate_inputs_for_collection(
+    validations.validate_inputs_for_collection(
       blueprint_artifact_collection,
       fn(blueprint) { blueprint.inputs },
       fn(artifact) { artifact.params },
     ),
   )
 
-  use _ <- result.try(helpers.validate_relevant_uniqueness(
+  // validate all names are unique
+  use _ <- result.try(validations.validate_relevant_uniqueness(
     blueprints,
     fn(b) { b.name },
     "blueprint names",
   ))
 
+  // ensure no param name overshadowing by the blueprint
   let overshadow_params_error =
     blueprint_artifact_collection
     |> list.filter_map(fn(blueprint_artifact_pair) {
       let #(blueprint, artifact) = blueprint_artifact_pair
 
-      case check_base_param_overshadowing(blueprint, artifact) {
+      case
+        validations.check_collection_key_overshadowing(
+          blueprint.params,
+          artifact.base_params,
+          "Blueprint overshadowing base_params from artifact: ",
+        )
+      {
         Ok(_) -> Error(Nil)
         Error(msg) -> Ok(msg)
       }
@@ -70,7 +84,7 @@ pub fn parse_from_file(
   use _ <- result.try(case overshadow_params_error {
     "" -> Ok(True)
     _ ->
-      Error(helpers.DuplicateError(
+      Error(DuplicateError(
         "Overshadowed base_params in blueprint error: "
         <> overshadow_params_error,
       ))
@@ -94,26 +108,6 @@ pub fn parse_from_file(
   Ok(merged_param_blueprints)
 }
 
-fn check_base_param_overshadowing(
-  blueprint: Blueprint,
-  artifact: Artifact,
-) -> Result(Bool, String) {
-  let blueprint_param_names = blueprint.params |> dict.keys |> set.from_list
-  let artifact_param_names = artifact.base_params |> dict.keys |> set.from_list
-  let overshadowing_params = {
-    set.intersection(blueprint_param_names, artifact_param_names) |> set.to_list
-  }
-
-  case overshadowing_params {
-    [] -> Ok(True)
-    _ ->
-      Error(
-        "Blueprint overshadowing base_params from artifact: "
-        <> overshadowing_params |> string.join(", "),
-      )
-  }
-}
-
 pub fn blueprints_from_json(
   json_string: String,
   artifacts: List(Artifact),
@@ -122,7 +116,7 @@ pub fn blueprints_from_json(
     use name <- decode.field("name", decode.string)
     use artifact_ref <- decode.field(
       "artifact_ref",
-      helpers.named_reference_decoder(artifacts, fn(a) { a.name }),
+      decoders.named_reference_decoder(artifacts, fn(a) { a.name }),
     )
     use params <- decode.field(
       "params",

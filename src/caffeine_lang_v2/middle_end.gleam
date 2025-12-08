@@ -1,3 +1,9 @@
+import caffeine_lang_v2/common/errors.{
+  type ResolveError, type SemanticError, type TemplateError, CqlParseError,
+  CqlResolveError, InvalidVariableFormat, MissingAttribute, MissingQueryKey,
+  QueryResolutionError, UnterminatedVariable, format_resolve_error,
+  format_template_error,
+}
 import caffeine_lang_v2/common/helpers.{type AcceptedTypes}
 import caffeine_query_language/generator as cql_generator
 import caffeine_query_language/parser as cql_parser
@@ -20,40 +26,6 @@ pub type IntermediateRepresentation {
   )
 }
 
-pub type SemanticError {
-  QueryResolutionError(msg: String)
-}
-
-pub type ResolveError {
-  ParseError(msg: String)
-  ResolveError(msg: String)
-  MissingQueryKey(key: String)
-}
-
-pub type TemplateError {
-  InvalidVariableFormat(variable: String)
-  MissingAttribute(attribute: String)
-  UnterminatedVariable(partial: String)
-}
-
-/// Format a template error as a string
-pub fn format_template_error(error: TemplateError) -> String {
-  case error {
-    InvalidVariableFormat(var) -> "Invalid template variable format: " <> var
-    MissingAttribute(attr) -> "Missing template attribute: " <> attr
-    UnterminatedVariable(partial) -> "Unterminated template variable: $$" <> partial
-  }
-}
-
-/// Format a resolve error as a string
-pub fn format_resolve_error(error: ResolveError) -> String {
-  case error {
-    ParseError(msg) -> "CQL parse error: " <> msg
-    ResolveError(msg) -> "CQL resolve error: " <> msg
-    MissingQueryKey(key) -> "Missing query key: " <> key
-  }
-}
-
 /// Resolve CQL expression and substitute query values
 /// Returns (numerator_query, denominator_query) tuple
 pub fn resolve_queries(
@@ -63,13 +35,13 @@ pub fn resolve_queries(
   // Parse the CQL expression
   use exp_container <- result_try(
     cql_parser.parse_expr(value)
-    |> result_map_error(fn(e) { ParseError(e) }),
+    |> result_map_error(fn(e) { CqlParseError(e) }),
   )
 
   // Resolve to a primitive (currently only GoodOverTotal supported)
   use primitive <- result_try(
     cql_resolver.resolve_primitives(exp_container)
-    |> result_map_error(fn(e) { ResolveError(e) }),
+    |> result_map_error(fn(e) { CqlResolveError(e) }),
   )
 
   // Extract query strings based on the primitive structure

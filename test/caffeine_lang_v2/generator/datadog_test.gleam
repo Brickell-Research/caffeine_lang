@@ -1,5 +1,5 @@
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/generator/datadog
 import caffeine_lang_v2/middle_end
 import gleam/dict
@@ -164,10 +164,10 @@ pub fn generate_slo_timeframes_test() {
 
 pub fn generate_slo_missing_values_test() {
   [
-    #("threshold", common.MissingValue("threshold")),
-    #("window_in_days", common.MissingValue("window_in_days")),
-    #("numerator_query", common.MissingValue("numerator_query")),
-    #("denominator_query", common.MissingValue("denominator_query")),
+    #("threshold", errors.MissingValue("threshold")),
+    #("window_in_days", errors.MissingValue("window_in_days")),
+    #("numerator_query", errors.MissingValue("numerator_query")),
+    #("denominator_query", errors.MissingValue("denominator_query")),
   ]
   |> list.each(fn(pair) {
     let #(missing_field, expected_error) = pair

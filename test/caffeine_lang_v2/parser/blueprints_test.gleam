@@ -1,3 +1,4 @@
+import caffeine_lang_v2/common/errors.{type ParseError}
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/parser/artifacts.{type Artifact}
 import caffeine_lang_v2/parser/blueprints
@@ -22,7 +23,7 @@ fn artifacts() -> List(Artifact) {
   ]
 }
 
-fn assert_error(file_name: String, error: helpers.ParseError) {
+fn assert_error(file_name: String, error: ParseError) {
   blueprints.parse_from_file(path(file_name), artifacts())
   |> should.equal(Error(error))
 }
@@ -106,7 +107,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -122,7 +123,7 @@ pub fn parse_from_file_duplicates_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
   })
 }
 
@@ -172,12 +173,12 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
 // ==== Semantic ====
-// * ✅ artifact references an actual artifact
+// * ✅ blueprint references an actual artifact
 pub fn parse_from_file_semantic_test() {
   [
     #(
@@ -186,6 +187,6 @@ pub fn parse_from_file_semantic_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }

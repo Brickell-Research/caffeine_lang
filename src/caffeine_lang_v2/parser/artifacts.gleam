@@ -1,4 +1,6 @@
+import caffeine_lang_v2/common/errors.{type ParseError}
 import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/common/validations
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int
@@ -21,32 +23,36 @@ pub type Semver {
   Semver(major: Int, minor: Int, patch: Int)
 }
 
-pub fn parse_from_file(file_path) -> Result(List(Artifact), helpers.ParseError) {
+pub fn parse_from_file(file_path) -> Result(List(Artifact), ParseError) {
+  // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
+  // actually parse
   use artifacts <- result.try(case parse_from_string(json_string) {
     Ok(artifacts) -> Ok(artifacts)
-    Error(err) -> Error(helpers.format_json_decode_error(err))
+    Error(err) -> Error(errors.format_json_decode_error(err))
   })
 
-  use _ <- result.try(helpers.validate_relevant_uniqueness(
+  // validate names are unique
+  use _ <- result.try(validations.validate_relevant_uniqueness(
     artifacts,
     fn(a) { a.name },
     "artifact names",
   ))
 
+  // return success
   Ok(artifacts)
 }
 
 pub fn semantic_version_decoder() -> decode.Decoder(Semver) {
+  let err_default = Semver(0, 0, 0)
   decode.new_primitive_decoder("Semver", fn(dyn) {
-    case decode.run(dyn, decode.string) {
-      Ok(x) ->
-        case x |> string.split(".") |> list.try_map(int.parse) {
-          Ok([major, minor, patch]) -> Ok(Semver(major:, minor:, patch:))
-          _ -> Error(Semver(0, 0, 0))
-        }
-      _ -> Error(Semver(0, 0, 0))
+    use str <- result.try(
+      decode.run(dyn, decode.string) |> result.replace_error(err_default),
+    )
+    case str |> string.split(".") |> list.try_map(int.parse) {
+      Ok([major, minor, patch]) -> Ok(Semver(major:, minor:, patch:))
+      _ -> Error(err_default)
     }
   })
 }

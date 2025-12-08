@@ -1,7 +1,8 @@
+import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/common/validations
 import gleam/dict
 import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/list
 import gleam/string
 import gleeunit/should
@@ -77,7 +78,7 @@ pub fn validate_value_type_test() {
   ]
   |> list.each(fn(pair) {
     let #(value, expected_type) = pair
-    helpers.validate_value_type(value, expected_type, "")
+    validations.validate_value_type(value, expected_type, "")
     |> should.be_ok
   })
 
@@ -175,8 +176,8 @@ pub fn validate_value_type_test() {
   ]
   |> list.each(fn(tuple) {
     let #(value, expected_type, msg) = tuple
-    helpers.validate_value_type(value, expected_type, "some_key")
-    |> should.equal(Error(helpers.JsonParserError(msg)))
+    validations.validate_value_type(value, expected_type, "some_key")
+    |> should.equal(Error(errors.JsonParserError(msg)))
   })
 }
 
@@ -205,7 +206,7 @@ pub fn inputs_validator_test() {
   ]
   |> list.each(fn(pair) {
     let #(params, inputs) = pair
-    helpers.inputs_validator(params:, inputs:)
+    validations.inputs_validator(params:, inputs:)
     |> should.equal(Ok(True))
   })
 
@@ -247,7 +248,7 @@ pub fn inputs_validator_test() {
   ]
   |> list.each(fn(tuple) {
     let #(params, inputs, expected_msg) = tuple
-    helpers.inputs_validator(params:, inputs:)
+    validations.inputs_validator(params:, inputs:)
     |> should.equal(Error(expected_msg))
   })
 
@@ -275,7 +276,7 @@ pub fn inputs_validator_test() {
   ]
   |> list.each(fn(tuple) {
     let #(params, inputs, expected_substring) = tuple
-    let result = helpers.inputs_validator(params:, inputs:)
+    let result = validations.inputs_validator(params:, inputs:)
     result |> should.be_error
     let assert Error(msg) = result
     string.contains(msg, expected_substring) |> should.be_true
@@ -296,7 +297,7 @@ pub fn validate_relevant_uniqueness_test() {
     [#("alice", 1), #("bob", 2), #("charlie", 3)],
   ]
   |> list.each(fn(things) {
-    helpers.validate_relevant_uniqueness(things, fetch_name, "names")
+    validations.validate_relevant_uniqueness(things, fetch_name, "names")
     |> should.equal(Ok(True))
   })
 
@@ -311,9 +312,9 @@ pub fn validate_relevant_uniqueness_test() {
   |> list.each(fn(pair) {
     let #(things, expected_msg) = pair
     let result =
-      helpers.validate_relevant_uniqueness(things, fetch_name, "names")
+      validations.validate_relevant_uniqueness(things, fetch_name, "names")
     result |> should.be_error
-    let assert Error(helpers.DuplicateError(msg)) = result
+    let assert Error(errors.DuplicateError(msg)) = result
     string.contains(msg, expected_msg) |> should.be_true
   })
 }
@@ -334,7 +335,9 @@ pub fn validate_inputs_for_collection_test() {
     ],
   ]
   |> list.each(fn(collection) {
-    helpers.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) { p })
+    validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {
+      p
+    })
     |> should.equal(Ok(True))
   })
 
@@ -345,48 +348,59 @@ pub fn validate_inputs_for_collection_test() {
       dict.from_list([#("count", helpers.Integer)]),
     ),
   ]
-  helpers.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) { p })
+  validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {
+    p
+  })
   |> should.be_error
 }
 
-// ==== Named Reference Decoder Tests ====
-// * ✅ happy path - name exists in collection
-// * ✅ sad path - name doesn't exist in collection
-pub fn named_reference_decoder_test() {
-  let collection = [#("alice", 1), #("bob", 2)]
-  let decoder = helpers.named_reference_decoder(collection, fn(x) { x.0 })
+// ==== Check Collection Key Overshadowing Tests ====
+// * ✅ happy path - both collections empty
+// * ✅ happy path - no overlapping keys
+// * ✅ sad path - single overlapping key
+// * ✅ sad path - multiple overlapping keys
+pub fn check_collection_key_overshadowing_test() {
+  let error_prefix = "Overshadowing keys: "
 
-  // happy path
-  decode.run(dynamic.string("alice"), decoder) |> should.be_ok
+  // happy paths
+  [
+    #(dict.new(), dict.new()),
+    #(
+      dict.from_list([#("alice", 1), #("bob", 2)]),
+      dict.from_list([#("charlie", 3), #("dave", 4)]),
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(reference, referrer) = pair
+    validations.check_collection_key_overshadowing(
+      reference,
+      referrer,
+      error_prefix,
+    )
+    |> should.equal(Ok(True))
+  })
 
-  // sad path
-  decode.run(dynamic.string("charlie"), decoder) |> should.be_error
-}
-
-// ==== Map Reference To Referrer Over Collection Tests ====
-// * ✅ happy path - empty collection
-// * ✅ happy path - matches references to referrers
-pub fn map_reference_to_referrer_over_collection_test() {
-  // empty collection
-  helpers.map_reference_to_referrer_over_collection(
-    references: [],
-    referrers: [],
-    reference_name: fn(x: #(String, Int)) { x.0 },
-    referrer_reference: fn(x: #(String, Int)) { x.0 },
-  )
-  |> should.equal([])
-
-  // matches references to referrers
-  let references = [#("alice", 1), #("bob", 2)]
-  let referrers = [#("bob", 100), #("alice", 200)]
-  helpers.map_reference_to_referrer_over_collection(
-    references:,
-    referrers:,
-    reference_name: fn(x) { x.0 },
-    referrer_reference: fn(x) { x.0 },
-  )
-  |> should.equal([
-    #(#("bob", 100), #("bob", 2)),
-    #(#("alice", 200), #("alice", 1)),
-  ])
+  // sad paths
+  [
+    #(
+      dict.from_list([#("alice", 1), #("bob", 2)]),
+      dict.from_list([#("alice", 3)]),
+      "alice",
+    ),
+    #(
+      dict.from_list([#("alice", 1), #("bob", 2), #("charlie", 3)]),
+      dict.from_list([#("alice", 10), #("bob", 20)]),
+      "",
+    ),
+  ]
+  |> list.each(fn(tuple) {
+    let #(reference, referrer, _expected_substring) = tuple
+    let result =
+      validations.check_collection_key_overshadowing(
+        reference,
+        referrer,
+        error_prefix,
+      )
+    result |> should.be_error
+  })
 }

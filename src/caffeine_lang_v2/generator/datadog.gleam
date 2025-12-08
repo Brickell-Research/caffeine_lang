@@ -1,4 +1,5 @@
-import caffeine_lang_v2/generator/common.{type GeneratorError}
+import caffeine_lang_v2/common/errors.{type GeneratorError}
+import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import gleam/dict
 import gleam/list

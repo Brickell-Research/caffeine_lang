@@ -1,3 +1,4 @@
+import caffeine_lang_v2/common/errors.{type ParseError}
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/middle_end
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
@@ -37,7 +38,7 @@ fn blueprints_with_inputs() -> List(Blueprint) {
   ]
 }
 
-fn assert_error(file_name: String, error: helpers.ParseError) {
+fn assert_error(file_name: String, error: ParseError) {
   expectations.parse_from_file(path(file_name), blueprints())
   |> should.equal(Error(error))
 }
@@ -124,7 +125,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -133,7 +134,7 @@ pub fn parse_from_file_missing_test() {
 pub fn parse_from_file_duplicates_test() {
   [#("duplicate_name", "Duplicate expectation names: my_expectation")]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
   })
 }
 
@@ -168,7 +169,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -182,7 +183,7 @@ pub fn parse_from_file_semantic_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, helpers.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
   })
 }
 
@@ -194,7 +195,7 @@ pub fn parse_from_file_overshadowing_test() {
     blueprints_with_inputs(),
   )
   |> should.equal(
-    Error(helpers.DuplicateError(
+    Error(errors.DuplicateError(
       msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
     )),
   )

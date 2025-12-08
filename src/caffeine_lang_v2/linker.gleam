@@ -1,4 +1,8 @@
-import caffeine_lang_v2/common/helpers
+import caffeine_lang_v2/common/errors.{
+  type LinkerError, type ParseError as CommonParseError, type SemanticError,
+  DuplicateError, FileReadError, JsonParserError, LinkerParseError,
+  LinkerSemanticError, QueryResolutionError,
+}
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import caffeine_lang_v2/parser/artifacts
 import caffeine_lang_v2/parser/blueprints
@@ -7,11 +11,6 @@ import gleam/list
 import gleam/result
 import gleam/string
 import simplifile
-
-pub type LinkerError {
-  ParseError(msg: String)
-  SemanticError(msg: String)
-}
 
 pub fn standard_library_directory() -> String {
   "src/caffeine_lang_v2/standard_library"
@@ -60,12 +59,12 @@ fn fetch_expectations(
 ) -> Result(List(IntermediateRepresentation), LinkerError) {
   use expectations_files <- result_try(
     get_instantiation_json_files(expectations_directory)
-    |> result.map_error(ParseError),
+    |> result.map_error(LinkerParseError),
   )
 
   case expectations_files {
     [] ->
-      Error(ParseError(
+      Error(LinkerParseError(
         "No expectation files found in: " <> expectations_directory,
       ))
     _ ->
@@ -79,17 +78,17 @@ fn fetch_expectations(
   }
 }
 
-fn format_parse_error(error: helpers.ParseError) -> LinkerError {
+fn format_parse_error(error: CommonParseError) -> LinkerError {
   case error {
-    helpers.FileReadError(msg) -> ParseError("File read error: " <> msg)
-    helpers.JsonParserError(msg) -> ParseError("JSON parse error: " <> msg)
-    helpers.DuplicateError(msg) -> ParseError("Duplicate error: " <> msg)
+    FileReadError(msg) -> LinkerParseError("File read error: " <> msg)
+    JsonParserError(msg) -> LinkerParseError("JSON parse error: " <> msg)
+    DuplicateError(msg) -> LinkerParseError("Duplicate error: " <> msg)
   }
 }
 
-fn format_semantic_error(error: middle_end.SemanticError) -> LinkerError {
+fn format_semantic_error(error: SemanticError) -> LinkerError {
   case error {
-    middle_end.QueryResolutionError(msg) -> SemanticError(msg)
+    QueryResolutionError(msg) -> LinkerSemanticError(msg)
   }
 }
 

@@ -1,4 +1,5 @@
-import caffeine_lang_v2/generator/common.{type GeneratorError}
+import caffeine_lang_v2/common/errors.{type GeneratorError, InvalidArtifact}
+import caffeine_lang_v2/generator/common
 import caffeine_lang_v2/generator/datadog
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
 import gleam/list
@@ -16,7 +17,7 @@ pub type Vendor {
 pub fn parse_vendor(vendor_string: String) -> Result(Vendor, GeneratorError) {
   case string.lowercase(vendor_string) {
     "datadog" -> Ok(Datadog)
-    _ -> Error(common.InvalidArtifact("Unknown vendor: " <> vendor_string))
+    _ -> Error(InvalidArtifact("Unknown vendor: " <> vendor_string))
   }
 }
 
@@ -56,7 +57,7 @@ fn generate_resource(
 ) -> Result(Resource, GeneratorError) {
   case ir.artifact_ref {
     "SLO" -> generate_slo_resource(ir)
-    other -> Error(common.InvalidArtifact(other))
+    other -> Error(InvalidArtifact(other))
   }
 }
 

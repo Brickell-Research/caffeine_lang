@@ -1,3 +1,6 @@
+import caffeine_lang_v2/common/errors.{
+  type GeneratorError, MissingValue, TypeError,
+}
 import caffeine_lang_v2/common/helpers.{type AcceptedTypes}
 import caffeine_lang_v2/middle_end.{type IntermediateRepresentation, type ValueTuple}
 import gleam/dict.{type Dict}
@@ -7,30 +10,6 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-
-/// Error type for generator operations
-pub type GeneratorError {
-  MissingValue(key: String)
-  TypeError(key: String, expected: String, found: String)
-  InvalidArtifact(artifact_ref: String)
-  RenderError(msg: String)
-}
-
-/// Format a generator error as a string
-pub fn format_error(error: GeneratorError) -> String {
-  case error {
-    MissingValue(key) -> "Missing required value: " <> key
-    TypeError(key, expected, found) ->
-      "Type error for '"
-      <> key
-      <> "': expected "
-      <> expected
-      <> ", found "
-      <> found
-    InvalidArtifact(artifact_ref) -> "Unknown artifact type: " <> artifact_ref
-    RenderError(msg) -> "Render error: " <> msg
-  }
-}
 
 /// Find a ValueTuple by label in an IntermediateRepresentation
 pub fn find_value(
