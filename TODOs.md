@@ -37,6 +37,7 @@ Finally we code gen:
 
 * why extracted in yay is shit compared to json's decode
 * love sets!
+* this test pattern
 
 ------------
 
