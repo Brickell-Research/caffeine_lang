@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "blueprint_ref": "success_rate_with_defaults",
+      "inputs": { "vendor": "datadog", "threshold": 99.9 }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "blueprint_ref": ["not", "a", "string"],
+      "inputs": { "percentile": 99.9 }
+    }
+  ]
+}
+

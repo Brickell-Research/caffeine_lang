@@ -1,0 +1,20 @@
+{
+  "blueprints": [
+    {
+      "name": "success_rate_graphql_calls",
+      "artifact_ref": "SLO",
+      "inputs": {
+        "queries": {
+          "numerator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()",
+          "denominator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()"
+        },
+        "value": "numerator / denominator",
+        "vendor": "Datadog"
+      },
+      "params": {
+        "environment": "String",
+        "graphql_operation_name": "String"
+      }
+    }
+  ]
+}

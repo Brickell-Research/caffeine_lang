@@ -1,7 +1,0 @@
-types:
-  - query_template_type: good_over_bad
-    metric_attributes:
-      numerator_query: ""
-      denominator_query: ""
-    filters:
-      - number_of_users

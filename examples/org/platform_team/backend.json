@@ -1,0 +1,24 @@
+{
+  "expectations": [
+    {
+      "name": "Success Rate of Fetching Appointment Calls",
+      "blueprint_ref": "success_rate_graphql_calls",
+      "inputs": {
+        "threshold": 99.9,
+        "window_in_days": 30,
+        "environment": "production",
+        "graphql_operation_name": "getappointments"
+      }
+    },
+    {
+      "name": "Success Rate of Fetching Appointment Slot Calls",
+      "blueprint_ref": "success_rate_graphql_calls",
+      "inputs": {
+        "threshold": 99.5,
+        "window_in_days": 7,
+        "environment": "production",
+        "graphql_operation_name": "*appointment*lot*"
+      }
+    }
+  ]
+}

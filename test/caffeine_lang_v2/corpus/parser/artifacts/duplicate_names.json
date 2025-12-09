@@ -1,0 +1,16 @@
+{
+  "artifacts": [
+    {
+      "name": "SLO",
+      "version": "0.0.1",
+      "base_params": { "threshold": "Float", "window_in_days": "Integer" },
+      "params": { "queries": "Dict(String, String)", "value": "String" }
+    },
+    {
+      "name": "SLO",
+      "version": "0.0.1",
+      "base_params": { "threshold": "Float", "window_in_days": "Integer" },
+      "params": { "queries": "Dict(String, String)", "value": "String" }
+    }
+  ]
+}

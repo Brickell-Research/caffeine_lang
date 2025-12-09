@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "0.1.6"
+version = "0.2.0"
 description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
@@ -14,6 +14,9 @@ target = "erlang"
 gleam_stdlib = ">= 0.63.0 and < 1.0.0"
 simplifile = ">= 2.3.0 and < 3.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
-glaml_extended = { git = "git@github.com:Brickell-Research/glaml_extended.git", ref = "v3.0.7" }
 gleeunit = ">= 1.0.0"
-caffeine_query_language = ">= 0.0.2"
+gleam_json = ">= 3.1.0 and < 4.0.0"
+terra_madre = ">=0.0.2"
+
+[dev-dependencies]
+gleamy_bench = ">= 0.6.0 and < 1.0.0"

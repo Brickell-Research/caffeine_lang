@@ -1,75 +1,75 @@
 import argv
-import caffeine_lang/compiler
-import gleam/dynamic
+import caffeine_lang_v2/compiler
 import gleam/io
+import gleam/string
+import simplifile
 
-/// Version must match gleam.toml
-const version = "0.1.6"
+const version = "0.2.0"
 
-fn print_version() -> Nil {
-  io.println("caffeine " <> version)
+pub fn main() {
+  handle_args(argv.load().arguments)
 }
 
-fn print_usage() -> Nil {
-  io.println("Caffeine SLI/SLO compiler v" <> version)
-  io.println("")
-  io.println("Usage:")
-  io.println(
-    "  caffeine compile <specification_directory> <instantiation_directory> <output_directory>",
-  )
-  io.println("")
-  io.println("Commands:")
-  io.println(
-    "  compile    Compile specification and instantiation files to output directory",
-  )
-  io.println("")
-  io.println("Arguments:")
-  io.println(
-    "  specification_directory   Directory containing specification files",
-  )
-  io.println(
-    "  instantiation_directory   Directory containing instantiation files",
-  )
-  io.println("  output_directory          Directory to output compiled files")
-  io.println("")
-  io.println("Options:")
-  io.println("  -h, --help       Print this help message")
-  io.println("  -V, --version    Print version information")
+/// Entry point for Erlang escript compatibility
+pub fn run(args: List(String)) {
+  handle_args(args)
 }
 
-fn handle_args() -> Nil {
-  let args = argv.load().arguments
-
+fn handle_args(args: List(String)) {
   case args {
-    ["compile", spec_dir, inst_dir, output_dir] -> {
-      compiler.compile(spec_dir, inst_dir, output_dir)
-    }
-    ["compile"] -> {
-      io.println_error("Error: compile command requires 3 arguments")
-      print_usage()
-    }
-    ["compile", ..] -> {
-      io.println_error("Error: compile command requires exactly 3 arguments")
-      print_usage()
-    }
-    ["--help"] | ["-h"] | [] -> {
-      print_usage()
-    }
-    ["--version"] | ["-V"] -> {
-      print_version()
-    }
+    ["compile", blueprint_file, expectations_dir, output_file] ->
+      compile(blueprint_file, expectations_dir, output_file)
+    ["--help"] | ["-h"] -> print_usage()
+    ["--version"] | ["-V"] -> print_version()
+    [] -> print_usage()
     _ -> {
-      io.println_error("Error: unknown command")
+      io.println("Error: Invalid arguments")
+      io.println("")
       print_usage()
     }
   }
 }
 
-// Entry point for Erlang escript
-pub fn run(_args: dynamic.Dynamic) -> Nil {
-  handle_args()
+fn compile(
+  blueprint_file: String,
+  expectations_dir: String,
+  output_path: String,
+) {
+  // If output_path is a directory, append main.tf
+  let output_file = case simplifile.is_directory(output_path) {
+    Ok(True) -> output_path <> "/main.tf"
+    _ -> output_path
+  }
+
+  case compiler.compile(blueprint_file, expectations_dir) {
+    Ok(output) -> {
+      case simplifile.write(output_file, output) {
+        Ok(_) ->
+          io.println(
+            "Successfully compiled to " <> output_file,
+          )
+        Error(err) ->
+          io.println(
+            "Error writing output file: " <> string.inspect(err),
+          )
+      }
+    }
+    Error(err) -> io.println("Compilation error: " <> err)
+  }
 }
 
-pub fn main() -> Nil {
-  handle_args()
+fn print_usage() {
+  io.println("caffeine " <> version)
+  io.println("A compiler for generating reliability artifacts from service expectation definitions.")
+  io.println("")
+  io.println("USAGE:")
+  io.println("    caffeine compile <blueprint_file> <expectations_directory> <output_file>")
+  io.println("")
+  io.println("OPTIONS:")
+  io.println("    -h, --help       Print help information")
+  io.println("    -V, --version    Print version information")
+}
+
+fn print_version() {
+  io.println("caffeine " <> version)
 }

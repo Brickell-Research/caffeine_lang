@@ -1,2 +1,0 @@
-query_template_types:
-  - metric_attributes: ["team_name", "accepted_status_codes"]
