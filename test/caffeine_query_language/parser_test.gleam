@@ -1,208 +1,172 @@
 import caffeine_query_language/parser.{
   Add, Div, ExpContainer, Mul, OperatorExpr, Sub,
-  find_rightmost_operator_at_level, is_balanced_parens, parse_expr,
+  find_rightmost_operator_at_level, is_balanced_parens, is_last_char, parse_expr,
 }
 import caffeine_query_language/test_helpers.{
-  assert_last_char, exp_op_cont, parens, prim_word, simple_exp_op_cont,
-  simple_op_cont,
+  exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
 }
+import gleam/list
 import gleeunit/should
 
-// ==================== parse_expr tests ====================
-pub fn parse_expr_should_parse_a_simple_parenthesized_word_test() {
-  let expected = Ok(ExpContainer(parens(prim_word("A"))))
+// ==== parse_expr Tests ====
+// * ✅ simple parenthesized word
+// * ✅ double parenthesized word
+// * ✅ simple addition
+// * ✅ simple subtraction
+// * ✅ simple multiplication
+// * ✅ simple division
+// * ✅ order of precedence with parentheses
+// * ✅ complex nested parentheses
+// * ✅ mixed operators precedence
+// * ✅ deeply nested expression
+// * ✅ complex division expression
 
-  let actual = parse_expr("(A)")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_double_parenthesized_word_test() {
-  let expected = Ok(ExpContainer(parens(parens(prim_word("A")))))
-
-  let actual = parse_expr("((A))")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_simple_addition_expression_test() {
-  let expected = Ok(simple_exp_op_cont("A", "B", Add))
-
-  let actual = parse_expr("A + B")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_simple_subtraction_expression_test() {
-  let expected = Ok(simple_exp_op_cont("A", "B", Sub))
-
-  let actual = parse_expr("A - B")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_simple_multiplication_expression_test() {
-  let expected = Ok(simple_exp_op_cont("A", "B", Mul))
-
-  let actual = parse_expr("A * B")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_simple_division_expression_test() {
-  let expected = Ok(simple_exp_op_cont("A", "B", Div))
-
-  let actual = parse_expr("A / B")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_an_expression_with_order_of_precedence_using_parentheses_test() {
-  let expected =
-    Ok(exp_op_cont(parens(simple_op_cont("A", "B", Add)), prim_word("C"), Div))
-
-  let actual = parse_expr("(A + B) / C")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_complex_nested_parentheses_expression_test() {
-  let lhs =
+pub fn parse_expr_test() {
+  let lhs_complex =
     parens(OperatorExpr(
       parens(simple_op_cont("A", "B", Add)),
       prim_word("C"),
       Mul,
     ))
-
-  let rhs =
+  let rhs_complex =
     parens(OperatorExpr(
       prim_word("D"),
       parens(simple_op_cont("E", "F", Add)),
       Sub,
     ))
-  let expected = Ok(exp_op_cont(lhs, rhs, Div))
 
-  let actual = parse_expr("((A + B) * C) / (D - (E + F))")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_an_expression_with_mixed_operators_precedence_test() {
-  let expected =
-    Ok(
-      ExpContainer(OperatorExpr(
+  [
+    // simple parenthesized word
+    #("(A)", Ok(ExpContainer(parens(prim_word("A"))))),
+    // double parenthesized word
+    #("((A))", Ok(ExpContainer(parens(parens(prim_word("A")))))),
+    // simple addition
+    #("A + B", Ok(simple_exp_op_cont("A", "B", Add))),
+    // simple subtraction
+    #("A - B", Ok(simple_exp_op_cont("A", "B", Sub))),
+    // simple multiplication
+    #("A * B", Ok(simple_exp_op_cont("A", "B", Mul))),
+    // simple division
+    #("A / B", Ok(simple_exp_op_cont("A", "B", Div))),
+    // order of precedence with parentheses
+    #(
+      "(A + B) / C",
+      Ok(exp_op_cont(parens(simple_op_cont("A", "B", Add)), prim_word("C"), Div)),
+    ),
+    // complex nested parentheses
+    #("((A + B) * C) / (D - (E + F))", Ok(exp_op_cont(lhs_complex, rhs_complex, Div))),
+    // mixed operators precedence
+    #(
+      "A * B + C / D - E",
+      Ok(ExpContainer(OperatorExpr(
         simple_op_cont("A", "B", Mul),
         OperatorExpr(simple_op_cont("C", "D", Div), prim_word("E"), Sub),
         Add,
-      )),
-    )
-
-  let actual = parse_expr("A * B + C / D - E")
-
-  actual |> should.equal(expected)
-}
-
-pub fn parse_expr_should_parse_a_deeply_nested_expression_test() {
-  let expected =
-    Ok(
-      ExpContainer(
+      ))),
+    ),
+    // deeply nested expression
+    #(
+      "(A + (B * (C - D)))",
+      Ok(ExpContainer(parens(OperatorExpr(
+        prim_word("A"),
         parens(OperatorExpr(
-          prim_word("A"),
-          parens(OperatorExpr(
-            prim_word("B"),
-            parens(simple_op_cont("C", "D", Sub)),
-            Mul,
-          )),
-          Add,
+          prim_word("B"),
+          parens(simple_op_cont("C", "D", Sub)),
+          Mul,
         )),
-      ),
-    )
-
-  let actual = parse_expr("(A + (B * (C - D)))")
-
-  actual |> should.equal(expected)
+        Add,
+      )))),
+    ),
+    // complex division expression
+    #(
+      "(X + Y * Z) / (A - B + C)",
+      Ok(exp_op_cont(
+        parens(OperatorExpr(prim_word("X"), simple_op_cont("Y", "Z", Mul), Add)),
+        parens(OperatorExpr(simple_op_cont("A", "B", Sub), prim_word("C"), Add)),
+        Div,
+      )),
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    parse_expr(input) |> should.equal(expected)
+  })
 }
 
-pub fn parse_expr_should_parse_a_complex_division_expression_test() {
-  let expected =
-    Ok(exp_op_cont(
-      parens(OperatorExpr(prim_word("X"), simple_op_cont("Y", "Z", Mul), Add)),
-      parens(OperatorExpr(simple_op_cont("A", "B", Sub), prim_word("C"), Add)),
-      Div,
-    ))
-  let actual = parse_expr("(X + Y * Z) / (A - B + C)")
+// ==== is_balanced_parens Tests ====
+// * ✅ empty string
+// * ✅ balanced parentheses
+// * ✅ unbalanced parentheses
+// * ✅ complex balanced parentheses
 
-  actual |> should.equal(expected)
+pub fn is_balanced_parens_test() {
+  [
+    // empty string
+    #("", 0, 0, True),
+    // balanced parentheses
+    #("()", 0, 0, True),
+    // unbalanced parentheses
+    #("(()))", 0, 0, False),
+    // complex balanced parentheses
+    #("(a(b)(c)((())))", 11, 4, True),
+  ]
+  |> list.each(fn(tuple) {
+    let #(input, pos, count, expected) = tuple
+    is_balanced_parens(input, pos, count) |> should.equal(expected)
+  })
 }
 
-// ==================== is_balanced_parens tests ====================
-pub fn is_balanced_parens_should_return_true_for_an_empty_string_test() {
-  is_balanced_parens("", 0, 0)
-  |> should.be_true
+// ==== find_rightmost_operator_at_level Tests ====
+// * ✅ find rightmost division operator
+// * ✅ find rightmost multiplication operator
+// * ✅ find rightmost subtraction operator
+// * ✅ error when operator not found at top level
+
+pub fn find_rightmost_operator_at_level_test() {
+  [
+    // find rightmost division operator
+    #("(A + B) / C", "/", Ok(#("(A + B)", "C"))),
+    // find rightmost multiplication operator
+    #("(A - B) / D * C", "*", Ok(#("(A - B) / D", "C"))),
+    // find rightmost subtraction operator
+    #("A - B / (D * C)", "-", Ok(#("A", "B / (D * C)"))),
+  ]
+  |> list.each(fn(tuple) {
+    let #(input, operator, expected) = tuple
+    find_rightmost_operator_at_level(input, operator, 0, 0, -1)
+    |> should.equal(expected)
+  })
+
+  // error when operator not found at top level
+  find_rightmost_operator_at_level("(A + B) / C", "+", 0, 0, -1)
+  |> should.be_error
 }
 
-pub fn is_balanced_parens_should_return_true_for_balanced_parentheses_test() {
-  is_balanced_parens("()", 0, 0)
-  |> should.be_true
-}
+// ==== is_last_char Tests ====
+// * ✅ empty string at index 0
+// * ✅ single character at index 0
+// * ✅ index not the last character
+// * ✅ negative index
+// * ✅ index beyond string length
+// * ✅ index is the last character
 
-pub fn is_balanced_parens_should_return_false_for_unbalanced_parentheses_test() {
-  is_balanced_parens("(()))", 0, 0)
-  |> should.be_false
-}
-
-pub fn is_balanced_parens_should_return_true_for_complex_balanced_parentheses_test() {
-  is_balanced_parens("(a(b)(c)((())))", 11, 4)
-  |> should.be_true
-}
-
-// ==================== find_rightmost_operator_at_level tests ====================
-pub fn find_rightmost_operator_at_level_should_find_the_rightmost_division_operator_test() {
-  let actual = find_rightmost_operator_at_level("(A + B) / C", "/", 0, 0, -1)
-  let expected = Ok(#("(A + B)", "C"))
-  actual |> should.equal(expected)
-}
-
-pub fn find_rightmost_operator_at_level_should_find_the_rightmost_multiplication_operator_test() {
-  let actual =
-    find_rightmost_operator_at_level("(A - B) / D * C", "*", 0, 0, -1)
-  let expected = Ok(#("(A - B) / D", "C"))
-  actual |> should.equal(expected)
-}
-
-pub fn find_rightmost_operator_at_level_should_find_the_rightmost_subtraction_operator_test() {
-  let actual =
-    find_rightmost_operator_at_level("A - B / (D * C)", "-", 0, 0, -1)
-  let expected = Ok(#("A", "B / (D * C)"))
-  actual |> should.equal(expected)
-}
-
-pub fn find_rightmost_operator_at_level_should_return_an_error_when_operator_is_not_found_at_the_top_level_test() {
-  let actual = find_rightmost_operator_at_level("(A + B) / C", "+", 0, 0, -1)
-  actual |> should.be_error
-}
-
-// ==================== is_last_char tests ====================
-pub fn is_last_char_should_return_true_for_empty_string_at_index_0_test() {
-  assert_last_char("", 0, True)
-}
-
-pub fn is_last_char_should_return_true_for_single_character_string_at_index_0_test() {
-  assert_last_char("a", 0, True)
-}
-
-pub fn is_last_char_should_return_false_when_index_is_not_the_last_character_test() {
-  assert_last_char("()", 0, False)
-}
-
-pub fn is_last_char_should_return_false_for_negative_index_test() {
-  assert_last_char("(()))", -1, False)
-}
-
-pub fn is_last_char_should_return_false_for_index_beyond_string_length_test() {
-  assert_last_char("(()))", 100, False)
-}
-
-pub fn is_last_char_should_return_true_when_index_is_the_last_character_test() {
-  assert_last_char("(a(b)(c)((())))", 14, True)
+pub fn is_last_char_test() {
+  [
+    // empty string at index 0
+    #("", 0, True),
+    // single character at index 0
+    #("a", 0, True),
+    // index not the last character
+    #("()", 0, False),
+    // negative index
+    #("(()))", -1, False),
+    // index beyond string length
+    #("(()))", 100, False),
+    // index is the last character
+    #("(a(b)(c)((())))", 14, True),
+  ]
+  |> list.each(fn(tuple) {
+    let #(input, index, expected) = tuple
+    is_last_char(input, index) |> should.equal(expected)
+  })
 }

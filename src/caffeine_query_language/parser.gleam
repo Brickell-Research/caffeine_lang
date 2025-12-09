@@ -1,15 +1,20 @@
+import caffeine_query_language/errors
 import gleam/result
 import gleam/string
 
 // ===== Types =====
+
+/// A complete query containing a single expression.
 pub type Query {
   Query(exp: Exp)
 }
 
+/// Container for a parsed expression, used as the top-level parse result.
 pub type ExpContainer {
   ExpContainer(exp: Exp)
 }
 
+/// Arithmetic operators supported in CQL expressions.
 pub type Operator {
   Add
   Sub
@@ -17,27 +22,34 @@ pub type Operator {
   Div
 }
 
+/// An expression in the CQL AST, either an operator expression or a primary.
 pub type Exp {
   OperatorExpr(numerator: Exp, denominator: Exp, operator: Operator)
   Primary(primary: Primary)
 }
 
+/// A primary expression, either a word (identifier) or a parenthesized expression.
 pub type Primary {
   PrimaryWord(word: Word)
   PrimaryExp(exp: Exp)
 }
 
+/// A word (identifier) in the expression.
 pub type Word {
   Word(value: String)
 }
 
 //==========================================
 
+/// Parses a CQL expression string into an ExpContainer.
+/// Returns an error if the input cannot be parsed.
 pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
   use exp <- result.try(do_parse_expr(input))
   Ok(ExpContainer(exp))
 }
 
+/// Parses a CQL expression string into an Exp AST node.
+/// Handles parenthesized expressions and operator precedence.
 pub fn do_parse_expr(input: String) -> Result(Exp, String) {
   let trimmed = string.trim(input)
 
@@ -85,10 +97,12 @@ fn try_operators(
 fn find_operator(
   input: String,
   operator: String,
-) -> Result(#(String, String), String) {
+) -> Result(#(String, String), errors.CQLError) {
   find_rightmost_operator_at_level(input, operator, 0, 0, -1)
 }
 
+/// Checks if parentheses are balanced in the input string starting from a position.
+/// Used to validate parenthesized expressions during parsing.
 pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
   case pos >= string.length(input) {
     True -> count == 0
@@ -102,6 +116,7 @@ pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
   }
 }
 
+/// Returns true if the position is at the last character of the input string.
 pub fn is_last_char(input: String, pos: Int) -> Bool {
   let is_empty = string.is_empty(input)
   let is_last = pos == string.length(input) - 1
@@ -109,19 +124,21 @@ pub fn is_last_char(input: String, pos: Int) -> Bool {
   is_empty || is_last
 }
 
+/// Finds the rightmost occurrence of an operator at parenthesis level 0.
+/// Returns the left and right parts of the expression split at the operator.
 pub fn find_rightmost_operator_at_level(
   input: String,
   operator: String,
   start_pos: Int,
   paren_level: Int,
   rightmost_pos: Int,
-) -> Result(#(String, String), String) {
+) -> Result(#(String, String), errors.CQLError) {
   let operator_length = string.length(operator)
 
   case start_pos >= string.length(input) {
     True ->
       case rightmost_pos {
-        -1 -> Error("Operator not found")
+        -1 -> Error(errors.CQLParserError("Operator not found"))
         pos -> {
           // Split at the rightmost operator position
           let left = string.trim(string.slice(input, 0, pos))

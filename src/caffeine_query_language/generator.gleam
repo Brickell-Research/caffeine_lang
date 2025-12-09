@@ -5,7 +5,8 @@ import caffeine_query_language/resolver.{type Primitives, GoodOverTotal}
 import gleam/option.{type Option, None, Some}
 import gleam/string
 
-// Datadog
+/// Generates a Datadog query block from a resolved primitive.
+/// Formats the numerator and denominator as a Datadog SLO query structure.
 pub fn generate_datadog_query(primitive: Primitives) -> String {
   case primitive {
     GoodOverTotal(numerator, denominator) -> {

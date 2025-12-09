@@ -5,6 +5,7 @@ import caffeine_lang_v2/common/errors.{
   format_template_error,
 }
 import caffeine_lang_v2/common/helpers.{type AcceptedTypes, result_try}
+import caffeine_query_language/errors as cql_errors
 import caffeine_query_language/generator as cql_generator
 import caffeine_query_language/parser as cql_parser
 import caffeine_query_language/resolver as cql_resolver
@@ -41,7 +42,13 @@ pub fn resolve_queries(
   // Resolve to a primitive (currently only GoodOverTotal supported)
   use primitive <- result_try(
     cql_resolver.resolve_primitives(exp_container)
-    |> result_map_error(fn(e) { CqlResolveError(e) }),
+    |> result_map_error(fn(e) {
+      case e {
+        cql_errors.CQLResolverError(msg) -> CqlResolveError(msg)
+        cql_errors.CQLParserError(msg) -> CqlResolveError(msg)
+        cql_errors.CQLGeneratorError(msg) -> CqlResolveError(msg)
+      }
+    }),
   )
 
   // Extract query strings based on the primitive structure
@@ -153,15 +160,11 @@ fn resolve_slo_datadog(
   // Apply template replacement to both queries
   use numerator_query_resolved <- result_try(
     replace_template_variables(numerator_query, attributes)
-    |> result_map_error(fn(e) {
-      QueryResolutionError(format_template_error(e))
-    }),
+    |> result_map_error(fn(e) { QueryResolutionError(format_template_error(e)) }),
   )
   use denominator_query_resolved <- result_try(
     replace_template_variables(denominator_query, attributes)
-    |> result_map_error(fn(e) {
-      QueryResolutionError(format_template_error(e))
-    }),
+    |> result_map_error(fn(e) { QueryResolutionError(format_template_error(e)) }),
   )
 
   // Build new values with resolved queries, removing value and queries
@@ -290,9 +293,9 @@ fn replace_variables_recursive(
         Error(_) -> Error(UnterminatedVariable(after_open))
         Ok(#(variable, after_close)) -> {
           // Parse the variable to get attribute name
-          use #(attribute, _template) <- result_try(
-            parse_template_variable(variable),
-          )
+          use #(attribute, _template) <- result_try(parse_template_variable(
+            variable,
+          ))
           // Look up the replacement value
           use value <- result_try(
             dict.get(replacements, attribute)

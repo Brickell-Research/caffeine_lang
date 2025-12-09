@@ -1,61 +1,71 @@
+import caffeine_query_language/errors.{CQLResolverError}
 import caffeine_query_language/parser.{Add, Mul, OperatorExpr, Sub}
 import caffeine_query_language/resolver.{GoodOverTotal}
 import caffeine_query_language/test_helpers.{
-  assert_invalid_expression, parens, parse_then_resolve_primitives, prim_word,
-  simple_op_cont,
+  parens, parse_then_resolve_primitives, prim_word, simple_op_cont,
 }
+import gleam/list
 import gleeunit/should
 
-pub fn resolve_primitives_should_resolve_a_simple_good_over_bad_expression_test() {
-  let lhs = prim_word("A")
-  let rhs = prim_word("B")
-  let expected = Ok(GoodOverTotal(lhs, rhs))
+// ==== resolve_primitives Tests ====
+// * ✅ simple good over total (A / B)
+// * ✅ moderately complex good over total ((A + B) / C)
+// * ✅ nested and complex good over total
+// * ✅ error for simple non-division expression
+// * ✅ error for moderately complex non-division expression
+// * ✅ error for nested and complex non-division expression
 
-  let actual = parse_then_resolve_primitives("A / B")
-
-  actual |> should.equal(expected)
-}
-
-pub fn resolve_primitives_should_resolve_a_moderately_more_complex_good_over_bad_expression_test() {
-  let lhs = parens(simple_op_cont("A", "B", Add))
-  let rhs = prim_word("C")
-  let expected = Ok(GoodOverTotal(lhs, rhs))
-
-  let actual = parse_then_resolve_primitives("(A + B) / C")
-
-  actual |> should.equal(expected)
-}
-
-pub fn resolve_primitives_should_resolve_a_nested_and_complex_good_over_bad_expression_test() {
-  let lhs =
+pub fn resolve_primitives_test() {
+  let lhs_complex =
     parens(OperatorExpr(
       parens(simple_op_cont("A", "G", Sub)),
       prim_word("B"),
       Add,
     ))
-  let rhs =
+  let rhs_complex =
     parens(OperatorExpr(
       prim_word("C"),
       OperatorExpr(parens(simple_op_cont("D", "E", Add)), prim_word("F"), Mul),
       Add,
     ))
 
-  let expected = Ok(GoodOverTotal(lhs, rhs))
-
-  let actual =
-    parse_then_resolve_primitives("((A - G) + B) / (C + (D + E) * F)")
-
-  actual |> should.equal(expected)
-}
-
-pub fn resolve_primitives_should_return_an_error_for_a_simple_expression_test() {
-  assert_invalid_expression("A + B")
-}
-
-pub fn resolve_primitives_should_return_an_error_for_a_moderately_more_complex_expression_test() {
-  assert_invalid_expression("A + B / C + D")
-}
-
-pub fn resolve_primitives_should_return_an_error_for_a_nested_and_complex_expression_test() {
-  assert_invalid_expression("((A + B) - E) / C + D")
+  [
+    // simple good over total (A / B)
+    #("A / B", Ok(GoodOverTotal(prim_word("A"), prim_word("B")))),
+    // moderately complex good over total ((A + B) / C)
+    #(
+      "(A + B) / C",
+      Ok(GoodOverTotal(parens(simple_op_cont("A", "B", Add)), prim_word("C"))),
+    ),
+    // nested and complex good over total
+    #(
+      "((A - G) + B) / (C + (D + E) * F)",
+      Ok(GoodOverTotal(lhs_complex, rhs_complex)),
+    ),
+    // error for simple non-division expression
+    #(
+      "A + B",
+      Error(CQLResolverError(
+        "Invalid expression. Expected a top level division operator.",
+      )),
+    ),
+    // error for moderately complex non-division expression
+    #(
+      "A + B / C + D",
+      Error(CQLResolverError(
+        "Invalid expression. Expected a top level division operator.",
+      )),
+    ),
+    // error for nested and complex non-division expression
+    #(
+      "((A + B) - E) / C + D",
+      Error(CQLResolverError(
+        "Invalid expression. Expected a top level division operator.",
+      )),
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    parse_then_resolve_primitives(input) |> should.equal(expected)
+  })
 }
