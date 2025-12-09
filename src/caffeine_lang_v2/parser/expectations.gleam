@@ -11,6 +11,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -105,6 +106,7 @@ pub fn parse_from_file(
       expectation_name: unique_name,
       artifact_ref: blueprint.artifact_ref,
       values: value_tuples,
+      vendor: option.None,
     )
   })
   |> Ok

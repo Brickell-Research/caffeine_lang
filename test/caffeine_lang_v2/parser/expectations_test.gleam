@@ -6,6 +6,7 @@ import caffeine_lang_v2/parser/expectations
 import gleam/dict
 import gleam/dynamic
 import gleam/list
+import gleam/option
 import gleeunit/should
 
 // ==== Helpers ====
@@ -66,6 +67,7 @@ pub fn parse_from_file_happy_path_test() {
             value: dynamic.float(99.9),
           ),
         ],
+        vendor: option.None,
       ),
     ]),
   )
@@ -84,6 +86,7 @@ pub fn parse_from_file_happy_path_test() {
             value: dynamic.float(99.9),
           ),
         ],
+        vendor: option.None,
       ),
       semantic_analyzer.IntermediateRepresentation(
         expectation_name: "parser_expectations_happy_path_multiple_another_expectation",
@@ -95,6 +98,7 @@ pub fn parse_from_file_happy_path_test() {
             value: dynamic.float(95.0),
           ),
         ],
+        vendor: option.None,
       ),
     ]),
   )

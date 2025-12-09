@@ -6,6 +6,7 @@ import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 
 pub type IntermediateRepresentation {
@@ -13,12 +14,24 @@ pub type IntermediateRepresentation {
     expectation_name: String,
     artifact_ref: String,
     values: List(ValueTuple),
+    // TODO: make this cleaner. An option is weird.
+    vendor: Option(Vendor),
   )
+}
+
+pub fn resolve_intermediate_representations(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(IntermediateRepresentation), errors.SemanticError) {
+  irs
+  |> list.try_map(fn(ir) {
+    use ir_with_vendor <- result.try(resolve_vendor(ir))
+    resolve_queries(ir_with_vendor)
+  })
 }
 
 pub fn resolve_vendor(
   ir: IntermediateRepresentation,
-) -> Result(Vendor, errors.SemanticError) {
+) -> Result(IntermediateRepresentation, errors.SemanticError) {
   case
     ir.values
     |> list.filter(fn(value) { value.label == "vendor" })
@@ -32,17 +45,18 @@ pub fn resolve_vendor(
       // ok to assert since already type checked in parser phase
       let assert Ok(vendor_string) =
         decode.run(vendor_value_tuple.value, decode.string)
-      vendor.resolve_vendor(vendor_string)
+      use vendor_value <- result.try(vendor.resolve_vendor(vendor_string))
+
+      Ok(IntermediateRepresentation(..ir, vendor: option.Some(vendor_value)))
     }
   }
 }
 
 pub fn resolve_queries(
   ir: IntermediateRepresentation,
-  vendor: Vendor,
 ) -> Result(IntermediateRepresentation, errors.SemanticError) {
-  case vendor {
-    vendor.Datadog -> {
+  case ir.vendor {
+    option.Some(vendor.Datadog) -> {
       let assert Ok(queries_value_tuple) =
         ir.values
         |> list.filter(fn(vt) { vt.label == "queries" })
@@ -96,5 +110,9 @@ pub fn resolve_queries(
 
       Ok(IntermediateRepresentation(..ir, values: new_values))
     }
+    _ ->
+      Error(errors.TemplateResolutionError(
+        "No vendor for expectation: " <> ir.expectation_name,
+      ))
   }
 }
