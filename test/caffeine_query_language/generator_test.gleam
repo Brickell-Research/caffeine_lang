@@ -1,6 +1,7 @@
 import caffeine_query_language/generator
 import caffeine_query_language/parser
 import caffeine_query_language/resolver
+import gleam/dict
 import gleam/list
 import gleeunit/should
 
@@ -169,14 +170,97 @@ pub fn exp_to_string_parsed_expressions_test() {
 pub fn operator_to_datadog_query_test() {
   [
     #(parser.Add, "+"),
-    #(parser.Add, "+"),
-    #(parser.Add, "+"),
-    #(parser.Add, "+"),
+    #(parser.Sub, "-"),
+    #(parser.Mul, "*"),
+    #(parser.Div, "/"),
   ]
   |> list.each(fn(pair) {
     let #(input, expected) = pair
 
     generator.operator_to_datadog_query(input)
+    |> should.equal(expected)
+  })
+}
+
+// ==== substitute_words ====
+// * ✅ substitutes single word
+// * ✅ substitutes multiple words in expression
+// * ✅ leaves unknown words unchanged
+// * ✅ handles nested parenthesized expressions
+pub fn substitute_words_test() {
+  [
+    // substitutes single word
+    #(
+      "numerator",
+      dict.from_list([#("numerator", "sum:http.requests{status:2xx}")]),
+      "sum:http.requests{status:2xx}",
+    ),
+    // substitutes multiple words in expression
+    #(
+      "good / total",
+      dict.from_list([
+        #("good", "sum:http.requests{status:2xx}"),
+        #("total", "sum:http.requests{*}"),
+      ]),
+      "sum:http.requests{status:2xx} / sum:http.requests{*}",
+    ),
+    // leaves unknown words unchanged
+    #(
+      "good / unknown",
+      dict.from_list([#("good", "sum:http.requests{status:2xx}")]),
+      "sum:http.requests{status:2xx} / unknown",
+    ),
+    // handles nested parenthesized expressions
+    #(
+      "(good + partial) / total",
+      dict.from_list([
+        #("good", "sum:http.requests{status:2xx}"),
+        #("partial", "sum:http.requests{status:3xx}"),
+        #("total", "sum:http.requests{*}"),
+      ]),
+      "(sum:http.requests{status:2xx} + sum:http.requests{status:3xx}) / sum:http.requests{*}",
+    ),
+  ]
+  |> list.each(fn(tuple) {
+    let #(input, substitutions, expected) = tuple
+    let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
+    generator.substitute_words(exp, substitutions)
+    |> generator.exp_to_string
+    |> should.equal(expected)
+  })
+}
+
+// ==== resolve_slo_query ====
+// * ✅ simple numerator/denominator
+// * ✅ complex expression with addition
+pub fn resolve_slo_query_test() {
+  [
+    // simple numerator/denominator
+    #(
+      "numerator / denominator",
+      dict.from_list([
+        #("numerator", "sum:http.requests{status:2xx}"),
+        #("denominator", "sum:http.requests{*}"),
+      ]),
+      #("sum:http.requests{status:2xx}", "sum:http.requests{*}"),
+    ),
+    // complex expression with addition
+    #(
+      "(good + partial) / total",
+      dict.from_list([
+        #("good", "sum:http.requests{status:2xx}"),
+        #("partial", "sum:http.requests{status:3xx}"),
+        #("total", "sum:http.requests{*}"),
+      ]),
+      #(
+        "(sum:http.requests{status:2xx} + sum:http.requests{status:3xx})",
+        "sum:http.requests{*}",
+      ),
+    ),
+  ]
+  |> list.each(fn(tuple) {
+    let #(value_expr, substitutions, expected) = tuple
+    generator.resolve_slo_query(value_expr, substitutions)
     |> should.equal(expected)
   })
 }

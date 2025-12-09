@@ -2,6 +2,7 @@ import caffeine_lang_v2/common/helpers.{type ValueTuple}
 import caffeine_lang_v2/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
+import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int
@@ -21,9 +22,8 @@ pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
   render.render_config(config)
 }
 
-/// TODO: fix how hard coded this is
-/// TODO: this makes a lot of assumptions that may be incorrect
 /// Convert a single IntermediateRepresentation to a Terraform Resource.
+/// Uses CQL to parse the value expression and extract numerator/denominator.
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
 ) -> terraform.Resource {
@@ -36,18 +36,19 @@ pub fn ir_to_terraform_resource(
   let queries =
     extract_dict_string_string(ir.values, "queries")
     |> result.unwrap(dict.new())
+  let value_expr =
+    extract_string(ir.values, "value")
+    |> result.unwrap("numerator / denominator")
 
-  // Get numerator and denominator from queries
-  let numerator =
-    dict.get(queries, "numerator") |> result.unwrap("") |> hcl.StringLiteral
-  let denominator =
-    dict.get(queries, "denominator") |> result.unwrap("") |> hcl.StringLiteral
+  // Parse the value expression using CQL and resolve numerator/denominator
+  let #(numerator_str, denominator_str) =
+    cql_generator.resolve_slo_query(value_expr, queries)
 
   // Build the query block
   let query_block =
     hcl.simple_block("query", [
-      #("numerator", numerator),
-      #("denominator", denominator),
+      #("numerator", hcl.StringLiteral(numerator_str)),
+      #("denominator", hcl.StringLiteral(denominator_str)),
     ])
 
   // Build the thresholds block

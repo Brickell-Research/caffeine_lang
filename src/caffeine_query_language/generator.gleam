@@ -1,8 +1,10 @@
 import caffeine_query_language/parser.{
-  type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord,
+  type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord, Word,
 }
 import caffeine_query_language/resolver.{type Primitives, GoodOverTotal}
+import gleam/dict
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 
 /// Generates a Datadog query block from a resolved primitive.
@@ -147,4 +149,45 @@ pub fn operator_to_datadog_query(operator: parser.Operator) -> String {
     parser.Mul -> "*"
     parser.Div -> "/"
   }
+}
+
+/// Transform an expression tree by substituting word values using a dictionary.
+/// Words found in the dictionary are replaced with their corresponding values.
+/// Words not found in the dictionary are left unchanged.
+pub fn substitute_words(
+  exp: Exp,
+  substitutions: dict.Dict(String, String),
+) -> Exp {
+  case exp {
+    parser.Primary(PrimaryWord(Word(name))) -> {
+      let value = dict.get(substitutions, name) |> result.unwrap(name)
+      parser.Primary(PrimaryWord(Word(value)))
+    }
+    parser.Primary(PrimaryExp(inner)) ->
+      parser.Primary(PrimaryExp(substitute_words(inner, substitutions)))
+    parser.OperatorExpr(left, right, op) ->
+      parser.OperatorExpr(
+        substitute_words(left, substitutions),
+        substitute_words(right, substitutions),
+        op,
+      )
+  }
+}
+
+/// Parse a value expression, resolve to GoodOverTotal primitive, substitute words,
+/// and return the numerator and denominator as strings.
+/// Panics if parsing or resolution fails.
+pub fn resolve_slo_query(
+  value_expr: String,
+  substitutions: dict.Dict(String, String),
+) -> #(String, String) {
+  let assert Ok(exp_container) = parser.parse_expr(value_expr)
+  let assert Ok(GoodOverTotal(numerator_exp, denominator_exp)) =
+    resolver.resolve_primitives(exp_container)
+
+  let numerator_str =
+    substitute_words(numerator_exp, substitutions) |> exp_to_string
+  let denominator_str =
+    substitute_words(denominator_exp, substitutions) |> exp_to_string
+  #(numerator_str, denominator_str)
 }

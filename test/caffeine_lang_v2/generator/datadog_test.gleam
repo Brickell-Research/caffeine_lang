@@ -23,6 +23,7 @@ fn read_corpus(file_name: String) -> String {
 // * ✅ simple SLO with numerator/denominator queries
 // * ✅ SLO with resolved template queries (tags filled in)
 // * ✅ multiple SLOs generate multiple resources
+// * ✅ complex CQL expression (good + partial) / total
 pub fn generate_terraform_test() {
   [
     // simple SLO with numerator/denominator queries
@@ -170,6 +171,53 @@ pub fn generate_terraform_test() {
         ),
       ],
       "multiple_slos",
+    ),
+    // complex CQL expression: (good + partial) / total
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          "org/team/auth/composite_slo",
+          "SLO",
+          [
+            helpers.ValueTuple(
+              "vendor",
+              helpers.String,
+              dynamic.string("datadog"),
+            ),
+            helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "window_in_days",
+              helpers.Integer,
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "value",
+              helpers.String,
+              dynamic.string("(good + partial) / total"),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              helpers.Dict(helpers.String, helpers.String),
+              dynamic.properties([
+                #(
+                  dynamic.string("good"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("partial"),
+                  dynamic.string("sum:http.requests{status:3xx}"),
+                ),
+                #(
+                  dynamic.string("total"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+          ],
+          option.Some(vendor.Datadog),
+        ),
+      ],
+      "complex_expression",
     ),
   ]
   |> list.each(fn(pair) {
@@ -329,3 +377,7 @@ pub fn extract_dict_string_string_test() {
     datadog.extract_dict_string_string(values, label) |> should.equal(expected)
   })
 }
+
+// CQL integration is tested via generate_terraform_test
+// (see complex_expression case which uses "(good + partial) / total")
+// CQL parsing/resolution logic has its own test suite in caffeine_query_language
