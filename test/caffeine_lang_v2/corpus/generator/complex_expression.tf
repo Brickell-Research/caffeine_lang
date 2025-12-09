@@ -23,6 +23,7 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "org_team_auth_composite_slo" {
   name = "org/team/auth/composite_slo"
+  tags = ["managed_by:caffeine"]
   type = "metric"
 
   query {

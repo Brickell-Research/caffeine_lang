@@ -11,7 +11,8 @@ import gleam/result
 
 pub type IntermediateRepresentation {
   IntermediateRepresentation(
-    expectation_name: String,
+    friendly_name: String,
+    unique_identifier: String,
     artifact_ref: String,
     values: List(ValueTuple),
     // TODO: make this cleaner. An option is weird.
@@ -39,7 +40,7 @@ pub fn resolve_vendor(
   {
     Error(_) ->
       Error(errors.VendorResolutionError(
-        "No vendor input for: " <> ir.expectation_name,
+        "No vendor input for: " <> ir.unique_identifier,
       ))
     Ok(vendor_value_tuple) -> {
       // ok to assert since already type checked in parser phase
@@ -112,7 +113,7 @@ pub fn resolve_queries(
     }
     _ ->
       Error(errors.TemplateResolutionError(
-        "No vendor for expectation: " <> ir.expectation_name,
+        "No vendor for expectation: " <> ir.unique_identifier,
       ))
   }
 }

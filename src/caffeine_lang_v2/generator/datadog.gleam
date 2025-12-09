@@ -37,7 +37,10 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
   terraform.TerraformSettings(
     required_version: option.None,
     required_providers: dict.from_list([
-      #("datadog", terraform.ProviderRequirement("DataDog/datadog", option.Some("~> 3.0"))),
+      #(
+        "datadog",
+        terraform.ProviderRequirement("DataDog/datadog", option.Some("~> 3.0")),
+      ),
     ]),
     backend: option.None,
     cloud: option.None,
@@ -86,7 +89,7 @@ pub fn variables() -> List(terraform.Variable) {
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
 ) -> terraform.Resource {
-  let resource_name = sanitize_resource_name(ir.expectation_name)
+  let resource_name = sanitize_resource_name(ir.unique_identifier)
 
   // Extract values from IR
   let threshold = extract_float(ir.values, "threshold") |> result.unwrap(99.9)
@@ -122,8 +125,9 @@ pub fn ir_to_terraform_resource(
     type_: "datadog_service_level_objective",
     name: resource_name,
     attributes: dict.from_list([
-      #("name", hcl.StringLiteral(ir.expectation_name)),
+      #("name", hcl.StringLiteral(ir.unique_identifier)),
       #("type", hcl.StringLiteral("metric")),
+      #("tags", hcl.ListExpr([hcl.StringLiteral("managed_by:caffeine")])),
     ]),
     blocks: [query_block, thresholds_block],
     meta: hcl.empty_meta(),

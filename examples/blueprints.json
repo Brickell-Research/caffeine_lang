@@ -1,33 +1,19 @@
 {
   "blueprints": [
     {
-      "name": "success_rate",
+      "name": "success_rate_graphql_calls",
       "artifact_ref": "SLO",
       "inputs": {
         "queries": {
-          "numerator": "numerator_query",
-          "denominator_1": "denominator_query_1",
-          "denominator_2": "denominator_query_2"
-        },
-        "value": "numerator / (denominator_1 + denominator_2)",
-        "vendor": "Datadog"
-      },
-      "params": {}
-    },
-    {
-      "name": "latency",
-      "artifact_ref": "SLO",
-      "inputs": {
-        "queries": {
-          "numerator": "sum.http.requests.duration{$$service->svc$$, $$environment->env$$}",
-          "denominator": "denominator_query_2"
+          "numerator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()",
+          "denominator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()"
         },
         "value": "numerator / denominator",
         "vendor": "Datadog"
       },
       "params": {
         "environment": "String",
-        "service": "String"
+        "graphql_operation_name": "String"
       }
     }
   ]

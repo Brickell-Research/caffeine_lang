@@ -103,7 +103,8 @@ pub fn parse_from_file(
     }
 
     semantic_analyzer.IntermediateRepresentation(
-      expectation_name: unique_name,
+      friendly_name: expectation.name,
+      unique_identifier: unique_name,
       artifact_ref: blueprint.artifact_ref,
       values: value_tuples,
       vendor: option.None,

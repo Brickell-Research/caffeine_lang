@@ -12,9 +12,10 @@ import gleeunit/should
 pub fn resolve_intermediate_representations_test() {
   let input_irs = [
     semantic_analyzer.IntermediateRepresentation(
-      "slo_one",
-      "SLO",
-      [
+      friendly_name: "SLO One",
+      unique_identifier: "slo_one",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
         helpers.ValueTuple(
@@ -28,12 +29,13 @@ pub fn resolve_intermediate_representations_test() {
           ]),
         ),
       ],
-      option.None,
+      vendor: option.None,
     ),
     semantic_analyzer.IntermediateRepresentation(
-      "slo_two",
-      "SLO",
-      [
+      friendly_name: "SLO Two",
+      unique_identifier: "slo_two",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
         helpers.ValueTuple(
@@ -47,15 +49,16 @@ pub fn resolve_intermediate_representations_test() {
           ]),
         ),
       ],
-      option.None,
+      vendor: option.None,
     ),
   ]
 
   let expected_irs = [
     semantic_analyzer.IntermediateRepresentation(
-      "slo_one",
-      "SLO",
-      [
+      friendly_name: "SLO One",
+      unique_identifier: "slo_one",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
         helpers.ValueTuple(
@@ -69,12 +72,13 @@ pub fn resolve_intermediate_representations_test() {
           ]),
         ),
       ],
-      option.Some(vendor.Datadog),
+      vendor: option.Some(vendor.Datadog),
     ),
     semantic_analyzer.IntermediateRepresentation(
-      "slo_two",
-      "SLO",
-      [
+      friendly_name: "SLO Two",
+      unique_identifier: "slo_two",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
         helpers.ValueTuple(
@@ -88,7 +92,7 @@ pub fn resolve_intermediate_representations_test() {
           ]),
         ),
       ],
-      option.Some(vendor.Datadog),
+      vendor: option.Some(vendor.Datadog),
     ),
   ]
 
@@ -101,22 +105,24 @@ pub fn resolve_intermediate_representations_test() {
 pub fn resolve_vendor_test() {
   let input_ir =
     semantic_analyzer.IntermediateRepresentation(
-      "foo",
-      "SLO",
-      [
+      friendly_name: "Foo SLO",
+      unique_identifier: "foo",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
       ],
-      option.None,
+      vendor: option.None,
     )
 
   let expected_ir =
     semantic_analyzer.IntermediateRepresentation(
-      "foo",
-      "SLO",
-      [
+      friendly_name: "Foo SLO",
+      unique_identifier: "foo",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
       ],
-      option.Some(vendor.Datadog),
+      vendor: option.Some(vendor.Datadog),
     )
 
   semantic_analyzer.resolve_vendor(input_ir)
@@ -128,9 +134,10 @@ pub fn resolve_vendor_test() {
 pub fn resolve_queries_test() {
   let input_ir =
     semantic_analyzer.IntermediateRepresentation(
-      "foo",
-      "SLO",
-      [
+      friendly_name: "Foo SLO",
+      unique_identifier: "foo",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
@@ -151,14 +158,15 @@ pub fn resolve_queries_test() {
           ]),
         ),
       ],
-      option.Some(vendor.Datadog),
+      vendor: option.Some(vendor.Datadog),
     )
 
   let expected_ir =
     semantic_analyzer.IntermediateRepresentation(
-      "foo",
-      "SLO",
-      [
+      friendly_name: "Foo SLO",
+      unique_identifier: "foo",
+      artifact_ref: "SLO",
+      values: [
         helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
@@ -177,7 +185,7 @@ pub fn resolve_queries_test() {
           ]),
         ),
       ],
-      option.Some(vendor.Datadog),
+      vendor: option.Some(vendor.Datadog),
     )
 
   semantic_analyzer.resolve_queries(input_ir)

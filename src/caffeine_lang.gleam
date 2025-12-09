@@ -33,8 +33,14 @@ fn handle_args(args: List(String)) {
 fn compile(
   blueprint_file: String,
   expectations_dir: String,
-  output_file: String,
+  output_path: String,
 ) {
+  // If output_path is a directory, append main.tf
+  let output_file = case simplifile.is_directory(output_path) {
+    Ok(True) -> output_path <> "/main.tf"
+    _ -> output_path
+  }
+
   case compiler.compile(blueprint_file, expectations_dir) {
     Ok(output) -> {
       case simplifile.write(output_file, output) {

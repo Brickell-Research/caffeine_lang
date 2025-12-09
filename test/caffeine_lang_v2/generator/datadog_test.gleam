@@ -88,9 +88,10 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          "org/team/auth/latency_slo",
-          "SLO",
-          [
+          friendly_name: "Auth Latency SLO",
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_ref: "SLO",
+          values: [
             helpers.ValueTuple(
               "vendor",
               helpers.String,
@@ -117,7 +118,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
           ],
-          option.Some(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "simple_slo",
@@ -126,9 +127,10 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          "org/team/auth/latency_slo",
-          "SLO",
-          [
+          friendly_name: "Auth Latency SLO",
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_ref: "SLO",
+          values: [
             helpers.ValueTuple(
               "vendor",
               helpers.String,
@@ -155,7 +157,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
           ],
-          option.Some(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "resolved_templates",
@@ -164,9 +166,10 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          "org/team/auth/latency_slo",
-          "SLO",
-          [
+          friendly_name: "Auth Latency SLO",
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_ref: "SLO",
+          values: [
             helpers.ValueTuple(
               "vendor",
               helpers.String,
@@ -193,12 +196,13 @@ pub fn generate_terraform_test() {
               ]),
             ),
           ],
-          option.Some(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
         semantic_analyzer.IntermediateRepresentation(
-          "org/team/api/availability_slo",
-          "SLO",
-          [
+          friendly_name: "API Availability SLO",
+          unique_identifier: "org/team/api/availability_slo",
+          artifact_ref: "SLO",
+          values: [
             helpers.ValueTuple(
               "vendor",
               helpers.String,
@@ -225,7 +229,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
           ],
-          option.Some(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "multiple_slos",
@@ -234,9 +238,10 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          "org/team/auth/composite_slo",
-          "SLO",
-          [
+          friendly_name: "Composite SLO",
+          unique_identifier: "org/team/auth/composite_slo",
+          artifact_ref: "SLO",
+          values: [
             helpers.ValueTuple(
               "vendor",
               helpers.String,
@@ -272,7 +277,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
           ],
-          option.Some(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "complex_expression",
