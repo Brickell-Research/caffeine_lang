@@ -24,6 +24,10 @@ pub type SemanticError {
   TemplateResolutionError(msg: String)
 }
 
+pub type CompilerError {
+  ExampleError
+}
+
 // =============================================================================
 // JSON Decode Error Formatting
 // =============================================================================
