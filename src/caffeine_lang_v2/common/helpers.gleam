@@ -1,5 +1,8 @@
 import caffeine_lang_v2/common/errors.{type ParseError, FileReadError}
+import gleam/bool
 import gleam/dynamic/decode
+import gleam/float
+import gleam/int
 import gleam/list
 import simplifile
 
@@ -29,6 +32,34 @@ pub fn accepted_types_decoder() -> decode.Decoder(AcceptedTypes) {
   }
 }
 
+/// Decoder that decodes a dynamic value based on an AcceptedTypes and returns its String representation.
+pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
+  case typ {
+    Boolean -> {
+      use val <- decode.then(decode.bool)
+      decode.success(bool.to_string(val))
+    }
+    Float -> {
+      use val <- decode.then(decode.float)
+      decode.success(float.to_string(val))
+    }
+    Integer -> {
+      use val <- decode.then(decode.int)
+      decode.success(int.to_string(val))
+    }
+    String -> decode.string
+    Dict(_, _) -> decode.failure("", "Dict")
+    List(_) -> decode.failure("", "List")
+  }
+}
+
+/// Decoder that decodes a list of dynamic values and returns a List(String).
+pub fn decode_list_values_to_strings(
+  inner_type: AcceptedTypes,
+) -> decode.Decoder(List(String)) {
+  decode.list(decode_value_to_string(inner_type))
+}
+
 /// Parses a raw string into an AcceptedType.
 fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, Nil) {
   case raw_accepted_type {
@@ -49,6 +80,23 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, Nil) {
     "List(Float)" -> Ok(List(Float))
     // TODO: hacky, fix this
     _ -> Error(Nil)
+  }
+}
+
+/// Converts an AcceptedTypes to its string representation.
+pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
+  case accepted_type {
+    Boolean -> "Boolean"
+    Float -> "Float"
+    Integer -> "Integer"
+    String -> "String"
+    Dict(key_type, value_type) ->
+      "Dict("
+      <> accepted_type_to_string(key_type)
+      <> ", "
+      <> accepted_type_to_string(value_type)
+      <> ")"
+    List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
   }
 }
 

@@ -1,6 +1,8 @@
 import caffeine_lang_v2/common/errors.{type LinkerError, LinkerParseError}
 import caffeine_lang_v2/common/helpers.{result_try}
-import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
+import caffeine_lang_v2/middle_end/semantic_analyzer.{
+  type IntermediateRepresentation,
+}
 import caffeine_lang_v2/parser/artifacts
 import caffeine_lang_v2/parser/blueprints
 import caffeine_lang_v2/parser/expectations

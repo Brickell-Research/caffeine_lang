@@ -1,6 +1,6 @@
 import caffeine_lang_v2/common/errors.{type ParseError}
 import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end
+import caffeine_lang_v2/middle_end/semantic_analyzer
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
 import caffeine_lang_v2/parser/expectations
 import gleam/dict
@@ -56,11 +56,11 @@ pub fn parse_from_file_happy_path_test() {
   expectations.parse_from_file(path("happy_path_single"), blueprints())
   |> should.equal(
     Ok([
-      middle_end.IntermediateRepresentation(
+      semantic_analyzer.IntermediateRepresentation(
         expectation_name: "parser_expectations_happy_path_single_my_expectation",
         artifact_ref: "SLO",
         values: [
-          middle_end.ValueTuple(
+          semantic_analyzer.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(99.9),
@@ -74,22 +74,22 @@ pub fn parse_from_file_happy_path_test() {
   expectations.parse_from_file(path("happy_path_multiple"), blueprints())
   |> should.equal(
     Ok([
-      middle_end.IntermediateRepresentation(
+      semantic_analyzer.IntermediateRepresentation(
         expectation_name: "parser_expectations_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
         values: [
-          middle_end.ValueTuple(
+          semantic_analyzer.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(99.9),
           ),
         ],
       ),
-      middle_end.IntermediateRepresentation(
+      semantic_analyzer.IntermediateRepresentation(
         expectation_name: "parser_expectations_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
         values: [
-          middle_end.ValueTuple(
+          semantic_analyzer.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(95.0),

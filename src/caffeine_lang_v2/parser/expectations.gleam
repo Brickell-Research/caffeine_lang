@@ -2,7 +2,9 @@ import caffeine_lang_v2/common/decoders
 import caffeine_lang_v2/common/errors.{type ParseError, DuplicateError}
 import caffeine_lang_v2/common/helpers
 import caffeine_lang_v2/common/validations
-import caffeine_lang_v2/middle_end.{type IntermediateRepresentation}
+import caffeine_lang_v2/middle_end/semantic_analyzer.{
+  type IntermediateRepresentation,
+}
 import caffeine_lang_v2/parser/blueprints.{type Blueprint}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -90,7 +92,7 @@ pub fn parse_from_file(
         let assert Ok(value) = merged_inputs |> dict.get(label)
         let assert Ok(typ) = blueprint.params |> dict.get(label)
 
-        middle_end.ValueTuple(label:, typ:, value:)
+        semantic_analyzer.ValueTuple(label:, typ:, value:)
       })
 
     // build unique expectation name by combining path prefix with name
@@ -99,7 +101,7 @@ pub fn parse_from_file(
       _ -> path_prefix <> "_" <> expectation.name
     }
 
-    middle_end.IntermediateRepresentation(
+    semantic_analyzer.IntermediateRepresentation(
       expectation_name: unique_name,
       artifact_ref: blueprint.artifact_ref,
       values: value_tuples,

@@ -100,3 +100,38 @@ pub fn result_try_test() {
   })
   |> should.equal(Error("mid-chain error"))
 }
+
+// ==== Accepted Type To String Tests ====
+// * ✅ Boolean
+// * ✅ Float
+// * ✅ Integer
+// * ✅ String
+// * ✅ Dict(String, String)
+// * ✅ Dict(String, Integer)
+// * ✅ Dict(String, Float)
+// * ✅ Dict(String, Boolean)
+// * ✅ List(String)
+// * ✅ List(Integer)
+// * ✅ List(Float)
+// * ✅ List(Boolean)
+pub fn accepted_type_to_string_test() {
+  [
+    #(helpers.Boolean, "Boolean"),
+    #(helpers.Float, "Float"),
+    #(helpers.Integer, "Integer"),
+    #(helpers.String, "String"),
+    #(helpers.Dict(helpers.String, helpers.String), "Dict(String, String)"),
+    #(helpers.Dict(helpers.String, helpers.Integer), "Dict(String, Integer)"),
+    #(helpers.Dict(helpers.String, helpers.Float), "Dict(String, Float)"),
+    #(helpers.Dict(helpers.String, helpers.Boolean), "Dict(String, Boolean)"),
+    #(helpers.List(helpers.String), "List(String)"),
+    #(helpers.List(helpers.Integer), "List(Integer)"),
+    #(helpers.List(helpers.Float), "List(Float)"),
+    #(helpers.List(helpers.Boolean), "List(Boolean)"),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    helpers.accepted_type_to_string(input)
+    |> should.equal(expected)
+  })
+}
