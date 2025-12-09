@@ -15,11 +15,70 @@ import terra_madre/render
 import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
+/// Includes provider configuration and variables.
 pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
   let resources = irs |> list.map(ir_to_terraform_resource)
   let config =
-    terraform.Config(..terraform.empty_config(), resources: resources)
+    terraform.Config(
+      terraform: option.Some(terraform_settings()),
+      providers: [provider()],
+      resources: resources,
+      data_sources: [],
+      variables: variables(),
+      outputs: [],
+      locals: [],
+      modules: [],
+    )
   render.render_config(config)
+}
+
+/// Terraform settings block with required Datadog provider.
+pub fn terraform_settings() -> terraform.TerraformSettings {
+  terraform.TerraformSettings(
+    required_version: option.None,
+    required_providers: dict.from_list([
+      #("datadog", terraform.ProviderRequirement("DataDog/datadog", option.Some("~> 3.0"))),
+    ]),
+    backend: option.None,
+    cloud: option.None,
+  )
+}
+
+/// Datadog provider configuration using variables for credentials.
+pub fn provider() -> terraform.Provider {
+  terraform.Provider(
+    name: "datadog",
+    alias: option.None,
+    attributes: dict.from_list([
+      #("api_key", hcl.ref("var.datadog_api_key")),
+      #("app_key", hcl.ref("var.datadog_app_key")),
+    ]),
+    blocks: [],
+  )
+}
+
+/// Variables for Datadog API credentials.
+pub fn variables() -> List(terraform.Variable) {
+  [
+    terraform.Variable(
+      name: "datadog_api_key",
+      type_constraint: option.Some(hcl.Identifier("string")),
+      default: option.None,
+      description: option.Some("Datadog API key"),
+      sensitive: option.Some(True),
+      nullable: option.None,
+      validation: [],
+    ),
+    terraform.Variable(
+      name: "datadog_app_key",
+      type_constraint: option.Some(hcl.Identifier("string")),
+      default: option.None,
+      description: option.Some("Datadog Application key"),
+      sensitive: option.Some(True),
+      nullable: option.None,
+      validation: [],
+    ),
+  ]
 }
 
 /// Convert a single IntermediateRepresentation to a Terraform Resource.

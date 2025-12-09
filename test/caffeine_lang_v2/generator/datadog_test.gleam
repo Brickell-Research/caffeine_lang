@@ -8,6 +8,7 @@ import gleam/list
 import gleam/option
 import gleeunit/should
 import simplifile
+import terra_madre/terraform
 
 // ==== Helpers ====
 fn corpus_path(file_name: String) {
@@ -17,6 +18,63 @@ fn corpus_path(file_name: String) {
 fn read_corpus(file_name: String) -> String {
   let assert Ok(content) = simplifile.read(corpus_path(file_name))
   content
+}
+
+// ==== terraform_settings ====
+// * ✅ includes Datadog provider requirement
+// * ✅ version constraint is ~> 3.0
+pub fn terraform_settings_test() {
+  let settings = datadog.terraform_settings()
+
+  // Check that datadog provider is required
+  dict.get(settings.required_providers, "datadog")
+  |> should.be_ok
+
+  // Check version constraint
+  let assert Ok(provider_req) = dict.get(settings.required_providers, "datadog")
+  provider_req.source |> should.equal("DataDog/datadog")
+  provider_req.version |> should.equal(option.Some("~> 3.0"))
+}
+
+// ==== provider ====
+// * ✅ provider name is datadog
+// * ✅ uses variable references for credentials
+pub fn provider_test() {
+  let provider = datadog.provider()
+
+  provider.name |> should.equal("datadog")
+  provider.alias |> should.equal(option.None)
+
+  // Check that api_key and app_key attributes exist
+  dict.get(provider.attributes, "api_key") |> should.be_ok
+  dict.get(provider.attributes, "app_key") |> should.be_ok
+}
+
+// ==== variables ====
+// * ✅ includes datadog_api_key variable
+// * ✅ includes datadog_app_key variable
+// * ✅ variables are marked as sensitive
+pub fn variables_test() {
+  let vars = datadog.variables()
+
+  // Should have 2 variables
+  list.length(vars) |> should.equal(2)
+
+  // Find api_key variable
+  let api_key_var =
+    list.find(vars, fn(v: terraform.Variable) { v.name == "datadog_api_key" })
+  api_key_var |> should.be_ok
+  let assert Ok(api_key) = api_key_var
+  api_key.sensitive |> should.equal(option.Some(True))
+  api_key.description |> should.equal(option.Some("Datadog API key"))
+
+  // Find app_key variable
+  let app_key_var =
+    list.find(vars, fn(v: terraform.Variable) { v.name == "datadog_app_key" })
+  app_key_var |> should.be_ok
+  let assert Ok(app_key) = app_key_var
+  app_key.sensitive |> should.equal(option.Some(True))
+  app_key.description |> should.equal(option.Some("Datadog Application key"))
 }
 
 // ==== generate_terraform ====
