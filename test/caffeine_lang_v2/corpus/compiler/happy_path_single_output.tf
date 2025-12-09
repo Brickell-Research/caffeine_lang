@@ -22,7 +22,7 @@ variable "datadog_app_key" {
 }
 
 resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability" {
-  name = "acme_payments_slos_checkout_availability"
+  name = "checkout_availability"
   tags = ["managed_by:caffeine"]
   type = "metric"
 

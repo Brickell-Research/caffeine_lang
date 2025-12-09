@@ -22,7 +22,7 @@ variable "datadog_app_key" {
 }
 
 resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability" {
-  name = "acme_payments_slos_checkout_availability"
+  name = "checkout_availability"
   tags = ["managed_by:caffeine"]
   type = "metric"
 
@@ -37,7 +37,7 @@ resource "datadog_service_level_objective" "acme_payments_slos_checkout_availabi
 }
 
 resource "datadog_service_level_objective" "acme_payments_slos_checkout_latency_p99" {
-  name = "acme_payments_slos_checkout_latency_p99"
+  name = "checkout_latency_p99"
   tags = ["managed_by:caffeine"]
   type = "metric"
 
@@ -52,7 +52,7 @@ resource "datadog_service_level_objective" "acme_payments_slos_checkout_latency_
 }
 
 resource "datadog_service_level_objective" "acme_platform_slos_auth_service_availability" {
-  name = "acme_platform_slos_auth_service_availability"
+  name = "auth_service_availability"
   tags = ["managed_by:caffeine"]
   type = "metric"
 

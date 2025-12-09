@@ -22,7 +22,7 @@ variable "datadog_app_key" {
 }
 
 resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
-  name = "org/team/auth/latency_slo"
+  name = "Auth Latency SLO"
   tags = ["managed_by:caffeine"]
   type = "metric"
 
@@ -37,7 +37,7 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
 }
 
 resource "datadog_service_level_objective" "org_team_api_availability_slo" {
-  name = "org/team/api/availability_slo"
+  name = "API Availability SLO"
   tags = ["managed_by:caffeine"]
   type = "metric"
 
