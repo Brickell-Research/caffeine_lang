@@ -14,3 +14,9 @@ pub fn resolve_vendor(vendor: String) -> Result(Vendor, errors.SemanticError) {
       ))
   }
 }
+
+pub fn vendor_to_string(vendor: Vendor) -> String {
+  case vendor {
+    Datadog -> "datadog"
+  }
+}

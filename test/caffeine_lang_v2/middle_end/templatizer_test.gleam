@@ -1,6 +1,5 @@
 import caffeine_lang_v2/common/errors
 import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end/semantic_analyzer
 import caffeine_lang_v2/middle_end/templatizer
 import gleam/dynamic
 import gleam/list
@@ -29,12 +28,12 @@ pub fn parse_and_resolve_query_template_test() {
     #(
       "foo.sum{$$foo->bar:not$$ AND $$baz->faz$$}",
       [
-        semantic_analyzer.ValueTuple(
+        helpers.ValueTuple(
           "bar",
           typ: helpers.String,
           value: dynamic.string("pizza"),
         ),
-        semantic_analyzer.ValueTuple(
+        helpers.ValueTuple(
           "faz",
           typ: helpers.List(helpers.Integer),
           value: dynamic.list([
@@ -134,7 +133,7 @@ pub fn resolve_template_test() {
   [
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "bar",
         typ: helpers.Boolean,
         value: dynamic.bool(True),
@@ -145,7 +144,7 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.Dict(helpers.String, helpers.Boolean),
         // technically invalud data point here but whatever, test still serves its purpose
@@ -157,7 +156,7 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.Boolean,
         value: dynamic.bool(True),
@@ -166,7 +165,7 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.Integer,
         value: dynamic.int(10),
@@ -175,7 +174,7 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.Float,
         value: dynamic.float(11.7),
@@ -184,7 +183,7 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.String,
         value: dynamic.string("salad"),
@@ -193,37 +192,34 @@ pub fn resolve_template_test() {
     ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.List(helpers.Boolean),
         value: dynamic.list([dynamic.bool(True), dynamic.bool(False)]),
       ),
       Ok("foo IN (True, False)"),
     ),
-
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.List(helpers.Integer),
         value: dynamic.list([dynamic.int(10), dynamic.int(11)]),
       ),
       Ok("foo IN (10, 11)"),
     ),
-
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.List(helpers.Float),
         value: dynamic.list([dynamic.float(11.7), dynamic.float(7.11)]),
       ),
       Ok("foo IN (11.7, 7.11)"),
     ),
-
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      semantic_analyzer.ValueTuple(
+      helpers.ValueTuple(
         label: "foo",
         typ: helpers.List(helpers.String),
         value: dynamic.list([dynamic.string("salad"), dynamic.string("pizza")]),

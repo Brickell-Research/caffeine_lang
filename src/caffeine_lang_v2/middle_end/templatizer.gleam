@@ -23,8 +23,7 @@
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
 import caffeine_lang_v2/common/errors
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end/semantic_analyzer
+import caffeine_lang_v2/common/helpers.{type ValueTuple}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
@@ -66,7 +65,7 @@ pub type DatadogTemplateType {
 /// The high level full parsing and resolution of a templatized query string.
 pub fn parse_and_resolve_query_template(
   query: String,
-  value_tuples: List(semantic_analyzer.ValueTuple),
+  value_tuples: List(ValueTuple),
 ) -> Result(String, errors.SemanticError) {
   case string.split_once(query, "$$") {
     // no more `$$`
@@ -183,7 +182,7 @@ pub fn parse_template_type(
 /// ASSUMPTION: we already checked the value type is correct in the parser phase.
 pub fn resolve_template(
   template: TemplateVariable,
-  value_tuple: semantic_analyzer.ValueTuple,
+  value_tuple: ValueTuple,
 ) -> Result(String, errors.SemanticError) {
   use _ <- result.try(case template.input_name == value_tuple.label {
     True -> Ok(True)

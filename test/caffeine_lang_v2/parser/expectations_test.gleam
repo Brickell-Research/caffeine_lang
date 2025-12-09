@@ -60,7 +60,7 @@ pub fn parse_from_file_happy_path_test() {
         expectation_name: "parser_expectations_happy_path_single_my_expectation",
         artifact_ref: "SLO",
         values: [
-          semantic_analyzer.ValueTuple(
+          helpers.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(99.9),
@@ -78,7 +78,7 @@ pub fn parse_from_file_happy_path_test() {
         expectation_name: "parser_expectations_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
         values: [
-          semantic_analyzer.ValueTuple(
+          helpers.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(99.9),
@@ -89,7 +89,7 @@ pub fn parse_from_file_happy_path_test() {
         expectation_name: "parser_expectations_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
         values: [
-          semantic_analyzer.ValueTuple(
+          helpers.ValueTuple(
             label: "percentile",
             typ: helpers.Float,
             value: dynamic.float(95.0),

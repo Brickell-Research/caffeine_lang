@@ -1,5 +1,6 @@
 import caffeine_lang_v2/common/errors.{type ParseError, FileReadError}
 import gleam/bool
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
@@ -16,6 +17,11 @@ pub type AcceptedTypes {
   String
   Dict(AcceptedTypes, AcceptedTypes)
   List(AcceptedTypes)
+}
+
+/// A tuple of a label, type, and value used for template resolution.
+pub type ValueTuple {
+  ValueTuple(label: String, typ: AcceptedTypes, value: Dynamic)
 }
 
 /// Decoder for AcceptedTypes from a raw string representation.

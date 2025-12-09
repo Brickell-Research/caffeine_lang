@@ -92,7 +92,7 @@ pub fn parse_from_file(
         let assert Ok(value) = merged_inputs |> dict.get(label)
         let assert Ok(typ) = blueprint.params |> dict.get(label)
 
-        semantic_analyzer.ValueTuple(label:, typ:, value:)
+        helpers.ValueTuple(label:, typ:, value:)
       })
 
     // build unique expectation name by combining path prefix with name
