@@ -53,6 +53,14 @@ fn json_error_to_string(error: json.DecodeError) -> String {
   }
 }
 
+/// Normalizes type names across targets (JS uses "Array", Erlang uses "List").
+fn normalize_type_name(name: String) -> String {
+  case name {
+    "Array" -> "List"
+    other -> other
+  }
+}
+
 /// Formats a list of decode errors into a human-readable string.
 pub fn format_decode_error_message(
   errors: List(decode.DecodeError),
@@ -63,7 +71,7 @@ pub fn format_decode_error_message(
     "expected ("
     <> error.expected
     <> ") received ("
-    <> error.found
+    <> normalize_type_name(error.found)
     <> ") for ("
     <> {
       case { error.path |> string.join(".") }, type_key_identifier {

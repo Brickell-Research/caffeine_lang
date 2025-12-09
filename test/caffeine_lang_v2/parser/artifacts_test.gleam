@@ -175,7 +175,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_multiple",
-      "Incorrect types: expected (String) received (Int) for (artifacts.0.name), expected (Semver) received (Float) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+      "Incorrect types: expected (String) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
   ]
   |> list.each(fn(pair) {
