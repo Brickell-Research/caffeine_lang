@@ -1,0 +1,135 @@
+import caffeine_lang_v2/common/helpers.{type ValueTuple}
+import caffeine_lang_v2/middle_end/semantic_analyzer.{
+  type IntermediateRepresentation,
+}
+import gleam/dict
+import gleam/dynamic/decode
+import gleam/int
+import gleam/list
+import gleam/option
+import gleam/result
+import gleam/string
+import terra_madre/hcl
+import terra_madre/render
+import terra_madre/terraform
+
+/// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
+pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
+  let resources = irs |> list.map(ir_to_terraform_resource)
+  let config =
+    terraform.Config(..terraform.empty_config(), resources: resources)
+  render.render_config(config)
+}
+
+/// TODO: fix how hard coded this is
+/// TODO: this makes a lot of assumptions that may be incorrect
+/// Convert a single IntermediateRepresentation to a Terraform Resource.
+pub fn ir_to_terraform_resource(
+  ir: IntermediateRepresentation,
+) -> terraform.Resource {
+  let resource_name = sanitize_resource_name(ir.expectation_name)
+
+  // Extract values from IR
+  let threshold = extract_float(ir.values, "threshold") |> result.unwrap(99.9)
+  let window_in_days =
+    extract_int(ir.values, "window_in_days") |> result.unwrap(30)
+  let queries =
+    extract_dict_string_string(ir.values, "queries")
+    |> result.unwrap(dict.new())
+
+  // Get numerator and denominator from queries
+  let numerator =
+    dict.get(queries, "numerator") |> result.unwrap("") |> hcl.StringLiteral
+  let denominator =
+    dict.get(queries, "denominator") |> result.unwrap("") |> hcl.StringLiteral
+
+  // Build the query block
+  let query_block =
+    hcl.simple_block("query", [
+      #("numerator", numerator),
+      #("denominator", denominator),
+    ])
+
+  // Build the thresholds block
+  let thresholds_block =
+    hcl.simple_block("thresholds", [
+      #("timeframe", hcl.StringLiteral(window_to_timeframe(window_in_days))),
+      #("target", hcl.FloatLiteral(threshold)),
+    ])
+
+  // Build the resource
+  terraform.Resource(
+    type_: "datadog_service_level_objective",
+    name: resource_name,
+    attributes: dict.from_list([
+      #("name", hcl.StringLiteral(ir.expectation_name)),
+      #("type", hcl.StringLiteral("metric")),
+    ]),
+    blocks: [query_block, thresholds_block],
+    meta: hcl.empty_meta(),
+    lifecycle: option.None,
+  )
+}
+
+/// Sanitize expectation name to valid Terraform resource name.
+/// Replaces slashes and spaces with underscores.
+pub fn sanitize_resource_name(name: String) -> String {
+  name
+  |> string.replace("/", "_")
+  |> string.replace(" ", "_")
+}
+
+/// Convert window_in_days to Datadog timeframe string.
+pub fn window_to_timeframe(days: Int) -> String {
+  int.to_string(days) <> "d"
+}
+
+/// Extract a String value from a list of ValueTuple by label.
+pub fn extract_string(
+  values: List(ValueTuple),
+  label: String,
+) -> Result(String, Nil) {
+  values
+  |> list.filter(fn(vt) { vt.label == label })
+  |> list.first
+  |> result.try(fn(vt) {
+    decode.run(vt.value, decode.string) |> result.replace_error(Nil)
+  })
+}
+
+/// Extract a Float value from a list of ValueTuple by label.
+pub fn extract_float(
+  values: List(ValueTuple),
+  label: String,
+) -> Result(Float, Nil) {
+  values
+  |> list.filter(fn(vt) { vt.label == label })
+  |> list.first
+  |> result.try(fn(vt) {
+    decode.run(vt.value, decode.float) |> result.replace_error(Nil)
+  })
+}
+
+/// Extract an Int value from a list of ValueTuple by label.
+pub fn extract_int(values: List(ValueTuple), label: String) -> Result(Int, Nil) {
+  values
+  |> list.filter(fn(vt) { vt.label == label })
+  |> list.first
+  |> result.try(fn(vt) {
+    decode.run(vt.value, decode.int) |> result.replace_error(Nil)
+  })
+}
+
+/// Extract a Dict(String, String) value from a list of ValueTuple by label.
+pub fn extract_dict_string_string(
+  values: List(ValueTuple),
+  label: String,
+) -> Result(dict.Dict(String, String), Nil) {
+  values
+  |> list.filter(fn(vt) { vt.label == label })
+  |> list.first
+  |> result.try(fn(vt) {
+    decode.run(vt.value, decode.dict(decode.string, decode.string))
+    |> result.replace_error(Nil)
+  })
+}
