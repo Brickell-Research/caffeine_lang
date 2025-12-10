@@ -1,7 +1,7 @@
-import caffeine_lang_v2/common/errors
-import caffeine_lang_v2/common/helpers.{type ValueTuple}
-import caffeine_lang_v2/middle_end/templatizer
-import caffeine_lang_v2/middle_end/vendor.{type Vendor}
+import caffeine_lang/common/errors
+import caffeine_lang/common/helpers.{type ValueTuple}
+import caffeine_lang/middle_end/templatizer
+import caffeine_lang/middle_end/vendor.{type Vendor}
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode

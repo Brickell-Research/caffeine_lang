@@ -1,5 +1,5 @@
 import argv
-import caffeine_lang_v2/compiler
+import caffeine_lang/compiler
 import gleam/io
 import gleam/string
 import simplifile
@@ -44,14 +44,9 @@ fn compile(
   case compiler.compile(blueprint_file, expectations_dir) {
     Ok(output) -> {
       case simplifile.write(output_file, output) {
-        Ok(_) ->
-          io.println(
-            "Successfully compiled to " <> output_file,
-          )
+        Ok(_) -> io.println("Successfully compiled to " <> output_file)
         Error(err) ->
-          io.println(
-            "Error writing output file: " <> string.inspect(err),
-          )
+          io.println("Error writing output file: " <> string.inspect(err))
       }
     }
     Error(err) -> io.println("Compilation error: " <> err)
@@ -60,10 +55,14 @@ fn compile(
 
 fn print_usage() {
   io.println("caffeine " <> version)
-  io.println("A compiler for generating reliability artifacts from service expectation definitions.")
+  io.println(
+    "A compiler for generating reliability artifacts from service expectation definitions.",
+  )
   io.println("")
   io.println("USAGE:")
-  io.println("    caffeine compile <blueprint_file> <expectations_directory> <output_file>")
+  io.println(
+    "    caffeine compile <blueprint_file> <expectations_directory> <output_file>",
+  )
   io.println("")
   io.println("OPTIONS:")
   io.println("    -h, --help       Print help information")

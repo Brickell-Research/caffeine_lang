@@ -1,6 +1,6 @@
-import caffeine_lang_v2/generator/datadog
-import caffeine_lang_v2/middle_end/semantic_analyzer
-import caffeine_lang_v2/parser/linker
+import caffeine_lang/generator/datadog
+import caffeine_lang/middle_end/semantic_analyzer
+import caffeine_lang/parser/linker
 import gleam/result
 
 // TODO: have an actual error type

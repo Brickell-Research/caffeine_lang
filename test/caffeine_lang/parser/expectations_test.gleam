@@ -1,8 +1,8 @@
-import caffeine_lang_v2/common/errors.{type ParseError}
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end/semantic_analyzer
-import caffeine_lang_v2/parser/blueprints.{type Blueprint}
-import caffeine_lang_v2/parser/expectations
+import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/helpers
+import caffeine_lang/middle_end/semantic_analyzer
+import caffeine_lang/parser/blueprints.{type Blueprint}
+import caffeine_lang/parser/expectations
 import gleam/dict
 import gleam/dynamic
 import gleam/list
@@ -11,7 +11,7 @@ import gleeunit/should
 
 // ==== Helpers ====
 fn path(file_name: String) {
-  "test/caffeine_lang_v2/corpus/parser/expectations/" <> file_name <> ".json"
+  "test/caffeine_lang/corpus/parser/expectations/" <> file_name <> ".json"
 }
 
 fn blueprints() -> List(Blueprint) {

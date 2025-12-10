@@ -1,8 +1,8 @@
-import caffeine_lang_v2/common/decoders
-import caffeine_lang_v2/common/errors.{type ParseError, DuplicateError}
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/common/validations
-import caffeine_lang_v2/parser/artifacts.{type Artifact}
+import caffeine_lang/common/decoders
+import caffeine_lang/common/errors.{type ParseError, DuplicateError}
+import caffeine_lang/common/helpers
+import caffeine_lang/common/validations
+import caffeine_lang/parser/artifacts.{type Artifact}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode

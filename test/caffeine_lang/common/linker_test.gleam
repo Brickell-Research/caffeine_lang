@@ -1,4 +1,4 @@
-import caffeine_lang_v2/parser/linker
+import caffeine_lang/parser/linker
 import gleam/list
 import gleeunit/should
 
@@ -11,7 +11,7 @@ import gleeunit/should
 // * ✅ multiple orgs, multiple teams
 // * ✅ hidden files and directories are included
 
-const corpus_dir = "test/caffeine_lang_v2/corpus/linker"
+const corpus_dir = "test/caffeine_lang/corpus/linker"
 
 pub fn get_instantiation_json_files_test() {
   [

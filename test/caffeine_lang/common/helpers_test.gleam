@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common/helpers
+import caffeine_lang/common/helpers
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/list

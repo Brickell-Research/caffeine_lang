@@ -1,7 +1,7 @@
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/generator/datadog
-import caffeine_lang_v2/middle_end/semantic_analyzer
-import caffeine_lang_v2/middle_end/vendor
+import caffeine_lang/common/helpers
+import caffeine_lang/generator/datadog
+import caffeine_lang/middle_end/semantic_analyzer
+import caffeine_lang/middle_end/vendor
 import gleam/dict
 import gleam/dynamic
 import gleam/list
@@ -12,7 +12,7 @@ import terra_madre/terraform
 
 // ==== Helpers ====
 fn corpus_path(file_name: String) {
-  "test/caffeine_lang_v2/corpus/generator/" <> file_name <> ".tf"
+  "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
 }
 
 fn read_corpus(file_name: String) -> String {
@@ -419,7 +419,10 @@ pub fn extract_dict_string_string_test() {
       ],
       "queries",
       Ok(
-        dict.from_list([#("numerator", "sum:good"), #("denominator", "sum:total")]),
+        dict.from_list([
+          #("numerator", "sum:good"),
+          #("denominator", "sum:total"),
+        ]),
       ),
     ),
     // returns Error for missing label
@@ -440,7 +443,6 @@ pub fn extract_dict_string_string_test() {
     datadog.extract_dict_string_string(values, label) |> should.equal(expected)
   })
 }
-
 // CQL integration is tested via generate_terraform_test
 // (see complex_expression case which uses "(good + partial) / total")
 // CQL parsing/resolution logic has its own test suite in caffeine_query_language

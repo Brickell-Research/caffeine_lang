@@ -1,7 +1,7 @@
-import caffeine_lang_v2/common/errors.{type ParseError}
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/parser/artifacts.{type Artifact}
-import caffeine_lang_v2/parser/blueprints
+import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/helpers
+import caffeine_lang/parser/artifacts.{type Artifact}
+import caffeine_lang/parser/blueprints
 import gleam/dict
 import gleam/dynamic
 import gleam/list
@@ -9,7 +9,7 @@ import gleeunit/should
 
 // ==== Helpers ====
 fn path(file_name: String) {
-  "test/caffeine_lang_v2/corpus/parser/blueprints/" <> file_name <> ".json"
+  "test/caffeine_lang/corpus/parser/blueprints/" <> file_name <> ".json"
 }
 
 fn artifacts() -> List(Artifact) {

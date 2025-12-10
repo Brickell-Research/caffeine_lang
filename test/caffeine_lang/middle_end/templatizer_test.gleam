@@ -1,6 +1,6 @@
-import caffeine_lang_v2/common/errors
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end/templatizer
+import caffeine_lang/common/errors
+import caffeine_lang/common/helpers
+import caffeine_lang/middle_end/templatizer
 import gleam/dynamic
 import gleam/list
 import gleeunit/should

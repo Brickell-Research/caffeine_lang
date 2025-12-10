@@ -1,5 +1,5 @@
-import caffeine_lang_v2/common/helpers.{type ValueTuple}
-import caffeine_lang_v2/middle_end/semantic_analyzer.{
+import caffeine_lang/common/helpers.{type ValueTuple}
+import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
 import caffeine_query_language/generator as cql_generator

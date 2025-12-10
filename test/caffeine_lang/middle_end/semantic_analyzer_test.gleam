@@ -1,8 +1,8 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/middle_end/semantic_analyzer
-import caffeine_lang_v2/middle_end/vendor
+import caffeine_lang/common/helpers
+import caffeine_lang/middle_end/semantic_analyzer
+import caffeine_lang/middle_end/vendor
 import gleam/dynamic
 import gleam/option
 import gleeunit/should

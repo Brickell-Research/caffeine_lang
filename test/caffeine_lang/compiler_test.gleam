@@ -1,10 +1,10 @@
-import caffeine_lang_v2/compiler
+import caffeine_lang/compiler
 import gleam/list
 import gleeunit/should
 import simplifile
 
 fn corpus_path(file_name: String) -> String {
-  "test/caffeine_lang_v2/corpus/compiler/" <> file_name
+  "test/caffeine_lang/corpus/compiler/" <> file_name
 }
 
 // ==== Compile Test ====

@@ -1,7 +1,7 @@
-import caffeine_lang_v2/common/errors.{
+import caffeine_lang/common/errors.{
   type ParseError, DuplicateError, JsonParserError, format_decode_error_message,
 }
-import caffeine_lang_v2/common/helpers.{type AcceptedTypes, Boolean, Integer}
+import caffeine_lang/common/helpers.{type AcceptedTypes, Boolean, Integer}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode

@@ -1,5 +1,5 @@
-import caffeine_lang_v2/common/errors
-import caffeine_lang_v2/middle_end/vendor
+import caffeine_lang/common/errors
+import caffeine_lang/middle_end/vendor
 import gleam/list
 import gleeunit/should
 

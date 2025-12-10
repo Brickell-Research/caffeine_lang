@@ -1,18 +1,18 @@
-import caffeine_lang_v2/common/errors.{type LinkerError, LinkerParseError}
-import caffeine_lang_v2/common/helpers.{result_try}
-import caffeine_lang_v2/middle_end/semantic_analyzer.{
+import caffeine_lang/common/errors.{type LinkerError, LinkerParseError}
+import caffeine_lang/common/helpers.{result_try}
+import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
-import caffeine_lang_v2/parser/artifacts
-import caffeine_lang_v2/parser/blueprints
-import caffeine_lang_v2/parser/expectations
+import caffeine_lang/parser/artifacts
+import caffeine_lang/parser/blueprints
+import caffeine_lang/parser/expectations
 import gleam/list
 import gleam/result
 import gleam/string
 import simplifile
 
 pub fn standard_library_directory() -> String {
-  "src/caffeine_lang_v2/standard_library"
+  "src/caffeine_lang/standard_library"
 }
 
 /// Link will fetch, then parse all configuration files, combining them into one single

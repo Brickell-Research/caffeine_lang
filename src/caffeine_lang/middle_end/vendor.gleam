@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common/errors
+import caffeine_lang/common/errors
 import gleam/string
 
 pub type Vendor {

@@ -1,6 +1,6 @@
-import caffeine_lang_v2/common/errors.{type ParseError}
-import caffeine_lang_v2/common/helpers
-import caffeine_lang_v2/common/validations
+import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/helpers
+import caffeine_lang/common/validations
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int

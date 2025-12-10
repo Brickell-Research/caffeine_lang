@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common/errors.{type ParseError, FileReadError}
+import caffeine_lang/common/errors.{type ParseError, FileReadError}
 import gleam/bool
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode

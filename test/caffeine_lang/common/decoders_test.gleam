@@ -1,4 +1,4 @@
-import caffeine_lang_v2/common/decoders
+import caffeine_lang/common/decoders
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleeunit/should
