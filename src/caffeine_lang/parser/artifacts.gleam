@@ -9,6 +9,21 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+/// The standard library artifacts embedded at compile time.
+/// This ensures the binary is self-contained and doesn't need external files.
+const standard_library_artifacts = "
+{
+  \"artifacts\": [
+    {
+      \"name\": \"SLO\",
+      \"version\": \"0.0.1\",
+      \"base_params\": { \"threshold\": \"Float\", \"window_in_days\": \"Integer\" },
+      \"params\": { \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String\"}
+    }
+  ]
+}
+"
+
 pub type Artifact {
   Artifact(
     name: String,
@@ -21,6 +36,25 @@ pub type Artifact {
 
 pub type Semver {
   Semver(major: Int, minor: Int, patch: Int)
+}
+
+/// Parses the embedded standard library artifacts.
+pub fn parse_standard_library() -> Result(List(Artifact), ParseError) {
+  // actually parse
+  use artifacts <- result.try(case parse_from_string(standard_library_artifacts) {
+    Ok(artifacts) -> Ok(artifacts)
+    Error(err) -> Error(errors.format_json_decode_error(err))
+  })
+
+  // validate names are unique
+  use _ <- result.try(validations.validate_relevant_uniqueness(
+    artifacts,
+    fn(a) { a.name },
+    "artifact names",
+  ))
+
+  // return success
+  Ok(artifacts)
 }
 
 pub fn parse_from_file(file_path) -> Result(List(Artifact), ParseError) {

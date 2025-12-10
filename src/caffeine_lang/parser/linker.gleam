@@ -11,9 +11,6 @@ import gleam/result
 import gleam/string
 import simplifile
 
-pub fn standard_library_directory() -> String {
-  "src/caffeine_lang/standard_library"
-}
 
 /// Link will fetch, then parse all configuration files, combining them into one single
 /// list of intermeidate representation objects. In the future how we fetch these files will
@@ -34,7 +31,7 @@ pub fn link(
 }
 
 fn fetch_artifacts() -> Result(List(artifacts.Artifact), LinkerError) {
-  artifacts.parse_from_file(standard_library_directory() <> "/artifacts.json")
+  artifacts.parse_standard_library()
   |> result.map_error(errors.parser_error_to_linker_error)
 }
 

@@ -4,7 +4,7 @@ import gleam/io
 import gleam/string
 import simplifile
 
-const version = "0.2.1"
+const version = "0.2.2"
 
 pub fn main() {
   handle_args(argv.load().arguments)
