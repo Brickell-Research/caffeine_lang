@@ -76,7 +76,11 @@ fn read_directory_or_error(
 ) -> Result(List(String), String) {
   case simplifile.read_directory(directory_path) {
     Ok(items) -> Ok(items)
-    Error(_) -> Error("Failed to read directory: " <> directory_path)
+    Error(err) ->
+      Error(simplifile.describe_error(err)
+        <> " ("
+        <> directory_path
+        <> ")")
   }
 }
 

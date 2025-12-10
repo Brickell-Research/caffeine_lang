@@ -110,7 +110,11 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
 pub fn json_from_file(file_path) -> Result(String, ParseError) {
   case simplifile.read(file_path) {
     Ok(file_contents) -> Ok(file_contents)
-    Error(err) -> Error(FileReadError(msg: simplifile.describe_error(err)))
+    Error(err) ->
+      Error(FileReadError(msg: simplifile.describe_error(err)
+        <> " ("
+        <> file_path
+        <> ")"))
   }
 }
 

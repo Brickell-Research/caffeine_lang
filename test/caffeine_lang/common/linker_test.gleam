@@ -17,7 +17,7 @@ pub fn get_instantiation_json_files_test() {
   [
     #(
       "non_existent_directory",
-      Error("Failed to read directory: non_existent_directory"),
+      Error("No such file or directory (non_existent_directory)"),
     ),
     #(
       corpus_dir <> "/nested_structure",
