@@ -1,9 +1,0 @@
-{
-  "expectations": [
-    {
-      "blueprint_ref": "success_rate",
-      "inputs": { "percentile": 99.9 }
-    }
-  ]
-}
-

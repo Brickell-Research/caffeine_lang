@@ -1,5 +1,0 @@
-{
-  "blueprints": [
-    { "artifact_ref": "SLO", "params": {}, "inputs": {} }
-  ]
-}
