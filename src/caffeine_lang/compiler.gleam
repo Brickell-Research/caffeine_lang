@@ -9,7 +9,7 @@ import gleam/list
 import gleam/result
 import gleam_community/ansi
 
-// ---- Print helpers ----
+// ==== Print helpers ====
 
 fn print_header() {
   io.println("")
@@ -25,8 +25,7 @@ fn print_step1_start(blueprint_path: String, expectations_dir: String) {
 
 fn print_step1_success(count: Int) {
   io.println(
-    "  "
-    <> ansi.green("✓ Parsed " <> int.to_string(count) <> " expectations"),
+    "  " <> ansi.green("✓ Parsed " <> int.to_string(count) <> " expectations"),
   )
 }
 
@@ -107,7 +106,7 @@ fn print_footer() {
   io.println("")
 }
 
-// ---- Compiler ----
+// ==== Compiler ====
 
 // TODO: have an actual error type
 pub fn compile(

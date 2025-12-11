@@ -3,31 +3,62 @@ import caffeine_lang/common/constants
 import caffeine_lang/compiler
 import gleam/io
 import gleam/option.{type Option}
+import gleam/result
 import gleam/string
 import simplifile
 
+// ==== CLI Helpers ===
+@external(erlang, "erlang", "halt")
+@external(javascript, "./caffeine_lang_ffi.mjs", "halt")
+fn halt(code: Int) -> Nil
+
+fn result_to_exit_code(res: Result(Nil, String)) -> Int {
+  case res {
+    Ok(_) -> constants.exit_success
+    Error(msg) -> {
+      io.println(msg)
+      constants.exit_failure
+    }
+  }
+}
+
+// ==== Main ====
 pub fn main() {
-  handle_args(argv.load().arguments)
+  let exit_code = handle_args(argv.load().arguments)
+  case exit_code {
+    code if code == constants.exit_success -> Nil
+    _ -> halt(exit_code)
+  }
 }
 
 /// Entry point for Erlang escript compatibility
-pub fn run(args: List(String)) {
+pub fn run(args: List(String)) -> Int {
   handle_args(args)
 }
 
-fn handle_args(args: List(String)) {
+fn handle_args(args: List(String)) -> Int {
   case args {
     ["compile", blueprint_file, expectations_dir, output_file] ->
       compile(blueprint_file, expectations_dir, option.Some(output_file))
     ["compile", blueprint_file, expectations_dir] ->
       compile(blueprint_file, expectations_dir, option.None)
-    ["--help"] | ["-h"] -> print_usage()
-    ["--version"] | ["-V"] -> print_version()
-    [] -> print_usage()
+    ["--help"] | ["-h"] -> {
+      print_usage()
+      constants.exit_success
+    }
+    ["--version"] | ["-V"] -> {
+      print_version()
+      constants.exit_success
+    }
+    [] -> {
+      print_usage()
+      constants.exit_success
+    }
     _ -> {
       io.println("Error: Invalid arguments")
       io.println("")
       print_usage()
+      constants.exit_failure
     }
   }
 }
@@ -36,29 +67,34 @@ fn compile(
   blueprint_file: String,
   expectations_dir: String,
   output_path: Option(String),
-) {
-  case compiler.compile(blueprint_file, expectations_dir) {
-    Ok(output) -> {
-      case output_path {
-        // Print to stdout if no output file specified
-        option.None -> io.println(output)
-        // Otherwise write to file
-        option.Some(path) -> {
-          // If output_path is a directory, append main.tf
-          let output_file = case simplifile.is_directory(path) {
-            Ok(True) -> path <> "/main.tf"
-            _ -> path
-          }
-          case simplifile.write(output_file, output) {
-            Ok(_) -> io.println("Successfully compiled to " <> output_file)
-            Error(err) ->
-              io.println("Error writing output file: " <> string.inspect(err))
-          }
+) -> Int {
+  {
+    use output <- result.try(
+      compiler.compile(blueprint_file, expectations_dir)
+      |> result.map_error(fn(err) { "Compilation error: " <> err }),
+    )
+
+    case output_path {
+      option.None -> {
+        io.println(output)
+        Ok(Nil)
+      }
+      option.Some(path) -> {
+        let output_file = case simplifile.is_directory(path) {
+          Ok(True) -> path <> "/main.tf"
+          _ -> path
         }
+        simplifile.write(output_file, output)
+        |> result.map(fn(_) {
+          io.println("Successfully compiled to " <> output_file)
+        })
+        |> result.map_error(fn(err) {
+          "Error writing output file: " <> string.inspect(err)
+        })
       }
     }
-    Error(err) -> io.println("Compilation error: " <> err)
   }
+  |> result_to_exit_code
 }
 
 fn print_usage() {
