@@ -116,6 +116,7 @@ pub fn parse_and_resolve_query_template(
 /// - "environment->env:not" -> TemplateVariable("environment", "env", Not)
 /// - "service->service:prefix" -> TemplateVariable("service", "service", PrefixWildcard)
 /// - "threshold->:raw" -> TemplateVariable("threshold", "", Raw)
+@internal
 pub fn parse_template_variable(
   variable: String,
 ) -> Result(TemplateVariable, errors.SemanticError) {
@@ -168,6 +169,7 @@ pub fn parse_template_variable(
 ///
 /// Supported template type strings:
 /// - "not" -> Not
+@internal
 pub fn parse_template_type(
   type_string: String,
 ) -> Result(DatadogTemplateType, errors.SemanticError) {
@@ -180,6 +182,7 @@ pub fn parse_template_type(
 
 /// Given a parsed template and a parsed value tuple, resolve the templatized string.
 /// ASSUMPTION: we already checked the value type is correct in the parser phase.
+@internal
 pub fn resolve_template(
   template: TemplateVariable,
   value_tuple: ValueTuple,
@@ -228,6 +231,7 @@ pub fn resolve_template(
 /// ASSUMPTION: we already checked the value type is correct and the label matches
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw string value.
+@internal
 pub fn resolve_string_value(template: TemplateVariable, value: String) -> String {
   let attr = template.datadog_attr
   case template.template_type {
@@ -240,6 +244,7 @@ pub fn resolve_string_value(template: TemplateVariable, value: String) -> String
 /// ASSUMPTION: we already checked the value type is correct and the label matches
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw list value of strings.
+@internal
 pub fn resolve_list_value(
   template: TemplateVariable,
   values: List(String),

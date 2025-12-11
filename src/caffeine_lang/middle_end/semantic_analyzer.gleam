@@ -38,6 +38,7 @@ pub fn resolve_intermediate_representations(
   })
 }
 
+@internal
 pub fn resolve_vendor(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, errors.SemanticError) {
@@ -61,6 +62,7 @@ pub fn resolve_vendor(
   }
 }
 
+@internal
 pub fn resolve_queries(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, errors.SemanticError) {

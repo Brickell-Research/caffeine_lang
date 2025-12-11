@@ -9,6 +9,7 @@ import gleam/string
 
 /// Generates a Datadog query block from a resolved primitive.
 /// Formats the numerator and denominator as a Datadog SLO query structure.
+@internal
 pub fn generate_datadog_query(primitive: Primitives) -> String {
   case primitive {
     GoodOverTotal(numerator, denominator) -> {
@@ -142,6 +143,7 @@ fn primary_to_string(primary: Primary, _parent_op: Option(Operator)) -> String {
   }
 }
 
+@internal
 pub fn operator_to_datadog_query(operator: parser.Operator) -> String {
   case operator {
     parser.Add -> "+"
@@ -154,6 +156,7 @@ pub fn operator_to_datadog_query(operator: parser.Operator) -> String {
 /// Transform an expression tree by substituting word values using a dictionary.
 /// Words found in the dictionary are replaced with their corresponding values.
 /// Words not found in the dictionary are left unchanged.
+@internal
 pub fn substitute_words(
   exp: Exp,
   substitutions: dict.Dict(String, String),

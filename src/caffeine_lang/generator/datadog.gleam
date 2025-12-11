@@ -34,6 +34,7 @@ pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
 }
 
 /// Terraform settings block with required Datadog provider.
+@internal
 pub fn terraform_settings() -> terraform.TerraformSettings {
   terraform.TerraformSettings(
     required_version: option.None,
@@ -49,6 +50,7 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
 }
 
 /// Datadog provider configuration using variables for credentials.
+@internal
 pub fn provider() -> terraform.Provider {
   terraform.Provider(
     name: "datadog",
@@ -62,6 +64,7 @@ pub fn provider() -> terraform.Provider {
 }
 
 /// Variables for Datadog API credentials.
+@internal
 pub fn variables() -> List(terraform.Variable) {
   [
     terraform.Variable(
@@ -87,6 +90,7 @@ pub fn variables() -> List(terraform.Variable) {
 
 /// Convert a single IntermediateRepresentation to a Terraform Resource.
 /// Uses CQL to parse the value expression and extract numerator/denominator.
+@internal
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
 ) -> terraform.Resource {
@@ -149,6 +153,7 @@ pub fn ir_to_terraform_resource(
 
 /// Sanitize expectation name to valid Terraform resource name.
 /// Replaces slashes and spaces with underscores.
+@internal
 pub fn sanitize_resource_name(name: String) -> String {
   name
   |> string.replace("/", "_")
@@ -156,11 +161,13 @@ pub fn sanitize_resource_name(name: String) -> String {
 }
 
 /// Convert window_in_days to Datadog timeframe string.
+@internal
 pub fn window_to_timeframe(days: Int) -> String {
   int.to_string(days) <> "d"
 }
 
 /// Extract a String value from a list of ValueTuple by label.
+@internal
 pub fn extract_string(
   values: List(ValueTuple),
   label: String,
@@ -174,6 +181,7 @@ pub fn extract_string(
 }
 
 /// Extract a Float value from a list of ValueTuple by label.
+@internal
 pub fn extract_float(
   values: List(ValueTuple),
   label: String,
@@ -187,6 +195,7 @@ pub fn extract_float(
 }
 
 /// Extract an Int value from a list of ValueTuple by label.
+@internal
 pub fn extract_int(values: List(ValueTuple), label: String) -> Result(Int, Nil) {
   values
   |> list.filter(fn(vt) { vt.label == label })
@@ -197,6 +206,7 @@ pub fn extract_int(values: List(ValueTuple), label: String) -> Result(Int, Nil) 
 }
 
 /// Extract a Dict(String, String) value from a list of ValueTuple by label.
+@internal
 pub fn extract_dict_string_string(
   values: List(ValueTuple),
   label: String,

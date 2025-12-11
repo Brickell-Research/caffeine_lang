@@ -20,3 +20,11 @@ terra_madre = ">=0.0.2"
 
 [dev-dependencies]
 gleamy_bench = ">= 0.6.0 and < 1.0.0"
+
+# Mark implementation-detail modules as internal (hidden from docs)
+[internal-modules]
+"caffeine_lang/parser/artifacts" = true
+"caffeine_lang/parser/blueprints" = true
+"caffeine_lang/parser/expectations" = true
+"caffeine_lang/common/validations" = true
+"caffeine_lang/common/decoders" = true

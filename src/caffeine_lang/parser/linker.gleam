@@ -130,6 +130,7 @@ fn extract_json_files_with_full_paths(
 }
 
 /// This function returns a list of all JSON files in the given directory.
+@internal
 pub fn get_instantiation_json_files(
   base_directory: String,
 ) -> Result(List(String), String) {
