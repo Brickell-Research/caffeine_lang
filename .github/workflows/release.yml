@@ -59,36 +59,40 @@ jobs:
       run: |
         mkdir -p dist
         VERSION=${{ steps.version.outputs.version }}
+        DIST_DIR="$(pwd)/dist"
+
+        echo "Deno version: $(deno --version)"
+        echo "Output directory: $DIST_DIR"
 
         # Linux x64
         echo "Building Linux x64..."
         deno compile --no-check --allow-read --allow-write \
           --target x86_64-unknown-linux-gnu \
-          --output dist/caffeine-${VERSION}-linux-x64 main.mjs
+          --output "$DIST_DIR/caffeine-${VERSION}-linux-x64" main.mjs
 
         # Linux ARM64
         echo "Building Linux ARM64..."
         deno compile --no-check --allow-read --allow-write \
           --target aarch64-unknown-linux-gnu \
-          --output dist/caffeine-${VERSION}-linux-arm64 main.mjs
+          --output "$DIST_DIR/caffeine-${VERSION}-linux-arm64" main.mjs
 
         # macOS x64
         echo "Building macOS x64..."
         deno compile --no-check --allow-read --allow-write \
           --target x86_64-apple-darwin \
-          --output dist/caffeine-${VERSION}-macos-x64 main.mjs
+          --output "$DIST_DIR/caffeine-${VERSION}-macos-x64" main.mjs
 
         # macOS ARM64 (Apple Silicon)
         echo "Building macOS ARM64..."
         deno compile --no-check --allow-read --allow-write \
           --target aarch64-apple-darwin \
-          --output dist/caffeine-${VERSION}-macos-arm64 main.mjs
+          --output "$DIST_DIR/caffeine-${VERSION}-macos-arm64" main.mjs
 
         # Windows x64
         echo "Building Windows x64..."
         deno compile --no-check --allow-read --allow-write \
           --target x86_64-pc-windows-msvc \
-          --output dist/caffeine-${VERSION}-windows-x64.exe main.mjs
+          --output "$DIST_DIR/caffeine-${VERSION}-windows-x64.exe" main.mjs
 
         echo "All binaries built successfully"
         ls -la dist/
