@@ -97,13 +97,15 @@ pub fn parse_from_file(
       })
 
     // build unique expectation name by combining path prefix with name
-    let unique_name = case path_prefix {
-      "" -> expectation.name
-      _ -> path_prefix <> "_" <> expectation.name
-    }
+    let unique_name =
+      path_prefix.0 <> "_" <> path_prefix.1 <> "_" <> expectation.name
 
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: expectation.name,
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: expectation.name,
+        org_name: path_prefix.0,
+        service_name: path_prefix.1,
+      ),
       unique_identifier: unique_name,
       artifact_ref: blueprint.artifact_ref,
       values: value_tuples,
@@ -114,21 +116,27 @@ pub fn parse_from_file(
 }
 
 /// Extract a meaningful prefix from the source path
-/// e.g., "examples/org/platform_team/authentication.json" -> "org_platform_team_authentication"
-fn extract_path_prefix(path: String) -> String {
-  path
-  |> string.split("/")
-  |> list.reverse
-  |> list.take(3)
-  |> list.reverse
-  |> list.map(fn(segment) {
-    // Remove .json extension if present
-    case string.ends_with(segment, ".json") {
-      True -> string.drop_end(segment, 5)
-      False -> segment
-    }
-  })
-  |> string.join("_")
+/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team_authentication")
+fn extract_path_prefix(path: String) -> #(String, String) {
+  case
+    path
+    |> string.split("/")
+    |> list.reverse
+    |> list.take(3)
+    |> list.reverse
+    |> list.map(fn(segment) {
+      // Remove .json extension if present
+      case string.ends_with(segment, ".json") {
+        True -> string.drop_end(segment, 5)
+        False -> segment
+      }
+    })
+  {
+    [org, service, file] -> #(org, service <> "_" <> file)
+    [org, service] -> #(org, service)
+    // TODO: this should never happen, so we need to validate earlier in compilation
+    _ -> #("unknown", "unknown")
+  }
 }
 
 fn check_input_overshadowing(

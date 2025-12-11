@@ -11,12 +11,20 @@ import gleam/result
 
 pub type IntermediateRepresentation {
   IntermediateRepresentation(
-    friendly_name: String,
+    metadata: IntermediateRepresentationMetaData,
     unique_identifier: String,
     artifact_ref: String,
     values: List(ValueTuple),
     // TODO: make this cleaner. An option is weird.
     vendor: Option(Vendor),
+  )
+}
+
+pub type IntermediateRepresentationMetaData {
+  IntermediateRepresentationMetaData(
+    friendly_label: String,
+    org_name: String,
+    service_name: String,
   )
 }
 

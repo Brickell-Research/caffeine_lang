@@ -58,7 +58,11 @@ pub fn parse_from_file_happy_path_test() {
   |> should.equal(
     Ok([
       semantic_analyzer.IntermediateRepresentation(
-        friendly_name: "my_expectation",
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "my_expectation",
+          org_name: "parser",
+          service_name: "expectations_happy_path_single",
+        ),
         unique_identifier: "parser_expectations_happy_path_single_my_expectation",
         artifact_ref: "SLO",
         values: [
@@ -78,7 +82,11 @@ pub fn parse_from_file_happy_path_test() {
   |> should.equal(
     Ok([
       semantic_analyzer.IntermediateRepresentation(
-        friendly_name: "my_expectation",
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "my_expectation",
+          org_name: "parser",
+          service_name: "expectations_happy_path_multiple",
+        ),
         unique_identifier: "parser_expectations_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
         values: [
@@ -91,7 +99,11 @@ pub fn parse_from_file_happy_path_test() {
         vendor: option.None,
       ),
       semantic_analyzer.IntermediateRepresentation(
-        friendly_name: "another_expectation",
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "another_expectation",
+          org_name: "parser",
+          service_name: "expectations_happy_path_multiple",
+        ),
         unique_identifier: "parser_expectations_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
         values: [

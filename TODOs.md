@@ -36,6 +36,7 @@ Finally we code gen:
 * this test pattern
 * at the beginning, it was possible to successfullly compile a lot of code that wouldn't actually be "terraform apply"-able. How to make the compiler more helpful?
 * so part of v2 was surfacing more to the user for configurations, beauty of debugging against the query vs. against the core compiler code was so sweet
+* using internals?
 
 ------------
 

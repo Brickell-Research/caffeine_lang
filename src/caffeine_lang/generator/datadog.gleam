@@ -125,7 +125,7 @@ pub fn ir_to_terraform_resource(
     type_: "datadog_service_level_objective",
     name: resource_name,
     attributes: dict.from_list([
-      #("name", hcl.StringLiteral(ir.friendly_name)),
+      #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
       #("type", hcl.StringLiteral("metric")),
       #("tags", hcl.ListExpr([hcl.StringLiteral("managed_by:caffeine")])),
     ]),

@@ -88,7 +88,11 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          friendly_name: "Auth Latency SLO",
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+          ),
           unique_identifier: "org/team/auth/latency_slo",
           artifact_ref: "SLO",
           values: [
@@ -127,7 +131,11 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          friendly_name: "Auth Latency SLO",
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+          ),
           unique_identifier: "org/team/auth/latency_slo",
           artifact_ref: "SLO",
           values: [
@@ -166,7 +174,11 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          friendly_name: "Auth Latency SLO",
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+          ),
           unique_identifier: "org/team/auth/latency_slo",
           artifact_ref: "SLO",
           values: [
@@ -199,7 +211,11 @@ pub fn generate_terraform_test() {
           vendor: option.Some(vendor.Datadog),
         ),
         semantic_analyzer.IntermediateRepresentation(
-          friendly_name: "API Availability SLO",
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "API Availability SLO",
+            org_name: "org",
+            service_name: "team",
+          ),
           unique_identifier: "org/team/api/availability_slo",
           artifact_ref: "SLO",
           values: [
@@ -238,7 +254,11 @@ pub fn generate_terraform_test() {
     #(
       [
         semantic_analyzer.IntermediateRepresentation(
-          friendly_name: "Composite SLO",
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Composite SLO",
+            org_name: "org",
+            service_name: "team",
+          ),
           unique_identifier: "org/team/auth/composite_slo",
           artifact_ref: "SLO",
           values: [

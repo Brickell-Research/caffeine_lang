@@ -12,7 +12,11 @@ import gleeunit/should
 pub fn resolve_intermediate_representations_test() {
   let input_irs = [
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "SLO One",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "SLO One",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
       values: [
@@ -32,7 +36,11 @@ pub fn resolve_intermediate_representations_test() {
       vendor: option.None,
     ),
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "SLO Two",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "SLO Two",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
       values: [
@@ -55,7 +63,11 @@ pub fn resolve_intermediate_representations_test() {
 
   let expected_irs = [
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "SLO One",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "SLO One",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
       values: [
@@ -75,7 +87,11 @@ pub fn resolve_intermediate_representations_test() {
       vendor: option.Some(vendor.Datadog),
     ),
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "SLO Two",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "SLO Two",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
       values: [
@@ -105,7 +121,11 @@ pub fn resolve_intermediate_representations_test() {
 pub fn resolve_vendor_test() {
   let input_ir =
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "Foo SLO",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "Foo SLO",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
@@ -116,7 +136,11 @@ pub fn resolve_vendor_test() {
 
   let expected_ir =
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "Foo SLO",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "Foo SLO",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
@@ -134,7 +158,11 @@ pub fn resolve_vendor_test() {
 pub fn resolve_queries_test() {
   let input_ir =
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "Foo SLO",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "Foo SLO",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
@@ -163,7 +191,11 @@ pub fn resolve_queries_test() {
 
   let expected_ir =
     semantic_analyzer.IntermediateRepresentation(
-      friendly_name: "Foo SLO",
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "Foo SLO",
+        org_name: "test",
+        service_name: "service",
+      ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
