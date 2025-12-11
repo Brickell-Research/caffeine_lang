@@ -1,0 +1,9 @@
+{
+  "artifacts": [
+    {
+      "name": "SLO",
+      "base_params": { "threshold": "Float", "window_in_days": "Integer" },
+      "params": { "queries": "String", "value": "String" }
+    }
+  ]
+}

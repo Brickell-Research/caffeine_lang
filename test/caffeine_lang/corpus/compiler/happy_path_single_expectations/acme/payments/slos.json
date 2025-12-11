@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {
+      "name": "checkout_availability",
+      "blueprint_ref": "api_availability",
+      "inputs": {
+        "env": "production",
+        "status": true,
+        "threshold": 99.95,
+        "window_in_days": 30
+      }
+    }
+  ]
+}

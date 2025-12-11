@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "inputs": { "percentile": 99.9 }
+    }
+  ]
+}
+

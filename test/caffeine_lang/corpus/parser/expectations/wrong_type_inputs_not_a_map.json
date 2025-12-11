@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {
+      "name": "my_expectation",
+      "blueprint_ref": "success_rate",
+      "inputs": "not a map"
+    }
+  ]
+}
+
