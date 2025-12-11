@@ -17,6 +17,7 @@ argv = ">= 1.0.2 and < 2.0.0"
 gleeunit = ">= 1.0.0"
 gleam_json = ">= 3.1.0 and < 4.0.0"
 terra_madre = ">=0.0.2"
+gleam_community_ansi = ">= 1.4.0 and < 2.0.0"
 
 [dev-dependencies]
 gleamy_bench = ">= 0.6.0 and < 1.0.0"
