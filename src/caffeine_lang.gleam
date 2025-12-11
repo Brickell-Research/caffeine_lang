@@ -2,6 +2,7 @@ import argv
 import caffeine_lang/common/constants
 import caffeine_lang/compiler
 import gleam/io
+import gleam/option.{type Option}
 import gleam/string
 import simplifile
 
@@ -17,7 +18,9 @@ pub fn run(args: List(String)) {
 fn handle_args(args: List(String)) {
   case args {
     ["compile", blueprint_file, expectations_dir, output_file] ->
-      compile(blueprint_file, expectations_dir, output_file)
+      compile(blueprint_file, expectations_dir, option.Some(output_file))
+    ["compile", blueprint_file, expectations_dir] ->
+      compile(blueprint_file, expectations_dir, option.None)
     ["--help"] | ["-h"] -> print_usage()
     ["--version"] | ["-V"] -> print_version()
     [] -> print_usage()
@@ -32,20 +35,26 @@ fn handle_args(args: List(String)) {
 fn compile(
   blueprint_file: String,
   expectations_dir: String,
-  output_path: String,
+  output_path: Option(String),
 ) {
-  // If output_path is a directory, append main.tf
-  let output_file = case simplifile.is_directory(output_path) {
-    Ok(True) -> output_path <> "/main.tf"
-    _ -> output_path
-  }
-
   case compiler.compile(blueprint_file, expectations_dir) {
     Ok(output) -> {
-      case simplifile.write(output_file, output) {
-        Ok(_) -> io.println("Successfully compiled to " <> output_file)
-        Error(err) ->
-          io.println("Error writing output file: " <> string.inspect(err))
+      case output_path {
+        // Print to stdout if no output file specified
+        option.None -> io.println(output)
+        // Otherwise write to file
+        option.Some(path) -> {
+          // If output_path is a directory, append main.tf
+          let output_file = case simplifile.is_directory(path) {
+            Ok(True) -> path <> "/main.tf"
+            _ -> path
+          }
+          case simplifile.write(output_file, output) {
+            Ok(_) -> io.println("Successfully compiled to " <> output_file)
+            Error(err) ->
+              io.println("Error writing output file: " <> string.inspect(err))
+          }
+        }
       }
     }
     Error(err) -> io.println("Compilation error: " <> err)
@@ -60,7 +69,12 @@ fn print_usage() {
   io.println("")
   io.println("USAGE:")
   io.println(
-    "    caffeine compile <blueprint_file> <expectations_directory> <output_file>",
+    "    caffeine compile <blueprint_file> <expectations_directory> [output_file]",
+  )
+  io.println("")
+  io.println("ARGUMENTS:")
+  io.println(
+    "    [output_file]    Output file path or directory (prints to stdout if omitted)",
   )
   io.println("")
   io.println("OPTIONS:")
