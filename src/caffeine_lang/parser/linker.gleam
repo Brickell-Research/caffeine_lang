@@ -13,7 +13,7 @@ import simplifile
 
 
 /// Link will fetch, then parse all configuration files, combining them into one single
-/// list of intermeidate representation objects. In the future how we fetch these files will
+/// list of intermediate representation objects. In the future how we fetch these files will
 /// change to enable fetching from remote locations, via git, etc. but for now we
 /// just support standard library artifacts, a single blueprint file, and a single
 /// expectations directory. Furthermore note that we will ignore non-json files within

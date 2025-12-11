@@ -41,6 +41,7 @@ fn denominator_exp_to_datadog_query(exp: Exp) -> String {
   }
 }
 
+/// Converts an expression AST node to its string representation.
 pub fn exp_to_string(exp: Exp) -> String {
   case exp {
     parser.Primary(primary:) -> primary_to_string(primary, None)

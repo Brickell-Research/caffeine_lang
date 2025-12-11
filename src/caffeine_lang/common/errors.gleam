@@ -90,6 +90,7 @@ pub fn format_decode_error_message(
   |> string.join(", ")
 }
 
+/// Converts a ParseError to a LinkerError for error propagation across compilation phases.
 pub fn parser_error_to_linker_error(error: ParseError) -> LinkerError {
   case error {
     FileReadError(msg) -> LinkerParseError("File read error: " <> msg)

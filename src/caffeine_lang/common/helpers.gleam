@@ -134,7 +134,7 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
   }
 }
 
-/// Reads the contents of a file as a string.
+/// Reads the contents of a JSON file as a string.
 pub fn json_from_file(file_path) -> Result(String, ParseError) {
   case simplifile.read(file_path) {
     Ok(file_contents) -> Ok(file_contents)

@@ -63,7 +63,7 @@ pub type DatadogTemplateType {
   Not
 }
 
-/// The high level full parsing and resolution of a templatized query string.
+/// High-level parsing and resolution of a templatized query string.
 pub fn parse_and_resolve_query_template(
   query: String,
   value_tuples: List(ValueTuple),
@@ -115,8 +115,6 @@ pub fn parse_and_resolve_query_template(
 /// Examples:
 /// - "environment->env" -> TemplateVariable("environment", "env", Default)
 /// - "environment->env:not" -> TemplateVariable("environment", "env", Not)
-/// - "service->service:prefix" -> TemplateVariable("service", "service", PrefixWildcard)
-/// - "threshold->:raw" -> TemplateVariable("threshold", "", Raw)
 @internal
 pub fn parse_template_variable(
   variable: String,

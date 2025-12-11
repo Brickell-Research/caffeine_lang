@@ -78,6 +78,7 @@ pub fn parse_from_file(file_path) -> Result(List(Artifact), ParseError) {
   Ok(artifacts)
 }
 
+/// Decoder for semantic version strings (e.g., "1.2.3").
 pub fn semantic_version_decoder() -> decode.Decoder(Semver) {
   let err_default = Semver(0, 0, 0)
   decode.new_primitive_decoder("Semver", fn(dyn) {
