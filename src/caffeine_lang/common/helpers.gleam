@@ -5,6 +5,7 @@ import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option
 import simplifile
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
@@ -17,6 +18,7 @@ pub type AcceptedTypes {
   String
   Dict(AcceptedTypes, AcceptedTypes)
   List(AcceptedTypes)
+  Optional(AcceptedTypes)
 }
 
 /// A tuple of a label, type, and value used for template resolution.
@@ -56,6 +58,15 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
     String -> decode.string
     Dict(_, _) -> decode.failure("", "Dict")
     List(_) -> decode.failure("", "List")
+    Optional(inner_type) -> {
+      use maybe_val <- decode.then(decode.optional(decode_value_to_string(
+        inner_type,
+      )))
+      case maybe_val {
+        option.Some(val) -> decode.success(val)
+        option.None -> decode.success("")
+      }
+    }
   }
 }
 
@@ -84,6 +95,21 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, Nil) {
     "List(Integer)" -> Ok(List(Integer))
     "List(Boolean)" -> Ok(List(Boolean))
     "List(Float)" -> Ok(List(Float))
+    // Optional types
+    "Optional(String)" -> Ok(Optional(String))
+    "Optional(Integer)" -> Ok(Optional(Integer))
+    "Optional(Float)" -> Ok(Optional(Float))
+    "Optional(Boolean)" -> Ok(Optional(Boolean))
+    // Optional List types
+    "Optional(List(String))" -> Ok(Optional(List(String)))
+    "Optional(List(Integer))" -> Ok(Optional(List(Integer)))
+    "Optional(List(Float))" -> Ok(Optional(List(Float)))
+    "Optional(List(Boolean))" -> Ok(Optional(List(Boolean)))
+    // Optional Dict types
+    "Optional(Dict(String, String))" -> Ok(Optional(Dict(String, String)))
+    "Optional(Dict(String, Integer))" -> Ok(Optional(Dict(String, Integer)))
+    "Optional(Dict(String, Float))" -> Ok(Optional(Dict(String, Float)))
+    "Optional(Dict(String, Boolean))" -> Ok(Optional(Dict(String, Boolean)))
     // TODO: hacky, fix this
     _ -> Error(Nil)
   }
@@ -103,6 +129,8 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
       <> accepted_type_to_string(value_type)
       <> ")"
     List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
+    Optional(inner_type) ->
+      "Optional(" <> accepted_type_to_string(inner_type) <> ")"
   }
 }
 

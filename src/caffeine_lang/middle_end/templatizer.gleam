@@ -26,6 +26,7 @@ import caffeine_lang/common/errors
 import caffeine_lang/common/helpers.{type ValueTuple}
 import gleam/dynamic/decode
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -213,6 +214,39 @@ pub fn resolve_template(
           helpers.decode_list_values_to_strings(inner_type),
         )
       Ok(resolve_list_value(template, vals))
+    }
+    helpers.Optional(helpers.Dict(_, _)) ->
+      Error(errors.TemplateResolutionError(
+        "Unsupported templatized variable type: "
+        <> helpers.accepted_type_to_string(value_tuple.typ)
+        <> ". Dict support is pending, open an issue if this is a desired use case.",
+      ))
+    helpers.Optional(inner_type) -> {
+      // For Optional types, try to decode the inner value
+      // If None, return empty string (template gets removed from query)
+      let inner_decoder = case inner_type {
+        helpers.List(list_inner) ->
+          decode.optional(helpers.decode_list_values_to_strings(list_inner))
+          |> decode.map(fn(maybe_vals) {
+            case maybe_vals {
+              option.Some(vals) -> option.Some(resolve_list_value(template, vals))
+              option.None -> option.None
+            }
+          })
+        _ ->
+          decode.optional(helpers.decode_value_to_string(inner_type))
+          |> decode.map(fn(maybe_val) {
+            case maybe_val {
+              option.Some(val) -> option.Some(resolve_string_value(template, val))
+              option.None -> option.None
+            }
+          })
+      }
+      let assert Ok(maybe_result) = decode.run(value_tuple.value, inner_decoder)
+      case maybe_result {
+        option.Some(resolved) -> Ok(resolved)
+        option.None -> Ok("")
+      }
     }
     _ -> {
       let assert Ok(val) =

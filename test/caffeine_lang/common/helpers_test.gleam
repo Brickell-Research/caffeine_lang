@@ -18,6 +18,18 @@ import gleeunit/should
 // * ✅ List(Integer)
 // * ✅ List(Float)
 // * ✅ List(Boolean)
+// * ✅ Optional(String)
+// * ✅ Optional(Integer)
+// * ✅ Optional(Float)
+// * ✅ Optional(Boolean)
+// * ✅ Optional(List(String))
+// * ✅ Optional(List(Integer))
+// * ✅ Optional(List(Float))
+// * ✅ Optional(List(Boolean))
+// * ✅ Optional(Dict(String, String))
+// * ✅ Optional(Dict(String, Integer))
+// * ✅ Optional(Dict(String, Float))
+// * ✅ Optional(Dict(String, Boolean))
 // * ✅ Unrecognized
 pub fn accepted_types_decoder_test() {
   [
@@ -39,6 +51,45 @@ pub fn accepted_types_decoder_test() {
     #("List(Integer)", Ok(helpers.List(helpers.Integer))),
     #("List(Float)", Ok(helpers.List(helpers.Float))),
     #("List(Boolean)", Ok(helpers.List(helpers.Boolean))),
+    // Optional basic types
+    #("Optional(String)", Ok(helpers.Optional(helpers.String))),
+    #("Optional(Integer)", Ok(helpers.Optional(helpers.Integer))),
+    #("Optional(Float)", Ok(helpers.Optional(helpers.Float))),
+    #("Optional(Boolean)", Ok(helpers.Optional(helpers.Boolean))),
+    // Optional List types
+    #(
+      "Optional(List(String))",
+      Ok(helpers.Optional(helpers.List(helpers.String))),
+    ),
+    #(
+      "Optional(List(Integer))",
+      Ok(helpers.Optional(helpers.List(helpers.Integer))),
+    ),
+    #(
+      "Optional(List(Float))",
+      Ok(helpers.Optional(helpers.List(helpers.Float))),
+    ),
+    #(
+      "Optional(List(Boolean))",
+      Ok(helpers.Optional(helpers.List(helpers.Boolean))),
+    ),
+    // Optional Dict types
+    #(
+      "Optional(Dict(String, String))",
+      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.String))),
+    ),
+    #(
+      "Optional(Dict(String, Integer))",
+      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Integer))),
+    ),
+    #(
+      "Optional(Dict(String, Float))",
+      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Float))),
+    ),
+    #(
+      "Optional(Dict(String, Boolean))",
+      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Boolean))),
+    ),
     #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
   ]
   |> list.each(fn(pair) {
@@ -114,6 +165,12 @@ pub fn result_try_test() {
 // * ✅ List(Integer)
 // * ✅ List(Float)
 // * ✅ List(Boolean)
+// * ✅ Optional(String)
+// * ✅ Optional(Integer)
+// * ✅ Optional(Float)
+// * ✅ Optional(Boolean)
+// * ✅ Optional(List(String))
+// * ✅ Optional(Dict(String, String))
 pub fn accepted_type_to_string_test() {
   [
     #(helpers.Boolean, "Boolean"),
@@ -128,6 +185,20 @@ pub fn accepted_type_to_string_test() {
     #(helpers.List(helpers.Integer), "List(Integer)"),
     #(helpers.List(helpers.Float), "List(Float)"),
     #(helpers.List(helpers.Boolean), "List(Boolean)"),
+    // Optional basic types
+    #(helpers.Optional(helpers.String), "Optional(String)"),
+    #(helpers.Optional(helpers.Integer), "Optional(Integer)"),
+    #(helpers.Optional(helpers.Float), "Optional(Float)"),
+    #(helpers.Optional(helpers.Boolean), "Optional(Boolean)"),
+    // Optional nested types
+    #(
+      helpers.Optional(helpers.List(helpers.String)),
+      "Optional(List(String))",
+    ),
+    #(
+      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+      "Optional(Dict(String, String))",
+    ),
   ]
   |> list.each(fn(pair) {
     let #(input, expected) = pair

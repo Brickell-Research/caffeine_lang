@@ -64,6 +64,20 @@ pub fn validate_value_type(
           )
       }
     }
+    helpers.Optional(inner_type) -> {
+      case decode.run(value, decode.optional(decode.dynamic)) {
+        Ok(option.Some(inner_val)) ->
+          validate_value_type(inner_val, inner_type, type_key_identifier)
+        Ok(option.None) -> Ok(value)
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
+      }
+    }
   }
 }
 

@@ -121,6 +121,7 @@ pub fn parse_template_type_test() {
 // ==== Resolve Template ====
 // * ✅ input name and value tuple label don't match
 // * ✅ unsupported type - dict
+// * ✅ unsupported type - optional dict
 // * ✅ resolves boolean
 // * ✅ resolves int
 // * ✅ resolves float
@@ -129,6 +130,10 @@ pub fn parse_template_type_test() {
 // * ✅ resolves list of ints
 // * ✅ resolves list of floats
 // * ✅ resolves list of strings
+// * ✅ resolves optional string with value
+// * ✅ resolves optional string with none (returns empty string)
+// * ✅ resolves optional list with value
+// * ✅ resolves optional list with none (returns empty string)
 pub fn resolve_template_test() {
   [
     #(
@@ -152,6 +157,18 @@ pub fn resolve_template_test() {
       ),
       Error(errors.TemplateResolutionError(
         "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
+      )),
+    ),
+    // Optional Dict is also unsupported
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+        value: dynamic.array([]),
+      ),
+      Error(errors.TemplateResolutionError(
+        "Unsupported templatized variable type: Optional(Dict(String, String)). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
     #(
@@ -225,6 +242,56 @@ pub fn resolve_template_test() {
         value: dynamic.list([dynamic.string("salad"), dynamic.string("pizza")]),
       ),
       Ok("foo IN (salad, pizza)"),
+    ),
+    // Optional string with value
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.String),
+        value: dynamic.string("salad"),
+      ),
+      Ok("foo:salad"),
+    ),
+    // Optional string with None - returns empty string
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.String),
+        value: dynamic.nil(),
+      ),
+      Ok(""),
+    ),
+    // Optional integer with value
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.Integer),
+        value: dynamic.int(42),
+      ),
+      Ok("foo:42"),
+    ),
+    // Optional list with value
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.List(helpers.String)),
+        value: dynamic.list([dynamic.string("a"), dynamic.string("b")]),
+      ),
+      Ok("foo IN (a, b)"),
+    ),
+    // Optional list with None - returns empty string
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Optional(helpers.List(helpers.String)),
+        value: dynamic.nil(),
+      ),
+      Ok(""),
     ),
   ]
   |> list.each(fn(tuple) {

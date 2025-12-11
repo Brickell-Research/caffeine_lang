@@ -26,6 +26,13 @@ import gleeunit/should
 // * (✅, ✅) List(Boolean)
 // * (✅, ✅) List(Float)
 // * (✅, ✅) Empty List
+// Optional types
+// * (✅, ✅) Optional(String) with value
+// * (✅, ✅) Optional(Integer) with value
+// * (✅, ✅) Optional(Float) with value
+// * (✅, ✅) Optional(Boolean) with value
+// * (✅, ✅) Optional(List(String)) with value
+// * (✅, ✅) Optional(Dict(String, String)) with value
 // Other
 // * (n/a, ✅) Wrong structure (string for List/Dict)
 // * (n/a, ✅) Multi-entry collection with one bad value
@@ -75,6 +82,21 @@ pub fn validate_value_type_test() {
     // Empty collections
     #(dynamic.list([]), helpers.List(helpers.String)),
     #(dynamic.properties([]), helpers.Dict(helpers.String, helpers.String)),
+    // Optional types with values
+    #(some_string, helpers.Optional(helpers.String)),
+    #(some_int, helpers.Optional(helpers.Integer)),
+    #(some_float, helpers.Optional(helpers.Float)),
+    #(some_bool, helpers.Optional(helpers.Boolean)),
+    // Optional List types
+    #(
+      dynamic.list([some_string, other_string]),
+      helpers.Optional(helpers.List(helpers.String)),
+    ),
+    // Optional Dict types
+    #(
+      dynamic.properties([#(some_string, other_string)]),
+      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+    ),
   ]
   |> list.each(fn(pair) {
     let #(value, expected_type) = pair
@@ -171,6 +193,29 @@ pub fn validate_value_type_test() {
     #(
       dynamic.list([some_bool, some_string]),
       helpers.List(helpers.String),
+      "expected (String) received (Bool) for (some_key)",
+    ),
+    // Optional types with wrong inner type
+    #(
+      some_bool,
+      helpers.Optional(helpers.String),
+      "expected (String) received (Bool) for (some_key)",
+    ),
+    #(
+      some_string,
+      helpers.Optional(helpers.Integer),
+      "expected (Int) received (String) for (some_key)",
+    ),
+    // Optional List with wrong inner type
+    #(
+      dynamic.list([some_bool]),
+      helpers.Optional(helpers.List(helpers.String)),
+      "expected (String) received (Bool) for (some_key)",
+    ),
+    // Optional Dict with wrong value type
+    #(
+      dynamic.properties([#(some_string, some_bool)]),
+      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
       "expected (String) received (Bool) for (some_key)",
     ),
   ]
