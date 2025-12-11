@@ -18,5 +18,6 @@ Caffeine is a compiler for generating reliability artifacts from service expecta
 
 ```bash
 brew tap brickell-research/caffeine
+brew update
 brew install caffeine_lang
 ```
