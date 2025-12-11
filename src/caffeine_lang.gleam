@@ -1,10 +1,9 @@
 import argv
+import caffeine_lang/common/constants
 import caffeine_lang/compiler
 import gleam/io
 import gleam/string
 import simplifile
-
-const version = "0.2.2"
 
 pub fn main() {
   handle_args(argv.load().arguments)
@@ -54,7 +53,7 @@ fn compile(
 }
 
 fn print_usage() {
-  io.println("caffeine " <> version)
+  io.println("caffeine " <> constants.version)
   io.println(
     "A compiler for generating reliability artifacts from service expectation definitions.",
   )
@@ -70,5 +69,5 @@ fn print_usage() {
 }
 
 fn print_version() {
-  io.println("caffeine " <> version)
+  io.println("caffeine " <> constants.version)
 }

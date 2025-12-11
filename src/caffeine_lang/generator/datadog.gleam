@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
@@ -120,6 +121,16 @@ pub fn ir_to_terraform_resource(
       #("target", hcl.FloatLiteral(threshold)),
     ])
 
+  // Build tags
+  let tags =
+    hcl.ListExpr([
+      hcl.StringLiteral("managed_by:caffeine"),
+      hcl.StringLiteral("caffeine_version:" <> constants.version),
+      hcl.StringLiteral("org:" <> ir.metadata.org_name),
+      hcl.StringLiteral("service:" <> ir.metadata.service_name),
+      hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
+    ])
+
   // Build the resource
   terraform.Resource(
     type_: "datadog_service_level_objective",
@@ -127,7 +138,7 @@ pub fn ir_to_terraform_resource(
     attributes: dict.from_list([
       #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
       #("type", hcl.StringLiteral("metric")),
-      #("tags", hcl.ListExpr([hcl.StringLiteral("managed_by:caffeine")])),
+      #("tags", tags),
     ]),
     blocks: [query_block, thresholds_block],
     meta: hcl.empty_meta(),
