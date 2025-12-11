@@ -77,10 +77,10 @@ jobs:
           --output "$DIST_DIR/caffeine-${VERSION}-linux-arm64" main.mjs
 
         # macOS x64
-        # echo "Building macOS x64..."
-        # deno compile --no-check --allow-read --allow-write \
-        #   --target x86_64-apple-darwin \
-        #   --output "$DIST_DIR/caffeine-${VERSION}-macos-x64" main.mjs
+        echo "Building macOS x64..."
+        deno compile --no-check --allow-read --allow-write \
+          --target x86_64-apple-darwin \
+          --output "$DIST_DIR/caffeine-${VERSION}-macos-x64" main.mjs
 
         # macOS ARM64 (Apple Silicon)
         echo "Building macOS ARM64..."
@@ -89,10 +89,10 @@ jobs:
           --output "$DIST_DIR/caffeine-${VERSION}-macos-arm64" main.mjs
 
         # Windows x64
-        # echo "Building Windows x64..."
-        # deno compile --no-check --allow-read --allow-write \
-        #   --target x86_64-pc-windows-msvc \
-        #   --output "$DIST_DIR/caffeine-${VERSION}-windows-x64.exe" main.mjs
+        echo "Building Windows x64..."
+        deno compile --no-check --allow-read --allow-write \
+          --target x86_64-pc-windows-msvc \
+          --output "$DIST_DIR/caffeine-${VERSION}-windows-x64.exe" main.mjs
 
         echo "All binaries built successfully"
         ls -la dist/
