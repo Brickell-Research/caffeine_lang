@@ -97,14 +97,17 @@ pub fn parse_from_file(
       })
 
     // build unique expectation name by combining path prefix with name
-    let unique_name =
-      path_prefix.0 <> "_" <> path_prefix.1 <> "_" <> expectation.name
+    let #(org, team, service) = path_prefix
+    let service_name = team <> "_" <> service
+    let unique_name = org <> "_" <> service_name <> "_" <> expectation.name
 
     semantic_analyzer.IntermediateRepresentation(
       metadata: semantic_analyzer.IntermediateRepresentationMetaData(
         friendly_label: expectation.name,
-        org_name: path_prefix.0,
-        service_name: path_prefix.1,
+        org_name: org,
+        service_name: service_name,
+        blueprint_name: blueprint.name,
+        team_name: team,
       ),
       unique_identifier: unique_name,
       artifact_ref: blueprint.artifact_ref,
@@ -116,8 +119,9 @@ pub fn parse_from_file(
 }
 
 /// Extract a meaningful prefix from the source path
-/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team_authentication")
-fn extract_path_prefix(path: String) -> #(String, String) {
+/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team", "authentication")
+@internal
+pub fn extract_path_prefix(path: String) -> #(String, String, String) {
   case
     path
     |> string.split("/")
@@ -132,10 +136,9 @@ fn extract_path_prefix(path: String) -> #(String, String) {
       }
     })
   {
-    [org, service, file] -> #(org, service <> "_" <> file)
-    [org, service] -> #(org, service)
+    [org, team, service] -> #(org, team, service)
     // TODO: this should never happen, so we need to validate earlier in compilation
-    _ -> #("unknown", "unknown")
+    _ -> #("unknown", "unknown", "unknown")
   }
 }
 

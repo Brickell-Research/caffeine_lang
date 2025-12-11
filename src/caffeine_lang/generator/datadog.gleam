@@ -131,7 +131,9 @@ pub fn ir_to_terraform_resource(
       hcl.StringLiteral("managed_by:caffeine"),
       hcl.StringLiteral("caffeine_version:" <> constants.version),
       hcl.StringLiteral("org:" <> ir.metadata.org_name),
+      hcl.StringLiteral("team:" <> ir.metadata.team_name),
       hcl.StringLiteral("service:" <> ir.metadata.service_name),
+      hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
       hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
       hcl.StringLiteral("artifact:" <> ir.artifact_ref),
     ])

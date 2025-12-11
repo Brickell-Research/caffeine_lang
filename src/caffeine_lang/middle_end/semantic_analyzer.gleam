@@ -25,6 +25,8 @@ pub type IntermediateRepresentationMetaData {
     friendly_label: String,
     org_name: String,
     service_name: String,
+    blueprint_name: String,
+    team_name: String,
   )
 }
 

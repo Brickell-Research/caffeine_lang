@@ -62,6 +62,8 @@ pub fn parse_from_file_happy_path_test() {
           friendly_label: "my_expectation",
           org_name: "parser",
           service_name: "expectations_happy_path_single",
+          blueprint_name: "success_rate",
+          team_name: "expectations",
         ),
         unique_identifier: "parser_expectations_happy_path_single_my_expectation",
         artifact_ref: "SLO",
@@ -86,6 +88,8 @@ pub fn parse_from_file_happy_path_test() {
           friendly_label: "my_expectation",
           org_name: "parser",
           service_name: "expectations_happy_path_multiple",
+          blueprint_name: "success_rate",
+          team_name: "expectations",
         ),
         unique_identifier: "parser_expectations_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
@@ -103,6 +107,8 @@ pub fn parse_from_file_happy_path_test() {
           friendly_label: "another_expectation",
           org_name: "parser",
           service_name: "expectations_happy_path_multiple",
+          blueprint_name: "success_rate",
+          team_name: "expectations",
         ),
         unique_identifier: "parser_expectations_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
@@ -218,4 +224,21 @@ pub fn parse_from_file_overshadowing_test() {
       msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
     )),
   )
+}
+
+// ==== Extract Path Prefix ====
+// ❌ happy path
+// ❌ sad path - however unlikely
+pub fn extract_path_prefix_test() {
+  [
+    #("org/team/service.json", #("org", "team", "service")),
+    #("org/team/service.json", #("org", "team", "service")),
+    #("org/team", #("unknown", "unknown", "unknown")),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+
+    expectations.extract_path_prefix(input)
+    |> should.equal(expected)
+  })
 }
