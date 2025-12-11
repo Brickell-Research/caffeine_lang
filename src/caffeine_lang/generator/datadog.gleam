@@ -129,6 +129,7 @@ pub fn ir_to_terraform_resource(
       hcl.StringLiteral("org:" <> ir.metadata.org_name),
       hcl.StringLiteral("service:" <> ir.metadata.service_name),
       hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
+      hcl.StringLiteral("artifact:" <> ir.artifact_ref),
     ])
 
   // Build the resource
