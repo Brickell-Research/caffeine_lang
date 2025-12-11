@@ -98,7 +98,7 @@ pub fn parse_from_file(
 
     // build unique expectation name by combining path prefix with name
     let #(org, team, service) = path_prefix
-    let service_name = team <> "_" <> service
+    let service_name = service
     let unique_name = org <> "_" <> service_name <> "_" <> expectation.name
 
     semantic_analyzer.IntermediateRepresentation(

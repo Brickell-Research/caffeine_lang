@@ -21,9 +21,9 @@ variable "datadog_app_key" {
   type = string
 }
 
-resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability" {
+resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.7", "org:acme", "team:payments", "service:payments_slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:0.2.8", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
   type = "metric"
 
   query {
@@ -36,9 +36,9 @@ resource "datadog_service_level_objective" "acme_payments_slos_checkout_availabi
   }
 }
 
-resource "datadog_service_level_objective" "acme_payments_slos_checkout_latency_p99" {
+resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   name = "checkout_latency_p99"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.7", "org:acme", "team:payments", "service:payments_slos", "blueprint:api_latency_p99", "expectation:checkout_latency_p99", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:0.2.8", "org:acme", "team:payments", "service:slos", "blueprint:api_latency_p99", "expectation:checkout_latency_p99", "artifact:SLO"]
   type = "metric"
 
   query {
@@ -51,9 +51,9 @@ resource "datadog_service_level_objective" "acme_payments_slos_checkout_latency_
   }
 }
 
-resource "datadog_service_level_objective" "acme_platform_slos_auth_service_availability" {
+resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
   name = "auth_service_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.7", "org:acme", "team:platform", "service:platform_slos", "blueprint:api_availability", "expectation:auth_service_availability", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:0.2.8", "org:acme", "team:platform", "service:slos", "blueprint:api_availability", "expectation:auth_service_availability", "artifact:SLO"]
   type = "metric"
 
   query {

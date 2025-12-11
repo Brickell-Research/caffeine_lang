@@ -23,7 +23,7 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
   name = "Auth Latency SLO"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.7", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Auth Latency SLO", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:0.2.8", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Auth Latency SLO", "artifact:SLO"]
   type = "metric"
 
   query {

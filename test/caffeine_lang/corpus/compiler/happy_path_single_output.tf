@@ -21,9 +21,9 @@ variable "datadog_app_key" {
   type = string
 }
 
-resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability" {
+resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.7", "org:acme", "team:payments", "service:payments_slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:0.2.8", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
   type = "metric"
 
   query {

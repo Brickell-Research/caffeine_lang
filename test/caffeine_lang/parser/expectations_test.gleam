@@ -61,11 +61,11 @@ pub fn parse_from_file_happy_path_test() {
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
           friendly_label: "my_expectation",
           org_name: "parser",
-          service_name: "expectations_happy_path_single",
+          service_name: "happy_path_single",
           blueprint_name: "success_rate",
           team_name: "expectations",
         ),
-        unique_identifier: "parser_expectations_happy_path_single_my_expectation",
+        unique_identifier: "parser_happy_path_single_my_expectation",
         artifact_ref: "SLO",
         values: [
           helpers.ValueTuple(
@@ -79,7 +79,7 @@ pub fn parse_from_file_happy_path_test() {
     ]),
   )
 
-  // multiple - names are prefixed with "parser_expectations_happy_path_multiple"
+  // multiple - names are prefixed with "parser_happy_path_multiple"
   expectations.parse_from_file(path("happy_path_multiple"), blueprints())
   |> should.equal(
     Ok([
@@ -87,11 +87,11 @@ pub fn parse_from_file_happy_path_test() {
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
           friendly_label: "my_expectation",
           org_name: "parser",
-          service_name: "expectations_happy_path_multiple",
+          service_name: "happy_path_multiple",
           blueprint_name: "success_rate",
           team_name: "expectations",
         ),
-        unique_identifier: "parser_expectations_happy_path_multiple_my_expectation",
+        unique_identifier: "parser_happy_path_multiple_my_expectation",
         artifact_ref: "SLO",
         values: [
           helpers.ValueTuple(
@@ -106,11 +106,11 @@ pub fn parse_from_file_happy_path_test() {
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
           friendly_label: "another_expectation",
           org_name: "parser",
-          service_name: "expectations_happy_path_multiple",
+          service_name: "happy_path_multiple",
           blueprint_name: "success_rate",
           team_name: "expectations",
         ),
-        unique_identifier: "parser_expectations_happy_path_multiple_another_expectation",
+        unique_identifier: "parser_happy_path_multiple_another_expectation",
         artifact_ref: "SLO",
         values: [
           helpers.ValueTuple(
