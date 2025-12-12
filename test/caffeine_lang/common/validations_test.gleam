@@ -229,12 +229,16 @@ pub fn validate_value_type_test() {
 // ==== Inputs Validator ====
 // * ✅ happy path - no inputs
 // * ✅ happy path - some inputs
+// * ✅ happy path - optional param omitted
+// * ✅ happy path - optional param provided
+// * ✅ happy path - mix of required and optional, optional omitted
 // * ✅ missing inputs for params (single)
 // * ✅ missing inputs for params (multiple)
 // * ✅ extra inputs
 // * ✅ missing and extra inputs
 // * ✅ type validation error - single
 // * ✅ type validation error - multiple
+// * ✅ missing required when optional exists
 pub fn inputs_validator_test() {
   // happy paths
   [
@@ -247,6 +251,24 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("count", dynamic.int(42)),
       ]),
+    ),
+    // optional param omitted - should pass
+    #(
+      dict.from_list([#("maybe_name", helpers.Optional(helpers.String))]),
+      dict.from_list([]),
+    ),
+    // optional param provided - should pass
+    #(
+      dict.from_list([#("maybe_name", helpers.Optional(helpers.String))]),
+      dict.from_list([#("maybe_name", dynamic.string("foo"))]),
+    ),
+    // mix of required and optional, optional omitted - should pass
+    #(
+      dict.from_list([
+        #("name", helpers.String),
+        #("maybe_count", helpers.Optional(helpers.Integer)),
+      ]),
+      dict.from_list([#("name", dynamic.string("foo"))]),
     ),
   ]
   |> list.each(fn(pair) {
@@ -289,6 +311,15 @@ pub fn inputs_validator_test() {
       dict.from_list([#("count", helpers.Integer)]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       "expected (Int) received (String) for (count)",
+    ),
+    // missing required when optional param exists - should fail for required only
+    #(
+      dict.from_list([
+        #("name", helpers.String),
+        #("maybe_count", helpers.Optional(helpers.Integer)),
+      ]),
+      dict.from_list([]),
+      "Missing keys in input: name",
     ),
   ]
   |> list.each(fn(tuple) {

@@ -100,25 +100,39 @@ fn validate_value_type_helper(
 
 /// Validates that inputs match the expected params in both keys and types.
 /// Returns an error if there are missing keys, extra keys, or type mismatches.
+/// Note: Optional params are allowed to be omitted from inputs.
 pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
   inputs inputs: Dict(String, Dynamic),
 ) -> Result(Bool, String) {
+  // Filter out optional params - they're not required
+  let required_params =
+    params
+    |> dict.filter(fn(_, typ) {
+      case typ {
+        helpers.Optional(_) -> False
+        _ -> True
+      }
+    })
+
+  let required_param_keys = required_params |> dict.keys |> set.from_list
   let param_keys = params |> dict.keys |> set.from_list
   let input_keys = inputs |> dict.keys |> set.from_list
 
-  let keys_only_in_params =
-    set.difference(param_keys, input_keys) |> set.to_list
+  // Only required params must be present
+  let missing_required_keys =
+    set.difference(required_param_keys, input_keys) |> set.to_list
+  // Inputs must only contain keys that exist in params (required or optional)
   let keys_only_in_inputs =
     set.difference(input_keys, param_keys) |> set.to_list
 
   // see if we have the same inputs and params
-  use _ <- result.try(case keys_only_in_params, keys_only_in_inputs {
+  use _ <- result.try(case missing_required_keys, keys_only_in_inputs {
     [], [] -> Ok(True)
     _, [] ->
       Error(
         "Missing keys in input: "
-        <> { keys_only_in_params |> string.join(", ") },
+        <> { missing_required_keys |> string.join(", ") },
       )
     [], _ ->
       Error(
@@ -129,7 +143,7 @@ pub fn inputs_validator(
         "Extra keys in input: "
         <> { keys_only_in_inputs |> string.join(", ") }
         <> " and missing keys in input: "
-        <> { keys_only_in_params |> string.join(", ") },
+        <> { missing_required_keys |> string.join(", ") },
       )
   })
 
