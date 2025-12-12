@@ -1,23 +1,14 @@
 {
   "expectations": [
     {
-      "name": "Success Rate of Fetching Appointment Calls",
-      "blueprint_ref": "success_rate_graphql_calls",
-      "inputs": {
-        "threshold": 99.9,
-        "window_in_days": 30,
-        "environment": "production",
-        "graphql_operation_name": "getappointments"
-      }
-    },
-    {
-      "name": "Success Rate of Fetching Appointment Slot Calls",
-      "blueprint_ref": "success_rate_graphql_calls",
+      "name": "Some lcp - TESTING FOR CAFFEINE WOO",
+      "blueprint_ref": "lcp_of_views",
       "inputs": {
         "threshold": 99.5,
         "window_in_days": 7,
+        "application_name": "member_portal",
         "environment": "production",
-        "graphql_operation_name": "*appointment*lot*"
+        "view_path": "/members/home"
       }
     }
   ]

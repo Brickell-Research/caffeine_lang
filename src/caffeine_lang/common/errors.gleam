@@ -24,6 +24,11 @@ pub type SemanticError {
   TemplateResolutionError(msg: String)
 }
 
+/// Represents errors that can occur during code generation.
+pub type GeneratorError {
+  SloQueryResolutionError(msg: String)
+}
+
 pub type CompilerError {
   ExampleError
 }

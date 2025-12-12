@@ -140,6 +140,10 @@ fn print_step3_success(config: CompilationConfig) {
   log(config, "  " <> ansi.green("✓ Generated Terraform configuration"))
 }
 
+fn print_step3_error(config: CompilationConfig) {
+  log(config, "  " <> ansi.red("✗ Code generation failed"))
+}
+
 fn print_footer(config: CompilationConfig) {
   log(config, "")
   log(config, ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")))
@@ -154,8 +158,11 @@ fn run_semantic_analysis(
   |> result.map_error(fn(err) { "Semantic analysis error: " <> err.msg })
 }
 
-fn run_code_generation(resolved_irs: List(IntermediateRepresentation)) -> String {
+fn run_code_generation(
+  resolved_irs: List(IntermediateRepresentation),
+) -> Result(String, String) {
   datadog.generate_terraform(resolved_irs)
+  |> result.map_error(fn(err) { "Code generation error: " <> err.msg })
 }
 
 // ==== Compiler ====
@@ -198,8 +205,16 @@ pub fn compile(
 
   // Step 3: Code Generation
   print_step3_start(config, resolved_irs)
-  let terraform_output = run_code_generation(resolved_irs)
-  print_step3_success(config)
+  use terraform_output <- result.try(case run_code_generation(resolved_irs) {
+    Error(err) -> {
+      print_step3_error(config)
+      Error(err)
+    }
+    Ok(output) -> {
+      print_step3_success(config)
+      Ok(output)
+    }
+  })
 
   print_footer(config)
   Ok(terraform_output)
@@ -223,7 +238,7 @@ pub fn compile_from_strings(
   use resolved_irs <- result.try(run_semantic_analysis(irs))
 
   // Step 3: Code generation
-  Ok(run_code_generation(resolved_irs))
+  run_code_generation(resolved_irs)
 }
 
 fn parse_from_strings(

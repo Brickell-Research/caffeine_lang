@@ -1,19 +1,19 @@
 {
   "blueprints": [
     {
-      "name": "success_rate_graphql_calls",
+      "name": "lcp_of_views",
       "artifact_ref": "SLO",
       "inputs": {
         "queries": {
-          "numerator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$, status:info}.as_count()",
-          "denominator": "sum:rotom.graphql.hits_and_errors{$$env->environment$$, $$graphql.operation_name->graphql_operation_name$$}.as_count()"
+          "query": "p75:rum.lcp.duration{$$application.name->application_name$$, $$env->environment$$, $$view.url_path_group->view_path$$}"
         },
-        "value": "numerator / denominator",
+        "value": "time_slice(query < 2500000000 per 5m)",
         "vendor": "Datadog"
       },
       "params": {
+        "application_name": "String",
         "environment": "String",
-        "graphql_operation_name": "String"
+        "view_path": "String"
       }
     }
   ]

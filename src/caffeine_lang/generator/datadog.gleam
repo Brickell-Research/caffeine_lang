@@ -1,4 +1,5 @@
 import caffeine_lang/common/constants
+import caffeine_lang/common/errors
 import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
@@ -17,8 +18,12 @@ import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
 /// Includes provider configuration and variables.
-pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
-  let resources = irs |> list.map(ir_to_terraform_resource)
+pub fn generate_terraform(
+  irs: List(IntermediateRepresentation),
+) -> Result(String, errors.GeneratorError) {
+  use resources <- result.try(
+    irs |> list.try_map(ir_to_terraform_resource),
+  )
   let config =
     terraform.Config(
       terraform: option.Some(terraform_settings()),
@@ -30,7 +35,7 @@ pub fn generate_terraform(irs: List(IntermediateRepresentation)) -> String {
       locals: [],
       modules: [],
     )
-  render.render_config(config)
+  Ok(render.render_config(config))
 }
 
 /// Terraform settings block with required Datadog provider.
@@ -93,7 +98,7 @@ pub fn variables() -> List(terraform.Variable) {
 @internal
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
-) -> terraform.Resource {
+) -> Result(terraform.Resource, errors.GeneratorError) {
   let resource_name = sanitize_resource_name(ir.unique_identifier)
 
   // Extract values from IR
@@ -108,7 +113,17 @@ pub fn ir_to_terraform_resource(
     |> result.unwrap("numerator / denominator")
 
   // Parse the value expression using CQL and get HCL blocks
-  let resolved = cql_generator.resolve_slo_to_hcl(value_expr, queries)
+  use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
+    cql_generator.resolve_slo_to_hcl(value_expr, queries)
+    |> result.map_error(fn(err) {
+      errors.SloQueryResolutionError(
+        "Failed to resolve SLO query for '"
+        <> ir.metadata.friendly_label
+        <> "': "
+        <> err,
+      )
+    }),
+  )
 
   // Build tags (common to both types)
   let tags =
@@ -130,48 +145,23 @@ pub fn ir_to_terraform_resource(
       #("target", hcl.FloatLiteral(threshold)),
     ])
 
-  case resolved {
-    Ok(cql_generator.ResolvedSloHcl(slo_type, slo_blocks)) -> {
-      let type_str = case slo_type {
-        cql_generator.TimeSliceSlo -> "time_slice"
-        cql_generator.MetricSlo -> "metric"
-      }
-
-      terraform.Resource(
-        type_: "datadog_service_level_objective",
-        name: resource_name,
-        attributes: dict.from_list([
-          #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
-          #("type", hcl.StringLiteral(type_str)),
-          #("tags", tags),
-        ]),
-        blocks: list.append(slo_blocks, [thresholds_block]),
-        meta: hcl.empty_meta(),
-        lifecycle: option.None,
-      )
-    }
-    Error(_) -> {
-      // Fallback to empty query block
-      let query_block =
-        hcl.simple_block("query", [
-          #("numerator", hcl.StringLiteral("")),
-          #("denominator", hcl.StringLiteral("")),
-        ])
-
-      terraform.Resource(
-        type_: "datadog_service_level_objective",
-        name: resource_name,
-        attributes: dict.from_list([
-          #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
-          #("type", hcl.StringLiteral("metric")),
-          #("tags", tags),
-        ]),
-        blocks: [query_block, thresholds_block],
-        meta: hcl.empty_meta(),
-        lifecycle: option.None,
-      )
-    }
+  let type_str = case slo_type {
+    cql_generator.TimeSliceSlo -> "time_slice"
+    cql_generator.MetricSlo -> "metric"
   }
+
+  Ok(terraform.Resource(
+    type_: "datadog_service_level_objective",
+    name: resource_name,
+    attributes: dict.from_list([
+      #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+      #("type", hcl.StringLiteral(type_str)),
+      #("tags", tags),
+    ]),
+    blocks: list.append(slo_blocks, [thresholds_block]),
+    meta: hcl.empty_meta(),
+    lifecycle: option.None,
+  ))
 }
 
 /// Sanitize expectation name to valid Terraform resource name.

@@ -355,7 +355,7 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_file) = pair
     let expected = read_corpus(corpus_file)
-    datadog.generate_terraform(input) |> should.equal(expected)
+    datadog.generate_terraform(input) |> should.equal(Ok(expected))
   })
 }
 
