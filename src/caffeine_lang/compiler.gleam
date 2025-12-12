@@ -12,101 +12,138 @@ import gleam/list
 import gleam/result
 import gleam_community/ansi
 
+// ==== Configuration ====
+
+pub type LogLevel {
+  Verbose
+  Minimal
+}
+
+pub type CompilationConfig {
+  CompilationConfig(log_level: LogLevel)
+}
+
 // ==== Print helpers ====
 
-fn print_header() {
-  io.println("")
-  io.println(ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")))
-  io.println("")
+fn log(config: CompilationConfig, message: String) {
+  case config.log_level {
+    Verbose -> io.println(message)
+    Minimal -> Nil
+  }
 }
 
-fn print_step1_start(blueprint_path: String, expectations_dir: String) {
-  io.println(ansi.bold(ansi.underline("[1/3] Parsing and linking")))
-  io.println("  Blueprint file: " <> ansi.dim(blueprint_path))
-  io.println("  Expectations directory: " <> ansi.dim(expectations_dir))
+fn print_header(config: CompilationConfig) {
+  log(config, "")
+  log(config, ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")))
+  log(config, "")
 }
 
-fn print_step1_success(count: Int) {
-  io.println(
+fn print_step1_start(
+  config: CompilationConfig,
+  blueprint_path: String,
+  expectations_dir: String,
+) {
+  log(config, ansi.bold(ansi.underline("[1/3] Parsing and linking")))
+  log(config, "  Blueprint file: " <> ansi.dim(blueprint_path))
+  log(config, "  Expectations directory: " <> ansi.dim(expectations_dir))
+}
+
+fn print_step1_success(config: CompilationConfig, count: Int) {
+  log(
+    config,
     "  " <> ansi.green("✓ Parsed " <> int.to_string(count) <> " expectations"),
   )
 }
 
-fn print_step1_error() {
-  io.println("  " <> ansi.red("✗ Failed to parse and link"))
+fn print_step1_error(config: CompilationConfig) {
+  log(config, "  " <> ansi.red("✗ Failed to parse and link"))
 }
 
-fn print_step2_start(irs: List(IntermediateRepresentation)) {
-  io.println("")
-  io.println(ansi.bold(ansi.underline("[2/3] Performing semantic analysis")))
-  io.println(
+fn print_step2_start(
+  config: CompilationConfig,
+  irs: List(IntermediateRepresentation),
+) {
+  log(config, "")
+  log(config, ansi.bold(ansi.underline("[2/3] Performing semantic analysis")))
+  log(
+    config,
     "  Resolving "
-    <> ansi.yellow(int.to_string(list.length(irs)))
-    <> " intermediate representations:",
+      <> ansi.yellow(int.to_string(list.length(irs)))
+      <> " intermediate representations:",
   )
   irs
   |> list.each(fn(ir) {
-    io.println(
+    log(
+      config,
       "    "
-      <> ansi.dim("•")
-      <> " "
-      <> ir.unique_identifier
-      <> " "
-      <> ansi.dim("(artifact: " <> ir.artifact_ref <> ")"),
+        <> ansi.dim("•")
+        <> " "
+        <> ir.unique_identifier
+        <> " "
+        <> ansi.dim("(artifact: " <> ir.artifact_ref <> ")"),
     )
   })
 }
 
-fn print_step2_success(count: Int) {
-  io.println(
+fn print_step2_success(config: CompilationConfig, count: Int) {
+  log(
+    config,
     "  "
-    <> ansi.green(
-      "✓ Resolved vendors and queries for "
-      <> int.to_string(count)
-      <> " expectations",
-    ),
+      <> ansi.green(
+        "✓ Resolved vendors and queries for "
+        <> int.to_string(count)
+        <> " expectations",
+      ),
   )
 }
 
-fn print_step2_error() {
-  io.println("  " <> ansi.red("✗ Semantic analysis failed"))
+fn print_step2_error(config: CompilationConfig) {
+  log(config, "  " <> ansi.red("✗ Semantic analysis failed"))
 }
 
-fn print_step3_start(irs: List(IntermediateRepresentation)) {
-  io.println("")
-  io.println(ansi.bold(ansi.underline("[3/3] Generating Terraform artifacts")))
-  io.println(
+fn print_step3_start(
+  config: CompilationConfig,
+  irs: List(IntermediateRepresentation),
+) {
+  log(config, "")
+  log(
+    config,
+    ansi.bold(ansi.underline("[3/3] Generating Terraform artifacts")),
+  )
+  log(
+    config,
     "  Generating resources for "
-    <> ansi.yellow(int.to_string(list.length(irs)))
-    <> " expectations:",
+      <> ansi.yellow(int.to_string(list.length(irs)))
+      <> " expectations:",
   )
   irs
   |> list.each(fn(ir) {
-    io.println(
+    log(
+      config,
       "    "
-      <> ansi.dim("•")
-      <> " "
-      <> ir.metadata.friendly_label
-      <> " "
-      <> ansi.dim(
-        "(org: "
-        <> ir.metadata.org_name
-        <> ", service: "
-        <> ir.metadata.service_name
-        <> ")",
-      ),
+        <> ansi.dim("•")
+        <> " "
+        <> ir.metadata.friendly_label
+        <> " "
+        <> ansi.dim(
+          "(org: "
+          <> ir.metadata.org_name
+          <> ", service: "
+          <> ir.metadata.service_name
+          <> ")",
+        ),
     )
   })
 }
 
-fn print_step3_success() {
-  io.println("  " <> ansi.green("✓ Generated Terraform configuration"))
+fn print_step3_success(config: CompilationConfig) {
+  log(config, "  " <> ansi.green("✓ Generated Terraform configuration"))
 }
 
-fn print_footer() {
-  io.println("")
-  io.println(ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")))
-  io.println("")
+fn print_footer(config: CompilationConfig) {
+  log(config, "")
+  log(config, ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")))
+  log(config, "")
 }
 
 // ==== Shared compilation steps ====
@@ -127,43 +164,44 @@ fn run_code_generation(resolved_irs: List(IntermediateRepresentation)) -> String
 pub fn compile(
   blueprint_file_path: String,
   expectations_directory: String,
+  config: CompilationConfig,
 ) -> Result(String, String) {
-  print_header()
+  print_header(config)
 
   // Step 1: Parse and Link
-  print_step1_start(blueprint_file_path, expectations_directory)
+  print_step1_start(config, blueprint_file_path, expectations_directory)
   use irs <- result.try(
     case linker.link(blueprint_file_path, expectations_directory) {
       Error(err) -> {
-        print_step1_error()
+        print_step1_error(config)
         Error(err.msg)
       }
       Ok(irs) -> {
-        print_step1_success(list.length(irs))
+        print_step1_success(config, list.length(irs))
         Ok(irs)
       }
     },
   )
 
   // Step 2: Semantic Analysis
-  print_step2_start(irs)
+  print_step2_start(config, irs)
   use resolved_irs <- result.try(case run_semantic_analysis(irs) {
     Error(err) -> {
-      print_step2_error()
+      print_step2_error(config)
       Error(err)
     }
     Ok(resolved_irs) -> {
-      print_step2_success(list.length(resolved_irs))
+      print_step2_success(config, list.length(resolved_irs))
       Ok(resolved_irs)
     }
   })
 
   // Step 3: Code Generation
-  print_step3_start(resolved_irs)
+  print_step3_start(config, resolved_irs)
   let terraform_output = run_code_generation(resolved_irs)
-  print_step3_success()
+  print_step3_success(config)
 
-  print_footer()
+  print_footer(config)
   Ok(terraform_output)
 }
 

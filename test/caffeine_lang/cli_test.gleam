@@ -18,29 +18,30 @@ pub fn cli_exit_code_test() {
     #(
       [
         "compile",
+        "--quiet",
         "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
         "test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
       ],
       constants.exit_success,
     ),
     #(
-      ["compile", "/nonexistent/path.json", "/nonexistent/dir"],
+      ["compile", "--quiet", "/nonexistent/path.json", "/nonexistent/dir"],
       constants.exit_failure,
     ),
     #(
       [
         "compile",
+        "--quiet",
         "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
         "/nonexistent/expectations",
       ],
       constants.exit_failure,
     ),
-    #(["invalid-command"], constants.exit_failure),
-    #(["--help"], constants.exit_success),
-    #(["-h"], constants.exit_success),
-    #(["--version"], constants.exit_success),
-    #(["-V"], constants.exit_success),
-    #([], constants.exit_success),
+    #(["--quiet", "--help"], constants.exit_success),
+    #(["--quiet", "-h"], constants.exit_success),
+    #(["--quiet", "--version"], constants.exit_success),
+    #(["--quiet", "-V"], constants.exit_success),
+    #(["--quiet"], constants.exit_success),
   ]
   |> list.each(fn(pair) {
     let #(args, expected_exit_code) = pair

@@ -1,4 +1,4 @@
-import caffeine_lang/compiler
+import caffeine_lang/compiler.{CompilationConfig, Minimal}
 import gleam/list
 import gleam/string
 import gleeunit/should
@@ -37,7 +37,8 @@ pub fn compile_test() {
     let #(input_blueprints_path, input_expectations_dir, expected_path) = tuple
     let assert Ok(expected) = simplifile.read(expected_path)
 
-    compiler.compile(input_blueprints_path, input_expectations_dir)
+    let config = CompilationConfig(log_level: Minimal)
+    compiler.compile(input_blueprints_path, input_expectations_dir, config)
     |> should.equal(Ok(expected))
   })
 }
