@@ -1,15 +1,20 @@
 /// Datadog Query Template Resolver
 ///
 /// This module defines template types for replacing placeholders in Datadog metric queries.
-/// Templates use the format `$$INPUT_NAME->DATADOG_ATTR:TEMPLATE_TYPE$$` where:
-/// - INPUT_NAME: The name of the input attribute from the expectation (provides the value)
-/// - DATADOG_ATTR: The Datadog tag/attribute name to use in the query
-/// - TEMPLATE_TYPE: How the value should be formatted in the query
 ///
-/// Example:
-///   Template: `$$environment->env:tag$$`
-///   Input: (environment, "production", String)
-///   Output: `env:production`
+/// Two template formats are supported:
+///
+/// 1. Simple raw value substitution: `$$INPUT_NAME$$`
+///    - Just substitutes the raw value with no formatting
+///    - Example: `time_slice(query < $$threshold$$ per 10s)` with threshold=2500000
+///      becomes `time_slice(query < 2500000 per 10s)`
+///
+/// 2. Datadog filter format: `$$INPUT_NAME->DATADOG_ATTR:TEMPLATE_TYPE$$`
+///    - INPUT_NAME: The name of the input attribute from the expectation (provides the value)
+///    - DATADOG_ATTR: The Datadog tag/attribute name to use in the query
+///    - TEMPLATE_TYPE: How the value should be formatted in the query (optional, defaults to tag format)
+///    - Example: `$$environment->env$$` with environment="production"
+///      becomes `env:production`
 ///
 /// Datadog Query Syntax Reference:
 /// - Tag filters: `{tag:value}` or `{tag:value, tag2:value2}`
@@ -52,6 +57,12 @@ pub type TemplateVariable {
 ///
 /// The only explicit type needed is `Not` for negation.
 pub type DatadogTemplateType {
+  /// Raw type for simple value substitution without any formatting.
+  /// Used when template is just `$$name$$` without `->`.
+  /// - String -> just the value itself
+  /// - List -> comma-separated values
+  Raw
+
   /// Default type that auto-detects based on value:
   /// - String -> `attr:value` (wildcards in value are preserved)
   /// - List -> `attr IN (value1, value2, ...)`
@@ -109,45 +120,67 @@ pub fn parse_and_resolve_query_template(
   }
 }
 
-/// Parses a template variable string in the format "INPUT_NAME->DATADOG_ATTR:TEMPLATE_TYPE"
-/// or "INPUT_NAME->DATADOG_ATTR" (template type defaults to Default).
+/// Parses a template variable string. Supports two formats:
 ///
-/// Examples:
-/// - "environment->env" -> TemplateVariable("environment", "env", Default)
-/// - "environment->env:not" -> TemplateVariable("environment", "env", Not)
+/// 1. Simple raw value: "INPUT_NAME" (no ->)
+///    - Returns Raw type for direct value substitution
+///    - Example: "threshold" -> TemplateVariable("threshold", "", Raw)
+///
+/// 2. Datadog format: "INPUT_NAME->DATADOG_ATTR:TEMPLATE_TYPE"
+///    - Returns Default or Not type for Datadog filter formatting
+///    - Example: "environment->env" -> TemplateVariable("environment", "env", Default)
+///    - Example: "environment->env:not" -> TemplateVariable("environment", "env", Not)
 @internal
 pub fn parse_template_variable(
   variable: String,
 ) -> Result(TemplateVariable, errors.SemanticError) {
-  use #(trimmed_input, rest) <- result.try(
-    case string.split_once(variable, "->") {
-      Error(_) ->
-        Error(errors.TemplateParseError(
-          "Invalid template format, missing '->': " <> variable,
-        ))
-      Ok(#(input_name, rest)) -> {
-        let splitted_trimmed = string.trim(input_name)
-
-        case splitted_trimmed, rest {
-          "", _ ->
-            Error(errors.TemplateParseError(
-              "Empty input name in template: " <> variable,
-            ))
-          _, "" ->
-            Error(errors.TemplateParseError(
-              "Empty label name in template: " <> variable,
-            ))
-          _, _ -> Ok(#(splitted_trimmed, rest))
-        }
+  case string.split_once(variable, "->") {
+    // No "->" means simple raw value substitution
+    Error(_) -> {
+      let trimmed = string.trim(variable)
+      case trimmed {
+        "" ->
+          Error(errors.TemplateParseError(
+            "Empty template variable name: " <> variable,
+          ))
+        _ ->
+          Ok(TemplateVariable(
+            input_name: trimmed,
+            datadog_attr: "",
+            template_type: Raw,
+          ))
       }
-    },
-  )
+    }
+    // Has "->" means Datadog format
+    Ok(#(input_name, rest)) -> {
+      let trimmed_input = string.trim(input_name)
+
+      case trimmed_input, rest {
+        "", _ ->
+          Error(errors.TemplateParseError(
+            "Empty input name in template: " <> variable,
+          ))
+        _, "" ->
+          Error(errors.TemplateParseError(
+            "Empty label name in template: " <> variable,
+          ))
+        _, _ -> parse_datadog_template_variable(trimmed_input, rest)
+      }
+    }
+  }
+}
+
+/// Helper to parse Datadog format template variables (with ->)
+fn parse_datadog_template_variable(
+  input_name: String,
+  rest: String,
+) -> Result(TemplateVariable, errors.SemanticError) {
   case string.split_once(rest, ":") {
     // No colon means default template type
     Error(_) ->
       Ok(TemplateVariable(
         input_name: string.trim(rest),
-        datadog_attr: trimmed_input,
+        datadog_attr: input_name,
         template_type: Default,
       ))
     Ok(#(datadog_attr, type_string)) -> {
@@ -156,7 +189,7 @@ pub fn parse_template_variable(
         Ok(template_type) ->
           Ok(TemplateVariable(
             input_name: string.trim(datadog_attr),
-            datadog_attr: trimmed_input,
+            datadog_attr: input_name,
             template_type: template_type,
           ))
       }
@@ -301,6 +334,7 @@ pub fn resolve_template(
 pub fn resolve_string_value(template: TemplateVariable, value: String) -> String {
   let attr = template.datadog_attr
   case template.template_type {
+    Raw -> value
     Default -> attr <> ":" <> value
     Not -> "!" <> attr <> ":" <> value
   }
@@ -317,6 +351,7 @@ pub fn resolve_list_value(
 ) -> String {
   let attr = template.datadog_attr
   case template.template_type {
+    Raw -> values |> string.join(", ")
     Default -> attr <> " IN (" <> values |> string.join(", ") <> ")"
     Not -> attr <> " NOT IN (" <> values |> string.join(", ") <> ")"
   }

@@ -9,7 +9,9 @@ import gleeunit/should
 // * ✅ missing value tuple for a value
 // * ✅ query template var incomplete, missing ending `$$`
 // * ✅ happy path - no template variables
-// * ✅ happy path - multiple template variables
+// * ✅ happy path - multiple template variables (Datadog format)
+// * ✅ happy path - raw value substitution (time_slice threshold)
+// * ✅ happy path - mixed raw and Datadog format
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
@@ -45,6 +47,59 @@ pub fn parse_and_resolve_query_template_test() {
       ],
       Ok("foo.sum{!foo:pizza AND baz IN (10, 11, 12)}"),
     ),
+    // Raw value substitution - perfect for time_slice thresholds!
+    #(
+      "time_slice(query < $$threshold$$ per 10s)",
+      [
+        helpers.ValueTuple(
+          "threshold",
+          typ: helpers.Integer,
+          value: dynamic.int(2_500_000),
+        ),
+      ],
+      Ok("time_slice(query < 2500000 per 10s)"),
+    ),
+    // Raw value with Float
+    #(
+      "time_slice(query > $$threshold$$ per 5m)",
+      [
+        helpers.ValueTuple(
+          "threshold",
+          typ: helpers.Float,
+          value: dynamic.float(99.5),
+        ),
+      ],
+      Ok("time_slice(query > 99.5 per 5m)"),
+    ),
+    // Raw value with String
+    #(
+      "some_metric{status:$$status$$}",
+      [
+        helpers.ValueTuple(
+          "status",
+          typ: helpers.String,
+          value: dynamic.string("active"),
+        ),
+      ],
+      Ok("some_metric{status:active}"),
+    ),
+    // Mixed raw and Datadog format
+    #(
+      "time_slice(avg:system.cpu{$$env->environment$$} > $$threshold$$ per 300s)",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: helpers.String,
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "threshold",
+          typ: helpers.Integer,
+          value: dynamic.int(80),
+        ),
+      ],
+      Ok("time_slice(avg:system.cpu{env:production} > 80 per 300s)"),
+    ),
   ]
   |> list.each(fn(tuple) {
     let #(input_1, input_2, expected) = tuple
@@ -55,14 +110,25 @@ pub fn parse_and_resolve_query_template_test() {
 }
 
 // ==== Parse Template Variable ====
+// * ✅ parses "threshold" (no ->) -> Raw
 // * ✅ parses "environment->env" -> Default
 // * ✅ parses "environment->env:not" -> Not
-// * ✅ rejects missing "->"
-// * ✅ rejects empty input name
-// * ✅ rejects empty label name
+// * ✅ rejects empty template name
+// * ✅ rejects empty input name (with ->)
+// * ✅ rejects empty label name (with ->)
 // * ✅ rejects unknown template type
 pub fn parse_template_variable_test() {
   [
+    // Raw format: just the input name, no "->"
+    #(
+      "threshold",
+      Ok(templatizer.TemplateVariable("threshold", "", templatizer.Raw)),
+    ),
+    #(
+      "my_value",
+      Ok(templatizer.TemplateVariable("my_value", "", templatizer.Raw)),
+    ),
+    // Datadog format: input->attr
     #(
       "bar->foo",
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Default)),
@@ -71,13 +137,15 @@ pub fn parse_template_variable_test() {
       "bar->foo:not",
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Not)),
     ),
+    // Error cases
     #(
-      "foofoo",
-      Error(errors.TemplateParseError(
-        "Invalid template format, missing '->': foofoo",
-      )),
+      "",
+      Error(errors.TemplateParseError("Empty template variable name: ")),
     ),
-
+    #(
+      "  ",
+      Error(errors.TemplateParseError("Empty template variable name:   ")),
+    ),
     #(
       "->foo",
       Error(errors.TemplateParseError("Empty input name in template: ->foo")),
@@ -303,10 +371,17 @@ pub fn resolve_template_test() {
 }
 
 // ==== Resolve String Value ====
+// * ✅ Raw: just the value itself
 // * ✅ Default: "attr:value" (wildcards preserved)
 // * ✅ Not: "!attr:value" (wildcards preserved)
 pub fn resolve_string_value_test() {
   [
+    // Raw: just returns the value
+    #(
+      templatizer.TemplateVariable("threshold", "", templatizer.Raw),
+      "2500000",
+      "2500000",
+    ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       "bar",
@@ -327,10 +402,17 @@ pub fn resolve_string_value_test() {
 }
 
 // ==== Resolve List Value ====
+// * ✅ Raw: "v1, v2, v3" (comma-separated)
 // * ✅ Default: "attr IN (v1, v2, v3)"
 // * ✅ Not: "attr NOT IN (v1, v2)"
 pub fn resolve_list_value_test() {
   [
+    // Raw: just comma-separated values
+    #(
+      templatizer.TemplateVariable("values", "", templatizer.Raw),
+      ["bar", "baz"],
+      "bar, baz",
+    ),
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       ["bar", "baz"],
