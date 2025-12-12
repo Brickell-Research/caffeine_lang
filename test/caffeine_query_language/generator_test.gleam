@@ -6,10 +6,14 @@ import gleam/list
 import gleeunit/should
 
 // ==== generate_datadog_query Tests ====
+// good_over_total
 // * ✅ simple good over total query
 // * ✅ nested and complex good over total query
+// time_slice
+// * ✅ TimeSlice(GreaterThan, 10, 1000000, "Query") - generates correct Datadog time slice format
+// * ✅ TimeSlice(LessThanOrEqualTo, 300, 500, "avg:system.cpu") - different comparator, minutes converted to seconds
 
-pub fn generate_datadog_query_test() {
+pub fn generate_datadog_query_good_over_total_test() {
   [
     // simple good over total query
     #(
@@ -28,6 +32,63 @@ pub fn generate_datadog_query_test() {
     denominator = \"C + (D + E) * F\"
   }
 ",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    let assert Ok(parsed) = parser.parse_expr(input)
+    let assert Ok(resolved) = resolver.resolve_primitives(parsed)
+    generator.generate_datadog_query(resolved) |> should.equal(expected)
+  })
+}
+
+pub fn generate_datadog_query_time_slice_test() {
+  [
+    // TimeSlice(GreaterThan, 10, 1000000, "Query") - generates correct Datadog time slice format
+    #(
+      "time_slice(Query > 1000000 per 10s)",
+      "  sli_specification {
+    time_slice {
+      comparator               = \">\"
+      query_interval_seconds   = 10
+      threshold                = 1000000
+      query {
+        formula {
+          formula_expression = \"query1\"
+        }
+        query {
+          metric_query {
+            data_source = \"metrics\"
+            name        = \"query1\"
+            query       = \"Query\"
+          }
+        }
+      }
+    }
+  }",
+    ),
+    // TimeSlice(LessThanOrEqualTo, 300, 500, "avg:system.cpu") - different comparator
+    #(
+      "time_slice(avg:system.cpu <= 500 per 5m)",
+      "  sli_specification {
+    time_slice {
+      comparator               = \"<=\"
+      query_interval_seconds   = 300
+      threshold                = 500
+      query {
+        formula {
+          formula_expression = \"query1\"
+        }
+        query {
+          metric_query {
+            data_source = \"metrics\"
+            name        = \"query1\"
+            query       = \"avg:system.cpu\"
+          }
+        }
+      }
+    }
+  }",
     ),
   ]
   |> list.each(fn(pair) {

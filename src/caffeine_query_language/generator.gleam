@@ -1,8 +1,12 @@
 import caffeine_query_language/parser.{
   type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord, Word,
 }
-import caffeine_query_language/resolver.{type Primitives, GoodOverTotal}
+import caffeine_query_language/resolver.{
+  type Primitives, GoodOverTotal, TimeSlice,
+}
 import gleam/dict
+import gleam/float
+import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
@@ -21,6 +25,27 @@ pub fn generate_datadog_query(primitive: Primitives) -> String {
       <> denominator_exp_to_datadog_query(denominator)
       <> "\"\n"
       <> "  }\n"
+    }
+    TimeSlice(comparator, interval_in_seconds, threshold, query) -> {
+      "  sli_specification {
+    time_slice {
+      comparator               = " <> resolver.comparator_to_string(comparator) <> "
+      query_interval_seconds   = " <> int.to_string(interval_in_seconds) <> "
+      threshold                = " <> float_to_string(threshold) <> "
+      query {
+        formula {
+          formula_expression = \"query1\"
+        }
+        query {
+          metric_query {
+            data_source = \"metrics\"
+            name        = \"query1\"
+            query       = \"" <> query <> "\"
+          }
+        }
+      }
+    }
+  }"
     }
   }
 }
@@ -45,6 +70,16 @@ fn denominator_exp_to_datadog_query(exp: Exp) -> String {
 pub fn exp_to_string(exp: Exp) -> String {
   case exp {
     parser.Primary(primary:) -> primary_to_string(primary, None)
+    parser.TimeSliceExpr(spec) ->
+      "time_slice("
+      <> spec.query
+      <> " "
+      <> comparator_to_string(spec.comparator)
+      <> " "
+      <> float_to_string(spec.threshold)
+      <> " per "
+      <> float_to_string(spec.interval_seconds)
+      <> "s)"
     parser.OperatorExpr(numerator:, denominator:, operator:) -> {
       // Check if this entire expression tree is a path (all divisions with path-like components)
       case operator, is_path_expression(exp) {
@@ -62,6 +97,25 @@ pub fn exp_to_string(exp: Exp) -> String {
         }
       }
     }
+  }
+}
+
+fn comparator_to_string(comparator: parser.Comparator) -> String {
+  case comparator {
+    parser.LessThan -> "<"
+    parser.LessThanOrEqualTo -> "<="
+    parser.GreaterThan -> ">"
+    parser.GreaterThanOrEqualTo -> ">="
+  }
+}
+
+fn float_to_string(f: Float) -> String {
+  // Check if it's a whole number (no fractional part)
+  let truncated = float.truncate(f)
+  let is_whole = int.to_float(truncated) == f
+  case is_whole {
+    True -> int.to_string(truncated)
+    False -> float.to_string(f)
   }
 }
 
@@ -85,6 +139,7 @@ fn get_leftmost_word(exp: Exp) -> Option(String) {
   case exp {
     parser.Primary(parser.PrimaryWord(parser.Word(w))) -> Some(w)
     parser.Primary(parser.PrimaryExp(inner_exp)) -> get_leftmost_word(inner_exp)
+    parser.TimeSliceExpr(_) -> None
     parser.OperatorExpr(left, _, _) -> get_leftmost_word(left)
   }
 }
@@ -116,6 +171,7 @@ fn exp_to_string_with_context(
 ) -> String {
   case exp {
     parser.Primary(primary:) -> primary_to_string(primary, parent_op)
+    parser.TimeSliceExpr(_) -> exp_to_string(exp)
     parser.OperatorExpr(numerator:, denominator:, operator:) -> {
       // Check if this is a path expression to avoid adding spaces
       // This is important when the division is part of a larger expression (e.g., with AND)
@@ -169,6 +225,12 @@ pub fn substitute_words(
     }
     parser.Primary(PrimaryExp(inner)) ->
       parser.Primary(PrimaryExp(substitute_words(inner, substitutions)))
+    parser.TimeSliceExpr(spec) -> {
+      // Substitute in the query string if it matches a key
+      let query =
+        dict.get(substitutions, spec.query) |> result.unwrap(spec.query)
+      parser.TimeSliceExpr(parser.TimeSliceExp(..spec, query: query))
+    }
     parser.OperatorExpr(left, right, op) ->
       parser.OperatorExpr(
         substitute_words(left, substitutions),
@@ -186,12 +248,16 @@ pub fn resolve_slo_query(
   substitutions: dict.Dict(String, String),
 ) -> #(String, String) {
   let assert Ok(exp_container) = parser.parse_expr(value_expr)
-  let assert Ok(GoodOverTotal(numerator_exp, denominator_exp)) =
-    resolver.resolve_primitives(exp_container)
+  case resolver.resolve_primitives(exp_container) {
+    Ok(GoodOverTotal(numerator_exp, denominator_exp)) -> {
+      let numerator_str =
+        substitute_words(numerator_exp, substitutions) |> exp_to_string
+      let denominator_str =
+        substitute_words(denominator_exp, substitutions) |> exp_to_string
+      #(numerator_str, denominator_str)
+    }
 
-  let numerator_str =
-    substitute_words(numerator_exp, substitutions) |> exp_to_string
-  let denominator_str =
-    substitute_words(denominator_exp, substitutions) |> exp_to_string
-  #(numerator_str, denominator_str)
+    // TODO: handle error and handle time slice
+    _ -> #("", "")
+  }
 }
