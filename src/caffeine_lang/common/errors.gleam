@@ -36,12 +36,13 @@ pub type CompilerError {
 /// custom errors we have per compilation phase vs. the lower level ones from
 /// various libraries we leverage.
 pub fn format_json_decode_error(error: json.DecodeError) -> ParseError {
-  let msg = json_error_to_string(error)
+  let msg = format_json_decode_error_to_string(error)
 
   JsonParserError(msg:)
 }
 
-fn json_error_to_string(error: json.DecodeError) -> String {
+/// Converts a JSON decode error directly to a string (for browser error messages).
+pub fn format_json_decode_error_to_string(error: json.DecodeError) -> String {
   case error {
     json.UnexpectedEndOfInput -> "Unexpected end of input."
     json.UnexpectedByte(val) -> "Unexpected byte: " <> val <> "."

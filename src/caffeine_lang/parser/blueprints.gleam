@@ -27,7 +27,16 @@ pub fn parse_from_file(
   // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  // actually parse
+  // parse and validate
+  parse_from_string(json_string, artifacts)
+}
+
+/// Parse blueprints from a JSON string.
+/// This is public so it can be used by browser.gleam for in-browser compilation.
+pub fn parse_from_string(
+  json_string: String,
+  artifacts: List(Artifact),
+) -> Result(List(Blueprint), ParseError) {
   use blueprints <- result.try(
     case blueprints_from_json(json_string, artifacts) {
       Ok(blueprints) -> Ok(blueprints)
@@ -35,8 +44,17 @@ pub fn parse_from_file(
     },
   )
 
+  validate_blueprints(blueprints, artifacts)
+}
+
+/// Validates and transforms blueprints after JSON parsing.
+/// This performs all the validation and merging that parse_from_file does,
+/// but takes already-parsed blueprints instead of reading from a file.
+pub fn validate_blueprints(
+  blueprints: List(Blueprint),
+  artifacts: List(Artifact),
+) -> Result(List(Blueprint), ParseError) {
   // map blueprints to artifacts since we'll reuse that numerous times
-  // and we've already validated all artifact_refs
   let blueprint_artifact_collection =
     helpers.map_reference_to_referrer_over_collection(
       references: artifacts,

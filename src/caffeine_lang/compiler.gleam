@@ -2,6 +2,9 @@ import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
+import caffeine_lang/parser/artifacts
+import caffeine_lang/parser/blueprints
+import caffeine_lang/parser/expectations
 import caffeine_lang/parser/linker
 import gleam/int
 import gleam/io
@@ -106,6 +109,18 @@ fn print_footer() {
   io.println("")
 }
 
+// ==== Shared compilation steps ====
+fn run_semantic_analysis(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(IntermediateRepresentation), String) {
+  semantic_analyzer.resolve_intermediate_representations(irs)
+  |> result.map_error(fn(err) { "Semantic analysis error: " <> err.msg })
+}
+
+fn run_code_generation(resolved_irs: List(IntermediateRepresentation)) -> String {
+  datadog.generate_terraform(resolved_irs)
+}
+
 // ==== Compiler ====
 
 // TODO: have an actual error type
@@ -132,24 +147,66 @@ pub fn compile(
 
   // Step 2: Semantic Analysis
   print_step2_start(irs)
-  use resolved_irs <- result.try(
-    case semantic_analyzer.resolve_intermediate_representations(irs) {
-      Error(err) -> {
-        print_step2_error()
-        Error(err.msg)
-      }
-      Ok(resolved_irs) -> {
-        print_step2_success(list.length(resolved_irs))
-        Ok(resolved_irs)
-      }
-    },
-  )
+  use resolved_irs <- result.try(case run_semantic_analysis(irs) {
+    Error(err) -> {
+      print_step2_error()
+      Error(err)
+    }
+    Ok(resolved_irs) -> {
+      print_step2_success(list.length(resolved_irs))
+      Ok(resolved_irs)
+    }
+  })
 
   // Step 3: Code Generation
   print_step3_start(resolved_irs)
-  let terraform_output = datadog.generate_terraform(resolved_irs)
+  let terraform_output = run_code_generation(resolved_irs)
   print_step3_success()
 
   print_footer()
   Ok(terraform_output)
+}
+
+/// Compile from JSON strings directly (no file I/O).
+/// Used for browser-based compilation.
+pub fn compile_from_strings(
+  blueprints_json: String,
+  expectations_json: String,
+  expectations_path: String,
+) -> Result(String, String) {
+  // Step 1: Parse (no file I/O)
+  use irs <- result.try(parse_from_strings(
+    blueprints_json,
+    expectations_json,
+    expectations_path,
+  ))
+
+  // Step 2: Semantic analysis
+  use resolved_irs <- result.try(run_semantic_analysis(irs))
+
+  // Step 3: Code generation
+  Ok(run_code_generation(resolved_irs))
+}
+
+fn parse_from_strings(
+  blueprints_json: String,
+  expectations_json: String,
+  expectations_path: String,
+) -> Result(List(IntermediateRepresentation), String) {
+  use artifacts <- result.try(
+    artifacts.parse_standard_library()
+    |> result.map_error(fn(err) { "Artifact error: " <> err.msg }),
+  )
+
+  use validated_blueprints <- result.try(
+    blueprints.parse_from_string(blueprints_json, artifacts)
+    |> result.map_error(fn(err) { "Blueprint error: " <> err.msg }),
+  )
+
+  expectations.parse_from_string(
+    expectations_json,
+    expectations_path,
+    validated_blueprints,
+  )
+  |> result.map_error(fn(err) { "Expectation error: " <> err.msg })
 }

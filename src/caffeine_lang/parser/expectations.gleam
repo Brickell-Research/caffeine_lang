@@ -30,6 +30,17 @@ pub fn parse_from_file(
   // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
+  // parse and validate
+  parse_from_string(json_string, file_path, blueprints)
+}
+
+/// Parse expectations from a JSON string with a given path for metadata extraction.
+/// This is public so it can be used by browser.gleam for in-browser compilation.
+pub fn parse_from_string(
+  json_string: String,
+  file_path: String,
+  blueprints: List(Blueprint),
+) -> Result(List(IntermediateRepresentation), ParseError) {
   // actually parse
   use expectations <- result.try(
     case expectations_from_json(json_string, blueprints) {
@@ -38,6 +49,16 @@ pub fn parse_from_file(
     },
   )
 
+  // validate and build IRs
+  validate_and_build_irs(expectations, blueprints, file_path)
+}
+
+/// Validate expectations and build intermediate representations.
+fn validate_and_build_irs(
+  expectations: List(Expectation),
+  blueprints: List(Blueprint),
+  file_path: String,
+) -> Result(List(IntermediateRepresentation), ParseError) {
   // map expectations to blueprints since we'll reuse that numerous times
   // and we've already validated all blueprint_refs
   let expectations_blueprint_collection =
@@ -170,7 +191,9 @@ fn check_input_overshadowing(
   }
 }
 
-fn expectations_from_json(
+/// Parse expectations from a JSON string.
+/// This is public so it can be used by browser.gleam for in-browser compilation.
+pub fn expectations_from_json(
   json_string: String,
   blueprints: List(Blueprint),
 ) -> Result(List(Expectation), json.DecodeError) {
