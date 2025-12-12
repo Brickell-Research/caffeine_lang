@@ -97,6 +97,16 @@ pub fn validate_value_type_test() {
       dynamic.properties([#(some_string, other_string)]),
       helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
     ),
+    // Defaulted types with values
+    #(some_string, helpers.Defaulted(helpers.String, "default")),
+    #(some_int, helpers.Defaulted(helpers.Integer, "0")),
+    #(some_float, helpers.Defaulted(helpers.Float, "0.0")),
+    #(some_bool, helpers.Defaulted(helpers.Boolean, "False")),
+    // Defaulted List types
+    #(
+      dynamic.list([some_string, other_string]),
+      helpers.Defaulted(helpers.List(helpers.String), ""),
+    ),
   ]
   |> list.each(fn(pair) {
     let #(value, expected_type) = pair
@@ -218,6 +228,23 @@ pub fn validate_value_type_test() {
       helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
       "expected (String) received (Bool) for (some_key)",
     ),
+    // Defaulted types with wrong inner type
+    #(
+      some_bool,
+      helpers.Defaulted(helpers.String, "default"),
+      "expected (String) received (Bool) for (some_key)",
+    ),
+    #(
+      some_string,
+      helpers.Defaulted(helpers.Integer, "0"),
+      "expected (Int) received (String) for (some_key)",
+    ),
+    // Defaulted List with wrong inner type
+    #(
+      dynamic.list([some_bool]),
+      helpers.Defaulted(helpers.List(helpers.String), ""),
+      "expected (String) received (Bool) for (some_key)",
+    ),
   ]
   |> list.each(fn(tuple) {
     let #(value, expected_type, msg) = tuple
@@ -232,6 +259,9 @@ pub fn validate_value_type_test() {
 // * ✅ happy path - optional param omitted
 // * ✅ happy path - optional param provided
 // * ✅ happy path - mix of required and optional, optional omitted
+// * ✅ happy path - defaulted param omitted
+// * ✅ happy path - defaulted param provided
+// * ✅ happy path - mix of required and defaulted, defaulted omitted
 // * ✅ missing inputs for params (single)
 // * ✅ missing inputs for params (multiple)
 // * ✅ extra inputs
@@ -239,6 +269,7 @@ pub fn validate_value_type_test() {
 // * ✅ type validation error - single
 // * ✅ type validation error - multiple
 // * ✅ missing required when optional exists
+// * ✅ missing required when defaulted exists
 pub fn inputs_validator_test() {
   // happy paths
   [
@@ -267,6 +298,24 @@ pub fn inputs_validator_test() {
       dict.from_list([
         #("name", helpers.String),
         #("maybe_count", helpers.Optional(helpers.Integer)),
+      ]),
+      dict.from_list([#("name", dynamic.string("foo"))]),
+    ),
+    // defaulted param omitted - should pass
+    #(
+      dict.from_list([#("count", helpers.Defaulted(helpers.Integer, "10"))]),
+      dict.from_list([]),
+    ),
+    // defaulted param provided - should pass
+    #(
+      dict.from_list([#("count", helpers.Defaulted(helpers.Integer, "10"))]),
+      dict.from_list([#("count", dynamic.int(42))]),
+    ),
+    // mix of required and defaulted, defaulted omitted - should pass
+    #(
+      dict.from_list([
+        #("name", helpers.String),
+        #("count", helpers.Defaulted(helpers.Integer, "10")),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
@@ -317,6 +366,15 @@ pub fn inputs_validator_test() {
       dict.from_list([
         #("name", helpers.String),
         #("maybe_count", helpers.Optional(helpers.Integer)),
+      ]),
+      dict.from_list([]),
+      "Missing keys in input: name",
+    ),
+    // missing required when defaulted param exists - should fail for required only
+    #(
+      dict.from_list([
+        #("name", helpers.String),
+        #("count", helpers.Defaulted(helpers.Integer, "10")),
       ]),
       dict.from_list([]),
       "Missing keys in input: name",

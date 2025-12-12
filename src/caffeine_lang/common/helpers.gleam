@@ -6,6 +6,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option
+import gleam/string
 import simplifile
 
 /// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
@@ -19,6 +20,9 @@ pub type AcceptedTypes {
   Dict(AcceptedTypes, AcceptedTypes)
   List(AcceptedTypes)
   Optional(AcceptedTypes)
+  /// Defaulted type stores the inner type and its default value as a string
+  /// e.g., Defaulted(Integer, "10") means an optional integer with default 10
+  Defaulted(AcceptedTypes, String)
 }
 
 /// A tuple of a label, type, and value used for template resolution.
@@ -59,12 +63,21 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
     Dict(_, _) -> decode.failure("", "Dict")
     List(_) -> decode.failure("", "List")
     Optional(inner_type) -> {
-      use maybe_val <- decode.then(decode.optional(decode_value_to_string(
-        inner_type,
-      )))
+      use maybe_val <- decode.then(
+        decode.optional(decode_value_to_string(inner_type)),
+      )
       case maybe_val {
         option.Some(val) -> decode.success(val)
         option.None -> decode.success("")
+      }
+    }
+    Defaulted(inner_type, default_val) -> {
+      use maybe_val <- decode.then(
+        decode.optional(decode_value_to_string(inner_type)),
+      )
+      case maybe_val {
+        option.Some(val) -> decode.success(val)
+        option.None -> decode.success(default_val)
       }
     }
   }
@@ -110,8 +123,103 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, Nil) {
     "Optional(Dict(String, Integer))" -> Ok(Optional(Dict(String, Integer)))
     "Optional(Dict(String, Float))" -> Ok(Optional(Dict(String, Float)))
     "Optional(Dict(String, Boolean))" -> Ok(Optional(Dict(String, Boolean)))
-    // TODO: hacky, fix this
-    _ -> Error(Nil)
+    // Try to parse Defaulted types with default value
+    _ -> parse_defaulted_type(raw_accepted_type)
+  }
+}
+
+/// Parses a Defaulted type string like "Defaulted(Integer, 10)" into Defaulted(Integer, "10")
+/// Also validates that the default value is compatible with the inner type.
+fn parse_defaulted_type(raw: String) -> Result(AcceptedTypes, Nil) {
+  case string.starts_with(raw, "Defaulted(") && string.ends_with(raw, ")") {
+    False -> Error(Nil)
+    True -> {
+      // Remove "Defaulted(" prefix and ")" suffix
+      let inner =
+        raw
+        |> string.drop_start(10)
+        |> string.drop_end(1)
+
+      // Find the last comma that separates the type from the default value
+      // We need to handle nested types like "List(String), default"
+      case find_type_default_split(inner) {
+        Error(Nil) -> Error(Nil)
+        Ok(#(type_str, default_val)) -> {
+          let trimmed_type = string.trim(type_str)
+          let trimmed_default = string.trim(default_val)
+          case parse_accepted_type(trimmed_type) {
+            Ok(inner_type) -> {
+              // Validate the default value is compatible with the inner type
+              case validate_default_value(inner_type, trimmed_default) {
+                True -> Ok(Defaulted(inner_type, trimmed_default))
+                False -> Error(Nil)
+              }
+            }
+            Error(Nil) -> Error(Nil)
+          }
+        }
+      }
+    }
+  }
+}
+
+/// Validates that a default value string is compatible with the given type.
+/// For basic types, checks that the string can be parsed as that type.
+/// For complex types (List, Dict), we accept any string since the default
+/// is used as a literal string value in templates.
+fn validate_default_value(typ: AcceptedTypes, default_val: String) -> Bool {
+  case typ {
+    Boolean -> default_val == "True" || default_val == "False"
+    Integer -> case int.parse(default_val) {
+      Ok(_) -> True
+      Error(_) -> False
+    }
+    Float -> case float.parse(default_val) {
+      Ok(_) -> True
+      Error(_) -> False
+    }
+    String -> True
+    // For complex types, we accept any default since it's used as a literal
+    // string value in template substitution
+    List(_) -> True
+    Dict(_, _) -> True
+    // Nested Optional/Defaulted doesn't make sense
+    Optional(_) -> False
+    Defaulted(_, _) -> False
+  }
+}
+
+/// Finds the split point between the type and default value in a Defaulted inner string.
+/// For "Integer, 10" returns Ok(#("Integer", "10"))
+/// For "List(String), hello" returns Ok(#("List(String)", "hello"))
+/// Handles nested parentheses correctly.
+fn find_type_default_split(inner: String) -> Result(#(String, String), Nil) {
+  find_type_default_split_helper(inner, inner, 0, 0)
+}
+
+fn find_type_default_split_helper(
+  original: String,
+  s: String,
+  index: Int,
+  paren_depth: Int,
+) -> Result(#(String, String), Nil) {
+  case string.pop_grapheme(s) {
+    Error(Nil) -> Error(Nil)
+    Ok(#(char, rest)) -> {
+      case char, paren_depth {
+        "(", _ ->
+          find_type_default_split_helper(original, rest, index + 1, paren_depth + 1)
+        ")", _ ->
+          find_type_default_split_helper(original, rest, index + 1, paren_depth - 1)
+        ",", 0 -> {
+          // Found the split point at depth 0
+          let type_str = string.slice(original, 0, index)
+          let default_val = rest
+          Ok(#(type_str, default_val))
+        }
+        _, _ -> find_type_default_split_helper(original, rest, index + 1, paren_depth)
+      }
+    }
   }
 }
 
@@ -131,6 +239,12 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
     List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
     Optional(inner_type) ->
       "Optional(" <> accepted_type_to_string(inner_type) <> ")"
+    Defaulted(inner_type, default_val) ->
+      "Defaulted("
+      <> accepted_type_to_string(inner_type)
+      <> ", "
+      <> default_val
+      <> ")"
   }
 }
 
@@ -139,10 +253,9 @@ pub fn json_from_file(file_path) -> Result(String, ParseError) {
   case simplifile.read(file_path) {
     Ok(file_contents) -> Ok(file_contents)
     Error(err) ->
-      Error(FileReadError(msg: simplifile.describe_error(err)
-        <> " ("
-        <> file_path
-        <> ")"))
+      Error(FileReadError(
+        msg: simplifile.describe_error(err) <> " (" <> file_path <> ")",
+      ))
   }
 }
 

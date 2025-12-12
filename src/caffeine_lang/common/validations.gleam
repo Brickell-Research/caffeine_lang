@@ -78,6 +78,22 @@ pub fn validate_value_type(
           )
       }
     }
+    helpers.Defaulted(inner_type, _default_val) -> {
+      // Defaulted works like Optional for validation - value can be present or absent
+      // If present, validate it matches the inner type
+      case decode.run(value, decode.optional(decode.dynamic)) {
+        Ok(option.Some(inner_val)) ->
+          validate_value_type(inner_val, inner_type, type_key_identifier)
+        Ok(option.None) -> Ok(value)
+        Error(err) ->
+          Error(
+            JsonParserError(format_decode_error_message(
+              err,
+              option.Some(type_key_identifier),
+            )),
+          )
+      }
+    }
   }
 }
 
@@ -100,17 +116,18 @@ fn validate_value_type_helper(
 
 /// Validates that inputs match the expected params in both keys and types.
 /// Returns an error if there are missing keys, extra keys, or type mismatches.
-/// Note: Optional params are allowed to be omitted from inputs.
+/// Note: Optional and Defaulted params are allowed to be omitted from inputs.
 pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
   inputs inputs: Dict(String, Dynamic),
 ) -> Result(Bool, String) {
-  // Filter out optional params - they're not required
+  // Filter out optional and defaulted params - they're not required
   let required_params =
     params
     |> dict.filter(fn(_, typ) {
       case typ {
         helpers.Optional(_) -> False
+        helpers.Defaulted(_, _) -> False
         _ -> True
       }
     })
