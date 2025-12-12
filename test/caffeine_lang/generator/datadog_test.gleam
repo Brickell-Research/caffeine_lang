@@ -82,6 +82,7 @@ pub fn variables_test() {
 // * ✅ SLO with resolved template queries (tags filled in)
 // * ✅ multiple SLOs generate multiple resources
 // * ✅ complex CQL expression (good + partial) / total
+// * ✅ fully resolved SLO time slice
 pub fn generate_terraform_test() {
   [
     // simple SLO with numerator/denominator queries
@@ -311,6 +312,44 @@ pub fn generate_terraform_test() {
         ),
       ],
       "complex_expression",
+    ),
+    // fully resolved SLO time slice
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Time Slice SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+          ),
+          unique_identifier: "org/team/auth/time_slice_slo",
+          artifact_ref: "SLO",
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              helpers.String,
+              dynamic.string("datadog"),
+            ),
+            helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "window_in_days",
+              helpers.Integer,
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "value",
+              helpers.String,
+              dynamic.string(
+                "time_slice(avg:system.cpu.user{env:production} > 99.5 per 300s)",
+              ),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "resolved_time_slice_expression",
     ),
   ]
   |> list.each(fn(pair) {

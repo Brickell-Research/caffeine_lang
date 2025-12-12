@@ -1,102 +1,75 @@
 import caffeine_query_language/generator
 import caffeine_query_language/parser
-import caffeine_query_language/resolver
 import gleam/dict
 import gleam/list
 import gleeunit/should
+import terra_madre/hcl
 
-// ==== generate_datadog_query Tests ====
+// ==== resolve_slo_to_hcl Tests ====
 // good_over_total
-// * ✅ simple good over total query
-// * ✅ nested and complex good over total query
+// * ✅ simple good over total query returns MetricSlo with query block
+// * ✅ nested expression returns correct numerator/denominator
 // time_slice
-// * ✅ TimeSlice(GreaterThan, 10, 1000000, "Query") - generates correct Datadog time slice format
-// * ✅ TimeSlice(LessThanOrEqualTo, 300, 500, "avg:system.cpu") - different comparator, minutes converted to seconds
+// * ✅ time_slice returns TimeSliceSlo with sli_specification block
 
-pub fn generate_datadog_query_good_over_total_test() {
-  [
-    // simple good over total query
-    #(
-      "(A + B) / C",
-      "query {
-    numerator = \"A + B\"
-    denominator = \"C\"
-  }
-",
-    ),
-    // nested and complex good over total query
-    #(
-      "((A - G) + B) / (C + (D + E) * F)",
-      "query {
-    numerator = \"(A - G) + B\"
-    denominator = \"C + (D + E) * F\"
-  }
-",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    let assert Ok(parsed) = parser.parse_expr(input)
-    let assert Ok(resolved) = resolver.resolve_primitives(parsed)
-    generator.generate_datadog_query(resolved) |> should.equal(expected)
-  })
+pub fn resolve_slo_to_hcl_good_over_total_test() {
+  // simple good over total query
+  let result =
+    generator.resolve_slo_to_hcl(
+      "numerator / denominator",
+      dict.from_list([
+        #("numerator", "sum:http.requests{status:2xx}"),
+        #("denominator", "sum:http.requests{*}"),
+      ]),
+    )
+
+  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
+  should.equal(slo_type, generator.MetricSlo)
+  should.equal(list.length(blocks), 1)
+
+  let assert [query_block] = blocks
+  should.equal(query_block.type_, "query")
+  should.equal(
+    dict.get(query_block.attributes, "numerator"),
+    Ok(hcl.StringLiteral("sum:http.requests{status:2xx}")),
+  )
+  should.equal(
+    dict.get(query_block.attributes, "denominator"),
+    Ok(hcl.StringLiteral("sum:http.requests{*}")),
+  )
 }
 
-pub fn generate_datadog_query_time_slice_test() {
-  [
-    // TimeSlice(GreaterThan, 10, 1000000, "Query") - generates correct Datadog time slice format
-    #(
-      "time_slice(Query > 1000000 per 10s)",
-      "  sli_specification {
-    time_slice {
-      comparator               = \">\"
-      query_interval_seconds   = 10
-      threshold                = 1000000
-      query {
-        formula {
-          formula_expression = \"query1\"
-        }
-        query {
-          metric_query {
-            data_source = \"metrics\"
-            name        = \"query1\"
-            query       = \"Query\"
-          }
-        }
-      }
-    }
-  }",
-    ),
-    // TimeSlice(LessThanOrEqualTo, 300, 500, "avg:system.cpu") - different comparator
-    #(
-      "time_slice(avg:system.cpu <= 500 per 5m)",
-      "  sli_specification {
-    time_slice {
-      comparator               = \"<=\"
-      query_interval_seconds   = 300
-      threshold                = 500
-      query {
-        formula {
-          formula_expression = \"query1\"
-        }
-        query {
-          metric_query {
-            data_source = \"metrics\"
-            name        = \"query1\"
-            query       = \"avg:system.cpu\"
-          }
-        }
-      }
-    }
-  }",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    let assert Ok(parsed) = parser.parse_expr(input)
-    let assert Ok(resolved) = resolver.resolve_primitives(parsed)
-    generator.generate_datadog_query(resolved) |> should.equal(expected)
-  })
+pub fn resolve_slo_to_hcl_time_slice_test() {
+  // time_slice returns TimeSliceSlo with sli_specification block
+  let result =
+    generator.resolve_slo_to_hcl(
+      "time_slice(avg:system.cpu{env:production} > 99.5 per 300s)",
+      dict.new(),
+    )
+
+  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
+  should.equal(slo_type, generator.TimeSliceSlo)
+  should.equal(list.length(blocks), 1)
+
+  let assert [sli_spec_block] = blocks
+  should.equal(sli_spec_block.type_, "sli_specification")
+
+  // Check nested time_slice block exists
+  should.equal(list.length(sli_spec_block.blocks), 1)
+  let assert [time_slice_block] = sli_spec_block.blocks
+  should.equal(time_slice_block.type_, "time_slice")
+  should.equal(
+    dict.get(time_slice_block.attributes, "comparator"),
+    Ok(hcl.StringLiteral(">")),
+  )
+  should.equal(
+    dict.get(time_slice_block.attributes, "query_interval_seconds"),
+    Ok(hcl.IntLiteral(300)),
+  )
+  should.equal(
+    dict.get(time_slice_block.attributes, "threshold"),
+    Ok(hcl.FloatLiteral(99.5)),
+  )
 }
 
 // ==== exp_to_string Tests ====

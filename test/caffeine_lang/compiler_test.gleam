@@ -46,6 +46,7 @@ pub fn compile_test() {
 // ==== Compile From Strings Test ====
 // * ✅ happy path - single expectation with templated queries
 // * ✅ happy path - path extraction (org/team/service from file path)
+// * ✅ happy path - time_slice SLO expression
 // * ✅ sad path   - invalid blueprint JSON
 // * ✅ sad path   - invalid expectations JSON
 // * ✅ sad path   - missing blueprint reference
@@ -106,6 +107,40 @@ pub fn compile_from_strings_happy_path_test() {
       }",
       "myorg/myteam/myservice.json",
       ["org:myorg", "team:myteam", "service:myservice"],
+    ),
+    // time_slice SLO expression
+    #(
+      "{
+        \"blueprints\": [{
+          \"name\": \"cpu_slo\",
+          \"artifact_ref\": \"SLO\",
+          \"params\": { \"env\": \"String\" },
+          \"inputs\": {
+            \"vendor\": \"datadog\",
+            \"value\": \"time_slice(avg:system.cpu.user{$$env->env$$} > 99.5 per 300s)\",
+            \"queries\": {}
+          }
+        }]
+      }",
+      "{
+        \"expectations\": [{
+          \"name\": \"cpu_availability\",
+          \"blueprint_ref\": \"cpu_slo\",
+          \"inputs\": { \"env\": \"production\", \"threshold\": 99.9, \"window_in_days\": 30 }
+        }]
+      }",
+      "acme/infra/slos.json",
+      [
+        "datadog_service_level_objective",
+        "cpu_availability",
+        "type = \"time_slice\"",
+        "sli_specification",
+        "time_slice",
+        "comparator = \">\"",
+        "query_interval_seconds = 300",
+        "threshold = 99.5",
+        "avg:system.cpu.user{env:production}",
+      ],
     ),
   ]
   |> list.each(fn(test_case) {

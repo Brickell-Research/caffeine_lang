@@ -1,70 +1,14 @@
 import caffeine_query_language/parser.{
   type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord, Word,
 }
-import caffeine_query_language/resolver.{
-  type Primitives, GoodOverTotal, TimeSlice,
-}
+import caffeine_query_language/resolver.{GoodOverTotal}
 import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-
-/// Generates a Datadog query block from a resolved primitive.
-/// Formats the numerator and denominator as a Datadog SLO query structure.
-@internal
-pub fn generate_datadog_query(primitive: Primitives) -> String {
-  case primitive {
-    GoodOverTotal(numerator, denominator) -> {
-      "query {\n"
-      <> "    numerator = \""
-      <> numerator_exp_to_datadog_query(numerator)
-      <> "\"\n"
-      <> "    denominator = \""
-      <> denominator_exp_to_datadog_query(denominator)
-      <> "\"\n"
-      <> "  }\n"
-    }
-    TimeSlice(comparator, interval_in_seconds, threshold, query) -> {
-      "  sli_specification {
-    time_slice {
-      comparator               = " <> resolver.comparator_to_string(comparator) <> "
-      query_interval_seconds   = " <> int.to_string(interval_in_seconds) <> "
-      threshold                = " <> float_to_string(threshold) <> "
-      query {
-        formula {
-          formula_expression = \"query1\"
-        }
-        query {
-          metric_query {
-            data_source = \"metrics\"
-            name        = \"query1\"
-            query       = \"" <> query <> "\"
-          }
-        }
-      }
-    }
-  }"
-    }
-  }
-}
-
-fn numerator_exp_to_datadog_query(exp: Exp) -> String {
-  // Unwrap outer PrimaryExp at top level only
-  case exp {
-    parser.Primary(PrimaryExp(exp:)) -> exp_to_string(exp)
-    _ -> exp_to_string(exp)
-  }
-}
-
-fn denominator_exp_to_datadog_query(exp: Exp) -> String {
-  // Unwrap outer PrimaryExp at top level only
-  case exp {
-    parser.Primary(PrimaryExp(exp:)) -> exp_to_string(exp)
-    _ -> exp_to_string(exp)
-  }
-}
+import terra_madre/hcl
 
 /// Converts an expression AST node to its string representation.
 pub fn exp_to_string(exp: Exp) -> String {
@@ -240,6 +184,67 @@ pub fn substitute_words(
   }
 }
 
+/// Represents a resolved SLO query, either GoodOverTotal or TimeSlice.
+pub type ResolvedSloQuery {
+  ResolvedGoodOverTotal(numerator: String, denominator: String)
+  ResolvedTimeSlice(
+    comparator: String,
+    interval_seconds: Int,
+    threshold: Float,
+    query: String,
+  )
+}
+
+/// Represents the SLO type for Datadog terraform generation.
+pub type SloType {
+  MetricSlo
+  TimeSliceSlo
+}
+
+/// Resolved SLO with HCL blocks ready for terraform generation.
+pub type ResolvedSloHcl {
+  ResolvedSloHcl(slo_type: SloType, blocks: List(hcl.Block))
+}
+
+/// Parse a value expression, resolve to primitive, substitute words,
+/// and return the resolved SLO query type.
+pub fn resolve_slo_query_typed(
+  value_expr: String,
+  substitutions: dict.Dict(String, String),
+) -> Result(ResolvedSloQuery, String) {
+  case parser.parse_expr(value_expr) {
+    Error(err) -> Error("Parse error: " <> err)
+    Ok(exp_container) ->
+      case resolver.resolve_primitives(exp_container) {
+        Ok(GoodOverTotal(numerator_exp, denominator_exp)) -> {
+          let numerator_str =
+            substitute_words(numerator_exp, substitutions) |> exp_to_string
+          let denominator_str =
+            substitute_words(denominator_exp, substitutions) |> exp_to_string
+          Ok(ResolvedGoodOverTotal(numerator_str, denominator_str))
+        }
+        Ok(resolver.TimeSlice(comparator, interval_seconds, threshold, query)) -> {
+          let comparator_str = case comparator {
+            resolver.LessThan -> "<"
+            resolver.LessThanOrEqualTo -> "<="
+            resolver.GreaterThan -> ">"
+            resolver.GreaterThanOrEqualTo -> ">="
+          }
+          // Substitute the query if it matches a key in substitutions
+          let resolved_query =
+            dict.get(substitutions, query) |> result.unwrap(query)
+          Ok(ResolvedTimeSlice(
+            comparator_str,
+            interval_seconds,
+            threshold,
+            resolved_query,
+          ))
+        }
+        Error(err) -> Error("Resolution error: " <> err.msg)
+      }
+  }
+}
+
 /// Parse a value expression, resolve to GoodOverTotal primitive, substitute words,
 /// and return the numerator and denominator as strings.
 /// Panics if parsing or resolution fails.
@@ -247,17 +252,88 @@ pub fn resolve_slo_query(
   value_expr: String,
   substitutions: dict.Dict(String, String),
 ) -> #(String, String) {
-  let assert Ok(exp_container) = parser.parse_expr(value_expr)
-  case resolver.resolve_primitives(exp_container) {
-    Ok(GoodOverTotal(numerator_exp, denominator_exp)) -> {
-      let numerator_str =
-        substitute_words(numerator_exp, substitutions) |> exp_to_string
-      let denominator_str =
-        substitute_words(denominator_exp, substitutions) |> exp_to_string
-      #(numerator_str, denominator_str)
-    }
-
-    // TODO: handle error and handle time slice
+  case resolve_slo_query_typed(value_expr, substitutions) {
+    Ok(ResolvedGoodOverTotal(numerator, denominator)) -> #(numerator, denominator)
     _ -> #("", "")
+  }
+}
+
+/// Parse a value expression, resolve to primitive, substitute words,
+/// and return HCL blocks ready for Datadog terraform generation.
+pub fn resolve_slo_to_hcl(
+  value_expr: String,
+  substitutions: dict.Dict(String, String),
+) -> Result(ResolvedSloHcl, String) {
+  case resolve_slo_query_typed(value_expr, substitutions) {
+    Ok(ResolvedGoodOverTotal(numerator, denominator)) -> {
+      let query_block =
+        hcl.simple_block("query", [
+          #("numerator", hcl.StringLiteral(numerator)),
+          #("denominator", hcl.StringLiteral(denominator)),
+        ])
+      Ok(ResolvedSloHcl(MetricSlo, [query_block]))
+    }
+    Ok(ResolvedTimeSlice(comparator, interval_seconds, threshold, query)) -> {
+      let metric_query_block =
+        hcl.Block(
+          type_: "metric_query",
+          labels: [],
+          attributes: dict.from_list([
+            #("data_source", hcl.StringLiteral("metrics")),
+            #("name", hcl.StringLiteral("query1")),
+            #("query", hcl.StringLiteral(query)),
+          ]),
+          blocks: [],
+        )
+
+      let inner_query_block =
+        hcl.Block(
+          type_: "query",
+          labels: [],
+          attributes: dict.new(),
+          blocks: [metric_query_block],
+        )
+
+      let formula_block =
+        hcl.Block(
+          type_: "formula",
+          labels: [],
+          attributes: dict.from_list([
+            #("formula_expression", hcl.StringLiteral("query1")),
+          ]),
+          blocks: [],
+        )
+
+      let outer_query_block =
+        hcl.Block(
+          type_: "query",
+          labels: [],
+          attributes: dict.new(),
+          blocks: [formula_block, inner_query_block],
+        )
+
+      let time_slice_block =
+        hcl.Block(
+          type_: "time_slice",
+          labels: [],
+          attributes: dict.from_list([
+            #("comparator", hcl.StringLiteral(comparator)),
+            #("query_interval_seconds", hcl.IntLiteral(interval_seconds)),
+            #("threshold", hcl.FloatLiteral(threshold)),
+          ]),
+          blocks: [outer_query_block],
+        )
+
+      let sli_specification_block =
+        hcl.Block(
+          type_: "sli_specification",
+          labels: [],
+          attributes: dict.new(),
+          blocks: [time_slice_block],
+        )
+
+      Ok(ResolvedSloHcl(TimeSliceSlo, [sli_specification_block]))
+    }
+    Error(err) -> Error(err)
   }
 }

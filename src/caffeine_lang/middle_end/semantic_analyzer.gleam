@@ -111,13 +111,41 @@ pub fn resolve_queries(
           resolved_queries_dynamic,
         )
 
-      // Update the IR with the resolved queries
+      // Also resolve templates in the "value" field if present
+      let value_tuple_result =
+        ir.values
+        |> list.filter(fn(vt) { vt.label == "value" })
+        |> list.first
+
+      use resolved_value_tuple <- result.try(case value_tuple_result {
+        Error(_) -> Ok(option.None)
+        Ok(value_tuple) -> {
+          let assert Ok(value_string) =
+            decode.run(value_tuple.value, decode.string)
+          case templatizer.parse_and_resolve_query_template(value_string, ir.values) {
+            Ok(resolved_value) ->
+              Ok(option.Some(helpers.ValueTuple(
+                "value",
+                helpers.String,
+                dynamic.string(resolved_value),
+              )))
+            Error(err) -> Error(err)
+          }
+        }
+      })
+
+      // Update the IR with the resolved queries and value
       let new_values =
         ir.values
         |> list.map(fn(vt) {
-          case vt.label == "queries" {
-            True -> new_queries_value_tuple
-            False -> vt
+          case vt.label {
+            "queries" -> new_queries_value_tuple
+            "value" ->
+              case resolved_value_tuple {
+                option.Some(new_value) -> new_value
+                option.None -> vt
+              }
+            _ -> vt
           }
         })
 

@@ -89,7 +89,7 @@ pub fn variables() -> List(terraform.Variable) {
 }
 
 /// Convert a single IntermediateRepresentation to a Terraform Resource.
-/// Uses CQL to parse the value expression and extract numerator/denominator.
+/// Uses CQL to parse the value expression and generate HCL blocks.
 @internal
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
@@ -107,25 +107,10 @@ pub fn ir_to_terraform_resource(
     extract_string(ir.values, "value")
     |> result.unwrap("numerator / denominator")
 
-  // Parse the value expression using CQL and resolve numerator/denominator
-  let #(numerator_str, denominator_str) =
-    cql_generator.resolve_slo_query(value_expr, queries)
+  // Parse the value expression using CQL and get HCL blocks
+  let resolved = cql_generator.resolve_slo_to_hcl(value_expr, queries)
 
-  // Build the query block
-  let query_block =
-    hcl.simple_block("query", [
-      #("numerator", hcl.StringLiteral(numerator_str)),
-      #("denominator", hcl.StringLiteral(denominator_str)),
-    ])
-
-  // Build the thresholds block
-  let thresholds_block =
-    hcl.simple_block("thresholds", [
-      #("timeframe", hcl.StringLiteral(window_to_timeframe(window_in_days))),
-      #("target", hcl.FloatLiteral(threshold)),
-    ])
-
-  // Build tags
+  // Build tags (common to both types)
   let tags =
     hcl.ListExpr([
       hcl.StringLiteral("managed_by:caffeine"),
@@ -138,19 +123,55 @@ pub fn ir_to_terraform_resource(
       hcl.StringLiteral("artifact:" <> ir.artifact_ref),
     ])
 
-  // Build the resource
-  terraform.Resource(
-    type_: "datadog_service_level_objective",
-    name: resource_name,
-    attributes: dict.from_list([
-      #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
-      #("type", hcl.StringLiteral("metric")),
-      #("tags", tags),
-    ]),
-    blocks: [query_block, thresholds_block],
-    meta: hcl.empty_meta(),
-    lifecycle: option.None,
-  )
+  // Build the thresholds block (common to both types)
+  let thresholds_block =
+    hcl.simple_block("thresholds", [
+      #("timeframe", hcl.StringLiteral(window_to_timeframe(window_in_days))),
+      #("target", hcl.FloatLiteral(threshold)),
+    ])
+
+  case resolved {
+    Ok(cql_generator.ResolvedSloHcl(slo_type, slo_blocks)) -> {
+      let type_str = case slo_type {
+        cql_generator.TimeSliceSlo -> "time_slice"
+        cql_generator.MetricSlo -> "metric"
+      }
+
+      terraform.Resource(
+        type_: "datadog_service_level_objective",
+        name: resource_name,
+        attributes: dict.from_list([
+          #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+          #("type", hcl.StringLiteral(type_str)),
+          #("tags", tags),
+        ]),
+        blocks: list.append(slo_blocks, [thresholds_block]),
+        meta: hcl.empty_meta(),
+        lifecycle: option.None,
+      )
+    }
+    Error(_) -> {
+      // Fallback to empty query block
+      let query_block =
+        hcl.simple_block("query", [
+          #("numerator", hcl.StringLiteral("")),
+          #("denominator", hcl.StringLiteral("")),
+        ])
+
+      terraform.Resource(
+        type_: "datadog_service_level_objective",
+        name: resource_name,
+        attributes: dict.from_list([
+          #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+          #("type", hcl.StringLiteral("metric")),
+          #("tags", tags),
+        ]),
+        blocks: [query_block, thresholds_block],
+        meta: hcl.empty_meta(),
+        lifecycle: option.None,
+      )
+    }
+  }
 }
 
 /// Sanitize expectation name to valid Terraform resource name.
