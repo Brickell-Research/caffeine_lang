@@ -202,6 +202,12 @@ pub fn parse_template_type_test() {
 // * ✅ resolves optional string with none (returns empty string)
 // * ✅ resolves optional list with value
 // * ✅ resolves optional list with none (returns empty string)
+// * ✅ resolves defaulted integer with value
+// * ✅ resolves defaulted integer with none (uses default)
+// * ✅ resolves defaulted string with value
+// * ✅ resolves defaulted string with none (uses default)
+// * ✅ resolves defaulted with Raw template type and nil value
+// * ✅ unsupported type - defaulted dict
 pub fn resolve_template_test() {
   [
     #(
@@ -360,6 +366,68 @@ pub fn resolve_template_test() {
         value: dynamic.nil(),
       ),
       Ok(""),
+    ),
+    // Defaulted integer with value - uses provided value
+    #(
+      templatizer.TemplateVariable("threshold", "threshold", templatizer.Default),
+      helpers.ValueTuple(
+        label: "threshold",
+        typ: helpers.Defaulted(helpers.Integer, "2500000"),
+        value: dynamic.int(1000000),
+      ),
+      Ok("threshold:1000000"),
+    ),
+    // Defaulted integer with None - uses default value
+    #(
+      templatizer.TemplateVariable("threshold", "threshold", templatizer.Default),
+      helpers.ValueTuple(
+        label: "threshold",
+        typ: helpers.Defaulted(helpers.Integer, "2500000"),
+        value: dynamic.nil(),
+      ),
+      Ok("threshold:2500000"),
+    ),
+    // Defaulted string with value
+    #(
+      templatizer.TemplateVariable("env", "env", templatizer.Default),
+      helpers.ValueTuple(
+        label: "env",
+        typ: helpers.Defaulted(helpers.String, "production"),
+        value: dynamic.string("staging"),
+      ),
+      Ok("env:staging"),
+    ),
+    // Defaulted string with None - uses default value
+    #(
+      templatizer.TemplateVariable("env", "env", templatizer.Default),
+      helpers.ValueTuple(
+        label: "env",
+        typ: helpers.Defaulted(helpers.String, "production"),
+        value: dynamic.nil(),
+      ),
+      Ok("env:production"),
+    ),
+    // Defaulted with Raw template type and nil value - uses default
+    #(
+      templatizer.TemplateVariable("threshold", "", templatizer.Raw),
+      helpers.ValueTuple(
+        label: "threshold",
+        typ: helpers.Defaulted(helpers.Integer, "2500000000"),
+        value: dynamic.nil(),
+      ),
+      Ok("2500000000"),
+    ),
+    // Defaulted Dict is unsupported
+    #(
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      helpers.ValueTuple(
+        label: "foo",
+        typ: helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), "{}"),
+        value: dynamic.nil(),
+      ),
+      Error(errors.TemplateResolutionError(
+        "Unsupported templatized variable type: Defaulted(Dict(String, String), {}). Dict support is pending, open an issue if this is a desired use case.",
+      )),
     ),
   ]
   |> list.each(fn(tuple) {

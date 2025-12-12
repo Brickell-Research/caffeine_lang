@@ -167,6 +167,7 @@ pub fn resolve_vendor_test() {
 
 // ==== Resolve Queries ====
 // * ✅ happy path - multiple queries
+// * ✅ happy path - defaulted param with nil uses default value
 pub fn resolve_queries_test() {
   let input_ir =
     semantic_analyzer.IntermediateRepresentation(
@@ -231,6 +232,85 @@ pub fn resolve_queries_test() {
               dynamic.string("avg:system.cpu{env:production AND !status:True}"),
             ),
           ]),
+        ),
+      ],
+      vendor: option.Some(vendor.Datadog),
+    )
+
+  semantic_analyzer.resolve_queries(input_ir)
+  |> should.equal(Ok(expected_ir))
+}
+
+// Test that Defaulted params with nil value (not provided) use the default value
+pub fn resolve_queries_defaulted_param_test() {
+  let input_ir =
+    semantic_analyzer.IntermediateRepresentation(
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "LCP SLO",
+        org_name: "test",
+        service_name: "service",
+        blueprint_name: "lcp_p75_latency",
+        team_name: "test_team",
+      ),
+      unique_identifier: "lcp_slo",
+      artifact_ref: "SLO",
+      values: [
+        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
+        // threshold_in_ms is Defaulted and not provided - uses nil
+        helpers.ValueTuple(
+          "threshold_in_ms",
+          helpers.Defaulted(helpers.Integer, "2500000000"),
+          dynamic.nil(),
+        ),
+        // queries is required by resolve_queries
+        helpers.ValueTuple(
+          "queries",
+          helpers.Dict(helpers.String, helpers.String),
+          dynamic.properties([
+            #(dynamic.string("query"), dynamic.string("p75:rum.lcp.duration{$$env->env$$}")),
+          ]),
+        ),
+        helpers.ValueTuple(
+          "value",
+          helpers.String,
+          dynamic.string("time_slice(query > $$threshold_in_ms$$ per 5m)"),
+        ),
+      ],
+      vendor: option.Some(vendor.Datadog),
+    )
+
+  let expected_ir =
+    semantic_analyzer.IntermediateRepresentation(
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "LCP SLO",
+        org_name: "test",
+        service_name: "service",
+        blueprint_name: "lcp_p75_latency",
+        team_name: "test_team",
+      ),
+      unique_identifier: "lcp_slo",
+      artifact_ref: "SLO",
+      values: [
+        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
+        helpers.ValueTuple(
+          "threshold_in_ms",
+          helpers.Defaulted(helpers.Integer, "2500000000"),
+          dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "queries",
+          helpers.Dict(helpers.String, helpers.String),
+          dynamic.properties([
+            #(dynamic.string("query"), dynamic.string("p75:rum.lcp.duration{env:production}")),
+          ]),
+        ),
+        // The template should be resolved using the default value
+        helpers.ValueTuple(
+          "value",
+          helpers.String,
+          dynamic.string("time_slice(query > 2500000000 per 5m)"),
         ),
       ],
       vendor: option.Some(vendor.Datadog),

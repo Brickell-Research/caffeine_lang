@@ -39,6 +39,20 @@ fn blueprints_with_inputs() -> List(Blueprint) {
   ]
 }
 
+fn blueprints_with_defaulted() -> List(Blueprint) {
+  [
+    blueprints.Blueprint(
+      name: "success_rate_with_defaulted",
+      artifact_ref: "SLO",
+      params: dict.from_list([
+        #("threshold", helpers.Float),
+        #("default_env", helpers.Defaulted(helpers.String, "production")),
+      ]),
+      inputs: dict.from_list([]),
+    ),
+  ]
+}
+
 fn assert_error(file_name: String, error: ParseError) {
   expectations.parse_from_file(path(file_name), blueprints())
   |> should.equal(Error(error))
@@ -49,6 +63,7 @@ fn assert_error(file_name: String, error: ParseError) {
 // * ✅ none
 // * ✅ single expectation
 // * ✅ multiple expectations
+// * ✅ defaulted param not provided (should include in value_tuples with nil)
 pub fn parse_from_file_happy_path_test() {
   // none
   expectations.parse_from_file(path("happy_path_none"), blueprints())
@@ -123,6 +138,34 @@ pub fn parse_from_file_happy_path_test() {
       ),
     ]),
   )
+
+  // defaulted param not provided - should still create value tuple with nil
+  let result =
+    expectations.parse_from_file(
+      path("happy_path_defaulted_param"),
+      blueprints_with_defaulted(),
+    )
+  result |> should.be_ok
+
+  let assert Ok([ir]) = result
+  ir.metadata.friendly_label |> should.equal("my_expectation_with_defaulted")
+  ir.artifact_ref |> should.equal("SLO")
+
+  // Should have 2 values: threshold (provided) and default_env (defaulted, with nil value)
+  list.length(ir.values) |> should.equal(2)
+
+  // Check that threshold is present with provided value
+  let threshold_tuple =
+    list.find(ir.values, fn(v) { v.label == "threshold" })
+    |> should.be_ok
+  threshold_tuple.typ |> should.equal(helpers.Float)
+
+  // Check that default_env is present with nil value (defaulted param not provided)
+  let default_env_tuple =
+    list.find(ir.values, fn(v) { v.label == "default_env" })
+    |> should.be_ok
+  default_env_tuple.typ
+  |> should.equal(helpers.Defaulted(helpers.String, "production"))
 }
 
 // ==== Missing ====

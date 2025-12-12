@@ -106,7 +106,8 @@ fn validate_and_build_irs(
     // Expectation inputs override blueprint inputs for the same key
     let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
-    let value_tuples =
+    // Build value tuples from provided inputs
+    let provided_value_tuples =
       merged_inputs
       |> dict.keys
       |> list.map(fn(label) {
@@ -116,6 +117,37 @@ fn validate_and_build_irs(
 
         helpers.ValueTuple(label:, typ:, value:)
       })
+
+    // Also include Optional and Defaulted params that weren't provided
+    // These need to be in value_tuples so the templatizer can resolve them
+    let unprovided_optional_value_tuples =
+      blueprint.params
+      |> dict.to_list
+      |> list.filter_map(fn(param) {
+        let #(label, typ) = param
+        case dict.has_key(merged_inputs, label) {
+          True -> Error(Nil)
+          False ->
+            case typ {
+              helpers.Optional(_) ->
+                Ok(helpers.ValueTuple(
+                  label:,
+                  typ:,
+                  value: dynamic.nil(),
+                ))
+              helpers.Defaulted(_, _) ->
+                Ok(helpers.ValueTuple(
+                  label:,
+                  typ:,
+                  value: dynamic.nil(),
+                ))
+              _ -> Error(Nil)
+            }
+        }
+      })
+
+    let value_tuples =
+      list.append(provided_value_tuples, unprovided_optional_value_tuples)
 
     // build unique expectation name by combining path prefix with name
     let #(org, team, service) = path_prefix
