@@ -5,6 +5,7 @@ import caffeine_query_language/resolver.{GoodOverTotal}
 import gleam/dict
 import gleam/float
 import gleam/int
+import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
@@ -184,6 +185,25 @@ pub fn substitute_words(
   }
 }
 
+/// Extracts all word names from an expression AST.
+/// Returns a list of unique word strings found in the expression.
+@internal
+pub fn extract_words(exp: Exp) -> List(String) {
+  case exp {
+    parser.Primary(PrimaryWord(Word(name))) -> [name]
+    parser.Primary(PrimaryExp(inner)) -> extract_words(inner)
+    parser.TimeSliceExpr(_) -> []
+    parser.OperatorExpr(left, right, _) ->
+      list.append(extract_words(left), extract_words(right))
+      |> list.unique
+  }
+}
+
+/// Represents a single named query for TimeSlice formulas.
+pub type NamedQuery {
+  NamedQuery(name: String, query: String)
+}
+
 /// Represents a resolved SLO query, either GoodOverTotal or TimeSlice.
 pub type ResolvedSloQuery {
   ResolvedGoodOverTotal(numerator: String, denominator: String)
@@ -191,7 +211,10 @@ pub type ResolvedSloQuery {
     comparator: String,
     interval_seconds: Int,
     threshold: Float,
-    query: String,
+    /// The formula expression (e.g., "build_time + deploy_time")
+    formula_expression: String,
+    /// List of named queries referenced by the formula
+    queries: List(NamedQuery),
   )
 }
 
@@ -230,15 +253,56 @@ pub fn resolve_slo_query_typed(
             resolver.GreaterThan -> ">"
             resolver.GreaterThanOrEqualTo -> ">="
           }
-          // Substitute the query if it matches a key in substitutions
-          let resolved_query =
-            dict.get(substitutions, query) |> result.unwrap(query)
-          Ok(ResolvedTimeSlice(
-            comparator_str,
-            interval_seconds,
-            threshold,
-            resolved_query,
-          ))
+          // Parse the query as an expression to extract word references
+          // The query could be a single word like "query1" or a formula like "(a + b)"
+          case parser.parse_expr(query) {
+            Ok(query_exp_container) -> {
+              let query_exp = query_exp_container.exp
+              let words = extract_words(query_exp)
+              // Build named queries by looking up each word in substitutions
+              let named_queries =
+                words
+                |> list.filter_map(fn(word) {
+                  case dict.get(substitutions, word) {
+                    Ok(resolved) -> Ok(NamedQuery(word, resolved))
+                    Error(_) -> Error(Nil)
+                  }
+                })
+              // If no substitutions were found, the query is likely a literal metric query
+              // In that case, use "query1" as the formula expression and the query as-is
+              case named_queries {
+                [] ->
+                  Ok(ResolvedTimeSlice(
+                    comparator_str,
+                    interval_seconds,
+                    threshold,
+                    "query1",
+                    [NamedQuery("query1", query)],
+                  ))
+                _ ->
+                  // Use the original query string as the formula expression
+                  Ok(ResolvedTimeSlice(
+                    comparator_str,
+                    interval_seconds,
+                    threshold,
+                    query,
+                    named_queries,
+                  ))
+              }
+            }
+            Error(_) -> {
+              // If parsing fails, treat as a single literal query (backwards compat)
+              let resolved_query =
+                dict.get(substitutions, query) |> result.unwrap(query)
+              Ok(ResolvedTimeSlice(
+                comparator_str,
+                interval_seconds,
+                threshold,
+                "query1",
+                [NamedQuery("query1", resolved_query)],
+              ))
+            }
+          }
         }
         Error(err) -> Error("Resolution error: " <> err.msg)
       }
@@ -273,33 +337,42 @@ pub fn resolve_slo_to_hcl(
         ])
       Ok(ResolvedSloHcl(MetricSlo, [query_block]))
     }
-    Ok(ResolvedTimeSlice(comparator, interval_seconds, threshold, query)) -> {
-      let metric_query_block =
-        hcl.Block(
-          type_: "metric_query",
-          labels: [],
-          attributes: dict.from_list([
-            #("data_source", hcl.StringLiteral("metrics")),
-            #("name", hcl.StringLiteral("query1")),
-            #("query", hcl.StringLiteral(query)),
-          ]),
-          blocks: [],
-        )
-
-      let inner_query_block =
-        hcl.Block(
-          type_: "query",
-          labels: [],
-          attributes: dict.new(),
-          blocks: [metric_query_block],
-        )
+    Ok(ResolvedTimeSlice(
+      comparator,
+      interval_seconds,
+      threshold,
+      formula_expression,
+      named_queries,
+    )) -> {
+      // Generate a metric_query block for each named query
+      let inner_query_blocks =
+        named_queries
+        |> list.map(fn(nq) {
+          let metric_query_block =
+            hcl.Block(
+              type_: "metric_query",
+              labels: [],
+              attributes: dict.from_list([
+                #("data_source", hcl.StringLiteral("metrics")),
+                #("name", hcl.StringLiteral(nq.name)),
+                #("query", hcl.StringLiteral(nq.query)),
+              ]),
+              blocks: [],
+            )
+          hcl.Block(
+            type_: "query",
+            labels: [],
+            attributes: dict.new(),
+            blocks: [metric_query_block],
+          )
+        })
 
       let formula_block =
         hcl.Block(
           type_: "formula",
           labels: [],
           attributes: dict.from_list([
-            #("formula_expression", hcl.StringLiteral("query1")),
+            #("formula_expression", hcl.StringLiteral(formula_expression)),
           ]),
           blocks: [],
         )
@@ -309,7 +382,7 @@ pub fn resolve_slo_to_hcl(
           type_: "query",
           labels: [],
           attributes: dict.new(),
-          blocks: [formula_block, inner_query_block],
+          blocks: [formula_block, ..inner_query_blocks],
         )
 
       let time_slice_block =

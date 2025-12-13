@@ -11,6 +11,7 @@ import terra_madre/hcl
 // * ✅ nested expression returns correct numerator/denominator
 // time_slice
 // * ✅ time_slice returns TimeSliceSlo with sli_specification block
+// * ✅ time_slice with formula expression generates multiple metric_query blocks
 
 pub fn resolve_slo_to_hcl_good_over_total_test() {
   // simple good over total query
@@ -70,6 +71,82 @@ pub fn resolve_slo_to_hcl_time_slice_test() {
     dict.get(time_slice_block.attributes, "threshold"),
     Ok(hcl.FloatLiteral(99.5)),
   )
+}
+
+pub fn resolve_slo_to_hcl_time_slice_multi_query_test() {
+  // time_slice with formula expression like "(build_time + deploy_time)"
+  let result =
+    generator.resolve_slo_to_hcl(
+      "time_slice((build_time + deploy_time) >= 600000 per 5m)",
+      dict.from_list([
+        #(
+          "build_time",
+          "sum:circleci.completed_build_time.avg{job_name:build-prod}",
+        ),
+        #(
+          "deploy_time",
+          "sum:circleci.completed_build_time.avg{job_name:deploy-prod}",
+        ),
+      ]),
+    )
+
+  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
+  should.equal(slo_type, generator.TimeSliceSlo)
+  should.equal(list.length(blocks), 1)
+
+  let assert [sli_spec_block] = blocks
+  should.equal(sli_spec_block.type_, "sli_specification")
+
+  // Check nested time_slice block
+  let assert [time_slice_block] = sli_spec_block.blocks
+  should.equal(time_slice_block.type_, "time_slice")
+  should.equal(
+    dict.get(time_slice_block.attributes, "comparator"),
+    Ok(hcl.StringLiteral(">=")),
+  )
+  should.equal(
+    dict.get(time_slice_block.attributes, "threshold"),
+    Ok(hcl.FloatLiteral(600_000.0)),
+  )
+
+  // Check the outer query block contains formula + 2 inner query blocks
+  let assert [outer_query_block] = time_slice_block.blocks
+  should.equal(outer_query_block.type_, "query")
+  // Should have: 1 formula block + 2 query blocks (one per metric)
+  should.equal(list.length(outer_query_block.blocks), 3)
+
+  // Find the formula block
+  let formula_blocks =
+    outer_query_block.blocks
+    |> list.filter(fn(b) { b.type_ == "formula" })
+  should.equal(list.length(formula_blocks), 1)
+  let assert [formula_block] = formula_blocks
+  should.equal(
+    dict.get(formula_block.attributes, "formula_expression"),
+    Ok(hcl.StringLiteral("(build_time + deploy_time)")),
+  )
+
+  // Find the inner query blocks (each contains a metric_query)
+  let inner_query_blocks =
+    outer_query_block.blocks
+    |> list.filter(fn(b) { b.type_ == "query" })
+  should.equal(list.length(inner_query_blocks), 2)
+
+  // Extract metric_query blocks and verify their names
+  let metric_names =
+    inner_query_blocks
+    |> list.flat_map(fn(qb) { qb.blocks })
+    |> list.filter(fn(b) { b.type_ == "metric_query" })
+    |> list.filter_map(fn(mq) {
+      case dict.get(mq.attributes, "name") {
+        Ok(hcl.StringLiteral(name)) -> Ok(name)
+        _ -> Error(Nil)
+      }
+    })
+
+  // Should have both build_time and deploy_time
+  should.be_true(list.contains(metric_names, "build_time"))
+  should.be_true(list.contains(metric_names, "deploy_time"))
 }
 
 // ==== exp_to_string Tests ====
@@ -261,6 +338,33 @@ pub fn substitute_words_test() {
     generator.substitute_words(exp, substitutions)
     |> generator.exp_to_string
     |> should.equal(expected)
+  })
+}
+
+// ==== extract_words ====
+// * ✅ single word
+// * ✅ multiple words in expression
+// * ✅ words in nested parentheses
+// * ✅ returns unique words only
+pub fn extract_words_test() {
+  [
+    // single word
+    #("query1", ["query1"]),
+    // multiple words in expression
+    #("build_time + deploy_time", ["build_time", "deploy_time"]),
+    // words in nested parentheses
+    #("(a + b) * c", ["a", "b", "c"]),
+    // complex formula
+    #("(build_time + deploy_time) / total", ["build_time", "deploy_time", "total"]),
+  ]
+  |> list.each(fn(pair) {
+    let #(input, expected) = pair
+    let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
+    let words = generator.extract_words(exp)
+    // Check all expected words are present (order may vary)
+    expected
+    |> list.each(fn(w) { should.be_true(list.contains(words, w)) })
+    should.equal(list.length(words), list.length(expected))
   })
 }
 
