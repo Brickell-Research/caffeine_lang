@@ -1,4 +1,4 @@
-pub const version = "0.2.12"
+pub const version = "0.2.14"
 
 // Exit codes
 pub const exit_success = 0
