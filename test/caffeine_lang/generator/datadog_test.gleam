@@ -382,11 +382,8 @@ pub fn sanitize_resource_name_test() {
 // * ✅ 90 -> "90d"
 pub fn window_to_timeframe_test() {
   [
-    // 7 -> "7d"
     #(7, "7d"),
-    // 30 -> "30d"
     #(30, "30d"),
-    // 90 -> "90d"
     #(90, "90d"),
   ]
   |> test_helpers.array_based_test_executor_1(datadog.window_to_timeframe)
@@ -497,6 +494,3 @@ pub fn extract_dict_string_string_test() {
     datadog.extract_dict_string_string,
   )
 }
-// CQL integration is tested via generate_terraform_test
-// (see complex_expression case which uses "(good + partial) / total")
-// CQL parsing/resolution logic has its own test suite in caffeine_query_language

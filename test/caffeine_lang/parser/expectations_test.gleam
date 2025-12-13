@@ -271,11 +271,10 @@ pub fn parse_from_file_overshadowing_test() {
 }
 
 // ==== Extract Path Prefix ====
-// ❌ happy path
-// ❌ sad path - however unlikely
+// ✅ happy path
+// ✅ sad path - however unlikely
 pub fn extract_path_prefix_test() {
   [
-    #("org/team/service.json", #("org", "team", "service")),
     #("org/team/service.json", #("org", "team", "service")),
     #("org/team", #("unknown", "unknown", "unknown")),
   ]
