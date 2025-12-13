@@ -199,6 +199,41 @@ pub fn extract_words(exp: Exp) -> List(String) {
   }
 }
 
+/// Strips outer parentheses from a string if they wrap the entire expression.
+/// E.g., "(a + b)" -> "a + b", but "(a + b) * c" stays unchanged.
+fn strip_outer_parens(s: String) -> String {
+  let trimmed = string.trim(s)
+  case
+    string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")")
+  {
+    True -> {
+      // Check if these parens actually wrap the whole expression
+      let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
+      // Verify parens are balanced in the inner part
+      case is_balanced(inner, 0) {
+        True -> inner
+        False -> trimmed
+      }
+    }
+    False -> trimmed
+  }
+}
+
+/// Check if parentheses are balanced in a string.
+fn is_balanced(s: String, depth: Int) -> Bool {
+  case string.pop_grapheme(s) {
+    Error(_) -> depth == 0
+    Ok(#("(", rest)) -> is_balanced(rest, depth + 1)
+    Ok(#(")", rest)) ->
+      case depth {
+        0 -> False
+        // Closing without matching open
+        _ -> is_balanced(rest, depth - 1)
+      }
+    Ok(#(_, rest)) -> is_balanced(rest, depth)
+  }
+}
+
 /// Represents a single named query for TimeSlice formulas.
 pub type NamedQuery {
   NamedQuery(name: String, query: String)
@@ -279,15 +314,18 @@ pub fn resolve_slo_query_typed(
                     "query1",
                     [NamedQuery("query1", query)],
                   ))
-                _ ->
+                _ -> {
                   // Use the original query string as the formula expression
+                  // Strip outer parentheses if they wrap the entire expression
+                  let formula_expr = strip_outer_parens(query)
                   Ok(ResolvedTimeSlice(
                     comparator_str,
                     interval_seconds,
                     threshold,
-                    query,
+                    formula_expr,
                     named_queries,
                   ))
+                }
               }
             }
             Error(_) -> {

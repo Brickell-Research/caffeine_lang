@@ -121,9 +121,10 @@ pub fn resolve_slo_to_hcl_time_slice_multi_query_test() {
     |> list.filter(fn(b) { b.type_ == "formula" })
   should.equal(list.length(formula_blocks), 1)
   let assert [formula_block] = formula_blocks
+  // Outer parentheses are stripped from the formula expression
   should.equal(
     dict.get(formula_block.attributes, "formula_expression"),
-    Ok(hcl.StringLiteral("(build_time + deploy_time)")),
+    Ok(hcl.StringLiteral("build_time + deploy_time")),
   )
 
   // Find the inner query blocks (each contains a metric_query)
