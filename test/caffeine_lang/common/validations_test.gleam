@@ -6,6 +6,7 @@ import gleam/dynamic
 import gleam/list
 import gleam/string
 import gleeunit/should
+import test_helpers
 
 // ==== Validate Types ====
 // (happy, sad)
@@ -45,150 +46,171 @@ pub fn validate_value_type_test() {
   let some_bool = dynamic.bool(True)
 
   // happy paths
+  let dict_string_string = dynamic.properties([#(some_string, other_string)])
+  let dict_string_int = dynamic.properties([#(some_string, dynamic.int(1))])
+  let dict_string_float =
+    dynamic.properties([#(some_string, dynamic.float(1.5))])
+  let dict_string_bool = dynamic.properties([#(some_string, some_bool)])
+  let list_string = dynamic.list([some_string, other_string])
+  let list_int = dynamic.list([dynamic.int(1), dynamic.int(2)])
+  let list_bool = dynamic.list([some_bool, some_bool])
+  let list_float = dynamic.list([dynamic.float(1.1), dynamic.float(2.2)])
+  let empty_list = dynamic.list([])
+  let empty_dict = dynamic.properties([])
+
   [
     // Basic types
-    #(some_bool, helpers.Boolean),
-    #(some_int, helpers.Integer),
-    #(some_float, helpers.Float),
-    #(some_string, helpers.String),
+    #(some_bool, helpers.Boolean, Ok(some_bool)),
+    #(some_int, helpers.Integer, Ok(some_int)),
+    #(some_float, helpers.Float, Ok(some_float)),
+    #(some_string, helpers.String, Ok(some_string)),
     // Dict types
     #(
-      dynamic.properties([#(some_string, other_string)]),
+      dict_string_string,
       helpers.Dict(helpers.String, helpers.String),
+      Ok(dict_string_string),
     ),
     #(
-      dynamic.properties([#(some_string, dynamic.int(1))]),
+      dict_string_int,
       helpers.Dict(helpers.String, helpers.Integer),
+      Ok(dict_string_int),
     ),
     #(
-      dynamic.properties([#(some_string, dynamic.float(1.5))]),
+      dict_string_float,
       helpers.Dict(helpers.String, helpers.Float),
+      Ok(dict_string_float),
     ),
     #(
-      dynamic.properties([#(some_string, some_bool)]),
+      dict_string_bool,
       helpers.Dict(helpers.String, helpers.Boolean),
+      Ok(dict_string_bool),
     ),
     // List types
-    #(dynamic.list([some_string, other_string]), helpers.List(helpers.String)),
-    #(
-      dynamic.list([dynamic.int(1), dynamic.int(2)]),
-      helpers.List(helpers.Integer),
-    ),
-    #(dynamic.list([some_bool, some_bool]), helpers.List(helpers.Boolean)),
-    #(
-      dynamic.list([dynamic.float(1.1), dynamic.float(2.2)]),
-      helpers.List(helpers.Float),
-    ),
+    #(list_string, helpers.List(helpers.String), Ok(list_string)),
+    #(list_int, helpers.List(helpers.Integer), Ok(list_int)),
+    #(list_bool, helpers.List(helpers.Boolean), Ok(list_bool)),
+    #(list_float, helpers.List(helpers.Float), Ok(list_float)),
     // Empty collections
-    #(dynamic.list([]), helpers.List(helpers.String)),
-    #(dynamic.properties([]), helpers.Dict(helpers.String, helpers.String)),
+    #(empty_list, helpers.List(helpers.String), Ok(empty_list)),
+    #(
+      empty_dict,
+      helpers.Dict(helpers.String, helpers.String),
+      Ok(empty_dict),
+    ),
     // Optional types with values
-    #(some_string, helpers.Optional(helpers.String)),
-    #(some_int, helpers.Optional(helpers.Integer)),
-    #(some_float, helpers.Optional(helpers.Float)),
-    #(some_bool, helpers.Optional(helpers.Boolean)),
+    #(some_string, helpers.Optional(helpers.String), Ok(some_string)),
+    #(some_int, helpers.Optional(helpers.Integer), Ok(some_int)),
+    #(some_float, helpers.Optional(helpers.Float), Ok(some_float)),
+    #(some_bool, helpers.Optional(helpers.Boolean), Ok(some_bool)),
     // Optional List types
     #(
-      dynamic.list([some_string, other_string]),
+      list_string,
       helpers.Optional(helpers.List(helpers.String)),
+      Ok(list_string),
     ),
     // Optional Dict types
     #(
-      dynamic.properties([#(some_string, other_string)]),
+      dict_string_string,
       helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+      Ok(dict_string_string),
     ),
     // Defaulted types with values
-    #(some_string, helpers.Defaulted(helpers.String, "default")),
-    #(some_int, helpers.Defaulted(helpers.Integer, "0")),
-    #(some_float, helpers.Defaulted(helpers.Float, "0.0")),
-    #(some_bool, helpers.Defaulted(helpers.Boolean, "False")),
+    #(
+      some_string,
+      helpers.Defaulted(helpers.String, "default"),
+      Ok(some_string),
+    ),
+    #(some_int, helpers.Defaulted(helpers.Integer, "0"), Ok(some_int)),
+    #(some_float, helpers.Defaulted(helpers.Float, "0.0"), Ok(some_float)),
+    #(some_bool, helpers.Defaulted(helpers.Boolean, "False"), Ok(some_bool)),
     // Defaulted List types
     #(
-      dynamic.list([some_string, other_string]),
+      list_string,
       helpers.Defaulted(helpers.List(helpers.String), ""),
+      Ok(list_string),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(value, expected_type) = pair
+  |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
     validations.validate_value_type(value, expected_type, "")
-    |> should.be_ok
   })
 
   // sad paths
+  let json_error = fn(msg) { Error(errors.JsonParserError(msg)) }
+
   [
     // Basic types
     #(
       some_string,
       helpers.Boolean,
-      "expected (Bool) received (String) for (some_key)",
+      json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       some_string,
       helpers.Integer,
-      "expected (Int) received (String) for (some_key)",
+      json_error("expected (Int) received (String) for (some_key)"),
     ),
     #(
       some_string,
       helpers.Float,
-      "expected (Float) received (String) for (some_key)",
+      json_error("expected (Float) received (String) for (some_key)"),
     ),
     #(
       some_bool,
       helpers.String,
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Dict types
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.String),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.Integer),
-      "expected (Int) received (Bool) for (some_key)",
+      json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Dict(helpers.String, helpers.Float),
-      "expected (Float) received (Bool) for (some_key)",
+      json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
       helpers.Dict(helpers.String, helpers.Boolean),
-      "expected (Bool) received (String) for (some_key)",
+      json_error("expected (Bool) received (String) for (some_key)"),
     ),
     // List types
     #(
       dynamic.list([some_string, some_bool]),
       helpers.List(helpers.String),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
       helpers.List(helpers.Integer),
-      "expected (Int) received (Bool) for (some_key)",
+      json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([some_bool, some_string]),
       helpers.List(helpers.Boolean),
-      "expected (Bool) received (String) for (some_key)",
+      json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
       helpers.List(helpers.Float),
-      "expected (Float) received (Bool) for (some_key)",
+      json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     // Wrong structure types
     #(
       some_string,
       helpers.List(helpers.String),
-      "expected (List) received (String) for (some_key)",
+      json_error("expected (List) received (String) for (some_key)"),
     ),
     #(
       some_string,
       helpers.Dict(helpers.String, helpers.String),
-      "expected (Dict) received (String) for (some_key)",
+      json_error("expected (Dict) received (String) for (some_key)"),
     ),
     // Multi-entry collection with one bad value
     #(
@@ -197,59 +219,57 @@ pub fn validate_value_type_test() {
         #(dynamic.string("key2"), some_bool),
       ]),
       helpers.Dict(helpers.String, helpers.String),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // List with first element wrong
     #(
       dynamic.list([some_bool, some_string]),
       helpers.List(helpers.String),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional types with wrong inner type
     #(
       some_bool,
       helpers.Optional(helpers.String),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
       helpers.Optional(helpers.Integer),
-      "expected (Int) received (String) for (some_key)",
+      json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Optional List with wrong inner type
     #(
       dynamic.list([some_bool]),
       helpers.Optional(helpers.List(helpers.String)),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
       helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted types with wrong inner type
     #(
       some_bool,
       helpers.Defaulted(helpers.String, "default"),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
       helpers.Defaulted(helpers.Integer, "0"),
-      "expected (Int) received (String) for (some_key)",
+      json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Defaulted List with wrong inner type
     #(
       dynamic.list([some_bool]),
       helpers.Defaulted(helpers.List(helpers.String), ""),
-      "expected (String) received (Bool) for (some_key)",
+      json_error("expected (String) received (Bool) for (some_key)"),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(value, expected_type, msg) = tuple
+  |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
     validations.validate_value_type(value, expected_type, "some_key")
-    |> should.equal(Error(errors.JsonParserError(msg)))
   })
 }
 
@@ -332,7 +352,7 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([#("name", helpers.String), #("count", helpers.Integer)]),
       dict.from_list([#("name", dynamic.string("foo"))]),
-      "Missing keys in input: count",
+      Error("Missing keys in input: count"),
     ),
     // extra inputs
     #(
@@ -341,7 +361,7 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
       ]),
-      "Extra keys in input: extra",
+      Error("Extra keys in input: extra"),
     ),
     // missing and extra inputs
     #(
@@ -353,13 +373,13 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
       ]),
-      "Extra keys in input: extra and missing keys in input: required",
+      Error("Extra keys in input: extra and missing keys in input: required"),
     ),
     // type validation error - single
     #(
       dict.from_list([#("count", helpers.Integer)]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
-      "expected (Int) received (String) for (count)",
+      Error("expected (Int) received (String) for (count)"),
     ),
     // missing required when optional param exists - should fail for required only
     #(
@@ -368,7 +388,7 @@ pub fn inputs_validator_test() {
         #("maybe_count", helpers.Optional(helpers.Integer)),
       ]),
       dict.from_list([]),
-      "Missing keys in input: name",
+      Error("Missing keys in input: name"),
     ),
     // missing required when defaulted param exists - should fail for required only
     #(
@@ -377,13 +397,11 @@ pub fn inputs_validator_test() {
         #("count", helpers.Defaulted(helpers.Integer, "10")),
       ]),
       dict.from_list([]),
-      "Missing keys in input: name",
+      Error("Missing keys in input: name"),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(params, inputs, expected_msg) = tuple
+  |> test_helpers.array_based_test_executor_2(fn(params, inputs) {
     validations.inputs_validator(params:, inputs:)
-    |> should.equal(Error(expected_msg))
   })
 
   // sad paths - error exists but order not guaranteed (check contains)
@@ -427,29 +445,38 @@ pub fn validate_relevant_uniqueness_test() {
 
   // happy paths
   [
-    [],
-    [#("alice", 1), #("bob", 2), #("charlie", 3)],
+    #([], Ok(True)),
+    #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(True)),
   ]
-  |> list.each(fn(things) {
+  |> test_helpers.array_based_test_executor_1(fn(things) {
     validations.validate_relevant_uniqueness(things, fetch_name, "names")
-    |> should.equal(Ok(True))
   })
 
-  // sad paths
+  // sad paths - exact match
   [
-    #([#("alice", 1), #("alice", 2)], "Duplicate names: alice"),
+    #(
+      [#("alice", 1), #("alice", 2)],
+      Error(errors.DuplicateError("Duplicate names: alice")),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(things) {
+    validations.validate_relevant_uniqueness(things, fetch_name, "names")
+  })
+
+  // sad paths - order not guaranteed (check contains)
+  [
     #(
       [#("alice", 1), #("bob", 2), #("alice", 3), #("bob", 4), #("chad", 5)],
       "Duplicate names: ",
     ),
   ]
   |> list.each(fn(pair) {
-    let #(things, expected_msg) = pair
+    let #(things, expected_substring) = pair
     let result =
       validations.validate_relevant_uniqueness(things, fetch_name, "names")
     result |> should.be_error
     let assert Error(errors.DuplicateError(msg)) = result
-    string.contains(msg, expected_msg) |> should.be_true
+    string.contains(msg, expected_substring) |> should.be_true
   })
 }
 

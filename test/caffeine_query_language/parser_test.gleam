@@ -1,3 +1,4 @@
+import caffeine_query_language/errors
 import caffeine_query_language/parser.{
   Add, Div, ExpContainer, GreaterThan, GreaterThanOrEqualTo, LessThan,
   LessThanOrEqualTo, Mul, OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp,
@@ -5,7 +6,6 @@ import caffeine_query_language/parser.{
   is_last_char, parse_expr,
 }
 import caffeine_query_language/test_helpers as cql_test_helpers
-import gleam/list
 import gleeunit/should
 import test_helpers
 
@@ -191,16 +191,12 @@ pub fn find_rightmost_operator_at_level_test() {
     #("(A - B) / D * C", "*", Ok(#("(A - B) / D", "C"))),
     // find rightmost subtraction operator
     #("A - B / (D * C)", "-", Ok(#("A", "B / (D * C)"))),
+    // error when operator not found at top level
+    #("(A + B) / C", "+", Error(errors.CQLParserError("Operator not found"))),
   ]
-  |> list.each(fn(tuple) {
-    let #(input, operator, expected) = tuple
+  |> test_helpers.array_based_test_executor_2(fn(input, operator) {
     find_rightmost_operator_at_level(input, operator, 0, 0, -1)
-    |> should.equal(expected)
   })
-
-  // error when operator not found at top level
-  find_rightmost_operator_at_level("(A + B) / C", "+", 0, 0, -1)
-  |> should.be_error
 }
 
 // ==== is_last_char Tests ====
@@ -382,27 +378,54 @@ pub fn time_slice_valid_parsing_test() {
 pub fn time_slice_invalid_syntax_test() {
   [
     // time_slice(Query > 100) - missing per <interval>
-    "time_slice(Query > 100)",
+    #(
+      "time_slice(Query > 100)",
+      Error("Missing 'per' keyword in time_slice expression"),
+    ),
     // time_slice(Query 100 per 10s) - missing comparator
-    "time_slice(Query 100 per 10s)",
+    #(
+      "time_slice(Query 100 per 10s)",
+      Error("No comparator found in time_slice expression"),
+    ),
     // time_slice(> 100 per 10s) - missing query
-    "time_slice(> 100 per 10s)",
+    #(
+      "time_slice(> 100 per 10s)",
+      Error("Missing query in time_slice expression"),
+    ),
     // time_slice(Query > per 10s) - missing threshold
-    "time_slice(Query > per 10s)",
+    #(
+      "time_slice(Query > per 10s)",
+      Error("Missing threshold in time_slice expression"),
+    ),
     // time_slice(Query > 100 per) - missing interval
-    "time_slice(Query > 100 per)",
+    #(
+      "time_slice(Query > 100 per)",
+      Error("Missing interval in time_slice expression"),
+    ),
     // time_slice(Query > 100 per s) - invalid interval (no number)
-    "time_slice(Query > 100 per s)",
+    #(
+      "time_slice(Query > 100 per s)",
+      Error("Invalid interval number ''"),
+    ),
     // time_slice(Query > 100 per 10) - invalid interval (no unit)
-    "time_slice(Query > 100 per 10)",
+    #(
+      "time_slice(Query > 100 per 10)",
+      Error("Invalid interval unit '0' (expected s, m, or h)"),
+    ),
     // time_slice(Query > 100 per 10x) - invalid unit
-    "time_slice(Query > 100 per 10x)",
+    #(
+      "time_slice(Query > 100 per 10x)",
+      Error("Invalid interval unit 'x' (expected s, m, or h)"),
+    ),
     // time_slice(Query > abc per 10s) - non-numeric threshold
-    "time_slice(Query > abc per 10s)",
+    #(
+      "time_slice(Query > abc per 10s)",
+      Error("Invalid threshold 'abc' in time_slice expression"),
+    ),
     // time_slice() - empty
-    "time_slice()",
+    #("time_slice()", Error("Empty time_slice expression")),
   ]
-  |> list.each(fn(input) { parse_expr(input) |> should.be_error })
+  |> test_helpers.array_based_test_executor_1(parse_expr)
 }
 
 // ==== time_slice parses as regular word Tests ====

@@ -4,8 +4,6 @@ import caffeine_query_language/resolver.{
   GoodOverTotal, GreaterThan, GreaterThanOrEqualTo, LessThan, TimeSlice,
 }
 import caffeine_query_language/test_helpers as cql_test_helpers
-import gleam/list
-import gleeunit/should
 import test_helpers
 
 const parens = cql_test_helpers.parens
@@ -127,17 +125,24 @@ pub fn resolve_time_slice_valid_test() {
 // ==== time_slice invalid (should error) Tests ====
 
 pub fn resolve_time_slice_invalid_test() {
+  let time_slice_operand_error =
+    Error(CQLResolverError(
+      "time_slice cannot be used as an operand. It must be the entire expression.",
+    ))
+  let not_division_or_time_slice_error =
+    Error(CQLResolverError(
+      "Invalid expression. Expected a top level division operator or time_slice.",
+    ))
+
   [
     // time_slice(Query > 100 per 10s) + B - keyword not at top level
-    "time_slice(Query > 100 per 10s) + B",
+    #("time_slice(Query > 100 per 10s) + B", not_division_or_time_slice_error),
     // A + time_slice(Query > 100 per 10s) - keyword not at top level
-    "A + time_slice(Query > 100 per 10s)",
+    #("A + time_slice(Query > 100 per 10s)", not_division_or_time_slice_error),
     // (time_slice(Query > 100 per 10s)) - wrapped in parens
-    "(time_slice(Query > 100 per 10s))",
+    #("(time_slice(Query > 100 per 10s))", not_division_or_time_slice_error),
     // time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
-    "time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)",
+    #("time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)", time_slice_operand_error),
   ]
-  |> list.each(fn(input) {
-    parse_then_resolve_primitives(input) |> should.be_error
-  })
+  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
 }

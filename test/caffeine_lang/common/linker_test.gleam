@@ -1,6 +1,7 @@
 import caffeine_lang/parser/linker
 import gleam/list
 import gleeunit/should
+import test_helpers
 
 // ==== get_instantiation_json_files Tests ====
 // * ✅ directory doesn't exist
@@ -44,11 +45,7 @@ pub fn get_instantiation_json_files_test() {
       ]),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    linker.get_instantiation_json_files(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(linker.get_instantiation_json_files)
 }
 
 pub fn get_instantiation_json_files_multiple_orgs_teams_test() {
