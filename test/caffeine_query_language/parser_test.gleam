@@ -4,11 +4,20 @@ import caffeine_query_language/parser.{
   TimeSliceExpr, Word, find_rightmost_operator_at_level, is_balanced_parens,
   is_last_char, parse_expr,
 }
-import caffeine_query_language/test_helpers.{
-  exp_op_cont, parens, prim_word, simple_exp_op_cont, simple_op_cont,
-}
+import caffeine_query_language/test_helpers as cql_test_helpers
 import gleam/list
 import gleeunit/should
+import test_helpers
+
+const exp_op_cont = cql_test_helpers.exp_op_cont
+
+const parens = cql_test_helpers.parens
+
+const prim_word = cql_test_helpers.prim_word
+
+const simple_exp_op_cont = cql_test_helpers.simple_exp_op_cont
+
+const simple_op_cont = cql_test_helpers.simple_op_cont
 
 // ==== parse_expr Tests ====
 // general:
@@ -133,18 +142,19 @@ pub fn parse_expr_test() {
     // time_slice with basic expression
     #(
       "time_slice(Query > 1000000 per 10s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 1_000_000.0,
-        interval_seconds: 10.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 1_000_000.0,
+            interval_seconds: 10.0,
+          )),
+        ),
+      ),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    parse_expr(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(parse_expr)
 }
 
 // ==== is_balanced_parens Tests ====
@@ -164,10 +174,7 @@ pub fn is_balanced_parens_test() {
     // complex balanced parentheses
     #("(a(b)(c)((())))", 11, 4, True),
   ]
-  |> list.each(fn(tuple) {
-    let #(input, pos, count, expected) = tuple
-    is_balanced_parens(input, pos, count) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_3(is_balanced_parens)
 }
 
 // ==== find_rightmost_operator_at_level Tests ====
@@ -219,10 +226,7 @@ pub fn is_last_char_test() {
     // index is the last character
     #("(a(b)(c)((())))", 14, True),
   ]
-  |> list.each(fn(tuple) {
-    let #(input, index, expected) = tuple
-    is_last_char(input, index) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(is_last_char)
 }
 
 // ==== time_slice valid parsing Tests ====
@@ -232,108 +236,145 @@ pub fn time_slice_valid_parsing_test() {
     // time_slice(Query > 1000000 per 10s) - basic with >
     #(
       "time_slice(Query > 1000000 per 10s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 1_000_000.0,
-        interval_seconds: 10.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 1_000_000.0,
+            interval_seconds: 10.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query < 500 per 30s) - with <
     #(
       "time_slice(Query < 500 per 30s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: LessThan,
-        threshold: 500.0,
-        interval_seconds: 30.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: LessThan,
+            threshold: 500.0,
+            interval_seconds: 30.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query >= 100 per 60s) - with >=
     #(
       "time_slice(Query >= 100 per 60s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThanOrEqualTo,
-        threshold: 100.0,
-        interval_seconds: 60.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThanOrEqualTo,
+            threshold: 100.0,
+            interval_seconds: 60.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query <= 999 per 5s) - with <=
     #(
       "time_slice(Query <= 999 per 5s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: LessThanOrEqualTo,
-        threshold: 999.0,
-        interval_seconds: 5.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: LessThanOrEqualTo,
+            threshold: 999.0,
+            interval_seconds: 5.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(avg:system.cpu > 80 per 300s) - realistic metric query
     #(
       "time_slice(avg:system.cpu > 80 per 300s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "avg:system.cpu",
-        comparator: GreaterThan,
-        threshold: 80.0,
-        interval_seconds: 300.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "avg:system.cpu",
+            comparator: GreaterThan,
+            threshold: 80.0,
+            interval_seconds: 300.0,
+          )),
+        ),
+      ),
     ),
     // time_slice( Query > 100 per 10s ) - whitespace handling
     #(
       "time_slice( Query > 100 per 10s )",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 100.0,
-        interval_seconds: 10.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 100.0,
+            interval_seconds: 10.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query > 99.5 per 10s) - decimal threshold
     #(
       "time_slice(Query > 99.5 per 10s)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 99.5,
-        interval_seconds: 10.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 99.5,
+            interval_seconds: 10.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query > 100 per 10m) - minutes interval
     #(
       "time_slice(Query > 100 per 10m)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 100.0,
-        interval_seconds: 600.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 100.0,
+            interval_seconds: 600.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query > 100 per 1h) - hours interval
     #(
       "time_slice(Query > 100 per 1h)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 100.0,
-        interval_seconds: 3600.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 100.0,
+            interval_seconds: 3600.0,
+          )),
+        ),
+      ),
     ),
     // time_slice(Query > 100 per 1.5h) - decimal interval
     #(
       "time_slice(Query > 100 per 1.5h)",
-      Ok(ExpContainer(TimeSliceExpr(TimeSliceExp(
-        query: "Query",
-        comparator: GreaterThan,
-        threshold: 100.0,
-        interval_seconds: 5400.0,
-      )))),
+      Ok(
+        ExpContainer(
+          TimeSliceExpr(TimeSliceExp(
+            query: "Query",
+            comparator: GreaterThan,
+            threshold: 100.0,
+            interval_seconds: 5400.0,
+          )),
+        ),
+      ),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    parse_expr(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(parse_expr)
 }
 
 // ==== time_slice invalid inner syntax Tests ====
@@ -371,27 +412,32 @@ pub fn time_slice_parses_as_word_test() {
     // TIME_SLICE(Query > 100 per 10s) - wrong case
     #(
       "TIME_SLICE(Query > 100 per 10s)",
-      Ok(ExpContainer(Primary(PrimaryWord(Word(
-        "TIME_SLICE(Query > 100 per 10s)",
-      ))))),
+      Ok(
+        ExpContainer(
+          Primary(PrimaryWord(Word("TIME_SLICE(Query > 100 per 10s)"))),
+        ),
+      ),
     ),
     // timeslice(Query > 100 per 10s) - no underscore
     #(
       "timeslice(Query > 100 per 10s)",
-      Ok(ExpContainer(Primary(PrimaryWord(Word("timeslice(Query > 100 per 10s)"))))),
+      Ok(
+        ExpContainer(
+          Primary(PrimaryWord(Word("timeslice(Query > 100 per 10s)"))),
+        ),
+      ),
     ),
     // time_slice Query > 100 per 10s - no parens (parses as word)
     #(
       "time_slice Query > 100 per 10s",
-      Ok(ExpContainer(Primary(PrimaryWord(Word(
-        "time_slice Query > 100 per 10s",
-      ))))),
+      Ok(
+        ExpContainer(
+          Primary(PrimaryWord(Word("time_slice Query > 100 per 10s"))),
+        ),
+      ),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    parse_expr(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(parse_expr)
 }
 
 // ==== time_slice nested (parser succeeds, resolver rejects) Tests ====
@@ -413,6 +459,7 @@ pub fn time_slice_nested_parsing_test() {
   should.be_ok(result3)
 
   // time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - two keywords
-  let result4 = parse_expr("time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)")
+  let result4 =
+    parse_expr("time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)")
   should.be_ok(result4)
 }

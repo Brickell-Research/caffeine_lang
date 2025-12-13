@@ -2,8 +2,7 @@ import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/templatizer
 import gleam/dynamic
-import gleam/list
-import gleeunit/should
+import test_helpers
 
 // ==== Parse and Resolve Query Template ====
 // * ✅ missing value tuple for a value
@@ -101,12 +100,9 @@ pub fn parse_and_resolve_query_template_test() {
       Ok("time_slice(avg:system.cpu{env:production} > 80 per 300s)"),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input_1, input_2, expected) = tuple
-
-    templatizer.parse_and_resolve_query_template(input_1, input_2)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(
+    templatizer.parse_and_resolve_query_template,
+  )
 }
 
 // ==== Parse Template Variable ====
@@ -138,10 +134,7 @@ pub fn parse_template_variable_test() {
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Not)),
     ),
     // Error cases
-    #(
-      "",
-      Error(errors.TemplateParseError("Empty template variable name: ")),
-    ),
+    #("", Error(errors.TemplateParseError("Empty template variable name: "))),
     #(
       "  ",
       Error(errors.TemplateParseError("Empty template variable name:   ")),
@@ -159,12 +152,9 @@ pub fn parse_template_variable_test() {
       Error(errors.TemplateParseError("Unknown template type: unknown")),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-
-    templatizer.parse_template_variable(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(
+    templatizer.parse_template_variable,
+  )
 }
 
 // ==== Parse Template Type ====
@@ -178,12 +168,7 @@ pub fn parse_template_type_test() {
       Error(errors.TemplateParseError("Unknown template type: unknown")),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-
-    templatizer.parse_template_type(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(templatizer.parse_template_type)
 }
 
 // ==== Resolve Template ====
@@ -369,17 +354,25 @@ pub fn resolve_template_test() {
     ),
     // Defaulted integer with value - uses provided value
     #(
-      templatizer.TemplateVariable("threshold", "threshold", templatizer.Default),
+      templatizer.TemplateVariable(
+        "threshold",
+        "threshold",
+        templatizer.Default,
+      ),
       helpers.ValueTuple(
         label: "threshold",
         typ: helpers.Defaulted(helpers.Integer, "2500000"),
-        value: dynamic.int(1000000),
+        value: dynamic.int(1_000_000),
       ),
       Ok("threshold:1000000"),
     ),
     // Defaulted integer with None - uses default value
     #(
-      templatizer.TemplateVariable("threshold", "threshold", templatizer.Default),
+      templatizer.TemplateVariable(
+        "threshold",
+        "threshold",
+        templatizer.Default,
+      ),
       helpers.ValueTuple(
         label: "threshold",
         typ: helpers.Defaulted(helpers.Integer, "2500000"),
@@ -422,7 +415,10 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), "{}"),
+        typ: helpers.Defaulted(
+          helpers.Dict(helpers.String, helpers.String),
+          "{}",
+        ),
         value: dynamic.nil(),
       ),
       Error(errors.TemplateResolutionError(
@@ -430,12 +426,7 @@ pub fn resolve_template_test() {
       )),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input_1, input_2, expected) = tuple
-
-    templatizer.resolve_template(input_1, input_2)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(templatizer.resolve_template)
 }
 
 // ==== Resolve String Value ====
@@ -461,12 +452,7 @@ pub fn resolve_string_value_test() {
       "!foo:bar",
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input_1, input_2, expected) = tuple
-
-    templatizer.resolve_string_value(input_1, input_2)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(templatizer.resolve_string_value)
 }
 
 // ==== Resolve List Value ====
@@ -492,10 +478,5 @@ pub fn resolve_list_value_test() {
       "foo NOT IN (bar, baz)",
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input_1, input_2, expected) = tuple
-
-    templatizer.resolve_list_value(input_1, input_2)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(templatizer.resolve_list_value)
 }

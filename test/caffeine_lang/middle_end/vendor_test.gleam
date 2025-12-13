@@ -1,11 +1,10 @@
 import caffeine_lang/common/errors
 import caffeine_lang/middle_end/vendor
-import gleam/list
-import gleeunit/should
+import test_helpers
 
 // ==== Vendor Resolution ====
-// ❌ vendor resolves
-// ❌ vendor does not resolve
+// ✅ vendor resolves
+// ✅ vendor does not resolve
 pub fn resolve_vendor_test() {
   [
     #("datadog", Ok(vendor.Datadog)),
@@ -16,10 +15,5 @@ pub fn resolve_vendor_test() {
       )),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-
-    vendor.resolve_vendor(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(vendor.resolve_vendor)
 }

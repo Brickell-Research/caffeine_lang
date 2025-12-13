@@ -9,6 +9,7 @@ import gleam/option
 import gleeunit/should
 import simplifile
 import terra_madre/terraform
+import test_helpers
 
 // ==== Helpers ====
 fn corpus_path(file_name: String) {
@@ -372,10 +373,7 @@ pub fn sanitize_resource_name_test() {
     // handles simple names without modification
     #("simple_name", "simple_name"),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    datadog.sanitize_resource_name(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(datadog.sanitize_resource_name)
 }
 
 // ==== window_to_timeframe ====
@@ -391,10 +389,7 @@ pub fn window_to_timeframe_test() {
     // 90 -> "90d"
     #(90, "90d"),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    datadog.window_to_timeframe(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(datadog.window_to_timeframe)
 }
 
 // ==== extract_string ====
@@ -415,10 +410,7 @@ pub fn extract_string_test() {
       Error(Nil),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(values, label, expected) = tuple
-    datadog.extract_string(values, label) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(datadog.extract_string)
 }
 
 // ==== extract_float ====
@@ -439,10 +431,7 @@ pub fn extract_float_test() {
       Error(Nil),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(values, label, expected) = tuple
-    datadog.extract_float(values, label) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(datadog.extract_float)
 }
 
 // ==== extract_int ====
@@ -463,10 +452,7 @@ pub fn extract_int_test() {
       Error(Nil),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(values, label, expected) = tuple
-    datadog.extract_int(values, label) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(datadog.extract_int)
 }
 
 // ==== extract_dict_string_string ====
@@ -507,10 +493,9 @@ pub fn extract_dict_string_string_test() {
       Error(Nil),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(values, label, expected) = tuple
-    datadog.extract_dict_string_string(values, label) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(
+    datadog.extract_dict_string_string,
+  )
 }
 // CQL integration is tested via generate_terraform_test
 // (see complex_expression case which uses "(good + partial) / total")

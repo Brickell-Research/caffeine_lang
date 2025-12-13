@@ -1,8 +1,8 @@
 import caffeine_lang/common/helpers
 import gleam/dynamic
 import gleam/dynamic/decode
-import gleam/list
 import gleeunit/should
+import test_helpers
 
 // ==== Accepted Type Tests ====
 // Arguably not needed, but anyway should be fine
@@ -106,7 +106,10 @@ pub fn accepted_types_decoder_test() {
     ),
     #("Defaulted(Integer, 10)", Ok(helpers.Defaulted(helpers.Integer, "10"))),
     #("Defaulted(Float, 3.14)", Ok(helpers.Defaulted(helpers.Float, "3.14"))),
-    #("Defaulted(Boolean, True)", Ok(helpers.Defaulted(helpers.Boolean, "True"))),
+    #(
+      "Defaulted(Boolean, True)",
+      Ok(helpers.Defaulted(helpers.Boolean, "True")),
+    ),
     // Defaulted nested types
     #(
       "Defaulted(List(String), default)",
@@ -134,10 +137,8 @@ pub fn accepted_types_decoder_test() {
       Error([decode.DecodeError("AcceptedType", "String", [])]),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
+  |> test_helpers.array_based_test_executor_1(fn(input) {
     decode.run(dynamic.string(input), helpers.accepted_types_decoder())
-    |> should.equal(expected)
   })
 }
 
@@ -237,16 +238,16 @@ pub fn accepted_type_to_string_test() {
     #(helpers.Optional(helpers.Float), "Optional(Float)"),
     #(helpers.Optional(helpers.Boolean), "Optional(Boolean)"),
     // Optional nested types
-    #(
-      helpers.Optional(helpers.List(helpers.String)),
-      "Optional(List(String))",
-    ),
+    #(helpers.Optional(helpers.List(helpers.String)), "Optional(List(String))"),
     #(
       helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
       "Optional(Dict(String, String))",
     ),
     // Defaulted basic types
-    #(helpers.Defaulted(helpers.String, "default"), "Defaulted(String, default)"),
+    #(
+      helpers.Defaulted(helpers.String, "default"),
+      "Defaulted(String, default)",
+    ),
     #(helpers.Defaulted(helpers.Integer, "10"), "Defaulted(Integer, 10)"),
     // Defaulted nested types
     #(
@@ -258,9 +259,5 @@ pub fn accepted_type_to_string_test() {
       "Defaulted(Dict(String, String), default)",
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    helpers.accepted_type_to_string(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(helpers.accepted_type_to_string)
 }

@@ -1,9 +1,8 @@
 import caffeine_lang/common/errors
 import gleam/dynamic/decode
 import gleam/json
-import gleam/list
 import gleam/option
-import gleeunit/should
+import test_helpers
 
 // ==== Format JSON Decode Error Tests ====
 // * ✅ UnexpectedEndOfInput
@@ -13,28 +12,34 @@ import gleeunit/should
 // * ✅ UnableToDecode (multiple errors)
 pub fn format_json_decode_error_test() {
   [
-    #(json.UnexpectedEndOfInput, "Unexpected end of input."),
-    #(json.UnexpectedByte("x"), "Unexpected byte: x."),
-    #(json.UnexpectedSequence("abc"), "Unexpected sequence: abc."),
+    #(
+      json.UnexpectedEndOfInput,
+      errors.JsonParserError("Unexpected end of input."),
+    ),
+    #(json.UnexpectedByte("x"), errors.JsonParserError("Unexpected byte: x.")),
+    #(
+      json.UnexpectedSequence("abc"),
+      errors.JsonParserError("Unexpected sequence: abc."),
+    ),
     #(
       json.UnableToDecode([
         decode.DecodeError("String", "Int", ["field", "nested"]),
       ]),
-      "Incorrect types: expected (String) received (Int) for (field.nested)",
+      errors.JsonParserError(
+        "Incorrect types: expected (String) received (Int) for (field.nested)",
+      ),
     ),
     #(
       json.UnableToDecode([
         decode.DecodeError("String", "Int", ["first"]),
         decode.DecodeError("Bool", "Float", ["second"]),
       ]),
-      "Incorrect types: expected (String) received (Int) for (first), expected (Bool) received (Float) for (second)",
+      errors.JsonParserError(
+        "Incorrect types: expected (String) received (Int) for (first), expected (Bool) received (Float) for (second)",
+      ),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected_msg) = pair
-    errors.format_json_decode_error(input)
-    |> should.equal(errors.JsonParserError(expected_msg))
-  })
+  |> test_helpers.array_based_test_executor_1(errors.format_json_decode_error)
 }
 
 // ==== Format Decode Error Message Tests ====
@@ -82,11 +87,9 @@ pub fn format_decode_error_message_test() {
       "expected (String) received (Int) for (first), expected (Bool) received (Float) for (second)",
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input_errors, identifier, expected) = tuple
-    errors.format_decode_error_message(input_errors, identifier)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(
+    errors.format_decode_error_message,
+  )
 }
 
 // ==== Parser Error to Linker Error ====
@@ -108,9 +111,7 @@ pub fn parser_error_to_linker_error_test() {
       errors.LinkerParseError("Duplicate error: foo"),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    errors.parser_error_to_linker_error(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(
+    errors.parser_error_to_linker_error,
+  )
 }

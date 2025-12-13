@@ -3,11 +3,18 @@ import caffeine_query_language/parser.{Add, Mul, OperatorExpr, Sub}
 import caffeine_query_language/resolver.{
   GoodOverTotal, GreaterThan, GreaterThanOrEqualTo, LessThan, TimeSlice,
 }
-import caffeine_query_language/test_helpers.{
-  parens, parse_then_resolve_primitives, prim_word, simple_op_cont,
-}
+import caffeine_query_language/test_helpers as cql_test_helpers
 import gleam/list
 import gleeunit/should
+import test_helpers
+
+const parens = cql_test_helpers.parens
+
+const parse_then_resolve_primitives = cql_test_helpers.parse_then_resolve_primitives
+
+const prim_word = cql_test_helpers.prim_word
+
+const simple_op_cont = cql_test_helpers.simple_op_cont
 
 // ==== resolve_primitives Tests ====
 // good_over_total:
@@ -76,10 +83,7 @@ pub fn resolve_primitives_test() {
       )),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    parse_then_resolve_primitives(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
 }
 
 // ==== time_slice valid (resolves to TimeSlice primitive) Tests ====
@@ -117,10 +121,7 @@ pub fn resolve_time_slice_valid_test() {
       )),
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-    parse_then_resolve_primitives(input) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
 }
 
 // ==== time_slice invalid (should error) Tests ====

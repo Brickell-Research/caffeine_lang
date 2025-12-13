@@ -4,6 +4,7 @@ import gleam/dict
 import gleam/list
 import gleeunit/should
 import terra_madre/hcl
+import test_helpers
 
 // ==== resolve_slo_to_hcl Tests ====
 // good_over_total
@@ -235,10 +236,7 @@ pub fn exp_to_string_path_expressions_test() {
       "metric{a:b} / metric{c:d}",
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(exp, expected) = pair
-    generator.exp_to_string(exp) |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(generator.exp_to_string)
 }
 
 pub fn exp_to_string_parsed_expressions_test() {
@@ -267,10 +265,9 @@ pub fn exp_to_string_parsed_expressions_test() {
       "http.url_details.path:/oauth/access_token",
     ),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
+  |> test_helpers.array_based_test_executor_1(fn(input) {
     let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
-    generator.exp_to_string(exp) |> should.equal(expected)
+    generator.exp_to_string(exp)
   })
 }
 
@@ -286,12 +283,9 @@ pub fn operator_to_datadog_query_test() {
     #(parser.Mul, "*"),
     #(parser.Div, "/"),
   ]
-  |> list.each(fn(pair) {
-    let #(input, expected) = pair
-
-    generator.operator_to_datadog_query(input)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_1(
+    generator.operator_to_datadog_query,
+  )
 }
 
 // ==== substitute_words ====
@@ -333,12 +327,10 @@ pub fn substitute_words_test() {
       "(sum:http.requests{status:2xx} + sum:http.requests{status:3xx}) / sum:http.requests{*}",
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(input, substitutions, expected) = tuple
+  |> test_helpers.array_based_test_executor_2(fn(input, substitutions) {
     let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
     generator.substitute_words(exp, substitutions)
     |> generator.exp_to_string
-    |> should.equal(expected)
   })
 }
 
@@ -356,7 +348,11 @@ pub fn extract_words_test() {
     // words in nested parentheses
     #("(a + b) * c", ["a", "b", "c"]),
     // complex formula
-    #("(build_time + deploy_time) / total", ["build_time", "deploy_time", "total"]),
+    #("(build_time + deploy_time) / total", [
+      "build_time",
+      "deploy_time",
+      "total",
+    ]),
   ]
   |> list.each(fn(pair) {
     let #(input, expected) = pair
@@ -397,9 +393,5 @@ pub fn resolve_slo_query_test() {
       ),
     ),
   ]
-  |> list.each(fn(tuple) {
-    let #(value_expr, substitutions, expected) = tuple
-    generator.resolve_slo_query(value_expr, substitutions)
-    |> should.equal(expected)
-  })
+  |> test_helpers.array_based_test_executor_2(generator.resolve_slo_query)
 }
