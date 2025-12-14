@@ -1,6 +1,7 @@
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers.{type ValueTuple}
+import caffeine_lang/generator/common as generator_common
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -11,7 +12,6 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
-import gleam/string
 import terra_madre/hcl
 import terra_madre/render
 import terra_madre/terraform
@@ -21,9 +21,7 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, errors.GeneratorError) {
-  use resources <- result.try(
-    irs |> list.try_map(ir_to_terraform_resource),
-  )
+  use resources <- result.try(irs |> list.try_map(ir_to_terraform_resource))
   let config =
     terraform.Config(
       terraform: option.Some(terraform_settings()),
@@ -99,7 +97,8 @@ pub fn variables() -> List(terraform.Variable) {
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
 ) -> Result(terraform.Resource, errors.GeneratorError) {
-  let resource_name = sanitize_resource_name(ir.unique_identifier)
+  let resource_name =
+    generator_common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR
   let threshold = extract_float(ir.values, "threshold") |> result.unwrap(99.9)
@@ -162,15 +161,6 @@ pub fn ir_to_terraform_resource(
     meta: hcl.empty_meta(),
     lifecycle: option.None,
   ))
-}
-
-/// Sanitize expectation name to valid Terraform resource name.
-/// Replaces slashes and spaces with underscores.
-@internal
-pub fn sanitize_resource_name(name: String) -> String {
-  name
-  |> string.replace("/", "_")
-  |> string.replace(" ", "_")
 }
 
 /// Convert window_in_days to Datadog timeframe string.

@@ -360,22 +360,6 @@ pub fn generate_terraform_test() {
   })
 }
 
-// ==== sanitize_resource_name ====
-// * ✅ replaces slashes with underscores
-// * ✅ replaces spaces with underscores
-// * ✅ handles simple names without modification
-pub fn sanitize_resource_name_test() {
-  [
-    // replaces slashes with underscores
-    #("org/team/auth/latency", "org_team_auth_latency"),
-    // replaces spaces with underscores
-    #("my slo name", "my_slo_name"),
-    // handles simple names without modification
-    #("simple_name", "simple_name"),
-  ]
-  |> test_helpers.array_based_test_executor_1(datadog.sanitize_resource_name)
-}
-
 // ==== window_to_timeframe ====
 // * ✅ 7 -> "7d"
 // * ✅ 30 -> "30d"
