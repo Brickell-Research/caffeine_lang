@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "0.2.16"
+version = "0.2.17"
 description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
