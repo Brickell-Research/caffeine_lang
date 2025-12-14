@@ -151,7 +151,7 @@ jobs:
 
     - name: Update Homebrew formula
       env:
-        HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        HOMEBREW_TAP_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         VERSION=${{ steps.version.outputs.version }}
 
@@ -231,7 +231,7 @@ jobs:
 
     - name: Update website compiler
       env:
-        WEBSITE_TOKEN: ${{ secrets.WEBSITE_TOKEN }}
+        WEBSITE_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         VERSION=${{ steps.version.outputs.version }}
 
