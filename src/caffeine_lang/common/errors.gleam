@@ -29,10 +29,6 @@ pub type GeneratorError {
   SloQueryResolutionError(msg: String)
 }
 
-pub type CompilerError {
-  ExampleError
-}
-
 // =============================================================================
 // JSON Decode Error Formatting
 // =============================================================================
