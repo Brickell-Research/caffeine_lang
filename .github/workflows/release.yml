@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.2.16)'
+        required: true
+        type: string
 
 jobs:
   release:
@@ -15,6 +21,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.tag || github.ref }}
 
     - name: Setup BEAM (Erlang + Gleam)
       uses: erlef/setup-beam@v1
@@ -140,3 +148,107 @@ jobs:
           dist/caffeine-${{ steps.version.outputs.version }}-macos-arm64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-windows-x64.zip
           dist/caffeine-${{ steps.version.outputs.version }}-checksums.sha256
+
+    - name: Update Homebrew formula
+      env:
+        HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+
+        # Calculate SHA256 for each platform from the archives we just created
+        SHA_MACOS_X64=$(sha256sum dist/caffeine-${VERSION}-macos-x64.tar.gz | cut -d' ' -f1)
+        SHA_MACOS_ARM64=$(sha256sum dist/caffeine-${VERSION}-macos-arm64.tar.gz | cut -d' ' -f1)
+        SHA_LINUX_X64=$(sha256sum dist/caffeine-${VERSION}-linux-x64.tar.gz | cut -d' ' -f1)
+
+        echo "SHA256 checksums:"
+        echo "  macos-x64:   $SHA_MACOS_X64"
+        echo "  macos-arm64: $SHA_MACOS_ARM64"
+        echo "  linux-x64:   $SHA_LINUX_X64"
+
+        # Clone the tap repository
+        git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/brickell-research/homebrew-caffeine.git tap
+        cd tap
+
+        # Generate the formula file matching existing style
+        cat > Formula/caffeine_lang.rb << 'FORMULA_END'
+        class CaffeineLang < Formula
+          desc "Caffeine programming language"
+          homepage "https://caffeine-lang.run"
+          license "GPL-3.0-only"
+        FORMULA_END
+
+        # Append version (needs variable expansion)
+        sed -i "s/license \"GPL-3.0-only\"/license \"GPL-3.0-only\"\n  version \"${VERSION}\"/" Formula/caffeine_lang.rb
+
+        cat >> Formula/caffeine_lang.rb << FORMULA_END
+
+          # Platform-specific downloads
+          if OS.mac? && Hardware::CPU.intel?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-x64.tar.gz"
+            sha256 "${SHA_MACOS_X64}"
+          elsif OS.mac? && Hardware::CPU.arm?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-arm64.tar.gz"
+            sha256 "${SHA_MACOS_ARM64}"
+          elsif OS.linux? && Hardware::CPU.intel?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-linux-x64.tar.gz"
+            sha256 "${SHA_LINUX_X64}"
+          end
+
+          def install
+            # The binary name includes version and platform, rename to just "caffeine"
+            if OS.mac? && Hardware::CPU.intel?
+              bin.install "caffeine-#{version}-macos-x64" => "caffeine"
+            elsif OS.mac? && Hardware::CPU.arm?
+              bin.install "caffeine-#{version}-macos-arm64" => "caffeine"
+            elsif OS.linux? && Hardware::CPU.intel?
+              bin.install "caffeine-#{version}-linux-x64" => "caffeine"
+            end
+          end
+
+          test do
+            system "#{bin}/caffeine"
+          end
+        end
+        FORMULA_END
+
+        # Fix indentation (remove leading spaces from heredoc)
+        sed -i 's/^        //' Formula/caffeine_lang.rb
+
+        # Configure git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Commit and push
+        git add Formula/caffeine_lang.rb
+        git commit -m "Update caffeine_lang to ${VERSION}"
+        git push origin main
+
+        echo "Homebrew formula updated to version ${VERSION}"
+
+    - name: Build browser bundle
+      run: |
+        ./scripts/bundle-browser.sh
+
+    - name: Update website compiler
+      env:
+        WEBSITE_TOKEN: ${{ secrets.WEBSITE_TOKEN }}
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+
+        # Clone the website repository
+        git clone https://x-access-token:${WEBSITE_TOKEN}@github.com/Brickell-Research/caffeine_lang_website.git website
+        cd website
+
+        # Copy the browser bundle
+        cp ../dist/caffeine-browser.js static/js/
+
+        # Configure git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Commit and push
+        git add static/js/caffeine-browser.js
+        git commit -m "Update Caffeine compiler to ${VERSION}"
+        git push origin main
+
+        echo "Website compiler updated to version ${VERSION}"
