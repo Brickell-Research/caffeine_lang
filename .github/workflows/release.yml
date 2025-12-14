@@ -250,12 +250,16 @@ jobs:
         EOF
         sed -i 's/^        //' src/version.gleam
 
+        # Rebuild the website
+        gleam deps download
+        gleam run -m build
+
         # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         # Commit and push
-        git add static/js/caffeine-browser.js src/version.gleam
+        git add static/js/caffeine-browser.js src/version.gleam docs/
         git commit -m "Update Caffeine compiler to ${VERSION}"
         git push origin main
 
