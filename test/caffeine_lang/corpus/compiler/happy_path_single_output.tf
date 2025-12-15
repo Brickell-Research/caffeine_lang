@@ -23,7 +23,7 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:0.2.19", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:1.0.0", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO"]
   type = "metric"
 
   query {
