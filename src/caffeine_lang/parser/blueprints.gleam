@@ -20,14 +20,13 @@ pub type Blueprint {
   )
 }
 
+/// Parse blueprints from a file.
 pub fn parse_from_file(
   file_path: String,
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), ParseError) {
-  // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  // parse and validate
   parse_from_string(json_string, artifacts)
 }
 
@@ -64,7 +63,8 @@ pub fn validate_blueprints(
     )
 
   // validate exactly the right number of inputs and each input is the
-  // correct type as per the param
+  // correct type as per the param. A blueprint needs to specify inputs for
+  // all params from the artifact.
   use _ <- result.try(
     validations.validate_inputs_for_collection(
       blueprint_artifact_collection,

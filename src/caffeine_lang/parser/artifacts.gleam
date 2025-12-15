@@ -1,3 +1,4 @@
+import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type ParseError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
@@ -98,7 +99,7 @@ fn parse_from_string(
   json_string: String,
 ) -> Result(List(Artifact), json.DecodeError) {
   let artifact_decoder = {
-    use name <- decode.field("name", decode.string)
+    use name <- decode.field("name", decoders.non_empty_string_decoder())
     use version <- decode.field("version", semantic_version_decoder())
     use base_params <- decode.field(
       "base_params",

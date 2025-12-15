@@ -23,19 +23,20 @@ pub type Expectation {
   )
 }
 
+/// Parse expectations from a file, leveraging the given file path for metadata extraction.
 pub fn parse_from_file(
   file_path: String,
   blueprints: List(Blueprint),
 ) -> Result(List(IntermediateRepresentation), ParseError) {
-  // load file
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  // parse and validate
   parse_from_string(json_string, file_path, blueprints)
 }
 
 /// Parse expectations from a JSON string with a given path for metadata extraction.
 /// This is public so it can be used by browser.gleam for in-browser compilation.
+/// Furthermore, internally we use this as the base from which parse_from_file also
+/// uses to parse.
 pub fn parse_from_string(
   json_string: String,
   file_path: String,
@@ -49,7 +50,6 @@ pub fn parse_from_string(
     },
   )
 
-  // validate and build IRs
   validate_and_build_irs(expectations, blueprints, file_path)
 }
 
@@ -94,10 +94,15 @@ fn validate_and_build_irs(
     "expectation names",
   ))
 
-  // build unique name prefix from file path
-  let path_prefix = extract_path_prefix(file_path)
-
   // at this point we're completely validated, now build IR
+  build_ir(expectations_blueprint_collection, file_path)
+}
+
+@internal
+pub fn build_ir(
+  expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+  file_path: String,
+) {
   expectations_blueprint_collection
   |> list.map(fn(expectation_and_blueprint_pair) {
     let #(expectation, blueprint) = expectation_and_blueprint_pair
@@ -140,7 +145,7 @@ fn validate_and_build_irs(
       list.append(provided_value_tuples, unprovided_optional_value_tuples)
 
     // build unique expectation name by combining path prefix with name
-    let #(org, team, service) = path_prefix
+    let #(org, team, service) = extract_path_prefix(file_path)
     let service_name = service
     let unique_name = org <> "_" <> service_name <> "_" <> expectation.name
 
@@ -180,7 +185,8 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
     })
   {
     [org, team, service] -> #(org, team, service)
-    // TODO: this should never happen, so we need to validate earlier in compilation
+    // this is not actually a possible state, however for pattern matching completeness we
+    // inlcude it here
     _ -> #("unknown", "unknown", "unknown")
   }
 }
@@ -220,7 +226,7 @@ pub fn expectations_from_json(
   blueprints: List(Blueprint),
 ) -> Result(List(Expectation), json.DecodeError) {
   let expectation_decoded = {
-    use name <- decode.field("name", decode.string)
+    use name <- decode.field("name", decoders.non_empty_string_decoder())
     use blueprint_ref <- decode.field(
       "blueprint_ref",
       decoders.named_reference_decoder(blueprints, fn(b) { b.name }),

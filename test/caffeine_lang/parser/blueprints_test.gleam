@@ -146,7 +146,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_name",
-      "Incorrect types: expected (String) received (Int) for (blueprints.0.name)",
+      "Incorrect types: expected (NonEmptyString) received (Int) for (blueprints.0.name)",
     ),
     #(
       "wrong_type_artifact_ref",
@@ -246,22 +246,17 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
 }
 
 // ==== Empty Name ====
-// * ✅ empty string name (currently allowed - documents behavior)
+// * ✅ empty string name is rejected
 pub fn parse_from_file_empty_name_test() {
-  blueprints.parse_from_file(path("empty_name"), artifacts())
-  |> should.equal(
-    Ok([
-      blueprints.Blueprint(
-        name: "",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("threshold", helpers.Float),
-          #("value", helpers.String),
-        ]),
-        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
-      ),
-    ]),
-  )
+  [
+    #(
+      "empty_name",
+      "Incorrect types: expected (NonEmptyString) received (String) for (blueprints.0.name)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
 }
 
 // ==== Input Validation ====

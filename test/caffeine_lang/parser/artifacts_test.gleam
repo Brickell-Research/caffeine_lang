@@ -148,7 +148,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_name",
-      "Incorrect types: expected (String) received (Int) for (artifacts.0.name)",
+      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name)",
     ),
     #(
       "wrong_type_version",
@@ -176,7 +176,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_multiple",
-      "Incorrect types: expected (String) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
   ]
   |> list.each(fn(pair) {
@@ -274,20 +274,17 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
 }
 
 // ==== Empty Name ====
-// * ✅ empty string name (currently allowed - documents behavior)
+// * ✅ empty string name is rejected
 pub fn parse_from_file_empty_name_test() {
-  // Note: empty name is currently allowed by the parser
-  artifacts.parse_from_file(path("empty_name"))
-  |> should.equal(
-    Ok([
-      artifacts.Artifact(
-        name: "",
-        version: artifacts.Semver(0, 0, 1),
-        base_params: dict.new(),
-        params: dict.new(),
-      ),
-    ]),
-  )
+  [
+    #(
+      "empty_name",
+      "Incorrect types: expected (NonEmptyString) received (String) for (artifacts.0.name)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
 }
 
 // ==== Standard Library ====
