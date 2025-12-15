@@ -29,6 +29,16 @@ pub type GeneratorError {
   SloQueryResolutionError(msg: String)
 }
 
+/// Represents top level compilation errors.
+pub type CompilationError {
+  StandardLibraryStringParseError(msg: String)
+  BlueprintsStringParseError(msg: String)
+  ExpectationsStringParseError(msg: String)
+  ParseAndLinkError(msg: String)
+  SemanticAnalysisError(msg: String)
+  CodeGenerationError(msg: String)
+}
+
 // =============================================================================
 // JSON Decode Error Formatting
 // =============================================================================

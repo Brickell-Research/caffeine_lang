@@ -129,18 +129,8 @@ fn validate_and_build_irs(
           True -> Error(Nil)
           False ->
             case typ {
-              helpers.Optional(_) ->
-                Ok(helpers.ValueTuple(
-                  label:,
-                  typ:,
-                  value: dynamic.nil(),
-                ))
-              helpers.Defaulted(_, _) ->
-                Ok(helpers.ValueTuple(
-                  label:,
-                  typ:,
-                  value: dynamic.nil(),
-                ))
+              helpers.Optional(_) | helpers.Defaulted(_, _) ->
+                Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
               _ -> Error(Nil)
             }
         }

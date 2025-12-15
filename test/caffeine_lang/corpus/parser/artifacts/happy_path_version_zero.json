@@ -1,0 +1,10 @@
+{
+  "artifacts": [
+    {
+      "name": "ZeroVersion",
+      "version": "0.0.0",
+      "base_params": {},
+      "params": {}
+    }
+  ]
+}

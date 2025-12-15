@@ -1,4 +1,6 @@
-import caffeine_lang/core/compiler.{CompilationConfig, Minimal}
+import caffeine_lang/core/compilation_configuration.{CompilationConfig}
+import caffeine_lang/core/compiler
+import caffeine_lang/core/logger.{Minimal}
 import gleam/list
 import gleam/string
 import gleeunit/should

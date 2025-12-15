@@ -22,3 +22,14 @@ pub fn named_reference_decoder(
     }
   })
 }
+
+/// Decoder for non-empty strings. Fails if the string is empty.
+pub fn non_empty_string_decoder() -> decode.Decoder(String) {
+  decode.new_primitive_decoder("NonEmptyString", fn(dyn) {
+    case decode.run(dyn, decode.string) {
+      Ok("") -> Error("")
+      Ok(s) -> Ok(s)
+      _ -> Error("")
+    }
+  })
+}

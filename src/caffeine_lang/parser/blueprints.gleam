@@ -131,7 +131,7 @@ pub fn blueprints_from_json(
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), json.DecodeError) {
   let blueprint_decoded = {
-    use name <- decode.field("name", decode.string)
+    use name <- decode.field("name", decoders.non_empty_string_decoder())
     use artifact_ref <- decode.field(
       "artifact_ref",
       decoders.named_reference_decoder(artifacts, fn(a) { a.name }),

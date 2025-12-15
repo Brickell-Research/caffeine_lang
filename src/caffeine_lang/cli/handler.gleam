@@ -2,36 +2,14 @@ import caffeine_lang/cli/exit_status_codes.{
   type ExitStatusCodes, Failure, Success,
 }
 import caffeine_lang/common/constants
-import caffeine_lang/core/compiler.{type LogLevel, Minimal, Verbose}
+import caffeine_lang/core/compilation_configuration.{CompilationConfig}
+import caffeine_lang/core/compiler
+import caffeine_lang/core/logger.{type LogLevel, Minimal, Verbose}
 import gleam/io
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import simplifile
-
-// ==== CLI Helpers ===
-
-fn log(log_level: LogLevel, message: String) {
-  case log_level {
-    Verbose -> io.println(message)
-    Minimal -> Nil
-  }
-}
-
-fn result_to_exit_status(
-  res: Result(Nil, String),
-  log_level: LogLevel,
-) -> ExitStatusCodes {
-  case res {
-    Ok(_) -> Success
-    Error(msg) -> {
-      log(log_level, msg)
-      Failure
-    }
-  }
-}
-
-// ==== Handler ====
 
 pub fn handle_args(args: List(String)) -> ExitStatusCodes {
   case args {
@@ -98,11 +76,11 @@ fn compile(
   output_path: Option(String),
   log_level: LogLevel,
 ) -> ExitStatusCodes {
-  let config = compiler.CompilationConfig(log_level: log_level)
+  let config = CompilationConfig(log_level: log_level)
   {
     use output <- result.try(
       compiler.compile(blueprint_file, expectations_dir, config)
-      |> result.map_error(fn(err) { "Compilation error: " <> err }),
+      |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
     )
 
     case output_path {
@@ -155,4 +133,24 @@ fn print_usage(log_level: LogLevel) {
 
 fn print_version(log_level: LogLevel) {
   log(log_level, "caffeine " <> constants.version)
+}
+
+fn log(log_level: LogLevel, message: String) {
+  case log_level {
+    Verbose -> io.println(message)
+    Minimal -> Nil
+  }
+}
+
+fn result_to_exit_status(
+  res: Result(Nil, String),
+  log_level: LogLevel,
+) -> ExitStatusCodes {
+  case res {
+    Ok(_) -> Success
+    Error(msg) -> {
+      log(log_level, msg)
+      Failure
+    }
+  }
 }

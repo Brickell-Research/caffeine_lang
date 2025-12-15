@@ -6,6 +6,7 @@ import gleam/dict
 import gleam/dynamic
 import gleam/list
 import gleeunit/should
+import simplifile
 
 // ==== Helpers ====
 fn path(file_name: String) {
@@ -184,6 +185,97 @@ pub fn parse_from_file_semantic_test() {
     #(
       "semantic_artifact_ref",
       "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_ref)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
+}
+
+// ==== File Errors ====
+// * ✅ file not found
+pub fn parse_from_file_file_errors_test() {
+  [
+    #(
+      "nonexistent_file_that_does_not_exist",
+      simplifile.describe_error(simplifile.Enoent)
+        <> " (test/caffeine_lang/corpus/parser/blueprints/nonexistent_file_that_does_not_exist.json)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.FileReadError(msg: pair.1))
+  })
+}
+
+// ==== JSON Format Errors ====
+// * ✅ invalid JSON syntax
+// * ✅ empty file
+// * ✅ null value
+pub fn parse_from_file_json_format_test() {
+  [
+    #("json_invalid_syntax", "Unexpected end of input."),
+    #("json_empty_file", "Unexpected end of input."),
+    #(
+      "json_null",
+      "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
+}
+
+// ==== Edge Cases - Happy Path ====
+// * ✅ empty params
+pub fn parse_from_file_edge_cases_happy_path_test() {
+  // empty params - should merge with artifact params
+  blueprints.parse_from_file(path("happy_path_empty_params"), artifacts())
+  |> should.equal(
+    Ok([
+      blueprints.Blueprint(
+        name: "minimal_blueprint",
+        artifact_ref: "SLO",
+        params: dict.from_list([
+          #("threshold", helpers.Float),
+          #("value", helpers.String),
+        ]),
+        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+      ),
+    ]),
+  )
+}
+
+// ==== Empty Name ====
+// * ✅ empty string name (currently allowed - documents behavior)
+pub fn parse_from_file_empty_name_test() {
+  blueprints.parse_from_file(path("empty_name"), artifacts())
+  |> should.equal(
+    Ok([
+      blueprints.Blueprint(
+        name: "",
+        artifact_ref: "SLO",
+        params: dict.from_list([
+          #("threshold", helpers.Float),
+          #("value", helpers.String),
+        ]),
+        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+      ),
+    ]),
+  )
+}
+
+// ==== Input Validation ====
+// * ✅ missing required input
+// * ✅ extra input field
+pub fn parse_from_file_input_validation_test() {
+  [
+    #(
+      "input_missing_required",
+      "Input validation errors: Missing keys in input: value",
+    ),
+    #(
+      "input_extra_field",
+      "Input validation errors: Extra keys in input: extra",
     ),
   ]
   |> list.each(fn(pair) {

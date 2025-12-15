@@ -4,6 +4,7 @@ import caffeine_lang/parser/artifacts
 import gleam/dict
 import gleam/list
 import gleeunit/should
+import simplifile
 
 // ==== Helpers ====
 fn path(file_name: String) {
@@ -205,5 +206,156 @@ pub fn parse_from_file_semver_test() {
   ]
   |> list.each(fn(pair) {
     assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
+}
+
+// ==== File Errors ====
+// * ✅ file not found
+pub fn parse_from_file_file_errors_test() {
+  [
+    #(
+      "nonexistent_file_that_does_not_exist",
+      simplifile.describe_error(simplifile.Enoent)
+        <> " (test/caffeine_lang/corpus/parser/artifacts/nonexistent_file_that_does_not_exist.json)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.FileReadError(msg: pair.1))
+  })
+}
+
+// ==== JSON Format Errors ====
+// * ✅ invalid JSON syntax
+// * ✅ empty file
+// * ✅ null value
+pub fn parse_from_file_json_format_test() {
+  [
+    #("json_invalid_syntax", "Unexpected end of input."),
+    #("json_empty_file", "Unexpected end of input."),
+    #(
+      "json_null",
+      "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+    ),
+  ]
+  |> list.each(fn(pair) {
+    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+  })
+}
+
+// ==== Edge Cases - Happy Path ====
+// * ✅ empty base_params and params
+// * ✅ version 0.0.0
+pub fn parse_from_file_edge_cases_happy_path_test() {
+  // empty params
+  artifacts.parse_from_file(path("happy_path_empty_params"))
+  |> should.equal(
+    Ok([
+      artifacts.Artifact(
+        name: "MinimalArtifact",
+        version: artifacts.Semver(0, 0, 1),
+        base_params: dict.new(),
+        params: dict.new(),
+      ),
+    ]),
+  )
+
+  // version 0.0.0
+  artifacts.parse_from_file(path("happy_path_version_zero"))
+  |> should.equal(
+    Ok([
+      artifacts.Artifact(
+        name: "ZeroVersion",
+        version: artifacts.Semver(0, 0, 0),
+        base_params: dict.new(),
+        params: dict.new(),
+      ),
+    ]),
+  )
+}
+
+// ==== Empty Name ====
+// * ✅ empty string name (currently allowed - documents behavior)
+pub fn parse_from_file_empty_name_test() {
+  // Note: empty name is currently allowed by the parser
+  artifacts.parse_from_file(path("empty_name"))
+  |> should.equal(
+    Ok([
+      artifacts.Artifact(
+        name: "",
+        version: artifacts.Semver(0, 0, 1),
+        base_params: dict.new(),
+        params: dict.new(),
+      ),
+    ]),
+  )
+}
+
+// ==== Standard Library ====
+// * ✅ parses without error
+pub fn parse_standard_library_test() {
+  artifacts.parse_standard_library()
+  |> should.be_ok
+}
+
+// ==== parse_semver ====
+// ==== Happy Path ====
+// * ✅ standard semver (1.2.3)
+// * ✅ zero version (0.0.0)
+// * ✅ large numbers
+pub fn parse_semver_happy_path_test() {
+  [
+    #("1.2.3", Ok(artifacts.Semver(1, 2, 3))),
+    #("0.0.0", Ok(artifacts.Semver(0, 0, 0))),
+    #("999.999.999", Ok(artifacts.Semver(999, 999, 999))),
+  ]
+  |> list.each(fn(pair) {
+    artifacts.parse_semver(pair.0)
+    |> should.equal(pair.1)
+  })
+}
+
+// ==== Invalid ====
+// * ✅ wrong number of parts (no dots, one dot, too many dots)
+// * ✅ non-numeric parts
+// * ✅ empty/whitespace
+// * ✅ malformed dots (leading, trailing, consecutive)
+// * ✅ semver extensions (prerelease, build metadata)
+// * ✅ leading zeros
+// * ✅ negative numbers
+pub fn parse_semver_invalid_test() {
+  [
+    // Wrong number of parts
+    #("1", Error(Nil)),
+    #("1.2", Error(Nil)),
+    #("1.2.3.4", Error(Nil)),
+    // Non-numeric
+    #("a.b.c", Error(Nil)),
+    #("1.2.a", Error(Nil)),
+    #("v1.2.3", Error(Nil)),
+    // Empty/whitespace
+    #("", Error(Nil)),
+    #("   ", Error(Nil)),
+    // Malformed dots
+    #(".1.2.3", Error(Nil)),
+    #("1.2.3.", Error(Nil)),
+    #("1..3", Error(Nil)),
+    #("1.2.", Error(Nil)),
+    #("..", Error(Nil)),
+    // Semver extensions not supported
+    #("1.2.3-beta", Error(Nil)),
+    #("1.2.3+build", Error(Nil)),
+    // Leading zeros disallowed
+    #("01.2.3", Error(Nil)),
+    #("1.02.3", Error(Nil)),
+    #("1.2.03", Error(Nil)),
+    #("01.02.03", Error(Nil)),
+    // Negative numbers disallowed
+    #("-1.0.0", Error(Nil)),
+    #("0.-1.0", Error(Nil)),
+    #("0.0.-1", Error(Nil)),
+  ]
+  |> list.each(fn(pair) {
+    artifacts.parse_semver(pair.0)
+    |> should.equal(pair.1)
   })
 }

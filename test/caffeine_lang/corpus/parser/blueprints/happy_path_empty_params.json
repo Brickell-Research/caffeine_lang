@@ -1,0 +1,10 @@
+{
+  "blueprints": [
+    {
+      "name": "minimal_blueprint",
+      "artifact_ref": "SLO",
+      "params": {},
+      "inputs": { "value": "foobar" }
+    }
+  ]
+}

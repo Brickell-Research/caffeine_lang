@@ -1,3 +1,6 @@
+import caffeine_lang/common/errors
+import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
+import caffeine_lang/core/logger
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
@@ -7,35 +10,18 @@ import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import caffeine_lang/parser/linker
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/result
 import gleam_community/ansi
 
-// ==== Configuration ====
-
-pub type LogLevel {
-  Verbose
-  Minimal
-}
-
-pub type CompilationConfig {
-  CompilationConfig(log_level: LogLevel)
-}
-
 // ==== Print helpers ====
-
-fn log(config: CompilationConfig, message: String) {
-  case config.log_level {
-    Verbose -> io.println(message)
-    Minimal -> Nil
-  }
-}
-
 fn print_header(config: CompilationConfig) {
-  log(config, "")
-  log(config, ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")))
-  log(config, "")
+  logger.log(config.log_level, "")
+  logger.log(
+    config.log_level,
+    ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")),
+  )
+  logger.log(config.log_level, "")
 }
 
 fn print_step1_start(
@@ -43,38 +29,47 @@ fn print_step1_start(
   blueprint_path: String,
   expectations_dir: String,
 ) {
-  log(config, ansi.bold(ansi.underline("[1/3] Parsing and linking")))
-  log(config, "  Blueprint file: " <> ansi.dim(blueprint_path))
-  log(config, "  Expectations directory: " <> ansi.dim(expectations_dir))
+  logger.log(
+    config.log_level,
+    ansi.bold(ansi.underline("[1/3] Parsing and linking")),
+  )
+  logger.log(config.log_level, "  Blueprint file: " <> ansi.dim(blueprint_path))
+  logger.log(
+    config.log_level,
+    "  Expectations directory: " <> ansi.dim(expectations_dir),
+  )
 }
 
 fn print_step1_success(config: CompilationConfig, count: Int) {
-  log(
-    config,
+  logger.log(
+    config.log_level,
     "  " <> ansi.green("✓ Parsed " <> int.to_string(count) <> " expectations"),
   )
 }
 
 fn print_step1_error(config: CompilationConfig) {
-  log(config, "  " <> ansi.red("✗ Failed to parse and link"))
+  logger.log(config.log_level, "  " <> ansi.red("✗ Failed to parse and link"))
 }
 
 fn print_step2_start(
   config: CompilationConfig,
   irs: List(IntermediateRepresentation),
 ) {
-  log(config, "")
-  log(config, ansi.bold(ansi.underline("[2/3] Performing semantic analysis")))
-  log(
-    config,
+  logger.log(config.log_level, "")
+  logger.log(
+    config.log_level,
+    ansi.bold(ansi.underline("[2/3] Performing semantic analysis")),
+  )
+  logger.log(
+    config.log_level,
     "  Resolving "
       <> ansi.yellow(int.to_string(list.length(irs)))
       <> " intermediate representations:",
   )
   irs
   |> list.each(fn(ir) {
-    log(
-      config,
+    logger.log(
+      config.log_level,
       "    "
         <> ansi.dim("•")
         <> " "
@@ -86,102 +81,122 @@ fn print_step2_start(
 }
 
 fn print_step2_success(config: CompilationConfig, count: Int) {
-  log(
-    config,
+  logger.log(
+    config.log_level,
     "  "
       <> ansi.green(
-        "✓ Resolved vendors and queries for "
-        <> int.to_string(count)
-        <> " expectations",
-      ),
+      "✓ Resolved vendors and queries for "
+      <> int.to_string(count)
+      <> " expectations",
+    ),
   )
 }
 
 fn print_step2_error(config: CompilationConfig) {
-  log(config, "  " <> ansi.red("✗ Semantic analysis failed"))
+  logger.log(config.log_level, "  " <> ansi.red("✗ Semantic analysis failed"))
 }
 
 fn print_step3_start(
   config: CompilationConfig,
   irs: List(IntermediateRepresentation),
 ) {
-  log(config, "")
-  log(
-    config,
+  logger.log(config.log_level, "")
+  logger.log(
+    config.log_level,
     ansi.bold(ansi.underline("[3/3] Generating Terraform artifacts")),
   )
-  log(
-    config,
+  logger.log(
+    config.log_level,
     "  Generating resources for "
       <> ansi.yellow(int.to_string(list.length(irs)))
       <> " expectations:",
   )
   irs
   |> list.each(fn(ir) {
-    log(
-      config,
+    logger.log(
+      config.log_level,
       "    "
         <> ansi.dim("•")
         <> " "
         <> ir.metadata.friendly_label
         <> " "
         <> ansi.dim(
-          "(org: "
-          <> ir.metadata.org_name
-          <> ", service: "
-          <> ir.metadata.service_name
-          <> ")",
-        ),
+        "(org: "
+        <> ir.metadata.org_name
+        <> ", team: "
+        <> ir.metadata.team_name
+        <> ", service: "
+        <> ir.metadata.service_name
+        <> ")",
+      ),
     )
   })
 }
 
 fn print_step3_success(config: CompilationConfig) {
-  log(config, "  " <> ansi.green("✓ Generated Terraform configuration"))
+  logger.log(
+    config.log_level,
+    "  " <> ansi.green("✓ Generated Terraform configuration"),
+  )
 }
 
 fn print_step3_error(config: CompilationConfig) {
-  log(config, "  " <> ansi.red("✗ Code generation failed"))
+  logger.log(config.log_level, "  " <> ansi.red("✗ Code generation failed"))
 }
 
 fn print_footer(config: CompilationConfig) {
-  log(config, "")
-  log(config, ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")))
-  log(config, "")
+  logger.log(config.log_level, "")
+  logger.log(
+    config.log_level,
+    ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")),
+  )
+  logger.log(config.log_level, "")
 }
 
 // ==== Shared compilation steps ====
+fn run_parse_and_link(
+  blueprint_file_path: String,
+  expectations_directory: String,
+) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+  linker.link(blueprint_file_path, expectations_directory)
+  |> result.map_error(fn(err) {
+    errors.ParseAndLinkError("Parse and link error: " <> err.msg)
+  })
+}
+
 fn run_semantic_analysis(
   irs: List(IntermediateRepresentation),
-) -> Result(List(IntermediateRepresentation), String) {
+) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   semantic_analyzer.resolve_intermediate_representations(irs)
-  |> result.map_error(fn(err) { "Semantic analysis error: " <> err.msg })
+  |> result.map_error(fn(err) {
+    errors.SemanticAnalysisError("Semantic analysis error: " <> err.msg)
+  })
 }
 
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
-) -> Result(String, String) {
+) -> Result(String, errors.CompilationError) {
   datadog.generate_terraform(resolved_irs)
-  |> result.map_error(fn(err) { "Code generation error: " <> err.msg })
+  |> result.map_error(fn(err) {
+    errors.CodeGenerationError("Code generation error: " <> err.msg)
+  })
 }
 
 // ==== Compiler ====
-
-// TODO: have an actual error type
 pub fn compile(
   blueprint_file_path: String,
   expectations_directory: String,
   config: CompilationConfig,
-) -> Result(String, String) {
+) -> Result(String, errors.CompilationError) {
   print_header(config)
 
   // Step 1: Parse and Link
   print_step1_start(config, blueprint_file_path, expectations_directory)
   use irs <- result.try(
-    case linker.link(blueprint_file_path, expectations_directory) {
+    case run_parse_and_link(blueprint_file_path, expectations_directory) {
       Error(err) -> {
         print_step1_error(config)
-        Error(err.msg)
+        Error(err)
       }
       Ok(irs) -> {
         print_step1_success(config, list.length(irs))
@@ -226,7 +241,7 @@ pub fn compile_from_strings(
   blueprints_json: String,
   expectations_json: String,
   expectations_path: String,
-) -> Result(String, String) {
+) -> Result(String, errors.CompilationError) {
   // Step 1: Parse (no file I/O)
   use irs <- result.try(parse_from_strings(
     blueprints_json,
@@ -245,15 +260,19 @@ fn parse_from_strings(
   blueprints_json: String,
   expectations_json: String,
   expectations_path: String,
-) -> Result(List(IntermediateRepresentation), String) {
+) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   use artifacts <- result.try(
     artifacts.parse_standard_library()
-    |> result.map_error(fn(err) { "Artifact error: " <> err.msg }),
+    |> result.map_error(fn(err) {
+      errors.StandardLibraryStringParseError("Artifact error: " <> err.msg)
+    }),
   )
 
   use validated_blueprints <- result.try(
     blueprints.parse_from_string(blueprints_json, artifacts)
-    |> result.map_error(fn(err) { "Blueprint error: " <> err.msg }),
+    |> result.map_error(fn(err) {
+      errors.BlueprintsStringParseError("Blueprint error: " <> err.msg)
+    }),
   )
 
   expectations.parse_from_string(
@@ -261,5 +280,7 @@ fn parse_from_strings(
     expectations_path,
     validated_blueprints,
   )
-  |> result.map_error(fn(err) { "Expectation error: " <> err.msg })
+  |> result.map_error(fn(err) {
+    errors.ExpectationsStringParseError("Expectation error: " <> err.msg)
+  })
 }
