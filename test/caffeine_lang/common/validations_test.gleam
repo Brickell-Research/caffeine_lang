@@ -34,6 +34,17 @@ import test_helpers
 // * (✅, ✅) Optional(Boolean) with value
 // * (✅, ✅) Optional(List(String)) with value
 // * (✅, ✅) Optional(Dict(String, String)) with value
+// Defaulted types
+// * (✅, ✅) Defaulted(String, default) with value
+// * (✅, ✅) Defaulted(Integer, default) with value
+// * (✅, ✅) Defaulted(Float, default) with value
+// * (✅, ✅) Defaulted(Boolean, default) with value
+// * (✅, ✅) Defaulted(List(String), default) with value
+// * (✅, ✅) Defaulted(Dict(String, String), default) with value
+// Nested types
+// * (✅, ✅) List(List(String))
+// * (✅, ✅) Dict(String, Dict(String, Integer))
+// * (✅, ✅) List(Dict(String, String))
 // Other
 // * (n/a, ✅) Wrong structure (string for List/Dict)
 // * (n/a, ✅) Multi-entry collection with one bad value
@@ -128,6 +139,28 @@ pub fn validate_value_type_test() {
       list_string,
       helpers.Defaulted(helpers.List(helpers.String), ""),
       Ok(list_string),
+    ),
+    // Defaulted Dict types
+    #(
+      dict_string_string,
+      helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), ""),
+      Ok(dict_string_string),
+    ),
+    // Nested types
+    #(
+      dynamic.list([list_string, list_string]),
+      helpers.List(helpers.List(helpers.String)),
+      Ok(dynamic.list([list_string, list_string])),
+    ),
+    #(
+      dynamic.properties([#(some_string, dict_string_int)]),
+      helpers.Dict(helpers.String, helpers.Dict(helpers.String, helpers.Integer)),
+      Ok(dynamic.properties([#(some_string, dict_string_int)])),
+    ),
+    #(
+      dynamic.list([dict_string_string]),
+      helpers.List(helpers.Dict(helpers.String, helpers.String)),
+      Ok(dynamic.list([dict_string_string])),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
@@ -265,6 +298,28 @@ pub fn validate_value_type_test() {
     #(
       dynamic.list([some_bool]),
       helpers.Defaulted(helpers.List(helpers.String), ""),
+      json_error("expected (String) received (Bool) for (some_key)"),
+    ),
+    // Defaulted Dict with wrong value type
+    #(
+      dynamic.properties([#(some_string, some_bool)]),
+      helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), ""),
+      json_error("expected (String) received (Bool) for (some_key)"),
+    ),
+    // Nested types with wrong inner type
+    #(
+      dynamic.list([dynamic.list([some_bool])]),
+      helpers.List(helpers.List(helpers.String)),
+      json_error("expected (String) received (Bool) for (some_key)"),
+    ),
+    #(
+      dynamic.properties([#(some_string, dynamic.properties([#(some_string, some_bool)]))]),
+      helpers.Dict(helpers.String, helpers.Dict(helpers.String, helpers.String)),
+      json_error("expected (String) received (Bool) for (some_key)"),
+    ),
+    #(
+      dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
+      helpers.List(helpers.Dict(helpers.String, helpers.String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
   ]

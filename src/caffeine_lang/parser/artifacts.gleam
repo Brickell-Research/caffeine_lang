@@ -103,11 +103,11 @@ fn parse_from_string(
     use version <- decode.field("version", semantic_version_decoder())
     use inherited_params <- decode.field(
       "inherited_params",
-      decode.dict(decode.string, helpers.accepted_types_decoder()),
+      decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
     use required_params <- decode.field(
       "required_params",
-      decode.dict(decode.string, helpers.accepted_types_decoder()),
+      decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
 
     decode.success(Artifact(name:, version:, inherited_params:, required_params:))

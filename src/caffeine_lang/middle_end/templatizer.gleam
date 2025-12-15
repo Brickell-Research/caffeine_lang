@@ -31,6 +31,7 @@ import caffeine_lang/common/errors.{
   type CompilationError, SemanticAnalysisTemplateParseError,
   SemanticAnalysisTemplateResolutionError,
 }
+import caffeine_lang/common/decoders
 import caffeine_lang/common/helpers.{type ValueTuple}
 import gleam/dynamic/decode
 import gleam/list
@@ -247,7 +248,7 @@ pub fn resolve_template(
       let assert Ok(vals) =
         decode.run(
           value_tuple.value,
-          helpers.decode_list_values_to_strings(inner_type),
+          decoders.decode_list_values_to_strings(inner_type),
         )
       Ok(resolve_list_value(template, vals))
     }
@@ -262,18 +263,20 @@ pub fn resolve_template(
       // If None, return empty string (template gets removed from query)
       let inner_decoder = case inner_type {
         helpers.List(list_inner) ->
-          decode.optional(helpers.decode_list_values_to_strings(list_inner))
+          decode.optional(decoders.decode_list_values_to_strings(list_inner))
           |> decode.map(fn(maybe_vals) {
             case maybe_vals {
-              option.Some(vals) -> option.Some(resolve_list_value(template, vals))
+              option.Some(vals) ->
+                option.Some(resolve_list_value(template, vals))
               option.None -> option.None
             }
           })
         _ ->
-          decode.optional(helpers.decode_value_to_string(inner_type))
+          decode.optional(decoders.decode_value_to_string(inner_type))
           |> decode.map(fn(maybe_val) {
             case maybe_val {
-              option.Some(val) -> option.Some(resolve_string_value(template, val))
+              option.Some(val) ->
+                option.Some(resolve_string_value(template, val))
               option.None -> option.None
             }
           })
@@ -295,18 +298,20 @@ pub fn resolve_template(
       // If None, use the default value instead of empty string
       let inner_decoder = case inner_type {
         helpers.List(list_inner) ->
-          decode.optional(helpers.decode_list_values_to_strings(list_inner))
+          decode.optional(decoders.decode_list_values_to_strings(list_inner))
           |> decode.map(fn(maybe_vals) {
             case maybe_vals {
-              option.Some(vals) -> option.Some(resolve_list_value(template, vals))
+              option.Some(vals) ->
+                option.Some(resolve_list_value(template, vals))
               option.None -> option.None
             }
           })
         _ ->
-          decode.optional(helpers.decode_value_to_string(inner_type))
+          decode.optional(decoders.decode_value_to_string(inner_type))
           |> decode.map(fn(maybe_val) {
             case maybe_val {
-              option.Some(val) -> option.Some(resolve_string_value(template, val))
+              option.Some(val) ->
+                option.Some(resolve_string_value(template, val))
               option.None -> option.None
             }
           })
@@ -322,7 +327,7 @@ pub fn resolve_template(
       let assert Ok(val) =
         decode.run(
           value_tuple.value,
-          helpers.decode_value_to_string(value_tuple.typ),
+          decoders.decode_value_to_string(value_tuple.typ),
         )
       Ok(resolve_string_value(template, val))
     }

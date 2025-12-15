@@ -138,7 +138,7 @@ pub fn blueprints_from_json(
     )
     use params <- decode.field(
       "params",
-      decode.dict(decode.string, helpers.accepted_types_decoder()),
+      decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
     use inputs <- decode.field(
       "inputs",
