@@ -1,5 +1,6 @@
 import caffeine_lang/common/errors.{
-  type ParseError, DuplicateError, JsonParserError, format_decode_error_message,
+  type CompilationError, ParserDuplicateError, ParserJsonParserError,
+  format_decode_error_message,
 }
 import caffeine_lang/common/helpers.{type AcceptedTypes, Boolean, Integer}
 import gleam/dict.{type Dict}
@@ -12,12 +13,12 @@ import gleam/set
 import gleam/string
 
 /// Validates that a dynamic value matches the expected AcceptedType.
-/// Returns the original value if valid, or a ParseError describing the type mismatch.
+/// Returns the original value if valid, or a CompilationError describing the type mismatch.
 pub fn validate_value_type(
   value: dynamic.Dynamic,
   expected_type: AcceptedTypes,
   type_key_identifier: String,
-) -> Result(dynamic.Dynamic, ParseError) {
+) -> Result(dynamic.Dynamic, CompilationError) {
   case expected_type {
     Boolean ->
       validate_value_type_helper(value, decode.bool, type_key_identifier)
@@ -39,7 +40,7 @@ pub fn validate_value_type(
         }
         Error(err) ->
           Error(
-            JsonParserError(format_decode_error_message(
+            ParserJsonParserError(format_decode_error_message(
               err,
               option.Some(type_key_identifier),
             )),
@@ -57,7 +58,7 @@ pub fn validate_value_type(
         }
         Error(err) ->
           Error(
-            JsonParserError(format_decode_error_message(
+            ParserJsonParserError(format_decode_error_message(
               err,
               option.Some(type_key_identifier),
             )),
@@ -71,7 +72,7 @@ pub fn validate_value_type(
         Ok(option.None) -> Ok(value)
         Error(err) ->
           Error(
-            JsonParserError(format_decode_error_message(
+            ParserJsonParserError(format_decode_error_message(
               err,
               option.Some(type_key_identifier),
             )),
@@ -87,7 +88,7 @@ pub fn validate_value_type(
         Ok(option.None) -> Ok(value)
         Error(err) ->
           Error(
-            JsonParserError(format_decode_error_message(
+            ParserJsonParserError(format_decode_error_message(
               err,
               option.Some(type_key_identifier),
             )),
@@ -106,7 +107,7 @@ fn validate_value_type_helper(
     Ok(_) -> Ok(value)
     Error(err) ->
       Error(
-        JsonParserError(format_decode_error_message(
+        ParserJsonParserError(format_decode_error_message(
           err,
           option.Some(type_key_identifier),
         )),
@@ -186,12 +187,12 @@ pub fn inputs_validator(
 }
 
 /// Validates that all items in a list have unique values for a given property.
-/// Returns a DuplicateError listing any duplicate values found.
+/// Returns a ParserDuplicateError listing any duplicate values found.
 pub fn validate_relevant_uniqueness(
   things_to_validate_uniqueness_for: List(a),
   fetch_property: fn(a) -> String,
   thing_label: String,
-) -> Result(Bool, ParseError) {
+) -> Result(Bool, CompilationError) {
   let dupe_names =
     things_to_validate_uniqueness_for
     |> list.group(fn(thing) { fetch_property(thing) })
@@ -201,7 +202,7 @@ pub fn validate_relevant_uniqueness(
   case dupe_names {
     [] -> Ok(True)
     _ ->
-      Error(DuplicateError(
+      Error(ParserDuplicateError(
         "Duplicate "
         <> thing_label
         <> ": "
@@ -216,7 +217,7 @@ pub fn validate_inputs_for_collection(
   input_param_collections: List(#(a, b)),
   get_inputs: fn(a) -> Dict(String, Dynamic),
   get_params: fn(b) -> Dict(String, AcceptedTypes),
-) -> Result(Bool, ParseError) {
+) -> Result(Bool, CompilationError) {
   let errors =
     input_param_collections
     |> list.filter_map(fn(collection) {
@@ -235,7 +236,7 @@ pub fn validate_inputs_for_collection(
 
   case errors {
     "" -> Ok(True)
-    _ -> Error(JsonParserError("Input validation errors: " <> errors))
+    _ -> Error(ParserJsonParserError("Input validation errors: " <> errors))
   }
 }
 

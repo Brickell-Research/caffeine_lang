@@ -1,4 +1,4 @@
-import caffeine_query_language/errors
+import caffeine_lang/common/errors.{type CompilationError, CQLResolverError}
 import caffeine_query_language/parser.{
   type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr, TimeSliceExpr,
 }
@@ -50,7 +50,7 @@ fn convert_comparator(comp: parser.Comparator) -> Comparator {
 /// Returns an error if the expression doesn't match a known primitive pattern.
 pub fn resolve_primitives(
   exp_container: ExpContainer,
-) -> Result(Primitives, errors.CQLError) {
+) -> Result(Primitives, CompilationError) {
   case exp_container {
     ExpContainer(exp) ->
       case exp {
@@ -58,8 +58,8 @@ pub fn resolve_primitives(
           // Check that neither operand contains a time_slice expression
           case contains_time_slice(left) || contains_time_slice(right) {
             True ->
-              Error(errors.CQLResolverError(
-                "time_slice cannot be used as an operand. It must be the entire expression.",
+              Error(CQLResolverError(
+                msg: "time_slice cannot be used as an operand. It must be the entire expression.",
               ))
             False -> Ok(GoodOverTotal(left, right))
           }
@@ -72,8 +72,8 @@ pub fn resolve_primitives(
             query: spec.query,
           ))
         _ ->
-          Error(errors.CQLResolverError(
-            "Invalid expression. Expected a top level division operator or time_slice.",
+          Error(CQLResolverError(
+            msg: "Invalid expression. Expected a top level division operator or time_slice.",
           ))
       }
   }

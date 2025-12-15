@@ -1,5 +1,5 @@
 import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{type ParseError, DuplicateError}
+import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import caffeine_lang/parser/artifacts.{type Artifact}
@@ -24,7 +24,7 @@ pub type Blueprint {
 pub fn parse_from_file(
   file_path: String,
   artifacts: List(Artifact),
-) -> Result(List(Blueprint), ParseError) {
+) -> Result(List(Blueprint), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
   parse_from_string(json_string, artifacts)
@@ -35,7 +35,7 @@ pub fn parse_from_file(
 pub fn parse_from_string(
   json_string: String,
   artifacts: List(Artifact),
-) -> Result(List(Blueprint), ParseError) {
+) -> Result(List(Blueprint), CompilationError) {
   use blueprints <- result.try(
     case blueprints_from_json(json_string, artifacts) {
       Ok(blueprints) -> Ok(blueprints)
@@ -52,7 +52,7 @@ pub fn parse_from_string(
 pub fn validate_blueprints(
   blueprints: List(Blueprint),
   artifacts: List(Artifact),
-) -> Result(List(Blueprint), ParseError) {
+) -> Result(List(Blueprint), CompilationError) {
   // map blueprints to artifacts since we'll reuse that numerous times
   let blueprint_artifact_collection =
     helpers.map_reference_to_referrer_over_collection(
@@ -102,7 +102,7 @@ pub fn validate_blueprints(
   use _ <- result.try(case overshadow_params_error {
     "" -> Ok(True)
     _ ->
-      Error(DuplicateError(
+      Error(ParserDuplicateError(
         "Overshadowed base_params in blueprint error: "
         <> overshadow_params_error,
       ))

@@ -159,27 +159,18 @@ fn run_parse_and_link(
   expectations_directory: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   linker.link(blueprint_file_path, expectations_directory)
-  |> result.map_error(fn(err) {
-    errors.ParseAndLinkError("Parse and link error: " <> err.msg)
-  })
 }
 
 fn run_semantic_analysis(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   semantic_analyzer.resolve_intermediate_representations(irs)
-  |> result.map_error(fn(err) {
-    errors.SemanticAnalysisError("Semantic analysis error: " <> err.msg)
-  })
 }
 
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(String, errors.CompilationError) {
   datadog.generate_terraform(resolved_irs)
-  |> result.map_error(fn(err) {
-    errors.CodeGenerationError("Code generation error: " <> err.msg)
-  })
 }
 
 // ==== Compiler ====
@@ -261,18 +252,10 @@ fn parse_from_strings(
   expectations_json: String,
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
-  use artifacts <- result.try(
-    artifacts.parse_standard_library()
-    |> result.map_error(fn(err) {
-      errors.StandardLibraryStringParseError("Artifact error: " <> err.msg)
-    }),
-  )
+  use artifacts <- result.try(artifacts.parse_standard_library())
 
   use validated_blueprints <- result.try(
-    blueprints.parse_from_string(blueprints_json, artifacts)
-    |> result.map_error(fn(err) {
-      errors.BlueprintsStringParseError("Blueprint error: " <> err.msg)
-    }),
+    blueprints.parse_from_string(blueprints_json, artifacts),
   )
 
   expectations.parse_from_string(
@@ -280,7 +263,4 @@ fn parse_from_strings(
     expectations_path,
     validated_blueprints,
   )
-  |> result.map_error(fn(err) {
-    errors.ExpectationsStringParseError("Expectation error: " <> err.msg)
-  })
 }

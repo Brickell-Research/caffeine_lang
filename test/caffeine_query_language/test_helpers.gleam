@@ -1,4 +1,4 @@
-import caffeine_query_language/errors
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_query_language/parser.{
   ExpContainer, OperatorExpr, Primary, PrimaryExp, PrimaryWord, Word, parse_expr,
 }
@@ -46,7 +46,7 @@ pub fn simple_exp_op_cont(
 /// Parses an expression string and resolves it to primitives.
 pub fn parse_then_resolve_primitives(
   expr: String,
-) -> Result(resolver.Primitives, errors.CQLError) {
+) -> Result(resolver.Primitives, CompilationError) {
   let assert Ok(parsed) = parse_expr(expr)
   resolve_primitives(parsed)
 }

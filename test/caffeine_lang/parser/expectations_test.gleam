@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/parser/blueprints.{type Blueprint}
@@ -55,7 +55,7 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
   ]
 }
 
-fn assert_error(file_name: String, error: ParseError) {
+fn assert_error(file_name: String, error: CompilationError) {
   expectations.parse_from_file(path(file_name), blueprints())
   |> should.equal(Error(error))
 }
@@ -201,7 +201,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -210,7 +210,7 @@ pub fn parse_from_file_missing_test() {
 pub fn parse_from_file_duplicates_test() {
   [#("duplicate_name", "Duplicate expectation names: my_expectation")]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.ParserDuplicateError(msg: pair.1))
   })
 }
 
@@ -245,7 +245,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -259,7 +259,7 @@ pub fn parse_from_file_semantic_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -271,7 +271,7 @@ pub fn parse_from_file_overshadowing_test() {
     blueprints_with_inputs(),
   )
   |> should.equal(
-    Error(errors.DuplicateError(
+    Error(errors.ParserDuplicateError(
       msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
     )),
   )
@@ -299,7 +299,7 @@ pub fn parse_from_file_file_errors_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.FileReadError(msg: pair.1))
+    assert_error(pair.0, errors.ParserFileReadError(msg: pair.1))
   })
 }
 
@@ -317,7 +317,7 @@ pub fn parse_from_file_json_format_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -331,7 +331,7 @@ pub fn parse_from_file_empty_name_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -350,6 +350,6 @@ pub fn parse_from_file_input_validation_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }

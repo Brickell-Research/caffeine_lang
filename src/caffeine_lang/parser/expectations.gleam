@@ -1,5 +1,5 @@
 import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{type ParseError, DuplicateError}
+import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import caffeine_lang/middle_end/semantic_analyzer.{
@@ -27,7 +27,7 @@ pub type Expectation {
 pub fn parse_from_file(
   file_path: String,
   blueprints: List(Blueprint),
-) -> Result(List(IntermediateRepresentation), ParseError) {
+) -> Result(List(IntermediateRepresentation), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
   parse_from_string(json_string, file_path, blueprints)
@@ -41,7 +41,7 @@ pub fn parse_from_string(
   json_string: String,
   file_path: String,
   blueprints: List(Blueprint),
-) -> Result(List(IntermediateRepresentation), ParseError) {
+) -> Result(List(IntermediateRepresentation), CompilationError) {
   // actually parse
   use expectations <- result.try(
     case expectations_from_json(json_string, blueprints) {
@@ -58,7 +58,7 @@ fn validate_and_build_irs(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
   file_path: String,
-) -> Result(List(IntermediateRepresentation), ParseError) {
+) -> Result(List(IntermediateRepresentation), CompilationError) {
   // map expectations to blueprints since we'll reuse that numerous times
   // and we've already validated all blueprint_refs
   let expectations_blueprint_collection =
@@ -193,7 +193,7 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
 
 fn check_input_overshadowing(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
-) -> Result(Bool, ParseError) {
+) -> Result(Bool, CompilationError) {
   let overshadow_errors =
     expectations_blueprint_collection
     |> list.filter_map(fn(pair) {
@@ -215,7 +215,7 @@ fn check_input_overshadowing(
 
   case overshadow_errors {
     "" -> Ok(True)
-    _ -> Error(DuplicateError(msg: overshadow_errors))
+    _ -> Error(ParserDuplicateError(msg: overshadow_errors))
   }
 }
 

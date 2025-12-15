@@ -1,5 +1,7 @@
 import caffeine_lang/common/constants
-import caffeine_lang/common/errors
+import caffeine_lang/common/errors.{
+  type CompilationError, GeneratorSloQueryResolutionError,
+}
 import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
@@ -20,7 +22,7 @@ import terra_madre/terraform
 /// Includes provider configuration and variables.
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
-) -> Result(String, errors.GeneratorError) {
+) -> Result(String, CompilationError) {
   use resources <- result.try(irs |> list.try_map(ir_to_terraform_resource))
   let config =
     terraform.Config(
@@ -96,7 +98,7 @@ pub fn variables() -> List(terraform.Variable) {
 @internal
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
-) -> Result(terraform.Resource, errors.GeneratorError) {
+) -> Result(terraform.Resource, CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR
@@ -114,8 +116,8 @@ pub fn ir_to_terraform_resource(
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
     cql_generator.resolve_slo_to_hcl(value_expr, queries)
     |> result.map_error(fn(err) {
-      errors.SloQueryResolutionError(
-        "Failed to resolve SLO query for '"
+      GeneratorSloQueryResolutionError(
+        msg: "Failed to resolve SLO query for '"
         <> ir.metadata.friendly_label
         <> "': "
         <> err,

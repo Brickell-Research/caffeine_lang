@@ -4,52 +4,38 @@ import gleam/list
 import gleam/option
 import gleam/string
 
-/// Represents errors that can occur during the parsing phase of compilation.
-pub type ParseError {
-  FileReadError(msg: String)
-  JsonParserError(msg: String)
-  DuplicateError(msg: String)
-}
-
-/// Represents errors that can occur during the linking phase of compilation.
-pub type LinkerError {
-  LinkerParseError(msg: String)
-  LinkerSemanticError(msg: String)
-}
-
-/// Represents errors that can occur during semantic analysis.
-pub type SemanticError {
-  VendorResolutionError(msg: String)
-  TemplateParseError(msg: String)
-  TemplateResolutionError(msg: String)
-}
-
-/// Represents errors that can occur during code generation.
-pub type GeneratorError {
-  SloQueryResolutionError(msg: String)
-}
-
 /// Represents top level compilation errors.
 pub type CompilationError {
-  StandardLibraryStringParseError(msg: String)
-  BlueprintsStringParseError(msg: String)
-  ExpectationsStringParseError(msg: String)
-  ParseAndLinkError(msg: String)
-  SemanticAnalysisError(msg: String)
-  CodeGenerationError(msg: String)
+  // Parser Phase (part of initial parse & link step)
+  ParserFileReadError(msg: String)
+  ParserJsonParserError(msg: String)
+  ParserDuplicateError(msg: String)
+  // Linker Phase (part of initial parse & link step)
+  LinkerParseError(msg: String)
+  LinkerSemanticError(msg: String)
+  // Semantic Analysis Phase
+  SemanticAnalysisVendorResolutionError(msg: String)
+  SemanticAnalysisTemplateParseError(msg: String)
+  SemanticAnalysisTemplateResolutionError(msg: String)
+  // Code Generation Phase
+  GeneratorSloQueryResolutionError(msg: String)
+  // Caffeine Query Language (CQL)
+  CQLResolverError(msg: String)
+  CQLParserError(msg: String)
+  CQLGeneratorError(msg: String)
 }
 
 // =============================================================================
 // JSON Decode Error Formatting
 // =============================================================================
 
-/// Converts a JSON decode error into a ParseError. Useful for leveraging the
+/// Converts a JSON decode error into a CompilationError. Useful for leveraging the
 /// custom errors we have per compilation phase vs. the lower level ones from
 /// various libraries we leverage.
-pub fn format_json_decode_error(error: json.DecodeError) -> ParseError {
+pub fn format_json_decode_error(error: json.DecodeError) -> CompilationError {
   let msg = format_json_decode_error_to_string(error)
 
-  JsonParserError(msg:)
+  ParserJsonParserError(msg:)
 }
 
 /// Converts a JSON decode error directly to a string (for browser error messages).
@@ -102,11 +88,3 @@ pub fn format_decode_error_message(
   |> string.join(", ")
 }
 
-/// Converts a ParseError to a LinkerError for error propagation across compilation phases.
-pub fn parser_error_to_linker_error(error: ParseError) -> LinkerError {
-  case error {
-    FileReadError(msg) -> LinkerParseError("File read error: " <> msg)
-    JsonParserError(msg) -> LinkerParseError("JSON parse error: " <> msg)
-    DuplicateError(msg) -> LinkerParseError("Duplicate error: " <> msg)
-  }
-}

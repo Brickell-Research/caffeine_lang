@@ -1,4 +1,4 @@
-import caffeine_query_language/errors
+import caffeine_lang/common/errors
 import caffeine_query_language/parser.{
   Add, Div, ExpContainer, GreaterThan, GreaterThanOrEqualTo, LessThan,
   LessThanOrEqualTo, Mul, OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp,
@@ -192,7 +192,7 @@ pub fn find_rightmost_operator_at_level_test() {
     // find rightmost subtraction operator
     #("A - B / (D * C)", "-", Ok(#("A", "B / (D * C)"))),
     // error when operator not found at top level
-    #("(A + B) / C", "+", Error(errors.CQLParserError("Operator not found"))),
+    #("(A + B) / C", "+", Error(errors.CQLParserError(msg: "Operator not found"))),
   ]
   |> test_helpers.array_based_test_executor_2(fn(input, operator) {
     find_rightmost_operator_at_level(input, operator, 0, 0, -1)

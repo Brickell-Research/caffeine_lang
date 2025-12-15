@@ -1,4 +1,4 @@
-import caffeine_query_language/errors
+import caffeine_lang/common/errors.{type CompilationError, CQLParserError}
 import gleam/float
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -329,7 +329,7 @@ fn parse_interval(input: String) -> Result(Float, String) {
 fn find_operator(
   input: String,
   operator: String,
-) -> Result(#(String, String), errors.CQLError) {
+) -> Result(#(String, String), CompilationError) {
   find_rightmost_operator_at_level(input, operator, 0, 0, -1)
 }
 
@@ -367,13 +367,13 @@ pub fn find_rightmost_operator_at_level(
   start_pos: Int,
   paren_level: Int,
   rightmost_pos: Int,
-) -> Result(#(String, String), errors.CQLError) {
+) -> Result(#(String, String), CompilationError) {
   let operator_length = string.length(operator)
 
   case start_pos >= string.length(input) {
     True ->
       case rightmost_pos {
-        -1 -> Error(errors.CQLParserError("Operator not found"))
+        -1 -> Error(CQLParserError(msg: "Operator not found"))
         pos -> {
           // Split at the rightmost operator position
           let left = string.trim(string.slice(input, 0, pos))

@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/parser/artifacts
 import gleam/dict
@@ -11,7 +11,7 @@ fn path(file_name: String) {
   "test/caffeine_lang/corpus/parser/artifacts/" <> file_name <> ".json"
 }
 
-fn assert_error(file_name: String, error: ParseError) {
+fn assert_error(file_name: String, error: CompilationError) {
   artifacts.parse_from_file(path(file_name))
   |> should.equal(Error(error))
 }
@@ -114,7 +114,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -125,7 +125,7 @@ pub fn parse_from_file_duplicates_test() {
     #("duplicate_names", "Duplicate artifact names: SLO"),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.ParserDuplicateError(msg: pair.1))
   })
 }
 
@@ -180,7 +180,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -205,7 +205,7 @@ pub fn parse_from_file_semver_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -220,7 +220,7 @@ pub fn parse_from_file_file_errors_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.FileReadError(msg: pair.1))
+    assert_error(pair.0, errors.ParserFileReadError(msg: pair.1))
   })
 }
 
@@ -238,7 +238,7 @@ pub fn parse_from_file_json_format_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -283,7 +283,7 @@ pub fn parse_from_file_empty_name_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 

@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type LinkerError, LinkerParseError}
+import caffeine_lang/common/errors.{type CompilationError, LinkerParseError}
 import caffeine_lang/common/helpers.{result_try}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
@@ -22,31 +22,18 @@ import simplifile
 pub fn link(
   blueprint_file_path: String,
   expectations_directory: String,
-) -> Result(List(IntermediateRepresentation), LinkerError) {
-  use artifacts <- result_try(fetch_artifacts())
-  use blueprints <- result_try(fetch_blueprints(blueprint_file_path, artifacts))
+) -> Result(List(IntermediateRepresentation), CompilationError) {
+  use artifacts <- result_try(artifacts.parse_standard_library())
+  use blueprints <- result_try(blueprints.parse_from_file(blueprint_file_path, artifacts))
   use ir <- result_try(fetch_expectations(expectations_directory, blueprints))
 
   Ok(ir)
 }
 
-fn fetch_artifacts() -> Result(List(artifacts.Artifact), LinkerError) {
-  artifacts.parse_standard_library()
-  |> result.map_error(errors.parser_error_to_linker_error)
-}
-
-fn fetch_blueprints(
-  blueprint_file_path: String,
-  artifacts: List(artifacts.Artifact),
-) -> Result(List(blueprints.Blueprint), LinkerError) {
-  blueprints.parse_from_file(blueprint_file_path, artifacts)
-  |> result.map_error(errors.parser_error_to_linker_error)
-}
-
 fn fetch_expectations(
   expectations_directory: String,
   blueprints: List(blueprints.Blueprint),
-) -> Result(List(IntermediateRepresentation), LinkerError) {
+) -> Result(List(IntermediateRepresentation), CompilationError) {
   use expectations_files <- result_try(
     get_instantiation_json_files(expectations_directory)
     |> result.map_error(LinkerParseError),
@@ -55,13 +42,12 @@ fn fetch_expectations(
   case expectations_files {
     [] ->
       Error(LinkerParseError(
-        "No expectation files found in: " <> expectations_directory,
+        msg: "No expectation files found in: " <> expectations_directory,
       ))
     _ ->
       expectations_files
       |> list.map(fn(file_path) {
         expectations.parse_from_file(file_path, blueprints)
-        |> result.map_error(errors.parser_error_to_linker_error)
       })
       |> result.all()
       |> result.map(list.flatten)

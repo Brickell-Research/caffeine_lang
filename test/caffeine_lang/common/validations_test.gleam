@@ -135,7 +135,7 @@ pub fn validate_value_type_test() {
   })
 
   // sad paths
-  let json_error = fn(msg) { Error(errors.JsonParserError(msg)) }
+  let json_error = fn(msg) { Error(errors.ParserJsonParserError(msg)) }
 
   [
     // Basic types
@@ -456,7 +456,7 @@ pub fn validate_relevant_uniqueness_test() {
   [
     #(
       [#("alice", 1), #("alice", 2)],
-      Error(errors.DuplicateError("Duplicate names: alice")),
+      Error(errors.ParserDuplicateError("Duplicate names: alice")),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
@@ -475,7 +475,7 @@ pub fn validate_relevant_uniqueness_test() {
     let result =
       validations.validate_relevant_uniqueness(things, fetch_name, "names")
     result |> should.be_error
-    let assert Error(errors.DuplicateError(msg)) = result
+    let assert Error(errors.ParserDuplicateError(msg)) = result
     string.contains(msg, expected_substring) |> should.be_true
   })
 }

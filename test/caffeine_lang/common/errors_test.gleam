@@ -14,18 +14,21 @@ pub fn format_json_decode_error_test() {
   [
     #(
       json.UnexpectedEndOfInput,
-      errors.JsonParserError("Unexpected end of input."),
+      errors.ParserJsonParserError("Unexpected end of input."),
     ),
-    #(json.UnexpectedByte("x"), errors.JsonParserError("Unexpected byte: x.")),
+    #(
+      json.UnexpectedByte("x"),
+      errors.ParserJsonParserError("Unexpected byte: x."),
+    ),
     #(
       json.UnexpectedSequence("abc"),
-      errors.JsonParserError("Unexpected sequence: abc."),
+      errors.ParserJsonParserError("Unexpected sequence: abc."),
     ),
     #(
       json.UnableToDecode([
         decode.DecodeError("String", "Int", ["field", "nested"]),
       ]),
-      errors.JsonParserError(
+      errors.ParserJsonParserError(
         "Incorrect types: expected (String) received (Int) for (field.nested)",
       ),
     ),
@@ -34,7 +37,7 @@ pub fn format_json_decode_error_test() {
         decode.DecodeError("String", "Int", ["first"]),
         decode.DecodeError("Bool", "Float", ["second"]),
       ]),
-      errors.JsonParserError(
+      errors.ParserJsonParserError(
         "Incorrect types: expected (String) received (Int) for (first), expected (Bool) received (Float) for (second)",
       ),
     ),
@@ -89,29 +92,5 @@ pub fn format_decode_error_message_test() {
   ]
   |> test_helpers.array_based_test_executor_2(
     errors.format_decode_error_message,
-  )
-}
-
-// ==== Parser Error to Linker Error ====
-// * ✅ FileReadError -> LinkerParseError
-// * ✅ JsonParserError -> LinkerParseError
-// * ✅ DuplicateError -> LinkerParseError
-pub fn parser_error_to_linker_error_test() {
-  [
-    #(
-      errors.FileReadError("foo"),
-      errors.LinkerParseError("File read error: foo"),
-    ),
-    #(
-      errors.JsonParserError("foo"),
-      errors.LinkerParseError("JSON parse error: foo"),
-    ),
-    #(
-      errors.DuplicateError("foo"),
-      errors.LinkerParseError("Duplicate error: foo"),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(
-    errors.parser_error_to_linker_error,
   )
 }

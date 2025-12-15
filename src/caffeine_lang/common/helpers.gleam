@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type ParseError, FileReadError}
+import caffeine_lang/common/errors.{type CompilationError, ParserFileReadError}
 import gleam/bool
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -249,11 +249,11 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
 }
 
 /// Reads the contents of a JSON file as a string.
-pub fn json_from_file(file_path) -> Result(String, ParseError) {
+pub fn json_from_file(file_path) -> Result(String, CompilationError) {
   case simplifile.read(file_path) {
     Ok(file_contents) -> Ok(file_contents)
     Error(err) ->
-      Error(FileReadError(
+      Error(ParserFileReadError(
         msg: simplifile.describe_error(err) <> " (" <> file_path <> ")",
       ))
   }

@@ -1,4 +1,7 @@
-import caffeine_lang/common/errors
+import caffeine_lang/common/errors.{
+  type CompilationError, SemanticAnalysisTemplateResolutionError,
+  SemanticAnalysisVendorResolutionError,
+}
 import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/middle_end/templatizer
 import caffeine_lang/middle_end/vendor.{type Vendor}
@@ -32,7 +35,7 @@ pub type IntermediateRepresentationMetaData {
 
 pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation),
-) -> Result(List(IntermediateRepresentation), errors.SemanticError) {
+) -> Result(List(IntermediateRepresentation), CompilationError) {
   irs
   |> list.try_map(fn(ir) {
     use ir_with_vendor <- result.try(resolve_vendor(ir))
@@ -43,15 +46,15 @@ pub fn resolve_intermediate_representations(
 @internal
 pub fn resolve_vendor(
   ir: IntermediateRepresentation,
-) -> Result(IntermediateRepresentation, errors.SemanticError) {
+) -> Result(IntermediateRepresentation, CompilationError) {
   case
     ir.values
     |> list.filter(fn(value) { value.label == "vendor" })
     |> list.first
   {
     Error(_) ->
-      Error(errors.VendorResolutionError(
-        "No vendor input for: " <> ir.unique_identifier,
+      Error(SemanticAnalysisVendorResolutionError(
+        msg: "No vendor input for: " <> ir.unique_identifier,
       ))
     Ok(vendor_value_tuple) -> {
       // ok to assert since already type checked in parser phase
@@ -67,7 +70,7 @@ pub fn resolve_vendor(
 @internal
 pub fn resolve_queries(
   ir: IntermediateRepresentation,
-) -> Result(IntermediateRepresentation, errors.SemanticError) {
+) -> Result(IntermediateRepresentation, CompilationError) {
   case ir.vendor {
     option.Some(vendor.Datadog) -> {
       let assert Ok(queries_value_tuple) =
@@ -152,8 +155,8 @@ pub fn resolve_queries(
       Ok(IntermediateRepresentation(..ir, values: new_values))
     }
     _ ->
-      Error(errors.TemplateResolutionError(
-        "No vendor for expectation: " <> ir.unique_identifier,
+      Error(SemanticAnalysisTemplateResolutionError(
+        msg: "No vendor for expectation: " <> ir.unique_identifier,
       ))
   }
 }

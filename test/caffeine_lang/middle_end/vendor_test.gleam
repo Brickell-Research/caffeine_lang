@@ -10,7 +10,7 @@ pub fn resolve_vendor_test() {
     #("datadog", Ok(vendor.Datadog)),
     #(
       "unknown",
-      Error(errors.VendorResolutionError(
+      Error(errors.SemanticAnalysisVendorResolutionError(
         "Unknown or unsupported vendor: unknown",
       )),
     ),

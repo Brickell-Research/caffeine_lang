@@ -1,16 +1,18 @@
-import caffeine_lang/common/errors
+import caffeine_lang/common/errors.{
+  type CompilationError, SemanticAnalysisVendorResolutionError,
+}
 import gleam/string
 
 pub type Vendor {
   Datadog
 }
 
-pub fn resolve_vendor(vendor: String) -> Result(Vendor, errors.SemanticError) {
+pub fn resolve_vendor(vendor: String) -> Result(Vendor, CompilationError) {
   case { vendor |> string.lowercase |> string.trim } {
     "datadog" -> Ok(Datadog)
     _ ->
-      Error(errors.VendorResolutionError(
-        "Unknown or unsupported vendor: " <> vendor,
+      Error(SemanticAnalysisVendorResolutionError(
+        msg: "Unknown or unsupported vendor: " <> vendor,
       ))
   }
 }

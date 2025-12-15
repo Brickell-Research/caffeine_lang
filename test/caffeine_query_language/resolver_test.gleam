@@ -1,4 +1,4 @@
-import caffeine_query_language/errors.{CQLResolverError}
+import caffeine_lang/common/errors.{CQLResolverError}
 import caffeine_query_language/parser.{Add, Mul, OperatorExpr, Sub}
 import caffeine_query_language/resolver.{
   GoodOverTotal, GreaterThan, GreaterThanOrEqualTo, LessThan, TimeSlice,

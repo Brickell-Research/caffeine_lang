@@ -27,7 +27,10 @@
 /// - https://docs.datadoghq.com/metrics/advanced-filtering/
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
-import caffeine_lang/common/errors
+import caffeine_lang/common/errors.{
+  type CompilationError, SemanticAnalysisTemplateParseError,
+  SemanticAnalysisTemplateResolutionError,
+}
 import caffeine_lang/common/helpers.{type ValueTuple}
 import gleam/dynamic/decode
 import gleam/list
@@ -78,15 +81,15 @@ pub type DatadogTemplateType {
 pub fn parse_and_resolve_query_template(
   query: String,
   value_tuples: List(ValueTuple),
-) -> Result(String, errors.SemanticError) {
+) -> Result(String, CompilationError) {
   case string.split_once(query, "$$") {
     // no more `$$`
     Error(_) -> Ok(query)
     Ok(#(before, rest)) -> {
       case string.split_once(rest, "$$") {
         Error(_) ->
-          Error(errors.TemplateParseError(
-            "Unexpected incomplete `$$` for substring: " <> query,
+          Error(SemanticAnalysisTemplateParseError(
+            msg: "Unexpected incomplete `$$` for substring: " <> query,
           ))
         Ok(#(inside, rest)) -> {
           use rest_of_items <- result.try(parse_and_resolve_query_template(
@@ -102,8 +105,8 @@ pub fn parse_and_resolve_query_template(
               |> list.first
             {
               Error(_) ->
-                Error(errors.TemplateParseError(
-                  "Missing input for template: " <> template.input_name,
+                Error(SemanticAnalysisTemplateParseError(
+                  msg: "Missing input for template: " <> template.input_name,
                 ))
               Ok(value_tuple) -> Ok(value_tuple)
             },
@@ -133,15 +136,15 @@ pub fn parse_and_resolve_query_template(
 @internal
 pub fn parse_template_variable(
   variable: String,
-) -> Result(TemplateVariable, errors.SemanticError) {
+) -> Result(TemplateVariable, CompilationError) {
   case string.split_once(variable, "->") {
     // No "->" means simple raw value substitution
     Error(_) -> {
       let trimmed = string.trim(variable)
       case trimmed {
         "" ->
-          Error(errors.TemplateParseError(
-            "Empty template variable name: " <> variable,
+          Error(SemanticAnalysisTemplateParseError(
+            msg: "Empty template variable name: " <> variable,
           ))
         _ ->
           Ok(TemplateVariable(
@@ -157,12 +160,12 @@ pub fn parse_template_variable(
 
       case trimmed_input, rest {
         "", _ ->
-          Error(errors.TemplateParseError(
-            "Empty input name in template: " <> variable,
+          Error(SemanticAnalysisTemplateParseError(
+            msg: "Empty input name in template: " <> variable,
           ))
         _, "" ->
-          Error(errors.TemplateParseError(
-            "Empty label name in template: " <> variable,
+          Error(SemanticAnalysisTemplateParseError(
+            msg: "Empty label name in template: " <> variable,
           ))
         _, _ -> parse_datadog_template_variable(trimmed_input, rest)
       }
@@ -174,7 +177,7 @@ pub fn parse_template_variable(
 fn parse_datadog_template_variable(
   input_name: String,
   rest: String,
-) -> Result(TemplateVariable, errors.SemanticError) {
+) -> Result(TemplateVariable, CompilationError) {
   case string.split_once(rest, ":") {
     // No colon means default template type
     Error(_) ->
@@ -204,11 +207,13 @@ fn parse_datadog_template_variable(
 @internal
 pub fn parse_template_type(
   type_string: String,
-) -> Result(DatadogTemplateType, errors.SemanticError) {
+) -> Result(DatadogTemplateType, CompilationError) {
   case type_string {
     "not" -> Ok(Not)
     _ ->
-      Error(errors.TemplateParseError("Unknown template type: " <> type_string))
+      Error(SemanticAnalysisTemplateParseError(
+        msg: "Unknown template type: " <> type_string,
+      ))
   }
 }
 
@@ -218,12 +223,12 @@ pub fn parse_template_type(
 pub fn resolve_template(
   template: TemplateVariable,
   value_tuple: ValueTuple,
-) -> Result(String, errors.SemanticError) {
+) -> Result(String, CompilationError) {
   use _ <- result.try(case template.input_name == value_tuple.label {
     True -> Ok(True)
     _ ->
-      Error(errors.TemplateResolutionError(
-        "Mismatch between template input name ("
+      Error(SemanticAnalysisTemplateResolutionError(
+        msg: "Mismatch between template input name ("
         <> template.input_name
         <> ") and input value label ("
         <> value_tuple.label
@@ -233,8 +238,8 @@ pub fn resolve_template(
 
   case value_tuple.typ {
     helpers.Dict(_, _) ->
-      Error(errors.TemplateResolutionError(
-        "Unsupported templatized variable type: "
+      Error(SemanticAnalysisTemplateResolutionError(
+        msg: "Unsupported templatized variable type: "
         <> helpers.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
@@ -247,8 +252,8 @@ pub fn resolve_template(
       Ok(resolve_list_value(template, vals))
     }
     helpers.Optional(helpers.Dict(_, _)) ->
-      Error(errors.TemplateResolutionError(
-        "Unsupported templatized variable type: "
+      Error(SemanticAnalysisTemplateResolutionError(
+        msg: "Unsupported templatized variable type: "
         <> helpers.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
@@ -280,8 +285,8 @@ pub fn resolve_template(
       }
     }
     helpers.Defaulted(helpers.Dict(_, _), _) ->
-      Error(errors.TemplateResolutionError(
-        "Unsupported templatized variable type: "
+      Error(SemanticAnalysisTemplateResolutionError(
+        msg: "Unsupported templatized variable type: "
         <> helpers.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))

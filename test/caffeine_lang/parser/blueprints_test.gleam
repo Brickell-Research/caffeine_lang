@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/parser/artifacts.{type Artifact}
 import caffeine_lang/parser/blueprints
@@ -24,7 +24,7 @@ fn artifacts() -> List(Artifact) {
   ]
 }
 
-fn assert_error(file_name: String, error: ParseError) {
+fn assert_error(file_name: String, error: CompilationError) {
   blueprints.parse_from_file(path(file_name), artifacts())
   |> should.equal(Error(error))
 }
@@ -108,7 +108,7 @@ pub fn parse_from_file_missing_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -124,7 +124,7 @@ pub fn parse_from_file_duplicates_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.DuplicateError(msg: pair.1))
+    assert_error(pair.0, errors.ParserDuplicateError(msg: pair.1))
   })
 }
 
@@ -174,7 +174,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -188,7 +188,7 @@ pub fn parse_from_file_semantic_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -203,7 +203,7 @@ pub fn parse_from_file_file_errors_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.FileReadError(msg: pair.1))
+    assert_error(pair.0, errors.ParserFileReadError(msg: pair.1))
   })
 }
 
@@ -221,7 +221,7 @@ pub fn parse_from_file_json_format_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -255,7 +255,7 @@ pub fn parse_from_file_empty_name_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }
 
@@ -274,6 +274,6 @@ pub fn parse_from_file_input_validation_test() {
     ),
   ]
   |> list.each(fn(pair) {
-    assert_error(pair.0, errors.JsonParserError(msg: pair.1))
+    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
   })
 }

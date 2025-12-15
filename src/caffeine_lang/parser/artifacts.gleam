@@ -1,5 +1,5 @@
 import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{type ParseError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import caffeine_lang/standard_library/artifacts
@@ -29,12 +29,12 @@ pub type Semver {
 }
 
 /// Parses the embedded standard library artifacts.
-pub fn parse_standard_library() -> Result(List(Artifact), ParseError) {
+pub fn parse_standard_library() -> Result(List(Artifact), CompilationError) {
   internal_parse_from_string(artifacts.standard_library)
 }
 
 /// Parses an artifact from an artifacts.json file.
-pub fn parse_from_file(file_path: String) -> Result(List(Artifact), ParseError) {
+pub fn parse_from_file(file_path: String) -> Result(List(Artifact), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
   internal_parse_from_string(json_string)
@@ -43,7 +43,7 @@ pub fn parse_from_file(file_path: String) -> Result(List(Artifact), ParseError) 
 /// The actual, common parsing logic.
 fn internal_parse_from_string(
   content: String,
-) -> Result(List(Artifact), ParseError) {
+) -> Result(List(Artifact), CompilationError) {
   use artifacts <- result.try(case parse_from_string(content) {
     Ok(artifacts) -> Ok(artifacts)
     Error(err) -> Error(errors.format_json_decode_error(err))

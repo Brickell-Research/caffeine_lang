@@ -16,12 +16,14 @@ pub fn parse_and_resolve_query_template_test() {
     #(
       "foo.sum$$baz->faz$$",
       [],
-      Error(errors.TemplateParseError("Missing input for template: faz")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Missing input for template: faz",
+      )),
     ),
     #(
       "foo.sum$$baz",
       [],
-      Error(errors.TemplateParseError(
+      Error(errors.SemanticAnalysisTemplateParseError(
         "Unexpected incomplete `$$` for substring: foo.sum$$baz",
       )),
     ),
@@ -134,22 +136,35 @@ pub fn parse_template_variable_test() {
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Not)),
     ),
     // Error cases
-    #("", Error(errors.TemplateParseError("Empty template variable name: "))),
+    #(
+      "",
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Empty template variable name: ",
+      )),
+    ),
     #(
       "  ",
-      Error(errors.TemplateParseError("Empty template variable name:   ")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Empty template variable name:   ",
+      )),
     ),
     #(
       "->foo",
-      Error(errors.TemplateParseError("Empty input name in template: ->foo")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Empty input name in template: ->foo",
+      )),
     ),
     #(
       "foo->",
-      Error(errors.TemplateParseError("Empty label name in template: foo->")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Empty label name in template: foo->",
+      )),
     ),
     #(
       "foo->foo:unknown",
-      Error(errors.TemplateParseError("Unknown template type: unknown")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Unknown template type: unknown",
+      )),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(
@@ -165,7 +180,9 @@ pub fn parse_template_type_test() {
     #("not", Ok(templatizer.Not)),
     #(
       "unknown",
-      Error(errors.TemplateParseError("Unknown template type: unknown")),
+      Error(errors.SemanticAnalysisTemplateParseError(
+        "Unknown template type: unknown",
+      )),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(templatizer.parse_template_type)
@@ -202,7 +219,7 @@ pub fn resolve_template_test() {
         typ: helpers.Boolean,
         value: dynamic.bool(True),
       ),
-      Error(errors.TemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         "Mismatch between template input name (foo) and input value label (bar).",
       )),
     ),
@@ -214,7 +231,7 @@ pub fn resolve_template_test() {
         // technically invalud data point here but whatever, test still serves its purpose
         value: dynamic.array([]),
       ),
-      Error(errors.TemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
@@ -226,7 +243,7 @@ pub fn resolve_template_test() {
         typ: helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
         value: dynamic.array([]),
       ),
-      Error(errors.TemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         "Unsupported templatized variable type: Optional(Dict(String, String)). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
@@ -421,7 +438,7 @@ pub fn resolve_template_test() {
         ),
         value: dynamic.nil(),
       ),
-      Error(errors.TemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         "Unsupported templatized variable type: Defaulted(Dict(String, String), {}). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
