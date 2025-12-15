@@ -19,6 +19,7 @@ pub type CompilationError {
   SemanticAnalysisTemplateResolutionError(msg: String)
   // Code Generation Phase
   GeneratorSloQueryResolutionError(msg: String)
+  GeneratorDatadogTerraformResolutionError(msg: String)
   // Caffeine Query Language (CQL)
   CQLResolverError(msg: String)
   CQLParserError(msg: String)
@@ -28,7 +29,6 @@ pub type CompilationError {
 // =============================================================================
 // JSON Decode Error Formatting
 // =============================================================================
-
 /// Converts a JSON decode error into a CompilationError. Useful for leveraging the
 /// custom errors we have per compilation phase vs. the lower level ones from
 /// various libraries we leverage.
@@ -87,4 +87,3 @@ pub fn format_decode_error_message(
   })
   |> string.join(", ")
 }
-

@@ -1,4 +1,5 @@
 import caffeine_lang/common/constants
+import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer
@@ -366,11 +367,18 @@ pub fn generate_terraform_test() {
 // * ✅ 7 -> "7d"
 // * ✅ 30 -> "30d"
 // * ✅ 90 -> "90d"
+// * ✅ 120 -> "120d"
 pub fn window_to_timeframe_test() {
   [
-    #(7, "7d"),
-    #(30, "30d"),
-    #(90, "90d"),
+    #(7, Ok("7d")),
+    #(30, Ok("30d")),
+    #(90, Ok("90d")),
+    #(
+      120,
+      Error(errors.GeneratorDatadogTerraformResolutionError(
+        msg: "Illegal window_in_days value: 120. Accepted values are 7, 30, or 90.",
+      )),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(datadog.window_to_timeframe)
 }

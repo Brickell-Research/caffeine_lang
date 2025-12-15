@@ -1,6 +1,7 @@
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{
-  type CompilationError, GeneratorSloQueryResolutionError,
+  type CompilationError, GeneratorDatadogTerraformResolutionError,
+  GeneratorSloQueryResolutionError,
 }
 import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/middle_end/semantic_analyzer.{
@@ -138,10 +139,12 @@ pub fn ir_to_terraform_resource(
       hcl.StringLiteral("artifact:" <> ir.artifact_ref),
     ])
 
+  use window_in_days_string <- result.try(window_to_timeframe(window_in_days))
+
   // Build the thresholds block (common to both types)
   let thresholds_block =
     hcl.simple_block("thresholds", [
-      #("timeframe", hcl.StringLiteral(window_to_timeframe(window_in_days))),
+      #("timeframe", hcl.StringLiteral(window_in_days_string)),
       #("target", hcl.FloatLiteral(threshold)),
     ])
 
@@ -166,8 +169,18 @@ pub fn ir_to_terraform_resource(
 
 /// Convert window_in_days to Datadog timeframe string.
 @internal
-pub fn window_to_timeframe(days: Int) -> String {
-  int.to_string(days) <> "d"
+pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
+  let days_string = int.to_string(days)
+  case days {
+    7 | 30 | 90 -> Ok(days_string <> "d")
+    // TODO: catch this earlier on in the compilation pipeline
+    _ ->
+      Error(GeneratorDatadogTerraformResolutionError(
+        msg: "Illegal window_in_days value: "
+        <> days_string
+        <> ". Accepted values are 7, 30, or 90.",
+      ))
+  }
 }
 
 /// Extract a String value from a list of ValueTuple by label.
