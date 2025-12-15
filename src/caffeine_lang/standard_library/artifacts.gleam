@@ -10,8 +10,8 @@ pub const standard_library = "
     {
       \"name\": \"SLO\",
       \"version\": \"0.0.1\",
-      \"base_params\": { \"threshold\": \"Float\", \"window_in_days\": \"Integer\" },
-      \"params\": { \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String\"}
+      \"inherited_params\": { \"threshold\": \"Float\", \"window_in_days\": \"Integer\" },
+      \"required_params\": { \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String\"}
     }
   ]
 }

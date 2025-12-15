@@ -64,12 +64,12 @@ pub fn validate_blueprints(
 
   // validate exactly the right number of inputs and each input is the
   // correct type as per the param. A blueprint needs to specify inputs for
-  // all params from the artifact.
+  // all required_params from the artifact.
   use _ <- result.try(
     validations.validate_inputs_for_collection(
       blueprint_artifact_collection,
       fn(blueprint) { blueprint.inputs },
-      fn(artifact) { artifact.params },
+      fn(artifact) { artifact.required_params },
     ),
   )
 
@@ -89,8 +89,8 @@ pub fn validate_blueprints(
       case
         validations.check_collection_key_overshadowing(
           blueprint.params,
-          artifact.base_params,
-          "Blueprint overshadowing base_params from artifact: ",
+          artifact.inherited_params,
+          "Blueprint overshadowing inherited_params from artifact: ",
         )
       {
         Ok(_) -> Error(Nil)
@@ -103,21 +103,21 @@ pub fn validate_blueprints(
     "" -> Ok(True)
     _ ->
       Error(ParserDuplicateError(
-        "Overshadowed base_params in blueprint error: "
+        "Overshadowed inherited_params in blueprint error: "
         <> overshadow_params_error,
       ))
   })
 
-  // at this point everything is validated, so we can merge base_params, params, and artifact params
+  // at this point everything is validated, so we can merge inherited_params, params, and artifact required_params
   let merged_param_blueprints =
     blueprint_artifact_collection
     |> list.map(fn(blueprint_artifact_pair) {
       let #(blueprint, artifact) = blueprint_artifact_pair
 
-      // Merge all params: artifact.params + artifact.base_params + blueprint.params
+      // Merge all params: artifact.required_params + artifact.inherited_params + blueprint.params
       let all_params =
-        artifact.params
-        |> dict.merge(artifact.base_params)
+        artifact.required_params
+        |> dict.merge(artifact.inherited_params)
         |> dict.merge(blueprint.params)
 
       Blueprint(..blueprint, params: all_params)

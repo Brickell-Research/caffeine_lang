@@ -3,8 +3,8 @@
     {
       "name": "SLO",
       "version": "foo.bar.baz",
-      "base_params": { "threshold": "Float", "window_in_days": "Integer" },
-      "params": { "queries": "Dict(String, String)", "value": "String" }
+      "inherited_params": { "threshold": "Float", "window_in_days": "Integer" },
+      "required_params": { "queries": "Dict(String, String)", "value": "String" }
     }
   ]
 }

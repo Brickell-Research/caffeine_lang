@@ -3,8 +3,8 @@
     {
       "name": "MinimalArtifact",
       "version": "0.0.1",
-      "base_params": {},
-      "params": {}
+      "inherited_params": {},
+      "required_params": {}
     }
   ]
 }

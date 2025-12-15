@@ -18,8 +18,8 @@ fn artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       version: artifacts.Semver(0, 0, 1),
-      base_params: dict.from_list([#("threshold", helpers.Float)]),
-      params: dict.from_list([#("value", helpers.String)]),
+      inherited_params: dict.from_list([#("threshold", helpers.Float)]),
+      required_params: dict.from_list([#("value", helpers.String)]),
     ),
   ]
 }
@@ -114,13 +114,13 @@ pub fn parse_from_file_missing_test() {
 
 // ==== Duplicates ====
 // * ✅ name (all blueprints must be unique)
-// * ✅ cannot overshadow base_params with params
+// * ✅ cannot overshadow inherited_params with params
 pub fn parse_from_file_duplicates_test() {
   [
     #("duplicate_name", "Duplicate blueprint names: success_rate"),
     #(
-      "duplicate_overshadowing_base_param",
-      "Overshadowed base_params in blueprint error: Blueprint overshadowing base_params from artifact: threshold",
+      "duplicate_overshadowing_inherited_param",
+      "Overshadowed inherited_params in blueprint error: Blueprint overshadowing inherited_params from artifact: threshold",
     ),
   ]
   |> list.each(fn(pair) {
