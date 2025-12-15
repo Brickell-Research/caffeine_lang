@@ -1,7 +1,6 @@
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers.{type ValueTuple}
-import caffeine_lang/generator/common as generator_common
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -12,6 +11,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
+import terra_madre/common
 import terra_madre/hcl
 import terra_madre/render
 import terra_madre/terraform
@@ -97,8 +97,7 @@ pub fn variables() -> List(terraform.Variable) {
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
 ) -> Result(terraform.Resource, errors.GeneratorError) {
-  let resource_name =
-    generator_common.sanitize_terraform_identifier(ir.unique_identifier)
+  let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR
   let threshold = extract_float(ir.values, "threshold") |> result.unwrap(99.9)
