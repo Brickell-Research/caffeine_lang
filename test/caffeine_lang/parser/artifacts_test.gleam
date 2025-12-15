@@ -229,17 +229,24 @@ pub fn parse_from_file_file_errors_test() {
 // * ✅ empty file
 // * ✅ null value
 pub fn parse_from_file_json_format_test() {
-  [
-    #("json_invalid_syntax", "Unexpected end of input."),
-    #("json_empty_file", "Unexpected end of input."),
-    #(
-      "json_null",
-      "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  // These produce different error messages on Erlang vs JavaScript targets,
+  // so we just check that they return a ParserJsonParserError
+  ["json_invalid_syntax", "json_empty_file"]
+  |> list.each(fn(file_name) {
+    let result = artifacts.parse_from_file(path(file_name))
+    case result {
+      Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
+      _ -> should.fail()
+    }
   })
+
+  // This one has a consistent error message across targets
+  assert_error(
+    "json_null",
+    errors.ParserJsonParserError(
+      msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+    ),
+  )
 }
 
 // ==== Edge Cases - Happy Path ====
