@@ -45,7 +45,7 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
     required_version: option.None,
     required_providers: dict.from_list([
       #(
-        "datadog",
+        constants.vendor_datadog,
         terraform.ProviderRequirement("DataDog/datadog", option.Some("~> 3.0")),
       ),
     ]),
@@ -58,7 +58,7 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
 @internal
 pub fn provider() -> terraform.Provider {
   terraform.Provider(
-    name: "datadog",
+    name: constants.vendor_datadog,
     alias: option.None,
     attributes: dict.from_list([
       #("api_key", hcl.ref("var.datadog_api_key")),

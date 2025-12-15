@@ -192,16 +192,17 @@ pub fn parse_template_type_test() {
 // * ✅ input name and value tuple label don't match
 // * ✅ unsupported type - dict
 // * ✅ unsupported type - optional dict
-// * ✅ resolves boolean
-// * ✅ resolves int
-// * ✅ resolves float
-// * ✅ resolves string
-// * ✅ resolves list of booleans
-// * ✅ resolves list of ints
-// * ✅ resolves list of floats
-// * ✅ resolves list of strings
+// * ✅ resolves boolean (Default type)
+// * ✅ resolves int (Default type)
+// * ✅ resolves float (Default type)
+// * ✅ resolves string (Default type)
+// * ✅ resolves list of booleans (Default type)
+// * ✅ resolves list of ints (Default type)
+// * ✅ resolves list of floats (Default type)
+// * ✅ resolves list of strings (Default type)
 // * ✅ resolves optional string with value
 // * ✅ resolves optional string with none (returns empty string)
+// * ✅ resolves optional integer with value
 // * ✅ resolves optional list with value
 // * ✅ resolves optional list with none (returns empty string)
 // * ✅ resolves defaulted integer with value
@@ -210,6 +211,10 @@ pub fn parse_template_type_test() {
 // * ✅ resolves defaulted string with none (uses default)
 // * ✅ resolves defaulted with Raw template type and nil value
 // * ✅ unsupported type - defaulted dict
+// * ✅ resolves string (Not type)
+// * ✅ resolves list of strings (Not type)
+// * ✅ resolves integer (Raw type)
+// * ✅ resolves list of integers (Raw type)
 pub fn resolve_template_test() {
   [
     #(
@@ -442,6 +447,46 @@ pub fn resolve_template_test() {
         "Unsupported templatized variable type: Defaulted(Dict(String, String), {}). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
+    // Not template type - string
+    #(
+      templatizer.TemplateVariable("status", "status", templatizer.Not),
+      helpers.ValueTuple(
+        label: "status",
+        typ: helpers.String,
+        value: dynamic.string("active"),
+      ),
+      Ok("!status:active"),
+    ),
+    // Not template type - list
+    #(
+      templatizer.TemplateVariable("env", "env", templatizer.Not),
+      helpers.ValueTuple(
+        label: "env",
+        typ: helpers.List(helpers.String),
+        value: dynamic.list([dynamic.string("dev"), dynamic.string("test")]),
+      ),
+      Ok("env NOT IN (dev, test)"),
+    ),
+    // Raw template type - integer
+    #(
+      templatizer.TemplateVariable("count", "", templatizer.Raw),
+      helpers.ValueTuple(
+        label: "count",
+        typ: helpers.Integer,
+        value: dynamic.int(42),
+      ),
+      Ok("42"),
+    ),
+    // Raw template type - list
+    #(
+      templatizer.TemplateVariable("values", "", templatizer.Raw),
+      helpers.ValueTuple(
+        label: "values",
+        typ: helpers.List(helpers.Integer),
+        value: dynamic.list([dynamic.int(1), dynamic.int(2), dynamic.int(3)]),
+      ),
+      Ok("1, 2, 3"),
+    ),
   ]
   |> test_helpers.array_based_test_executor_2(templatizer.resolve_template)
 }
@@ -473,12 +518,16 @@ pub fn resolve_string_value_test() {
 }
 
 // ==== Resolve List Value ====
+// ==== Non-empty Lists ====
+// * ✅ Raw: "v1, v2, v3" (comma-separated)
+// * ✅ Default: "attr IN (v1, v2, v3)"
+// * ✅ Not: "attr NOT IN (v1, v2)"
+// ==== Empty Lists ====
 // * ✅ Raw: "v1, v2, v3" (comma-separated)
 // * ✅ Default: "attr IN (v1, v2, v3)"
 // * ✅ Not: "attr NOT IN (v1, v2)"
 pub fn resolve_list_value_test() {
   [
-    // Raw: just comma-separated values
     #(
       templatizer.TemplateVariable("values", "", templatizer.Raw),
       ["bar", "baz"],
@@ -494,6 +543,9 @@ pub fn resolve_list_value_test() {
       ["bar", "baz"],
       "foo NOT IN (bar, baz)",
     ),
+    #(templatizer.TemplateVariable("values", "", templatizer.Raw), [], ""),
+    #(templatizer.TemplateVariable("foo", "foo", templatizer.Default), [], ""),
+    #(templatizer.TemplateVariable("foo", "foo", templatizer.Not), [], ""),
   ]
   |> test_helpers.array_based_test_executor_2(templatizer.resolve_list_value)
 }

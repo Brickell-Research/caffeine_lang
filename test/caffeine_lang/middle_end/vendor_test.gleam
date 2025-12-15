@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/middle_end/vendor
 import test_helpers
@@ -7,7 +8,7 @@ import test_helpers
 // ✅ vendor does not resolve
 pub fn resolve_vendor_test() {
   [
-    #("datadog", Ok(vendor.Datadog)),
+    #(constants.vendor_datadog, Ok(vendor.Datadog)),
     #(
       "unknown",
       Error(errors.SemanticAnalysisVendorResolutionError(

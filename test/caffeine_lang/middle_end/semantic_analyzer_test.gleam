@@ -1,5 +1,6 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
+import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
@@ -8,7 +9,7 @@ import gleam/option
 import gleeunit/should
 
 // ==== Resolve Intermediate Representations ====
-// * ✅ happy path - two IRs
+// * ✅ happy path - two IRs with vendor resolution and query template resolution
 pub fn resolve_intermediate_representations_test() {
   let input_irs = [
     semantic_analyzer.IntermediateRepresentation(
@@ -22,7 +23,11 @@ pub fn resolve_intermediate_representations_test() {
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
         helpers.ValueTuple(
           "queries",
@@ -48,7 +53,11 @@ pub fn resolve_intermediate_representations_test() {
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
         helpers.ValueTuple(
           "queries",
@@ -77,7 +86,11 @@ pub fn resolve_intermediate_representations_test() {
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
         helpers.ValueTuple(
           "queries",
@@ -103,7 +116,11 @@ pub fn resolve_intermediate_representations_test() {
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
         helpers.ValueTuple(
           "queries",
@@ -139,7 +156,11 @@ pub fn resolve_vendor_test() {
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
       ],
       vendor: option.None,
     )
@@ -156,7 +177,11 @@ pub fn resolve_vendor_test() {
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
       ],
       vendor: option.Some(vendor.Datadog),
     )
@@ -166,7 +191,7 @@ pub fn resolve_vendor_test() {
 }
 
 // ==== Resolve Queries ====
-// * ✅ happy path - multiple queries
+// * ✅ happy path - multiple queries with template variable resolution
 // * ✅ happy path - defaulted param with nil uses default value
 pub fn resolve_queries_test() {
   let input_ir =
@@ -181,7 +206,11 @@ pub fn resolve_queries_test() {
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
         helpers.ValueTuple(
@@ -216,7 +245,11 @@ pub fn resolve_queries_test() {
       unique_identifier: "foo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
         helpers.ValueTuple(
@@ -255,7 +288,11 @@ pub fn resolve_queries_defaulted_param_test() {
       unique_identifier: "lcp_slo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         // threshold_in_ms is Defaulted and not provided - uses nil
         helpers.ValueTuple(
@@ -268,7 +305,10 @@ pub fn resolve_queries_defaulted_param_test() {
           "queries",
           helpers.Dict(helpers.String, helpers.String),
           dynamic.properties([
-            #(dynamic.string("query"), dynamic.string("p75:rum.lcp.duration{$$env->env$$}")),
+            #(
+              dynamic.string("query"),
+              dynamic.string("p75:rum.lcp.duration{$$env->env$$}"),
+            ),
           ]),
         ),
         helpers.ValueTuple(
@@ -292,7 +332,11 @@ pub fn resolve_queries_defaulted_param_test() {
       unique_identifier: "lcp_slo",
       artifact_ref: "SLO",
       values: [
-        helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog")),
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
         helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
         helpers.ValueTuple(
           "threshold_in_ms",
@@ -303,7 +347,10 @@ pub fn resolve_queries_defaulted_param_test() {
           "queries",
           helpers.Dict(helpers.String, helpers.String),
           dynamic.properties([
-            #(dynamic.string("query"), dynamic.string("p75:rum.lcp.duration{env:production}")),
+            #(
+              dynamic.string("query"),
+              dynamic.string("p75:rum.lcp.duration{env:production}"),
+            ),
           ]),
         ),
         // The template should be resolved using the default value

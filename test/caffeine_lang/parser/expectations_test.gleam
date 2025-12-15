@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
@@ -36,7 +37,9 @@ fn blueprints_with_inputs() -> List(Blueprint) {
         #("vendor", helpers.String),
         #("threshold", helpers.Float),
       ]),
-      inputs: dict.from_list([#("vendor", dynamic.string("datadog"))]),
+      inputs: dict.from_list([
+        #("vendor", dynamic.string(constants.vendor_datadog)),
+      ]),
     ),
   ]
 }

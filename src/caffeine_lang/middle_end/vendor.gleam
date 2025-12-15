@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{
   type CompilationError, SemanticAnalysisVendorResolutionError,
 }
@@ -19,6 +20,6 @@ pub fn resolve_vendor(vendor: String) -> Result(Vendor, CompilationError) {
 
 pub fn vendor_to_string(vendor: Vendor) -> String {
   case vendor {
-    Datadog -> "datadog"
+    Datadog -> constants.vendor_datadog
   }
 }

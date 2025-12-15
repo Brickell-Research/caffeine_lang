@@ -27,11 +27,11 @@
 /// - https://docs.datadoghq.com/metrics/advanced-filtering/
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
+import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{
   type CompilationError, SemanticAnalysisTemplateParseError,
   SemanticAnalysisTemplateResolutionError,
 }
-import caffeine_lang/common/decoders
 import caffeine_lang/common/helpers.{type ValueTuple}
 import gleam/dynamic/decode
 import gleam/list
@@ -42,11 +42,11 @@ import gleam/string
 /// A parsed template variable containing all the information needed for substitution.
 pub type TemplateVariable {
   TemplateVariable(
-    /// The name of the input attribute from the expectation (provides the value)
+    // the name of the input attribute from the expectation (provides the value)
     input_name: String,
-    /// The Datadog tag/attribute name to use in the query
+    // the Datadog tag/attribute name to use in the query
     datadog_attr: String,
-    /// How the value should be formatted
+    // how the value should be formatted
     template_type: DatadogTemplateType,
   )
 }
@@ -61,20 +61,20 @@ pub type TemplateVariable {
 ///
 /// The only explicit type needed is `Not` for negation.
 pub type DatadogTemplateType {
-  /// Raw type for simple value substitution without any formatting.
-  /// Used when template is just `$$name$$` without `->`.
-  /// - String -> just the value itself
-  /// - List -> comma-separated values
+  // Raw type for simple value substitution without any formatting.
+  // Used when template is just `$$name$$` without `->`.
+  // - String -> just the value itself
+  // - List -> comma-separated values
   Raw
 
-  /// Default type that auto-detects based on value:
-  /// - String -> `attr:value` (wildcards in value are preserved)
-  /// - List -> `attr IN (value1, value2, ...)`
+  // Default type that auto-detects based on value:
+  // - String -> `attr:value` (wildcards in value are preserved)
+  // - List -> `attr IN (value1, value2, ...)`
   Default
 
-  /// Negated filter (auto-detects based on value):
-  /// - String -> `!attr:value` (wildcards in value are preserved)
-  /// - List -> `attr NOT IN (value1, value2, ...)`
+  // Negated filter (auto-detects based on value):
+  // - String -> `!attr:value` (wildcards in value are preserved)
+  // - List -> `attr NOT IN (value1, value2, ...)`
   Not
 }
 
@@ -360,9 +360,10 @@ pub fn resolve_list_value(
   values: List(String),
 ) -> String {
   let attr = template.datadog_attr
-  case template.template_type {
-    Raw -> values |> string.join(", ")
-    Default -> attr <> " IN (" <> values |> string.join(", ") <> ")"
-    Not -> attr <> " NOT IN (" <> values |> string.join(", ") <> ")"
+  case template.template_type, values {
+    _, [] -> ""
+    Raw, values -> values |> string.join(", ")
+    Default, values -> attr <> " IN (" <> values |> string.join(", ") <> ")"
+    Not, values -> attr <> " NOT IN (" <> values |> string.join(", ") <> ")"
   }
 }

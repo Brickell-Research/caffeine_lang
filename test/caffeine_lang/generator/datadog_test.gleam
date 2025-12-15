@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer
@@ -28,11 +29,12 @@ pub fn terraform_settings_test() {
   let settings = datadog.terraform_settings()
 
   // Check that datadog provider is required
-  dict.get(settings.required_providers, "datadog")
+  dict.get(settings.required_providers, constants.vendor_datadog)
   |> should.be_ok
 
   // Check version constraint
-  let assert Ok(provider_req) = dict.get(settings.required_providers, "datadog")
+  let assert Ok(provider_req) =
+    dict.get(settings.required_providers, constants.vendor_datadog)
   provider_req.source |> should.equal("DataDog/datadog")
   provider_req.version |> should.equal(option.Some("~> 3.0"))
 }
@@ -43,7 +45,7 @@ pub fn terraform_settings_test() {
 pub fn provider_test() {
   let provider = datadog.provider()
 
-  provider.name |> should.equal("datadog")
+  provider.name |> should.equal(constants.vendor_datadog)
   provider.alias |> should.equal(option.None)
 
   // Check that api_key and app_key attributes exist
@@ -103,7 +105,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
             helpers.ValueTuple(
@@ -148,7 +150,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
             helpers.ValueTuple(
@@ -193,7 +195,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
             helpers.ValueTuple(
@@ -232,7 +234,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.5)),
             helpers.ValueTuple(
@@ -277,7 +279,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
             helpers.ValueTuple(
@@ -331,7 +333,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               helpers.String,
-              dynamic.string("datadog"),
+              dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple("threshold", helpers.Float, dynamic.float(99.9)),
             helpers.ValueTuple(
@@ -380,13 +382,25 @@ pub fn extract_string_test() {
   [
     // extracts String ValueTuple
     #(
-      [helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog"))],
+      [
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
+      ],
       "vendor",
-      Ok("datadog"),
+      Ok(constants.vendor_datadog),
     ),
     // returns Error for missing label
     #(
-      [helpers.ValueTuple("vendor", helpers.String, dynamic.string("datadog"))],
+      [
+        helpers.ValueTuple(
+          "vendor",
+          helpers.String,
+          dynamic.string(constants.vendor_datadog),
+        ),
+      ],
       "missing",
       Error(Nil),
     ),
