@@ -26,6 +26,10 @@ pub fn named_reference_decoder_test() {
 // * ✅ non-empty string
 // * ✅ whitespace-only string (allowed - not empty)
 // * ✅ single character
+// ==== Sad Path ====
+// * ✅ empty string
+// * ✅ wrong type (int)
+// * ✅ wrong type (bool)
 pub fn non_empty_string_decoder_happy_path_test() {
   let decoder = decoders.non_empty_string_decoder()
 
@@ -34,23 +38,12 @@ pub fn non_empty_string_decoder_happy_path_test() {
     #("a", Ok("a")),
     #("   ", Ok("   ")),
     #("hello world", Ok("hello world")),
+    #("", Error([decode.DecodeError("NonEmptyString", "String", [])])),
   ]
   |> list.each(fn(pair) {
     decode.run(dynamic.string(pair.0), decoder)
     |> should.equal(pair.1)
   })
-}
-
-// ==== Invalid ====
-// * ✅ empty string
-// * ✅ wrong type (int)
-// * ✅ wrong type (bool)
-pub fn non_empty_string_decoder_invalid_test() {
-  let decoder = decoders.non_empty_string_decoder()
-
-  // Empty string
-  decode.run(dynamic.string(""), decoder)
-  |> should.equal(Error([decode.DecodeError("NonEmptyString", "String", [])]))
 
   // Wrong type - int
   decode.run(dynamic.int(123), decoder)

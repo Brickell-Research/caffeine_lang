@@ -25,11 +25,13 @@ pub fn named_reference_decoder(
 
 /// Decoder for non-empty strings. Fails if the string is empty.
 pub fn non_empty_string_decoder() -> decode.Decoder(String) {
+  let default = Error("")
+
   decode.new_primitive_decoder("NonEmptyString", fn(dyn) {
     case decode.run(dyn, decode.string) {
-      Ok("") -> Error("")
+      Ok("") -> default
       Ok(s) -> Ok(s)
-      _ -> Error("")
+      _ -> default
     }
   })
 }
