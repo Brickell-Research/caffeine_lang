@@ -4,6 +4,7 @@ import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
+import gleam/dict
 import gleam/dynamic
 import gleam/option
 import gleeunit/should
@@ -19,6 +20,7 @@ pub fn resolve_intermediate_representations_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
@@ -49,6 +51,7 @@ pub fn resolve_intermediate_representations_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
@@ -82,6 +85,7 @@ pub fn resolve_intermediate_representations_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "slo_one",
       artifact_ref: "SLO",
@@ -112,6 +116,7 @@ pub fn resolve_intermediate_representations_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "slo_two",
       artifact_ref: "SLO",
@@ -152,6 +157,7 @@ pub fn resolve_vendor_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
@@ -173,6 +179,7 @@ pub fn resolve_vendor_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
@@ -202,6 +209,7 @@ pub fn resolve_queries_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
@@ -241,6 +249,7 @@ pub fn resolve_queries_test() {
         service_name: "service",
         blueprint_name: "test_blueprint",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "foo",
       artifact_ref: "SLO",
@@ -284,6 +293,7 @@ pub fn resolve_queries_defaulted_param_test() {
         service_name: "service",
         blueprint_name: "lcp_p75_latency",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "lcp_slo",
       artifact_ref: "SLO",
@@ -328,6 +338,7 @@ pub fn resolve_queries_defaulted_param_test() {
         service_name: "service",
         blueprint_name: "lcp_p75_latency",
         team_name: "test_team",
+        misc: dict.new(),
       ),
       unique_identifier: "lcp_slo",
       artifact_ref: "SLO",

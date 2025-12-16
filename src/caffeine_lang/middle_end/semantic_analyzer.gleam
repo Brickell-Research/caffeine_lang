@@ -30,6 +30,8 @@ pub type IntermediateRepresentationMetaData {
     service_name: String,
     blueprint_name: String,
     team_name: String,
+    // metadata specific to any given expectation
+    misc: dict.Dict(String, String),
   )
 }
 
@@ -125,13 +127,20 @@ pub fn resolve_queries(
         Ok(value_tuple) -> {
           let assert Ok(value_string) =
             decode.run(value_tuple.value, decode.string)
-          case templatizer.parse_and_resolve_query_template(value_string, ir.values) {
+          case
+            templatizer.parse_and_resolve_query_template(
+              value_string,
+              ir.values,
+            )
+          {
             Ok(resolved_value) ->
-              Ok(option.Some(helpers.ValueTuple(
-                "value",
-                helpers.String,
-                dynamic.string(resolved_value),
-              )))
+              Ok(
+                option.Some(helpers.ValueTuple(
+                  "value",
+                  helpers.String,
+                  dynamic.string(resolved_value),
+                )),
+              )
             Error(err) -> Error(err)
           }
         }

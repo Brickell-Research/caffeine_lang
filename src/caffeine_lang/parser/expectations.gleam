@@ -144,6 +144,20 @@ pub fn build_ir(
     let value_tuples =
       list.append(provided_value_tuples, unprovided_optional_value_tuples)
 
+    let misc_metadata =
+      value_tuples
+      |> list.filter_map(fn(value_tuple) {
+        // safe assertion since we're already validated everything
+        case value_tuple.label, decode.run(value_tuple.value, decode.string) {
+          // for some reason we cannot parse the value
+          _, Error(_) -> Error(Nil)
+          // TODO: make the tag filtering dynamic
+          "window_in_days", _ | "threshold", _ | "value", _ -> Error(Nil)
+          _, Ok(value_string) -> Ok(#(value_tuple.label, value_string))
+        }
+      })
+      |> dict.from_list
+
     // build unique expectation name by combining path prefix with name
     let #(org, team, service) = extract_path_prefix(file_path)
     let service_name = service
@@ -156,6 +170,7 @@ pub fn build_ir(
         service_name: service_name,
         blueprint_name: blueprint.name,
         team_name: team,
+        misc: misc_metadata,
       ),
       unique_identifier: unique_name,
       artifact_ref: blueprint.artifact_ref,

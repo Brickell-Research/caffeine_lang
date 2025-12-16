@@ -128,16 +128,28 @@ pub fn ir_to_terraform_resource(
 
   // Build tags (common to both types)
   let tags =
-    hcl.ListExpr([
-      hcl.StringLiteral("managed_by:caffeine"),
-      hcl.StringLiteral("caffeine_version:" <> constants.version),
-      hcl.StringLiteral("org:" <> ir.metadata.org_name),
-      hcl.StringLiteral("team:" <> ir.metadata.team_name),
-      hcl.StringLiteral("service:" <> ir.metadata.service_name),
-      hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
-      hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
-      hcl.StringLiteral("artifact:" <> ir.artifact_ref),
-    ])
+    hcl.ListExpr(
+      // well known metadata info
+      [
+        hcl.StringLiteral("managed_by:caffeine"),
+        hcl.StringLiteral("caffeine_version:" <> constants.version),
+        hcl.StringLiteral("org:" <> ir.metadata.org_name),
+        hcl.StringLiteral("team:" <> ir.metadata.team_name),
+        hcl.StringLiteral("service:" <> ir.metadata.service_name),
+        hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
+        hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
+        hcl.StringLiteral("artifact:" <> ir.artifact_ref),
+      ]
+      |> list.append(
+        // Also add misc tags
+        ir.metadata.misc
+        |> dict.keys
+        |> list.map(fn(key) {
+          let assert Ok(value) = ir.metadata.misc |> dict.get(key)
+          hcl.StringLiteral(key <> ":" <> value)
+        }),
+      ),
+    )
 
   use window_in_days_string <- result.try(window_to_timeframe(window_in_days))
 
