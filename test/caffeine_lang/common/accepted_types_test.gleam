@@ -51,42 +51,66 @@ pub fn accepted_type_to_string_test() {
     #(accepted_types.List(accepted_types.Float), "List(Float)"),
     #(accepted_types.List(accepted_types.Boolean), "List(Boolean)"),
     // Optional basic types
-    #(accepted_types.Optional(accepted_types.String), "Optional(String)"),
-    #(accepted_types.Optional(accepted_types.Integer), "Optional(Integer)"),
-    #(accepted_types.Optional(accepted_types.Float), "Optional(Float)"),
-    #(accepted_types.Optional(accepted_types.Boolean), "Optional(Boolean)"),
+    #(
+      accepted_types.Modifier(accepted_types.Optional(accepted_types.String)),
+      "Optional(String)",
+    ),
+    #(
+      accepted_types.Modifier(accepted_types.Optional(accepted_types.Integer)),
+      "Optional(Integer)",
+    ),
+    #(
+      accepted_types.Modifier(accepted_types.Optional(accepted_types.Float)),
+      "Optional(Float)",
+    ),
+    #(
+      accepted_types.Modifier(accepted_types.Optional(accepted_types.Boolean)),
+      "Optional(Boolean)",
+    ),
     // Optional nested types
     #(
-      accepted_types.Optional(accepted_types.List(accepted_types.String)),
+      accepted_types.Modifier(
+        accepted_types.Optional(accepted_types.List(accepted_types.String)),
+      ),
       "Optional(List(String))",
     ),
     #(
-      accepted_types.Optional(
-        accepted_types.Dict(accepted_types.String, accepted_types.String),
+      accepted_types.Modifier(
+        accepted_types.Optional(
+          accepted_types.Dict(accepted_types.String, accepted_types.String),
+        ),
       ),
       "Optional(Dict(String, String))",
     ),
     // Defaulted basic types
     #(
-      accepted_types.Defaulted(accepted_types.String, "default"),
+      accepted_types.Modifier(
+        accepted_types.Defaulted(accepted_types.String, "default"),
+      ),
       "Defaulted(String, default)",
     ),
     #(
-      accepted_types.Defaulted(accepted_types.Integer, "10"),
+      accepted_types.Modifier(
+        accepted_types.Defaulted(accepted_types.Integer, "10"),
+      ),
       "Defaulted(Integer, 10)",
     ),
     // Defaulted nested types
     #(
-      accepted_types.Defaulted(
-        accepted_types.List(accepted_types.String),
-        "default",
+      accepted_types.Modifier(
+        accepted_types.Defaulted(
+          accepted_types.List(accepted_types.String),
+          "default",
+        ),
       ),
       "Defaulted(List(String), default)",
     ),
     #(
-      accepted_types.Defaulted(
-        accepted_types.Dict(accepted_types.String, accepted_types.String),
-        "default",
+      accepted_types.Modifier(
+        accepted_types.Defaulted(
+          accepted_types.Dict(accepted_types.String, accepted_types.String),
+          "default",
+        ),
       ),
       "Defaulted(Dict(String, String), default)",
     ),

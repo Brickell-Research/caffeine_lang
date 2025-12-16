@@ -1,5 +1,5 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Float, Integer, List, Optional, String,
+  Boolean, Defaulted, Dict, Float, Integer, List, Modifier, Optional, String,
 }
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
@@ -248,7 +248,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(Dict(String, String)),
+        typ: Modifier(Optional(Dict(String, String))),
         value: dynamic.array([]),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
@@ -332,7 +332,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(String),
+        typ: Modifier(Optional(String)),
         value: dynamic.string("salad"),
       ),
       Ok("foo:salad"),
@@ -342,7 +342,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(String),
+        typ: Modifier(Optional(String)),
         value: dynamic.nil(),
       ),
       Ok(""),
@@ -352,7 +352,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(Integer),
+        typ: Modifier(Optional(Integer)),
         value: dynamic.int(42),
       ),
       Ok("foo:42"),
@@ -362,7 +362,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(List(String)),
+        typ: Modifier(Optional(List(String))),
         value: dynamic.list([dynamic.string("a"), dynamic.string("b")]),
       ),
       Ok("foo IN (a, b)"),
@@ -372,7 +372,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Optional(List(String)),
+        typ: Modifier(Optional(List(String))),
         value: dynamic.nil(),
       ),
       Ok(""),
@@ -386,7 +386,7 @@ pub fn resolve_template_test() {
       ),
       helpers.ValueTuple(
         label: "threshold",
-        typ: Defaulted(Integer, "2500000"),
+        typ: Modifier(Defaulted(Integer, "2500000")),
         value: dynamic.int(1_000_000),
       ),
       Ok("threshold:1000000"),
@@ -400,7 +400,7 @@ pub fn resolve_template_test() {
       ),
       helpers.ValueTuple(
         label: "threshold",
-        typ: Defaulted(Integer, "2500000"),
+        typ: Modifier(Defaulted(Integer, "2500000")),
         value: dynamic.nil(),
       ),
       Ok("threshold:2500000"),
@@ -410,7 +410,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("env", "env", templatizer.Default),
       helpers.ValueTuple(
         label: "env",
-        typ: Defaulted(String, "production"),
+        typ: Modifier(Defaulted(String, "production")),
         value: dynamic.string("staging"),
       ),
       Ok("env:staging"),
@@ -420,7 +420,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("env", "env", templatizer.Default),
       helpers.ValueTuple(
         label: "env",
-        typ: Defaulted(String, "production"),
+        typ: Modifier(Defaulted(String, "production")),
         value: dynamic.nil(),
       ),
       Ok("env:production"),
@@ -430,7 +430,7 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("threshold", "", templatizer.Raw),
       helpers.ValueTuple(
         label: "threshold",
-        typ: Defaulted(Integer, "2500000000"),
+        typ: Modifier(Defaulted(Integer, "2500000000")),
         value: dynamic.nil(),
       ),
       Ok("2500000000"),
@@ -440,10 +440,10 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: Defaulted(
+        typ: Modifier(Defaulted(
           Dict(String, String),
           "{}",
-        ),
+        )),
         value: dynamic.nil(),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(

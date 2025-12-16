@@ -1,7 +1,7 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Integer, String,
+  Boolean, Defaulted, Dict, Integer, Modifier, String,
 }
 import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
@@ -310,7 +310,7 @@ pub fn resolve_queries_defaulted_param_test() {
         // threshold_in_ms is Defaulted and not provided - uses nil
         helpers.ValueTuple(
           "threshold_in_ms",
-          Defaulted(Integer, "2500000000"),
+          Modifier(Defaulted(Integer, "2500000000")),
           dynamic.nil(),
         ),
         // queries is required by resolve_queries
@@ -354,7 +354,7 @@ pub fn resolve_queries_defaulted_param_test() {
         helpers.ValueTuple("env", String, dynamic.string("production")),
         helpers.ValueTuple(
           "threshold_in_ms",
-          Defaulted(Integer, "2500000000"),
+          Modifier(Defaulted(Integer, "2500000000")),
           dynamic.nil(),
         ),
         helpers.ValueTuple(

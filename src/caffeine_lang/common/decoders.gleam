@@ -1,6 +1,6 @@
 import caffeine_lang/common/accepted_types.{
-  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Optional,
-  String,
+  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Modifier,
+  Optional, String,
 }
 import gleam/bool
 import gleam/dynamic/decode
@@ -77,24 +77,27 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
     String -> decode.string
     Dict(_, _) -> decode.failure("", "Dict")
     List(_) -> decode.failure("", "List")
-    Optional(inner_type) -> {
-      use maybe_val <- decode.then(
-        decode.optional(decode_value_to_string(inner_type)),
-      )
-      case maybe_val {
-        option.Some(val) -> decode.success(val)
-        option.None -> decode.success("")
+    Modifier(modifier_type) ->
+      case modifier_type {
+        Optional(inner_type) -> {
+          use maybe_val <- decode.then(
+            decode.optional(decode_value_to_string(inner_type)),
+          )
+          case maybe_val {
+            option.Some(val) -> decode.success(val)
+            option.None -> decode.success("")
+          }
+        }
+        Defaulted(inner_type, default_val) -> {
+          use maybe_val <- decode.then(
+            decode.optional(decode_value_to_string(inner_type)),
+          )
+          case maybe_val {
+            option.Some(val) -> decode.success(val)
+            option.None -> decode.success(default_val)
+          }
+        }
       }
-    }
-    Defaulted(inner_type, default_val) -> {
-      use maybe_val <- decode.then(
-        decode.optional(decode_value_to_string(inner_type)),
-      )
-      case maybe_val {
-        option.Some(val) -> decode.success(val)
-        option.None -> decode.success(default_val)
-      }
-    }
   }
 }
 
@@ -124,20 +127,24 @@ fn parse_accepted_type(raw_accepted_type) -> Result(AcceptedTypes, Nil) {
     "List(Boolean)" -> Ok(List(Boolean))
     "List(Float)" -> Ok(List(Float))
     // Optional types
-    "Optional(String)" -> Ok(Optional(String))
-    "Optional(Integer)" -> Ok(Optional(Integer))
-    "Optional(Float)" -> Ok(Optional(Float))
-    "Optional(Boolean)" -> Ok(Optional(Boolean))
+    "Optional(String)" -> Ok(Modifier(Optional(String)))
+    "Optional(Integer)" -> Ok(Modifier(Optional(Integer)))
+    "Optional(Float)" -> Ok(Modifier(Optional(Float)))
+    "Optional(Boolean)" -> Ok(Modifier(Optional(Boolean)))
     // Optional List types
-    "Optional(List(String))" -> Ok(Optional(List(String)))
-    "Optional(List(Integer))" -> Ok(Optional(List(Integer)))
-    "Optional(List(Float))" -> Ok(Optional(List(Float)))
-    "Optional(List(Boolean))" -> Ok(Optional(List(Boolean)))
+    "Optional(List(String))" -> Ok(Modifier(Optional(List(String))))
+    "Optional(List(Integer))" -> Ok(Modifier(Optional(List(Integer))))
+    "Optional(List(Float))" -> Ok(Modifier(Optional(List(Float))))
+    "Optional(List(Boolean))" -> Ok(Modifier(Optional(List(Boolean))))
     // Optional Dict types
-    "Optional(Dict(String, String))" -> Ok(Optional(Dict(String, String)))
-    "Optional(Dict(String, Integer))" -> Ok(Optional(Dict(String, Integer)))
-    "Optional(Dict(String, Float))" -> Ok(Optional(Dict(String, Float)))
-    "Optional(Dict(String, Boolean))" -> Ok(Optional(Dict(String, Boolean)))
+    "Optional(Dict(String, String))" ->
+      Ok(Modifier(Optional(Dict(String, String))))
+    "Optional(Dict(String, Integer))" ->
+      Ok(Modifier(Optional(Dict(String, Integer))))
+    "Optional(Dict(String, Float))" ->
+      Ok(Modifier(Optional(Dict(String, Float))))
+    "Optional(Dict(String, Boolean))" ->
+      Ok(Modifier(Optional(Dict(String, Boolean))))
     // Try to parse Defaulted types with default value
     _ -> parse_defaulted_type(raw_accepted_type)
   }
@@ -166,7 +173,7 @@ fn parse_defaulted_type(raw: String) -> Result(AcceptedTypes, Nil) {
             Ok(inner_type) -> {
               // Validate the default value is compatible with the inner type
               case validate_default_value(inner_type, trimmed_default) {
-                True -> Ok(Defaulted(inner_type, trimmed_default))
+                True -> Ok(Modifier(Defaulted(inner_type, trimmed_default)))
                 False -> Error(Nil)
               }
             }
@@ -201,8 +208,7 @@ fn validate_default_value(typ: AcceptedTypes, default_val: String) -> Bool {
     List(_) -> True
     Dict(_, _) -> True
     // Nested Optional/Defaulted doesn't make sense
-    Optional(_) -> False
-    Defaulted(_, _) -> False
+    Modifier(_) -> False
   }
 }
 

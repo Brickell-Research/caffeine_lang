@@ -253,13 +253,13 @@ pub fn resolve_template(
         )
       Ok(resolve_list_value(template, vals))
     }
-    accepted_types.Optional(accepted_types.Dict(_, _)) ->
+    accepted_types.Modifier(accepted_types.Optional(accepted_types.Dict(_, _))) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
         <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    accepted_types.Optional(inner_type) -> {
+    accepted_types.Modifier(accepted_types.Optional(inner_type)) -> {
       // For Optional types, try to decode the inner value
       // If None, return empty string (template gets removed from query)
       let inner_decoder = case inner_type {
@@ -288,13 +288,16 @@ pub fn resolve_template(
         option.None -> Ok("")
       }
     }
-    accepted_types.Defaulted(accepted_types.Dict(_, _), _) ->
+    accepted_types.Modifier(accepted_types.Defaulted(
+      accepted_types.Dict(_, _),
+      _,
+    )) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
         <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    accepted_types.Defaulted(inner_type, default_val) -> {
+    accepted_types.Modifier(accepted_types.Defaulted(inner_type, default_val)) -> {
       // For Defaulted types, try to decode the inner value
       // If None, use the default value instead of empty string
       let inner_decoder = case inner_type {

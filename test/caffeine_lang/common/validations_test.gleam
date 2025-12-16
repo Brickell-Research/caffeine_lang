@@ -1,5 +1,5 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Float, Integer, List, Optional, String,
+  Boolean, Defaulted, Dict, Float, Integer, List, Modifier, Optional, String,
 }
 import caffeine_lang/common/errors
 import caffeine_lang/common/validations
@@ -111,41 +111,41 @@ pub fn validate_value_type_test() {
       Ok(empty_dict),
     ),
     // Optional types with values
-    #(some_string, Optional(String), Ok(some_string)),
-    #(some_int, Optional(Integer), Ok(some_int)),
-    #(some_float, Optional(Float), Ok(some_float)),
-    #(some_bool, Optional(Boolean), Ok(some_bool)),
+    #(some_string, Modifier(Optional(String)), Ok(some_string)),
+    #(some_int, Modifier(Optional(Integer)), Ok(some_int)),
+    #(some_float, Modifier(Optional(Float)), Ok(some_float)),
+    #(some_bool, Modifier(Optional(Boolean)), Ok(some_bool)),
     // Optional List types
     #(
       list_string,
-      Optional(List(String)),
+      Modifier(Optional(List(String))),
       Ok(list_string),
     ),
     // Optional Dict types
     #(
       dict_string_string,
-      Optional(Dict(String, String)),
+      Modifier(Optional(Dict(String, String))),
       Ok(dict_string_string),
     ),
     // Defaulted types with values
     #(
       some_string,
-      Defaulted(String, "default"),
+      Modifier(Defaulted(String, "default")),
       Ok(some_string),
     ),
-    #(some_int, Defaulted(Integer, "0"), Ok(some_int)),
-    #(some_float, Defaulted(Float, "0.0"), Ok(some_float)),
-    #(some_bool, Defaulted(Boolean, "False"), Ok(some_bool)),
+    #(some_int, Modifier(Defaulted(Integer, "0")), Ok(some_int)),
+    #(some_float, Modifier(Defaulted(Float, "0.0")), Ok(some_float)),
+    #(some_bool, Modifier(Defaulted(Boolean, "False")), Ok(some_bool)),
     // Defaulted List types
     #(
       list_string,
-      Defaulted(List(String), ""),
+      Modifier(Defaulted(List(String), "")),
       Ok(list_string),
     ),
     // Defaulted Dict types
     #(
       dict_string_string,
-      Defaulted(Dict(String, String), ""),
+      Modifier(Defaulted(Dict(String, String), "")),
       Ok(dict_string_string),
     ),
     // Nested types
@@ -265,47 +265,47 @@ pub fn validate_value_type_test() {
     // Optional types with wrong inner type
     #(
       some_bool,
-      Optional(String),
+      Modifier(Optional(String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      Optional(Integer),
+      Modifier(Optional(Integer)),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Optional List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      Optional(List(String)),
+      Modifier(Optional(List(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Optional(Dict(String, String)),
+      Modifier(Optional(Dict(String, String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted types with wrong inner type
     #(
       some_bool,
-      Defaulted(String, "default"),
+      Modifier(Defaulted(String, "default")),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      Defaulted(Integer, "0"),
+      Modifier(Defaulted(Integer, "0")),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Defaulted List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      Defaulted(List(String), ""),
+      Modifier(Defaulted(List(String), "")),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Defaulted(Dict(String, String), ""),
+      Modifier(Defaulted(Dict(String, String), "")),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Nested types with wrong inner type
@@ -362,37 +362,37 @@ pub fn inputs_validator_test() {
     ),
     // optional param omitted - should pass
     #(
-      dict.from_list([#("maybe_name", Optional(String))]),
+      dict.from_list([#("maybe_name", Modifier(Optional(String)))]),
       dict.from_list([]),
     ),
     // optional param provided - should pass
     #(
-      dict.from_list([#("maybe_name", Optional(String))]),
+      dict.from_list([#("maybe_name", Modifier(Optional(String)))]),
       dict.from_list([#("maybe_name", dynamic.string("foo"))]),
     ),
     // mix of required and optional, optional omitted - should pass
     #(
       dict.from_list([
         #("name", String),
-        #("maybe_count", Optional(Integer)),
+        #("maybe_count", Modifier(Optional(Integer))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
     // defaulted param omitted - should pass
     #(
-      dict.from_list([#("count", Defaulted(Integer, "10"))]),
+      dict.from_list([#("count", Modifier(Defaulted(Integer, "10")))]),
       dict.from_list([]),
     ),
     // defaulted param provided - should pass
     #(
-      dict.from_list([#("count", Defaulted(Integer, "10"))]),
+      dict.from_list([#("count", Modifier(Defaulted(Integer, "10")))]),
       dict.from_list([#("count", dynamic.int(42))]),
     ),
     // mix of required and defaulted, defaulted omitted - should pass
     #(
       dict.from_list([
         #("name", String),
-        #("count", Defaulted(Integer, "10")),
+        #("count", Modifier(Defaulted(Integer, "10"))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
@@ -442,7 +442,7 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", String),
-        #("maybe_count", Optional(Integer)),
+        #("maybe_count", Modifier(Optional(Integer))),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),
@@ -451,7 +451,7 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", String),
-        #("count", Defaulted(Integer, "10")),
+        #("count", Modifier(Defaulted(Integer, "10"))),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),

@@ -1,6 +1,6 @@
 import caffeine_lang/common/accepted_types.{
-  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Optional,
-  String,
+  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Modifier,
+  Optional, String,
 }
 import caffeine_lang/common/errors.{
   type CompilationError, ParserDuplicateError, ParserJsonParserError,
@@ -68,36 +68,39 @@ pub fn validate_value_type(
           )
       }
     }
-    Optional(inner_type) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) ->
-          validate_value_type(inner_val, inner_type, type_key_identifier)
-        Ok(option.None) -> Ok(value)
-        Error(err) ->
-          Error(
-            ParserJsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
+    Modifier(modifier_type) ->
+      case modifier_type {
+        Optional(inner_type) -> {
+          case decode.run(value, decode.optional(decode.dynamic)) {
+            Ok(option.Some(inner_val)) ->
+              validate_value_type(inner_val, inner_type, type_key_identifier)
+            Ok(option.None) -> Ok(value)
+            Error(err) ->
+              Error(
+                ParserJsonParserError(format_decode_error_message(
+                  err,
+                  option.Some(type_key_identifier),
+                )),
+              )
+          }
+        }
+        Defaulted(inner_type, _default_val) -> {
+          // Defaulted works like Optional for validation - value can be present or absent
+          // If present, validate it matches the inner type
+          case decode.run(value, decode.optional(decode.dynamic)) {
+            Ok(option.Some(inner_val)) ->
+              validate_value_type(inner_val, inner_type, type_key_identifier)
+            Ok(option.None) -> Ok(value)
+            Error(err) ->
+              Error(
+                ParserJsonParserError(format_decode_error_message(
+                  err,
+                  option.Some(type_key_identifier),
+                )),
+              )
+          }
+        }
       }
-    }
-    Defaulted(inner_type, _default_val) -> {
-      // Defaulted works like Optional for validation - value can be present or absent
-      // If present, validate it matches the inner type
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) ->
-          validate_value_type(inner_val, inner_type, type_key_identifier)
-        Ok(option.None) -> Ok(value)
-        Error(err) ->
-          Error(
-            ParserJsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
-      }
-    }
   }
 }
 
@@ -130,8 +133,8 @@ pub fn inputs_validator(
     params
     |> dict.filter(fn(_, typ) {
       case typ {
-        Optional(_) -> False
-        Defaulted(_, _) -> False
+        Modifier(Optional(_)) -> False
+        Modifier(Defaulted(_, _)) -> False
         _ -> True
       }
     })

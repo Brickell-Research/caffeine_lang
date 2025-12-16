@@ -8,6 +8,11 @@ pub type AcceptedTypes {
   String
   Dict(AcceptedTypes, AcceptedTypes)
   List(AcceptedTypes)
+  Modifier(ModifierTypes)
+}
+
+/// Modifier types are a special class of types.
+pub type ModifierTypes {
   Optional(AcceptedTypes)
   /// Defaulted type stores the inner type and its default value as a string
   /// e.g., Defaulted(Integer, "10") means an optional integer with default 10
@@ -28,13 +33,16 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
       <> accepted_type_to_string(value_type)
       <> ")"
     List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
-    Optional(inner_type) ->
-      "Optional(" <> accepted_type_to_string(inner_type) <> ")"
-    Defaulted(inner_type, default_val) ->
-      "Defaulted("
-      <> accepted_type_to_string(inner_type)
-      <> ", "
-      <> default_val
-      <> ")"
+    Modifier(modifier_type) ->
+      case modifier_type {
+        Optional(inner_type) ->
+          "Optional(" <> accepted_type_to_string(inner_type) <> ")"
+        Defaulted(inner_type, default_val) ->
+          "Defaulted("
+          <> accepted_type_to_string(inner_type)
+          <> ", "
+          <> default_val
+          <> ")"
+      }
   }
 }

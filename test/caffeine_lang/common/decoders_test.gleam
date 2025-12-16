@@ -1,5 +1,5 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Float, Integer, List, Optional, String,
+  Boolean, Defaulted, Dict, Float, Integer, List, Modifier, Optional, String,
 }
 import caffeine_lang/common/decoders
 import gleam/dynamic
@@ -109,30 +109,48 @@ pub fn accepted_types_decoder_test() {
     #("List(Float)", Ok(List(Float))),
     #("List(Boolean)", Ok(List(Boolean))),
     // Optional basic types
-    #("Optional(String)", Ok(Optional(String))),
-    #("Optional(Integer)", Ok(Optional(Integer))),
-    #("Optional(Float)", Ok(Optional(Float))),
-    #("Optional(Boolean)", Ok(Optional(Boolean))),
+    #("Optional(String)", Ok(Modifier(Optional(String)))),
+    #("Optional(Integer)", Ok(Modifier(Optional(Integer)))),
+    #("Optional(Float)", Ok(Modifier(Optional(Float)))),
+    #("Optional(Boolean)", Ok(Modifier(Optional(Boolean)))),
     // Optional List types
-    #("Optional(List(String))", Ok(Optional(List(String)))),
-    #("Optional(List(Integer))", Ok(Optional(List(Integer)))),
-    #("Optional(List(Float))", Ok(Optional(List(Float)))),
-    #("Optional(List(Boolean))", Ok(Optional(List(Boolean)))),
+    #("Optional(List(String))", Ok(Modifier(Optional(List(String))))),
+    #("Optional(List(Integer))", Ok(Modifier(Optional(List(Integer))))),
+    #("Optional(List(Float))", Ok(Modifier(Optional(List(Float))))),
+    #("Optional(List(Boolean))", Ok(Modifier(Optional(List(Boolean))))),
     // Optional Dict types
-    #("Optional(Dict(String, String))", Ok(Optional(Dict(String, String)))),
-    #("Optional(Dict(String, Integer))", Ok(Optional(Dict(String, Integer)))),
-    #("Optional(Dict(String, Float))", Ok(Optional(Dict(String, Float)))),
-    #("Optional(Dict(String, Boolean))", Ok(Optional(Dict(String, Boolean)))),
+    #(
+      "Optional(Dict(String, String))",
+      Ok(Modifier(Optional(Dict(String, String)))),
+    ),
+    #(
+      "Optional(Dict(String, Integer))",
+      Ok(Modifier(Optional(Dict(String, Integer)))),
+    ),
+    #(
+      "Optional(Dict(String, Float))",
+      Ok(Modifier(Optional(Dict(String, Float)))),
+    ),
+    #(
+      "Optional(Dict(String, Boolean))",
+      Ok(Modifier(Optional(Dict(String, Boolean)))),
+    ),
     // Defaulted basic types with default values
-    #("Defaulted(String, default_value)", Ok(Defaulted(String, "default_value"))),
-    #("Defaulted(Integer, 10)", Ok(Defaulted(Integer, "10"))),
-    #("Defaulted(Float, 3.14)", Ok(Defaulted(Float, "3.14"))),
-    #("Defaulted(Boolean, True)", Ok(Defaulted(Boolean, "True"))),
+    #(
+      "Defaulted(String, default_value)",
+      Ok(Modifier(Defaulted(String, "default_value"))),
+    ),
+    #("Defaulted(Integer, 10)", Ok(Modifier(Defaulted(Integer, "10")))),
+    #("Defaulted(Float, 3.14)", Ok(Modifier(Defaulted(Float, "3.14")))),
+    #("Defaulted(Boolean, True)", Ok(Modifier(Defaulted(Boolean, "True")))),
     // Defaulted nested types
-    #("Defaulted(List(String), default)", Ok(Defaulted(List(String), "default"))),
+    #(
+      "Defaulted(List(String), default)",
+      Ok(Modifier(Defaulted(List(String), "default"))),
+    ),
     #(
       "Defaulted(Dict(String, String), default)",
-      Ok(Defaulted(Dict(String, String), "default")),
+      Ok(Modifier(Defaulted(Dict(String, String), "default"))),
     ),
     #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
     // Invalid Defaulted types - default value doesn't match inner type

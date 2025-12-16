@@ -1,4 +1,4 @@
-import caffeine_lang/common/accepted_types.{Defaulted, Float, String}
+import caffeine_lang/common/accepted_types.{Defaulted, Float, Modifier, String}
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
@@ -52,7 +52,7 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
       artifact_ref: "SLO",
       params: dict.from_list([
         #("threshold", Float),
-        #("default_env", Defaulted(String, "production")),
+        #("default_env", Modifier(Defaulted(String, "production"))),
       ]),
       inputs: dict.from_list([]),
     ),
@@ -174,7 +174,7 @@ pub fn parse_from_file_happy_path_test() {
           ),
           helpers.ValueTuple(
             label: "default_env",
-            typ: Defaulted(String, "production"),
+            typ: Modifier(Defaulted(String, "production")),
             value: dynamic.nil(),
           ),
         ],
