@@ -1,6 +1,5 @@
 import caffeine_lang/common/helpers
 import gleeunit/should
-import test_helpers
 
 // ==== Map Reference To Referrer Over Collection Tests ====
 // * ✅ happy path - empty collection
@@ -55,69 +54,3 @@ pub fn result_try_test() {
   |> should.equal(Error("mid-chain error"))
 }
 
-// ==== Accepted Type To String Tests ====
-// * ✅ Boolean
-// * ✅ Float
-// * ✅ Integer
-// * ✅ String
-// * ✅ Dict(String, String)
-// * ✅ Dict(String, Integer)
-// * ✅ Dict(String, Float)
-// * ✅ Dict(String, Boolean)
-// * ✅ List(String)
-// * ✅ List(Integer)
-// * ✅ List(Float)
-// * ✅ List(Boolean)
-// * ✅ Optional(String)
-// * ✅ Optional(Integer)
-// * ✅ Optional(Float)
-// * ✅ Optional(Boolean)
-// * ✅ Optional(List(String))
-// * ✅ Optional(Dict(String, String))
-// * ✅ Defaulted(String, default)
-// * ✅ Defaulted(Integer, 10)
-// * ✅ Defaulted(List(String), default)
-// * ✅ Defaulted(Dict(String, String), default)
-pub fn accepted_type_to_string_test() {
-  [
-    #(helpers.Boolean, "Boolean"),
-    #(helpers.Float, "Float"),
-    #(helpers.Integer, "Integer"),
-    #(helpers.String, "String"),
-    #(helpers.Dict(helpers.String, helpers.String), "Dict(String, String)"),
-    #(helpers.Dict(helpers.String, helpers.Integer), "Dict(String, Integer)"),
-    #(helpers.Dict(helpers.String, helpers.Float), "Dict(String, Float)"),
-    #(helpers.Dict(helpers.String, helpers.Boolean), "Dict(String, Boolean)"),
-    #(helpers.List(helpers.String), "List(String)"),
-    #(helpers.List(helpers.Integer), "List(Integer)"),
-    #(helpers.List(helpers.Float), "List(Float)"),
-    #(helpers.List(helpers.Boolean), "List(Boolean)"),
-    // Optional basic types
-    #(helpers.Optional(helpers.String), "Optional(String)"),
-    #(helpers.Optional(helpers.Integer), "Optional(Integer)"),
-    #(helpers.Optional(helpers.Float), "Optional(Float)"),
-    #(helpers.Optional(helpers.Boolean), "Optional(Boolean)"),
-    // Optional nested types
-    #(helpers.Optional(helpers.List(helpers.String)), "Optional(List(String))"),
-    #(
-      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
-      "Optional(Dict(String, String))",
-    ),
-    // Defaulted basic types
-    #(
-      helpers.Defaulted(helpers.String, "default"),
-      "Defaulted(String, default)",
-    ),
-    #(helpers.Defaulted(helpers.Integer, "10"), "Defaulted(Integer, 10)"),
-    // Defaulted nested types
-    #(
-      helpers.Defaulted(helpers.List(helpers.String), "default"),
-      "Defaulted(List(String), default)",
-    ),
-    #(
-      helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), "default"),
-      "Defaulted(Dict(String, String), default)",
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(helpers.accepted_type_to_string)
-}

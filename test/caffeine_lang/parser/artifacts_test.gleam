@@ -1,5 +1,7 @@
+import caffeine_lang/common/accepted_types.{
+  Boolean, Dict, Float, Integer, List, String,
+}
 import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers
 import caffeine_lang/parser/artifacts
 import gleam/dict
 import gleam/list
@@ -38,12 +40,12 @@ pub fn parse_from_file_happy_path_test() {
         name: "SLO",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("threshold", helpers.Float),
-          #("window_in_days", helpers.Integer),
+          #("threshold", Float),
+          #("window_in_days", Integer),
         ]),
         required_params: dict.from_list([
-          #("queries", helpers.Dict(helpers.String, helpers.String)),
-          #("value", helpers.String),
+          #("queries", Dict(String, String)),
+          #("value", String),
         ]),
       ),
     ]),
@@ -57,22 +59,22 @@ pub fn parse_from_file_happy_path_test() {
         name: "SLO",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("threshold", helpers.Float),
-          #("window_in_days", helpers.Integer),
+          #("threshold", Float),
+          #("window_in_days", Integer),
         ]),
         required_params: dict.from_list([
-          #("queries", helpers.Dict(helpers.String, helpers.String)),
-          #("value", helpers.String),
+          #("queries", Dict(String, String)),
+          #("value", String),
         ]),
       ),
       artifacts.Artifact(
         name: "Dependency",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("relationship", helpers.List(helpers.String)),
+          #("relationship", List(String)),
         ]),
         required_params: dict.from_list([
-          #("isHard", helpers.Boolean),
+          #("isHard", Boolean),
         ]),
       ),
     ]),

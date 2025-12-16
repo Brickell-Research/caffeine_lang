@@ -1,3 +1,4 @@
+import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
 import caffeine_lang/common/helpers
@@ -15,7 +16,7 @@ pub type Blueprint {
   Blueprint(
     name: String,
     artifact_ref: String,
-    params: dict.Dict(String, helpers.AcceptedTypes),
+    params: dict.Dict(String, AcceptedTypes),
     inputs: dict.Dict(String, Dynamic),
   )
 }

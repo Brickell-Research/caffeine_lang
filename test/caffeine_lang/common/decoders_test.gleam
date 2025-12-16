@@ -1,5 +1,7 @@
+import caffeine_lang/common/accepted_types.{
+  Boolean, Defaulted, Dict, Float, Integer, List, Optional, String,
+}
 import caffeine_lang/common/decoders
-import caffeine_lang/common/helpers
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/list
@@ -94,85 +96,43 @@ pub fn non_empty_string_decoder_happy_path_test() {
 // * ✅ Invalid Defaulted(Boolean, maybe) - default doesn't match type
 pub fn accepted_types_decoder_test() {
   [
-    #("Boolean", Ok(helpers.Boolean)),
-    #("Float", Ok(helpers.Float)),
-    #("Integer", Ok(helpers.Integer)),
-    #("String", Ok(helpers.String)),
-    #("Dict(String, String)", Ok(helpers.Dict(helpers.String, helpers.String))),
-    #(
-      "Dict(String, Integer)",
-      Ok(helpers.Dict(helpers.String, helpers.Integer)),
-    ),
-    #("Dict(String, Float)", Ok(helpers.Dict(helpers.String, helpers.Float))),
-    #(
-      "Dict(String, Boolean)",
-      Ok(helpers.Dict(helpers.String, helpers.Boolean)),
-    ),
-    #("List(String)", Ok(helpers.List(helpers.String))),
-    #("List(Integer)", Ok(helpers.List(helpers.Integer))),
-    #("List(Float)", Ok(helpers.List(helpers.Float))),
-    #("List(Boolean)", Ok(helpers.List(helpers.Boolean))),
+    #("Boolean", Ok(Boolean)),
+    #("Float", Ok(Float)),
+    #("Integer", Ok(Integer)),
+    #("String", Ok(String)),
+    #("Dict(String, String)", Ok(Dict(String, String))),
+    #("Dict(String, Integer)", Ok(Dict(String, Integer))),
+    #("Dict(String, Float)", Ok(Dict(String, Float))),
+    #("Dict(String, Boolean)", Ok(Dict(String, Boolean))),
+    #("List(String)", Ok(List(String))),
+    #("List(Integer)", Ok(List(Integer))),
+    #("List(Float)", Ok(List(Float))),
+    #("List(Boolean)", Ok(List(Boolean))),
     // Optional basic types
-    #("Optional(String)", Ok(helpers.Optional(helpers.String))),
-    #("Optional(Integer)", Ok(helpers.Optional(helpers.Integer))),
-    #("Optional(Float)", Ok(helpers.Optional(helpers.Float))),
-    #("Optional(Boolean)", Ok(helpers.Optional(helpers.Boolean))),
+    #("Optional(String)", Ok(Optional(String))),
+    #("Optional(Integer)", Ok(Optional(Integer))),
+    #("Optional(Float)", Ok(Optional(Float))),
+    #("Optional(Boolean)", Ok(Optional(Boolean))),
     // Optional List types
-    #(
-      "Optional(List(String))",
-      Ok(helpers.Optional(helpers.List(helpers.String))),
-    ),
-    #(
-      "Optional(List(Integer))",
-      Ok(helpers.Optional(helpers.List(helpers.Integer))),
-    ),
-    #(
-      "Optional(List(Float))",
-      Ok(helpers.Optional(helpers.List(helpers.Float))),
-    ),
-    #(
-      "Optional(List(Boolean))",
-      Ok(helpers.Optional(helpers.List(helpers.Boolean))),
-    ),
+    #("Optional(List(String))", Ok(Optional(List(String)))),
+    #("Optional(List(Integer))", Ok(Optional(List(Integer)))),
+    #("Optional(List(Float))", Ok(Optional(List(Float)))),
+    #("Optional(List(Boolean))", Ok(Optional(List(Boolean)))),
     // Optional Dict types
-    #(
-      "Optional(Dict(String, String))",
-      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.String))),
-    ),
-    #(
-      "Optional(Dict(String, Integer))",
-      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Integer))),
-    ),
-    #(
-      "Optional(Dict(String, Float))",
-      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Float))),
-    ),
-    #(
-      "Optional(Dict(String, Boolean))",
-      Ok(helpers.Optional(helpers.Dict(helpers.String, helpers.Boolean))),
-    ),
+    #("Optional(Dict(String, String))", Ok(Optional(Dict(String, String)))),
+    #("Optional(Dict(String, Integer))", Ok(Optional(Dict(String, Integer)))),
+    #("Optional(Dict(String, Float))", Ok(Optional(Dict(String, Float)))),
+    #("Optional(Dict(String, Boolean))", Ok(Optional(Dict(String, Boolean)))),
     // Defaulted basic types with default values
-    #(
-      "Defaulted(String, default_value)",
-      Ok(helpers.Defaulted(helpers.String, "default_value")),
-    ),
-    #("Defaulted(Integer, 10)", Ok(helpers.Defaulted(helpers.Integer, "10"))),
-    #("Defaulted(Float, 3.14)", Ok(helpers.Defaulted(helpers.Float, "3.14"))),
-    #(
-      "Defaulted(Boolean, True)",
-      Ok(helpers.Defaulted(helpers.Boolean, "True")),
-    ),
+    #("Defaulted(String, default_value)", Ok(Defaulted(String, "default_value"))),
+    #("Defaulted(Integer, 10)", Ok(Defaulted(Integer, "10"))),
+    #("Defaulted(Float, 3.14)", Ok(Defaulted(Float, "3.14"))),
+    #("Defaulted(Boolean, True)", Ok(Defaulted(Boolean, "True"))),
     // Defaulted nested types
-    #(
-      "Defaulted(List(String), default)",
-      Ok(helpers.Defaulted(helpers.List(helpers.String), "default")),
-    ),
+    #("Defaulted(List(String), default)", Ok(Defaulted(List(String), "default"))),
     #(
       "Defaulted(Dict(String, String), default)",
-      Ok(helpers.Defaulted(
-        helpers.Dict(helpers.String, helpers.String),
-        "default",
-      )),
+      Ok(Defaulted(Dict(String, String), "default")),
     ),
     #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
     // Invalid Defaulted types - default value doesn't match inner type

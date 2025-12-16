@@ -1,3 +1,4 @@
+import caffeine_lang/common/accepted_types.{Dict, String}
 import caffeine_lang/common/errors.{
   type CompilationError, SemanticAnalysisTemplateResolutionError,
   SemanticAnalysisVendorResolutionError,
@@ -112,7 +113,7 @@ pub fn resolve_queries(
       let new_queries_value_tuple =
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           resolved_queries_dynamic,
         )
 
@@ -137,7 +138,7 @@ pub fn resolve_queries(
               Ok(
                 option.Some(helpers.ValueTuple(
                   "value",
-                  helpers.String,
+                  String,
                   dynamic.string(resolved_value),
                 )),
               )

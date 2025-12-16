@@ -1,4 +1,4 @@
-import caffeine_lang/common/helpers.{
+import caffeine_lang/common/accepted_types.{
   type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Optional,
   String,
 }

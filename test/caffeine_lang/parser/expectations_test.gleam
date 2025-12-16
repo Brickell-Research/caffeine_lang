@@ -1,3 +1,4 @@
+import caffeine_lang/common/accepted_types.{Defaulted, Float, String}
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
@@ -22,7 +23,7 @@ fn blueprints() -> List(Blueprint) {
     blueprints.Blueprint(
       name: "success_rate",
       artifact_ref: "SLO",
-      params: dict.from_list([#("percentile", helpers.Float)]),
+      params: dict.from_list([#("percentile", Float)]),
       inputs: dict.from_list([]),
     ),
   ]
@@ -34,8 +35,8 @@ fn blueprints_with_inputs() -> List(Blueprint) {
       name: "success_rate_with_defaults",
       artifact_ref: "SLO",
       params: dict.from_list([
-        #("vendor", helpers.String),
-        #("threshold", helpers.Float),
+        #("vendor", String),
+        #("threshold", Float),
       ]),
       inputs: dict.from_list([
         #("vendor", dynamic.string(constants.vendor_datadog)),
@@ -50,8 +51,8 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
       name: "success_rate_with_defaulted",
       artifact_ref: "SLO",
       params: dict.from_list([
-        #("threshold", helpers.Float),
-        #("default_env", helpers.Defaulted(helpers.String, "production")),
+        #("threshold", Float),
+        #("default_env", Defaulted(String, "production")),
       ]),
       inputs: dict.from_list([]),
     ),
@@ -91,7 +92,7 @@ pub fn parse_from_file_happy_path_test() {
         values: [
           helpers.ValueTuple(
             label: "percentile",
-            typ: helpers.Float,
+            typ: Float,
             value: dynamic.float(99.9),
           ),
         ],
@@ -118,7 +119,7 @@ pub fn parse_from_file_happy_path_test() {
         values: [
           helpers.ValueTuple(
             label: "percentile",
-            typ: helpers.Float,
+            typ: Float,
             value: dynamic.float(99.9),
           ),
         ],
@@ -138,7 +139,7 @@ pub fn parse_from_file_happy_path_test() {
         values: [
           helpers.ValueTuple(
             label: "percentile",
-            typ: helpers.Float,
+            typ: Float,
             value: dynamic.float(95.0),
           ),
         ],
@@ -168,12 +169,12 @@ pub fn parse_from_file_happy_path_test() {
         values: [
           helpers.ValueTuple(
             label: "threshold",
-            typ: helpers.Float,
+            typ: Float,
             value: dynamic.float(99.9),
           ),
           helpers.ValueTuple(
             label: "default_env",
-            typ: helpers.Defaulted(helpers.String, "production"),
+            typ: Defaulted(String, "production"),
             value: dynamic.nil(),
           ),
         ],

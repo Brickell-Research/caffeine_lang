@@ -1,3 +1,4 @@
+import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
@@ -19,8 +20,8 @@ pub type Artifact {
     // most of the way. Especially true if Caffeine is the source of truth for artifacts via
     // the standard library for now.
     version: Semver,
-    inherited_params: dict.Dict(String, helpers.AcceptedTypes),
-    required_params: dict.Dict(String, helpers.AcceptedTypes),
+    inherited_params: dict.Dict(String, AcceptedTypes),
+    required_params: dict.Dict(String, AcceptedTypes),
   )
 }
 

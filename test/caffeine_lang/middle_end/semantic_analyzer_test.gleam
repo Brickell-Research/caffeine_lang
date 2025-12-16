@@ -1,5 +1,8 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
+import caffeine_lang/common/accepted_types.{
+  Boolean, Defaulted, Dict, Integer, String,
+}
 import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
@@ -27,13 +30,13 @@ pub fn resolve_intermediate_representations_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
+        helpers.ValueTuple("env", String, dynamic.string("staging")),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query_a"),
@@ -58,13 +61,13 @@ pub fn resolve_intermediate_representations_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
+        helpers.ValueTuple("region", String, dynamic.string("us-east")),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query_b"),
@@ -92,13 +95,13 @@ pub fn resolve_intermediate_representations_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("staging")),
+        helpers.ValueTuple("env", String, dynamic.string("staging")),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query_a"),
@@ -123,13 +126,13 @@ pub fn resolve_intermediate_representations_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("region", helpers.String, dynamic.string("us-east")),
+        helpers.ValueTuple("region", String, dynamic.string("us-east")),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query_b"),
@@ -164,7 +167,7 @@ pub fn resolve_vendor_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
       ],
@@ -186,7 +189,7 @@ pub fn resolve_vendor_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
       ],
@@ -216,14 +219,14 @@ pub fn resolve_queries_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
-        helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
+        helpers.ValueTuple("env", String, dynamic.string("production")),
+        helpers.ValueTuple("status", Boolean, dynamic.bool(True)),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("denominator"),
@@ -256,14 +259,14 @@ pub fn resolve_queries_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
-        helpers.ValueTuple("status", helpers.Boolean, dynamic.bool(True)),
+        helpers.ValueTuple("env", String, dynamic.string("production")),
+        helpers.ValueTuple("status", Boolean, dynamic.bool(True)),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("denominator"),
@@ -300,20 +303,20 @@ pub fn resolve_queries_defaulted_param_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
+        helpers.ValueTuple("env", String, dynamic.string("production")),
         // threshold_in_ms is Defaulted and not provided - uses nil
         helpers.ValueTuple(
           "threshold_in_ms",
-          helpers.Defaulted(helpers.Integer, "2500000000"),
+          Defaulted(Integer, "2500000000"),
           dynamic.nil(),
         ),
         // queries is required by resolve_queries
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query"),
@@ -323,7 +326,7 @@ pub fn resolve_queries_defaulted_param_test() {
         ),
         helpers.ValueTuple(
           "value",
-          helpers.String,
+          String,
           dynamic.string("time_slice(query > $$threshold_in_ms$$ per 5m)"),
         ),
       ],
@@ -345,18 +348,18 @@ pub fn resolve_queries_defaulted_param_test() {
       values: [
         helpers.ValueTuple(
           "vendor",
-          helpers.String,
+          String,
           dynamic.string(constants.vendor_datadog),
         ),
-        helpers.ValueTuple("env", helpers.String, dynamic.string("production")),
+        helpers.ValueTuple("env", String, dynamic.string("production")),
         helpers.ValueTuple(
           "threshold_in_ms",
-          helpers.Defaulted(helpers.Integer, "2500000000"),
+          Defaulted(Integer, "2500000000"),
           dynamic.nil(),
         ),
         helpers.ValueTuple(
           "queries",
-          helpers.Dict(helpers.String, helpers.String),
+          Dict(String, String),
           dynamic.properties([
             #(
               dynamic.string("query"),
@@ -367,7 +370,7 @@ pub fn resolve_queries_defaulted_param_test() {
         // The template should be resolved using the default value
         helpers.ValueTuple(
           "value",
-          helpers.String,
+          String,
           dynamic.string("time_slice(query > 2500000000 per 5m)"),
         ),
       ],

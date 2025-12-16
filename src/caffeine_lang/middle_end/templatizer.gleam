@@ -27,6 +27,7 @@
 /// - https://docs.datadoghq.com/metrics/advanced-filtering/
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{
   type CompilationError, SemanticAnalysisTemplateParseError,
@@ -238,13 +239,13 @@ pub fn resolve_template(
   })
 
   case value_tuple.typ {
-    helpers.Dict(_, _) ->
+    accepted_types.Dict(_, _) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
-        <> helpers.accepted_type_to_string(value_tuple.typ)
+        <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    helpers.List(inner_type) -> {
+    accepted_types.List(inner_type) -> {
       let assert Ok(vals) =
         decode.run(
           value_tuple.value,
@@ -252,17 +253,17 @@ pub fn resolve_template(
         )
       Ok(resolve_list_value(template, vals))
     }
-    helpers.Optional(helpers.Dict(_, _)) ->
+    accepted_types.Optional(accepted_types.Dict(_, _)) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
-        <> helpers.accepted_type_to_string(value_tuple.typ)
+        <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    helpers.Optional(inner_type) -> {
+    accepted_types.Optional(inner_type) -> {
       // For Optional types, try to decode the inner value
       // If None, return empty string (template gets removed from query)
       let inner_decoder = case inner_type {
-        helpers.List(list_inner) ->
+        accepted_types.List(list_inner) ->
           decode.optional(decoders.decode_list_values_to_strings(list_inner))
           |> decode.map(fn(maybe_vals) {
             case maybe_vals {
@@ -287,17 +288,17 @@ pub fn resolve_template(
         option.None -> Ok("")
       }
     }
-    helpers.Defaulted(helpers.Dict(_, _), _) ->
+    accepted_types.Defaulted(accepted_types.Dict(_, _), _) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
-        <> helpers.accepted_type_to_string(value_tuple.typ)
+        <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    helpers.Defaulted(inner_type, default_val) -> {
+    accepted_types.Defaulted(inner_type, default_val) -> {
       // For Defaulted types, try to decode the inner value
       // If None, use the default value instead of empty string
       let inner_decoder = case inner_type {
-        helpers.List(list_inner) ->
+        accepted_types.List(list_inner) ->
           decode.optional(decoders.decode_list_values_to_strings(list_inner))
           |> decode.map(fn(maybe_vals) {
             case maybe_vals {

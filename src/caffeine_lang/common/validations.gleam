@@ -1,8 +1,11 @@
+import caffeine_lang/common/accepted_types.{
+  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Optional,
+  String,
+}
 import caffeine_lang/common/errors.{
   type CompilationError, ParserDuplicateError, ParserJsonParserError,
   format_decode_error_message,
 }
-import caffeine_lang/common/helpers.{type AcceptedTypes, Boolean, Integer}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -24,11 +27,11 @@ pub fn validate_value_type(
       validate_value_type_helper(value, decode.bool, type_key_identifier)
     Integer ->
       validate_value_type_helper(value, decode.int, type_key_identifier)
-    helpers.Float ->
+    Float ->
       validate_value_type_helper(value, decode.float, type_key_identifier)
-    helpers.String ->
+    String ->
       validate_value_type_helper(value, decode.string, type_key_identifier)
-    helpers.Dict(_key_type, value_type) -> {
+    Dict(_key_type, value_type) -> {
       case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
         Ok(dict_val) -> {
           dict_val
@@ -47,7 +50,7 @@ pub fn validate_value_type(
           )
       }
     }
-    helpers.List(inner_type) -> {
+    List(inner_type) -> {
       case decode.run(value, decode.list(decode.dynamic)) {
         Ok(list_val) -> {
           list_val
@@ -65,7 +68,7 @@ pub fn validate_value_type(
           )
       }
     }
-    helpers.Optional(inner_type) -> {
+    Optional(inner_type) -> {
       case decode.run(value, decode.optional(decode.dynamic)) {
         Ok(option.Some(inner_val)) ->
           validate_value_type(inner_val, inner_type, type_key_identifier)
@@ -79,7 +82,7 @@ pub fn validate_value_type(
           )
       }
     }
-    helpers.Defaulted(inner_type, _default_val) -> {
+    Defaulted(inner_type, _default_val) -> {
       // Defaulted works like Optional for validation - value can be present or absent
       // If present, validate it matches the inner type
       case decode.run(value, decode.optional(decode.dynamic)) {
@@ -127,8 +130,8 @@ pub fn inputs_validator(
     params
     |> dict.filter(fn(_, typ) {
       case typ {
-        helpers.Optional(_) -> False
-        helpers.Defaulted(_, _) -> False
+        Optional(_) -> False
+        Defaulted(_, _) -> False
         _ -> True
       }
     })

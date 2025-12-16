@@ -1,5 +1,7 @@
+import caffeine_lang/common/accepted_types.{
+  Boolean, Defaulted, Dict, Float, Integer, List, Optional, String,
+}
 import caffeine_lang/common/errors
-import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import gleam/dict
 import gleam/dynamic
@@ -71,95 +73,95 @@ pub fn validate_value_type_test() {
 
   [
     // Basic types
-    #(some_bool, helpers.Boolean, Ok(some_bool)),
-    #(some_int, helpers.Integer, Ok(some_int)),
-    #(some_float, helpers.Float, Ok(some_float)),
-    #(some_string, helpers.String, Ok(some_string)),
+    #(some_bool, Boolean, Ok(some_bool)),
+    #(some_int, Integer, Ok(some_int)),
+    #(some_float, Float, Ok(some_float)),
+    #(some_string, String, Ok(some_string)),
     // Dict types
     #(
       dict_string_string,
-      helpers.Dict(helpers.String, helpers.String),
+      Dict(String, String),
       Ok(dict_string_string),
     ),
     #(
       dict_string_int,
-      helpers.Dict(helpers.String, helpers.Integer),
+      Dict(String, Integer),
       Ok(dict_string_int),
     ),
     #(
       dict_string_float,
-      helpers.Dict(helpers.String, helpers.Float),
+      Dict(String, Float),
       Ok(dict_string_float),
     ),
     #(
       dict_string_bool,
-      helpers.Dict(helpers.String, helpers.Boolean),
+      Dict(String, Boolean),
       Ok(dict_string_bool),
     ),
     // List types
-    #(list_string, helpers.List(helpers.String), Ok(list_string)),
-    #(list_int, helpers.List(helpers.Integer), Ok(list_int)),
-    #(list_bool, helpers.List(helpers.Boolean), Ok(list_bool)),
-    #(list_float, helpers.List(helpers.Float), Ok(list_float)),
+    #(list_string, List(String), Ok(list_string)),
+    #(list_int, List(Integer), Ok(list_int)),
+    #(list_bool, List(Boolean), Ok(list_bool)),
+    #(list_float, List(Float), Ok(list_float)),
     // Empty collections
-    #(empty_list, helpers.List(helpers.String), Ok(empty_list)),
+    #(empty_list, List(String), Ok(empty_list)),
     #(
       empty_dict,
-      helpers.Dict(helpers.String, helpers.String),
+      Dict(String, String),
       Ok(empty_dict),
     ),
     // Optional types with values
-    #(some_string, helpers.Optional(helpers.String), Ok(some_string)),
-    #(some_int, helpers.Optional(helpers.Integer), Ok(some_int)),
-    #(some_float, helpers.Optional(helpers.Float), Ok(some_float)),
-    #(some_bool, helpers.Optional(helpers.Boolean), Ok(some_bool)),
+    #(some_string, Optional(String), Ok(some_string)),
+    #(some_int, Optional(Integer), Ok(some_int)),
+    #(some_float, Optional(Float), Ok(some_float)),
+    #(some_bool, Optional(Boolean), Ok(some_bool)),
     // Optional List types
     #(
       list_string,
-      helpers.Optional(helpers.List(helpers.String)),
+      Optional(List(String)),
       Ok(list_string),
     ),
     // Optional Dict types
     #(
       dict_string_string,
-      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+      Optional(Dict(String, String)),
       Ok(dict_string_string),
     ),
     // Defaulted types with values
     #(
       some_string,
-      helpers.Defaulted(helpers.String, "default"),
+      Defaulted(String, "default"),
       Ok(some_string),
     ),
-    #(some_int, helpers.Defaulted(helpers.Integer, "0"), Ok(some_int)),
-    #(some_float, helpers.Defaulted(helpers.Float, "0.0"), Ok(some_float)),
-    #(some_bool, helpers.Defaulted(helpers.Boolean, "False"), Ok(some_bool)),
+    #(some_int, Defaulted(Integer, "0"), Ok(some_int)),
+    #(some_float, Defaulted(Float, "0.0"), Ok(some_float)),
+    #(some_bool, Defaulted(Boolean, "False"), Ok(some_bool)),
     // Defaulted List types
     #(
       list_string,
-      helpers.Defaulted(helpers.List(helpers.String), ""),
+      Defaulted(List(String), ""),
       Ok(list_string),
     ),
     // Defaulted Dict types
     #(
       dict_string_string,
-      helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), ""),
+      Defaulted(Dict(String, String), ""),
       Ok(dict_string_string),
     ),
     // Nested types
     #(
       dynamic.list([list_string, list_string]),
-      helpers.List(helpers.List(helpers.String)),
+      List(List(String)),
       Ok(dynamic.list([list_string, list_string])),
     ),
     #(
       dynamic.properties([#(some_string, dict_string_int)]),
-      helpers.Dict(helpers.String, helpers.Dict(helpers.String, helpers.Integer)),
+      Dict(String, Dict(String, Integer)),
       Ok(dynamic.properties([#(some_string, dict_string_int)])),
     ),
     #(
       dynamic.list([dict_string_string]),
-      helpers.List(helpers.Dict(helpers.String, helpers.String)),
+      List(Dict(String, String)),
       Ok(dynamic.list([dict_string_string])),
     ),
   ]
@@ -174,75 +176,75 @@ pub fn validate_value_type_test() {
     // Basic types
     #(
       some_string,
-      helpers.Boolean,
+      Boolean,
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      helpers.Integer,
+      Integer,
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      helpers.Float,
+      Float,
       json_error("expected (Float) received (String) for (some_key)"),
     ),
     #(
       some_bool,
-      helpers.String,
+      String,
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Dict types
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      helpers.Dict(helpers.String, helpers.String),
+      Dict(String, String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      helpers.Dict(helpers.String, helpers.Integer),
+      Dict(String, Integer),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      helpers.Dict(helpers.String, helpers.Float),
+      Dict(String, Float),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
-      helpers.Dict(helpers.String, helpers.Boolean),
+      Dict(String, Boolean),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     // List types
     #(
       dynamic.list([some_string, some_bool]),
-      helpers.List(helpers.String),
+      List(String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
-      helpers.List(helpers.Integer),
+      List(Integer),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([some_bool, some_string]),
-      helpers.List(helpers.Boolean),
+      List(Boolean),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
-      helpers.List(helpers.Float),
+      List(Float),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     // Wrong structure types
     #(
       some_string,
-      helpers.List(helpers.String),
+      List(String),
       json_error("expected (List) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      helpers.Dict(helpers.String, helpers.String),
+      Dict(String, String),
       json_error("expected (Dict) received (String) for (some_key)"),
     ),
     // Multi-entry collection with one bad value
@@ -251,75 +253,75 @@ pub fn validate_value_type_test() {
         #(some_string, other_string),
         #(dynamic.string("key2"), some_bool),
       ]),
-      helpers.Dict(helpers.String, helpers.String),
+      Dict(String, String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // List with first element wrong
     #(
       dynamic.list([some_bool, some_string]),
-      helpers.List(helpers.String),
+      List(String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional types with wrong inner type
     #(
       some_bool,
-      helpers.Optional(helpers.String),
+      Optional(String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      helpers.Optional(helpers.Integer),
+      Optional(Integer),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Optional List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      helpers.Optional(helpers.List(helpers.String)),
+      Optional(List(String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      helpers.Optional(helpers.Dict(helpers.String, helpers.String)),
+      Optional(Dict(String, String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted types with wrong inner type
     #(
       some_bool,
-      helpers.Defaulted(helpers.String, "default"),
+      Defaulted(String, "default"),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      helpers.Defaulted(helpers.Integer, "0"),
+      Defaulted(Integer, "0"),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Defaulted List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      helpers.Defaulted(helpers.List(helpers.String), ""),
+      Defaulted(List(String), ""),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      helpers.Defaulted(helpers.Dict(helpers.String, helpers.String), ""),
+      Defaulted(Dict(String, String), ""),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Nested types with wrong inner type
     #(
       dynamic.list([dynamic.list([some_bool])]),
-      helpers.List(helpers.List(helpers.String)),
+      List(List(String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, dynamic.properties([#(some_string, some_bool)]))]),
-      helpers.Dict(helpers.String, helpers.Dict(helpers.String, helpers.String)),
+      Dict(String, Dict(String, String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
-      helpers.List(helpers.Dict(helpers.String, helpers.String)),
+      List(Dict(String, String)),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
   ]
@@ -352,7 +354,7 @@ pub fn inputs_validator_test() {
     #(dict.new(), dict.new()),
     // some inputs
     #(
-      dict.from_list([#("name", helpers.String), #("count", helpers.Integer)]),
+      dict.from_list([#("name", String), #("count", Integer)]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("count", dynamic.int(42)),
@@ -360,37 +362,37 @@ pub fn inputs_validator_test() {
     ),
     // optional param omitted - should pass
     #(
-      dict.from_list([#("maybe_name", helpers.Optional(helpers.String))]),
+      dict.from_list([#("maybe_name", Optional(String))]),
       dict.from_list([]),
     ),
     // optional param provided - should pass
     #(
-      dict.from_list([#("maybe_name", helpers.Optional(helpers.String))]),
+      dict.from_list([#("maybe_name", Optional(String))]),
       dict.from_list([#("maybe_name", dynamic.string("foo"))]),
     ),
     // mix of required and optional, optional omitted - should pass
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("maybe_count", helpers.Optional(helpers.Integer)),
+        #("name", String),
+        #("maybe_count", Optional(Integer)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
     // defaulted param omitted - should pass
     #(
-      dict.from_list([#("count", helpers.Defaulted(helpers.Integer, "10"))]),
+      dict.from_list([#("count", Defaulted(Integer, "10"))]),
       dict.from_list([]),
     ),
     // defaulted param provided - should pass
     #(
-      dict.from_list([#("count", helpers.Defaulted(helpers.Integer, "10"))]),
+      dict.from_list([#("count", Defaulted(Integer, "10"))]),
       dict.from_list([#("count", dynamic.int(42))]),
     ),
     // mix of required and defaulted, defaulted omitted - should pass
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("count", helpers.Defaulted(helpers.Integer, "10")),
+        #("name", String),
+        #("count", Defaulted(Integer, "10")),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
@@ -405,13 +407,13 @@ pub fn inputs_validator_test() {
   [
     // missing inputs for params (single)
     #(
-      dict.from_list([#("name", helpers.String), #("count", helpers.Integer)]),
+      dict.from_list([#("name", String), #("count", Integer)]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       Error("Missing keys in input: count"),
     ),
     // extra inputs
     #(
-      dict.from_list([#("name", helpers.String)]),
+      dict.from_list([#("name", String)]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
@@ -421,8 +423,8 @@ pub fn inputs_validator_test() {
     // missing and extra inputs
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("required", helpers.Boolean),
+        #("name", String),
+        #("required", Boolean),
       ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
@@ -432,15 +434,15 @@ pub fn inputs_validator_test() {
     ),
     // type validation error - single
     #(
-      dict.from_list([#("count", helpers.Integer)]),
+      dict.from_list([#("count", Integer)]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       Error("expected (Int) received (String) for (count)"),
     ),
     // missing required when optional param exists - should fail for required only
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("maybe_count", helpers.Optional(helpers.Integer)),
+        #("name", String),
+        #("maybe_count", Optional(Integer)),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),
@@ -448,8 +450,8 @@ pub fn inputs_validator_test() {
     // missing required when defaulted param exists - should fail for required only
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("count", helpers.Defaulted(helpers.Integer, "10")),
+        #("name", String),
+        #("count", Defaulted(Integer, "10")),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),
@@ -464,16 +466,16 @@ pub fn inputs_validator_test() {
     // missing inputs for params (multiple)
     #(
       dict.from_list([
-        #("name", helpers.String),
-        #("count", helpers.Integer),
-        #("flag", helpers.Boolean),
+        #("name", String),
+        #("count", Integer),
+        #("flag", Boolean),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       "Missing keys in input:",
     ),
     // type validation error - multiple
     #(
-      dict.from_list([#("count", helpers.Integer), #("flag", helpers.Boolean)]),
+      dict.from_list([#("count", Integer), #("flag", Boolean)]),
       dict.from_list([
         #("count", dynamic.string("not an int")),
         #("flag", dynamic.string("not a bool")),
@@ -546,7 +548,7 @@ pub fn validate_inputs_for_collection_test() {
     [
       #(
         dict.from_list([#("name", dynamic.string("foo"))]),
-        dict.from_list([#("name", helpers.String)]),
+        dict.from_list([#("name", String)]),
       ),
     ],
   ]
@@ -561,7 +563,7 @@ pub fn validate_inputs_for_collection_test() {
   let collection = [
     #(
       dict.from_list([#("count", dynamic.string("not an int"))]),
-      dict.from_list([#("count", helpers.Integer)]),
+      dict.from_list([#("count", Integer)]),
     ),
   ]
   validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {
