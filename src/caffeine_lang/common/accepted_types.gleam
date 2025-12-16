@@ -11,13 +11,16 @@ pub type AcceptedTypes {
   Modifier(ModifierTypes)
 }
 
-/// Modifier types are a special class of types.
+// Modifier types are a special class of types that alter the value semantics of
+/// the attribute they are bound to.
 pub type ModifierTypes {
   Optional(AcceptedTypes)
   /// Defaulted type stores the inner type and its default value as a string
   /// e.g., Defaulted(Integer, "10") means an optional integer with default 10
   Defaulted(AcceptedTypes, String)
 }
+
+pub type 
 
 /// Converts an AcceptedTypes to its string representation.
 pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
