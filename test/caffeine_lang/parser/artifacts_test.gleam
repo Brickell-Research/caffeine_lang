@@ -356,7 +356,7 @@ pub fn parse_semver_invalid_test() {
     #("1.2.03", Error(Nil)),
     #("01.02.03", Error(Nil)),
     // Negative numbers disallowed
-    #("-1.0.1", Error(Nil)),
+    #("-1.0.2", Error(Nil)),
     #("0.-1.0", Error(Nil)),
     #("0.0.-1", Error(Nil)),
   ]

@@ -19,8 +19,8 @@ packages = [
 argv = { version = ">= 1.0.2 and < 2.0.0" }
 gleam_community_ansi = { version = ">= 1.4.0 and < 2.0.0" }
 gleam_json = { version = ">= 3.1.0 and < 4.0.0" }
-gleam_stdlib = { version = ">= 0.63.0 and < 1.0.1" }
-gleamy_bench = { version = ">= 0.6.0 and < 1.0.1" }
-gleeunit = { version = ">= 1.0.1" }
+gleam_stdlib = { version = ">= 0.63.0 and < 1.0.2" }
+gleamy_bench = { version = ">= 0.6.0 and < 1.0.2" }
+gleeunit = { version = ">= 1.0.2" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }
 terra_madre = { version = ">=0.0.4" }
