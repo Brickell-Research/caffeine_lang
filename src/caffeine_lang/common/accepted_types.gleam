@@ -20,8 +20,6 @@ pub type ModifierTypes {
   Defaulted(AcceptedTypes, String)
 }
 
-pub type 
-
 /// Converts an AcceptedTypes to its string representation.
 pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
   case accepted_type {
