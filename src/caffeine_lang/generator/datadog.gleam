@@ -14,6 +14,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
+import gleam/string
 import terra_madre/common
 import terra_madre/hcl
 import terra_madre/render
@@ -141,9 +142,10 @@ pub fn ir_to_terraform_resource(
         hcl.StringLiteral("artifact:" <> ir.artifact_ref),
       ]
       |> list.append(
-        // Also add misc tags
+        // Also add misc tags (sorted for deterministic output across targets)
         ir.metadata.misc
         |> dict.keys
+        |> list.sort(string.compare)
         |> list.map(fn(key) {
           let assert Ok(value) = ir.metadata.misc |> dict.get(key)
           hcl.StringLiteral(key <> ":" <> value)
