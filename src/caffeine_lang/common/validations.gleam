@@ -1,6 +1,6 @@
 import caffeine_lang/common/accepted_types.{
-  type AcceptedTypes, Boolean, Defaulted, Dict, Float, Integer, List, Modifier,
-  Optional, String,
+  type AcceptedTypes, Boolean, CollectionType, Defaulted, Dict, Float, Integer,
+  List, ModifierType, Optional, PrimitiveType, String,
 }
 import caffeine_lang/common/errors.{
   type CompilationError, ParserDuplicateError, ParserJsonParserError,
@@ -23,53 +23,59 @@ pub fn validate_value_type(
   type_key_identifier: String,
 ) -> Result(dynamic.Dynamic, CompilationError) {
   case expected_type {
-    Boolean ->
-      validate_value_type_helper(value, decode.bool, type_key_identifier)
-    Integer ->
-      validate_value_type_helper(value, decode.int, type_key_identifier)
-    Float ->
-      validate_value_type_helper(value, decode.float, type_key_identifier)
-    String ->
-      validate_value_type_helper(value, decode.string, type_key_identifier)
-    Dict(_key_type, value_type) -> {
-      case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
-        Ok(dict_val) -> {
-          dict_val
-          |> dict.values
-          |> list.try_map(fn(v) {
-            validate_value_type(v, value_type, type_key_identifier)
-          })
-          |> result.map(fn(_) { value })
-        }
-        Error(err) ->
-          Error(
-            ParserJsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
+    PrimitiveType(primitive) ->
+      case primitive {
+        Boolean ->
+          validate_value_type_helper(value, decode.bool, type_key_identifier)
+        Integer ->
+          validate_value_type_helper(value, decode.int, type_key_identifier)
+        Float ->
+          validate_value_type_helper(value, decode.float, type_key_identifier)
+        String ->
+          validate_value_type_helper(value, decode.string, type_key_identifier)
       }
-    }
-    List(inner_type) -> {
-      case decode.run(value, decode.list(decode.dynamic)) {
-        Ok(list_val) -> {
-          list_val
-          |> list.try_map(fn(v) {
-            validate_value_type(v, inner_type, type_key_identifier)
-          })
-          |> result.map(fn(_) { value })
+    CollectionType(collection) ->
+      case collection {
+        Dict(_key_type, value_type) -> {
+          case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
+            Ok(dict_val) -> {
+              dict_val
+              |> dict.values
+              |> list.try_map(fn(v) {
+                validate_value_type(v, value_type, type_key_identifier)
+              })
+              |> result.map(fn(_) { value })
+            }
+            Error(err) ->
+              Error(
+                ParserJsonParserError(format_decode_error_message(
+                  err,
+                  option.Some(type_key_identifier),
+                )),
+              )
+          }
         }
-        Error(err) ->
-          Error(
-            ParserJsonParserError(format_decode_error_message(
-              err,
-              option.Some(type_key_identifier),
-            )),
-          )
+        List(inner_type) -> {
+          case decode.run(value, decode.list(decode.dynamic)) {
+            Ok(list_val) -> {
+              list_val
+              |> list.try_map(fn(v) {
+                validate_value_type(v, inner_type, type_key_identifier)
+              })
+              |> result.map(fn(_) { value })
+            }
+            Error(err) ->
+              Error(
+                ParserJsonParserError(format_decode_error_message(
+                  err,
+                  option.Some(type_key_identifier),
+                )),
+              )
+          }
+        }
       }
-    }
-    Modifier(modifier_type) ->
-      case modifier_type {
+    ModifierType(modifier) ->
+      case modifier {
         Optional(inner_type) -> {
           case decode.run(value, decode.optional(decode.dynamic)) {
             Ok(option.Some(inner_val)) ->
@@ -133,8 +139,8 @@ pub fn inputs_validator(
     params
     |> dict.filter(fn(_, typ) {
       case typ {
-        Modifier(Optional(_)) -> False
-        Modifier(Defaulted(_, _)) -> False
+        ModifierType(Optional(_)) -> False
+        ModifierType(Defaulted(_, _)) -> False
         _ -> True
       }
     })

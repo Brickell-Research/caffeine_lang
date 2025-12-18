@@ -1,4 +1,4 @@
-import caffeine_lang/common/accepted_types.{Float, String}
+import caffeine_lang/common/accepted_types.{Float, PrimitiveType, String}
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/parser/artifacts.{type Artifact}
 import caffeine_lang/parser/blueprints
@@ -18,8 +18,8 @@ fn artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       version: artifacts.Semver(0, 0, 1),
-      inherited_params: dict.from_list([#("threshold", Float)]),
-      required_params: dict.from_list([#("value", String)]),
+      inherited_params: dict.from_list([#("threshold", PrimitiveType(Float))]),
+      required_params: dict.from_list([#("value", PrimitiveType(String))]),
     ),
   ]
 }
@@ -47,9 +47,9 @@ pub fn parse_from_file_happy_path_test() {
         name: "success_rate",
         artifact_ref: "SLO",
         params: dict.from_list([
-          #("percentile", Float),
-          #("threshold", Float),
-          #("value", String),
+          #("percentile", PrimitiveType(Float)),
+          #("threshold", PrimitiveType(Float)),
+          #("value", PrimitiveType(String)),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
@@ -64,9 +64,9 @@ pub fn parse_from_file_happy_path_test() {
         name: "success_rate",
         artifact_ref: "SLO",
         params: dict.from_list([
-          #("percentile", Float),
-          #("threshold", Float),
-          #("value", String),
+          #("percentile", PrimitiveType(Float)),
+          #("threshold", PrimitiveType(Float)),
+          #("value", PrimitiveType(String)),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
@@ -74,8 +74,8 @@ pub fn parse_from_file_happy_path_test() {
         name: "latency_p99",
         artifact_ref: "SLO",
         params: dict.from_list([
-          #("threshold", Float),
-          #("value", String),
+          #("threshold", PrimitiveType(Float)),
+          #("value", PrimitiveType(String)),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),
@@ -243,8 +243,8 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
         name: "minimal_blueprint",
         artifact_ref: "SLO",
         params: dict.from_list([
-          #("threshold", Float),
-          #("value", String),
+          #("threshold", PrimitiveType(Float)),
+          #("value", PrimitiveType(String)),
         ]),
         inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
       ),

@@ -1,5 +1,6 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Float, Integer, List, Modifier, Optional, String,
+  Boolean, CollectionType, Defaulted, Dict, Float, Integer, List, ModifierType,
+  Optional, PrimitiveType, String,
 }
 import caffeine_lang/common/errors
 import caffeine_lang/common/validations
@@ -36,13 +37,11 @@ import test_helpers
 // * (✅, ✅) Optional(Boolean) with value
 // * (✅, ✅) Optional(List(String)) with value
 // * (✅, ✅) Optional(Dict(String, String)) with value
-// Defaulted types
+// Defaulted types (only primitives allowed)
 // * (✅, ✅) Defaulted(String, default) with value
 // * (✅, ✅) Defaulted(Integer, default) with value
 // * (✅, ✅) Defaulted(Float, default) with value
 // * (✅, ✅) Defaulted(Boolean, default) with value
-// * (✅, ✅) Defaulted(List(String), default) with value
-// * (✅, ✅) Defaulted(Dict(String, String), default) with value
 // Nested types
 // * (✅, ✅) List(List(String))
 // * (✅, ✅) Dict(String, Dict(String, Integer))
@@ -73,95 +72,110 @@ pub fn validate_value_type_test() {
 
   [
     // Basic types
-    #(some_bool, Boolean, Ok(some_bool)),
-    #(some_int, Integer, Ok(some_int)),
-    #(some_float, Float, Ok(some_float)),
-    #(some_string, String, Ok(some_string)),
+    #(some_bool, PrimitiveType(Boolean), Ok(some_bool)),
+    #(some_int, PrimitiveType(Integer), Ok(some_int)),
+    #(some_float, PrimitiveType(Float), Ok(some_float)),
+    #(some_string, PrimitiveType(String), Ok(some_string)),
     // Dict types
     #(
       dict_string_string,
-      Dict(String, String),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       Ok(dict_string_string),
     ),
     #(
       dict_string_int,
-      Dict(String, Integer),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
       Ok(dict_string_int),
     ),
     #(
       dict_string_float,
-      Dict(String, Float),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Float))),
       Ok(dict_string_float),
     ),
     #(
       dict_string_bool,
-      Dict(String, Boolean),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Boolean))),
       Ok(dict_string_bool),
     ),
     // List types
-    #(list_string, List(String), Ok(list_string)),
-    #(list_int, List(Integer), Ok(list_int)),
-    #(list_bool, List(Boolean), Ok(list_bool)),
-    #(list_float, List(Float), Ok(list_float)),
+    #(list_string, CollectionType(List(PrimitiveType(String))), Ok(list_string)),
+    #(list_int, CollectionType(List(PrimitiveType(Integer))), Ok(list_int)),
+    #(list_bool, CollectionType(List(PrimitiveType(Boolean))), Ok(list_bool)),
+    #(list_float, CollectionType(List(PrimitiveType(Float))), Ok(list_float)),
     // Empty collections
-    #(empty_list, List(String), Ok(empty_list)),
+    #(empty_list, CollectionType(List(PrimitiveType(String))), Ok(empty_list)),
     #(
       empty_dict,
-      Dict(String, String),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       Ok(empty_dict),
     ),
     // Optional types with values
-    #(some_string, Modifier(Optional(String)), Ok(some_string)),
-    #(some_int, Modifier(Optional(Integer)), Ok(some_int)),
-    #(some_float, Modifier(Optional(Float)), Ok(some_float)),
-    #(some_bool, Modifier(Optional(Boolean)), Ok(some_bool)),
+    #(
+      some_string,
+      ModifierType(Optional(PrimitiveType(String))),
+      Ok(some_string),
+    ),
+    #(some_int, ModifierType(Optional(PrimitiveType(Integer))), Ok(some_int)),
+    #(some_float, ModifierType(Optional(PrimitiveType(Float))), Ok(some_float)),
+    #(some_bool, ModifierType(Optional(PrimitiveType(Boolean))), Ok(some_bool)),
     // Optional List types
     #(
       list_string,
-      Modifier(Optional(List(String))),
+      ModifierType(Optional(CollectionType(List(PrimitiveType(String))))),
       Ok(list_string),
     ),
     // Optional Dict types
     #(
       dict_string_string,
-      Modifier(Optional(Dict(String, String))),
+      ModifierType(
+        Optional(
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+        ),
+      ),
       Ok(dict_string_string),
     ),
     // Defaulted types with values
     #(
       some_string,
-      Modifier(Defaulted(String, "default")),
+      ModifierType(Defaulted(PrimitiveType(String), "default")),
       Ok(some_string),
     ),
-    #(some_int, Modifier(Defaulted(Integer, "0")), Ok(some_int)),
-    #(some_float, Modifier(Defaulted(Float, "0.0")), Ok(some_float)),
-    #(some_bool, Modifier(Defaulted(Boolean, "False")), Ok(some_bool)),
-    // Defaulted List types
     #(
-      list_string,
-      Modifier(Defaulted(List(String), "")),
-      Ok(list_string),
+      some_int,
+      ModifierType(Defaulted(PrimitiveType(Integer), "0")),
+      Ok(some_int),
     ),
-    // Defaulted Dict types
     #(
-      dict_string_string,
-      Modifier(Defaulted(Dict(String, String), "")),
-      Ok(dict_string_string),
+      some_float,
+      ModifierType(Defaulted(PrimitiveType(Float), "0.0")),
+      Ok(some_float),
+    ),
+    #(
+      some_bool,
+      ModifierType(Defaulted(PrimitiveType(Boolean), "False")),
+      Ok(some_bool),
     ),
     // Nested types
     #(
       dynamic.list([list_string, list_string]),
-      List(List(String)),
+      CollectionType(List(CollectionType(List(PrimitiveType(String))))),
       Ok(dynamic.list([list_string, list_string])),
     ),
     #(
       dynamic.properties([#(some_string, dict_string_int)]),
-      Dict(String, Dict(String, Integer)),
+      CollectionType(
+        Dict(
+          PrimitiveType(String),
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
+        ),
+      ),
       Ok(dynamic.properties([#(some_string, dict_string_int)])),
     ),
     #(
       dynamic.list([dict_string_string]),
-      List(Dict(String, String)),
+      CollectionType(
+        List(CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+      ),
       Ok(dynamic.list([dict_string_string])),
     ),
   ]
@@ -176,75 +190,75 @@ pub fn validate_value_type_test() {
     // Basic types
     #(
       some_string,
-      Boolean,
+      PrimitiveType(Boolean),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      Integer,
+      PrimitiveType(Integer),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      Float,
+      PrimitiveType(Float),
       json_error("expected (Float) received (String) for (some_key)"),
     ),
     #(
       some_bool,
-      String,
+      PrimitiveType(String),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Dict types
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Dict(String, String),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Dict(String, Integer),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Dict(String, Float),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Float))),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
-      Dict(String, Boolean),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(Boolean))),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     // List types
     #(
       dynamic.list([some_string, some_bool]),
-      List(String),
+      CollectionType(List(PrimitiveType(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
-      List(Integer),
+      CollectionType(List(PrimitiveType(Integer))),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([some_bool, some_string]),
-      List(Boolean),
+      CollectionType(List(PrimitiveType(Boolean))),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
-      List(Float),
+      CollectionType(List(PrimitiveType(Float))),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     // Wrong structure types
     #(
       some_string,
-      List(String),
+      CollectionType(List(PrimitiveType(String))),
       json_error("expected (List) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      Dict(String, String),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       json_error("expected (Dict) received (String) for (some_key)"),
     ),
     // Multi-entry collection with one bad value
@@ -253,75 +267,76 @@ pub fn validate_value_type_test() {
         #(some_string, other_string),
         #(dynamic.string("key2"), some_bool),
       ]),
-      Dict(String, String),
+      CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // List with first element wrong
     #(
       dynamic.list([some_bool, some_string]),
-      List(String),
+      CollectionType(List(PrimitiveType(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional types with wrong inner type
     #(
       some_bool,
-      Modifier(Optional(String)),
+      ModifierType(Optional(PrimitiveType(String))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      Modifier(Optional(Integer)),
+      ModifierType(Optional(PrimitiveType(Integer))),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Optional List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      Modifier(Optional(List(String))),
+      ModifierType(Optional(CollectionType(List(PrimitiveType(String))))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional Dict with wrong value type
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      Modifier(Optional(Dict(String, String))),
+      ModifierType(
+        Optional(
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+        ),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Defaulted types with wrong inner type
     #(
       some_bool,
-      Modifier(Defaulted(String, "default")),
+      ModifierType(Defaulted(PrimitiveType(String), "default")),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      Modifier(Defaulted(Integer, "0")),
+      ModifierType(Defaulted(PrimitiveType(Integer), "0")),
       json_error("expected (Int) received (String) for (some_key)"),
-    ),
-    // Defaulted List with wrong inner type
-    #(
-      dynamic.list([some_bool]),
-      Modifier(Defaulted(List(String), "")),
-      json_error("expected (String) received (Bool) for (some_key)"),
-    ),
-    // Defaulted Dict with wrong value type
-    #(
-      dynamic.properties([#(some_string, some_bool)]),
-      Modifier(Defaulted(Dict(String, String), "")),
-      json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Nested types with wrong inner type
     #(
       dynamic.list([dynamic.list([some_bool])]),
-      List(List(String)),
+      CollectionType(List(CollectionType(List(PrimitiveType(String))))),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
-      dynamic.properties([#(some_string, dynamic.properties([#(some_string, some_bool)]))]),
-      Dict(String, Dict(String, String)),
+      dynamic.properties([
+        #(some_string, dynamic.properties([#(some_string, some_bool)])),
+      ]),
+      CollectionType(
+        Dict(
+          PrimitiveType(String),
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+        ),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
-      List(Dict(String, String)),
+      CollectionType(
+        List(CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
   ]
@@ -354,7 +369,10 @@ pub fn inputs_validator_test() {
     #(dict.new(), dict.new()),
     // some inputs
     #(
-      dict.from_list([#("name", String), #("count", Integer)]),
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+      ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("count", dynamic.int(42)),
@@ -362,37 +380,41 @@ pub fn inputs_validator_test() {
     ),
     // optional param omitted - should pass
     #(
-      dict.from_list([#("maybe_name", Modifier(Optional(String)))]),
+      dict.from_list([#("maybe_name", ModifierType(Optional(PrimitiveType(String))))]),
       dict.from_list([]),
     ),
     // optional param provided - should pass
     #(
-      dict.from_list([#("maybe_name", Modifier(Optional(String)))]),
+      dict.from_list([#("maybe_name", ModifierType(Optional(PrimitiveType(String))))]),
       dict.from_list([#("maybe_name", dynamic.string("foo"))]),
     ),
     // mix of required and optional, optional omitted - should pass
     #(
       dict.from_list([
-        #("name", String),
-        #("maybe_count", Modifier(Optional(Integer))),
+        #("name", PrimitiveType(String)),
+        #("maybe_count", ModifierType(Optional(PrimitiveType(Integer)))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
     // defaulted param omitted - should pass
     #(
-      dict.from_list([#("count", Modifier(Defaulted(Integer, "10")))]),
+      dict.from_list([
+        #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
+      ]),
       dict.from_list([]),
     ),
     // defaulted param provided - should pass
     #(
-      dict.from_list([#("count", Modifier(Defaulted(Integer, "10")))]),
+      dict.from_list([
+        #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
+      ]),
       dict.from_list([#("count", dynamic.int(42))]),
     ),
     // mix of required and defaulted, defaulted omitted - should pass
     #(
       dict.from_list([
-        #("name", String),
-        #("count", Modifier(Defaulted(Integer, "10"))),
+        #("name", PrimitiveType(String)),
+        #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
     ),
@@ -407,13 +429,16 @@ pub fn inputs_validator_test() {
   [
     // missing inputs for params (single)
     #(
-      dict.from_list([#("name", String), #("count", Integer)]),
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+      ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       Error("Missing keys in input: count"),
     ),
     // extra inputs
     #(
-      dict.from_list([#("name", String)]),
+      dict.from_list([#("name", PrimitiveType(String))]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
@@ -423,8 +448,8 @@ pub fn inputs_validator_test() {
     // missing and extra inputs
     #(
       dict.from_list([
-        #("name", String),
-        #("required", Boolean),
+        #("name", PrimitiveType(String)),
+        #("required", PrimitiveType(Boolean)),
       ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
@@ -434,15 +459,15 @@ pub fn inputs_validator_test() {
     ),
     // type validation error - single
     #(
-      dict.from_list([#("count", Integer)]),
+      dict.from_list([#("count", PrimitiveType(Integer))]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       Error("expected (Int) received (String) for (count)"),
     ),
     // missing required when optional param exists - should fail for required only
     #(
       dict.from_list([
-        #("name", String),
-        #("maybe_count", Modifier(Optional(Integer))),
+        #("name", PrimitiveType(String)),
+        #("maybe_count", ModifierType(Optional(PrimitiveType(Integer)))),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),
@@ -450,8 +475,8 @@ pub fn inputs_validator_test() {
     // missing required when defaulted param exists - should fail for required only
     #(
       dict.from_list([
-        #("name", String),
-        #("count", Modifier(Defaulted(Integer, "10"))),
+        #("name", PrimitiveType(String)),
+        #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([]),
       Error("Missing keys in input: name"),
@@ -466,16 +491,19 @@ pub fn inputs_validator_test() {
     // missing inputs for params (multiple)
     #(
       dict.from_list([
-        #("name", String),
-        #("count", Integer),
-        #("flag", Boolean),
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+        #("flag", PrimitiveType(Boolean)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       "Missing keys in input:",
     ),
     // type validation error - multiple
     #(
-      dict.from_list([#("count", Integer), #("flag", Boolean)]),
+      dict.from_list([
+        #("count", PrimitiveType(Integer)),
+        #("flag", PrimitiveType(Boolean)),
+      ]),
       dict.from_list([
         #("count", dynamic.string("not an int")),
         #("flag", dynamic.string("not a bool")),
@@ -548,7 +576,7 @@ pub fn validate_inputs_for_collection_test() {
     [
       #(
         dict.from_list([#("name", dynamic.string("foo"))]),
-        dict.from_list([#("name", String)]),
+        dict.from_list([#("name", PrimitiveType(String))]),
       ),
     ],
   ]
@@ -563,7 +591,7 @@ pub fn validate_inputs_for_collection_test() {
   let collection = [
     #(
       dict.from_list([#("count", dynamic.string("not an int"))]),
-      dict.from_list([#("count", Integer)]),
+      dict.from_list([#("count", PrimitiveType(Integer))]),
     ),
   ]
   validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {

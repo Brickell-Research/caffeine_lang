@@ -1,4 +1,4 @@
-import caffeine_lang/common/accepted_types.{Defaulted, Modifier, Optional}
+import caffeine_lang/common/accepted_types.{Defaulted, ModifierType, Optional}
 import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
 import caffeine_lang/common/helpers
@@ -135,7 +135,7 @@ pub fn build_ir(
           True -> Error(Nil)
           False ->
             case typ {
-              Modifier(Optional(_)) | Modifier(Defaulted(_, _)) ->
+              ModifierType(Optional(_)) | ModifierType(Defaulted(_, _)) ->
                 Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
               _ -> Error(Nil)
             }

@@ -2,13 +2,21 @@
 /// to allow for nested filters. This may be a bug in the future since it seems it may
 /// infinitely recurse.
 pub type AcceptedTypes {
+  PrimitiveType(PrimitiveTypes)
+  CollectionType(CollectionTypes)
+  ModifierType(ModifierTypes)
+}
+
+pub type PrimitiveTypes {
   Boolean
   Float
   Integer
   String
+}
+
+pub type CollectionTypes {
   Dict(AcceptedTypes, AcceptedTypes)
   List(AcceptedTypes)
-  Modifier(ModifierTypes)
 }
 
 // Modifier types are a special class of types that alter the value semantics of
@@ -23,19 +31,26 @@ pub type ModifierTypes {
 /// Converts an AcceptedTypes to its string representation.
 pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
   case accepted_type {
-    Boolean -> "Boolean"
-    Float -> "Float"
-    Integer -> "Integer"
-    String -> "String"
-    Dict(key_type, value_type) ->
-      "Dict("
-      <> accepted_type_to_string(key_type)
-      <> ", "
-      <> accepted_type_to_string(value_type)
-      <> ")"
-    List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
-    Modifier(modifier_type) ->
-      case modifier_type {
+    PrimitiveType(primitive) ->
+      case primitive {
+        Boolean -> "Boolean"
+        Float -> "Float"
+        Integer -> "Integer"
+        String -> "String"
+      }
+    CollectionType(collection) ->
+      case collection {
+        Dict(key_type, value_type) ->
+          "Dict("
+          <> accepted_type_to_string(key_type)
+          <> ", "
+          <> accepted_type_to_string(value_type)
+          <> ")"
+        List(inner_type) ->
+          "List(" <> accepted_type_to_string(inner_type) <> ")"
+      }
+    ModifierType(modifier) ->
+      case modifier {
         Optional(inner_type) ->
           "Optional(" <> accepted_type_to_string(inner_type) <> ")"
         Defaulted(inner_type, default_val) ->

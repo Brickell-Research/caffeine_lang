@@ -1,4 +1,6 @@
-import caffeine_lang/common/accepted_types.{Dict, Float, Integer, String}
+import caffeine_lang/common/accepted_types.{
+  CollectionType, Dict, Float, Integer, PrimitiveType, String,
+}
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
@@ -107,18 +109,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.9),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              Dict(String, String),
+              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -153,18 +159,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.9),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              Dict(String, String),
+              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -199,18 +209,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.9),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              Dict(String, String),
+              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -239,18 +253,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.5)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.5),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(7),
             ),
             helpers.ValueTuple(
               "queries",
-              Dict(String, String),
+              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -285,23 +303,27 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.9),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "value",
-              String,
+              PrimitiveType(String),
               dynamic.string("(good + partial) / total"),
             ),
             helpers.ValueTuple(
               "queries",
-              Dict(String, String),
+              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
               dynamic.properties([
                 #(
                   dynamic.string("good"),
@@ -340,18 +362,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              String,
+              PrimitiveType(String),
               dynamic.string(constants.vendor_datadog),
             ),
-            helpers.ValueTuple("threshold", Float, dynamic.float(99.9)),
+            helpers.ValueTuple(
+              "threshold",
+              PrimitiveType(Float),
+              dynamic.float(99.9),
+            ),
             helpers.ValueTuple(
               "window_in_days",
-              Integer,
+              PrimitiveType(Integer),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "value",
-              String,
+              PrimitiveType(String),
               dynamic.string(
                 "time_slice(avg:system.cpu.user{env:production} > 99.5 per 300s)",
               ),
@@ -400,7 +426,7 @@ pub fn extract_string_test() {
       [
         helpers.ValueTuple(
           "vendor",
-          String,
+          PrimitiveType(String),
           dynamic.string(constants.vendor_datadog),
         ),
       ],
@@ -412,7 +438,7 @@ pub fn extract_string_test() {
       [
         helpers.ValueTuple(
           "vendor",
-          String,
+          PrimitiveType(String),
           dynamic.string(constants.vendor_datadog),
         ),
       ],
@@ -430,13 +456,13 @@ pub fn extract_float_test() {
   [
     // extracts Float ValueTuple
     #(
-      [helpers.ValueTuple("threshold", Float, dynamic.float(99.9))],
+      [helpers.ValueTuple("threshold", PrimitiveType(Float), dynamic.float(99.9))],
       "threshold",
       Ok(99.9),
     ),
     // returns Error for missing label
     #(
-      [helpers.ValueTuple("threshold", Float, dynamic.float(99.9))],
+      [helpers.ValueTuple("threshold", PrimitiveType(Float), dynamic.float(99.9))],
       "missing",
       Error(Nil),
     ),
@@ -451,13 +477,13 @@ pub fn extract_int_test() {
   [
     // extracts Integer ValueTuple
     #(
-      [helpers.ValueTuple("window_in_days", Integer, dynamic.int(30))],
+      [helpers.ValueTuple("window_in_days", PrimitiveType(Integer), dynamic.int(30))],
       "window_in_days",
       Ok(30),
     ),
     // returns Error for missing label
     #(
-      [helpers.ValueTuple("window_in_days", Integer, dynamic.int(30))],
+      [helpers.ValueTuple("window_in_days", PrimitiveType(Integer), dynamic.int(30))],
       "missing",
       Error(Nil),
     ),
@@ -475,7 +501,7 @@ pub fn extract_dict_string_string_test() {
       [
         helpers.ValueTuple(
           "queries",
-          Dict(String, String),
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
           dynamic.properties([
             #(dynamic.string("numerator"), dynamic.string("sum:good")),
             #(dynamic.string("denominator"), dynamic.string("sum:total")),
@@ -495,7 +521,7 @@ pub fn extract_dict_string_string_test() {
       [
         helpers.ValueTuple(
           "queries",
-          Dict(String, String),
+          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
           dynamic.properties([]),
         ),
       ],

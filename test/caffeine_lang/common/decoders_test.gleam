@@ -1,5 +1,6 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Defaulted, Dict, Float, Integer, List, Modifier, Optional, String,
+  Boolean, CollectionType, Defaulted, Dict, Float, Integer, List, ModifierType,
+  Optional, PrimitiveType, String,
 }
 import caffeine_lang/common/decoders
 import gleam/dynamic
@@ -9,8 +10,10 @@ import gleeunit/should
 import test_helpers
 
 // ==== Named Reference Decoder Tests ====
-// * ✅ happy path - name exists in collection
-// * ✅ sad path - name doesn't exist in collection
+// ==== Happy Path ====
+// * ✅ name exists in collection
+// ==== Sad Path ====
+// * ✅ name doesn't exist in collection
 pub fn named_reference_decoder_test() {
   let collection = [#("alice", 1), #("bob", 2)]
   let decoder = decoders.named_reference_decoder(collection, fn(x) { x.0 })
@@ -58,20 +61,26 @@ pub fn non_empty_string_decoder_happy_path_test() {
   |> should.equal(Error([decode.DecodeError("NonEmptyString", "Bool", [])]))
 }
 
-// ==== Accepted Type Tests ====
-// Arguably not needed, but anyway should be fine
+// ==== Accepted Types Decoder Tests ====
+// ==== Primitives ====
 // * ✅ Boolean
 // * ✅ Float
 // * ✅ Integer
 // * ✅ String
+// ==== Collections - Dict ====
 // * ✅ Dict(String, String)
 // * ✅ Dict(String, Integer)
 // * ✅ Dict(String, Float)
 // * ✅ Dict(String, Boolean)
+// * ✅ Dict(Integer, String)
+// * ✅ Dict(Float, String)
+// * ✅ Dict(Boolean, String)
+// ==== Collections - List ====
 // * ✅ List(String)
 // * ✅ List(Integer)
 // * ✅ List(Float)
 // * ✅ List(Boolean)
+// ==== Modifier Types - Optional ====
 // * ✅ Optional(String)
 // * ✅ Optional(Integer)
 // * ✅ Optional(Float)
@@ -84,76 +93,165 @@ pub fn non_empty_string_decoder_happy_path_test() {
 // * ✅ Optional(Dict(String, Integer))
 // * ✅ Optional(Dict(String, Float))
 // * ✅ Optional(Dict(String, Boolean))
+// ==== Modifier Types - Defaulted ====
 // * ✅ Defaulted(String, default_value)
 // * ✅ Defaulted(Integer, 10)
 // * ✅ Defaulted(Float, 3.14)
 // * ✅ Defaulted(Boolean, True)
-// * ✅ Defaulted(List(String), default)
-// * ✅ Defaulted(Dict(String, String), default)
-// * ✅ Unrecognized
-// * ✅ Invalid Defaulted(Integer, hello) - default doesn't match type
-// * ✅ Invalid Defaulted(Float, not_a_float) - default doesn't match type
-// * ✅ Invalid Defaulted(Boolean, maybe) - default doesn't match type
+// * ✅ Defaulted(Boolean, False)
+// ==== Invalid - Unrecognized ====
+// * ✅ UnknownType
+// * ✅ Empty string
+// * ✅ Whitespace only
+// ==== Invalid - Defaulted with mismatched default value ====
+// * ✅ Defaulted(Integer, hello)
+// * ✅ Defaulted(Float, not_a_float)
+// * ✅ Defaulted(Boolean, maybe)
+// ==== Invalid - Nested collections not allowed ====
+// * ✅ List(List(String)) - cannot have Lists in Lists
+// * ✅ List(Dict(String, String)) - cannot have Dicts in Lists
+// * ✅ Dict(String, List(String)) - cannot have List as Dict value
+// * ✅ Dict(String, Dict(String, String)) - cannot have Dict as Dict value
+// * ✅ Dict(List(String), String) - cannot have List as Dict key
+// * ✅ Dict(Dict(String, String), String) - cannot have Dict as Dict key
+// ==== Invalid - Nested modifiers not allowed ====
+// * ✅ Optional(Optional(String)) - cannot have Optional within Optional
+// * ✅ Optional(Defaulted(String, default)) - cannot have Defaulted within Optional
+// * ✅ Defaulted(Optional(String), default) - cannot have Optional within Defaulted
+// * ✅ Defaulted(Defaulted(String, inner), outer) - cannot have Defaulted within Defaulted
+// ==== Invalid - Defaulted only allows primitives ====
+// * ✅ Defaulted(List(String), default) - cannot have List in Defaulted
+// * ✅ Defaulted(Dict(String, String), default) - cannot have Dict in Defaulted
 pub fn accepted_types_decoder_test() {
   [
-    #("Boolean", Ok(Boolean)),
-    #("Float", Ok(Float)),
-    #("Integer", Ok(Integer)),
-    #("String", Ok(String)),
-    #("Dict(String, String)", Ok(Dict(String, String))),
-    #("Dict(String, Integer)", Ok(Dict(String, Integer))),
-    #("Dict(String, Float)", Ok(Dict(String, Float))),
-    #("Dict(String, Boolean)", Ok(Dict(String, Boolean))),
-    #("List(String)", Ok(List(String))),
-    #("List(Integer)", Ok(List(Integer))),
-    #("List(Float)", Ok(List(Float))),
-    #("List(Boolean)", Ok(List(Boolean))),
-    // Optional basic types
-    #("Optional(String)", Ok(Modifier(Optional(String)))),
-    #("Optional(Integer)", Ok(Modifier(Optional(Integer)))),
-    #("Optional(Float)", Ok(Modifier(Optional(Float)))),
-    #("Optional(Boolean)", Ok(Modifier(Optional(Boolean)))),
-    // Optional List types
-    #("Optional(List(String))", Ok(Modifier(Optional(List(String))))),
-    #("Optional(List(Integer))", Ok(Modifier(Optional(List(Integer))))),
-    #("Optional(List(Float))", Ok(Modifier(Optional(List(Float))))),
-    #("Optional(List(Boolean))", Ok(Modifier(Optional(List(Boolean))))),
-    // Optional Dict types
+    // ==== Primitives ====
+    #("Boolean", Ok(PrimitiveType(Boolean))),
+    #("Float", Ok(PrimitiveType(Float))),
+    #("Integer", Ok(PrimitiveType(Integer))),
+    #("String", Ok(PrimitiveType(String))),
+    // ==== Collections - Dict ====
+    #(
+      "Dict(String, String)",
+      Ok(CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+    ),
+    #(
+      "Dict(String, Integer)",
+      Ok(CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer)))),
+    ),
+    #(
+      "Dict(String, Float)",
+      Ok(CollectionType(Dict(PrimitiveType(String), PrimitiveType(Float)))),
+    ),
+    #(
+      "Dict(String, Boolean)",
+      Ok(CollectionType(Dict(PrimitiveType(String), PrimitiveType(Boolean)))),
+    ),
+    #(
+      "Dict(Integer, String)",
+      Ok(CollectionType(Dict(PrimitiveType(Integer), PrimitiveType(String)))),
+    ),
+    #(
+      "Dict(Float, String)",
+      Ok(CollectionType(Dict(PrimitiveType(Float), PrimitiveType(String)))),
+    ),
+    #(
+      "Dict(Boolean, String)",
+      Ok(CollectionType(Dict(PrimitiveType(Boolean), PrimitiveType(String)))),
+    ),
+    // ==== Collections - List ====
+    #("List(String)", Ok(CollectionType(List(PrimitiveType(String))))),
+    #("List(Integer)", Ok(CollectionType(List(PrimitiveType(Integer))))),
+    #("List(Float)", Ok(CollectionType(List(PrimitiveType(Float))))),
+    #("List(Boolean)", Ok(CollectionType(List(PrimitiveType(Boolean))))),
+    // ==== Modifier Types - Optional basic types ====
+    #("Optional(String)", Ok(ModifierType(Optional(PrimitiveType(String))))),
+    #("Optional(Integer)", Ok(ModifierType(Optional(PrimitiveType(Integer))))),
+    #("Optional(Float)", Ok(ModifierType(Optional(PrimitiveType(Float))))),
+    #("Optional(Boolean)", Ok(ModifierType(Optional(PrimitiveType(Boolean))))),
+    // ==== Modifier Types - Optional List types ====
+    #(
+      "Optional(List(String))",
+      Ok(ModifierType(Optional(CollectionType(List(PrimitiveType(String)))))),
+    ),
+    #(
+      "Optional(List(Integer))",
+      Ok(ModifierType(Optional(CollectionType(List(PrimitiveType(Integer)))))),
+    ),
+    #(
+      "Optional(List(Float))",
+      Ok(ModifierType(Optional(CollectionType(List(PrimitiveType(Float)))))),
+    ),
+    #(
+      "Optional(List(Boolean))",
+      Ok(ModifierType(Optional(CollectionType(List(PrimitiveType(Boolean)))))),
+    ),
+    // ==== Modifier Types - Optional Dict types ====
     #(
       "Optional(Dict(String, String))",
-      Ok(Modifier(Optional(Dict(String, String)))),
+      Ok(
+        ModifierType(
+          Optional(
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+          ),
+        ),
+      ),
     ),
     #(
       "Optional(Dict(String, Integer))",
-      Ok(Modifier(Optional(Dict(String, Integer)))),
+      Ok(
+        ModifierType(
+          Optional(
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
+          ),
+        ),
+      ),
     ),
     #(
       "Optional(Dict(String, Float))",
-      Ok(Modifier(Optional(Dict(String, Float)))),
+      Ok(
+        ModifierType(
+          Optional(
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(Float))),
+          ),
+        ),
+      ),
     ),
     #(
       "Optional(Dict(String, Boolean))",
-      Ok(Modifier(Optional(Dict(String, Boolean)))),
+      Ok(
+        ModifierType(
+          Optional(
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(Boolean))),
+          ),
+        ),
+      ),
     ),
-    // Defaulted basic types with default values
+    // ==== Modifier Types - Defaulted basic types ====
     #(
       "Defaulted(String, default_value)",
-      Ok(Modifier(Defaulted(String, "default_value"))),
-    ),
-    #("Defaulted(Integer, 10)", Ok(Modifier(Defaulted(Integer, "10")))),
-    #("Defaulted(Float, 3.14)", Ok(Modifier(Defaulted(Float, "3.14")))),
-    #("Defaulted(Boolean, True)", Ok(Modifier(Defaulted(Boolean, "True")))),
-    // Defaulted nested types
-    #(
-      "Defaulted(List(String), default)",
-      Ok(Modifier(Defaulted(List(String), "default"))),
+      Ok(ModifierType(Defaulted(PrimitiveType(String), "default_value"))),
     ),
     #(
-      "Defaulted(Dict(String, String), default)",
-      Ok(Modifier(Defaulted(Dict(String, String), "default"))),
+      "Defaulted(Integer, 10)",
+      Ok(ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
     ),
+    #(
+      "Defaulted(Float, 3.14)",
+      Ok(ModifierType(Defaulted(PrimitiveType(Float), "3.14"))),
+    ),
+    #(
+      "Defaulted(Boolean, True)",
+      Ok(ModifierType(Defaulted(PrimitiveType(Boolean), "True"))),
+    ),
+    #(
+      "Defaulted(Boolean, False)",
+      Ok(ModifierType(Defaulted(PrimitiveType(Boolean), "False"))),
+    ),
+    // ==== Invalid - Unrecognized ====
     #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
-    // Invalid Defaulted types - default value doesn't match inner type
+    #("", Error([decode.DecodeError("AcceptedType", "String", [])])),
+    #("   ", Error([decode.DecodeError("AcceptedType", "String", [])])),
+    // ==== Invalid - Defaulted with mismatched default value ====
     #(
       "Defaulted(Integer, hello)",
       Error([decode.DecodeError("AcceptedType", "String", [])]),
@@ -164,6 +262,57 @@ pub fn accepted_types_decoder_test() {
     ),
     #(
       "Defaulted(Boolean, maybe)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    // ==== Invalid - Nested collections not allowed ====
+    #(
+      "List(List(String))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "List(Dict(String, String))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Dict(String, List(String))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Dict(String, Dict(String, String))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Dict(List(String), String)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Dict(Dict(String, String), String)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    // ==== Invalid - Nested modifiers not allowed ====
+    #(
+      "Optional(Optional(String))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Optional(Defaulted(String, default))",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Defaulted(Optional(String), default)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Defaulted(Defaulted(String, inner), outer)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    // ==== Invalid - Defaulted only allows primitives ====
+    #(
+      "Defaulted(List(String), default)",
+      Error([decode.DecodeError("AcceptedType", "String", [])]),
+    ),
+    #(
+      "Defaulted(Dict(String, String), default)",
       Error([decode.DecodeError("AcceptedType", "String", [])]),
     ),
   ]

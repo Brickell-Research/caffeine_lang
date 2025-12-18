@@ -1,5 +1,5 @@
 import caffeine_lang/common/accepted_types.{
-  Boolean, Dict, Float, Integer, List, String,
+  Boolean, CollectionType, Dict, Float, Integer, List, PrimitiveType, String,
 }
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/parser/artifacts
@@ -40,12 +40,12 @@ pub fn parse_from_file_happy_path_test() {
         name: "SLO",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("threshold", Float),
-          #("window_in_days", Integer),
+          #("threshold", PrimitiveType(Float)),
+          #("window_in_days", PrimitiveType(Integer)),
         ]),
         required_params: dict.from_list([
-          #("queries", Dict(String, String)),
-          #("value", String),
+          #("queries", CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+          #("value", PrimitiveType(String)),
         ]),
       ),
     ]),
@@ -59,22 +59,22 @@ pub fn parse_from_file_happy_path_test() {
         name: "SLO",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("threshold", Float),
-          #("window_in_days", Integer),
+          #("threshold", PrimitiveType(Float)),
+          #("window_in_days", PrimitiveType(Integer)),
         ]),
         required_params: dict.from_list([
-          #("queries", Dict(String, String)),
-          #("value", String),
+          #("queries", CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+          #("value", PrimitiveType(String)),
         ]),
       ),
       artifacts.Artifact(
         name: "Dependency",
         version: semver_0_0_1(),
         inherited_params: dict.from_list([
-          #("relationship", List(String)),
+          #("relationship", CollectionType(List(PrimitiveType(String)))),
         ]),
         required_params: dict.from_list([
-          #("isHard", Boolean),
+          #("isHard", PrimitiveType(Boolean)),
         ]),
       ),
     ]),
