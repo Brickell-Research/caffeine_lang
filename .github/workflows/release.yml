@@ -137,7 +137,22 @@ jobs:
         echo "Generated checksums:"
         cat caffeine-${VERSION}-checksums.sha256
 
+    - name: Check if release exists
+      id: check_release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG="${{ inputs.tag || github.ref_name }}"
+        if gh release view "$TAG" &>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release $TAG already exists - skipping"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release $TAG does not exist - will create"
+        fi
+
     - name: Create Release
+      if: steps.check_release.outputs.exists == 'false'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ inputs.tag || github.ref_name }}
@@ -149,6 +164,18 @@ jobs:
           dist/caffeine-${{ steps.version.outputs.version }}-macos-arm64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-windows-x64.zip
           dist/caffeine-${{ steps.version.outputs.version }}-checksums.sha256
+
+    - name: Publish to Hex
+      env:
+        HEXPM_API_KEY: ${{ secrets.HEX_RELEASE_KEY }}
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        echo "Publishing caffeine_lang v${VERSION} to Hex..."
+        if gleam publish --yes 2>&1; then
+          echo "Published to Hex successfully"
+        else
+          echo "Hex publish failed (version may already exist) - continuing"
+        fi
 
     - name: Update Homebrew formula
       env:
@@ -219,12 +246,15 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        # Commit and push
+        # Commit and push (only if there are changes)
         git add Formula/caffeine_lang.rb
-        git commit -m "Update caffeine_lang to ${VERSION}"
-        git push origin main
-
-        echo "Homebrew formula updated to version ${VERSION}"
+        if git diff --cached --quiet; then
+          echo "Homebrew formula already up to date"
+        else
+          git commit -m "Update caffeine_lang to ${VERSION}"
+          git push origin main
+          echo "Homebrew formula updated to version ${VERSION}"
+        fi
 
     - name: Build browser bundle
       run: |
@@ -258,9 +288,12 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        # Commit and push
+        # Commit and push (only if there are changes)
         git add static/js/caffeine-browser.js src/version.gleam docs/
-        git commit -m "Update Caffeine compiler to ${VERSION}"
-        git push origin main
-
-        echo "Website compiler updated to version ${VERSION}"
+        if git diff --cached --quiet; then
+          echo "Website already up to date"
+        else
+          git commit -m "Update Caffeine compiler to ${VERSION}"
+          git push origin main
+          echo "Website compiler updated to version ${VERSION}"
+        fi
