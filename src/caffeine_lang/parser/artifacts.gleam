@@ -31,21 +31,23 @@ pub type Semver {
 
 /// Parses the embedded standard library artifacts.
 pub fn parse_standard_library() -> Result(List(Artifact), CompilationError) {
-  internal_parse_from_string(artifacts.standard_library)
+  internal_parse_from_json_string(artifacts.standard_library)
 }
 
 /// Parses an artifact from an artifacts.json file.
-pub fn parse_from_file(file_path: String) -> Result(List(Artifact), CompilationError) {
+pub fn parse_from_json_file(
+  file_path: String,
+) -> Result(List(Artifact), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  internal_parse_from_string(json_string)
+  internal_parse_from_json_string(json_string)
 }
 
 /// The actual, common parsing logic.
-fn internal_parse_from_string(
+fn internal_parse_from_json_string(
   content: String,
 ) -> Result(List(Artifact), CompilationError) {
-  use artifacts <- result.try(case parse_from_string(content) {
+  use artifacts <- result.try(case parse_from_json_string(content) {
     Ok(artifacts) -> Ok(artifacts)
     Error(err) -> Error(errors.format_json_decode_error(err))
   })
@@ -96,7 +98,7 @@ fn semantic_version_decoder() -> decode.Decoder(Semver) {
   })
 }
 
-fn parse_from_string(
+fn parse_from_json_string(
   json_string: String,
 ) -> Result(List(Artifact), json.DecodeError) {
   let artifact_decoder = {

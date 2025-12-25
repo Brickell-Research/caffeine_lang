@@ -25,7 +25,7 @@ fn artifacts() -> List(Artifact) {
 }
 
 fn assert_error(file_name: String, error: CompilationError) {
-  blueprints.parse_from_file(path(file_name), artifacts())
+  blueprints.parse_from_json_file(path(file_name), artifacts())
   |> should.equal(Error(error))
 }
 
@@ -36,11 +36,11 @@ fn assert_error(file_name: String, error: CompilationError) {
 // * ✅ multiple blueprints
 pub fn parse_from_file_happy_path_test() {
   // none
-  blueprints.parse_from_file(path("happy_path_none"), artifacts())
+  blueprints.parse_from_json_file(path("happy_path_none"), artifacts())
   |> should.equal(Ok([]))
 
   // single
-  blueprints.parse_from_file(path("happy_path_single"), artifacts())
+  blueprints.parse_from_json_file(path("happy_path_single"), artifacts())
   |> should.equal(
     Ok([
       blueprints.Blueprint(
@@ -57,7 +57,7 @@ pub fn parse_from_file_happy_path_test() {
   )
 
   // multiple
-  blueprints.parse_from_file(path("happy_path_multiple"), artifacts())
+  blueprints.parse_from_json_file(path("happy_path_multiple"), artifacts())
   |> should.equal(
     Ok([
       blueprints.Blueprint(
@@ -216,7 +216,7 @@ pub fn parse_from_file_json_format_test() {
   // so we just check that they return a ParserJsonParserError
   ["json_invalid_syntax", "json_empty_file"]
   |> list.each(fn(file_name) {
-    let result = blueprints.parse_from_file(path(file_name), artifacts())
+    let result = blueprints.parse_from_json_file(path(file_name), artifacts())
     case result {
       Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
       _ -> should.fail()
@@ -236,7 +236,7 @@ pub fn parse_from_file_json_format_test() {
 // * ✅ empty params
 pub fn parse_from_file_edge_cases_happy_path_test() {
   // empty params - should merge with artifact params
-  blueprints.parse_from_file(path("happy_path_empty_params"), artifacts())
+  blueprints.parse_from_json_file(path("happy_path_empty_params"), artifacts())
   |> should.equal(
     Ok([
       blueprints.Blueprint(

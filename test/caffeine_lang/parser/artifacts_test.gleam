@@ -14,7 +14,7 @@ fn path(file_name: String) {
 }
 
 fn assert_error(file_name: String, error: CompilationError) {
-  artifacts.parse_from_file(path(file_name))
+  artifacts.parse_from_json_file(path(file_name))
   |> should.equal(Error(error))
 }
 
@@ -29,11 +29,11 @@ fn semver_0_0_1() {
 // * ✅ multiple artifacts
 pub fn parse_from_file_happy_path_test() {
   // none
-  artifacts.parse_from_file(path("happy_path_none"))
+  artifacts.parse_from_json_file(path("happy_path_none"))
   |> should.equal(Ok([]))
 
   // single
-  artifacts.parse_from_file(path("happy_path_single"))
+  artifacts.parse_from_json_file(path("happy_path_single"))
   |> should.equal(
     Ok([
       artifacts.Artifact(
@@ -52,7 +52,7 @@ pub fn parse_from_file_happy_path_test() {
   )
 
   // multiple
-  artifacts.parse_from_file(path("happy_path_multiple"))
+  artifacts.parse_from_json_file(path("happy_path_multiple"))
   |> should.equal(
     Ok([
       artifacts.Artifact(
@@ -235,7 +235,7 @@ pub fn parse_from_file_json_format_test() {
   // so we just check that they return a ParserJsonParserError
   ["json_invalid_syntax", "json_empty_file"]
   |> list.each(fn(file_name) {
-    let result = artifacts.parse_from_file(path(file_name))
+    let result = artifacts.parse_from_json_file(path(file_name))
     case result {
       Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
       _ -> should.fail()
@@ -256,7 +256,7 @@ pub fn parse_from_file_json_format_test() {
 // * ✅ version 0.0.0
 pub fn parse_from_file_edge_cases_happy_path_test() {
   // empty params
-  artifacts.parse_from_file(path("happy_path_empty_params"))
+  artifacts.parse_from_json_file(path("happy_path_empty_params"))
   |> should.equal(
     Ok([
       artifacts.Artifact(
@@ -269,7 +269,7 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
   )
 
   // version 0.0.0
-  artifacts.parse_from_file(path("happy_path_version_zero"))
+  artifacts.parse_from_json_file(path("happy_path_version_zero"))
   |> should.equal(
     Ok([
       artifacts.Artifact(

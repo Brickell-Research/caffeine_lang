@@ -22,18 +22,18 @@ pub type Blueprint {
 }
 
 /// Parse blueprints from a file.
-pub fn parse_from_file(
+pub fn parse_from_json_file(
   file_path: String,
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  parse_from_string(json_string, artifacts)
+  parse_from_json_string(json_string, artifacts)
 }
 
 /// Parse blueprints from a JSON string.
 /// This is public so it can be used by browser.gleam for in-browser compilation.
-pub fn parse_from_string(
+pub fn parse_from_json_string(
   json_string: String,
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), CompilationError) {

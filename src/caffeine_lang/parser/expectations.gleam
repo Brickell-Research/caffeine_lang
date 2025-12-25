@@ -25,20 +25,20 @@ pub type Expectation {
 }
 
 /// Parse expectations from a file, leveraging the given file path for metadata extraction.
-pub fn parse_from_file(
+pub fn parse_from_json_file(
   file_path: String,
   blueprints: List(Blueprint),
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   use json_string <- result.try(helpers.json_from_file(file_path))
 
-  parse_from_string(json_string, file_path, blueprints)
+  parse_from_json_string(json_string, file_path, blueprints)
 }
 
 /// Parse expectations from a JSON string with a given path for metadata extraction.
 /// This is public so it can be used by browser.gleam for in-browser compilation.
-/// Furthermore, internally we use this as the base from which parse_from_file also
+/// Furthermore, internally we use this as the base from which parse_from_json_file also
 /// uses to parse.
-pub fn parse_from_string(
+pub fn parse_from_json_string(
   json_string: String,
   file_path: String,
   blueprints: List(Blueprint),

@@ -62,7 +62,7 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
 }
 
 fn assert_error(file_name: String, error: CompilationError) {
-  expectations.parse_from_file(path(file_name), blueprints())
+  expectations.parse_from_json_file(path(file_name), blueprints())
   |> should.equal(Error(error))
 }
 
@@ -74,10 +74,10 @@ fn assert_error(file_name: String, error: CompilationError) {
 // * ✅ defaulted param not provided (should include in value_tuples with nil)
 pub fn parse_from_file_happy_path_test() {
   // none
-  expectations.parse_from_file(path("happy_path_none"), blueprints())
+  expectations.parse_from_json_file(path("happy_path_none"), blueprints())
   |> should.equal(Ok([]))
 
-  expectations.parse_from_file(path("happy_path_single"), blueprints())
+  expectations.parse_from_json_file(path("happy_path_single"), blueprints())
   |> should.equal(
     Ok([
       semantic_analyzer.IntermediateRepresentation(
@@ -104,7 +104,7 @@ pub fn parse_from_file_happy_path_test() {
   )
 
   // multiple - names are prefixed with "parser_happy_path_multiple"
-  expectations.parse_from_file(path("happy_path_multiple"), blueprints())
+  expectations.parse_from_json_file(path("happy_path_multiple"), blueprints())
   |> should.equal(
     Ok([
       semantic_analyzer.IntermediateRepresentation(
@@ -151,7 +151,7 @@ pub fn parse_from_file_happy_path_test() {
   )
 
   // defaulted param not provided - should still create value tuple with nil
-  expectations.parse_from_file(
+  expectations.parse_from_json_file(
     path("happy_path_defaulted_param"),
     blueprints_with_defaulted(),
   )
@@ -276,7 +276,7 @@ pub fn parse_from_file_semantic_test() {
 // ==== Overshadowing ====
 // * ✅ expectation inputs cannot overshadow blueprint inputs
 pub fn parse_from_file_overshadowing_test() {
-  expectations.parse_from_file(
+  expectations.parse_from_json_file(
     path("overshadowing_blueprint_input"),
     blueprints_with_inputs(),
   )
@@ -322,7 +322,7 @@ pub fn parse_from_file_json_format_test() {
   // so we just check that they return a ParserJsonParserError
   ["json_invalid_syntax", "json_empty_file"]
   |> list.each(fn(file_name) {
-    let result = expectations.parse_from_file(path(file_name), blueprints())
+    let result = expectations.parse_from_json_file(path(file_name), blueprints())
     case result {
       Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
       _ -> should.fail()

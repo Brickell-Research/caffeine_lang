@@ -24,7 +24,7 @@ pub fn link(
   expectations_directory: String,
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   use artifacts <- result_try(artifacts.parse_standard_library())
-  use blueprints <- result_try(blueprints.parse_from_file(blueprint_file_path, artifacts))
+  use blueprints <- result_try(blueprints.parse_from_json_file(blueprint_file_path, artifacts))
   use ir <- result_try(fetch_expectations(expectations_directory, blueprints))
 
   Ok(ir)
@@ -47,7 +47,7 @@ fn fetch_expectations(
     _ ->
       expectations_files
       |> list.map(fn(file_path) {
-        expectations.parse_from_file(file_path, blueprints)
+        expectations.parse_from_json_file(file_path, blueprints)
       })
       |> result.all()
       |> result.map(list.flatten)

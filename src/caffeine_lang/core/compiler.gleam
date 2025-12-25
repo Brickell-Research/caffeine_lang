@@ -255,10 +255,10 @@ fn parse_from_strings(
   use artifacts <- result.try(artifacts.parse_standard_library())
 
   use validated_blueprints <- result.try(
-    blueprints.parse_from_string(blueprints_json, artifacts),
+    blueprints.parse_from_json_string(blueprints_json, artifacts),
   )
 
-  expectations.parse_from_string(
+  expectations.parse_from_json_string(
     expectations_json,
     expectations_path,
     validated_blueprints,
