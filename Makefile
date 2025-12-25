@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix test build docs ci watch watch-cql watch-glaml-extended watch-all
+.PHONY: lint lint-fix test build docs ci watch watch-js watch-cql watch-glaml-extended watch-all
 
 # Check code formatting
 lint:
@@ -25,7 +25,11 @@ docs:
 
 # Watch for changes and run tests automatically (main project only)
 watch:
-	@./watch.sh 
+	@./watch.sh
+
+# Watch for changes and run tests with JavaScript target
+watch-js:
+	@./watch.sh --target=javascript
 
 # Generate a report of the codebase
 lines-of-code:
