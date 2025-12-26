@@ -17,7 +17,6 @@ fn artifacts() -> List(Artifact) {
   [
     artifacts.Artifact(
       name: "SLO",
-      version: artifacts.Semver(0, 0, 1),
       params: dict.from_list([
         #("threshold", PrimitiveType(Float)),
         #("value", PrimitiveType(String)),

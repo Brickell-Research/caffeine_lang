@@ -2,12 +2,10 @@
   "artifacts": [
     {
       "name": "SLO",
-      "version": "0.0.1",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     },
     {
       "name": "SLO",
-      "version": "0.0.1",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     }
   ]

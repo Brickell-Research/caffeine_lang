@@ -18,10 +18,6 @@ fn assert_error(file_name: String, error: CompilationError) {
   |> should.equal(Error(error))
 }
 
-fn semver_0_0_1() {
-  artifacts.Semver(0, 0, 1)
-}
-
 // ==== Tests - Artifacts ====
 // ==== Happy Path ====
 // * ✅ none
@@ -38,7 +34,6 @@ pub fn parse_from_file_happy_path_test() {
     Ok([
       artifacts.Artifact(
         name: "SLO",
-        version: semver_0_0_1(),
         params: dict.from_list([
           #("threshold", PrimitiveType(Float)),
           #("window_in_days", PrimitiveType(Integer)),
@@ -58,7 +53,6 @@ pub fn parse_from_file_happy_path_test() {
     Ok([
       artifacts.Artifact(
         name: "SLO",
-        version: semver_0_0_1(),
         params: dict.from_list([
           #("threshold", PrimitiveType(Float)),
           #("window_in_days", PrimitiveType(Integer)),
@@ -71,7 +65,6 @@ pub fn parse_from_file_happy_path_test() {
       ),
       artifacts.Artifact(
         name: "Dependency",
-        version: semver_0_0_1(),
         params: dict.from_list([
           #("relationship", CollectionType(List(PrimitiveType(String)))),
           #("isHard", PrimitiveType(Boolean)),
@@ -84,7 +77,6 @@ pub fn parse_from_file_happy_path_test() {
 // ==== Missing ====
 // * ✅ artifacts
 // * ✅ name
-// * ✅ version
 // * ✅ params
 // * ✅ multiple
 pub fn parse_from_file_missing_test() {
@@ -98,16 +90,12 @@ pub fn parse_from_file_missing_test() {
       "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.name)",
     ),
     #(
-      "missing_version",
-      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.version)",
-    ),
-    #(
       "missing_params",
       "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.params)",
     ),
     #(
       "missing_multiple",
-      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.version), expected (Field) received (Nothing) for (artifacts.0.params)",
+      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.name), expected (Field) received (Nothing) for (artifacts.0.params)",
     ),
   ]
   |> list.each(fn(pair) {
@@ -129,7 +117,6 @@ pub fn parse_from_file_duplicates_test() {
 // ==== Wrong Types ====
 // * ✅ artifacts
 // * ✅ name
-// * ✅ version
 // * ✅ params
 //   * ✅ params is a map
 //   * ✅ each param's value is an Accepted Type (made up, typo, illegal nesting)
@@ -143,10 +130,6 @@ pub fn parse_from_file_wrong_type_test() {
     #(
       "wrong_type_name",
       "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name)",
-    ),
-    #(
-      "wrong_type_version",
-      "Incorrect types: expected (Semver) received (List) for (artifacts.0.version)",
     ),
     #(
       "wrong_type_params_not_map",
@@ -166,32 +149,7 @@ pub fn parse_from_file_wrong_type_test() {
     ),
     #(
       "wrong_type_multiple",
-      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== Semantic ====
-// * ✅ version not semantic versioning
-//   * ✅ no dots
-//   * ✅ too many dots
-//   * ✅ non numbers with two dots
-pub fn parse_from_file_semver_test() {
-  [
-    #(
-      "semver_no_dots",
-      "Incorrect types: expected (Semver) received (String) for (artifacts.0.version)",
-    ),
-    #(
-      "semver_too_many_dots",
-      "Incorrect types: expected (Semver) received (String) for (artifacts.0.version)",
-    ),
-    #(
-      "semver_non_numbers",
-      "Incorrect types: expected (Semver) received (String) for (artifacts.0.version)",
+      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
   ]
   |> list.each(fn(pair) {
@@ -241,29 +199,12 @@ pub fn parse_from_file_json_format_test() {
 
 // ==== Edge Cases - Happy Path ====
 // * ✅ empty params
-// * ✅ version 0.0.0
 pub fn parse_from_file_edge_cases_happy_path_test() {
   // empty params
   artifacts.parse_from_json_file(path("happy_path_empty_params"))
   |> should.equal(
     Ok([
-      artifacts.Artifact(
-        name: "MinimalArtifact",
-        version: artifacts.Semver(0, 0, 1),
-        params: dict.new(),
-      ),
-    ]),
-  )
-
-  // version 0.0.0
-  artifacts.parse_from_json_file(path("happy_path_version_zero"))
-  |> should.equal(
-    Ok([
-      artifacts.Artifact(
-        name: "ZeroVersion",
-        version: artifacts.Semver(0, 0, 0),
-        params: dict.new(),
-      ),
+      artifacts.Artifact(name: "MinimalArtifact", params: dict.new()),
     ]),
   )
 }
@@ -287,67 +228,4 @@ pub fn parse_from_file_empty_name_test() {
 pub fn parse_standard_library_test() {
   artifacts.parse_standard_library()
   |> should.be_ok
-}
-
-// ==== parse_semver ====
-// ==== Happy Path ====
-// * ✅ standard semver (1.2.3)
-// * ✅ zero version (0.0.0)
-// * ✅ large numbers
-pub fn parse_semver_happy_path_test() {
-  [
-    #("1.2.3", Ok(artifacts.Semver(1, 2, 3))),
-    #("0.0.0", Ok(artifacts.Semver(0, 0, 0))),
-    #("999.999.999", Ok(artifacts.Semver(999, 999, 999))),
-  ]
-  |> list.each(fn(pair) {
-    artifacts.parse_semver(pair.0)
-    |> should.equal(pair.1)
-  })
-}
-
-// ==== Invalid ====
-// * ✅ wrong number of parts (no dots, one dot, too many dots)
-// * ✅ non-numeric parts
-// * ✅ empty/whitespace
-// * ✅ malformed dots (leading, trailing, consecutive)
-// * ✅ semver extensions (prerelease, build metadata)
-// * ✅ leading zeros
-// * ✅ negative numbers
-pub fn parse_semver_invalid_test() {
-  [
-    // Wrong number of parts
-    #("1", Error(Nil)),
-    #("1.2", Error(Nil)),
-    #("1.2.3.4", Error(Nil)),
-    // Non-numeric
-    #("a.b.c", Error(Nil)),
-    #("1.2.a", Error(Nil)),
-    #("v1.2.3", Error(Nil)),
-    // Empty/whitespace
-    #("", Error(Nil)),
-    #("   ", Error(Nil)),
-    // Malformed dots
-    #(".1.2.3", Error(Nil)),
-    #("1.2.3.", Error(Nil)),
-    #("1..3", Error(Nil)),
-    #("1.2.", Error(Nil)),
-    #("..", Error(Nil)),
-    // Semver extensions not supported
-    #("1.2.3-beta", Error(Nil)),
-    #("1.2.3+build", Error(Nil)),
-    // Leading zeros disallowed
-    #("01.2.3", Error(Nil)),
-    #("1.02.3", Error(Nil)),
-    #("1.2.03", Error(Nil)),
-    #("01.02.03", Error(Nil)),
-    // Negative numbers disallowed
-    #("-1.0.2", Error(Nil)),
-    #("0.-1.0", Error(Nil)),
-    #("0.0.-1", Error(Nil)),
-  ]
-  |> list.each(fn(pair) {
-    artifacts.parse_semver(pair.0)
-    |> should.equal(pair.1)
-  })
 }

@@ -2,12 +2,10 @@
   "artifacts": [
     {
       "name": "SLO",
-      "version": "0.0.1",
       "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
     },
     {
       "name": "Dependency",
-      "version": "0.0.1",
       "params": { "relationship": "List(String)", "isHard": "Boolean" }
     }
   ]

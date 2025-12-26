@@ -1,8 +1,0 @@
-{
-  "artifacts": [
-    {
-      "name": "SLO",
-      "params": { "threshold": "Float", "window_in_days": "Integer" }
-    }
-  ]
-}

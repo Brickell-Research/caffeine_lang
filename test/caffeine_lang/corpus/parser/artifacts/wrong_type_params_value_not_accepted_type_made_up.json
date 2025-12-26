@@ -2,7 +2,6 @@
   "artifacts": [
     {
       "name": "SLO",
-      "version": "0.0.1",
       "params": { "threshold": "LolNotAType", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
     }
   ]
