@@ -2,15 +2,11 @@ import caffeine_lang/common/accepted_types.{
   Defaulted, Float, ModifierType, PrimitiveType, String,
 }
 import caffeine_lang/common/constants
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers
-import caffeine_lang/middle_end/semantic_analyzer
+import caffeine_lang/common/errors
 import caffeine_lang/parser/blueprints.{type Blueprint}
 import caffeine_lang/parser/expectations
 import gleam/dict
 import gleam/dynamic
-import gleam/list
-import gleam/option
 import gleeunit/should
 import simplifile
 import test_helpers
@@ -61,255 +57,281 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
   ]
 }
 
-fn assert_error(file_name: String, error: CompilationError) {
-  expectations.parse_from_json_file(path(file_name), blueprints())
-  |> should.equal(Error(error))
-}
-
-// ==== Tests - Expectations ====
 // ==== Happy Path ====
-// * ✅ none
+// * ✅ empty expectations list
 // * ✅ single expectation
 // * ✅ multiple expectations
-// * ✅ defaulted param not provided (should include in value_tuples with nil)
-pub fn parse_from_file_happy_path_test() {
-  // none
+// * ✅ expectation with defaulted param in blueprint
+pub fn parse_from_json_file_happy_path_test() {
+  // empty expectations list
   expectations.parse_from_json_file(path("happy_path_none"), blueprints())
   |> should.equal(Ok([]))
 
-  expectations.parse_from_json_file(path("happy_path_single"), blueprints())
-  |> should.equal(
-    Ok([
-      semantic_analyzer.IntermediateRepresentation(
-        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-          friendly_label: "my_expectation",
-          org_name: "parser",
-          service_name: "happy_path_single",
-          blueprint_name: "success_rate",
-          team_name: "expectations",
-          misc: dict.new(),
-        ),
-        unique_identifier: "parser_happy_path_single_my_expectation",
-        artifact_ref: "SLO",
-        values: [
-          helpers.ValueTuple(
-            label: "percentile",
-            typ: PrimitiveType(Float),
-            value: dynamic.float(99.9),
-          ),
-        ],
-        vendor: option.None,
+  // single expectation - verify it parses and pairs with blueprint
+  let assert Ok(result) =
+    expectations.parse_from_json_file(path("happy_path_single"), blueprints())
+  result
+  |> should.equal([
+    #(
+      expectations.Expectation(
+        name: "my_expectation",
+        blueprint_ref: "success_rate",
+        inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
       ),
-    ]),
-  )
+      blueprints.Blueprint(
+        name: "success_rate",
+        artifact_ref: "SLO",
+        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+        inputs: dict.from_list([]),
+      ),
+    ),
+  ])
 
-  // multiple - names are prefixed with "parser_happy_path_multiple"
-  expectations.parse_from_json_file(path("happy_path_multiple"), blueprints())
-  |> should.equal(
-    Ok([
-      semantic_analyzer.IntermediateRepresentation(
-        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-          friendly_label: "my_expectation",
-          org_name: "parser",
-          service_name: "happy_path_multiple",
-          blueprint_name: "success_rate",
-          team_name: "expectations",
-          misc: dict.new(),
-        ),
-        unique_identifier: "parser_happy_path_multiple_my_expectation",
-        artifact_ref: "SLO",
-        values: [
-          helpers.ValueTuple(
-            label: "percentile",
-            typ: PrimitiveType(Float),
-            value: dynamic.float(99.9),
-          ),
-        ],
-        vendor: option.None,
+  // multiple expectations
+  let assert Ok(result) =
+    expectations.parse_from_json_file(path("happy_path_multiple"), blueprints())
+  result
+  |> should.equal([
+    #(
+      expectations.Expectation(
+        name: "my_expectation",
+        blueprint_ref: "success_rate",
+        inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
       ),
-      semantic_analyzer.IntermediateRepresentation(
-        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-          friendly_label: "another_expectation",
-          org_name: "parser",
-          service_name: "happy_path_multiple",
-          blueprint_name: "success_rate",
-          team_name: "expectations",
-          misc: dict.new(),
-        ),
-        unique_identifier: "parser_happy_path_multiple_another_expectation",
+      blueprints.Blueprint(
+        name: "success_rate",
         artifact_ref: "SLO",
-        values: [
-          helpers.ValueTuple(
-            label: "percentile",
-            typ: PrimitiveType(Float),
-            value: dynamic.float(95.0),
-          ),
-        ],
-        vendor: option.None,
+        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+        inputs: dict.from_list([]),
       ),
-    ]),
-  )
+    ),
+    #(
+      expectations.Expectation(
+        name: "another_expectation",
+        blueprint_ref: "success_rate",
+        inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
+      ),
+      blueprints.Blueprint(
+        name: "success_rate",
+        artifact_ref: "SLO",
+        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+        inputs: dict.from_list([]),
+      ),
+    ),
+  ])
 
-  // defaulted param not provided - should still create value tuple with nil
-  expectations.parse_from_json_file(
-    path("happy_path_defaulted_param"),
-    blueprints_with_defaulted(),
-  )
-  |> should.equal(
-    Ok([
-      semantic_analyzer.IntermediateRepresentation(
-        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-          friendly_label: "my_expectation_with_defaulted",
-          org_name: "parser",
-          service_name: "happy_path_defaulted_param",
-          blueprint_name: "success_rate_with_defaulted",
-          team_name: "expectations",
-          misc: dict.new(),
-        ),
-        unique_identifier: "parser_happy_path_defaulted_param_my_expectation_with_defaulted",
-        artifact_ref: "SLO",
-        values: [
-          helpers.ValueTuple(
-            label: "threshold",
-            typ: PrimitiveType(Float),
-            value: dynamic.float(99.9),
-          ),
-          helpers.ValueTuple(
-            label: "default_env",
-            typ: ModifierType(Defaulted(PrimitiveType(String), "production")),
-            value: dynamic.nil(),
-          ),
-        ],
-        vendor: option.None,
+  // expectation with defaulted param - input not provided is fine
+  let assert Ok(result) =
+    expectations.parse_from_json_file(
+      path("happy_path_defaulted_param"),
+      blueprints_with_defaulted(),
+    )
+  result
+  |> should.equal([
+    #(
+      expectations.Expectation(
+        name: "my_expectation_with_defaulted",
+        blueprint_ref: "success_rate_with_defaulted",
+        inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
       ),
-    ]),
-  )
+      blueprints.Blueprint(
+        name: "success_rate_with_defaulted",
+        artifact_ref: "SLO",
+        params: dict.from_list([
+          #("threshold", PrimitiveType(Float)),
+          #(
+            "default_env",
+            ModifierType(Defaulted(PrimitiveType(String), "production")),
+          ),
+        ]),
+        inputs: dict.from_list([]),
+      ),
+    ),
+  ])
 }
 
-// ==== Missing ====
-// * ✅ expectations
-// * ✅ name
-// * ✅ blueprint_ref
-// * ✅ inputs
-pub fn parse_from_file_missing_test() {
+// ==== Missing Fields ====
+// * ✅ missing expectations field
+// * ✅ missing name field
+// * ✅ missing blueprint_ref field
+// * ✅ missing inputs field
+pub fn parse_from_json_file_missing_fields_test() {
   [
     #(
       "missing_expectations",
-      "Incorrect types: expected (Field) received (Nothing) for (expectations)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations)",
+      )),
     ),
     #(
       "missing_name",
-      "Incorrect types: expected (Field) received (Nothing) for (expectations.0.name)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.name)",
+      )),
     ),
     #(
       "missing_blueprint_ref",
-      "Incorrect types: expected (Field) received (Nothing) for (expectations.0.blueprint_ref)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.blueprint_ref)",
+      )),
     ),
     #(
       "missing_inputs",
-      "Incorrect types: expected (Field) received (Nothing) for (expectations.0.inputs)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.inputs)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== Duplicates ====
-// * ✅ name (all expectations must be unique)
-pub fn parse_from_file_duplicates_test() {
-  [#("duplicate_name", "Duplicate expectation names: my_expectation")]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserDuplicateError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
   })
 }
 
 // ==== Wrong Types ====
-// * ✅ expectations
-// * ✅ name
-// * ✅ blueprint_ref
-// * ✅ inputs
-//   * ✅ inputs is not a map
-//   * ✅ input value type validation
-pub fn parse_from_file_wrong_type_test() {
+// * ✅ expectations is not a list
+// * ✅ name is not a string
+// * ✅ blueprint_ref is not a string
+// * ✅ inputs is not a map
+// * ✅ input value has wrong type
+pub fn parse_from_json_file_wrong_types_test() {
   [
     #(
       "wrong_type_expectations",
-      "Incorrect types: expected (List) received (String) for (expectations)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (List) received (String) for (expectations)",
+      )),
     ),
     #(
       "wrong_type_name",
-      "Incorrect types: expected (NonEmptyString) received (Int) for (expectations.0.name)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (expectations.0.name)",
+      )),
     ),
     #(
       "wrong_type_blueprint_ref",
-      "Incorrect types: expected (NamedReference) received (List) for (expectations.0.blueprint_ref)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (List) for (expectations.0.blueprint_ref)",
+      )),
     ),
     #(
       "wrong_type_inputs_not_a_map",
-      "Incorrect types: expected (Dict) received (String) for (expectations.0.inputs)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Dict) received (String) for (expectations.0.inputs)",
+      )),
     ),
     #(
       "wrong_type_input_value",
-      "Input validation errors: expected (Float) received (String) for (percentile)",
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: expected (Float) received (String) for (percentile)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
   })
 }
 
-// ==== Semantic ====
-// * ✅ blueprint_ref references an actual blueprint
-pub fn parse_from_file_semantic_test() {
+// ==== Duplicates ====
+// * ✅ duplicate expectation names within file
+pub fn parse_from_json_file_duplicates_test() {
+  [
+    #(
+      "duplicate_name",
+      Error(errors.ParserDuplicateError(
+        msg: "Duplicate expectation names: my_expectation",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
+  })
+}
+
+// ==== Empty Name ====
+// * ✅ empty string name is rejected
+pub fn parse_from_json_file_empty_name_test() {
+  [
+    #(
+      "empty_name",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NonEmptyString) received (String) for (expectations.0.name)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
+  })
+}
+
+// ==== Invalid Blueprint Reference ====
+// * ✅ blueprint_ref references non-existent blueprint
+pub fn parse_from_json_file_invalid_blueprint_ref_test() {
   [
     #(
       "semantic_blueprint_ref",
-      "Incorrect types: expected (NamedReference) received (String) for (expectations.0.blueprint_ref)",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (String) for (expectations.0.blueprint_ref)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
   })
 }
 
-// ==== Overshadowing ====
+// ==== Input Overshadowing ====
 // * ✅ expectation inputs cannot overshadow blueprint inputs
-pub fn parse_from_file_overshadowing_test() {
-  expectations.parse_from_json_file(
-    path("overshadowing_blueprint_input"),
-    blueprints_with_inputs(),
-  )
-  |> should.equal(
-    Error(errors.ParserDuplicateError(
-      msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
-    )),
-  )
+pub fn parse_from_json_file_overshadowing_test() {
+  [
+    #(
+      "overshadowing_blueprint_input",
+      Error(errors.ParserDuplicateError(
+        msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints_with_inputs())
+  })
 }
 
-// ==== Extract Path Prefix ====
-// ✅ happy path
-// ✅ sad path - however unlikely
-pub fn extract_path_prefix_test() {
+// ==== Input Validation ====
+// * ✅ missing required input
+// * ✅ extra input field not in params
+pub fn parse_from_json_file_input_validation_test() {
   [
-    #("org/team/service.json", #("org", "team", "service")),
-    #("org/team", #("unknown", "unknown", "unknown")),
+    #(
+      "input_missing_required",
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: Missing keys in input: percentile",
+      )),
+    ),
+    #(
+      "input_extra_field",
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: Extra keys in input: extra",
+      )),
+    ),
   ]
-  |> test_helpers.array_based_test_executor_1(expectations.extract_path_prefix)
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
+  })
 }
 
 // ==== File Errors ====
 // * ✅ file not found
-pub fn parse_from_file_file_errors_test() {
+pub fn parse_from_json_file_file_not_found_test() {
   [
     #(
       "nonexistent_file_that_does_not_exist",
-      simplifile.describe_error(simplifile.Enoent)
-        <> " (test/caffeine_lang/corpus/parser/expectations/nonexistent_file_that_does_not_exist.json)",
+      Error(errors.ParserFileReadError(
+        msg: simplifile.describe_error(simplifile.Enoent)
+          <> " (test/caffeine_lang/corpus/parser/expectations/nonexistent_file_that_does_not_exist.json)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserFileReadError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
   })
 }
 
@@ -317,56 +339,27 @@ pub fn parse_from_file_file_errors_test() {
 // * ✅ invalid JSON syntax
 // * ✅ empty file
 // * ✅ null value
-pub fn parse_from_file_json_format_test() {
+pub fn parse_from_json_file_json_format_errors_test() {
   // These produce different error messages on Erlang vs JavaScript targets,
   // so we just check that they return a ParserJsonParserError
-  ["json_invalid_syntax", "json_empty_file"]
-  |> list.each(fn(file_name) {
-    let result = expectations.parse_from_json_file(path(file_name), blueprints())
-    case result {
-      Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
-      _ -> should.fail()
+  [#("json_invalid_syntax", True), #("json_empty_file", True)]
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    case expectations.parse_from_json_file(path(file_name), blueprints()) {
+      Error(errors.ParserJsonParserError(msg: _)) -> True
+      _ -> False
     }
   })
 
-  // This one has a consistent error message across targets
-  assert_error(
-    "json_null",
-    errors.ParserJsonParserError(
-      msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
-    ),
-  )
-}
-
-// ==== Empty Name ====
-// * ✅ empty string name is rejected
-pub fn parse_from_file_empty_name_test() {
+  // null value has consistent error message
   [
     #(
-      "empty_name",
-      "Incorrect types: expected (NonEmptyString) received (String) for (expectations.0.name)",
+      "json_null",
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== Input Validation ====
-// * ✅ missing required input
-// * ✅ extra input field
-pub fn parse_from_file_input_validation_test() {
-  [
-    #(
-      "input_missing_required",
-      "Input validation errors: Missing keys in input: percentile",
-    ),
-    #(
-      "input_extra_field",
-      "Input validation errors: Extra keys in input: extra",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    expectations.parse_from_json_file(path(file_name), blueprints())
   })
 }

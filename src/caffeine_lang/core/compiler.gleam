@@ -2,6 +2,7 @@ import caffeine_lang/common/errors
 import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/generator/datadog
+import caffeine_lang/middle_end/ir_builder
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -258,9 +259,9 @@ fn parse_from_strings(
     blueprints.parse_from_json_string(blueprints_json, artifacts),
   )
 
-  expectations.parse_from_json_string(
-    expectations_json,
-    expectations_path,
-    validated_blueprints,
+  use expectations_blueprint_collection <- result.try(
+    expectations.parse_from_json_string(expectations_json, validated_blueprints),
   )
+
+  Ok(ir_builder.build_all([#(expectations_blueprint_collection, expectations_path)]))
 }
