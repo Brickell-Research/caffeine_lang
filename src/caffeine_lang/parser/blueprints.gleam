@@ -66,13 +66,12 @@ pub fn validate_blueprints(
   // validate exactly the right number of inputs and each input is the
   // correct type as per the param. A blueprint needs to specify inputs for
   // all required_params from the artifact.
-  use _ <- result.try(
-    validations.validate_inputs_for_collection(
-      blueprint_artifact_collection,
-      fn(blueprint) { blueprint.inputs },
-      fn(artifact) { artifact.required_params },
-    ),
-  )
+  use _ <- result.try(validations.validate_inputs_for_collection(
+    input_param_collections: blueprint_artifact_collection,
+    get_inputs: fn(blueprint) { blueprint.inputs },
+    get_params: fn(artifact) { artifact.params },
+    missing_inputs_ok: True,
+  ))
 
   // validate all names are unique
   use _ <- result.try(validations.validate_relevant_uniqueness(
@@ -90,7 +89,7 @@ pub fn validate_blueprints(
       case
         validations.check_collection_key_overshadowing(
           blueprint.params,
-          artifact.inherited_params,
+          artifact.params,
           "Blueprint overshadowing inherited_params from artifact: ",
         )
       {
@@ -117,8 +116,7 @@ pub fn validate_blueprints(
 
       // Merge all params: artifact.required_params + artifact.inherited_params + blueprint.params
       let all_params =
-        artifact.required_params
-        |> dict.merge(artifact.inherited_params)
+        artifact.params
         |> dict.merge(blueprint.params)
 
       Blueprint(..blueprint, params: all_params)

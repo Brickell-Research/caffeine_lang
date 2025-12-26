@@ -133,6 +133,7 @@ fn validate_value_type_helper(
 pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
   inputs inputs: Dict(String, Dynamic),
+  missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, String) {
   // Filter out optional and defaulted params - they're not required
   let required_params =
@@ -156,37 +157,50 @@ pub fn inputs_validator(
   let keys_only_in_inputs =
     set.difference(input_keys, param_keys) |> set.to_list
 
-  // see if we have the same inputs and params
-  use _ <- result.try(case missing_required_keys, keys_only_in_inputs {
-    [], [] -> Ok(True)
-    _, [] ->
-      Error(
-        "Missing keys in input: "
-        <> { missing_required_keys |> string.join(", ") },
-      )
-    [], _ ->
-      Error(
-        "Extra keys in input: " <> { keys_only_in_inputs |> string.join(", ") },
-      )
-    _, _ ->
-      Error(
-        "Extra keys in input: "
-        <> { keys_only_in_inputs |> string.join(", ") }
-        <> " and missing keys in input: "
-        <> { missing_required_keys |> string.join(", ") },
-      )
-  })
+  // see if we have the same inputs and params. Extra keys are always rejected;
+  // missing keys only rejected when missing_inputs_ok is False
+  use _ <- result.try(
+    case missing_required_keys, keys_only_in_inputs, missing_inputs_ok {
+      [], [], _ -> Ok(True)
+      _, [], True -> Ok(True)
+      _, [], False ->
+        Error(
+          "Missing keys in input: "
+          <> { missing_required_keys |> string.join(", ") },
+        )
+      [], _, _ ->
+        Error(
+          "Extra keys in input: "
+          <> { keys_only_in_inputs |> string.join(", ") },
+        )
+      _, _, True ->
+        Error(
+          "Extra keys in input: "
+          <> { keys_only_in_inputs |> string.join(", ") },
+        )
+      _, _, False ->
+        Error(
+          "Extra keys in input: "
+          <> { keys_only_in_inputs |> string.join(", ") }
+          <> " and missing keys in input: "
+          <> { missing_required_keys |> string.join(", ") },
+        )
+    },
+  )
 
   let type_validation_errors =
     inputs
     |> dict.to_list
     |> list.filter_map(fn(pair) {
       let #(key, value) = pair
-      let assert Ok(expected_type) = params |> dict.get(key)
-
-      case validate_value_type(value, expected_type, key) {
-        Ok(_) -> Error(Nil)
-        Error(errs) -> Ok(errs)
+      // only validate types for keys that exist in params (extra keys handled above)
+      case params |> dict.get(key) {
+        Error(Nil) -> Error(Nil)
+        Ok(expected_type) ->
+          case validate_value_type(value, expected_type, key) {
+            Ok(_) -> Error(Nil)
+            Error(errs) -> Ok(errs)
+          }
       }
     })
     |> list.map(fn(err) { err.msg })
@@ -226,9 +240,10 @@ pub fn validate_relevant_uniqueness(
 /// Validates inputs against params for a collection of paired items.
 /// Aggregates all validation errors across the collection into a single result.
 pub fn validate_inputs_for_collection(
-  input_param_collections: List(#(a, b)),
-  get_inputs: fn(a) -> Dict(String, Dynamic),
-  get_params: fn(b) -> Dict(String, AcceptedTypes),
+  input_param_collections input_param_collections: List(#(a, b)),
+  get_inputs get_inputs: fn(a) -> Dict(String, Dynamic),
+  get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
+  missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, CompilationError) {
   let errors =
     input_param_collections
@@ -238,6 +253,7 @@ pub fn validate_inputs_for_collection(
         inputs_validator(
           params: get_params(param_collection),
           inputs: get_inputs(input_collection),
+          missing_inputs_ok: missing_inputs_ok,
         )
       {
         Ok(_) -> Error(Nil)

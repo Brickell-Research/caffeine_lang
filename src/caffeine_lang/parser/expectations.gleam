@@ -67,17 +67,16 @@ fn validate_expectations(
   ))
 
   // validate that expectation.inputs provides params NOT already provided by blueprint.inputs
-  use _ <- result.try(
-    validations.validate_inputs_for_collection(
-      expectations_blueprint_collection,
-      fn(expectation) { expectation.inputs },
-      fn(blueprint) {
-        let blueprint_input_keys = blueprint.inputs |> dict.keys
-        blueprint.params
-        |> dict.filter(fn(key, _) { !list.contains(blueprint_input_keys, key) })
-      },
-    ),
-  )
+  use _ <- result.try(validations.validate_inputs_for_collection(
+    input_param_collections: expectations_blueprint_collection,
+    get_inputs: fn(expectation) { expectation.inputs },
+    get_params: fn(blueprint) {
+      let blueprint_input_keys = blueprint.inputs |> dict.keys
+      blueprint.params
+      |> dict.filter(fn(key, _) { !list.contains(blueprint_input_keys, key) })
+    },
+    missing_inputs_ok: False,
+  ))
 
   // validate unique names within a file
   use _ <- result.try(validations.validate_relevant_uniqueness(

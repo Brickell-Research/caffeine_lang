@@ -7,8 +7,8 @@
     },
     {
       "name": "Dependency",
-      "version": "0.0.1",
-      "params": { "relationship": "List(String)", "isHard": "Boolean" }
+      "version": "0.2.1",
+      "params": 11.1
     }
   ]
 }

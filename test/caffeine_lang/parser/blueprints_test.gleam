@@ -18,8 +18,10 @@ fn artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       version: artifacts.Semver(0, 0, 1),
-      inherited_params: dict.from_list([#("threshold", PrimitiveType(Float))]),
-      required_params: dict.from_list([#("value", PrimitiveType(String))]),
+      params: dict.from_list([
+        #("threshold", PrimitiveType(Float)),
+        #("value", PrimitiveType(String)),
+      ]),
     ),
   ]
 }
@@ -34,6 +36,7 @@ fn assert_error(file_name: String, error: CompilationError) {
 // * ✅ none
 // * ✅ single blueprint
 // * ✅ multiple blueprints
+// * ✅ blueprint with no inputs (partial inputs allowed)
 pub fn parse_from_file_happy_path_test() {
   // none
   blueprints.parse_from_json_file(path("happy_path_none"), artifacts())
@@ -81,6 +84,10 @@ pub fn parse_from_file_happy_path_test() {
       ),
     ]),
   )
+
+  // no inputs - now allowed since blueprints can provide partial inputs
+  blueprints.parse_from_json_file(path("input_missing_required"), artifacts())
+  |> should.be_ok
 }
 
 // ==== Missing ====
@@ -114,7 +121,7 @@ pub fn parse_from_file_missing_test() {
 
 // ==== Duplicates ====
 // * ✅ name (all blueprints must be unique)
-// * ✅ cannot overshadow inherited_params with params
+// * ✅ cannot overshadow artifact params with blueprint params
 pub fn parse_from_file_duplicates_test() {
   [
     #("duplicate_name", "Duplicate blueprint names: success_rate"),
@@ -267,14 +274,9 @@ pub fn parse_from_file_empty_name_test() {
 }
 
 // ==== Input Validation ====
-// * ✅ missing required input
-// * ✅ extra input field
+// * ✅ extra input field (still an error - can't provide inputs not in params)
 pub fn parse_from_file_input_validation_test() {
   [
-    #(
-      "input_missing_required",
-      "Input validation errors: Missing keys in input: value",
-    ),
     #(
       "input_extra_field",
       "Input validation errors: Extra keys in input: extra",

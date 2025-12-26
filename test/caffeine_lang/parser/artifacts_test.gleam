@@ -39,12 +39,13 @@ pub fn parse_from_file_happy_path_test() {
       artifacts.Artifact(
         name: "SLO",
         version: semver_0_0_1(),
-        inherited_params: dict.from_list([
+        params: dict.from_list([
           #("threshold", PrimitiveType(Float)),
           #("window_in_days", PrimitiveType(Integer)),
-        ]),
-        required_params: dict.from_list([
-          #("queries", CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+          #(
+            "queries",
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+          ),
           #("value", PrimitiveType(String)),
         ]),
       ),
@@ -58,22 +59,21 @@ pub fn parse_from_file_happy_path_test() {
       artifacts.Artifact(
         name: "SLO",
         version: semver_0_0_1(),
-        inherited_params: dict.from_list([
+        params: dict.from_list([
           #("threshold", PrimitiveType(Float)),
           #("window_in_days", PrimitiveType(Integer)),
-        ]),
-        required_params: dict.from_list([
-          #("queries", CollectionType(Dict(PrimitiveType(String), PrimitiveType(String)))),
+          #(
+            "queries",
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+          ),
           #("value", PrimitiveType(String)),
         ]),
       ),
       artifacts.Artifact(
         name: "Dependency",
         version: semver_0_0_1(),
-        inherited_params: dict.from_list([
+        params: dict.from_list([
           #("relationship", CollectionType(List(PrimitiveType(String)))),
-        ]),
-        required_params: dict.from_list([
           #("isHard", PrimitiveType(Boolean)),
         ]),
       ),
@@ -85,8 +85,7 @@ pub fn parse_from_file_happy_path_test() {
 // * ✅ artifacts
 // * ✅ name
 // * ✅ version
-// * ✅ inherited_params
-// * ✅ required_params
+// * ✅ params
 // * ✅ multiple
 pub fn parse_from_file_missing_test() {
   [
@@ -103,16 +102,12 @@ pub fn parse_from_file_missing_test() {
       "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.version)",
     ),
     #(
-      "missing_inherited_params",
-      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.inherited_params)",
-    ),
-    #(
-      "missing_required_params",
-      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.required_params)",
+      "missing_params",
+      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.params)",
     ),
     #(
       "missing_multiple",
-      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.version), expected (Field) received (Nothing) for (artifacts.0.inherited_params), expected (Field) received (Nothing) for (artifacts.0.required_params)",
+      "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.version), expected (Field) received (Nothing) for (artifacts.0.params)",
     ),
   ]
   |> list.each(fn(pair) {
@@ -135,12 +130,9 @@ pub fn parse_from_file_duplicates_test() {
 // * ✅ artifacts
 // * ✅ name
 // * ✅ version
-// * ✅ inherited_params
-//  * ✅ inherited_params is a map
-//  * ✅ each inherited_param's value is an Accepted Type
-// * ✅ required_params
-//  * ✅ required_params is a map
-//  * ✅ each required_param's value is an Accepted Type
+// * ✅ params
+//   * ✅ params is a map
+//   * ✅ each param's value is an Accepted Type (made up, typo, illegal nesting)
 // * ✅ multiple
 pub fn parse_from_file_wrong_type_test() {
   [
@@ -157,28 +149,24 @@ pub fn parse_from_file_wrong_type_test() {
       "Incorrect types: expected (Semver) received (List) for (artifacts.0.version)",
     ),
     #(
-      "wrong_type_inherited_params_not_map",
-      "Incorrect types: expected (Dict) received (Float) for (artifacts.1.inherited_params)",
+      "wrong_type_params_not_map",
+      "Incorrect types: expected (Dict) received (Float) for (artifacts.1.params)",
     ),
     #(
-      "wrong_type_inherited_params_value_not_accepted_type_made_up",
-      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.inherited_params.values)",
+      "wrong_type_params_value_not_accepted_type_made_up",
+      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
     #(
-      "wrong_type_inherited_params_value_not_accepted_type_typo",
-      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.inherited_params.values)",
+      "wrong_type_params_value_not_accepted_type_typo",
+      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
     #(
-      "wrong_type_required_params_not_map",
-      "Incorrect types: expected (Dict) received (String) for (artifacts.0.required_params)",
-    ),
-    #(
-      "wrong_type_required_params_value_not_accepted_type_illegal",
-      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.required_params.values)",
+      "wrong_type_params_value_not_accepted_type_illegal",
+      "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
     #(
       "wrong_type_multiple",
-      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.required_params.values)",
+      "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (Semver) received (Int) for (artifacts.0.version), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
     ),
   ]
   |> list.each(fn(pair) {
@@ -252,7 +240,7 @@ pub fn parse_from_file_json_format_test() {
 }
 
 // ==== Edge Cases - Happy Path ====
-// * ✅ empty inherited_params and required_params
+// * ✅ empty params
 // * ✅ version 0.0.0
 pub fn parse_from_file_edge_cases_happy_path_test() {
   // empty params
@@ -262,8 +250,7 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
       artifacts.Artifact(
         name: "MinimalArtifact",
         version: artifacts.Semver(0, 0, 1),
-        inherited_params: dict.new(),
-        required_params: dict.new(),
+        params: dict.new(),
       ),
     ]),
   )
@@ -275,8 +262,7 @@ pub fn parse_from_file_edge_cases_happy_path_test() {
       artifacts.Artifact(
         name: "ZeroVersion",
         version: artifacts.Semver(0, 0, 0),
-        inherited_params: dict.new(),
-        required_params: dict.new(),
+        params: dict.new(),
       ),
     ]),
   )

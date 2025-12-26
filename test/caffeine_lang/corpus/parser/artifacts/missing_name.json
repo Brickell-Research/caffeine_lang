@@ -2,8 +2,7 @@
   "artifacts": [
     {
       "version": "0.0.1",
-      "inherited_params": { "threshold": "Float", "window_in_days": "Integer" },
-      "required_params": { "queries": "String", "value": "String" }
+      "params": { "threshold": "Float", "window_in_days": "Integer" }
     }
   ]
 }

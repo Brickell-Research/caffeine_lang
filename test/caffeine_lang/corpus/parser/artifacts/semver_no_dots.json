@@ -3,8 +3,7 @@
     {
       "name": "SLO",
       "version": "001",
-      "inherited_params": { "threshold": "Float", "window_in_days": "Integer" },
-      "required_params": { "queries": "Dict(String, String)", "value": "String" }
+      "params": { "threshold": "Float", "window_in_days": "Integer" }
     }
   ]
 }

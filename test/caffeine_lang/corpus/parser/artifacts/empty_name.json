@@ -3,8 +3,7 @@
     {
       "name": "",
       "version": "0.0.1",
-      "inherited_params": {},
-      "required_params": {}
+      "params": {}
     }
   ]
 }

@@ -3,8 +3,7 @@
     {
       "name": "ZeroVersion",
       "version": "0.0.0",
-      "inherited_params": {},
-      "required_params": {}
+      "params": {}
     }
   ]
 }

@@ -346,6 +346,7 @@ pub fn validate_value_type_test() {
 }
 
 // ==== Inputs Validator ====
+// missing_inputs_ok: False
 // * ✅ happy path - no inputs
 // * ✅ happy path - some inputs
 // * ✅ happy path - optional param omitted
@@ -355,18 +356,22 @@ pub fn validate_value_type_test() {
 // * ✅ happy path - defaulted param provided
 // * ✅ happy path - mix of required and defaulted, defaulted omitted
 // * ✅ missing inputs for params (single)
-// * ✅ missing inputs for params (multiple)
 // * ✅ extra inputs
 // * ✅ missing and extra inputs
 // * ✅ type validation error - single
-// * ✅ type validation error - multiple
 // * ✅ missing required when optional exists
 // * ✅ missing required when defaulted exists
+// missing_inputs_ok: True
+// * ✅ happy path - no inputs when params exist (missing is OK)
+// * ✅ happy path - partial inputs (some provided, some missing)
+// * ✅ happy path - all inputs provided
+// * ✅ extra inputs still rejected
+// * ✅ type validation still enforced
 pub fn inputs_validator_test() {
-  // happy paths
   [
+    // ==== missing_inputs_ok: False ====
     // no inputs
-    #(dict.new(), dict.new()),
+    #(dict.new(), dict.new(), False, Ok(True)),
     // some inputs
     #(
       dict.from_list([
@@ -377,16 +382,26 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("count", dynamic.int(42)),
       ]),
+      False,
+      Ok(True),
     ),
     // optional param omitted - should pass
     #(
-      dict.from_list([#("maybe_name", ModifierType(Optional(PrimitiveType(String))))]),
+      dict.from_list([
+        #("maybe_name", ModifierType(Optional(PrimitiveType(String)))),
+      ]),
       dict.from_list([]),
+      False,
+      Ok(True),
     ),
     // optional param provided - should pass
     #(
-      dict.from_list([#("maybe_name", ModifierType(Optional(PrimitiveType(String))))]),
+      dict.from_list([
+        #("maybe_name", ModifierType(Optional(PrimitiveType(String)))),
+      ]),
       dict.from_list([#("maybe_name", dynamic.string("foo"))]),
+      False,
+      Ok(True),
     ),
     // mix of required and optional, optional omitted - should pass
     #(
@@ -395,6 +410,8 @@ pub fn inputs_validator_test() {
         #("maybe_count", ModifierType(Optional(PrimitiveType(Integer)))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
+      False,
+      Ok(True),
     ),
     // defaulted param omitted - should pass
     #(
@@ -402,6 +419,8 @@ pub fn inputs_validator_test() {
         #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([]),
+      False,
+      Ok(True),
     ),
     // defaulted param provided - should pass
     #(
@@ -409,6 +428,8 @@ pub fn inputs_validator_test() {
         #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([#("count", dynamic.int(42))]),
+      False,
+      Ok(True),
     ),
     // mix of required and defaulted, defaulted omitted - should pass
     #(
@@ -417,16 +438,9 @@ pub fn inputs_validator_test() {
         #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
+      False,
+      Ok(True),
     ),
-  ]
-  |> list.each(fn(pair) {
-    let #(params, inputs) = pair
-    validations.inputs_validator(params:, inputs:)
-    |> should.equal(Ok(True))
-  })
-
-  // sad paths
-  [
     // missing inputs for params (single)
     #(
       dict.from_list([
@@ -434,6 +448,7 @@ pub fn inputs_validator_test() {
         #("count", PrimitiveType(Integer)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
+      False,
       Error("Missing keys in input: count"),
     ),
     // extra inputs
@@ -443,6 +458,7 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
       ]),
+      False,
       Error("Extra keys in input: extra"),
     ),
     // missing and extra inputs
@@ -455,12 +471,14 @@ pub fn inputs_validator_test() {
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
       ]),
+      False,
       Error("Extra keys in input: extra and missing keys in input: required"),
     ),
     // type validation error - single
     #(
       dict.from_list([#("count", PrimitiveType(Integer))]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
+      False,
       Error("expected (Int) received (String) for (count)"),
     ),
     // missing required when optional param exists - should fail for required only
@@ -470,6 +488,7 @@ pub fn inputs_validator_test() {
         #("maybe_count", ModifierType(Optional(PrimitiveType(Integer)))),
       ]),
       dict.from_list([]),
+      False,
       Error("Missing keys in input: name"),
     ),
     // missing required when defaulted param exists - should fail for required only
@@ -479,16 +498,21 @@ pub fn inputs_validator_test() {
         #("count", ModifierType(Defaulted(PrimitiveType(Integer), "10"))),
       ]),
       dict.from_list([]),
+      False,
       Error("Missing keys in input: name"),
     ),
-  ]
-  |> test_helpers.array_based_test_executor_2(fn(params, inputs) {
-    validations.inputs_validator(params:, inputs:)
-  })
-
-  // sad paths - error exists but order not guaranteed (check contains)
-  [
-    // missing inputs for params (multiple)
+    // ==== missing_inputs_ok: True ====
+    // no inputs when params exist - now OK
+    #(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+      ]),
+      dict.from_list([]),
+      True,
+      Ok(True),
+    ),
+    // partial inputs - now OK
     #(
       dict.from_list([
         #("name", PrimitiveType(String)),
@@ -496,9 +520,60 @@ pub fn inputs_validator_test() {
         #("flag", PrimitiveType(Boolean)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
+      True,
+      Ok(True),
+    ),
+    // all inputs provided - still OK
+    #(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+      ]),
+      dict.from_list([
+        #("name", dynamic.string("foo")),
+        #("count", dynamic.int(42)),
+      ]),
+      True,
+      Ok(True),
+    ),
+    // extra inputs still rejected
+    #(
+      dict.from_list([#("name", PrimitiveType(String))]),
+      dict.from_list([
+        #("name", dynamic.string("foo")),
+        #("extra", dynamic.int(42)),
+      ]),
+      True,
+      Error("Extra keys in input: extra"),
+    ),
+    // type validation still enforced
+    #(
+      dict.from_list([#("count", PrimitiveType(Integer))]),
+      dict.from_list([#("count", dynamic.string("not an int"))]),
+      True,
+      Error("expected (Int) received (String) for (count)"),
+    ),
+  ]
+  |> list.each(fn(tuple) {
+    let #(params, inputs, missing_inputs_ok, expected) = tuple
+    validations.inputs_validator(params:, inputs:, missing_inputs_ok:)
+    |> should.equal(expected)
+  })
+
+  // Tests where error order is not guaranteed (check contains)
+  [
+    // missing inputs for params (multiple) - missing_inputs_ok: False
+    #(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+        #("flag", PrimitiveType(Boolean)),
+      ]),
+      dict.from_list([#("name", dynamic.string("foo"))]),
+      False,
       "Missing keys in input:",
     ),
-    // type validation error - multiple
+    // type validation error - multiple - missing_inputs_ok: False
     #(
       dict.from_list([
         #("count", PrimitiveType(Integer)),
@@ -508,12 +583,14 @@ pub fn inputs_validator_test() {
         #("count", dynamic.string("not an int")),
         #("flag", dynamic.string("not a bool")),
       ]),
+      False,
       "expected (Int) received (String)",
     ),
   ]
   |> list.each(fn(tuple) {
-    let #(params, inputs, expected_substring) = tuple
-    let result = validations.inputs_validator(params:, inputs:)
+    let #(params, inputs, missing_inputs_ok, expected_substring) = tuple
+    let result =
+      validations.inputs_validator(params:, inputs:, missing_inputs_ok:)
     result |> should.be_error
     let assert Error(msg) = result
     string.contains(msg, expected_substring) |> should.be_true
@@ -567,10 +644,12 @@ pub fn validate_relevant_uniqueness_test() {
 
 // ==== Validate Inputs For Collection Tests ====
 // * ✅ happy path - empty collection
-// * ✅ happy path - valid inputs
-// * ✅ sad path - invalid inputs
+// * ✅ happy path - valid inputs (missing_inputs_ok: False)
+// * ✅ happy path - partial inputs (missing_inputs_ok: True)
+// * ✅ sad path - invalid inputs (missing_inputs_ok: False)
+// * ✅ sad path - missing inputs rejected (missing_inputs_ok: False)
 pub fn validate_inputs_for_collection_test() {
-  // happy paths
+  // happy paths with missing_inputs_ok: False
   [
     [],
     [
@@ -581,22 +660,63 @@ pub fn validate_inputs_for_collection_test() {
     ],
   ]
   |> list.each(fn(collection) {
-    validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {
-      p
-    })
+    validations.validate_inputs_for_collection(
+      input_param_collections: collection,
+      get_inputs: fn(p) { p },
+      get_params: fn(p) { p },
+      missing_inputs_ok: False,
+    )
     |> should.equal(Ok(True))
   })
 
-  // sad path
-  let collection = [
+  // happy path with missing_inputs_ok: True - partial inputs allowed
+  let collection_partial = [
+    #(
+      dict.from_list([]),
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(Integer)),
+      ]),
+    ),
+  ]
+  validations.validate_inputs_for_collection(
+    input_param_collections: collection_partial,
+    get_inputs: fn(p) { p },
+    get_params: fn(p) { p },
+    missing_inputs_ok: True,
+  )
+  |> should.equal(Ok(True))
+
+  // sad path - type error (both modes)
+  let collection_type_error = [
     #(
       dict.from_list([#("count", dynamic.string("not an int"))]),
       dict.from_list([#("count", PrimitiveType(Integer))]),
     ),
   ]
-  validations.validate_inputs_for_collection(collection, fn(p) { p }, fn(p) {
-    p
-  })
+  validations.validate_inputs_for_collection(
+    input_param_collections: collection_type_error,
+    get_inputs: fn(p) { p },
+    get_params: fn(p) { p },
+    missing_inputs_ok: False,
+  )
+  |> should.be_error
+
+  validations.validate_inputs_for_collection(
+    input_param_collections: collection_type_error,
+    get_inputs: fn(p) { p },
+    get_params: fn(p) { p },
+    missing_inputs_ok: True,
+  )
+  |> should.be_error
+
+  // sad path - missing inputs rejected when missing_inputs_ok: False
+  validations.validate_inputs_for_collection(
+    input_param_collections: collection_partial,
+    get_inputs: fn(p) { p },
+    get_params: fn(p) { p },
+    missing_inputs_ok: False,
+  )
   |> should.be_error
 }
 

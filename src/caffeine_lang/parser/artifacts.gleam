@@ -20,8 +20,7 @@ pub type Artifact {
     // most of the way. Especially true if Caffeine is the source of truth for artifacts via
     // the standard library for now.
     version: Semver,
-    inherited_params: dict.Dict(String, AcceptedTypes),
-    required_params: dict.Dict(String, AcceptedTypes),
+    params: dict.Dict(String, AcceptedTypes),
   )
 }
 
@@ -104,16 +103,12 @@ fn parse_from_json_string(
   let artifact_decoder = {
     use name <- decode.field("name", decoders.non_empty_string_decoder())
     use version <- decode.field("version", semantic_version_decoder())
-    use inherited_params <- decode.field(
-      "inherited_params",
-      decode.dict(decode.string, decoders.accepted_types_decoder()),
-    )
-    use required_params <- decode.field(
-      "required_params",
+    use params <- decode.field(
+      "params",
       decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
 
-    decode.success(Artifact(name:, version:, inherited_params:, required_params:))
+    decode.success(Artifact(name:, version:, params:))
   }
   let artifacts_decoded = {
     use artifacts <- decode.field("artifacts", decode.list(artifact_decoder))
