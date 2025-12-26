@@ -1,3 +1,4 @@
+import caffeine_lang/common/errors
 import caffeine_lang/parser/file_discovery
 import gleam/list
 import gleeunit/should
@@ -15,7 +16,9 @@ pub fn get_json_files_test() {
   [
     #(
       "non_existent_directory",
-      Error("No such file or directory (non_existent_directory)"),
+      Error(errors.LinkerParseError(
+        "No such file or directory (non_existent_directory)",
+      )),
     ),
     #(
       corpus_dir <> "/nested_structure",
