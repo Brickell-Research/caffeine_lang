@@ -1,10 +1,10 @@
 import caffeine_lang/common/errors.{type CompilationError, LinkerParseError}
 import caffeine_lang/common/helpers.{result_try}
-import caffeine_lang/middle_end/ir_builder
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
 import caffeine_lang/parser/artifacts
+import caffeine_lang/parser/ir_builder
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import caffeine_lang/parser/file_discovery

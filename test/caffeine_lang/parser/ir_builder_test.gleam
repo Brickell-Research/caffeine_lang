@@ -2,10 +2,10 @@ import caffeine_lang/common/accepted_types.{
   Defaulted, Float, ModifierType, Optional, PrimitiveType, String,
 }
 import caffeine_lang/common/helpers
-import caffeine_lang/middle_end/ir_builder
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
+import caffeine_lang/parser/ir_builder
 import gleam/dict
 import gleam/dynamic
 import gleam/list

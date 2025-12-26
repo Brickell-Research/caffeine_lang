@@ -2,13 +2,13 @@ import caffeine_lang/common/errors
 import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/generator/datadog
-import caffeine_lang/middle_end/ir_builder
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
 import caffeine_lang/parser/artifacts
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
+import caffeine_lang/parser/ir_builder
 import caffeine_lang/parser/linker
 import gleam/int
 import gleam/list
