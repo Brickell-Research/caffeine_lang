@@ -163,12 +163,10 @@ pub fn validate_value_type_test() {
     ),
     #(
       dynamic.properties([#(some_string, dict_string_int)]),
-      CollectionType(
-        Dict(
-          PrimitiveType(String),
-          CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
-        ),
-      ),
+      CollectionType(Dict(
+        PrimitiveType(String),
+        CollectionType(Dict(PrimitiveType(String), PrimitiveType(Integer))),
+      )),
       Ok(dynamic.properties([#(some_string, dict_string_int)])),
     ),
     #(
@@ -324,12 +322,10 @@ pub fn validate_value_type_test() {
       dynamic.properties([
         #(some_string, dynamic.properties([#(some_string, some_bool)])),
       ]),
-      CollectionType(
-        Dict(
-          PrimitiveType(String),
-          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
-        ),
-      ),
+      CollectionType(Dict(
+        PrimitiveType(String),
+        CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+      )),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(

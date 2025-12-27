@@ -192,7 +192,11 @@ pub fn find_rightmost_operator_at_level_test() {
     // find rightmost subtraction operator
     #("A - B / (D * C)", "-", Ok(#("A", "B / (D * C)"))),
     // error when operator not found at top level
-    #("(A + B) / C", "+", Error(errors.CQLParserError(msg: "Operator not found"))),
+    #(
+      "(A + B) / C",
+      "+",
+      Error(errors.CQLParserError(msg: "Operator not found")),
+    ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(input, operator) {
     find_rightmost_operator_at_level(input, operator, 0, 0, -1)
@@ -226,7 +230,6 @@ pub fn is_last_char_test() {
 }
 
 // ==== time_slice valid parsing Tests ====
-
 pub fn time_slice_valid_parsing_test() {
   [
     // time_slice(Query > 1000000 per 10s) - basic with >
@@ -403,10 +406,7 @@ pub fn time_slice_invalid_syntax_test() {
       Error("Missing interval in time_slice expression"),
     ),
     // time_slice(Query > 100 per s) - invalid interval (no number)
-    #(
-      "time_slice(Query > 100 per s)",
-      Error("Invalid interval number ''"),
-    ),
+    #("time_slice(Query > 100 per s)", Error("Invalid interval number ''")),
     // time_slice(Query > 100 per 10) - invalid interval (no unit)
     #(
       "time_slice(Query > 100 per 10)",

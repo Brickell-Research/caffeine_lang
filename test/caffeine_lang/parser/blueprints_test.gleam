@@ -1,12 +1,10 @@
 import caffeine_lang/common/accepted_types.{Float, PrimitiveType, String}
-import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/common/errors
 import caffeine_lang/parser/artifacts.{type Artifact}
 import caffeine_lang/parser/blueprints
 import gleam/dict
 import gleam/dynamic
-import gleam/list
-import gleeunit/should
-import simplifile
+import test_helpers
 
 // ==== Helpers ====
 fn path(file_name: String) {
@@ -25,263 +23,283 @@ fn artifacts() -> List(Artifact) {
   ]
 }
 
-fn assert_error(file_name: String, error: CompilationError) {
-  blueprints.parse_from_json_file(path(file_name), artifacts())
-  |> should.equal(Error(error))
-}
-
-// ==== Tests - Blueprints ====
-// ==== Happy Path ====
-// * ✅ none
-// * ✅ single blueprint
-// * ✅ multiple blueprints
-// * ✅ blueprint with no inputs (partial inputs allowed)
-pub fn parse_from_file_happy_path_test() {
-  // none
-  blueprints.parse_from_json_file(path("happy_path_none"), artifacts())
-  |> should.equal(Ok([]))
-
-  // single
-  blueprints.parse_from_json_file(path("happy_path_single"), artifacts())
-  |> should.equal(
-    Ok([
-      blueprints.Blueprint(
-        name: "success_rate",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("percentile", PrimitiveType(Float)),
-          #("threshold", PrimitiveType(Float)),
-          #("value", PrimitiveType(String)),
-        ]),
-        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
-      ),
-    ]),
-  )
-
-  // multiple
-  blueprints.parse_from_json_file(path("happy_path_multiple"), artifacts())
-  |> should.equal(
-    Ok([
-      blueprints.Blueprint(
-        name: "success_rate",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("percentile", PrimitiveType(Float)),
-          #("threshold", PrimitiveType(Float)),
-          #("value", PrimitiveType(String)),
-        ]),
-        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
-      ),
-      blueprints.Blueprint(
-        name: "latency_p99",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("threshold", PrimitiveType(Float)),
-          #("value", PrimitiveType(String)),
-        ]),
-        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
-      ),
-    ]),
-  )
+// ==== parse_from_json_file ====
+// * ✅ happy path - none
+// * ✅ happy path - single blueprint
+// * ✅ happy path - multiple blueprints
+// * ✅ happy path - blueprint with no inputs (partial inputs allowed)
+// * ✅ happy path - empty params
+// * ✅ missing - name
+// * ✅ missing - artifact_ref
+// * ✅ missing - params
+// * ✅ missing - inputs
+// * ✅ duplicates - name (all blueprints must be unique)
+// * ✅ duplicates - cannot overshadow artifact params with blueprint params
+// * ✅ wrong type - blueprints
+// * ✅ wrong type - name
+// * ✅ wrong type - artifact_ref
+// * ✅ wrong type - params is a map
+// * ✅ wrong type - each param's value is an Accepted Type
+// * ✅ wrong type - inputs is a map
+// * ✅ wrong type - input value type validation
+// * ✅ semantic - blueprint references an actual artifact
+// * ✅ file error - file not found
+// * ✅ json format - invalid JSON syntax
+// * ✅ json format - empty file
+// * ✅ json format - null value
+// * ✅ empty name - empty string name is rejected
+// * ✅ input validation - extra input field
+pub fn parse_from_json_file_test() {
+  // Happy paths with Ok results
+  [
+    // none
+    #(path("happy_path_none"), Ok([])),
+    // single
+    #(
+      path("happy_path_single"),
+      Ok([
+        blueprints.Blueprint(
+          name: "success_rate",
+          artifact_ref: "SLO",
+          params: dict.from_list([
+            #("percentile", PrimitiveType(Float)),
+            #("threshold", PrimitiveType(Float)),
+            #("value", PrimitiveType(String)),
+          ]),
+          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+        ),
+      ]),
+    ),
+    // multiple
+    #(
+      path("happy_path_multiple"),
+      Ok([
+        blueprints.Blueprint(
+          name: "success_rate",
+          artifact_ref: "SLO",
+          params: dict.from_list([
+            #("percentile", PrimitiveType(Float)),
+            #("threshold", PrimitiveType(Float)),
+            #("value", PrimitiveType(String)),
+          ]),
+          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+        ),
+        blueprints.Blueprint(
+          name: "latency_p99",
+          artifact_ref: "SLO",
+          params: dict.from_list([
+            #("threshold", PrimitiveType(Float)),
+            #("value", PrimitiveType(String)),
+          ]),
+          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+        ),
+      ]),
+    ),
+    // empty params - should merge with artifact params
+    #(
+      path("happy_path_empty_params"),
+      Ok([
+        blueprints.Blueprint(
+          name: "minimal_blueprint",
+          artifact_ref: "SLO",
+          params: dict.from_list([
+            #("threshold", PrimitiveType(Float)),
+            #("value", PrimitiveType(String)),
+          ]),
+          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
 
   // no inputs - now allowed since blueprints can provide partial inputs
-  blueprints.parse_from_json_file(path("input_missing_required"), artifacts())
-  |> should.be_ok
-}
-
-// ==== Missing ====
-// * ✅ name
-// * ✅ artifact_ref
-// * ✅ params
-// * ✅ inputs
-pub fn parse_from_file_missing_test() {
-  [
-    #(
-      "missing_name",
-      "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.name)",
-    ),
-    #(
-      "missing_artifact_ref",
-      "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.artifact_ref)",
-    ),
-    #(
-      "missing_params",
-      "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.params)",
-    ),
-    #(
-      "missing_inputs",
-      "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.inputs)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== Duplicates ====
-// * ✅ name (all blueprints must be unique)
-// * ✅ cannot overshadow artifact params with blueprint params
-pub fn parse_from_file_duplicates_test() {
-  [
-    #("duplicate_name", "Duplicate blueprint names: success_rate"),
-    #(
-      "duplicate_overshadowing_inherited_param",
-      "Overshadowed inherited_params in blueprint error: Blueprint overshadowing inherited_params from artifact: threshold",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserDuplicateError(msg: pair.1))
-  })
-}
-
-// ==== Wrong Types ====
-// * ✅ blueprints
-// * ✅ name
-// * ✅ artifact_ref
-// * ✅ params
-//  * ✅ params is a map
-//  * ✅ each param's value is an Accepted Type
-// * ✅ inputs
-//  * ✅ inputs is a map
-//  * ✅ input value type validation
-pub fn parse_from_file_wrong_type_test() {
-  [
-    #(
-      "wrong_type_blueprints",
-      "Incorrect types: expected (List) received (String) for (blueprints)",
-    ),
-    #(
-      "wrong_type_name",
-      "Incorrect types: expected (NonEmptyString) received (Int) for (blueprints.0.name)",
-    ),
-    #(
-      "wrong_type_artifact_ref",
-      "Incorrect types: expected (NamedReference) received (List) for (blueprints.0.artifact_ref)",
-    ),
-    #(
-      "wrong_type_params_not_a_map",
-      "Incorrect types: expected (Dict) received (List) for (blueprints.0.params)",
-    ),
-    #(
-      "wrong_type_params_value_typo",
-      "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
-    ),
-    #(
-      "wrong_type_params_value_illegal",
-      "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
-    ),
-    #(
-      "wrong_type_inputs_not_a_map",
-      "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
-    ),
-    #(
-      "wrong_type_input_value",
-      "Input validation errors: expected (String) received (Int) for (value)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== Semantic ====
-// * ✅ blueprint references an actual artifact
-pub fn parse_from_file_semantic_test() {
-  [
-    #(
-      "semantic_artifact_ref",
-      "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_ref)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
-  })
-}
-
-// ==== File Errors ====
-// * ✅ file not found
-pub fn parse_from_file_file_errors_test() {
-  [
-    #(
-      "nonexistent_file_that_does_not_exist",
-      simplifile.describe_error(simplifile.Enoent)
-        <> " (test/caffeine_lang/corpus/parser/blueprints/nonexistent_file_that_does_not_exist.json)",
-    ),
-  ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserFileReadError(msg: pair.1))
-  })
-}
-
-// ==== JSON Format Errors ====
-// * ✅ invalid JSON syntax
-// * ✅ empty file
-// * ✅ null value
-pub fn parse_from_file_json_format_test() {
-  // These produce different error messages on Erlang vs JavaScript targets,
-  // so we just check that they return a ParserJsonParserError
-  ["json_invalid_syntax", "json_empty_file"]
-  |> list.each(fn(file_name) {
-    let result = blueprints.parse_from_json_file(path(file_name), artifacts())
-    case result {
-      Error(errors.ParserJsonParserError(msg: _)) -> should.be_true(True)
-      _ -> should.fail()
+  [#(path("input_missing_required"), True)]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    case blueprints.parse_from_json_file(file_path, artifacts()) {
+      Ok(_) -> True
+      Error(_) -> False
     }
   })
 
-  // This one has a consistent error message across targets
-  assert_error(
-    "json_null",
-    errors.ParserJsonParserError(
-      msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
-    ),
-  )
-}
-
-// ==== Edge Cases - Happy Path ====
-// * ✅ empty params
-pub fn parse_from_file_edge_cases_happy_path_test() {
-  // empty params - should merge with artifact params
-  blueprints.parse_from_json_file(path("happy_path_empty_params"), artifacts())
-  |> should.equal(
-    Ok([
-      blueprints.Blueprint(
-        name: "minimal_blueprint",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("threshold", PrimitiveType(Float)),
-          #("value", PrimitiveType(String)),
-        ]),
-        inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
-      ),
-    ]),
-  )
-}
-
-// ==== Empty Name ====
-// * ✅ empty string name is rejected
-pub fn parse_from_file_empty_name_test() {
+  // Missing fields
   [
     #(
-      "empty_name",
-      "Incorrect types: expected (NonEmptyString) received (String) for (blueprints.0.name)",
+      path("missing_name"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.name)",
+      )),
+    ),
+    #(
+      path("missing_artifact_ref"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.artifact_ref)",
+      )),
+    ),
+    #(
+      path("missing_params"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.params)",
+      )),
+    ),
+    #(
+      path("missing_inputs"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.inputs)",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
   })
-}
 
-// ==== Input Validation ====
-// * ✅ extra input field (still an error - can't provide inputs not in params)
-pub fn parse_from_file_input_validation_test() {
+  // Duplicates
   [
     #(
-      "input_extra_field",
-      "Input validation errors: Extra keys in input: extra",
+      path("duplicate_name"),
+      Error(errors.ParserDuplicateError(
+        msg: "Duplicate blueprint names: success_rate",
+      )),
+    ),
+    #(
+      path("duplicate_overshadowing_inherited_param"),
+      Error(errors.ParserDuplicateError(
+        msg: "Overshadowed inherited_params in blueprint error: Blueprint overshadowing inherited_params from artifact: threshold",
+      )),
     ),
   ]
-  |> list.each(fn(pair) {
-    assert_error(pair.0, errors.ParserJsonParserError(msg: pair.1))
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // Wrong types
+  [
+    #(
+      path("wrong_type_blueprints"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (List) received (String) for (blueprints)",
+      )),
+    ),
+    #(
+      path("wrong_type_name"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (blueprints.0.name)",
+      )),
+    ),
+    #(
+      path("wrong_type_artifact_ref"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (List) for (blueprints.0.artifact_ref)",
+      )),
+    ),
+    #(
+      path("wrong_type_params_not_a_map"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Dict) received (List) for (blueprints.0.params)",
+      )),
+    ),
+    #(
+      path("wrong_type_params_value_typo"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
+      )),
+    ),
+    #(
+      path("wrong_type_params_value_illegal"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
+      )),
+    ),
+    #(
+      path("wrong_type_inputs_not_a_map"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Dict) received (String) for (blueprints.0.inputs)",
+      )),
+    ),
+    #(
+      path("wrong_type_input_value"),
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: expected (String) received (Int) for (value)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // Semantic
+  [
+    #(
+      path("semantic_artifact_ref"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_ref)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // File errors
+  [
+    #(
+      path("nonexistent_file_that_does_not_exist"),
+      Error(errors.ParserFileReadError(
+        msg: "No such file or directory (test/caffeine_lang/corpus/parser/blueprints/nonexistent_file_that_does_not_exist.json)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // JSON format errors - these produce different error messages on Erlang vs JavaScript targets
+  [#("json_invalid_syntax", True), #("json_empty_file", True)]
+  |> test_helpers.array_based_test_executor_1(fn(file_name) {
+    case blueprints.parse_from_json_file(path(file_name), artifacts()) {
+      Error(errors.ParserJsonParserError(msg: _)) -> True
+      _ -> False
+    }
+  })
+
+  // null value has consistent error message
+  [
+    #(
+      path("json_null"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // Empty name
+  [
+    #(
+      path("empty_name"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NonEmptyString) received (String) for (blueprints.0.name)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
+  })
+
+  // Input validation
+  [
+    #(
+      path("input_extra_field"),
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: Extra keys in input: extra",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, artifacts())
   })
 }

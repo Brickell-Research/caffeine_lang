@@ -248,7 +248,11 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: ModifierType(Optional(CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))))),
+        typ: ModifierType(
+          Optional(
+            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+          ),
+        ),
         value: dynamic.array([]),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(

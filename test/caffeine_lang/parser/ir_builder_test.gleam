@@ -1,6 +1,4 @@
-import caffeine_lang/common/accepted_types.{
-  Defaulted, Float, ModifierType, Optional, PrimitiveType, String,
-}
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/parser/blueprints
@@ -20,7 +18,11 @@ import test_helpers
 pub fn extract_path_prefix_test() {
   [
     #("org/team/service.json", #("org", "team", "service")),
-    #("examples/acme/platform_team/auth.json", #("acme", "platform_team", "auth")),
+    #("examples/acme/platform_team/auth.json", #(
+      "acme",
+      "platform_team",
+      "auth",
+    )),
     #("org/team", #("unknown", "unknown", "unknown")),
     #("single", #("unknown", "unknown", "unknown")),
   ]
@@ -36,357 +38,308 @@ pub fn extract_path_prefix_test() {
 // * ✅ defaulted params not provided get nil value
 // * ✅ blueprint inputs merged with expectation inputs
 // * ✅ misc metadata populated from string values (excluding filtered keys)
-pub fn build_all_empty_test() {
-  ir_builder.build_all([])
-  |> should.equal([])
-}
+pub fn build_all_test() {
+  // empty list returns empty list
+  ir_builder.build_all([]) |> should.equal([])
 
-pub fn build_all_single_expectation_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([#("threshold", PrimitiveType(Float))]),
-      inputs: dict.from_list([]),
-    )
+  // single expectation builds correct IR
+  {
+    let blueprint = make_blueprint("test_blueprint", [#("threshold", Float)])
+    let expectation =
+      make_expectation("my_test", [#("threshold", dynamic.float(99.9))])
 
-  let expectation =
-    expectations.Expectation(
-      name: "my_test",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
-    )
-
-  let result =
-    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/service.json")])
-
-  result
-  |> should.equal([
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-        friendly_label: "my_test",
-        org_name: "org",
-        service_name: "service",
-        blueprint_name: "test_blueprint",
-        team_name: "team",
-        misc: dict.new(),
-      ),
-      unique_identifier: "org_service_my_test",
-      artifact_ref: "TestArtifact",
-      values: [
-        helpers.ValueTuple(
-          label: "threshold",
-          typ: PrimitiveType(Float),
-          value: dynamic.float(99.9),
-        ),
-      ],
-      vendor: option.None,
-    ),
-  ])
-}
-
-pub fn build_all_multiple_expectations_single_file_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([#("value", PrimitiveType(Float))]),
-      inputs: dict.from_list([]),
-    )
-
-  let exp1 =
-    expectations.Expectation(
-      name: "first",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("value", dynamic.float(1.0))]),
-    )
-
-  let exp2 =
-    expectations.Expectation(
-      name: "second",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("value", dynamic.float(2.0))]),
-    )
-
-  let result =
     ir_builder.build_all([
-      #([#(exp1, blueprint), #(exp2, blueprint)], "org/team/service.json"),
+      #([#(expectation, blueprint)], "org/team/service.json"),
     ])
-
-  result
-  |> should.equal([
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-        friendly_label: "first",
-        org_name: "org",
-        service_name: "service",
+    |> should.equal([
+      make_ir(
+        name: "my_test",
         blueprint_name: "test_blueprint",
-        team_name: "team",
+        org: "org",
+        team: "team",
+        service: "service",
+        values: [
+          helpers.ValueTuple(
+            label: "threshold",
+            typ: accepted_types.PrimitiveType(accepted_types.Float),
+            value: dynamic.float(99.9),
+          ),
+        ],
         misc: dict.new(),
       ),
-      unique_identifier: "org_service_first",
-      artifact_ref: "TestArtifact",
-      values: [
-        helpers.ValueTuple(
-          label: "value",
-          typ: PrimitiveType(Float),
-          value: dynamic.float(1.0),
-        ),
-      ],
-      vendor: option.None,
-    ),
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-        friendly_label: "second",
-        org_name: "org",
-        service_name: "service",
-        blueprint_name: "test_blueprint",
-        team_name: "team",
-        misc: dict.new(),
-      ),
-      unique_identifier: "org_service_second",
-      artifact_ref: "TestArtifact",
-      values: [
-        helpers.ValueTuple(
-          label: "value",
-          typ: PrimitiveType(Float),
-          value: dynamic.float(2.0),
-        ),
-      ],
-      vendor: option.None,
-    ),
-  ])
-}
-
-pub fn build_all_multiple_files_flattened_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([#("id", PrimitiveType(Float))]),
-      inputs: dict.from_list([]),
-    )
-
-  let exp1 =
-    expectations.Expectation(
-      name: "from_file1",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("id", dynamic.float(1.0))]),
-    )
-
-  let exp2 =
-    expectations.Expectation(
-      name: "from_file2",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("id", dynamic.float(2.0))]),
-    )
-
-  let result =
-    ir_builder.build_all([
-      #([#(exp1, blueprint)], "org/team/file1.json"),
-      #([#(exp2, blueprint)], "org/team/file2.json"),
     ])
+  }
 
-  // Should have 2 IRs from 2 different files
-  result
-  |> should.equal([
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-        friendly_label: "from_file1",
-        org_name: "org",
-        service_name: "file1",
-        blueprint_name: "test_blueprint",
-        team_name: "team",
-        misc: dict.new(),
-      ),
-      unique_identifier: "org_file1_from_file1",
-      artifact_ref: "TestArtifact",
-      values: [
-        helpers.ValueTuple(
-          label: "id",
-          typ: PrimitiveType(Float),
-          value: dynamic.float(1.0),
+  // multiple expectations from single file
+  {
+    let blueprint = make_blueprint("test_blueprint", [#("value", Float)])
+    let exp1 = make_expectation("first", [#("value", dynamic.float(1.0))])
+    let exp2 = make_expectation("second", [#("value", dynamic.float(2.0))])
+
+    let result =
+      ir_builder.build_all([
+        #([#(exp1, blueprint), #(exp2, blueprint)], "org/team/service.json"),
+      ])
+
+    result |> list.length |> should.equal(2)
+    let assert [ir1, ir2] = result
+    ir1.metadata.friendly_label |> should.equal("first")
+    ir2.metadata.friendly_label |> should.equal("second")
+  }
+
+  // multiple files flattened into single list
+  {
+    let blueprint = make_blueprint("test_blueprint", [#("id", Float)])
+    let exp1 = make_expectation("from_file1", [#("id", dynamic.float(1.0))])
+    let exp2 = make_expectation("from_file2", [#("id", dynamic.float(2.0))])
+
+    let result =
+      ir_builder.build_all([
+        #([#(exp1, blueprint)], "org/team/file1.json"),
+        #([#(exp2, blueprint)], "org/team/file2.json"),
+      ])
+
+    result |> list.length |> should.equal(2)
+    let assert [ir1, ir2] = result
+    ir1.metadata.service_name |> should.equal("file1")
+    ir2.metadata.service_name |> should.equal("file2")
+  }
+
+  // optional params not provided get nil value
+  {
+    let blueprint =
+      blueprints.Blueprint(
+        name: "test_blueprint",
+        artifact_ref: "TestArtifact",
+        params: dict.from_list([
+          #("required", accepted_types.PrimitiveType(accepted_types.Float)),
+          #(
+            "optional_field",
+            accepted_types.ModifierType(
+              accepted_types.Optional(accepted_types.PrimitiveType(
+                accepted_types.String,
+              )),
+            ),
+          ),
+        ]),
+        inputs: dict.from_list([]),
+      )
+    let expectation =
+      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+
+    let assert [ir] =
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/svc.json"),
+      ])
+
+    ir.values
+    |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
+    |> should.equal([
+      helpers.ValueTuple(
+        label: "optional_field",
+        typ: accepted_types.ModifierType(
+          accepted_types.Optional(accepted_types.PrimitiveType(
+            accepted_types.String,
+          )),
         ),
-      ],
-      vendor: option.None,
-    ),
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-        friendly_label: "from_file2",
-        org_name: "org",
-        service_name: "file2",
-        blueprint_name: "test_blueprint",
-        team_name: "team",
-        misc: dict.new(),
+        value: dynamic.nil(),
       ),
-      unique_identifier: "org_file2_from_file2",
-      artifact_ref: "TestArtifact",
-      values: [
-        helpers.ValueTuple(
-          label: "id",
-          typ: PrimitiveType(Float),
-          value: dynamic.float(2.0),
-        ),
-      ],
-      vendor: option.None,
-    ),
-  ])
+      helpers.ValueTuple(
+        label: "required",
+        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        value: dynamic.float(1.0),
+      ),
+    ])
+  }
+
+  // defaulted params not provided get nil value
+  {
+    let blueprint =
+      blueprints.Blueprint(
+        name: "test_blueprint",
+        artifact_ref: "TestArtifact",
+        params: dict.from_list([
+          #("required", accepted_types.PrimitiveType(accepted_types.Float)),
+          #(
+            "defaulted_field",
+            accepted_types.ModifierType(accepted_types.Defaulted(
+              accepted_types.PrimitiveType(accepted_types.String),
+              "default_value",
+            )),
+          ),
+        ]),
+        inputs: dict.from_list([]),
+      )
+    let expectation =
+      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+
+    let assert [ir] =
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/svc.json"),
+      ])
+
+    ir.values
+    |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
+    |> should.equal([
+      helpers.ValueTuple(
+        label: "defaulted_field",
+        typ: accepted_types.ModifierType(accepted_types.Defaulted(
+          accepted_types.PrimitiveType(accepted_types.String),
+          "default_value",
+        )),
+        value: dynamic.nil(),
+      ),
+      helpers.ValueTuple(
+        label: "required",
+        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        value: dynamic.float(1.0),
+      ),
+    ])
+  }
+
+  // blueprint inputs merged with expectation inputs
+  {
+    let blueprint =
+      blueprints.Blueprint(
+        name: "test_blueprint",
+        artifact_ref: "TestArtifact",
+        params: dict.from_list([
+          #(
+            "from_blueprint",
+            accepted_types.PrimitiveType(accepted_types.String),
+          ),
+          #(
+            "from_expectation",
+            accepted_types.PrimitiveType(accepted_types.Float),
+          ),
+        ]),
+        inputs: dict.from_list([
+          #("from_blueprint", dynamic.string("blueprint_value")),
+        ]),
+      )
+    let expectation =
+      make_expectation("my_test", [#("from_expectation", dynamic.float(42.0))])
+
+    let assert [ir] =
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/svc.json"),
+      ])
+
+    ir.values
+    |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
+    |> should.equal([
+      helpers.ValueTuple(
+        label: "from_blueprint",
+        typ: accepted_types.PrimitiveType(accepted_types.String),
+        value: dynamic.string("blueprint_value"),
+      ),
+      helpers.ValueTuple(
+        label: "from_expectation",
+        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        value: dynamic.float(42.0),
+      ),
+    ])
+  }
+
+  // misc metadata populated from string values (excluding filtered keys)
+  {
+    let blueprint =
+      blueprints.Blueprint(
+        name: "test_blueprint",
+        artifact_ref: "TestArtifact",
+        params: dict.from_list([
+          #("env", accepted_types.PrimitiveType(accepted_types.String)),
+          #("region", accepted_types.PrimitiveType(accepted_types.String)),
+          #("threshold", accepted_types.PrimitiveType(accepted_types.Float)),
+        ]),
+        inputs: dict.from_list([]),
+      )
+    let expectation =
+      expectations.Expectation(
+        name: "my_test",
+        blueprint_ref: "test_blueprint",
+        inputs: dict.from_list([
+          #("env", dynamic.string("production")),
+          #("region", dynamic.string("us-east-1")),
+          #("threshold", dynamic.float(99.9)),
+        ]),
+      )
+
+    let assert [ir] =
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/svc.json"),
+      ])
+
+    // misc should contain string values but NOT threshold or non-strings
+    ir.metadata.misc
+    |> should.equal(
+      dict.from_list([#("env", "production"), #("region", "us-east-1")]),
+    )
+  }
 }
 
-pub fn build_all_optional_params_get_nil_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([
-        #("required", PrimitiveType(Float)),
-        #("optional_field", ModifierType(Optional(PrimitiveType(String)))),
-      ]),
-      inputs: dict.from_list([]),
-    )
+// ==== Helpers ====
 
-  let expectation =
-    expectations.Expectation(
-      name: "my_test",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("required", dynamic.float(1.0))]),
-    )
-
-  let result =
-    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
-
-  let assert [ir] = result
-
-  // Should have both required and optional in values
-  ir.values
-  |> should.equal([
-    helpers.ValueTuple(
-      label: "required",
-      typ: PrimitiveType(Float),
-      value: dynamic.float(1.0),
-    ),
-    helpers.ValueTuple(
-      label: "optional_field",
-      typ: ModifierType(Optional(PrimitiveType(String))),
-      value: dynamic.nil(),
-    ),
-  ])
+type PrimitiveShorthand {
+  Float
+  String
 }
 
-pub fn build_all_defaulted_params_get_nil_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([
-        #("required", PrimitiveType(Float)),
-        #("defaulted_field", ModifierType(Defaulted(PrimitiveType(String), "default_value"))),
-      ]),
-      inputs: dict.from_list([]),
-    )
-
-  let expectation =
-    expectations.Expectation(
-      name: "my_test",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("required", dynamic.float(1.0))]),
-    )
-
-  let result =
-    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
-
-  let assert [ir] = result
-
-  // Should have both required and defaulted in values
-  ir.values
-  |> should.equal([
-    helpers.ValueTuple(
-      label: "required",
-      typ: PrimitiveType(Float),
-      value: dynamic.float(1.0),
-    ),
-    helpers.ValueTuple(
-      label: "defaulted_field",
-      typ: ModifierType(Defaulted(PrimitiveType(String), "default_value")),
-      value: dynamic.nil(),
-    ),
-  ])
+fn make_blueprint(
+  name: String,
+  params: List(#(String, PrimitiveShorthand)),
+) -> blueprints.Blueprint {
+  blueprints.Blueprint(
+    name: name,
+    artifact_ref: "TestArtifact",
+    params: params
+      |> list.map(fn(p) {
+        let #(label, typ) = p
+        #(
+          label,
+          accepted_types.PrimitiveType(case typ {
+            Float -> accepted_types.Float
+            String -> accepted_types.String
+          }),
+        )
+      })
+      |> dict.from_list,
+    inputs: dict.from_list([]),
+  )
 }
 
-pub fn build_all_blueprint_inputs_merged_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([
-        #("from_blueprint", PrimitiveType(String)),
-        #("from_expectation", PrimitiveType(Float)),
-      ]),
-      inputs: dict.from_list([#("from_blueprint", dynamic.string("blueprint_value"))]),
-    )
-
-  let expectation =
-    expectations.Expectation(
-      name: "my_test",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([#("from_expectation", dynamic.float(42.0))]),
-    )
-
-  let result =
-    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
-
-  let assert [ir] = result
-
-  // Should have values from both blueprint and expectation inputs
-  // Sort by label for deterministic comparison across targets
-  ir.values
-  |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
-  |> should.equal([
-    helpers.ValueTuple(
-      label: "from_blueprint",
-      typ: PrimitiveType(String),
-      value: dynamic.string("blueprint_value"),
-    ),
-    helpers.ValueTuple(
-      label: "from_expectation",
-      typ: PrimitiveType(Float),
-      value: dynamic.float(42.0),
-    ),
-  ])
+fn make_expectation(
+  name: String,
+  inputs: List(#(String, dynamic.Dynamic)),
+) -> expectations.Expectation {
+  expectations.Expectation(
+    name: name,
+    blueprint_ref: "test_blueprint",
+    inputs: dict.from_list(inputs),
+  )
 }
 
-pub fn build_all_misc_metadata_from_string_values_test() {
-  let blueprint =
-    blueprints.Blueprint(
-      name: "test_blueprint",
-      artifact_ref: "TestArtifact",
-      params: dict.from_list([
-        #("env", PrimitiveType(String)),
-        #("region", PrimitiveType(String)),
-        #("threshold", PrimitiveType(Float)),
-      ]),
-      inputs: dict.from_list([]),
-    )
-
-  let expectation =
-    expectations.Expectation(
-      name: "my_test",
-      blueprint_ref: "test_blueprint",
-      inputs: dict.from_list([
-        #("env", dynamic.string("production")),
-        #("region", dynamic.string("us-east-1")),
-        #("threshold", dynamic.float(99.9)),
-      ]),
-    )
-
-  let result =
-    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
-
-  let assert [ir] = result
-
-  // misc should contain string values but NOT threshold (filtered) or non-strings
-  ir.metadata.misc
-  |> should.equal(
-    dict.from_list([#("env", "production"), #("region", "us-east-1")]),
+fn make_ir(
+  name name: String,
+  blueprint_name blueprint_name: String,
+  org org: String,
+  team team: String,
+  service service: String,
+  values values: List(helpers.ValueTuple),
+  misc misc: dict.Dict(String, String),
+) -> semantic_analyzer.IntermediateRepresentation {
+  semantic_analyzer.IntermediateRepresentation(
+    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+      friendly_label: name,
+      org_name: org,
+      service_name: service,
+      blueprint_name: blueprint_name,
+      team_name: team,
+      misc: misc,
+    ),
+    unique_identifier: org <> "_" <> service <> "_" <> name,
+    artifact_ref: "TestArtifact",
+    values: values,
+    vendor: option.None,
   )
 }

@@ -255,13 +255,18 @@ fn parse_from_strings(
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   use artifacts <- result.try(artifacts.parse_standard_library())
 
-  use validated_blueprints <- result.try(
-    blueprints.parse_from_json_string(blueprints_json, artifacts),
-  )
+  use validated_blueprints <- result.try(blueprints.parse_from_json_string(
+    blueprints_json,
+    artifacts,
+  ))
 
   use expectations_blueprint_collection <- result.try(
     expectations.parse_from_json_string(expectations_json, validated_blueprints),
   )
 
-  Ok(ir_builder.build_all([#(expectations_blueprint_collection, expectations_path)]))
+  Ok(
+    ir_builder.build_all([
+      #(expectations_blueprint_collection, expectations_path),
+    ]),
+  )
 }

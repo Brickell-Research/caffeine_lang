@@ -7,7 +7,6 @@ import caffeine_lang/parser/blueprints.{type Blueprint}
 import caffeine_lang/parser/expectations
 import gleam/dict
 import gleam/dynamic
-import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -50,112 +49,142 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
       artifact_ref: "SLO",
       params: dict.from_list([
         #("threshold", PrimitiveType(Float)),
-        #("default_env", ModifierType(Defaulted(PrimitiveType(String), "production"))),
+        #(
+          "default_env",
+          ModifierType(Defaulted(PrimitiveType(String), "production")),
+        ),
       ]),
       inputs: dict.from_list([]),
     ),
   ]
 }
 
-// ==== Happy Path ====
-// * ✅ empty expectations list
-// * ✅ single expectation
-// * ✅ multiple expectations
-// * ✅ expectation with defaulted param in blueprint
-pub fn parse_from_json_file_happy_path_test() {
-  // empty expectations list
-  expectations.parse_from_json_file(path("happy_path_none"), blueprints())
-  |> should.equal(Ok([]))
+// ==== parse_from_json_file ====
+// * ✅ happy path - empty expectations list
+// * ✅ happy path - single expectation
+// * ✅ happy path - multiple expectations
+// * ✅ happy path - expectation with defaulted param in blueprint
+// * ✅ missing - expectations field
+// * ✅ missing - name field
+// * ✅ missing - blueprint_ref field
+// * ✅ missing - inputs field
+// * ✅ wrong type - expectations is not a list
+// * ✅ wrong type - name is not a string
+// * ✅ wrong type - blueprint_ref is not a string
+// * ✅ wrong type - inputs is not a map
+// * ✅ wrong type - input value has wrong type
+// * ✅ duplicates - duplicate expectation names within file
+// * ✅ empty name - empty string name is rejected
+// * ✅ invalid blueprint ref - blueprint_ref references non-existent blueprint
+// * ✅ overshadowing - expectation inputs cannot overshadow blueprint inputs
+// * ✅ input validation - missing required input
+// * ✅ input validation - extra input field not in params
+// * ✅ file error - file not found
+// * ✅ json format - invalid JSON syntax
+// * ✅ json format - empty file
+// * ✅ json format - null value
+pub fn parse_from_json_file_test() {
+  // Happy paths
+  [#(path("happy_path_none"), Ok([]))]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    expectations.parse_from_json_file(file_path, blueprints())
+  })
 
   // single expectation - verify it parses and pairs with blueprint
-  let assert Ok(result) =
-    expectations.parse_from_json_file(path("happy_path_single"), blueprints())
-  result
-  |> should.equal([
+  [
     #(
-      expectations.Expectation(
-        name: "my_expectation",
-        blueprint_ref: "success_rate",
-        inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
-      ),
-      blueprints.Blueprint(
-        name: "success_rate",
-        artifact_ref: "SLO",
-        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
-        inputs: dict.from_list([]),
-      ),
+      path("happy_path_single"),
+      Ok([
+        #(
+          expectations.Expectation(
+            name: "my_expectation",
+            blueprint_ref: "success_rate",
+            inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
+          ),
+          blueprints.Blueprint(
+            name: "success_rate",
+            artifact_ref: "SLO",
+            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            inputs: dict.from_list([]),
+          ),
+        ),
+      ]),
     ),
-  ])
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    expectations.parse_from_json_file(file_path, blueprints())
+  })
 
   // multiple expectations
-  let assert Ok(result) =
-    expectations.parse_from_json_file(path("happy_path_multiple"), blueprints())
-  result
-  |> should.equal([
+  [
     #(
-      expectations.Expectation(
-        name: "my_expectation",
-        blueprint_ref: "success_rate",
-        inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
-      ),
-      blueprints.Blueprint(
-        name: "success_rate",
-        artifact_ref: "SLO",
-        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
-        inputs: dict.from_list([]),
-      ),
+      path("happy_path_multiple"),
+      Ok([
+        #(
+          expectations.Expectation(
+            name: "my_expectation",
+            blueprint_ref: "success_rate",
+            inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
+          ),
+          blueprints.Blueprint(
+            name: "success_rate",
+            artifact_ref: "SLO",
+            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            inputs: dict.from_list([]),
+          ),
+        ),
+        #(
+          expectations.Expectation(
+            name: "another_expectation",
+            blueprint_ref: "success_rate",
+            inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
+          ),
+          blueprints.Blueprint(
+            name: "success_rate",
+            artifact_ref: "SLO",
+            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            inputs: dict.from_list([]),
+          ),
+        ),
+      ]),
     ),
-    #(
-      expectations.Expectation(
-        name: "another_expectation",
-        blueprint_ref: "success_rate",
-        inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
-      ),
-      blueprints.Blueprint(
-        name: "success_rate",
-        artifact_ref: "SLO",
-        params: dict.from_list([#("percentile", PrimitiveType(Float))]),
-        inputs: dict.from_list([]),
-      ),
-    ),
-  ])
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    expectations.parse_from_json_file(file_path, blueprints())
+  })
 
   // expectation with defaulted param - input not provided is fine
-  let assert Ok(result) =
-    expectations.parse_from_json_file(
-      path("happy_path_defaulted_param"),
-      blueprints_with_defaulted(),
-    )
-  result
-  |> should.equal([
+  [
     #(
-      expectations.Expectation(
-        name: "my_expectation_with_defaulted",
-        blueprint_ref: "success_rate_with_defaulted",
-        inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
-      ),
-      blueprints.Blueprint(
-        name: "success_rate_with_defaulted",
-        artifact_ref: "SLO",
-        params: dict.from_list([
-          #("threshold", PrimitiveType(Float)),
-          #(
-            "default_env",
-            ModifierType(Defaulted(PrimitiveType(String), "production")),
+      path("happy_path_defaulted_param"),
+      Ok([
+        #(
+          expectations.Expectation(
+            name: "my_expectation_with_defaulted",
+            blueprint_ref: "success_rate_with_defaulted",
+            inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
           ),
-        ]),
-        inputs: dict.from_list([]),
-      ),
+          blueprints.Blueprint(
+            name: "success_rate_with_defaulted",
+            artifact_ref: "SLO",
+            params: dict.from_list([
+              #("threshold", PrimitiveType(Float)),
+              #(
+                "default_env",
+                ModifierType(Defaulted(PrimitiveType(String), "production")),
+              ),
+            ]),
+            inputs: dict.from_list([]),
+          ),
+        ),
+      ]),
     ),
-  ])
-}
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    expectations.parse_from_json_file(file_path, blueprints_with_defaulted())
+  })
 
-// ==== Missing Fields ====
-// * ✅ missing expectations field
-// * ✅ missing name field
-// * ✅ missing blueprint_ref field
-// * ✅ missing inputs field
-pub fn parse_from_json_file_missing_fields_test() {
+  // Missing fields
   [
     #(
       "missing_expectations",
@@ -185,15 +214,8 @@ pub fn parse_from_json_file_missing_fields_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== Wrong Types ====
-// * ✅ expectations is not a list
-// * ✅ name is not a string
-// * ✅ blueprint_ref is not a string
-// * ✅ inputs is not a map
-// * ✅ input value has wrong type
-pub fn parse_from_json_file_wrong_types_test() {
+  // Wrong types
   [
     #(
       "wrong_type_expectations",
@@ -229,11 +251,8 @@ pub fn parse_from_json_file_wrong_types_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== Duplicates ====
-// * ✅ duplicate expectation names within file
-pub fn parse_from_json_file_duplicates_test() {
+  // Duplicates
   [
     #(
       "duplicate_name",
@@ -245,11 +264,8 @@ pub fn parse_from_json_file_duplicates_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== Empty Name ====
-// * ✅ empty string name is rejected
-pub fn parse_from_json_file_empty_name_test() {
+  // Empty name
   [
     #(
       "empty_name",
@@ -261,11 +277,8 @@ pub fn parse_from_json_file_empty_name_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== Invalid Blueprint Reference ====
-// * ✅ blueprint_ref references non-existent blueprint
-pub fn parse_from_json_file_invalid_blueprint_ref_test() {
+  // Invalid blueprint reference
   [
     #(
       "semantic_blueprint_ref",
@@ -277,11 +290,8 @@ pub fn parse_from_json_file_invalid_blueprint_ref_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== Input Overshadowing ====
-// * ✅ expectation inputs cannot overshadow blueprint inputs
-pub fn parse_from_json_file_overshadowing_test() {
+  // Overshadowing
   [
     #(
       "overshadowing_blueprint_input",
@@ -293,12 +303,8 @@ pub fn parse_from_json_file_overshadowing_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints_with_inputs())
   })
-}
 
-// ==== Input Validation ====
-// * ✅ missing required input
-// * ✅ extra input field not in params
-pub fn parse_from_json_file_input_validation_test() {
+  // Input validation
   [
     #(
       "input_missing_required",
@@ -316,32 +322,22 @@ pub fn parse_from_json_file_input_validation_test() {
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== File Errors ====
-// * ✅ file not found
-pub fn parse_from_json_file_file_not_found_test() {
+  // File errors
   [
     #(
       "nonexistent_file_that_does_not_exist",
       Error(errors.ParserFileReadError(
         msg: simplifile.describe_error(simplifile.Enoent)
-          <> " (test/caffeine_lang/corpus/parser/expectations/nonexistent_file_that_does_not_exist.json)",
+        <> " (test/caffeine_lang/corpus/parser/expectations/nonexistent_file_that_does_not_exist.json)",
       )),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     expectations.parse_from_json_file(path(file_name), blueprints())
   })
-}
 
-// ==== JSON Format Errors ====
-// * ✅ invalid JSON syntax
-// * ✅ empty file
-// * ✅ null value
-pub fn parse_from_json_file_json_format_errors_test() {
-  // These produce different error messages on Erlang vs JavaScript targets,
-  // so we just check that they return a ParserJsonParserError
+  // JSON format errors - different error messages on Erlang vs JavaScript targets
   [#("json_invalid_syntax", True), #("json_empty_file", True)]
   |> test_helpers.array_based_test_executor_1(fn(file_name) {
     case expectations.parse_from_json_file(path(file_name), blueprints()) {

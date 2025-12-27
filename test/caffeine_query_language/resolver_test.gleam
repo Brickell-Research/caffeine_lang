@@ -31,7 +31,6 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ A + time_slice(Query > 100 per 10s) - keyword not at top level
 // * ✅ (time_slice(Query > 100 per 10s)) - wrapped in parens
 // * ✅ time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
-
 pub fn resolve_primitives_test() {
   let lhs_complex =
     parens(OperatorExpr(
@@ -142,7 +141,10 @@ pub fn resolve_time_slice_invalid_test() {
     // (time_slice(Query > 100 per 10s)) - wrapped in parens
     #("(time_slice(Query > 100 per 10s))", not_division_or_time_slice_error),
     // time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
-    #("time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)", time_slice_operand_error),
+    #(
+      "time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)",
+      time_slice_operand_error,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
 }

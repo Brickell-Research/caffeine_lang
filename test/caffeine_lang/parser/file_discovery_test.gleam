@@ -42,7 +42,7 @@ pub fn get_json_files_test() {
 
 // ==== get_json_files - multiple orgs/teams ====
 // * ✅ collects files from multiple orgs and teams
-// Note: Order may vary due to filesystem, so we check contains instead of equals
+// Note: order may vary due to filesystem, so we check contains instead of equals
 pub fn get_json_files_multiple_orgs_teams_test() {
   let base = corpus_dir <> "/multiple_orgs_teams"
   let assert Ok(files) = file_discovery.get_json_files(base)
@@ -64,7 +64,9 @@ pub fn get_json_files_multiple_orgs_teams_test() {
 // * ✅ hidden orgs are included
 // * ✅ hidden teams are included
 // * ✅ hidden files are included
-// Note: Order may vary due to filesystem, so we check contains instead of equals
+// Note: order may vary due to filesystem, so we check contains instead of equals
+// TODO: wondering if maybe we don't want this? When would we ever actually have things
+//       in hidden directories?
 pub fn get_json_files_hidden_files_test() {
   let base = corpus_dir <> "/hidden_files"
   let assert Ok(files) = file_discovery.get_json_files(base)

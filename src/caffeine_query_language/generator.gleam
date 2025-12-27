@@ -203,9 +203,7 @@ pub fn extract_words(exp: Exp) -> List(String) {
 /// E.g., "(a + b)" -> "a + b", but "(a + b) * c" stays unchanged.
 fn strip_outer_parens(s: String) -> String {
   let trimmed = string.trim(s)
-  case
-    string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")")
-  {
+  case string.starts_with(trimmed, "(") && string.ends_with(trimmed, ")") {
     True -> {
       // Check if these parens actually wrap the whole expression
       let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
@@ -307,13 +305,15 @@ pub fn resolve_slo_query_typed(
               // In that case, use "query1" as the formula expression and the query as-is
               case named_queries {
                 [] ->
-                  Ok(ResolvedTimeSlice(
-                    comparator_str,
-                    interval_seconds,
-                    threshold,
-                    "query1",
-                    [NamedQuery("query1", query)],
-                  ))
+                  Ok(
+                    ResolvedTimeSlice(
+                      comparator_str,
+                      interval_seconds,
+                      threshold,
+                      "query1",
+                      [NamedQuery("query1", query)],
+                    ),
+                  )
                 _ -> {
                   // Use the original query string as the formula expression
                   // Strip outer parentheses if they wrap the entire expression
@@ -332,13 +332,15 @@ pub fn resolve_slo_query_typed(
               // If parsing fails, treat as a single literal query (backwards compat)
               let resolved_query =
                 dict.get(substitutions, query) |> result.unwrap(query)
-              Ok(ResolvedTimeSlice(
-                comparator_str,
-                interval_seconds,
-                threshold,
-                "query1",
-                [NamedQuery("query1", resolved_query)],
-              ))
+              Ok(
+                ResolvedTimeSlice(
+                  comparator_str,
+                  interval_seconds,
+                  threshold,
+                  "query1",
+                  [NamedQuery("query1", resolved_query)],
+                ),
+              )
             }
           }
         }
@@ -355,7 +357,10 @@ pub fn resolve_slo_query(
   substitutions: dict.Dict(String, String),
 ) -> #(String, String) {
   case resolve_slo_query_typed(value_expr, substitutions) {
-    Ok(ResolvedGoodOverTotal(numerator, denominator)) -> #(numerator, denominator)
+    Ok(ResolvedGoodOverTotal(numerator, denominator)) -> #(
+      numerator,
+      denominator,
+    )
     _ -> #("", "")
   }
 }
@@ -397,12 +402,9 @@ pub fn resolve_slo_to_hcl(
               ]),
               blocks: [],
             )
-          hcl.Block(
-            type_: "query",
-            labels: [],
-            attributes: dict.new(),
-            blocks: [metric_query_block],
-          )
+          hcl.Block(type_: "query", labels: [], attributes: dict.new(), blocks: [
+            metric_query_block,
+          ])
         })
 
       let formula_block =
@@ -416,12 +418,10 @@ pub fn resolve_slo_to_hcl(
         )
 
       let outer_query_block =
-        hcl.Block(
-          type_: "query",
-          labels: [],
-          attributes: dict.new(),
-          blocks: [formula_block, ..inner_query_blocks],
-        )
+        hcl.Block(type_: "query", labels: [], attributes: dict.new(), blocks: [
+          formula_block,
+          ..inner_query_blocks
+        ])
 
       let time_slice_block =
         hcl.Block(

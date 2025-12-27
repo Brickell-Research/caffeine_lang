@@ -91,33 +91,33 @@ pub fn accepted_type_to_string_test() {
     // ==== Modifier Types - Optional basic types ====
     #(
       accepted_types.ModifierType(
-        accepted_types.Optional(
-          accepted_types.PrimitiveType(accepted_types.String),
-        ),
+        accepted_types.Optional(accepted_types.PrimitiveType(
+          accepted_types.String,
+        )),
       ),
       "Optional(String)",
     ),
     #(
       accepted_types.ModifierType(
-        accepted_types.Optional(
-          accepted_types.PrimitiveType(accepted_types.Integer),
-        ),
+        accepted_types.Optional(accepted_types.PrimitiveType(
+          accepted_types.Integer,
+        )),
       ),
       "Optional(Integer)",
     ),
     #(
       accepted_types.ModifierType(
-        accepted_types.Optional(
-          accepted_types.PrimitiveType(accepted_types.Float),
-        ),
+        accepted_types.Optional(accepted_types.PrimitiveType(
+          accepted_types.Float,
+        )),
       ),
       "Optional(Float)",
     ),
     #(
       accepted_types.ModifierType(
-        accepted_types.Optional(
-          accepted_types.PrimitiveType(accepted_types.Boolean),
-        ),
+        accepted_types.Optional(accepted_types.PrimitiveType(
+          accepted_types.Boolean,
+        )),
       ),
       "Optional(Boolean)",
     ),
@@ -126,9 +126,9 @@ pub fn accepted_type_to_string_test() {
       accepted_types.ModifierType(
         accepted_types.Optional(
           accepted_types.CollectionType(
-            accepted_types.List(
-              accepted_types.PrimitiveType(accepted_types.String),
-            ),
+            accepted_types.List(accepted_types.PrimitiveType(
+              accepted_types.String,
+            )),
           ),
         ),
       ),
@@ -147,21 +147,17 @@ pub fn accepted_type_to_string_test() {
     ),
     // ==== Modifier Types - Defaulted basic types ====
     #(
-      accepted_types.ModifierType(
-        accepted_types.Defaulted(
-          accepted_types.PrimitiveType(accepted_types.String),
-          "default",
-        ),
-      ),
+      accepted_types.ModifierType(accepted_types.Defaulted(
+        accepted_types.PrimitiveType(accepted_types.String),
+        "default",
+      )),
       "Defaulted(String, default)",
     ),
     #(
-      accepted_types.ModifierType(
-        accepted_types.Defaulted(
-          accepted_types.PrimitiveType(accepted_types.Integer),
-          "10",
-        ),
-      ),
+      accepted_types.ModifierType(accepted_types.Defaulted(
+        accepted_types.PrimitiveType(accepted_types.Integer),
+        "10",
+      )),
       "Defaulted(Integer, 10)",
     ),
   ]

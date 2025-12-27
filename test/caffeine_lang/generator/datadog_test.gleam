@@ -456,13 +456,25 @@ pub fn extract_float_test() {
   [
     // extracts Float ValueTuple
     #(
-      [helpers.ValueTuple("threshold", PrimitiveType(Float), dynamic.float(99.9))],
+      [
+        helpers.ValueTuple(
+          "threshold",
+          PrimitiveType(Float),
+          dynamic.float(99.9),
+        ),
+      ],
       "threshold",
       Ok(99.9),
     ),
     // returns Error for missing label
     #(
-      [helpers.ValueTuple("threshold", PrimitiveType(Float), dynamic.float(99.9))],
+      [
+        helpers.ValueTuple(
+          "threshold",
+          PrimitiveType(Float),
+          dynamic.float(99.9),
+        ),
+      ],
       "missing",
       Error(Nil),
     ),
@@ -477,13 +489,25 @@ pub fn extract_int_test() {
   [
     // extracts Integer ValueTuple
     #(
-      [helpers.ValueTuple("window_in_days", PrimitiveType(Integer), dynamic.int(30))],
+      [
+        helpers.ValueTuple(
+          "window_in_days",
+          PrimitiveType(Integer),
+          dynamic.int(30),
+        ),
+      ],
       "window_in_days",
       Ok(30),
     ),
     // returns Error for missing label
     #(
-      [helpers.ValueTuple("window_in_days", PrimitiveType(Integer), dynamic.int(30))],
+      [
+        helpers.ValueTuple(
+          "window_in_days",
+          PrimitiveType(Integer),
+          dynamic.int(30),
+        ),
+      ],
       "missing",
       Error(Nil),
     ),

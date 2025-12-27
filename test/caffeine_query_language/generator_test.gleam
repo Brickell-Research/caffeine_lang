@@ -6,165 +6,145 @@ import gleeunit/should
 import terra_madre/hcl
 import test_helpers
 
-// ==== resolve_slo_to_hcl Tests ====
+// ==== resolve_slo_to_hcl ====
 // good_over_total
 // * ✅ simple good over total query returns MetricSlo with query block
-// * ✅ nested expression returns correct numerator/denominator
 // time_slice
 // * ✅ time_slice returns TimeSliceSlo with sli_specification block
 // * ✅ time_slice with formula expression generates multiple metric_query blocks
+pub fn resolve_slo_to_hcl_test() {
+  // simple good over total query returns MetricSlo with query block
+  {
+    let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) =
+      generator.resolve_slo_to_hcl(
+        "numerator / denominator",
+        dict.from_list([
+          #("numerator", "sum:http.requests{status:2xx}"),
+          #("denominator", "sum:http.requests{*}"),
+        ]),
+      )
 
-pub fn resolve_slo_to_hcl_good_over_total_test() {
-  // simple good over total query
-  let result =
-    generator.resolve_slo_to_hcl(
-      "numerator / denominator",
-      dict.from_list([
-        #("numerator", "sum:http.requests{status:2xx}"),
-        #("denominator", "sum:http.requests{*}"),
-      ]),
-    )
+    slo_type |> should.equal(generator.MetricSlo)
+    blocks |> list.length |> should.equal(1)
 
-  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
-  should.equal(slo_type, generator.MetricSlo)
-  should.equal(list.length(blocks), 1)
+    let assert [query_block] = blocks
+    query_block.type_ |> should.equal("query")
+    dict.get(query_block.attributes, "numerator")
+    |> should.equal(Ok(hcl.StringLiteral("sum:http.requests{status:2xx}")))
+    dict.get(query_block.attributes, "denominator")
+    |> should.equal(Ok(hcl.StringLiteral("sum:http.requests{*}")))
+  }
 
-  let assert [query_block] = blocks
-  should.equal(query_block.type_, "query")
-  should.equal(
-    dict.get(query_block.attributes, "numerator"),
-    Ok(hcl.StringLiteral("sum:http.requests{status:2xx}")),
-  )
-  should.equal(
-    dict.get(query_block.attributes, "denominator"),
-    Ok(hcl.StringLiteral("sum:http.requests{*}")),
-  )
-}
-
-pub fn resolve_slo_to_hcl_time_slice_test() {
   // time_slice returns TimeSliceSlo with sli_specification block
-  let result =
-    generator.resolve_slo_to_hcl(
-      "time_slice(avg:system.cpu{env:production} > 99.5 per 300s)",
-      dict.new(),
-    )
+  {
+    let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) =
+      generator.resolve_slo_to_hcl(
+        "time_slice(avg:system.cpu{env:production} > 99.5 per 300s)",
+        dict.new(),
+      )
 
-  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
-  should.equal(slo_type, generator.TimeSliceSlo)
-  should.equal(list.length(blocks), 1)
+    slo_type |> should.equal(generator.TimeSliceSlo)
+    blocks |> list.length |> should.equal(1)
 
-  let assert [sli_spec_block] = blocks
-  should.equal(sli_spec_block.type_, "sli_specification")
+    let assert [sli_spec_block] = blocks
+    sli_spec_block.type_ |> should.equal("sli_specification")
 
-  // Check nested time_slice block exists
-  should.equal(list.length(sli_spec_block.blocks), 1)
-  let assert [time_slice_block] = sli_spec_block.blocks
-  should.equal(time_slice_block.type_, "time_slice")
-  should.equal(
-    dict.get(time_slice_block.attributes, "comparator"),
-    Ok(hcl.StringLiteral(">")),
-  )
-  should.equal(
-    dict.get(time_slice_block.attributes, "query_interval_seconds"),
-    Ok(hcl.IntLiteral(300)),
-  )
-  should.equal(
-    dict.get(time_slice_block.attributes, "threshold"),
-    Ok(hcl.FloatLiteral(99.5)),
-  )
+    // Check nested time_slice block exists
+    sli_spec_block.blocks |> list.length |> should.equal(1)
+    let assert [time_slice_block] = sli_spec_block.blocks
+    time_slice_block.type_ |> should.equal("time_slice")
+    dict.get(time_slice_block.attributes, "comparator")
+    |> should.equal(Ok(hcl.StringLiteral(">")))
+    dict.get(time_slice_block.attributes, "query_interval_seconds")
+    |> should.equal(Ok(hcl.IntLiteral(300)))
+    dict.get(time_slice_block.attributes, "threshold")
+    |> should.equal(Ok(hcl.FloatLiteral(99.5)))
+  }
+
+  // time_slice with formula expression generates multiple metric_query blocks
+  {
+    let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) =
+      generator.resolve_slo_to_hcl(
+        "time_slice((build_time + deploy_time) >= 600000 per 5m)",
+        dict.from_list([
+          #(
+            "build_time",
+            "sum:circleci.completed_build_time.avg{job_name:build-prod}",
+          ),
+          #(
+            "deploy_time",
+            "sum:circleci.completed_build_time.avg{job_name:deploy-prod}",
+          ),
+        ]),
+      )
+
+    slo_type |> should.equal(generator.TimeSliceSlo)
+    blocks |> list.length |> should.equal(1)
+
+    let assert [sli_spec_block] = blocks
+    sli_spec_block.type_ |> should.equal("sli_specification")
+
+    // Check nested time_slice block
+    let assert [time_slice_block] = sli_spec_block.blocks
+    time_slice_block.type_ |> should.equal("time_slice")
+    dict.get(time_slice_block.attributes, "comparator")
+    |> should.equal(Ok(hcl.StringLiteral(">=")))
+    dict.get(time_slice_block.attributes, "threshold")
+    |> should.equal(Ok(hcl.FloatLiteral(600_000.0)))
+
+    // Check the outer query block contains formula + 2 inner query blocks
+    let assert [outer_query_block] = time_slice_block.blocks
+    outer_query_block.type_ |> should.equal("query")
+    // Should have: 1 formula block + 2 query blocks (one per metric)
+    outer_query_block.blocks |> list.length |> should.equal(3)
+
+    // Find the formula block
+    let formula_blocks =
+      outer_query_block.blocks |> list.filter(fn(b) { b.type_ == "formula" })
+    formula_blocks |> list.length |> should.equal(1)
+    let assert [formula_block] = formula_blocks
+    // Outer parentheses are stripped from the formula expression
+    dict.get(formula_block.attributes, "formula_expression")
+    |> should.equal(Ok(hcl.StringLiteral("build_time + deploy_time")))
+
+    // Find the inner query blocks (each contains a metric_query)
+    let inner_query_blocks =
+      outer_query_block.blocks |> list.filter(fn(b) { b.type_ == "query" })
+    inner_query_blocks |> list.length |> should.equal(2)
+
+    // Extract metric_query blocks and verify their names
+    let metric_names =
+      inner_query_blocks
+      |> list.flat_map(fn(qb) { qb.blocks })
+      |> list.filter(fn(b) { b.type_ == "metric_query" })
+      |> list.filter_map(fn(mq) {
+        case dict.get(mq.attributes, "name") {
+          Ok(hcl.StringLiteral(name)) -> Ok(name)
+          _ -> Error(Nil)
+        }
+      })
+
+    // Should have both build_time and deploy_time
+    metric_names |> list.contains("build_time") |> should.be_true
+    metric_names |> list.contains("deploy_time") |> should.be_true
+  }
 }
 
-pub fn resolve_slo_to_hcl_time_slice_multi_query_test() {
-  // time_slice with formula expression like "(build_time + deploy_time)"
-  let result =
-    generator.resolve_slo_to_hcl(
-      "time_slice((build_time + deploy_time) >= 600000 per 5m)",
-      dict.from_list([
-        #(
-          "build_time",
-          "sum:circleci.completed_build_time.avg{job_name:build-prod}",
-        ),
-        #(
-          "deploy_time",
-          "sum:circleci.completed_build_time.avg{job_name:deploy-prod}",
-        ),
-      ]),
-    )
-
-  let assert Ok(generator.ResolvedSloHcl(slo_type, blocks)) = result
-  should.equal(slo_type, generator.TimeSliceSlo)
-  should.equal(list.length(blocks), 1)
-
-  let assert [sli_spec_block] = blocks
-  should.equal(sli_spec_block.type_, "sli_specification")
-
-  // Check nested time_slice block
-  let assert [time_slice_block] = sli_spec_block.blocks
-  should.equal(time_slice_block.type_, "time_slice")
-  should.equal(
-    dict.get(time_slice_block.attributes, "comparator"),
-    Ok(hcl.StringLiteral(">=")),
-  )
-  should.equal(
-    dict.get(time_slice_block.attributes, "threshold"),
-    Ok(hcl.FloatLiteral(600_000.0)),
-  )
-
-  // Check the outer query block contains formula + 2 inner query blocks
-  let assert [outer_query_block] = time_slice_block.blocks
-  should.equal(outer_query_block.type_, "query")
-  // Should have: 1 formula block + 2 query blocks (one per metric)
-  should.equal(list.length(outer_query_block.blocks), 3)
-
-  // Find the formula block
-  let formula_blocks =
-    outer_query_block.blocks
-    |> list.filter(fn(b) { b.type_ == "formula" })
-  should.equal(list.length(formula_blocks), 1)
-  let assert [formula_block] = formula_blocks
-  // Outer parentheses are stripped from the formula expression
-  should.equal(
-    dict.get(formula_block.attributes, "formula_expression"),
-    Ok(hcl.StringLiteral("build_time + deploy_time")),
-  )
-
-  // Find the inner query blocks (each contains a metric_query)
-  let inner_query_blocks =
-    outer_query_block.blocks
-    |> list.filter(fn(b) { b.type_ == "query" })
-  should.equal(list.length(inner_query_blocks), 2)
-
-  // Extract metric_query blocks and verify their names
-  let metric_names =
-    inner_query_blocks
-    |> list.flat_map(fn(qb) { qb.blocks })
-    |> list.filter(fn(b) { b.type_ == "metric_query" })
-    |> list.filter_map(fn(mq) {
-      case dict.get(mq.attributes, "name") {
-        Ok(hcl.StringLiteral(name)) -> Ok(name)
-        _ -> Error(Nil)
-      }
-    })
-
-  // Should have both build_time and deploy_time
-  should.be_true(list.contains(metric_names, "build_time"))
-  should.be_true(list.contains(metric_names, "deploy_time"))
-}
-
-// ==== exp_to_string Tests ====
+// ==== exp_to_string ====
+// path expressions (manually constructed ASTs)
 // * ✅ path with slashes (no spaces)
 // * ✅ path with multiple segments
 // * ✅ path with wildcards
+// * ✅ normal division (with spaces)
+// * ✅ division with query braces (with spaces)
+// parsed expressions
 // * ✅ path with dots in field name
 // * ✅ path ending with closing brace
 // * ✅ full datadog query path pattern
 // * ✅ datadog query pattern with braces
 // * ✅ path with underscores in last segment
-// * ✅ normal division (with spaces)
-// * ✅ division with query braces (with spaces)
-
-pub fn exp_to_string_path_expressions_test() {
-  // Tests that use manually constructed ASTs for path expressions
+pub fn exp_to_string_test() {
+  // path expressions (manually constructed ASTs)
   [
     // path with slashes (no spaces) - metric{path:/v1/users}
     #(
@@ -237,10 +217,8 @@ pub fn exp_to_string_path_expressions_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_1(generator.exp_to_string)
-}
 
-pub fn exp_to_string_parsed_expressions_test() {
-  // Tests that parse strings and verify output
+  // parsed expressions
   [
     // path with dots in field name
     #(
@@ -271,7 +249,7 @@ pub fn exp_to_string_parsed_expressions_test() {
   })
 }
 
-// ==== Operator to Datadog Query ====
+// ==== operator_to_datadog_query ====
 // * ✅ Addition
 // * ✅ Subtraction
 // * ✅ Multiplication
@@ -338,16 +316,12 @@ pub fn substitute_words_test() {
 // * ✅ single word
 // * ✅ multiple words in expression
 // * ✅ words in nested parentheses
-// * ✅ returns unique words only
+// * ✅ complex formula
 pub fn extract_words_test() {
   [
-    // single word
     #("query1", ["query1"]),
-    // multiple words in expression
     #("build_time + deploy_time", ["build_time", "deploy_time"]),
-    // words in nested parentheses
     #("(a + b) * c", ["a", "b", "c"]),
-    // complex formula
     #("(build_time + deploy_time) / total", [
       "build_time",
       "deploy_time",
@@ -359,9 +333,8 @@ pub fn extract_words_test() {
     let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
     let words = generator.extract_words(exp)
     // Check all expected words are present (order may vary)
-    expected
-    |> list.each(fn(w) { should.be_true(list.contains(words, w)) })
-    should.equal(list.length(words), list.length(expected))
+    expected |> list.each(fn(w) { words |> list.contains(w) |> should.be_true })
+    words |> list.length |> should.equal(list.length(expected))
   })
 }
 

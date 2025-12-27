@@ -134,7 +134,8 @@ fn try_operators(
 /// Returns Error if the input is not a keyword expression.
 fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
   // Check for time_slice keyword
-  case string.starts_with(input, "time_slice(") && string.ends_with(input, ")")
+  case
+    string.starts_with(input, "time_slice(") && string.ends_with(input, ")")
   {
     True -> {
       // Extract the inner content (everything between "time_slice(" and ")")
@@ -316,8 +317,7 @@ fn parse_interval(input: String) -> Result(Float, String) {
         Error(_) ->
           case parse_int_as_float(number_part) {
             Ok(f) -> Ok(f)
-            Error(_) ->
-              Error("Invalid interval number '" <> number_part <> "'")
+            Error(_) -> Error("Invalid interval number '" <> number_part <> "'")
           }
       })
 

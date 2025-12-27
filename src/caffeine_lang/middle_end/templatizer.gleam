@@ -253,9 +253,10 @@ pub fn resolve_template(
         )
       Ok(resolve_list_value(template, vals))
     }
-    accepted_types.ModifierType(accepted_types.Optional(
-      accepted_types.CollectionType(accepted_types.Dict(_, _)),
-    )) ->
+    accepted_types.ModifierType(accepted_types.Optional(accepted_types.CollectionType(accepted_types.Dict(
+      _,
+      _,
+    )))) ->
       Error(SemanticAnalysisTemplateResolutionError(
         msg: "Unsupported templatized variable type: "
         <> accepted_types.accepted_type_to_string(value_tuple.typ)
@@ -299,7 +300,10 @@ pub fn resolve_template(
         <> accepted_types.accepted_type_to_string(value_tuple.typ)
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       ))
-    accepted_types.ModifierType(accepted_types.Defaulted(inner_type, default_val)) -> {
+    accepted_types.ModifierType(accepted_types.Defaulted(
+      inner_type,
+      default_val,
+    )) -> {
       // For Defaulted types, try to decode the inner value
       // If None, use the default value instead of empty string
       let inner_decoder = case inner_type {
