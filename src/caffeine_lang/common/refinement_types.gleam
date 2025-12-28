@@ -8,6 +8,11 @@ import gleam/string
 /// Refinement types enforce additional compile-time validations.
 pub type RefinementTypes(accepted) {
   /// Restricts values to a user-defined set.
+  /// I.E. String { x | x in { pasta, pizza, salad } }
+  /// 
+  /// At this time we only support:
+  ///   * Primitives: Integer, Float, String
+  ///   * Modifiers:  Defaulted with Integer, Float, String
   OneOf(accepted, set.Set(String))
 }
 
@@ -42,7 +47,7 @@ pub fn parse_refinement_type(
     Ok(#(typ, rest)) -> {
       case typ |> string.trim {
         // TODO: fix, this is terrible
-        "Boolean" | "Dict" | "List" | "Optional" | "Defaulted" -> Error(Nil)
+        "Boolean" | "Dict" | "List" | "Optional" -> Error(Nil)
         _ -> {
           use parsed_typ <- result.try(parse_inner(typ |> string.trim))
           do_parse_refinement(parsed_typ, rest, validate_set_value)
@@ -81,9 +86,9 @@ pub fn validate_value(
                 decode.DecodeError(
                   expected: "one of: "
                     <> allowed_values
-                    |> set.to_list
-                    |> list.sort(string.compare)
-                    |> string.join(", "),
+                  |> set.to_list
+                  |> list.sort(string.compare)
+                  |> string.join(", "),
                   found: str_val,
                   path: [],
                 ),
