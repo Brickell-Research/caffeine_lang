@@ -1,5 +1,6 @@
 import caffeine_lang/common/collection_types.{type CollectionTypes}
 import caffeine_lang/common/modifier_types.{type ModifierTypes}
+import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
 import caffeine_lang/common/refinement_types.{type RefinementTypes}
 import gleam/dynamic.{type Dynamic}
@@ -108,8 +109,8 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   |> result.lazy_or(fn() {
     refinement_types.parse_refinement_type(
       raw,
-      parse_primitive_only,
-      validate_string_literal,
+      parse_primitive_or_defaulted,
+      validate_string_literal_or_defaulted,
     )
     |> result.map(RefinementType)
   })
@@ -131,6 +132,36 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   })
 }
 
+/// Parser for primitives or Defaulted modifiers - used for refinement type inner types.
+/// Only allows Integer, Float, String (not Boolean) or Defaulted with those types.
+fn parse_primitive_or_defaulted(raw: String) -> Result(AcceptedTypes, Nil) {
+  parse_refinement_compatible_primitive(raw)
+  |> result.map(PrimitiveType)
+  |> result.lazy_or(fn() {
+    modifier_types.parse_modifier_type(
+      raw,
+      fn(inner) {
+        parse_refinement_compatible_primitive(inner)
+        |> result.map(PrimitiveType)
+      },
+      validate_string_literal,
+    )
+    |> result.map(ModifierType)
+  })
+}
+
+/// Parses only Integer, Float, or String primitives (excludes Boolean).
+fn parse_refinement_compatible_primitive(
+  raw: String,
+) -> Result(primitive_types.PrimitiveTypes, Nil) {
+  case raw {
+    "String" -> Ok(primitive_types.String)
+    _ ->
+      numeric_types.parse_numeric_type(raw)
+      |> result.map(primitive_types.NumericType)
+  }
+}
+
 /// Validates a string literal value is valid for a type - only primitives are supported.
 /// Used for default values in modifiers and set values in refinement types.
 fn validate_string_literal(
@@ -143,6 +174,20 @@ fn validate_string_literal(
     CollectionType(_) -> Error(Nil)
     ModifierType(_) -> Error(Nil)
     RefinementType(_) -> Error(Nil)
+  }
+}
+
+/// Validates a string literal for refinement types - supports primitives and Defaulted.
+fn validate_string_literal_or_defaulted(
+  typ: AcceptedTypes,
+  value: String,
+) -> Result(Nil, Nil) {
+  case typ {
+    PrimitiveType(primitive) ->
+      primitive_types.validate_default_value(primitive, value)
+    ModifierType(modifier_types.Defaulted(inner, _)) ->
+      validate_string_literal_or_defaulted(inner, value)
+    _ -> Error(Nil)
   }
 }
 
