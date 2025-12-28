@@ -26,6 +26,31 @@ pub fn build_all(
   |> list.flatten
 }
 
+/// Extract a meaningful prefix from the source path.
+/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team", "authentication")
+@internal
+pub fn extract_path_prefix(path: String) -> #(String, String, String) {
+  case
+    path
+    |> string.split("/")
+    |> list.reverse
+    |> list.take(3)
+    |> list.reverse
+    |> list.map(fn(segment) {
+      // Remove .json extension if present.
+      case string.ends_with(segment, ".json") {
+        True -> string.drop_end(segment, 5)
+        False -> segment
+      }
+    })
+  {
+    [org, team, service] -> #(org, team, service)
+    // This is not actually a possible state, however for pattern matching completeness we
+    // include it here.
+    _ -> #("unknown", "unknown", "unknown")
+  }
+}
+
 /// Build intermediate representations from validated expectations for a single file.
 fn build(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
@@ -37,8 +62,8 @@ fn build(
   |> list.map(fn(expectation_and_blueprint_pair) {
     let #(expectation, blueprint) = expectation_and_blueprint_pair
 
-    // merge blueprint inputs with expectation inputs
-    // Expectation inputs override blueprint inputs for the same key
+    // Merge blueprint inputs with expectation inputs.
+    // Expectation inputs override blueprint inputs for the same key.
     let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
     let value_tuples = build_value_tuples(merged_inputs, blueprint.params)
@@ -119,37 +144,12 @@ fn extract_misc_metadata(
   value_tuples
   |> list.filter_map(fn(value_tuple) {
     case value_tuple.label, decode.run(value_tuple.value, decode.string) {
-      // for some reason we cannot parse the value
+      // For some reason we cannot parse the value.
       _, Error(_) -> Error(Nil)
-      // TODO: make the tag filtering dynamic
+      // TODO: Make the tag filtering dynamic.
       "window_in_days", _ | "threshold", _ | "value", _ -> Error(Nil)
       _, Ok(value_string) -> Ok(#(value_tuple.label, value_string))
     }
   })
   |> dict.from_list
-}
-
-/// Extract a meaningful prefix from the source path
-/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team", "authentication")
-@internal
-pub fn extract_path_prefix(path: String) -> #(String, String, String) {
-  case
-    path
-    |> string.split("/")
-    |> list.reverse
-    |> list.take(3)
-    |> list.reverse
-    |> list.map(fn(segment) {
-      // Remove .json extension if present
-      case string.ends_with(segment, ".json") {
-        True -> string.drop_end(segment, 5)
-        False -> segment
-      }
-    })
-  {
-    [org, team, service] -> #(org, team, service)
-    // This is not actually a possible state, however for pattern matching completeness we
-    // include it here.
-    _ -> #("unknown", "unknown", "unknown")
-  }
 }

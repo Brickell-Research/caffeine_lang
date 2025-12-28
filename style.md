@@ -79,6 +79,13 @@ Use plain `fn` (not `pub fn`) for truly private helpers that don't need test acc
 - Case list: `// * ✅ case description`
 - Subsections: `// ==== Section Name ====`
 
+## Module Structure
+
+1. Imports
+2. Public types (`pub type`)
+3. Public functions (`pub fn`, `@internal pub fn`)
+4. Private functions (`fn`)
+
 ## Function Design
 
 - **Data-first**: Put the main data as the first argument to enable piping

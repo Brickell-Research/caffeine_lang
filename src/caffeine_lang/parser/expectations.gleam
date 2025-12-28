@@ -48,9 +48,38 @@ pub fn parse_from_json_string(
   validate_expectations(expectations, blueprints)
 }
 
+/// Parse expectations from a JSON string.
+@internal
+pub fn expectations_from_json(
+  json_string: String,
+  blueprints: List(Blueprint),
+) -> Result(List(Expectation), json.DecodeError) {
+  let expectation_decoded = {
+    use name <- decode.field("name", decoders.non_empty_string_decoder())
+    use blueprint_ref <- decode.field(
+      "blueprint_ref",
+      decoders.named_reference_decoder(blueprints, fn(b) { b.name }),
+    )
+    use inputs <- decode.field(
+      "inputs",
+      decode.dict(decode.string, decode.dynamic),
+    )
+
+    decode.success(Expectation(name:, blueprint_ref:, inputs:))
+  }
+  let expectations_decoded = {
+    use expectations <- decode.field(
+      "expectations",
+      decode.list(expectation_decoded),
+    )
+    decode.success(expectations)
+  }
+
+  json.parse(from: json_string, using: expectations_decoded)
+}
+
 /// Validate expectations and return paired with their blueprints.
-/// TODO: this provides _massive_ duplication and is an area of low
-///       hanging fruit for optimization.
+/// TODO: This provides massive duplication and is an area of low hanging fruit for optimization.
 fn validate_expectations(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
@@ -118,34 +147,4 @@ fn check_input_overshadowing(
     "" -> Ok(True)
     _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
   }
-}
-
-/// Parse expectations from a JSON string.
-@internal
-pub fn expectations_from_json(
-  json_string: String,
-  blueprints: List(Blueprint),
-) -> Result(List(Expectation), json.DecodeError) {
-  let expectation_decoded = {
-    use name <- decode.field("name", decoders.non_empty_string_decoder())
-    use blueprint_ref <- decode.field(
-      "blueprint_ref",
-      decoders.named_reference_decoder(blueprints, fn(b) { b.name }),
-    )
-    use inputs <- decode.field(
-      "inputs",
-      decode.dict(decode.string, decode.dynamic),
-    )
-
-    decode.success(Expectation(name:, blueprint_ref:, inputs:))
-  }
-  let expectations_decoded = {
-    use expectations <- decode.field(
-      "expectations",
-      decode.list(expectation_decoded),
-    )
-    decode.success(expectations)
-  }
-
-  json.parse(from: json_string, using: expectations_decoded)
 }

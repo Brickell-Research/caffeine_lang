@@ -15,7 +15,82 @@ import gleam/list
 import gleam/result
 import gleam_community/ansi
 
+/// Compiles a blueprint and expectations directory into Terraform configuration.
+pub fn compile(
+  blueprint_file_path: String,
+  expectations_directory: String,
+  config: CompilationConfig,
+) -> Result(String, errors.CompilationError) {
+  print_header(config)
+
+  // Step 1: Parse and Link.
+  print_step1_start(config, blueprint_file_path, expectations_directory)
+  use irs <- result.try(
+    case run_parse_and_link(blueprint_file_path, expectations_directory) {
+      Error(err) -> {
+        print_step1_error(config)
+        Error(err)
+      }
+      Ok(irs) -> {
+        print_step1_success(config, list.length(irs))
+        Ok(irs)
+      }
+    },
+  )
+
+  // Step 2: Semantic Analysis.
+  print_step2_start(config, irs)
+  use resolved_irs <- result.try(case run_semantic_analysis(irs) {
+    Error(err) -> {
+      print_step2_error(config)
+      Error(err)
+    }
+    Ok(resolved_irs) -> {
+      print_step2_success(config, list.length(resolved_irs))
+      Ok(resolved_irs)
+    }
+  })
+
+  // Step 3: Code Generation.
+  print_step3_start(config, resolved_irs)
+  use terraform_output <- result.try(case run_code_generation(resolved_irs) {
+    Error(err) -> {
+      print_step3_error(config)
+      Error(err)
+    }
+    Ok(output) -> {
+      print_step3_success(config)
+      Ok(output)
+    }
+  })
+
+  print_footer(config)
+  Ok(terraform_output)
+}
+
+/// Compiles from JSON strings directly (no file I/O).
+/// Used for browser-based compilation.
+pub fn compile_from_strings(
+  blueprints_json: String,
+  expectations_json: String,
+  expectations_path: String,
+) -> Result(String, errors.CompilationError) {
+  // Step 1: Parse (no file I/O).
+  use irs <- result.try(parse_from_strings(
+    blueprints_json,
+    expectations_json,
+    expectations_path,
+  ))
+
+  // Step 2: Semantic analysis.
+  use resolved_irs <- result.try(run_semantic_analysis(irs))
+
+  // Step 3: Code generation.
+  run_code_generation(resolved_irs)
+}
+
 // ==== Print helpers ====
+
 fn print_header(config: CompilationConfig) {
   logger.log(config.log_level, "")
   logger.log(
@@ -155,6 +230,7 @@ fn print_footer(config: CompilationConfig) {
 }
 
 // ==== Shared compilation steps ====
+
 fn run_parse_and_link(
   blueprint_file_path: String,
   expectations_directory: String,
@@ -172,82 +248,6 @@ fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(String, errors.CompilationError) {
   datadog.generate_terraform(resolved_irs)
-}
-
-// ==== Compiler ====
-
-/// Compiles a blueprint and expectations directory into Terraform configuration.
-pub fn compile(
-  blueprint_file_path: String,
-  expectations_directory: String,
-  config: CompilationConfig,
-) -> Result(String, errors.CompilationError) {
-  print_header(config)
-
-  // Step 1: Parse and Link
-  print_step1_start(config, blueprint_file_path, expectations_directory)
-  use irs <- result.try(
-    case run_parse_and_link(blueprint_file_path, expectations_directory) {
-      Error(err) -> {
-        print_step1_error(config)
-        Error(err)
-      }
-      Ok(irs) -> {
-        print_step1_success(config, list.length(irs))
-        Ok(irs)
-      }
-    },
-  )
-
-  // Step 2: Semantic Analysis
-  print_step2_start(config, irs)
-  use resolved_irs <- result.try(case run_semantic_analysis(irs) {
-    Error(err) -> {
-      print_step2_error(config)
-      Error(err)
-    }
-    Ok(resolved_irs) -> {
-      print_step2_success(config, list.length(resolved_irs))
-      Ok(resolved_irs)
-    }
-  })
-
-  // Step 3: Code Generation
-  print_step3_start(config, resolved_irs)
-  use terraform_output <- result.try(case run_code_generation(resolved_irs) {
-    Error(err) -> {
-      print_step3_error(config)
-      Error(err)
-    }
-    Ok(output) -> {
-      print_step3_success(config)
-      Ok(output)
-    }
-  })
-
-  print_footer(config)
-  Ok(terraform_output)
-}
-
-/// Compiles from JSON strings directly (no file I/O).
-/// Used for browser-based compilation.
-pub fn compile_from_strings(
-  blueprints_json: String,
-  expectations_json: String,
-  expectations_path: String,
-) -> Result(String, errors.CompilationError) {
-  // Step 1: Parse (no file I/O)
-  use irs <- result.try(parse_from_strings(
-    blueprints_json,
-    expectations_json,
-    expectations_path,
-  ))
-
-  // Step 2: Semantic analysis
-  use resolved_irs <- result.try(run_semantic_analysis(irs))
-
-  // Step 3: Code generation
-  run_code_generation(resolved_irs)
 }
 
 fn parse_from_strings(

@@ -37,11 +37,11 @@ import gleam/string
 /// A parsed template variable containing all the information needed for substitution.
 pub type TemplateVariable {
   TemplateVariable(
-    // the name of the input attribute from the expectation (provides the value)
+    // The name of the input attribute from the expectation (provides the value).
     input_name: String,
-    // the Datadog tag/attribute name to use in the query
+    // The Datadog tag/attribute name to use in the query.
     datadog_attr: String,
-    // how the value should be formatted
+    // How the value should be formatted.
     template_type: DatadogTemplateType,
   )
 }
@@ -135,7 +135,7 @@ pub fn parse_template_variable(
   variable: String,
 ) -> Result(TemplateVariable, CompilationError) {
   case string.split_once(variable, "->") {
-    // No "->" means simple raw value substitution
+    // No "->" means simple raw value substitution.
     Error(_) -> {
       let trimmed = string.trim(variable)
       case trimmed {
@@ -151,7 +151,7 @@ pub fn parse_template_variable(
           ))
       }
     }
-    // Has "->" means Datadog format
+    // Has "->" means Datadog format.
     Ok(#(input_name, rest)) -> {
       let trimmed_input = string.trim(input_name)
 
@@ -165,33 +165,6 @@ pub fn parse_template_variable(
             msg: "Empty label name in template: " <> variable,
           ))
         _, _ -> parse_datadog_template_variable(trimmed_input, rest)
-      }
-    }
-  }
-}
-
-/// Helper to parse Datadog format template variables (with ->)
-fn parse_datadog_template_variable(
-  input_name: String,
-  rest: String,
-) -> Result(TemplateVariable, CompilationError) {
-  case string.split_once(rest, ":") {
-    // No colon means default template type
-    Error(_) ->
-      Ok(TemplateVariable(
-        input_name: string.trim(rest),
-        datadog_attr: input_name,
-        template_type: Default,
-      ))
-    Ok(#(datadog_attr, type_string)) -> {
-      case parse_template_type(string.trim(type_string)) {
-        Error(e) -> Error(e)
-        Ok(template_type) ->
-          Ok(TemplateVariable(
-            input_name: string.trim(datadog_attr),
-            datadog_attr: input_name,
-            template_type: template_type,
-          ))
       }
     }
   }
@@ -277,5 +250,32 @@ pub fn resolve_list_value(
     Raw, values -> values |> string.join(", ")
     Default, values -> attr <> " IN (" <> values |> string.join(", ") <> ")"
     Not, values -> attr <> " NOT IN (" <> values |> string.join(", ") <> ")"
+  }
+}
+
+/// Helper to parse Datadog format template variables (with ->).
+fn parse_datadog_template_variable(
+  input_name: String,
+  rest: String,
+) -> Result(TemplateVariable, CompilationError) {
+  case string.split_once(rest, ":") {
+    // No colon means default template type.
+    Error(_) ->
+      Ok(TemplateVariable(
+        input_name: string.trim(rest),
+        datadog_attr: input_name,
+        template_type: Default,
+      ))
+    Ok(#(datadog_attr, type_string)) -> {
+      case parse_template_type(string.trim(type_string)) {
+        Error(e) -> Error(e)
+        Ok(template_type) ->
+          Ok(TemplateVariable(
+            input_name: string.trim(datadog_attr),
+            datadog_attr: input_name,
+            template_type: template_type,
+          ))
+      }
+    }
   }
 }
