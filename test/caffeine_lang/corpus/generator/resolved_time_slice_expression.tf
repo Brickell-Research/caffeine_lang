@@ -23,7 +23,7 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "org_team_auth_time_slice_slo" {
   name = "Time Slice SLO"
-  tags = ["managed_by:caffeine", "caffeine_version:2.0.1", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Time Slice SLO", "artifact:SLO"]
+  tags = ["managed_by:caffeine", "caffeine_version:2.0.2", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Time Slice SLO", "artifact:SLO"]
   type = "time_slice"
 
   sli_specification {
