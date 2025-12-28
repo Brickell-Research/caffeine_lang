@@ -3,6 +3,7 @@ import caffeine_lang/common/helpers
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
@@ -11,6 +12,7 @@ import gleam/dict
 import gleam/dynamic
 import gleam/list
 import gleam/option
+import gleam/set
 import gleam/string
 import gleeunit/should
 import test_helpers
@@ -39,6 +41,7 @@ pub fn extract_path_prefix_test() {
 // * ✅ multiple files flattened into single list
 // * ✅ optional params not provided get nil value
 // * ✅ defaulted params not provided get nil value
+// * ✅ refinement type with defaulted inner not provided gets nil value
 // * ✅ blueprint inputs merged with expectation inputs
 // * ✅ misc metadata populated from string values (excluding filtered keys)
 pub fn build_all_test() {
@@ -187,6 +190,61 @@ pub fn build_all_test() {
           accepted_types.PrimitiveType(primitive_types.String),
           "default_value",
         )),
+        value: dynamic.nil(),
+      ),
+      helpers.ValueTuple(
+        label: "required",
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+        value: dynamic.float(1.0),
+      ),
+    ])
+  }
+
+  // refinement type with defaulted inner not provided gets nil value
+  {
+    let blueprint =
+      blueprints.Blueprint(
+        name: "test_blueprint",
+        artifact_ref: "TestArtifact",
+        params: dict.from_list([
+          #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+          #(
+            "environment",
+            accepted_types.RefinementType(
+              refinement_types.OneOf(
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
+                set.from_list(["production", "staging"]),
+              ),
+            ),
+          ),
+        ]),
+        inputs: dict.from_list([]),
+      )
+    let expectation =
+      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+
+    let assert [ir] =
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/svc.json"),
+      ])
+
+    ir.values
+    |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
+    |> should.equal([
+      helpers.ValueTuple(
+        label: "environment",
+        typ: accepted_types.RefinementType(
+          refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production", "staging"]),
+          ),
+        ),
         value: dynamic.nil(),
       ),
       helpers.ValueTuple(

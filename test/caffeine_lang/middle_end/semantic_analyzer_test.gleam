@@ -241,6 +241,7 @@ pub fn resolve_vendor_test() {
 // * ✅ happy path - multiple queries with template variable resolution
 // * ✅ happy path - defaulted param with nil uses default value
 // * ✅ happy path - refinement type with defaulted inner using nil gets default value
+// * ✅ happy path - lcp_p75_latency style with mix of defaulted, refinement, and provided values
 pub fn resolve_queries_test() {
   [
     // happy path - multiple queries with template variable resolution
@@ -539,6 +540,138 @@ pub fn resolve_queries_test() {
               #(
                 dynamic.string("query"),
                 dynamic.string("p75:rum.lcp.duration{env:production}"),
+              ),
+            ]),
+          ),
+        ],
+        vendor: option.Some(vendor.Datadog),
+      )),
+    ),
+    // happy path - lcp_p75_latency style: multiple params, mix of defaulted and refinement types
+    // Simulates: environment not provided (uses default "production"),
+    // application_name not provided (uses default "member_portal"),
+    // view_path provided explicitly
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "LCP is Reasonable",
+          org_name: "member_growth",
+          service_name: "member_portal",
+          blueprint_name: "lcp_p75_latency",
+          team_name: "member",
+          misc: dict.new(),
+        ),
+        unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
+        artifact_ref: "SLO",
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_datadog),
+          ),
+          // environment: Defaulted(String, production) { x | x in { production } } - NOT provided
+          helpers.ValueTuple(
+            "environment",
+            accepted_types.RefinementType(
+              refinement_types.OneOf(
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
+                set.from_list(["production"]),
+              ),
+            ),
+            dynamic.nil(),
+          ),
+          // application_name: Defaulted(String, member_portal) - NOT provided
+          helpers.ValueTuple(
+            "application_name",
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "member_portal",
+            )),
+            dynamic.nil(),
+          ),
+          // view_path: String - PROVIDED
+          helpers.ValueTuple(
+            "view_path",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string("/members/messages"),
+          ),
+          helpers.ValueTuple(
+            "queries",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("query"),
+                dynamic.string(
+                  "p75:rum.lcp.duration{$$application.name->application_name$$, $$env->environment$$, $$view.url_path_group->view_path$$}",
+                ),
+              ),
+            ]),
+          ),
+        ],
+        vendor: option.Some(vendor.Datadog),
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "LCP is Reasonable",
+          org_name: "member_growth",
+          service_name: "member_portal",
+          blueprint_name: "lcp_p75_latency",
+          team_name: "member",
+          misc: dict.new(),
+        ),
+        unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
+        artifact_ref: "SLO",
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_datadog),
+          ),
+          helpers.ValueTuple(
+            "environment",
+            accepted_types.RefinementType(
+              refinement_types.OneOf(
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
+                set.from_list(["production"]),
+              ),
+            ),
+            dynamic.nil(),
+          ),
+          helpers.ValueTuple(
+            "application_name",
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "member_portal",
+            )),
+            dynamic.nil(),
+          ),
+          helpers.ValueTuple(
+            "view_path",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string("/members/messages"),
+          ),
+          helpers.ValueTuple(
+            "queries",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("query"),
+                // All defaults resolved: application.name:member_portal, env:production, view.url_path_group:/members/messages
+                dynamic.string(
+                  "p75:rum.lcp.duration{application.name:member_portal, env:production, view.url_path_group:/members/messages}",
+                ),
               ),
             ]),
           ),
