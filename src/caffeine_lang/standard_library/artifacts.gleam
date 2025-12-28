@@ -12,7 +12,7 @@ pub const standard_library = "
   \"artifacts\": [
     {
       \"name\": \"SLO\",
-      \"params\": { \"threshold\": \"Float\", \"window_in_days\": \"Defaulted(Integer, 30)\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String\"}
+      \"params\": { \"threshold\": \"Float\", \"window_in_days\": \"Defaulted(Integer, 30)\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String { x | x in { datadog } }\"}
     }
   ]
 }

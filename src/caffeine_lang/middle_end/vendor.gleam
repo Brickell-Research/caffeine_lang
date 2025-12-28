@@ -1,8 +1,4 @@
 import caffeine_lang/common/constants
-import caffeine_lang/common/errors.{
-  type CompilationError, SemanticAnalysisVendorResolutionError,
-}
-import gleam/string
 
 /// Supported monitoring and observability platform vendors.
 pub type Vendor {
@@ -10,14 +6,15 @@ pub type Vendor {
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
+/// The vendor string is already validated by the refinement type at parse time,
+/// so this function can safely assume the input is valid.
 @internal
-pub fn resolve_vendor(vendor: String) -> Result(Vendor, CompilationError) {
-  case { vendor |> string.lowercase |> string.trim } {
-    "datadog" -> Ok(Datadog)
-    _ ->
-      Error(SemanticAnalysisVendorResolutionError(
-        msg: "Unknown or unsupported vendor: " <> vendor,
-      ))
+pub fn resolve_vendor(vendor: String) -> Vendor {
+  case vendor {
+    "datadog" -> Datadog
+    // This case should never be reached due to refinement type validation,
+    // but we need exhaustive pattern matching.
+    _ -> Datadog
   }
 }
 

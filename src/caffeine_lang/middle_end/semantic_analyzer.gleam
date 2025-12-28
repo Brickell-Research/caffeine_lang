@@ -67,7 +67,7 @@ pub fn resolve_vendor(
       // Safe to assert since already type checked in parser phase.
       let assert Ok(vendor_string) =
         decode.run(vendor_value_tuple.value, decode.string)
-      use vendor_value <- result.try(vendor.resolve_vendor(vendor_string))
+      let vendor_value = vendor.resolve_vendor(vendor_string)
 
       Ok(IntermediateRepresentation(..ir, vendor: option.Some(vendor_value)))
     }
