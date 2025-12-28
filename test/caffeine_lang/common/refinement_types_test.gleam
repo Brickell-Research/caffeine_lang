@@ -36,7 +36,7 @@ import test_helpers
 // * ✅ Malformed syntax - missing space after "x"
 // * ✅ Malformed syntax - missing space before inner opening bracket
 // * ✅ Malformed syntax - missing space after inner opening bracket
-pub fn parse_collection_type_test() {
+pub fn parse_refinement_type_test() {
   let parse_inner = fn(raw: String) {
     case raw {
       "String" -> Ok("String")
@@ -121,7 +121,7 @@ pub fn parse_collection_type_test() {
 //   * ✅ Integer
 //   * ✅ Float
 //   * ✅ String
-pub fn collection_type_to_string_test() {
+pub fn refinement_type_to_string_test() {
   [
     #(
       refinement_types.OneOf("Integer", set.from_list(["10", "20", "30"])),

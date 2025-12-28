@@ -53,44 +53,6 @@ pub fn parse_refinement_type(
   }
 }
 
-fn do_parse_refinement(
-  typ: accepted,
-  raw: String,
-  validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
-) -> Result(RefinementTypes(accepted), Nil) {
-  // Expect exact format: " x | x in { ... } }" (with leading space from split)
-  case raw {
-    " x | x in { " <> rest_rest -> {
-      // Must end with " } }" (inner closing brace, space, outer closing brace)
-      case string.ends_with(rest_rest, " } }") {
-        True -> {
-          // Remove the trailing " } }" to get just the values
-          let set_vals =
-            rest_rest
-            |> string.drop_end(4)
-          let values =
-            set_vals
-            |> string.split(",")
-            |> list.map(string.trim)
-            |> list.filter(fn(s) { s != "" })
-          case values {
-            [] -> Error(Nil)
-            _ -> {
-              // Validate all values are valid for the type
-              case list.try_each(values, validate_set_value(typ, _)) {
-                Ok(_) -> Ok(OneOf(typ, set.from_list(values)))
-                Error(_) -> Error(Nil)
-              }
-            }
-          }
-        }
-        False -> Error(Nil)
-      }
-    }
-    _ -> Error(Nil)
-  }
-}
-
 /// Decoder for refinement types.
 @internal
 pub fn decode_refinement_to_string(
@@ -152,5 +114,43 @@ pub fn resolve_to_string(
         Error(_) -> Error("Unable to decode refinement type value.")
       }
     }
+  }
+}
+
+fn do_parse_refinement(
+  typ: accepted,
+  raw: String,
+  validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
+) -> Result(RefinementTypes(accepted), Nil) {
+  // Expect exact format: " x | x in { ... } }" (with leading space from split)
+  case raw {
+    " x | x in { " <> rest_rest -> {
+      // Must end with " } }" (inner closing brace, space, outer closing brace)
+      case string.ends_with(rest_rest, " } }") {
+        True -> {
+          // Remove the trailing " } }" to get just the values
+          let set_vals =
+            rest_rest
+            |> string.drop_end(4)
+          let values =
+            set_vals
+            |> string.split(",")
+            |> list.map(string.trim)
+            |> list.filter(fn(s) { s != "" })
+          case values {
+            [] -> Error(Nil)
+            _ -> {
+              // Validate all values are valid for the type
+              case list.try_each(values, validate_set_value(typ, _)) {
+                Ok(_) -> Ok(OneOf(typ, set.from_list(values)))
+                Error(_) -> Error(Nil)
+              }
+            }
+          }
+        }
+        False -> Error(Nil)
+      }
+    }
+    _ -> Error(Nil)
   }
 }
