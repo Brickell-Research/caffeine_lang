@@ -3,8 +3,10 @@ import caffeine_lang/common/collection_types
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/set
 import gleam/string
 import test_helpers
 
@@ -50,6 +52,7 @@ pub fn accepted_type_to_string_test() {
 // * ✅ Invalid: nested collections not allowed
 // * ✅ Invalid: nested modifiers not allowed
 // * ✅ Invalid: Defaulted only allows primitives
+// * ✅ Refinement with Defaulted inner: parses as RefinementType, not ModifierType
 pub fn parse_accepted_type_test() {
   [
     // Composite type - modifier wrapping collection
@@ -75,6 +78,21 @@ pub fn parse_accepted_type_test() {
     #("Defaulted(Optional(String), default)", Error(Nil)),
     // Invalid - Defaulted only allows primitives
     #("Defaulted(List(String), default)", Error(Nil)),
+    // Refinement type with Defaulted inner type - should parse as RefinementType, not ModifierType
+    #(
+      "Defaulted(String, production) { x | x in { production } }",
+      Ok(
+        accepted_types.RefinementType(
+          refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production"]),
+          ),
+        ),
+      ),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(accepted_types.parse_accepted_type)
 }
@@ -167,6 +185,8 @@ fn result_to_ok_string(
 // * ✅ Collection (List) -> delegates to collection_types
 // * ✅ Modifier (Optional with value) -> unwraps and delegates
 // * ✅ Modifier (Defaulted with None) -> uses default
+// * ✅ Refinement (OneOf with Defaulted inner, value provided) -> resolves value
+// * ✅ Refinement (OneOf with Defaulted inner, None) -> uses default
 pub fn resolve_to_string_test() {
   let string_resolver = fn(s) { "resolved:" <> s }
   let list_resolver = fn(l) { "list:[" <> string.join(l, ",") <> "]" }
@@ -211,6 +231,38 @@ pub fn resolve_to_string_test() {
         dynamic.nil(),
       ),
       Ok("resolved:99"),
+    ),
+    // Refinement dispatch - OneOf(Defaulted(String)) with value provided
+    #(
+      #(
+        accepted_types.RefinementType(
+          refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production", "staging"]),
+          ),
+        ),
+        dynamic.string("staging"),
+      ),
+      Ok("resolved:staging"),
+    ),
+    // Refinement dispatch - OneOf(Defaulted(String)) with None uses default
+    #(
+      #(
+        accepted_types.RefinementType(
+          refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production", "staging"]),
+          ),
+        ),
+        dynamic.nil(),
+      ),
+      Ok("resolved:production"),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {

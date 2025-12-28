@@ -2,10 +2,13 @@ import caffeine_lang/common/accepted_types
 import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/middle_end/templatizer
 import gleam/dynamic
+import gleam/set
 import test_helpers
 
 // ==== Parse and Resolve Query Template ====
@@ -15,6 +18,8 @@ import test_helpers
 // * ✅ happy path - multiple template variables (Datadog format)
 // * ✅ happy path - raw value substitution (time_slice threshold)
 // * ✅ happy path - mixed raw and Datadog format
+// * ✅ happy path - refinement type with Defaulted inner (value provided)
+// * ✅ happy path - refinement type with Defaulted inner (None uses default)
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
@@ -108,6 +113,46 @@ pub fn parse_and_resolve_query_template_test() {
         ),
       ],
       Ok("time_slice(avg:system.cpu{env:production} > 80 per 300s)"),
+    ),
+    // Refinement type with Defaulted inner - value provided
+    #(
+      "metric{$$env->environment$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.RefinementType(
+            refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production", "staging"]),
+            ),
+          ),
+          value: dynamic.string("staging"),
+        ),
+      ],
+      Ok("metric{env:staging}"),
+    ),
+    // Refinement type with Defaulted inner - value NOT provided (uses default)
+    #(
+      "metric{$$env->environment$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.RefinementType(
+            refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production", "staging"]),
+            ),
+          ),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(

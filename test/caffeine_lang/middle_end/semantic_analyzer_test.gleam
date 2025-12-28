@@ -8,11 +8,13 @@ import caffeine_lang/common/helpers
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
 import gleam/dict
 import gleam/dynamic
 import gleam/option
+import gleam/set
 import test_helpers
 
 // ==== resolve_intermediate_representations ====
@@ -238,6 +240,7 @@ pub fn resolve_vendor_test() {
 // ==== resolve_queries ====
 // * ✅ happy path - multiple queries with template variable resolution
 // * ✅ happy path - defaulted param with nil uses default value
+// * ✅ happy path - refinement type with defaulted inner using nil gets default value
 pub fn resolve_queries_test() {
   [
     // happy path - multiple queries with template variable resolution
@@ -441,6 +444,103 @@ pub fn resolve_queries_test() {
             "value",
             accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("time_slice(query > 2500000000 per 5m)"),
+          ),
+        ],
+        vendor: option.Some(vendor.Datadog),
+      )),
+    ),
+    // happy path - refinement type with defaulted inner using nil gets default value
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "LCP SLO Refinement",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "lcp_p75_latency",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "lcp_slo_refinement",
+        artifact_ref: "SLO",
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_datadog),
+          ),
+          helpers.ValueTuple(
+            "environment",
+            accepted_types.RefinementType(
+              refinement_types.OneOf(
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
+                set.from_list(["production", "staging"]),
+              ),
+            ),
+            dynamic.nil(),
+          ),
+          helpers.ValueTuple(
+            "queries",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("query"),
+                dynamic.string(
+                  "p75:rum.lcp.duration{$$env->environment$$}",
+                ),
+              ),
+            ]),
+          ),
+        ],
+        vendor: option.Some(vendor.Datadog),
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "LCP SLO Refinement",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "lcp_p75_latency",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "lcp_slo_refinement",
+        artifact_ref: "SLO",
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_datadog),
+          ),
+          helpers.ValueTuple(
+            "environment",
+            accepted_types.RefinementType(
+              refinement_types.OneOf(
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
+                set.from_list(["production", "staging"]),
+              ),
+            ),
+            dynamic.nil(),
+          ),
+          helpers.ValueTuple(
+            "queries",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("query"),
+                dynamic.string("p75:rum.lcp.duration{env:production}"),
+              ),
+            ]),
           ),
         ],
         vendor: option.Some(vendor.Datadog),

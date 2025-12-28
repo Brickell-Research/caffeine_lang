@@ -15,6 +15,7 @@ import test_helpers
 // * ✅ Empty string
 // * ✅ Optional without parens
 // * ✅ Defaulted with invalid default value
+// * ✅ Modifier with refinement suffix (should fail, let refinement parser handle)
 pub fn parse_modifier_type_test() {
   // Helper to parse inner types (simulating primitive-only parsing)
   let parse_inner = fn(raw: String) {
@@ -68,6 +69,9 @@ pub fn parse_modifier_type_test() {
     #("Optional(Unknown)", Error(Nil)),
     #("Defaulted(Integer, hello)", Error(Nil)),
     #("Defaulted(Boolean, maybe)", Error(Nil)),
+    // Modifier with refinement suffix should fail - let refinement parser handle it
+    #("Defaulted(String, production) { x | x in { production } }", Error(Nil)),
+    #("Optional(String) { x | x in { foo } }", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     modifier_types.parse_modifier_type(input, parse_inner, validate_default)

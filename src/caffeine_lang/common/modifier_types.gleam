@@ -154,16 +154,67 @@ pub fn resolve_to_string(
   }
 }
 
+/// Extracts the content inside the outermost pair of parentheses,
+/// properly handling nested parentheses.
+/// Returns Error if there's content after the closing paren (e.g., refinement constraints).
+/// E.g., "(String)" -> Ok("String")
+/// E.g., "(String, foo)" -> Ok("String, foo")
+/// E.g., "(List(String))" -> Ok("List(String)")
+/// E.g., "(String, foo) { x | x in { a } }" -> Error(Nil) -- has refinement suffix
+fn extract_paren_content(raw: String) -> Result(String, Nil) {
+  case string.split_once(raw, "(") {
+    Error(_) -> Error(Nil)
+    Ok(#(_, after_open)) -> {
+      // Find the matching close paren by tracking nesting depth
+      case find_matching_close_paren(after_open, 1, "") {
+        Error(_) -> Error(Nil)
+        Ok(#(content, rest)) -> {
+          // If there's non-whitespace content after the closing paren,
+          // this is likely a refinement type and we should fail
+          case string.trim(rest) {
+            "" -> Ok(string.trim(content))
+            _ -> Error(Nil)
+          }
+        }
+      }
+    }
+  }
+}
+
+/// Finds the matching closing parenthesis, tracking nesting depth.
+/// Returns the content before the matching close and the rest after it.
+fn find_matching_close_paren(
+  s: String,
+  depth: Int,
+  acc: String,
+) -> Result(#(String, String), Nil) {
+  case string.pop_grapheme(s) {
+    Error(_) -> Error(Nil)
+    Ok(#("(", rest)) ->
+      find_matching_close_paren(rest, depth + 1, acc <> "(")
+    Ok(#(")", rest)) -> {
+      case depth {
+        1 -> Ok(#(acc, rest))
+        _ -> find_matching_close_paren(rest, depth - 1, acc <> ")")
+      }
+    }
+    Ok(#(char, rest)) -> find_matching_close_paren(rest, depth, acc <> char)
+  }
+}
+
 fn paren_innerds_trimmed(raw: String) -> String {
-  raw
-  |> string.replace("(", "")
-  |> string.replace(")", "")
-  |> string.trim
+  case extract_paren_content(raw) {
+    Ok(content) -> content
+    Error(_) -> string.trim(raw)
+  }
 }
 
 fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
-  raw
-  |> paren_innerds_trimmed
-  |> string.split(",")
-  |> list.map(string.trim)
+  case extract_paren_content(raw) {
+    Ok(content) ->
+      content
+      |> string.split(",")
+      |> list.map(string.trim)
+    Error(_) -> []
+  }
 }
