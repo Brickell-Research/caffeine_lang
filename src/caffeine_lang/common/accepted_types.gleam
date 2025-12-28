@@ -116,6 +116,45 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   })
 }
 
+/// Resolves a value to a string using the provided resolver functions.
+/// Dispatches to type-specific resolution logic.
+@internal
+pub fn resolve_to_string(
+  typ: AcceptedTypes,
+  value: Dynamic,
+  resolve_string: fn(String) -> String,
+  resolve_list: fn(List(String)) -> String,
+) -> Result(String, String) {
+  case typ {
+    PrimitiveType(primitive) ->
+      Ok(primitive_types.resolve_to_string(primitive, value, resolve_string))
+    CollectionType(collection) ->
+      collection_types.resolve_to_string(
+        collection,
+        value,
+        decode_value_to_string,
+        resolve_list,
+        collection_type_to_string,
+      )
+    ModifierType(modifier) ->
+      modifier_types.resolve_to_string(
+        modifier,
+        value,
+        fn(inner_typ, inner_val) {
+          resolve_to_string(inner_typ, inner_val, resolve_string, resolve_list)
+        },
+        resolve_string,
+      )
+    RefinementType(refinement) ->
+      refinement_types.resolve_to_string(
+        refinement,
+        value,
+        decode_value_to_string,
+        resolve_string,
+      )
+  }
+}
+
 /// Parser for primitives only - used for collection inner types.
 fn parse_primitive_only(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
@@ -191,47 +230,7 @@ fn validate_string_literal_or_defaulted(
   }
 }
 
-/// Resolves a value to a string using the provided resolver functions.
-/// Dispatches to type-specific resolution logic.
-@internal
-pub fn resolve_to_string(
-  typ: AcceptedTypes,
-  value: Dynamic,
-  resolve_string: fn(String) -> String,
-  resolve_list: fn(List(String)) -> String,
-) -> Result(String, String) {
-  case typ {
-    PrimitiveType(primitive) ->
-      Ok(primitive_types.resolve_to_string(primitive, value, resolve_string))
-    CollectionType(collection) ->
-      collection_types.resolve_to_string(
-        collection,
-        value,
-        decode_value_to_string,
-        resolve_list,
-        collection_type_to_string,
-      )
-    ModifierType(modifier) ->
-      modifier_types.resolve_to_string(
-        modifier,
-        value,
-        fn(inner_typ, inner_val) {
-          resolve_to_string(inner_typ, inner_val, resolve_string, resolve_list)
-        },
-        resolve_string,
-      )
-    RefinementType(refinement) ->
-      refinement_types.resolve_to_string(
-        refinement,
-        value,
-        decode_value_to_string,
-        resolve_string,
-      )
-  }
-}
-
 /// Converts a CollectionTypes to its string representation.
-/// Helper wrapper for collection_types.collection_type_to_string.
 fn collection_type_to_string(
   collection: CollectionTypes(AcceptedTypes),
 ) -> String {
