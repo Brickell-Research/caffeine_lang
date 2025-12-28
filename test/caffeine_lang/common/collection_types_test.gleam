@@ -95,7 +95,10 @@ pub fn validate_value_test() {
     ),
     // Dict sad path - not a dict
     #(
-      #(collection_types.Dict("String", "Integer"), dynamic.string("not a dict")),
+      #(
+        collection_types.Dict("String", "Integer"),
+        dynamic.string("not a dict"),
+      ),
       False,
     ),
   ]

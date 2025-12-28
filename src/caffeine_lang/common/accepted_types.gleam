@@ -1,6 +1,7 @@
 import caffeine_lang/common/collection_types.{type CollectionTypes}
 import caffeine_lang/common/modifier_types.{type ModifierTypes}
 import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
+import caffeine_lang/common/refinement_types.{type RefinementTypes}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
@@ -12,6 +13,7 @@ pub type AcceptedTypes {
   PrimitiveType(PrimitiveTypes)
   CollectionType(CollectionTypes(AcceptedTypes))
   ModifierType(ModifierTypes(AcceptedTypes))
+  RefinementType(RefinementTypes(AcceptedTypes))
 }
 
 /// Converts an AcceptedTypes to its string representation.
@@ -30,6 +32,11 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
         modifier_type,
         accepted_type_to_string,
       )
+    RefinementType(refinement_type) ->
+      refinement_types.refinement_type_to_string(
+        refinement_type,
+        accepted_type_to_string,
+      )
   }
 }
 
@@ -41,12 +48,13 @@ pub fn validate_value(
   value: Dynamic,
 ) -> Result(Dynamic, List(decode.DecodeError)) {
   case accepted_type {
-    PrimitiveType(primitive) ->
-      primitive_types.validate_value(primitive, value)
+    PrimitiveType(primitive) -> primitive_types.validate_value(primitive, value)
     CollectionType(collection) ->
       collection_types.validate_value(collection, value, validate_value)
     ModifierType(modifier) ->
       modifier_types.validate_value(modifier, value, validate_value)
+    RefinementType(refinement) ->
+      refinement_types.validate_value(refinement, value, decode_value_to_string)
   }
 }
 
@@ -64,6 +72,11 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
       )
     ModifierType(modifier) ->
       modifier_types.decode_modifier_to_string(modifier, decode_value_to_string)
+    RefinementType(refinement) ->
+      refinement_types.decode_refinement_to_string(
+        refinement,
+        decode_value_to_string,
+      )
   }
 }
 
@@ -88,9 +101,17 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
     modifier_types.parse_modifier_type(
       raw,
       parse_primitive_or_collection,
-      validate_default_value,
+      validate_string_literal,
     )
     |> result.map(ModifierType)
+  })
+  |> result.lazy_or(fn() {
+    refinement_types.parse_refinement_type(
+      raw,
+      parse_primitive_only,
+      validate_string_literal,
+    )
+    |> result.map(RefinementType)
   })
 }
 
@@ -110,17 +131,18 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   })
 }
 
-/// Validates a default value for a type - only primitives support defaults.
-fn validate_default_value(
+/// Validates a string literal value is valid for a type - only primitives are supported.
+/// Used for default values in modifiers and set values in refinement types.
+fn validate_string_literal(
   typ: AcceptedTypes,
-  default_val: String,
+  value: String,
 ) -> Result(Nil, Nil) {
   case typ {
     PrimitiveType(primitive) ->
-      primitive_types.validate_default_value(primitive, default_val)
-    // Only primitives support default values
+      primitive_types.validate_default_value(primitive, value)
     CollectionType(_) -> Error(Nil)
     ModifierType(_) -> Error(Nil)
+    RefinementType(_) -> Error(Nil)
   }
 }
 
@@ -153,6 +175,13 @@ pub fn resolve_to_string(
         },
         resolve_string,
       )
+    RefinementType(refinement) ->
+      refinement_types.resolve_to_string(
+        refinement,
+        value,
+        decode_value_to_string,
+        resolve_string,
+      )
   }
 }
 
@@ -161,5 +190,8 @@ pub fn resolve_to_string(
 fn collection_type_to_string(
   collection: CollectionTypes(AcceptedTypes),
 ) -> String {
-  collection_types.collection_type_to_string(collection, accepted_type_to_string)
+  collection_types.collection_type_to_string(
+    collection,
+    accepted_type_to_string,
+  )
 }

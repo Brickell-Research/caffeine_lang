@@ -20,7 +20,7 @@
       "name": "api_latency_p99",
       "artifact_ref": "SLO",
       "params": {
-        "env": "String",
+        "env": "String { x | x in { staging, production } }",
         "service": "String"
       },
       "inputs": {
