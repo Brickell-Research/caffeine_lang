@@ -23,7 +23,7 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:2.0.2", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO", "env:production", "service:checkout-api", "vendor:datadog"]
+  tags = ["managed_by:caffeine", "caffeine_version:2.0.3", "org:acme", "team:payments", "service:slos", "blueprint:api_availability", "expectation:checkout_availability", "artifact:SLO", "env:production", "service:checkout-api", "vendor:datadog"]
   type = "metric"
 
   query {
@@ -38,7 +38,7 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
 
 resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   name = "checkout_latency_p99"
-  tags = ["managed_by:caffeine", "caffeine_version:2.0.2", "org:acme", "team:payments", "service:slos", "blueprint:api_latency_p99", "expectation:checkout_latency_p99", "artifact:SLO", "env:production", "service:checkout-api", "vendor:datadog"]
+  tags = ["managed_by:caffeine", "caffeine_version:2.0.3", "org:acme", "team:payments", "service:slos", "blueprint:api_latency_p99", "expectation:checkout_latency_p99", "artifact:SLO", "env:production", "service:checkout-api", "vendor:datadog"]
   type = "metric"
 
   query {
@@ -53,7 +53,7 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
 
 resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
   name = "auth_service_availability"
-  tags = ["managed_by:caffeine", "caffeine_version:2.0.2", "org:acme", "team:platform", "service:slos", "blueprint:api_availability", "expectation:auth_service_availability", "artifact:SLO", "env:production", "service:auth-service", "vendor:datadog"]
+  tags = ["managed_by:caffeine", "caffeine_version:2.0.3", "org:acme", "team:platform", "service:slos", "blueprint:api_availability", "expectation:auth_service_availability", "artifact:SLO", "env:production", "service:auth-service", "vendor:datadog"]
   type = "metric"
 
   query {

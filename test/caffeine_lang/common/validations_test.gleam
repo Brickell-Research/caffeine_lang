@@ -4,10 +4,12 @@ import caffeine_lang/common/errors
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/common/validations
 import gleam/dict
 import gleam/dynamic
 import gleam/list
+import gleam/set
 import gleam/string
 import gleeunit/should
 import test_helpers
@@ -352,6 +354,7 @@ pub fn validate_value_type_test() {
 // * ✅ happy path - defaulted param omitted
 // * ✅ happy path - defaulted param provided
 // * ✅ happy path - mix of required and defaulted, defaulted omitted
+// * ✅ happy path - refinement with defaulted inner omitted
 // * ✅ missing inputs for params (single)
 // * ✅ extra inputs
 // * ✅ missing and extra inputs
@@ -435,6 +438,27 @@ pub fn inputs_validator_test() {
         #("count", accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "10"))),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
+      False,
+      Ok(True),
+    ),
+    // refinement with defaulted inner omitted - should pass (lcp_p75_latency style)
+    #(
+      dict.from_list([
+        #("view_path", accepted_types.PrimitiveType(primitive_types.String)),
+        #(
+          "environment",
+          accepted_types.RefinementType(
+            refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production"]),
+            ),
+          ),
+        ),
+      ]),
+      dict.from_list([#("view_path", dynamic.string("/members/messages"))]),
       False,
       Ok(True),
     ),
