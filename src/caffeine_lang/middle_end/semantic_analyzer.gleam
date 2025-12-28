@@ -1,9 +1,8 @@
 import caffeine_lang/common/accepted_types
-import caffeine_lang/common/errors.{
-  type CompilationError, SemanticAnalysisTemplateResolutionError,
-  SemanticAnalysisVendorResolutionError,
-}
+import caffeine_lang/common/collection_types
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers.{type ValueTuple}
+import caffeine_lang/common/primitive_types
 import caffeine_lang/middle_end/templatizer
 import caffeine_lang/middle_end/vendor.{type Vendor}
 import gleam/dict
@@ -13,6 +12,7 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 
+/// Internal representation of a parsed expectation with metadata and values.
 pub type IntermediateRepresentation {
   IntermediateRepresentation(
     metadata: IntermediateRepresentationMetaData,
@@ -24,6 +24,7 @@ pub type IntermediateRepresentation {
   )
 }
 
+/// Metadata associated with an intermediate representation including organization and service identifiers.
 pub type IntermediateRepresentationMetaData {
   IntermediateRepresentationMetaData(
     friendly_label: String,
@@ -31,11 +32,13 @@ pub type IntermediateRepresentationMetaData {
     service_name: String,
     blueprint_name: String,
     team_name: String,
-    // metadata specific to any given expectation
+    // Metadata specific to any given expectation.
     misc: dict.Dict(String, String),
   )
 }
 
+/// Resolves vendor and queries for a list of intermediate representations.
+@internal
 pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
@@ -46,6 +49,7 @@ pub fn resolve_intermediate_representations(
   })
 }
 
+/// Resolves the vendor string to a Vendor type for an intermediate representation.
 @internal
 pub fn resolve_vendor(
   ir: IntermediateRepresentation,
@@ -56,11 +60,11 @@ pub fn resolve_vendor(
     |> list.first
   {
     Error(_) ->
-      Error(SemanticAnalysisVendorResolutionError(
+      Error(errors.SemanticAnalysisVendorResolutionError(
         msg: "No vendor input for: " <> ir.unique_identifier,
       ))
     Ok(vendor_value_tuple) -> {
-      // ok to assert since already type checked in parser phase
+      // Safe to assert since already type checked in parser phase.
       let assert Ok(vendor_string) =
         decode.run(vendor_value_tuple.value, decode.string)
       use vendor_value <- result.try(vendor.resolve_vendor(vendor_string))
@@ -70,6 +74,7 @@ pub fn resolve_vendor(
   }
 }
 
+/// Resolves query templates in an intermediate representation.
 @internal
 pub fn resolve_queries(
   ir: IntermediateRepresentation,
@@ -87,7 +92,7 @@ pub fn resolve_queries(
           decode.dict(decode.string, decode.string),
         )
 
-      // Resolve all queries and collect results
+      // Resolve all queries and collect results.
       use resolved_queries <- result.try(
         queries_dict
         |> dict.to_list
@@ -100,7 +105,7 @@ pub fn resolve_queries(
         }),
       )
 
-      // Build the new queries dict as a dynamic value
+      // Build the new queries dict as a dynamic value.
       let resolved_queries_dynamic =
         resolved_queries
         |> list.map(fn(pair) {
@@ -109,18 +114,15 @@ pub fn resolve_queries(
         })
         |> dynamic.properties
 
-      // Create the new queries ValueTuple
+      // Create the new queries ValueTuple.
       let new_queries_value_tuple =
         helpers.ValueTuple(
           "queries",
-          accepted_types.CollectionType(accepted_types.Dict(
-            accepted_types.PrimitiveType(accepted_types.String),
-            accepted_types.PrimitiveType(accepted_types.String),
-          )),
+          accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
           resolved_queries_dynamic,
         )
 
-      // Also resolve templates in the "value" field if present
+      // Also resolve templates in the "value" field if present.
       let value_tuple_result =
         ir.values
         |> list.filter(fn(vt) { vt.label == "value" })
@@ -141,7 +143,7 @@ pub fn resolve_queries(
               Ok(
                 option.Some(helpers.ValueTuple(
                   "value",
-                  accepted_types.PrimitiveType(accepted_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
                   dynamic.string(resolved_value),
                 )),
               )
@@ -150,7 +152,7 @@ pub fn resolve_queries(
         }
       })
 
-      // Update the IR with the resolved queries and value
+      // Update the IR with the resolved queries and value.
       let new_values =
         ir.values
         |> list.map(fn(vt) {
@@ -168,7 +170,7 @@ pub fn resolve_queries(
       Ok(IntermediateRepresentation(..ir, values: new_values))
     }
     _ ->
-      Error(SemanticAnalysisTemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "No vendor for expectation: " <> ir.unique_identifier,
       ))
   }

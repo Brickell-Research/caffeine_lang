@@ -1,8 +1,9 @@
-import caffeine_lang/common/accepted_types.{
-  Defaulted, Float, ModifierType, PrimitiveType, String,
-}
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/parser/blueprints.{type Blueprint}
 import caffeine_lang/parser/expectations
 import gleam/dict
@@ -20,7 +21,7 @@ fn blueprints() -> List(Blueprint) {
     blueprints.Blueprint(
       name: "success_rate",
       artifact_ref: "SLO",
-      params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+      params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
       inputs: dict.from_list([]),
     ),
   ]
@@ -32,8 +33,8 @@ fn blueprints_with_inputs() -> List(Blueprint) {
       name: "success_rate_with_defaults",
       artifact_ref: "SLO",
       params: dict.from_list([
-        #("vendor", PrimitiveType(String)),
-        #("threshold", PrimitiveType(Float)),
+        #("vendor", accepted_types.PrimitiveType(primitive_types.String)),
+        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
       ]),
       inputs: dict.from_list([
         #("vendor", dynamic.string(constants.vendor_datadog)),
@@ -48,10 +49,10 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
       name: "success_rate_with_defaulted",
       artifact_ref: "SLO",
       params: dict.from_list([
-        #("threshold", PrimitiveType(Float)),
+        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
         #(
           "default_env",
-          ModifierType(Defaulted(PrimitiveType(String), "production")),
+          accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "production")),
         ),
       ]),
       inputs: dict.from_list([]),
@@ -104,7 +105,7 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_ref: "SLO",
-            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -129,7 +130,7 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_ref: "SLO",
-            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -142,7 +143,7 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_ref: "SLO",
-            params: dict.from_list([#("percentile", PrimitiveType(Float))]),
+            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -168,10 +169,10 @@ pub fn parse_from_json_file_test() {
             name: "success_rate_with_defaulted",
             artifact_ref: "SLO",
             params: dict.from_list([
-              #("threshold", PrimitiveType(Float)),
+              #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
               #(
                 "default_env",
-                ModifierType(Defaulted(PrimitiveType(String), "production")),
+                accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "production")),
               ),
             ]),
             inputs: dict.from_list([]),

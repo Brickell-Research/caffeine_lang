@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type CompilationError, CQLResolverError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_query_language/parser.{
   type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr, TimeSliceExpr,
 }
@@ -19,13 +19,21 @@ pub type Primitives {
   )
 }
 
+/// Set of valid comparison operators.
+/// FUTURE: possible we may want a good ol' '==' 🤷‍♂️. Not yet atleast and YAGNI.
 pub type Comparator {
+  // <
   LessThan
+  // <=
   LessThanOrEqualTo
+  // >
   GreaterThan
+  // >=
   GreaterThanOrEqualTo
 }
 
+/// Converst a comparator to a string
+@internal
 pub fn comparator_to_string(comparator: Comparator) {
   case comparator {
     LessThan -> "\"<\""
@@ -48,6 +56,7 @@ fn convert_comparator(comp: parser.Comparator) -> Comparator {
 /// Resolves a parsed CQL expression into a primitive type.
 /// Supports GoodOverTotal (division at the top level) and TimeSlice.
 /// Returns an error if the expression doesn't match a known primitive pattern.
+@internal
 pub fn resolve_primitives(
   exp_container: ExpContainer,
 ) -> Result(Primitives, CompilationError) {
@@ -58,7 +67,7 @@ pub fn resolve_primitives(
           // Check that neither operand contains a time_slice expression
           case contains_time_slice(left) || contains_time_slice(right) {
             True ->
-              Error(CQLResolverError(
+              Error(errors.CQLResolverError(
                 msg: "time_slice cannot be used as an operand. It must be the entire expression.",
               ))
             False -> Ok(GoodOverTotal(left, right))
@@ -72,7 +81,7 @@ pub fn resolve_primitives(
             query: spec.query,
           ))
         _ ->
-          Error(CQLResolverError(
+          Error(errors.CQLResolverError(
             msg: "Invalid expression. Expected a top level division operator or time_slice.",
           ))
       }

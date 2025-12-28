@@ -1,5 +1,5 @@
 import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import caffeine_lang/parser/blueprints.{type Blueprint}
@@ -11,6 +11,7 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+/// An Expectation is a concrete implementation of an Artifact + Blueprint.
 pub type Expectation {
   Expectation(
     name: String,
@@ -20,6 +21,7 @@ pub type Expectation {
 }
 
 /// Parse expectations from a file.
+@internal
 pub fn parse_from_json_file(
   file_path: String,
   blueprints: List(Blueprint),
@@ -30,12 +32,12 @@ pub fn parse_from_json_file(
 }
 
 /// Parse expectations from a JSON string.
-/// This is public so it can be used by browser.gleam for in-browser compilation.
+@internal
 pub fn parse_from_json_string(
   json_string: String,
   blueprints: List(Blueprint),
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
-  // actually parse
+  // Parse the JSON string.
   use expectations <- result.try(
     case expectations_from_json(json_string, blueprints) {
       Ok(expectations) -> Ok(expectations)
@@ -47,12 +49,14 @@ pub fn parse_from_json_string(
 }
 
 /// Validate expectations and return paired with their blueprints.
+/// TODO: this provides _massive_ duplication and is an area of low
+///       hanging fruit for optimization.
 fn validate_expectations(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
-  // map expectations to blueprints since we'll reuse that numerous times
-  // and we've already validated all blueprint_refs
+  // Map expectations to blueprints since we'll reuse that numerous times
+  // and we've already validated all blueprint_refs.
   let expectations_blueprint_collection =
     helpers.map_reference_to_referrer_over_collection(
       references: blueprints,
@@ -61,12 +65,12 @@ fn validate_expectations(
       referrer_reference: fn(e) { e.blueprint_ref },
     )
 
-  // validate that expectation inputs don't overshadow blueprint inputs
+  // Validate that expectation inputs don't overshadow blueprint inputs.
   use _ <- result.try(check_input_overshadowing(
     expectations_blueprint_collection,
   ))
 
-  // validate that expectation.inputs provides params NOT already provided by blueprint.inputs
+  // Validate that expectation.inputs provides params NOT already provided by blueprint.inputs.
   use _ <- result.try(validations.validate_inputs_for_collection(
     input_param_collections: expectations_blueprint_collection,
     get_inputs: fn(expectation) { expectation.inputs },
@@ -78,7 +82,7 @@ fn validate_expectations(
     missing_inputs_ok: False,
   ))
 
-  // validate unique names within a file
+  // Validate unique names within a file.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     expectations,
     fn(e) { e.name },
@@ -112,12 +116,12 @@ fn check_input_overshadowing(
 
   case overshadow_errors {
     "" -> Ok(True)
-    _ -> Error(ParserDuplicateError(msg: overshadow_errors))
+    _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
   }
 }
 
 /// Parse expectations from a JSON string.
-/// This is public so it can be used by browser.gleam for in-browser compilation.
+@internal
 pub fn expectations_from_json(
   json_string: String,
   blueprints: List(Blueprint),

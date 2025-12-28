@@ -1,8 +1,6 @@
-import caffeine_lang/common/errors.{CQLResolverError}
-import caffeine_query_language/parser.{Add, Mul, OperatorExpr, Sub}
-import caffeine_query_language/resolver.{
-  GoodOverTotal, GreaterThan, GreaterThanOrEqualTo, LessThan, TimeSlice,
-}
+import caffeine_lang/common/errors
+import caffeine_query_language/parser
+import caffeine_query_language/resolver
 import caffeine_query_language/test_helpers as cql_test_helpers
 import test_helpers
 
@@ -33,49 +31,49 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
 pub fn resolve_primitives_test() {
   let lhs_complex =
-    parens(OperatorExpr(
-      parens(simple_op_cont("A", "G", Sub)),
+    parens(parser.OperatorExpr(
+      parens(simple_op_cont("A", "G", parser.Sub)),
       prim_word("B"),
-      Add,
+      parser.Add,
     ))
   let rhs_complex =
-    parens(OperatorExpr(
+    parens(parser.OperatorExpr(
       prim_word("C"),
-      OperatorExpr(parens(simple_op_cont("D", "E", Add)), prim_word("F"), Mul),
-      Add,
+      parser.OperatorExpr(parens(simple_op_cont("D", "E", parser.Add)), prim_word("F"), parser.Mul),
+      parser.Add,
     ))
 
   [
     // simple good over total (A / B)
-    #("A / B", Ok(GoodOverTotal(prim_word("A"), prim_word("B")))),
+    #("A / B", Ok(resolver.GoodOverTotal(prim_word("A"), prim_word("B")))),
     // moderately complex good over total ((A + B) / C)
     #(
       "(A + B) / C",
-      Ok(GoodOverTotal(parens(simple_op_cont("A", "B", Add)), prim_word("C"))),
+      Ok(resolver.GoodOverTotal(parens(simple_op_cont("A", "B", parser.Add)), prim_word("C"))),
     ),
     // nested and complex good over total
     #(
       "((A - G) + B) / (C + (D + E) * F)",
-      Ok(GoodOverTotal(lhs_complex, rhs_complex)),
+      Ok(resolver.GoodOverTotal(lhs_complex, rhs_complex)),
     ),
     // error for simple non-division expression
     #(
       "A + B",
-      Error(CQLResolverError(
+      Error(errors.CQLResolverError(
         "Invalid expression. Expected a top level division operator or time_slice.",
       )),
     ),
     // error for moderately complex non-division expression
     #(
       "A + B / C + D",
-      Error(CQLResolverError(
+      Error(errors.CQLResolverError(
         "Invalid expression. Expected a top level division operator or time_slice.",
       )),
     ),
     // error for nested and complex non-division expression
     #(
       "((A + B) - E) / C + D",
-      Error(CQLResolverError(
+      Error(errors.CQLResolverError(
         "Invalid expression. Expected a top level division operator or time_slice.",
       )),
     ),
@@ -90,8 +88,8 @@ pub fn resolve_time_slice_valid_test() {
     // time_slice(Query > 1000000 per 10s) - basic
     #(
       "time_slice(Query > 1000000 per 10s)",
-      Ok(TimeSlice(
-        comparator: GreaterThan,
+      Ok(resolver.TimeSlice(
+        comparator: resolver.GreaterThan,
         interval_in_seconds: 10,
         threshold: 1_000_000.0,
         query: "Query",
@@ -100,8 +98,8 @@ pub fn resolve_time_slice_valid_test() {
     // time_slice(Query >= 100 per 60s) - different comparator
     #(
       "time_slice(Query >= 100 per 60s)",
-      Ok(TimeSlice(
-        comparator: GreaterThanOrEqualTo,
+      Ok(resolver.TimeSlice(
+        comparator: resolver.GreaterThanOrEqualTo,
         interval_in_seconds: 60,
         threshold: 100.0,
         query: "Query",
@@ -110,8 +108,8 @@ pub fn resolve_time_slice_valid_test() {
     // time_slice(Query < 99.5 per 5m) - decimal threshold, minutes
     #(
       "time_slice(Query < 99.5 per 5m)",
-      Ok(TimeSlice(
-        comparator: LessThan,
+      Ok(resolver.TimeSlice(
+        comparator: resolver.LessThan,
         interval_in_seconds: 300,
         threshold: 99.5,
         query: "Query",
@@ -125,11 +123,11 @@ pub fn resolve_time_slice_valid_test() {
 
 pub fn resolve_time_slice_invalid_test() {
   let time_slice_operand_error =
-    Error(CQLResolverError(
+    Error(errors.CQLResolverError(
       "time_slice cannot be used as an operand. It must be the entire expression.",
     ))
   let not_division_or_time_slice_error =
-    Error(CQLResolverError(
+    Error(errors.CQLResolverError(
       "Invalid expression. Expected a top level division operator or time_slice.",
     ))
 

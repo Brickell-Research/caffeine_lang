@@ -1,14 +1,8 @@
-import caffeine_lang/common/accepted_types.{
-  type AcceptedTypes, Boolean, CollectionType, Defaulted, Dict, Float, Integer,
-  List, ModifierType, Optional, PrimitiveType, String,
-}
-import caffeine_lang/common/errors.{
-  type CompilationError, ParserDuplicateError, ParserJsonParserError,
-  format_decode_error_message,
-}
+import caffeine_lang/common/accepted_types.{type AcceptedTypes}
+import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/common/modifier_types
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/list
 import gleam/option
 import gleam/result
@@ -17,119 +11,25 @@ import gleam/string
 
 /// Validates that a dynamic value matches the expected AcceptedType.
 /// Returns the original value if valid, or a CompilationError describing the type mismatch.
+@internal
 pub fn validate_value_type(
-  value: dynamic.Dynamic,
+  value: Dynamic,
   expected_type: AcceptedTypes,
   type_key_identifier: String,
-) -> Result(dynamic.Dynamic, CompilationError) {
-  case expected_type {
-    PrimitiveType(primitive) ->
-      case primitive {
-        Boolean ->
-          validate_value_type_helper(value, decode.bool, type_key_identifier)
-        Integer ->
-          validate_value_type_helper(value, decode.int, type_key_identifier)
-        Float ->
-          validate_value_type_helper(value, decode.float, type_key_identifier)
-        String ->
-          validate_value_type_helper(value, decode.string, type_key_identifier)
-      }
-    CollectionType(collection) ->
-      case collection {
-        Dict(_key_type, value_type) -> {
-          case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
-            Ok(dict_val) -> {
-              dict_val
-              |> dict.values
-              |> list.try_map(fn(v) {
-                validate_value_type(v, value_type, type_key_identifier)
-              })
-              |> result.map(fn(_) { value })
-            }
-            Error(err) ->
-              Error(
-                ParserJsonParserError(format_decode_error_message(
-                  err,
-                  option.Some(type_key_identifier),
-                )),
-              )
-          }
-        }
-        List(inner_type) -> {
-          case decode.run(value, decode.list(decode.dynamic)) {
-            Ok(list_val) -> {
-              list_val
-              |> list.try_map(fn(v) {
-                validate_value_type(v, inner_type, type_key_identifier)
-              })
-              |> result.map(fn(_) { value })
-            }
-            Error(err) ->
-              Error(
-                ParserJsonParserError(format_decode_error_message(
-                  err,
-                  option.Some(type_key_identifier),
-                )),
-              )
-          }
-        }
-      }
-    ModifierType(modifier) ->
-      case modifier {
-        Optional(inner_type) -> {
-          case decode.run(value, decode.optional(decode.dynamic)) {
-            Ok(option.Some(inner_val)) ->
-              validate_value_type(inner_val, inner_type, type_key_identifier)
-            Ok(option.None) -> Ok(value)
-            Error(err) ->
-              Error(
-                ParserJsonParserError(format_decode_error_message(
-                  err,
-                  option.Some(type_key_identifier),
-                )),
-              )
-          }
-        }
-        Defaulted(inner_type, _default_val) -> {
-          // Defaulted works like Optional for validation - value can be present or absent
-          // If present, validate it matches the inner type
-          case decode.run(value, decode.optional(decode.dynamic)) {
-            Ok(option.Some(inner_val)) ->
-              validate_value_type(inner_val, inner_type, type_key_identifier)
-            Ok(option.None) -> Ok(value)
-            Error(err) ->
-              Error(
-                ParserJsonParserError(format_decode_error_message(
-                  err,
-                  option.Some(type_key_identifier),
-                )),
-              )
-          }
-        }
-      }
-  }
-}
-
-fn validate_value_type_helper(
-  value: Dynamic,
-  decoder: decode.Decoder(a),
-  type_key_identifier: String,
-) {
-  case decode.run(value, decoder) {
-    Ok(_) -> Ok(value)
-    Error(err) ->
-      Error(
-        ParserJsonParserError(format_decode_error_message(
-          err,
-          option.Some(type_key_identifier),
-        )),
-      )
-  }
+) -> Result(Dynamic, CompilationError) {
+  accepted_types.validate_value(expected_type, value)
+  |> result.map_error(fn(err) {
+    errors.ParserJsonParserError(errors.format_decode_error_message(
+      err,
+      option.Some(type_key_identifier),
+    ))
+  })
 }
 
 /// Validates that inputs match the expected params in both keys and types.
 /// Returns an error if there are missing keys, extra keys, or type mismatches.
 /// Note: Optional and Defaulted params are allowed to be omitted from inputs.
+@internal
 pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
   inputs inputs: Dict(String, Dynamic),
@@ -140,8 +40,8 @@ pub fn inputs_validator(
     params
     |> dict.filter(fn(_, typ) {
       case typ {
-        ModifierType(Optional(_)) -> False
-        ModifierType(Defaulted(_, _)) -> False
+        accepted_types.ModifierType(modifier_types.Optional(_)) -> False
+        accepted_types.ModifierType(modifier_types.Defaulted(_, _)) -> False
         _ -> True
       }
     })
@@ -214,6 +114,7 @@ pub fn inputs_validator(
 
 /// Validates that all items in a list have unique values for a given property.
 /// Returns a ParserDuplicateError listing any duplicate values found.
+@internal
 pub fn validate_relevant_uniqueness(
   things_to_validate_uniqueness_for: List(a),
   fetch_property: fn(a) -> String,
@@ -228,7 +129,7 @@ pub fn validate_relevant_uniqueness(
   case dupe_names {
     [] -> Ok(True)
     _ ->
-      Error(ParserDuplicateError(
+      Error(errors.ParserDuplicateError(
         "Duplicate "
         <> thing_label
         <> ": "
@@ -239,13 +140,14 @@ pub fn validate_relevant_uniqueness(
 
 /// Validates inputs against params for a collection of paired items.
 /// Aggregates all validation errors across the collection into a single result.
+@internal
 pub fn validate_inputs_for_collection(
   input_param_collections input_param_collections: List(#(a, b)),
   get_inputs get_inputs: fn(a) -> Dict(String, Dynamic),
   get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
   missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, CompilationError) {
-  let errors =
+  let validation_errors =
     input_param_collections
     |> list.filter_map(fn(collection) {
       let #(input_collection, param_collection) = collection
@@ -262,14 +164,15 @@ pub fn validate_inputs_for_collection(
     })
     |> string.join(", ")
 
-  case errors {
+  case validation_errors {
     "" -> Ok(True)
-    _ -> Error(ParserJsonParserError("Input validation errors: " <> errors))
+    _ -> Error(errors.ParserJsonParserError("Input validation errors: " <> validation_errors))
   }
 }
 
 /// Checks if any keys in the referrer collection overlap with the reference collection.
 /// Returns an error with the overlapping keys if overshadowing is detected.
+@internal
 pub fn check_collection_key_overshadowing(
   reference_collection: Dict(String, a),
   referrer_collection: Dict(String, b),

@@ -1,64 +1,165 @@
-/// AcceptedTypes is a union of all the types that can be used as filters. It is recursive
-/// to allow for nested filters. This may be a bug in the future since it seems it may
-/// infinitely recurse.
+import caffeine_lang/common/collection_types.{type CollectionTypes}
+import caffeine_lang/common/modifier_types.{type ModifierTypes}
+import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
+import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
+import gleam/result
+
+/// AcceptedTypes is a union of all the types that can be used as a "filter" over the set
+/// of all possible values. This allows us to _type_ params and thus provide annotations
+/// that the compiler can leverage to be a more useful guide towards the pit of success.
 pub type AcceptedTypes {
   PrimitiveType(PrimitiveTypes)
-  CollectionType(CollectionTypes)
-  ModifierType(ModifierTypes)
-}
-
-pub type PrimitiveTypes {
-  Boolean
-  Float
-  Integer
-  String
-}
-
-pub type CollectionTypes {
-  Dict(AcceptedTypes, AcceptedTypes)
-  List(AcceptedTypes)
-}
-
-// Modifier types are a special class of types that alter the value semantics of
-/// the attribute they are bound to.
-pub type ModifierTypes {
-  Optional(AcceptedTypes)
-  /// Defaulted type stores the inner type and its default value as a string
-  /// e.g., Defaulted(Integer, "10") means an optional integer with default 10
-  Defaulted(AcceptedTypes, String)
+  CollectionType(CollectionTypes(AcceptedTypes))
+  ModifierType(ModifierTypes(AcceptedTypes))
 }
 
 /// Converts an AcceptedTypes to its string representation.
+@internal
 pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
   case accepted_type {
-    PrimitiveType(primitive) ->
-      case primitive {
-        Boolean -> "Boolean"
-        Float -> "Float"
-        Integer -> "Integer"
-        String -> "String"
-      }
-    CollectionType(collection) ->
-      case collection {
-        Dict(key_type, value_type) ->
-          "Dict("
-          <> accepted_type_to_string(key_type)
-          <> ", "
-          <> accepted_type_to_string(value_type)
-          <> ")"
-        List(inner_type) ->
-          "List(" <> accepted_type_to_string(inner_type) <> ")"
-      }
-    ModifierType(modifier) ->
-      case modifier {
-        Optional(inner_type) ->
-          "Optional(" <> accepted_type_to_string(inner_type) <> ")"
-        Defaulted(inner_type, default_val) ->
-          "Defaulted("
-          <> accepted_type_to_string(inner_type)
-          <> ", "
-          <> default_val
-          <> ")"
-      }
+    PrimitiveType(primitive_type) ->
+      primitive_types.primitive_type_to_string(primitive_type)
+    CollectionType(collection_type) ->
+      collection_types.collection_type_to_string(
+        collection_type,
+        accepted_type_to_string,
+      )
+    ModifierType(modifier_type) ->
+      modifier_types.modifier_type_to_string(
+        modifier_type,
+        accepted_type_to_string,
+      )
   }
+}
+
+/// Validates a dynamic value matches the expected AcceptedType.
+/// Returns the original value if valid, or an error with decode errors.
+@internal
+pub fn validate_value(
+  accepted_type: AcceptedTypes,
+  value: Dynamic,
+) -> Result(Dynamic, List(decode.DecodeError)) {
+  case accepted_type {
+    PrimitiveType(primitive) ->
+      primitive_types.validate_value(primitive, value)
+    CollectionType(collection) ->
+      collection_types.validate_value(collection, value, validate_value)
+    ModifierType(modifier) ->
+      modifier_types.validate_value(modifier, value, validate_value)
+  }
+}
+
+/// Decoder that converts a dynamic value to its String representation based on type.
+/// Dispatches to type-specific decoders.
+@internal
+pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
+  case typ {
+    PrimitiveType(primitive) ->
+      primitive_types.decode_primitive_to_string(primitive)
+    CollectionType(collection) ->
+      collection_types.decode_collection_to_string(
+        collection,
+        decode_value_to_string,
+      )
+    ModifierType(modifier) ->
+      modifier_types.decode_modifier_to_string(modifier, decode_value_to_string)
+  }
+}
+
+/// Decoder that converts a list of dynamic values to List(String).
+@internal
+pub fn decode_list_values_to_strings(
+  inner_type: AcceptedTypes,
+) -> decode.Decoder(List(String)) {
+  decode.list(decode_value_to_string(inner_type))
+}
+
+/// Parses a string into an AcceptedTypes.
+@internal
+pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
+  primitive_types.parse_primitive_type(raw)
+  |> result.map(PrimitiveType)
+  |> result.lazy_or(fn() {
+    collection_types.parse_collection_type(raw, parse_primitive_only)
+    |> result.map(CollectionType)
+  })
+  |> result.lazy_or(fn() {
+    modifier_types.parse_modifier_type(
+      raw,
+      parse_primitive_or_collection,
+      validate_default_value,
+    )
+    |> result.map(ModifierType)
+  })
+}
+
+/// Parser for primitives only - used for collection inner types.
+fn parse_primitive_only(raw: String) -> Result(AcceptedTypes, Nil) {
+  primitive_types.parse_primitive_type(raw)
+  |> result.map(PrimitiveType)
+}
+
+/// Parser for primitives or collections - used for modifier inner types.
+fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
+  primitive_types.parse_primitive_type(raw)
+  |> result.map(PrimitiveType)
+  |> result.lazy_or(fn() {
+    collection_types.parse_collection_type(raw, parse_primitive_only)
+    |> result.map(CollectionType)
+  })
+}
+
+/// Validates a default value for a type - only primitives support defaults.
+fn validate_default_value(
+  typ: AcceptedTypes,
+  default_val: String,
+) -> Result(Nil, Nil) {
+  case typ {
+    PrimitiveType(primitive) ->
+      primitive_types.validate_default_value(primitive, default_val)
+    // Only primitives support default values
+    CollectionType(_) -> Error(Nil)
+    ModifierType(_) -> Error(Nil)
+  }
+}
+
+/// Resolves a value to a string using the provided resolver functions.
+/// Dispatches to type-specific resolution logic.
+@internal
+pub fn resolve_to_string(
+  typ: AcceptedTypes,
+  value: Dynamic,
+  resolve_string: fn(String) -> String,
+  resolve_list: fn(List(String)) -> String,
+) -> Result(String, String) {
+  case typ {
+    PrimitiveType(primitive) ->
+      Ok(primitive_types.resolve_to_string(primitive, value, resolve_string))
+    CollectionType(collection) ->
+      collection_types.resolve_to_string(
+        collection,
+        value,
+        decode_value_to_string,
+        resolve_list,
+        collection_type_to_string,
+      )
+    ModifierType(modifier) ->
+      modifier_types.resolve_to_string(
+        modifier,
+        value,
+        fn(inner_typ, inner_val) {
+          resolve_to_string(inner_typ, inner_val, resolve_string, resolve_list)
+        },
+        resolve_string,
+      )
+  }
+}
+
+/// Converts a CollectionTypes to its string representation.
+/// Helper wrapper for collection_types.collection_type_to_string.
+fn collection_type_to_string(
+  collection: CollectionTypes(AcceptedTypes),
+) -> String {
+  collection_types.collection_type_to_string(collection, accepted_type_to_string)
 }

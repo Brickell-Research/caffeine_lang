@@ -1,16 +1,16 @@
-import caffeine_lang/cli/exit_status_codes.{
-  type ExitStatusCodes, Failure, Success,
-}
+import caffeine_lang/cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_lang/common/constants
-import caffeine_lang/core/compilation_configuration.{CompilationConfig}
+import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
-import caffeine_lang/core/logger.{type LogLevel, Minimal, Verbose}
+import caffeine_lang/core/logger.{type LogLevel}
 import gleam/io
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import simplifile
 
+/// Handles CLI arguments and dispatches to appropriate commands.
+@internal
 pub fn handle_args(args: List(String)) -> ExitStatusCodes {
   case args {
     ["compile", "--quiet", blueprint_file, expectations_dir, output_file] ->
@@ -18,54 +18,54 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
         blueprint_file,
         expectations_dir,
         option.Some(output_file),
-        Minimal,
+        logger.Minimal,
       )
     ["compile", "--quiet", blueprint_file, expectations_dir] ->
-      compile(blueprint_file, expectations_dir, option.None, Minimal)
+      compile(blueprint_file, expectations_dir, option.None, logger.Minimal)
     ["compile", blueprint_file, expectations_dir, output_file] ->
       compile(
         blueprint_file,
         expectations_dir,
         option.Some(output_file),
-        Verbose,
+        logger.Verbose,
       )
     ["compile", blueprint_file, expectations_dir] ->
-      compile(blueprint_file, expectations_dir, option.None, Verbose)
+      compile(blueprint_file, expectations_dir, option.None, logger.Verbose)
     ["--help"] | ["-h"] -> {
-      print_usage(Verbose)
-      Success
+      print_usage(logger.Verbose)
+      exit_status_codes.Success
     }
     ["--version"] | ["-V"] -> {
-      print_version(Verbose)
-      Success
+      print_version(logger.Verbose)
+      exit_status_codes.Success
     }
     ["--quiet", "--help"]
     | ["--quiet", "-h"]
     | ["--help", "--quiet"]
     | ["-h", "--quiet"] -> {
-      print_usage(Minimal)
-      Success
+      print_usage(logger.Minimal)
+      exit_status_codes.Success
     }
     ["--quiet", "--version"]
     | ["--quiet", "-V"]
     | ["--version", "--quiet"]
     | ["-V", "--quiet"] -> {
-      print_version(Minimal)
-      Success
+      print_version(logger.Minimal)
+      exit_status_codes.Success
     }
     ["--quiet"] -> {
-      print_usage(Minimal)
-      Success
+      print_usage(logger.Minimal)
+      exit_status_codes.Success
     }
     [] -> {
-      print_usage(Verbose)
-      Success
+      print_usage(logger.Verbose)
+      exit_status_codes.Success
     }
     _ -> {
-      log(Verbose, "Error: Invalid arguments")
-      log(Verbose, "")
-      print_usage(Verbose)
-      Failure
+      log(logger.Verbose, "Error: Invalid arguments")
+      log(logger.Verbose, "")
+      print_usage(logger.Verbose)
+      exit_status_codes.Failure
     }
   }
 }
@@ -76,7 +76,7 @@ fn compile(
   output_path: Option(String),
   log_level: LogLevel,
 ) -> ExitStatusCodes {
-  let config = CompilationConfig(log_level: log_level)
+  let config = compilation_configuration.CompilationConfig(log_level: log_level)
   {
     use output <- result.try(
       compiler.compile(blueprint_file, expectations_dir, config)
@@ -137,8 +137,8 @@ fn print_version(log_level: LogLevel) {
 
 fn log(log_level: LogLevel, message: String) {
   case log_level {
-    Verbose -> io.println(message)
-    Minimal -> Nil
+    logger.Verbose -> io.println(message)
+    logger.Minimal -> Nil
   }
 }
 
@@ -147,10 +147,10 @@ fn result_to_exit_status(
   log_level: LogLevel,
 ) -> ExitStatusCodes {
   case res {
-    Ok(_) -> Success
+    Ok(_) -> exit_status_codes.Success
     Error(msg) -> {
       log(log_level, msg)
-      Failure
+      exit_status_codes.Failure
     }
   }
 }

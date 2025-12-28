@@ -1,5 +1,8 @@
 import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
@@ -44,7 +47,8 @@ pub fn build_all_test() {
 
   // single expectation builds correct IR
   {
-    let blueprint = make_blueprint("test_blueprint", [#("threshold", Float)])
+    let blueprint =
+      make_blueprint("test_blueprint", [#("threshold", FloatType)])
     let expectation =
       make_expectation("my_test", [#("threshold", dynamic.float(99.9))])
 
@@ -61,7 +65,7 @@ pub fn build_all_test() {
         values: [
           helpers.ValueTuple(
             label: "threshold",
-            typ: accepted_types.PrimitiveType(accepted_types.Float),
+            typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
             value: dynamic.float(99.9),
           ),
         ],
@@ -72,7 +76,7 @@ pub fn build_all_test() {
 
   // multiple expectations from single file
   {
-    let blueprint = make_blueprint("test_blueprint", [#("value", Float)])
+    let blueprint = make_blueprint("test_blueprint", [#("value", FloatType)])
     let exp1 = make_expectation("first", [#("value", dynamic.float(1.0))])
     let exp2 = make_expectation("second", [#("value", dynamic.float(2.0))])
 
@@ -89,7 +93,7 @@ pub fn build_all_test() {
 
   // multiple files flattened into single list
   {
-    let blueprint = make_blueprint("test_blueprint", [#("id", Float)])
+    let blueprint = make_blueprint("test_blueprint", [#("id", FloatType)])
     let exp1 = make_expectation("from_file1", [#("id", dynamic.float(1.0))])
     let exp2 = make_expectation("from_file2", [#("id", dynamic.float(2.0))])
 
@@ -112,13 +116,11 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_ref: "TestArtifact",
         params: dict.from_list([
-          #("required", accepted_types.PrimitiveType(accepted_types.Float)),
+          #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
           #(
             "optional_field",
             accepted_types.ModifierType(
-              accepted_types.Optional(accepted_types.PrimitiveType(
-                accepted_types.String,
-              )),
+              modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)),
             ),
           ),
         ]),
@@ -138,15 +140,13 @@ pub fn build_all_test() {
       helpers.ValueTuple(
         label: "optional_field",
         typ: accepted_types.ModifierType(
-          accepted_types.Optional(accepted_types.PrimitiveType(
-            accepted_types.String,
-          )),
+          modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)),
         ),
         value: dynamic.nil(),
       ),
       helpers.ValueTuple(
         label: "required",
-        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
         value: dynamic.float(1.0),
       ),
     ])
@@ -159,11 +159,11 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_ref: "TestArtifact",
         params: dict.from_list([
-          #("required", accepted_types.PrimitiveType(accepted_types.Float)),
+          #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
           #(
             "defaulted_field",
-            accepted_types.ModifierType(accepted_types.Defaulted(
-              accepted_types.PrimitiveType(accepted_types.String),
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
               "default_value",
             )),
           ),
@@ -183,15 +183,15 @@ pub fn build_all_test() {
     |> should.equal([
       helpers.ValueTuple(
         label: "defaulted_field",
-        typ: accepted_types.ModifierType(accepted_types.Defaulted(
-          accepted_types.PrimitiveType(accepted_types.String),
+        typ: accepted_types.ModifierType(modifier_types.Defaulted(
+          accepted_types.PrimitiveType(primitive_types.String),
           "default_value",
         )),
         value: dynamic.nil(),
       ),
       helpers.ValueTuple(
         label: "required",
-        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
         value: dynamic.float(1.0),
       ),
     ])
@@ -204,14 +204,8 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_ref: "TestArtifact",
         params: dict.from_list([
-          #(
-            "from_blueprint",
-            accepted_types.PrimitiveType(accepted_types.String),
-          ),
-          #(
-            "from_expectation",
-            accepted_types.PrimitiveType(accepted_types.Float),
-          ),
+          #("from_blueprint", accepted_types.PrimitiveType(primitive_types.String)),
+          #("from_expectation", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
         ]),
         inputs: dict.from_list([
           #("from_blueprint", dynamic.string("blueprint_value")),
@@ -230,12 +224,12 @@ pub fn build_all_test() {
     |> should.equal([
       helpers.ValueTuple(
         label: "from_blueprint",
-        typ: accepted_types.PrimitiveType(accepted_types.String),
+        typ: accepted_types.PrimitiveType(primitive_types.String),
         value: dynamic.string("blueprint_value"),
       ),
       helpers.ValueTuple(
         label: "from_expectation",
-        typ: accepted_types.PrimitiveType(accepted_types.Float),
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
         value: dynamic.float(42.0),
       ),
     ])
@@ -248,9 +242,9 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_ref: "TestArtifact",
         params: dict.from_list([
-          #("env", accepted_types.PrimitiveType(accepted_types.String)),
-          #("region", accepted_types.PrimitiveType(accepted_types.String)),
-          #("threshold", accepted_types.PrimitiveType(accepted_types.Float)),
+          #("env", accepted_types.PrimitiveType(primitive_types.String)),
+          #("region", accepted_types.PrimitiveType(primitive_types.String)),
+          #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
         ]),
         inputs: dict.from_list([]),
       )
@@ -281,8 +275,8 @@ pub fn build_all_test() {
 // ==== Helpers ====
 
 type PrimitiveShorthand {
-  Float
-  String
+  FloatType
+  StringType
 }
 
 fn make_blueprint(
@@ -298,8 +292,8 @@ fn make_blueprint(
         #(
           label,
           accepted_types.PrimitiveType(case typ {
-            Float -> accepted_types.Float
-            String -> accepted_types.String
+            FloatType -> primitive_types.NumericType(numeric_types.Float)
+            StringType -> primitive_types.String
           }),
         )
       })

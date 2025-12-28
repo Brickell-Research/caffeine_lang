@@ -1,20 +1,21 @@
 import caffeine_query_language/parser.{
   type Exp, type Operator, type Primary, PrimaryExp, PrimaryWord, Word,
 }
-import caffeine_query_language/resolver.{GoodOverTotal}
+import caffeine_query_language/resolver
 import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import terra_madre/hcl
 
 /// Converts an expression AST node to its string representation.
+@internal
 pub fn exp_to_string(exp: Exp) -> String {
   case exp {
-    parser.Primary(primary:) -> primary_to_string(primary, None)
+    parser.Primary(primary:) -> primary_to_string(primary, option.None)
     parser.TimeSliceExpr(spec) ->
       "time_slice("
       <> spec.query
@@ -34,9 +35,10 @@ pub fn exp_to_string(exp: Exp) -> String {
         }
         _, _ -> {
           // Normal expression with spaces
-          let left = exp_to_string_with_context(numerator, Some(operator), True)
+          let left =
+            exp_to_string_with_context(numerator, option.Some(operator), True)
           let right =
-            exp_to_string_with_context(denominator, Some(operator), False)
+            exp_to_string_with_context(denominator, option.Some(operator), False)
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }
@@ -69,22 +71,22 @@ fn float_to_string(f: Float) -> String {
 fn is_path_expression(exp: Exp) -> Bool {
   // First check if the leftmost component is a field name (ends with :)
   case get_leftmost_word(exp) {
-    Some(w) -> {
+    option.Some(w) -> {
       case string.ends_with(w, ":") {
         True -> all_divisions(exp)
         False -> False
       }
     }
-    None -> False
+    option.None -> False
   }
 }
 
 // Get the leftmost word in an expression tree
 fn get_leftmost_word(exp: Exp) -> Option(String) {
   case exp {
-    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> Some(w)
+    parser.Primary(parser.PrimaryWord(parser.Word(w))) -> option.Some(w)
     parser.Primary(parser.PrimaryExp(inner_exp)) -> get_leftmost_word(inner_exp)
-    parser.TimeSliceExpr(_) -> None
+    parser.TimeSliceExpr(_) -> option.None
     parser.OperatorExpr(left, _, _) -> get_leftmost_word(left)
   }
 }
@@ -124,9 +126,10 @@ fn exp_to_string_with_context(
         parser.Div, True -> exp_to_string_no_spaces(exp)
         _, _ -> {
           // Not a path, render with spaces
-          let left = exp_to_string_with_context(numerator, Some(operator), True)
+          let left =
+            exp_to_string_with_context(numerator, option.Some(operator), True)
           let right =
-            exp_to_string_with_context(denominator, Some(operator), False)
+            exp_to_string_with_context(denominator, option.Some(operator), False)
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }
@@ -145,6 +148,7 @@ fn primary_to_string(primary: Primary, _parent_op: Option(Operator)) -> String {
   }
 }
 
+/// Converts a CQL operator to its Datadog query string representation.
 @internal
 pub fn operator_to_datadog_query(operator: parser.Operator) -> String {
   case operator {
@@ -264,6 +268,7 @@ pub type ResolvedSloHcl {
 
 /// Parse a value expression, resolve to primitive, substitute words,
 /// and return the resolved SLO query type.
+@internal
 pub fn resolve_slo_query_typed(
   value_expr: String,
   substitutions: dict.Dict(String, String),
@@ -272,7 +277,7 @@ pub fn resolve_slo_query_typed(
     Error(err) -> Error("Parse error: " <> err)
     Ok(exp_container) ->
       case resolver.resolve_primitives(exp_container) {
-        Ok(GoodOverTotal(numerator_exp, denominator_exp)) -> {
+        Ok(resolver.GoodOverTotal(numerator_exp, denominator_exp)) -> {
           let numerator_str =
             substitute_words(numerator_exp, substitutions) |> exp_to_string
           let denominator_str =
@@ -352,6 +357,7 @@ pub fn resolve_slo_query_typed(
 /// Parse a value expression, resolve to GoodOverTotal primitive, substitute words,
 /// and return the numerator and denominator as strings.
 /// Panics if parsing or resolution fails.
+@internal
 pub fn resolve_slo_query(
   value_expr: String,
   substitutions: dict.Dict(String, String),
@@ -367,6 +373,7 @@ pub fn resolve_slo_query(
 
 /// Parse a value expression, resolve to primitive, substitute words,
 /// and return HCL blocks ready for Datadog terraform generation.
+@internal
 pub fn resolve_slo_to_hcl(
   value_expr: String,
   substitutions: dict.Dict(String, String),

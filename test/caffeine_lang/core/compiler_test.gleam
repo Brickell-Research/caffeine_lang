@@ -1,6 +1,6 @@
-import caffeine_lang/core/compilation_configuration.{CompilationConfig}
+import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
-import caffeine_lang/core/logger.{Minimal}
+import caffeine_lang/core/logger
 import gleam/list
 import gleam/string
 import simplifile
@@ -20,7 +20,7 @@ fn read_corpus(file_name: String) -> String {
 // * ✅ happy path - single
 // * ✅ happy path - multiple (3 SLOs across 2 teams)
 pub fn compile_test() {
-  let config = CompilationConfig(log_level: Minimal)
+  let config = compilation_configuration.CompilationConfig(log_level: logger.Minimal)
   [
     // happy path - none
     #(

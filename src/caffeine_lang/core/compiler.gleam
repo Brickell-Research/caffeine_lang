@@ -175,6 +175,8 @@ fn run_code_generation(
 }
 
 // ==== Compiler ====
+
+/// Compiles a blueprint and expectations directory into Terraform configuration.
 pub fn compile(
   blueprint_file_path: String,
   expectations_directory: String,
@@ -227,7 +229,7 @@ pub fn compile(
   Ok(terraform_output)
 }
 
-/// Compile from JSON strings directly (no file I/O).
+/// Compiles from JSON strings directly (no file I/O).
 /// Used for browser-based compilation.
 pub fn compile_from_strings(
   blueprints_json: String,

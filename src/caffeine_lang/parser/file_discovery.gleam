@@ -4,6 +4,27 @@ import gleam/result
 import gleam/string
 import simplifile
 
+/// This function returns a list of all JSON files in the given directory.
+@internal
+pub fn get_json_files(
+  base_directory: String,
+) -> Result(List(String), CompilationError) {
+  use top_level_items <- result.try(read_directory_or_error(base_directory))
+
+  let json_file_paths =
+    top_level_items
+    |> list.try_fold([], fn(accumulated_files, item_name) {
+      process_top_level_item(base_directory, item_name, accumulated_files)
+    })
+
+  case json_file_paths {
+    Error(err) -> Error(err)
+    Ok([]) ->
+      Error(errors.LinkerParseError("No files found in: " <> base_directory))
+    Ok(files) -> Ok(files)
+  }
+}
+
 fn read_directory_or_error(
   directory_path: String,
 ) -> Result(List(String), CompilationError) {
@@ -62,25 +83,4 @@ fn extract_json_files_with_full_paths(
   files
   |> list.filter(fn(file) { string.ends_with(file, ".json") })
   |> list.map(fn(file) { directory_path <> "/" <> file })
-}
-
-/// This function returns a list of all JSON files in the given directory.
-@internal
-pub fn get_json_files(
-  base_directory: String,
-) -> Result(List(String), CompilationError) {
-  use top_level_items <- result.try(read_directory_or_error(base_directory))
-
-  let json_file_paths =
-    top_level_items
-    |> list.try_fold([], fn(accumulated_files, item_name) {
-      process_top_level_item(base_directory, item_name, accumulated_files)
-    })
-
-  case json_file_paths {
-    Error(err) -> Error(err)
-    Ok([]) ->
-      Error(errors.LinkerParseError("No files found in: " <> base_directory))
-    Ok(files) -> Ok(files)
-  }
 }

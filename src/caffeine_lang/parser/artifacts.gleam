@@ -9,16 +9,19 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/result
 
+/// A reusable artifact template with named parameters.
 pub type Artifact {
   Artifact(name: String, params: dict.Dict(String, AcceptedTypes))
 }
 
 /// Parses the embedded standard library artifacts.
+@internal
 pub fn parse_standard_library() -> Result(List(Artifact), CompilationError) {
   internal_parse_from_json_string(artifacts.standard_library)
 }
 
 /// Parses an artifact from an artifacts.json file.
+@internal
 pub fn parse_from_json_file(
   file_path: String,
 ) -> Result(List(Artifact), CompilationError) {

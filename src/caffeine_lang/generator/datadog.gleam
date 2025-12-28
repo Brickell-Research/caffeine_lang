@@ -3,7 +3,7 @@ import caffeine_lang/common/errors.{
   type CompilationError, GeneratorDatadogTerraformResolutionError,
   GeneratorSloQueryResolutionError,
 }
-import caffeine_lang/common/helpers.{type ValueTuple}
+import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -103,18 +103,25 @@ pub fn ir_to_terraform_resource(
 ) -> Result(terraform.Resource, CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract values from IR
-  let threshold = extract_float(ir.values, "threshold") |> result.unwrap(99.9)
+  // Extract values from IR.
+  let threshold =
+    helpers.extract_value(ir.values, "threshold", decode.float)
+    |> result.unwrap(99.9)
   let window_in_days =
-    extract_int(ir.values, "window_in_days") |> result.unwrap(30)
+    helpers.extract_value(ir.values, "window_in_days", decode.int)
+    |> result.unwrap(30)
   let queries =
-    extract_dict_string_string(ir.values, "queries")
+    helpers.extract_value(
+      ir.values,
+      "queries",
+      decode.dict(decode.string, decode.string),
+    )
     |> result.unwrap(dict.new())
   let value_expr =
-    extract_string(ir.values, "value")
+    helpers.extract_value(ir.values, "value", decode.string)
     |> result.unwrap("numerator / denominator")
 
-  // Parse the value expression using CQL and get HCL blocks
+  // Parse the value expression using CQL and get HCL blocks.
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
     cql_generator.resolve_slo_to_hcl(value_expr, queries)
     |> result.map_error(fn(err) {
@@ -127,10 +134,10 @@ pub fn ir_to_terraform_resource(
     }),
   )
 
-  // Build tags (common to both types)
+  // Build tags (common to both types).
   let tags =
     hcl.ListExpr(
-      // well known metadata info
+      // Well known metadata info.
       [
         hcl.StringLiteral("managed_by:caffeine"),
         hcl.StringLiteral("caffeine_version:" <> constants.version),
@@ -142,7 +149,7 @@ pub fn ir_to_terraform_resource(
         hcl.StringLiteral("artifact:" <> ir.artifact_ref),
       ]
       |> list.append(
-        // Also add misc tags (sorted for deterministic output across targets)
+        // Also add misc tags (sorted for deterministic output across targets).
         ir.metadata.misc
         |> dict.keys
         |> list.sort(string.compare)
@@ -155,7 +162,7 @@ pub fn ir_to_terraform_resource(
 
   use window_in_days_string <- result.try(window_to_timeframe(window_in_days))
 
-  // Build the thresholds block (common to both types)
+  // Build the thresholds block (common to both types).
   let thresholds_block =
     hcl.simple_block("thresholds", [
       #("timeframe", hcl.StringLiteral(window_in_days_string)),
@@ -187,7 +194,7 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
   let days_string = int.to_string(days)
   case days {
     7 | 30 | 90 -> Ok(days_string <> "d")
-    // TODO: catch this earlier on in the compilation pipeline
+    // TODO: catch this earlier on in the compilation pipeline. Possible with RefinementTypes 😁
     _ ->
       Error(GeneratorDatadogTerraformResolutionError(
         msg: "Illegal window_in_days value: "
@@ -195,58 +202,4 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
         <> ". Accepted values are 7, 30, or 90.",
       ))
   }
-}
-
-/// Extract a String value from a list of ValueTuple by label.
-@internal
-pub fn extract_string(
-  values: List(ValueTuple),
-  label: String,
-) -> Result(String, Nil) {
-  values
-  |> list.filter(fn(vt) { vt.label == label })
-  |> list.first
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decode.string) |> result.replace_error(Nil)
-  })
-}
-
-/// Extract a Float value from a list of ValueTuple by label.
-@internal
-pub fn extract_float(
-  values: List(ValueTuple),
-  label: String,
-) -> Result(Float, Nil) {
-  values
-  |> list.filter(fn(vt) { vt.label == label })
-  |> list.first
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decode.float) |> result.replace_error(Nil)
-  })
-}
-
-/// Extract an Int value from a list of ValueTuple by label.
-@internal
-pub fn extract_int(values: List(ValueTuple), label: String) -> Result(Int, Nil) {
-  values
-  |> list.filter(fn(vt) { vt.label == label })
-  |> list.first
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decode.int) |> result.replace_error(Nil)
-  })
-}
-
-/// Extract a Dict(String, String) value from a list of ValueTuple by label.
-@internal
-pub fn extract_dict_string_string(
-  values: List(ValueTuple),
-  label: String,
-) -> Result(dict.Dict(String, String), Nil) {
-  values
-  |> list.filter(fn(vt) { vt.label == label })
-  |> list.first
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decode.dict(decode.string, decode.string))
-    |> result.replace_error(Nil)
-  })
 }

@@ -1,5 +1,6 @@
-import caffeine_lang/common/accepted_types.{Defaulted, ModifierType, Optional}
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -13,6 +14,7 @@ import gleam/option
 import gleam/string
 
 /// Build intermediate representations from validated expectations across multiple files.
+@internal
 pub fn build_all(
   expectations_with_paths: List(#(List(#(Expectation, Blueprint)), String)),
 ) -> List(IntermediateRepresentation) {
@@ -29,6 +31,8 @@ fn build(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
   file_path: String,
 ) -> List(IntermediateRepresentation) {
+  let #(org, team, service) = extract_path_prefix(file_path)
+
   expectations_blueprint_collection
   |> list.map(fn(expectation_and_blueprint_pair) {
     let #(expectation, blueprint) = expectation_and_blueprint_pair
@@ -37,63 +41,15 @@ fn build(
     // Expectation inputs override blueprint inputs for the same key
     let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
-    // Build value tuples from provided inputs
-    let provided_value_tuples =
-      merged_inputs
-      |> dict.keys
-      |> list.map(fn(label) {
-        // safe assertions since we're already validated everything
-        let assert Ok(value) = merged_inputs |> dict.get(label)
-        let assert Ok(typ) = blueprint.params |> dict.get(label)
-
-        helpers.ValueTuple(label:, typ:, value:)
-      })
-
-    // Also include Optional and Defaulted params that weren't provided
-    // These need to be in value_tuples so the templatizer can resolve them
-    let unprovided_optional_value_tuples =
-      blueprint.params
-      |> dict.to_list
-      |> list.filter_map(fn(param) {
-        let #(label, typ) = param
-        case dict.has_key(merged_inputs, label) {
-          True -> Error(Nil)
-          False ->
-            case typ {
-              ModifierType(Optional(_)) | ModifierType(Defaulted(_, _)) ->
-                Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
-              _ -> Error(Nil)
-            }
-        }
-      })
-
-    let value_tuples =
-      list.append(provided_value_tuples, unprovided_optional_value_tuples)
-
-    let misc_metadata =
-      value_tuples
-      |> list.filter_map(fn(value_tuple) {
-        // safe assertion since we're already validated everything
-        case value_tuple.label, decode.run(value_tuple.value, decode.string) {
-          // for some reason we cannot parse the value
-          _, Error(_) -> Error(Nil)
-          // TODO: make the tag filtering dynamic
-          "window_in_days", _ | "threshold", _ | "value", _ -> Error(Nil)
-          _, Ok(value_string) -> Ok(#(value_tuple.label, value_string))
-        }
-      })
-      |> dict.from_list
-
-    // build unique expectation name by combining path prefix with name
-    let #(org, team, service) = extract_path_prefix(file_path)
-    let service_name = service
-    let unique_name = org <> "_" <> service_name <> "_" <> expectation.name
+    let value_tuples = build_value_tuples(merged_inputs, blueprint.params)
+    let misc_metadata = extract_misc_metadata(value_tuples)
+    let unique_name = org <> "_" <> service <> "_" <> expectation.name
 
     semantic_analyzer.IntermediateRepresentation(
       metadata: semantic_analyzer.IntermediateRepresentationMetaData(
         friendly_label: expectation.name,
         org_name: org,
-        service_name: service_name,
+        service_name: service,
         blueprint_name: blueprint.name,
         team_name: team,
         misc: misc_metadata,
@@ -104,6 +60,73 @@ fn build(
       vendor: option.None,
     )
   })
+}
+
+/// Build value tuples from merged inputs and params.
+/// Includes both provided inputs and unprovided Optional/Defaulted params.
+fn build_value_tuples(
+  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  params: dict.Dict(String, accepted_types.AcceptedTypes),
+) -> List(helpers.ValueTuple) {
+  let provided = build_provided_value_tuples(merged_inputs, params)
+  let unprovided = build_unprovided_optional_value_tuples(merged_inputs, params)
+  list.append(provided, unprovided)
+}
+
+/// Build value tuples from provided inputs.
+fn build_provided_value_tuples(
+  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  params: dict.Dict(String, accepted_types.AcceptedTypes),
+) -> List(helpers.ValueTuple) {
+  merged_inputs
+  |> dict.keys
+  |> list.map(fn(label) {
+    // Safe assertions since we've already validated everything.
+    let assert Ok(value) = merged_inputs |> dict.get(label)
+    let assert Ok(typ) = params |> dict.get(label)
+    helpers.ValueTuple(label:, typ:, value:)
+  })
+}
+
+/// Build value tuples for Optional/Defaulted params that weren't provided.
+/// These need to be in value_tuples so the templatizer can resolve them.
+fn build_unprovided_optional_value_tuples(
+  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  params: dict.Dict(String, accepted_types.AcceptedTypes),
+) -> List(helpers.ValueTuple) {
+  params
+  |> dict.to_list
+  |> list.filter_map(fn(param) {
+    let #(label, typ) = param
+    case dict.has_key(merged_inputs, label) {
+      True -> Error(Nil)
+      False ->
+        case typ {
+          accepted_types.ModifierType(modifier_types.Optional(_))
+          | accepted_types.ModifierType(modifier_types.Defaulted(_, _))
+          -> Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
+          _ -> Error(Nil)
+        }
+    }
+  })
+}
+
+/// Extract misc metadata from value tuples.
+/// Filters out non-string values and specific reserved labels.
+fn extract_misc_metadata(
+  value_tuples: List(helpers.ValueTuple),
+) -> dict.Dict(String, String) {
+  value_tuples
+  |> list.filter_map(fn(value_tuple) {
+    case value_tuple.label, decode.run(value_tuple.value, decode.string) {
+      // for some reason we cannot parse the value
+      _, Error(_) -> Error(Nil)
+      // TODO: make the tag filtering dynamic
+      "window_in_days", _ | "threshold", _ | "value", _ -> Error(Nil)
+      _, Ok(value_string) -> Ok(#(value_tuple.label, value_string))
+    }
+  })
+  |> dict.from_list
 }
 
 /// Extract a meaningful prefix from the source path
@@ -125,8 +148,8 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
     })
   {
     [org, team, service] -> #(org, team, service)
-    // this is not actually a possible state, however for pattern matching completeness we
-    // inlcude it here
+    // This is not actually a possible state, however for pattern matching completeness we
+    // include it here.
     _ -> #("unknown", "unknown", "unknown")
   }
 }

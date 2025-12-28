@@ -1,9 +1,9 @@
-import caffeine_lang/common/accepted_types.{
-  Boolean, CollectionType, Defaulted, Dict, Float, Integer, List, ModifierType,
-  Optional, PrimitiveType, String,
-}
+import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/middle_end/templatizer
 import gleam/dynamic
 import test_helpers
@@ -37,12 +37,16 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "bar",
-          typ: PrimitiveType(String),
+          typ: accepted_types.PrimitiveType(primitive_types.String),
           value: dynamic.string("pizza"),
         ),
         helpers.ValueTuple(
           "faz",
-          typ: CollectionType(List(PrimitiveType(Integer))),
+          typ: accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.NumericType(numeric_types.Integer),
+            )),
+          ),
           value: dynamic.list([
             dynamic.int(10),
             dynamic.int(11),
@@ -58,7 +62,7 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "threshold",
-          typ: PrimitiveType(Integer),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
           value: dynamic.int(2_500_000),
         ),
       ],
@@ -70,7 +74,7 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "threshold",
-          typ: PrimitiveType(Float),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
           value: dynamic.float(99.5),
         ),
       ],
@@ -82,7 +86,7 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "status",
-          typ: PrimitiveType(String),
+          typ: accepted_types.PrimitiveType(primitive_types.String),
           value: dynamic.string("active"),
         ),
       ],
@@ -94,12 +98,12 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "environment",
-          typ: PrimitiveType(String),
+          typ: accepted_types.PrimitiveType(primitive_types.String),
           value: dynamic.string("production"),
         ),
         helpers.ValueTuple(
           "threshold",
-          typ: PrimitiveType(Integer),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
           value: dynamic.int(80),
         ),
       ],
@@ -193,291 +197,74 @@ pub fn parse_template_type_test() {
 }
 
 // ==== Resolve Template ====
+// Tests templatizer-specific behavior. Type dispatch is tested in accepted_types_test.
 // * ✅ input name and value tuple label don't match
-// * ✅ unsupported type - dict
-// * ✅ unsupported type - optional dict
-// * ✅ resolves boolean (Default type)
-// * ✅ resolves int (Default type)
-// * ✅ resolves float (Default type)
-// * ✅ resolves string (Default type)
-// * ✅ resolves list of booleans (Default type)
-// * ✅ resolves list of ints (Default type)
-// * ✅ resolves list of floats (Default type)
-// * ✅ resolves list of strings (Default type)
-// * ✅ resolves optional string with value
-// * ✅ resolves optional string with none (returns empty string)
-// * ✅ resolves optional integer with value
-// * ✅ resolves optional list with value
-// * ✅ resolves optional list with none (returns empty string)
-// * ✅ resolves defaulted integer with value
-// * ✅ resolves defaulted integer with none (uses default)
-// * ✅ resolves defaulted string with value
-// * ✅ resolves defaulted string with none (uses default)
-// * ✅ resolves defaulted with Raw template type and nil value
-// * ✅ resolves string (Not type)
-// * ✅ resolves list of strings (Not type)
-// * ✅ resolves integer (Raw type)
-// * ✅ resolves list of integers (Raw type)
+// * ✅ unsupported type - dict (error propagation)
+// * ✅ E2E: primitive with Default template type
+// * ✅ E2E: list with Not template type
+// * ✅ E2E: primitive with Raw template type
 pub fn resolve_template_test() {
   [
+    // Label mismatch error (templatizer-specific validation)
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "bar",
-        typ: PrimitiveType(Boolean),
+        typ: accepted_types.PrimitiveType(primitive_types.Boolean),
         value: dynamic.bool(True),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
         "Mismatch between template input name (foo) and input value label (bar).",
       )),
     ),
+    // Dict unsupported error (error propagation from type module)
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: CollectionType(Dict(PrimitiveType(String), PrimitiveType(Boolean))),
-        // technically invalud data point here but whatever, test still serves its purpose
+        typ: accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.PrimitiveType(primitive_types.Boolean),
+        )),
         value: dynamic.array([]),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
         "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
       )),
     ),
-    // Optional Dict is also unsupported
+    // E2E: Default template type with string -> "attr:value"
     #(
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
-        typ: ModifierType(
-          Optional(
-            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
-          ),
-        ),
-        value: dynamic.array([]),
+        typ: accepted_types.PrimitiveType(primitive_types.String),
+        value: dynamic.string("bar"),
       ),
-      Error(errors.SemanticAnalysisTemplateResolutionError(
-        "Unsupported templatized variable type: Optional(Dict(String, String)). Dict support is pending, open an issue if this is a desired use case.",
-      )),
+      Ok("foo:bar"),
     ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: PrimitiveType(Boolean),
-        value: dynamic.bool(True),
-      ),
-      Ok("foo:True"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: PrimitiveType(Integer),
-        value: dynamic.int(10),
-      ),
-      Ok("foo:10"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: PrimitiveType(Float),
-        value: dynamic.float(11.7),
-      ),
-      Ok("foo:11.7"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: PrimitiveType(String),
-        value: dynamic.string("salad"),
-      ),
-      Ok("foo:salad"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: CollectionType(List(PrimitiveType(Boolean))),
-        value: dynamic.list([dynamic.bool(True), dynamic.bool(False)]),
-      ),
-      Ok("foo IN (True, False)"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: CollectionType(List(PrimitiveType(Integer))),
-        value: dynamic.list([dynamic.int(10), dynamic.int(11)]),
-      ),
-      Ok("foo IN (10, 11)"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: CollectionType(List(PrimitiveType(Float))),
-        value: dynamic.list([dynamic.float(11.7), dynamic.float(7.11)]),
-      ),
-      Ok("foo IN (11.7, 7.11)"),
-    ),
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: CollectionType(List(PrimitiveType(String))),
-        value: dynamic.list([dynamic.string("salad"), dynamic.string("pizza")]),
-      ),
-      Ok("foo IN (salad, pizza)"),
-    ),
-    // Optional string with value
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: ModifierType(Optional(PrimitiveType(String))),
-        value: dynamic.string("salad"),
-      ),
-      Ok("foo:salad"),
-    ),
-    // Optional string with None - returns empty string
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: ModifierType(Optional(PrimitiveType(String))),
-        value: dynamic.nil(),
-      ),
-      Ok(""),
-    ),
-    // Optional integer with value
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: ModifierType(Optional(PrimitiveType(Integer))),
-        value: dynamic.int(42),
-      ),
-      Ok("foo:42"),
-    ),
-    // Optional list with value
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: ModifierType(Optional(CollectionType(List(PrimitiveType(String))))),
-        value: dynamic.list([dynamic.string("a"), dynamic.string("b")]),
-      ),
-      Ok("foo IN (a, b)"),
-    ),
-    // Optional list with None - returns empty string
-    #(
-      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
-      helpers.ValueTuple(
-        label: "foo",
-        typ: ModifierType(Optional(CollectionType(List(PrimitiveType(String))))),
-        value: dynamic.nil(),
-      ),
-      Ok(""),
-    ),
-    // Defaulted integer with value - uses provided value
-    #(
-      templatizer.TemplateVariable(
-        "threshold",
-        "threshold",
-        templatizer.Default,
-      ),
-      helpers.ValueTuple(
-        label: "threshold",
-        typ: ModifierType(Defaulted(PrimitiveType(Integer), "2500000")),
-        value: dynamic.int(1_000_000),
-      ),
-      Ok("threshold:1000000"),
-    ),
-    // Defaulted integer with None - uses default value
-    #(
-      templatizer.TemplateVariable(
-        "threshold",
-        "threshold",
-        templatizer.Default,
-      ),
-      helpers.ValueTuple(
-        label: "threshold",
-        typ: ModifierType(Defaulted(PrimitiveType(Integer), "2500000")),
-        value: dynamic.nil(),
-      ),
-      Ok("threshold:2500000"),
-    ),
-    // Defaulted string with value
-    #(
-      templatizer.TemplateVariable("env", "env", templatizer.Default),
-      helpers.ValueTuple(
-        label: "env",
-        typ: ModifierType(Defaulted(PrimitiveType(String), "production")),
-        value: dynamic.string("staging"),
-      ),
-      Ok("env:staging"),
-    ),
-    // Defaulted string with None - uses default value
-    #(
-      templatizer.TemplateVariable("env", "env", templatizer.Default),
-      helpers.ValueTuple(
-        label: "env",
-        typ: ModifierType(Defaulted(PrimitiveType(String), "production")),
-        value: dynamic.nil(),
-      ),
-      Ok("env:production"),
-    ),
-    // Defaulted with Raw template type and nil value - uses default
-    #(
-      templatizer.TemplateVariable("threshold", "", templatizer.Raw),
-      helpers.ValueTuple(
-        label: "threshold",
-        typ: ModifierType(Defaulted(PrimitiveType(Integer), "2500000000")),
-        value: dynamic.nil(),
-      ),
-      Ok("2500000000"),
-    ),
-    // Not template type - string
-    #(
-      templatizer.TemplateVariable("status", "status", templatizer.Not),
-      helpers.ValueTuple(
-        label: "status",
-        typ: PrimitiveType(String),
-        value: dynamic.string("active"),
-      ),
-      Ok("!status:active"),
-    ),
-    // Not template type - list
+    // E2E: Not template type with list -> "attr NOT IN (v1, v2)"
     #(
       templatizer.TemplateVariable("env", "env", templatizer.Not),
       helpers.ValueTuple(
         label: "env",
-        typ: CollectionType(List(PrimitiveType(String))),
+        typ: accepted_types.CollectionType(
+          collection_types.List(accepted_types.PrimitiveType(
+            primitive_types.String,
+          )),
+        ),
         value: dynamic.list([dynamic.string("dev"), dynamic.string("test")]),
       ),
       Ok("env NOT IN (dev, test)"),
     ),
-    // Raw template type - integer
+    // E2E: Raw template type with integer -> just the value
     #(
       templatizer.TemplateVariable("count", "", templatizer.Raw),
       helpers.ValueTuple(
         label: "count",
-        typ: PrimitiveType(Integer),
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
         value: dynamic.int(42),
       ),
       Ok("42"),
-    ),
-    // Raw template type - list
-    #(
-      templatizer.TemplateVariable("values", "", templatizer.Raw),
-      helpers.ValueTuple(
-        label: "values",
-        typ: CollectionType(List(PrimitiveType(Integer))),
-        value: dynamic.list([dynamic.int(1), dynamic.int(2), dynamic.int(3)]),
-      ),
-      Ok("1, 2, 3"),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(templatizer.resolve_template)

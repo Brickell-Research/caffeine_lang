@@ -1,12 +1,13 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
 /// Uses array-based test pattern for consistency.
-import caffeine_lang/common/accepted_types.{
-  Boolean, CollectionType, Defaulted, Dict, Integer, ModifierType, PrimitiveType,
-  String,
-}
+import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
 import gleam/dict
@@ -35,17 +36,20 @@ pub fn resolve_intermediate_representations_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "env",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("staging"),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("query_a"),
@@ -70,17 +74,20 @@ pub fn resolve_intermediate_representations_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "region",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("us-east"),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("query_b"),
@@ -107,17 +114,20 @@ pub fn resolve_intermediate_representations_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "env",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("staging"),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("query_a"),
@@ -142,17 +152,20 @@ pub fn resolve_intermediate_representations_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "region",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("us-east"),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("query_b"),
@@ -191,7 +204,7 @@ pub fn resolve_vendor_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
         ],
@@ -211,7 +224,7 @@ pub fn resolve_vendor_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
         ],
@@ -243,22 +256,25 @@ pub fn resolve_queries_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("production"),
           ),
           helpers.ValueTuple(
             "status",
-            PrimitiveType(Boolean),
+            accepted_types.PrimitiveType(primitive_types.Boolean),
             dynamic.bool(True),
           ),
           helpers.ValueTuple(
             "queries",
-            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
             dynamic.properties([
               #(
                 dynamic.string("denominator"),
@@ -289,22 +305,25 @@ pub fn resolve_queries_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("production"),
           ),
           helpers.ValueTuple(
             "status",
-            PrimitiveType(Boolean),
+            accepted_types.PrimitiveType(primitive_types.Boolean),
             dynamic.bool(True),
           ),
           helpers.ValueTuple(
             "queries",
-            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
             dynamic.properties([
               #(
                 dynamic.string("denominator"),
@@ -338,22 +357,28 @@ pub fn resolve_queries_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("production"),
           ),
           helpers.ValueTuple(
             "threshold_in_ms",
-            ModifierType(Defaulted(PrimitiveType(Integer), "2500000000")),
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              "2500000000",
+            )),
             dynamic.nil(),
           ),
           helpers.ValueTuple(
             "queries",
-            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
             dynamic.properties([
               #(
                 dynamic.string("query"),
@@ -363,7 +388,7 @@ pub fn resolve_queries_test() {
           ),
           helpers.ValueTuple(
             "value",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
         ],
@@ -383,22 +408,28 @@ pub fn resolve_queries_test() {
         values: [
           helpers.ValueTuple(
             "vendor",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("production"),
           ),
           helpers.ValueTuple(
             "threshold_in_ms",
-            ModifierType(Defaulted(PrimitiveType(Integer), "2500000000")),
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              "2500000000",
+            )),
             dynamic.nil(),
           ),
           helpers.ValueTuple(
             "queries",
-            CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
             dynamic.properties([
               #(
                 dynamic.string("query"),
@@ -408,7 +439,7 @@ pub fn resolve_queries_test() {
           ),
           helpers.ValueTuple(
             "value",
-            PrimitiveType(String),
+            accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("time_slice(query > 2500000000 per 5m)"),
           ),
         ],

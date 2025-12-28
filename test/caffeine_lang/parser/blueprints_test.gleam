@@ -1,5 +1,7 @@
-import caffeine_lang/common/accepted_types.{Float, PrimitiveType, String}
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/errors
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/parser/artifacts.{type Artifact}
 import caffeine_lang/parser/blueprints
 import gleam/dict
@@ -16,8 +18,8 @@ fn artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       params: dict.from_list([
-        #("threshold", PrimitiveType(Float)),
-        #("value", PrimitiveType(String)),
+        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #("value", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
   ]
@@ -62,9 +64,9 @@ pub fn parse_from_json_file_test() {
           name: "success_rate",
           artifact_ref: "SLO",
           params: dict.from_list([
-            #("percentile", PrimitiveType(Float)),
-            #("threshold", PrimitiveType(Float)),
-            #("value", PrimitiveType(String)),
+            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
         ),
@@ -78,9 +80,9 @@ pub fn parse_from_json_file_test() {
           name: "success_rate",
           artifact_ref: "SLO",
           params: dict.from_list([
-            #("percentile", PrimitiveType(Float)),
-            #("threshold", PrimitiveType(Float)),
-            #("value", PrimitiveType(String)),
+            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
         ),
@@ -88,8 +90,8 @@ pub fn parse_from_json_file_test() {
           name: "latency_p99",
           artifact_ref: "SLO",
           params: dict.from_list([
-            #("threshold", PrimitiveType(Float)),
-            #("value", PrimitiveType(String)),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
         ),
@@ -103,8 +105,8 @@ pub fn parse_from_json_file_test() {
           name: "minimal_blueprint",
           artifact_ref: "SLO",
           params: dict.from_list([
-            #("threshold", PrimitiveType(Float)),
-            #("value", PrimitiveType(String)),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
         ),

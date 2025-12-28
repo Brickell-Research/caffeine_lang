@@ -1,6 +1,6 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{type CompilationError, ParserDuplicateError}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/common/validations
 import caffeine_lang/parser/artifacts.{type Artifact}
@@ -12,6 +12,8 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+/// A Blueprint that references an Artifact with parameters and inputs. It provides further params
+/// for the Expectation to satisfy while providing a partial set of inputs for the Artifact's params.
 pub type Blueprint {
   Blueprint(
     name: String,
@@ -22,6 +24,7 @@ pub type Blueprint {
 }
 
 /// Parse blueprints from a file.
+@internal
 pub fn parse_from_json_file(
   file_path: String,
   artifacts: List(Artifact),
@@ -32,7 +35,7 @@ pub fn parse_from_json_file(
 }
 
 /// Parse blueprints from a JSON string.
-/// This is public so it can be used by browser.gleam for in-browser compilation.
+@internal
 pub fn parse_from_json_string(
   json_string: String,
   artifacts: List(Artifact),
@@ -50,11 +53,12 @@ pub fn parse_from_json_string(
 /// Validates and transforms blueprints after JSON parsing.
 /// This performs all the validation and merging that parse_from_file does,
 /// but takes already-parsed blueprints instead of reading from a file.
+@internal
 pub fn validate_blueprints(
   blueprints: List(Blueprint),
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), CompilationError) {
-  // map blueprints to artifacts since we'll reuse that numerous times
+  // Map blueprints to artifacts since we'll reuse that numerous times.
   let blueprint_artifact_collection =
     helpers.map_reference_to_referrer_over_collection(
       references: artifacts,
@@ -63,7 +67,7 @@ pub fn validate_blueprints(
       referrer_reference: fn(b) { b.artifact_ref },
     )
 
-  // validate exactly the right number of inputs and each input is the
+  // Validate exactly the right number of inputs and each input is the
   // correct type as per the param. A blueprint needs to specify inputs for
   // all required_params from the artifact.
   use _ <- result.try(validations.validate_inputs_for_collection(
@@ -73,14 +77,14 @@ pub fn validate_blueprints(
     missing_inputs_ok: True,
   ))
 
-  // validate all names are unique
+  // Validate all names are unique.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     blueprints,
     fn(b) { b.name },
     "blueprint names",
   ))
 
-  // ensure no param name overshadowing by the blueprint
+  // Ensure no param name overshadowing by the blueprint.
   let overshadow_params_error =
     blueprint_artifact_collection
     |> list.filter_map(fn(blueprint_artifact_pair) {
@@ -102,13 +106,13 @@ pub fn validate_blueprints(
   use _ <- result.try(case overshadow_params_error {
     "" -> Ok(True)
     _ ->
-      Error(ParserDuplicateError(
-        "Overshadowed inherited_params in blueprint error: "
+      Error(errors.ParserDuplicateError(
+        msg: "Overshadowed inherited_params in blueprint error: "
         <> overshadow_params_error,
       ))
   })
 
-  // at this point everything is validated, so we can merge inherited_params, params, and artifact required_params
+  // At this point everything is validated, so we can merge inherited_params, params, and artifact required_params.
   let merged_param_blueprints =
     blueprint_artifact_collection
     |> list.map(fn(blueprint_artifact_pair) {
@@ -125,6 +129,8 @@ pub fn validate_blueprints(
   Ok(merged_param_blueprints)
 }
 
+/// Decodes a list of blueprints from a JSON dynamic value.
+@internal
 pub fn blueprints_from_json(
   json_string: String,
   artifacts: List(Artifact),

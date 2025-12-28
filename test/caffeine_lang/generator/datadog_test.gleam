@@ -1,9 +1,10 @@
-import caffeine_lang/common/accepted_types.{
-  CollectionType, Dict, Float, Integer, PrimitiveType, String,
-}
+import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
@@ -109,22 +110,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -159,22 +160,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -209,22 +210,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -253,22 +254,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.5),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(7),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -303,27 +304,27 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "value",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("(good + partial) / total"),
             ),
             helpers.ValueTuple(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
               dynamic.properties([
                 #(
                   dynamic.string("good"),
@@ -362,22 +363,22 @@ pub fn generate_terraform_test() {
           values: [
             helpers.ValueTuple(
               "vendor",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
-              PrimitiveType(Float),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              PrimitiveType(Integer),
+              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "value",
-              PrimitiveType(String),
+              accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(
                 "time_slice(avg:system.cpu.user{env:production} > 99.5 per 300s)",
               ),
@@ -414,146 +415,4 @@ pub fn window_to_timeframe_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_1(datadog.window_to_timeframe)
-}
-
-// ==== extract_string ====
-// * ✅ extracts String ValueTuple
-// * ✅ returns Error for missing label
-pub fn extract_string_test() {
-  [
-    // extracts String ValueTuple
-    #(
-      [
-        helpers.ValueTuple(
-          "vendor",
-          PrimitiveType(String),
-          dynamic.string(constants.vendor_datadog),
-        ),
-      ],
-      "vendor",
-      Ok(constants.vendor_datadog),
-    ),
-    // returns Error for missing label
-    #(
-      [
-        helpers.ValueTuple(
-          "vendor",
-          PrimitiveType(String),
-          dynamic.string(constants.vendor_datadog),
-        ),
-      ],
-      "missing",
-      Error(Nil),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_2(datadog.extract_string)
-}
-
-// ==== extract_float ====
-// * ✅ extracts Float ValueTuple
-// * ✅ returns Error for missing label
-pub fn extract_float_test() {
-  [
-    // extracts Float ValueTuple
-    #(
-      [
-        helpers.ValueTuple(
-          "threshold",
-          PrimitiveType(Float),
-          dynamic.float(99.9),
-        ),
-      ],
-      "threshold",
-      Ok(99.9),
-    ),
-    // returns Error for missing label
-    #(
-      [
-        helpers.ValueTuple(
-          "threshold",
-          PrimitiveType(Float),
-          dynamic.float(99.9),
-        ),
-      ],
-      "missing",
-      Error(Nil),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_2(datadog.extract_float)
-}
-
-// ==== extract_int ====
-// * ✅ extracts Integer ValueTuple
-// * ✅ returns Error for missing label
-pub fn extract_int_test() {
-  [
-    // extracts Integer ValueTuple
-    #(
-      [
-        helpers.ValueTuple(
-          "window_in_days",
-          PrimitiveType(Integer),
-          dynamic.int(30),
-        ),
-      ],
-      "window_in_days",
-      Ok(30),
-    ),
-    // returns Error for missing label
-    #(
-      [
-        helpers.ValueTuple(
-          "window_in_days",
-          PrimitiveType(Integer),
-          dynamic.int(30),
-        ),
-      ],
-      "missing",
-      Error(Nil),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_2(datadog.extract_int)
-}
-
-// ==== extract_dict_string_string ====
-// * ✅ extracts Dict(String, String) ValueTuple
-// * ✅ returns Error for missing label
-pub fn extract_dict_string_string_test() {
-  [
-    // extracts Dict(String, String) ValueTuple
-    #(
-      [
-        helpers.ValueTuple(
-          "queries",
-          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
-          dynamic.properties([
-            #(dynamic.string("numerator"), dynamic.string("sum:good")),
-            #(dynamic.string("denominator"), dynamic.string("sum:total")),
-          ]),
-        ),
-      ],
-      "queries",
-      Ok(
-        dict.from_list([
-          #("numerator", "sum:good"),
-          #("denominator", "sum:total"),
-        ]),
-      ),
-    ),
-    // returns Error for missing label
-    #(
-      [
-        helpers.ValueTuple(
-          "queries",
-          CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
-          dynamic.properties([]),
-        ),
-      ],
-      "missing",
-      Error(Nil),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_2(
-    datadog.extract_dict_string_string,
-  )
 }

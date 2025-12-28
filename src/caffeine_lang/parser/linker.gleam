@@ -1,5 +1,4 @@
 import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers.{result_try}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -23,20 +22,21 @@ import gleam/result
 ///   * specific known directories for expectations and blueprints
 ///   * no mixed type files
 ///   * all files are `.json`
+@internal
 pub fn link(
   blueprint_file_path: String,
   expectations_directory: String,
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
-  use expectation_files <- result_try(file_discovery.get_json_files(
+  use expectation_files <- result.try(file_discovery.get_json_files(
     expectations_directory,
   ))
 
-  use artifacts <- result_try(artifacts.parse_standard_library())
-  use blueprints <- result_try(blueprints.parse_from_json_file(
+  use artifacts <- result.try(artifacts.parse_standard_library())
+  use blueprints <- result.try(blueprints.parse_from_json_file(
     blueprint_file_path,
     artifacts,
   ))
-  use expectations_with_paths <- result_try(parse_expectation_files(
+  use expectations_with_paths <- result.try(parse_expectation_files(
     expectation_files,
     blueprints,
   ))

@@ -26,12 +26,10 @@ pub type CompilationError {
   CQLGeneratorError(msg: String)
 }
 
-// =============================================================================
-// JSON Decode Error Formatting
-// =============================================================================
 /// Converts a JSON decode error into a CompilationError. Useful for leveraging the
 /// custom errors we have per compilation phase vs. the lower level ones from
 /// various libraries we leverage.
+@internal
 pub fn format_json_decode_error(error: json.DecodeError) -> CompilationError {
   let msg = format_json_decode_error_to_string(error)
 
@@ -39,6 +37,7 @@ pub fn format_json_decode_error(error: json.DecodeError) -> CompilationError {
 }
 
 /// Converts a JSON decode error directly to a string (for browser error messages).
+@internal
 pub fn format_json_decode_error_to_string(error: json.DecodeError) -> String {
   case error {
     json.UnexpectedEndOfInput -> "Unexpected end of input."
@@ -60,6 +59,7 @@ fn normalize_type_name(name: String) -> String {
 }
 
 /// Formats a list of decode errors into a human-readable string.
+@internal
 pub fn format_decode_error_message(
   errors: List(decode.DecodeError),
   type_key_identifier: option.Option(String),

@@ -28,15 +28,9 @@
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
 import caffeine_lang/common/accepted_types
-import caffeine_lang/common/decoders
-import caffeine_lang/common/errors.{
-  type CompilationError, SemanticAnalysisTemplateParseError,
-  SemanticAnalysisTemplateResolutionError,
-}
+import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers.{type ValueTuple}
-import gleam/dynamic/decode
 import gleam/list
-import gleam/option
 import gleam/result
 import gleam/string
 
@@ -80,17 +74,18 @@ pub type DatadogTemplateType {
 }
 
 /// High-level parsing and resolution of a templatized query string.
+@internal
 pub fn parse_and_resolve_query_template(
   query: String,
   value_tuples: List(ValueTuple),
 ) -> Result(String, CompilationError) {
   case string.split_once(query, "$$") {
-    // no more `$$`
+    // No more `$$`.
     Error(_) -> Ok(query)
     Ok(#(before, rest)) -> {
       case string.split_once(rest, "$$") {
         Error(_) ->
-          Error(SemanticAnalysisTemplateParseError(
+          Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Unexpected incomplete `$$` for substring: " <> query,
           ))
         Ok(#(inside, rest)) -> {
@@ -107,7 +102,7 @@ pub fn parse_and_resolve_query_template(
               |> list.first
             {
               Error(_) ->
-                Error(SemanticAnalysisTemplateParseError(
+                Error(errors.SemanticAnalysisTemplateParseError(
                   msg: "Missing input for template: " <> template.input_name,
                 ))
               Ok(value_tuple) -> Ok(value_tuple)
@@ -145,7 +140,7 @@ pub fn parse_template_variable(
       let trimmed = string.trim(variable)
       case trimmed {
         "" ->
-          Error(SemanticAnalysisTemplateParseError(
+          Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty template variable name: " <> variable,
           ))
         _ ->
@@ -162,11 +157,11 @@ pub fn parse_template_variable(
 
       case trimmed_input, rest {
         "", _ ->
-          Error(SemanticAnalysisTemplateParseError(
+          Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty input name in template: " <> variable,
           ))
         _, "" ->
-          Error(SemanticAnalysisTemplateParseError(
+          Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty label name in template: " <> variable,
           ))
         _, _ -> parse_datadog_template_variable(trimmed_input, rest)
@@ -213,7 +208,7 @@ pub fn parse_template_type(
   case type_string {
     "not" -> Ok(Not)
     _ ->
-      Error(SemanticAnalysisTemplateParseError(
+      Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Unknown template type: " <> type_string,
       ))
   }
@@ -229,7 +224,7 @@ pub fn resolve_template(
   use _ <- result.try(case template.input_name == value_tuple.label {
     True -> Ok(True)
     _ ->
-      Error(SemanticAnalysisTemplateResolutionError(
+      Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "Mismatch between template input name ("
         <> template.input_name
         <> ") and input value label ("
@@ -238,109 +233,16 @@ pub fn resolve_template(
       ))
   })
 
-  case value_tuple.typ {
-    accepted_types.CollectionType(accepted_types.Dict(_, _)) ->
-      Error(SemanticAnalysisTemplateResolutionError(
-        msg: "Unsupported templatized variable type: "
-        <> accepted_types.accepted_type_to_string(value_tuple.typ)
-        <> ". Dict support is pending, open an issue if this is a desired use case.",
-      ))
-    accepted_types.CollectionType(accepted_types.List(inner_type)) -> {
-      let assert Ok(vals) =
-        decode.run(
-          value_tuple.value,
-          decoders.decode_list_values_to_strings(inner_type),
-        )
-      Ok(resolve_list_value(template, vals))
-    }
-    accepted_types.ModifierType(accepted_types.Optional(accepted_types.CollectionType(accepted_types.Dict(
-      _,
-      _,
-    )))) ->
-      Error(SemanticAnalysisTemplateResolutionError(
-        msg: "Unsupported templatized variable type: "
-        <> accepted_types.accepted_type_to_string(value_tuple.typ)
-        <> ". Dict support is pending, open an issue if this is a desired use case.",
-      ))
-    accepted_types.ModifierType(accepted_types.Optional(inner_type)) -> {
-      // For Optional types, try to decode the inner value
-      // If None, return empty string (template gets removed from query)
-      let inner_decoder = case inner_type {
-        accepted_types.CollectionType(accepted_types.List(list_inner)) ->
-          decode.optional(decoders.decode_list_values_to_strings(list_inner))
-          |> decode.map(fn(maybe_vals) {
-            case maybe_vals {
-              option.Some(vals) ->
-                option.Some(resolve_list_value(template, vals))
-              option.None -> option.None
-            }
-          })
-        _ ->
-          decode.optional(decoders.decode_value_to_string(inner_type))
-          |> decode.map(fn(maybe_val) {
-            case maybe_val {
-              option.Some(val) ->
-                option.Some(resolve_string_value(template, val))
-              option.None -> option.None
-            }
-          })
-      }
-      let assert Ok(maybe_result) = decode.run(value_tuple.value, inner_decoder)
-      case maybe_result {
-        option.Some(resolved) -> Ok(resolved)
-        option.None -> Ok("")
-      }
-    }
-    accepted_types.ModifierType(accepted_types.Defaulted(
-      accepted_types.CollectionType(accepted_types.Dict(_, _)),
-      _,
-    )) ->
-      Error(SemanticAnalysisTemplateResolutionError(
-        msg: "Unsupported templatized variable type: "
-        <> accepted_types.accepted_type_to_string(value_tuple.typ)
-        <> ". Dict support is pending, open an issue if this is a desired use case.",
-      ))
-    accepted_types.ModifierType(accepted_types.Defaulted(
-      inner_type,
-      default_val,
-    )) -> {
-      // For Defaulted types, try to decode the inner value
-      // If None, use the default value instead of empty string
-      let inner_decoder = case inner_type {
-        accepted_types.CollectionType(accepted_types.List(list_inner)) ->
-          decode.optional(decoders.decode_list_values_to_strings(list_inner))
-          |> decode.map(fn(maybe_vals) {
-            case maybe_vals {
-              option.Some(vals) ->
-                option.Some(resolve_list_value(template, vals))
-              option.None -> option.None
-            }
-          })
-        _ ->
-          decode.optional(decoders.decode_value_to_string(inner_type))
-          |> decode.map(fn(maybe_val) {
-            case maybe_val {
-              option.Some(val) ->
-                option.Some(resolve_string_value(template, val))
-              option.None -> option.None
-            }
-          })
-      }
-      let assert Ok(maybe_result) = decode.run(value_tuple.value, inner_decoder)
-      case maybe_result {
-        option.Some(resolved) -> Ok(resolved)
-        // Use default value instead of empty string
-        option.None -> Ok(resolve_string_value(template, default_val))
-      }
-    }
-    _ -> {
-      let assert Ok(val) =
-        decode.run(
-          value_tuple.value,
-          decoders.decode_value_to_string(value_tuple.typ),
-        )
-      Ok(resolve_string_value(template, val))
-    }
+  case
+    accepted_types.resolve_to_string(
+      value_tuple.typ,
+      value_tuple.value,
+      resolve_string_value(template, _),
+      resolve_list_value(template, _),
+    )
+  {
+    Ok(resolved) -> Ok(resolved)
+    Error(msg) -> Error(errors.SemanticAnalysisTemplateResolutionError(msg:))
   }
 }
 

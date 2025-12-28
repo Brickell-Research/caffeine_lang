@@ -1,6 +1,6 @@
-import caffeine_lang/common/errors.{type CompilationError, CQLParserError}
+import caffeine_lang/common/errors.{type CompilationError}
 import gleam/float
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 
@@ -64,6 +64,7 @@ pub type Word {
 
 /// Parses a CQL expression string into an ExpContainer.
 /// Returns an error if the input cannot be parsed.
+@internal
 pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
   use exp <- result.try(do_parse_expr(input))
   Ok(ExpContainer(exp))
@@ -211,14 +212,14 @@ fn find_comparator_loop(
     [] -> Error("No comparator found in time_slice expression")
     [#(comp_str, comp), ..rest] -> {
       case find_substring_position(input, comp_str) {
-        Some(pos) -> {
+        option.Some(pos) -> {
           let query = string.slice(input, 0, pos)
           let rest_start = pos + string.length(comp_str)
           let rest_len = string.length(input) - rest_start
           let rest_str = string.slice(input, rest_start, rest_len)
           Ok(#(query, comp, rest_str))
         }
-        None -> find_comparator_loop(input, rest)
+        option.None -> find_comparator_loop(input, rest)
       }
     }
   }
@@ -238,10 +239,10 @@ fn find_substring_position_loop(
   let haystack_len = string.length(haystack)
 
   case pos + needle_len > haystack_len {
-    True -> None
+    True -> option.None
     False -> {
       case string.slice(haystack, pos, needle_len) == needle {
-        True -> Some(pos)
+        True -> option.Some(pos)
         False -> find_substring_position_loop(haystack, needle, pos + 1)
       }
     }
@@ -251,7 +252,7 @@ fn find_substring_position_loop(
 /// Splits on "per" keyword, returning (threshold_str, interval_str).
 fn split_on_per(input: String) -> Result(#(String, String), String) {
   case find_substring_position(input, "per") {
-    Some(pos) -> {
+    option.Some(pos) -> {
       let threshold_str = string.trim(string.slice(input, 0, pos))
       let rest_start = pos + 3
       // "per" is 3 chars
@@ -259,7 +260,7 @@ fn split_on_per(input: String) -> Result(#(String, String), String) {
       let interval_str = string.trim(string.slice(input, rest_start, rest_len))
       Ok(#(threshold_str, interval_str))
     }
-    None -> Error("Missing 'per' keyword in time_slice expression")
+    option.None -> Error("Missing 'per' keyword in time_slice expression")
   }
 }
 
@@ -373,7 +374,7 @@ pub fn find_rightmost_operator_at_level(
   case start_pos >= string.length(input) {
     True ->
       case rightmost_pos {
-        -1 -> Error(CQLParserError(msg: "Operator not found"))
+        -1 -> Error(errors.CQLParserError(msg: "Operator not found"))
         pos -> {
           // Split at the rightmost operator position
           let left = string.trim(string.slice(input, 0, pos))

@@ -1,7 +1,8 @@
-import caffeine_lang/common/accepted_types.{
-  Boolean, CollectionType, Dict, Float, Integer, List, PrimitiveType, String,
-}
+import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
 import caffeine_lang/parser/artifacts
 import gleam/dict
 import test_helpers
@@ -43,13 +44,13 @@ pub fn parse_from_json_file_test() {
         artifacts.Artifact(
           name: "SLO",
           params: dict.from_list([
-            #("threshold", PrimitiveType(Float)),
-            #("window_in_days", PrimitiveType(Integer)),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("window_in_days", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
             #(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
             ),
-            #("value", PrimitiveType(String)),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
         ),
       ]),
@@ -61,20 +62,20 @@ pub fn parse_from_json_file_test() {
         artifacts.Artifact(
           name: "SLO",
           params: dict.from_list([
-            #("threshold", PrimitiveType(Float)),
-            #("window_in_days", PrimitiveType(Integer)),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("window_in_days", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
             #(
               "queries",
-              CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
+              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
             ),
-            #("value", PrimitiveType(String)),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
         ),
         artifacts.Artifact(
           name: "Dependency",
           params: dict.from_list([
-            #("relationship", CollectionType(List(PrimitiveType(String)))),
-            #("isHard", PrimitiveType(Boolean)),
+            #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+            #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
           ]),
         ),
       ]),

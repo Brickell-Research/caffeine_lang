@@ -1,4 +1,10 @@
+import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
+import caffeine_lang/common/numeric_types
+import caffeine_lang/common/primitive_types
+import gleam/dynamic
+import gleam/dynamic/decode
+import gleeunit/should
 import test_helpers
 
 // ==== map_reference_to_referrer_over_collection ====
@@ -25,40 +31,37 @@ pub fn map_reference_to_referrer_over_collection_test() {
   })
 }
 
-// ==== result_try ====
-// * ✅ ok value chains to next function
-// * ✅ chained ok values
-// * ✅ error short-circuits
-// * ✅ error in chain short-circuits
-pub fn result_try_test() {
-  [
-    // ok value chains to next function
-    #(#(Ok(1), fn(x) { Ok(x + 1) }), Ok(2)),
-    // error short-circuits
-    #(#(Error("failed"), fn(_) { Ok(42) }), Error("failed")),
+// ==== extract_value ====
+// * ✅ extracts value by label
+// * ✅ returns Error for missing label
+// * ✅ returns Error for decode failure
+pub fn extract_value_test() {
+  let values = [
+    helpers.ValueTuple(
+      "name",
+      accepted_types.PrimitiveType(primitive_types.String),
+      dynamic.string("hello"),
+    ),
+    helpers.ValueTuple(
+      "count",
+      accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+      dynamic.int(42),
+    ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    let #(initial, mapper) = input
-    helpers.result_try(initial, mapper)
-  })
 
-  // chained ok values - more complex test
-  [
-    #(5, Ok(13)),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(x) {
-    helpers.result_try(Ok(x), fn(y) {
-      helpers.result_try(Ok(y * 2), fn(z) { Ok(z + 3) })
-    })
-  })
+  // extracts value by label
+  helpers.extract_value(values, "name", decode.string)
+  |> should.equal(Ok("hello"))
 
-  // error in chain short-circuits
-  [
-    #(1, Error("mid-chain error")),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(x) {
-    helpers.result_try(Ok(x), fn(_) {
-      helpers.result_try(Error("mid-chain error"), fn(y) { Ok(y + 1) })
-    })
-  })
+  // extracts value with different decoder
+  helpers.extract_value(values, "count", decode.int)
+  |> should.equal(Ok(42))
+
+  // returns Error for missing label
+  helpers.extract_value(values, "missing", decode.string)
+  |> should.equal(Error(Nil))
+
+  // returns Error for decode failure (wrong decoder for type)
+  helpers.extract_value(values, "count", decode.string)
+  |> should.equal(Error(Nil))
 }

@@ -1,5 +1,5 @@
 import caffeine_lang
-import caffeine_lang/cli/exit_status_codes.{Failure, Success}
+import caffeine_lang/cli/exit_status_codes
 import test_helpers
 
 // ==== CLI Exit Codes ====
@@ -22,11 +22,11 @@ pub fn cli_exit_code_test() {
           "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
           "test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
         ],
-        Success,
+        exit_status_codes.Success,
       ),
       #(
         ["compile", "--quiet", "/nonexistent/path.json", "/nonexistent/dir"],
-        Failure,
+        exit_status_codes.Failure,
       ),
       #(
         [
@@ -35,13 +35,13 @@ pub fn cli_exit_code_test() {
           "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
           "/nonexistent/expectations",
         ],
-        Failure,
+        exit_status_codes.Failure,
       ),
-      #(["--quiet", "--help"], Success),
-      #(["--quiet", "-h"], Success),
-      #(["--quiet", "--version"], Success),
-      #(["--quiet", "-V"], Success),
-      #(["--quiet"], Success),
+      #(["--quiet", "--help"], exit_status_codes.Success),
+      #(["--quiet", "-h"], exit_status_codes.Success),
+      #(["--quiet", "--version"], exit_status_codes.Success),
+      #(["--quiet", "-V"], exit_status_codes.Success),
+      #(["--quiet"], exit_status_codes.Success),
     ],
     caffeine_lang.run,
   )
