@@ -55,7 +55,7 @@ EOF
 # Create a wrapper module that exports the compiler API
 cat > "$OUTPUT_DIR/caffeine-entry.mjs" << 'EOF'
 // Browser entry point for Caffeine compiler
-export { compile_from_strings } from "../build/dev/javascript/caffeine_lang/caffeine_lang/compiler.mjs";
+export { compile_from_strings } from "../build/dev/javascript/caffeine_lang/caffeine_lang/core/compiler.mjs";
 EOF
 
 # Bundle with esbuild (using deno), with node shims
