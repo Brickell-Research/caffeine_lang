@@ -96,7 +96,7 @@ pub fn validate_default_value_test() {
 // * ✅ Float with valid float dynamic
 // ==== Sad Path ====
 // * ✅ Integer with non-integer dynamic
-// * ✅ Float with non-float dynamic
+// * ✅ Float with non-float dynamic (String only - Int/Float distinction is platform-specific)
 pub fn validate_value_test() {
   let int_val = dynamic.int(42)
   let float_val = dynamic.float(3.14)
@@ -119,15 +119,12 @@ pub fn validate_value_test() {
   })
 
   // Float validation
+  // Note: Int -> Float validation is platform-specific (JS doesn't distinguish Int/Float)
   [
     #(#(numeric_types.Float, float_val), Ok(float_val)),
     #(
       #(numeric_types.Float, string_val),
       Error([decode.DecodeError(expected: "Float", found: "String", path: [])]),
-    ),
-    #(
-      #(numeric_types.Float, int_val),
-      Error([decode.DecodeError(expected: "Float", found: "Int", path: [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
