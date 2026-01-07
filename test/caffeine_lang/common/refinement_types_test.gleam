@@ -64,10 +64,10 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
-      "String { x | x in { pizza, pasta, salad } }",
+      "String { x | x in { pizza, pasta, salad, tasty-food } }",
       Ok(refinement_types.OneOf(
         accepted_types.PrimitiveType(primitive_types.String),
-        set.from_list(["pizza", "pasta", "salad"]),
+        set.from_list(["pizza", "pasta", "salad", "tasty-food"]),
       )),
     ),
     #("Boolean { x | x in { True, False } }", Error(Nil)),
