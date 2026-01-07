@@ -166,80 +166,123 @@ fn do_parse_refinement(
   raw: String,
   validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
 ) -> Result(RefinementTypes(accepted), Nil) {
-  // Expect exact format: " x | x in { ... } }" (with leading space from split)
+  // Expect format: " x | x in { ... } }" or " x | x in ( ... ) }"
+  // Spacing between letters/words is required (x | x in), but spacing around symbols is flexible
+  // So "{x" is ok, "x|" is ok, but "xin" is not ok (both are words)
+  let trimmed = string.trim(raw)
+  case normalize_refinement_guard(trimmed) {
+    Ok(#("x | x in", rest)) -> {
+      let rest_trimmed = string.trim(rest)
+      case rest_trimmed {
+        "{" <> values_rest ->
+          parse_one_of(typ, values_rest, validate_set_value)
+        "(" <> values_rest ->
+          parse_inclusive_range(typ, raw_typ, values_rest, validate_set_value)
+        _ -> Error(Nil)
+      }
+    }
+    _ -> Error(Nil)
+  }
+}
+
+/// Normalizes the refinement guard syntax, allowing flexible spacing around symbols.
+/// Returns the normalized guard and the remaining string after it.
+/// Valid: "x | x in", "x| x in", "x |x in", "x|x in" (flexible around |)
+/// Invalid: "xin" (no space between words)
+fn normalize_refinement_guard(raw: String) -> Result(#(String, String), Nil) {
+  // Pattern: x (optional space) | (optional space) x (required space) in (rest)
   case raw {
-    " x | x in { " <> rest_rest -> {
-      // Must end with " } }" (inner closing brace, space, outer closing brace)
-      case string.ends_with(rest_rest, " } }") {
+    "x | x in" <> rest -> Ok(#("x | x in", rest))
+    "x| x in" <> rest -> Ok(#("x | x in", rest))
+    "x |x in" <> rest -> Ok(#("x | x in", rest))
+    "x|x in" <> rest -> Ok(#("x | x in", rest))
+    _ -> Error(Nil)
+  }
+}
+
+fn parse_one_of(
+  typ: accepted,
+  raw: String,
+  validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
+) -> Result(RefinementTypes(accepted), Nil) {
+  // Must end with "} }" (inner closing brace, space, outer closing brace)
+  // But there may or may not be a space before the inner closing brace
+  case string.ends_with(raw, "} }") {
+    True -> {
+      // Remove the trailing "} }" and trim to get just the values
+      let set_vals =
+        raw
+        |> string.drop_end(3)
+        |> string.trim
+      let values =
+        set_vals
+        |> string.split(",")
+        |> list.map(string.trim)
+        |> list.filter(fn(s) { s != "" })
+      case values {
+        [] -> Error(Nil)
+        _ -> {
+          // Validate all values are valid for the type
+          case list.try_each(values, validate_set_value(typ, _)) {
+            Ok(_) -> {
+              let value_set = set.from_list(values)
+              // Ensure no duplicate values (set size must match list length)
+              case set.size(value_set) == list.length(values) {
+                True -> Ok(OneOf(typ, value_set))
+                False -> Error(Nil)
+              }
+            }
+            Error(_) -> Error(Nil)
+          }
+        }
+      }
+    }
+    False -> Error(Nil)
+  }
+}
+
+fn parse_inclusive_range(
+  typ: accepted,
+  raw_typ: String,
+  raw: String,
+  validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
+) -> Result(RefinementTypes(accepted), Nil) {
+  // InclusiveRange only supports Integer/Float primitives, not Defaulted or other types
+  case raw_typ {
+    "Integer" | "Float" -> {
+      // Must end with ") }" (inner closing paren, space, outer closing brace)
+      // But there may or may not be a space before the inner closing paren
+      case string.ends_with(raw, ") }") {
         True -> {
-          // Remove the trailing " } }" to get just the values
-          let set_vals =
-            rest_rest
-            |> string.drop_end(4)
+          // Remove the trailing ") }" and trim to get just the values
+          let low_high_vals =
+            raw
+            |> string.drop_end(3)
+            |> string.trim
           let values =
-            set_vals
-            |> string.split(",")
+            low_high_vals
+            |> string.split("..")
             |> list.map(string.trim)
             |> list.filter(fn(s) { s != "" })
           case values {
             [] -> Error(Nil)
-            _ -> {
+            [low, high] -> {
               // Validate all values are valid for the type
               case list.try_each(values, validate_set_value(typ, _)) {
                 Ok(_) -> {
-                  let value_set = set.from_list(values)
-                  // Ensure no duplicate values (set size must match list length)
-                  case set.size(value_set) == list.length(values) {
-                    True -> Ok(OneOf(typ, value_set))
-                    False -> Error(Nil)
+                  // Validate bounds based on type and ensure low <= high
+                  case validate_bounds_order(raw_typ, low, high) {
+                    Ok(_) -> Ok(InclusiveRange(typ, low, high))
+                    Error(_) -> Error(Nil)
                   }
                 }
                 Error(_) -> Error(Nil)
               }
             }
+            _ -> Error(Nil)
           }
         }
         False -> Error(Nil)
-      }
-    }
-    " x | x in ( " <> rest_rest -> {
-      // InclusiveRange only supports Integer/Float primitives, not Defaulted or other types
-      case raw_typ {
-        "Integer" | "Float" -> {
-          // Must end with " ) }" (inner closing paren, space, outer closing brace)
-          case string.ends_with(rest_rest, " ) }") {
-            True -> {
-              // Remove the trailing " ) }" to get just the values
-              let low_high_vals =
-                rest_rest
-                |> string.drop_end(4)
-              let values =
-                low_high_vals
-                |> string.split("..")
-                |> list.map(string.trim)
-                |> list.filter(fn(s) { s != "" })
-              case values {
-                [] -> Error(Nil)
-                [low, high] -> {
-                  // Validate all values are valid for the type
-                  case list.try_each(values, validate_set_value(typ, _)) {
-                    Ok(_) -> {
-                      // Validate bounds based on type and ensure low <= high
-                      case validate_bounds_order(raw_typ, low, high) {
-                        Ok(_) -> Ok(InclusiveRange(typ, low, high))
-                        Error(_) -> Error(Nil)
-                      }
-                    }
-                    Error(_) -> Error(Nil)
-                  }
-                }
-                _ -> Error(Nil)
-              }
-            }
-            False -> Error(Nil)
-          }
-        }
-        _ -> Error(Nil)
       }
     }
     _ -> Error(Nil)

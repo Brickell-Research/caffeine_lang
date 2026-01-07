@@ -16,6 +16,13 @@ import test_helpers
 // * ✅ Refinement(Defaulted(String, default))
 // * ✅ Refinement(Defaulted(Integer, 10))
 // * ✅ Refinement(Defaulted(Float, 1.5))
+// * ✅ OneOf - flexible spacing (no spaces around inner braces)
+// * ✅ OneOf - flexible spacing (no space after opening inner brace)
+// * ✅ OneOf - flexible spacing (no space before closing inner brace)
+// * ✅ OneOf - flexible spacing (no space after outer opening brace)
+// * ✅ OneOf - flexible spacing (no space before pipe)
+// * ✅ OneOf - flexible spacing (no space after pipe)
+// * ✅ OneOf - flexible spacing (no space before inner opening brace)
 // ==== Happy Path (InclusiveRange) ====
 // * ✅ InclusiveRange(Integer) - basic range
 // * ✅ InclusiveRange(Integer) - negative range
@@ -23,6 +30,13 @@ import test_helpers
 // * ✅ InclusiveRange(Float) - basic range
 // * ✅ InclusiveRange(Float) - negative range
 // * ✅ InclusiveRange(Float) - zero crossing range
+// * ✅ InclusiveRange - flexible spacing (no spaces around parens)
+// * ✅ InclusiveRange - flexible spacing (no space after opening paren)
+// * ✅ InclusiveRange - flexible spacing (no space before closing paren)
+// * ✅ InclusiveRange - flexible spacing (no space after outer opening brace)
+// * ✅ InclusiveRange - flexible spacing (no space before pipe)
+// * ✅ InclusiveRange - flexible spacing (no space after pipe)
+// * ✅ InclusiveRange - flexible spacing (no space before opening paren)
 // ==== Sad Path (OneOf) ====
 // * ✅ Refinement(Integer) - with empty set
 // * ✅ Refinement(Float) - with empty set
@@ -44,12 +58,7 @@ import test_helpers
 // * ✅ Malformed syntax - missing outer opening bracket
 // * ✅ Malformed syntax - wrong variable name (y instead of x)
 // * ✅ Malformed syntax - wrong case (IN instead of in)
-// * ✅ Malformed syntax - missing space after opening bracket
-// * ✅ Malformed syntax - missing space before pipe
-// * ✅ Malformed syntax - missing space after pipe
-// * ✅ Malformed syntax - missing space after "x"
-// * ✅ Malformed syntax - missing space before inner opening bracket
-// * ✅ Malformed syntax - missing space after inner opening bracket
+// * ✅ Malformed syntax - missing space between x and in (xin)
 // * ✅ OneOf - duplicate values in set (invalid)
 // ==== Sad Path (InclusiveRange) ====
 // * ✅ InclusiveRange(String) - not supported (only Integer/Float)
@@ -58,14 +67,13 @@ import test_helpers
 // * ✅ InclusiveRange - missing bounds
 // * ✅ InclusiveRange - too many bounds
 // * ✅ InclusiveRange - malformed syntax (wrong parens)
-// * ✅ InclusiveRange - malformed syntax (missing space after opening paren)
-// * ✅ InclusiveRange - malformed syntax (missing space before closing paren)
 // * ✅ InclusiveRange(Integer) - low > high (invalid range)
 // * ✅ InclusiveRange(Float) - low > high (invalid range)
 // * ✅ InclusiveRange(Defaulted(Integer, 50)) - Defaulted not supported
 // * ✅ InclusiveRange(Defaulted(Float, 1.5)) - Defaulted not supported
 pub fn parse_refinement_type_test() {
   [
+    // ==== Happy Path (OneOf) ====
     #(
       "Integer { x | x in { 10, 20, 30 } }",
       Ok(refinement_types.OneOf(
@@ -91,14 +99,6 @@ pub fn parse_refinement_type_test() {
         set.from_list(["pizza", "pasta", "salad", "tasty-food"]),
       )),
     ),
-    #("Boolean { x | x in { True, False } }", Error(Nil)),
-    // Sad path - empty set
-    #("Integer { x | x in {  } }", Error(Nil)),
-    #("Float { x | x in {  } }", Error(Nil)),
-    #("String { x | x in {  } }", Error(Nil)),
-    // Sad path - invalid types in set
-    #("Integer { x | x in { 10.0 } }", Error(Nil)),
-    #("Float { x | x in { pizza } }", Error(Nil)),
     #(
       "String { x | x in { 10 } }",
       Ok(refinement_types.OneOf(
@@ -106,13 +106,6 @@ pub fn parse_refinement_type_test() {
         set.from_list(["10"]),
       )),
     ),
-    // Sad path - invalid inner type (parse_inner returns Error)
-    #("Unknown { x | x in { 1, 2, 3 } }", Error(Nil)),
-    // Sad path - List/Dict/Optional not supported
-    #("List(String) { x | x in { a, b, c } }", Error(Nil)),
-    #("Dict(String, String) { x | x in { a, b, c } }", Error(Nil)),
-    #("Optional(String) { x | x in { a, b, c } }", Error(Nil)),
-    // Happy path - Defaulted is supported
     #(
       "Defaulted(String, default) { x | x in { a, b, c } }",
       Ok(refinement_types.OneOf(
@@ -147,27 +140,79 @@ pub fn parse_refinement_type_test() {
         set.from_list(["1.5", "2.5", "3.5"]),
       )),
     ),
-    // Sad path - Defaulted with unsupported inner types
-    #("Defaulted(Boolean, True) { x | x in { True, False } }", Error(Nil)),
-    #("Defaulted(List(String), a) { x | x in { a, b, c } }", Error(Nil)),
-    #("Defaulted(Dict(String, String), a) { x | x in { a, b } }", Error(Nil)),
-    #("Defaulted(Optional(String), a) { x | x in { a, b, c } }", Error(Nil)),
-    // Sad path - malformed syntax / missing brackets
-    #("Integer { x | x in { 10, 20, 30 }", Error(Nil)),
-    #("Integer { x | x in 10, 20, 30 } }", Error(Nil)),
-    #("Integer x | x in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { y | y in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | x IN { 10, 20, 30 } }", Error(Nil)),
-    #("Integer {x | x in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x| x in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x |x in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | xin { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | x in{ 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | x in {10, 20, 30 } }", Error(Nil)),
-    // Sad path - duplicate values in set
-    #("Integer { x | x in { 10, 10, 20 } }", Error(Nil)),
-    #("String { x | x in { pizza, pizza, pasta } }", Error(Nil)),
-    // InclusiveRange happy path - basic range
+    // OneOf flexible spacing
+    #(
+      "Integer { x | x in {10, 20, 30} }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "Integer { x | x in {10, 20, 30 } }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "Integer { x | x in { 10, 20, 30} }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "String { x | x in {pizza, pasta} }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.String),
+        set.from_list(["pizza", "pasta"]),
+      )),
+    ),
+    // OneOf flexible spacing - around outer brace and pipe
+    #(
+      "Integer {x | x in { 10, 20, 30 } }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "Integer { x| x in { 10, 20, 30 } }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "Integer { x |x in { 10, 20, 30 } }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    #(
+      "Integer { x | x in{ 10, 20, 30 } }",
+      Ok(refinement_types.OneOf(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        set.from_list(["10", "20", "30"]),
+      )),
+    ),
+    // ==== Happy Path (InclusiveRange) ====
     #(
       "Integer { x | x in ( 0..100 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -178,7 +223,6 @@ pub fn parse_refinement_type_test() {
         "100",
       )),
     ),
-    // InclusiveRange happy path - negative range
     #(
       "Integer { x | x in ( -100..-50 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -189,7 +233,6 @@ pub fn parse_refinement_type_test() {
         "-50",
       )),
     ),
-    // InclusiveRange happy path - zero crossing range
     #(
       "Integer { x | x in ( -10..10 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -200,7 +243,6 @@ pub fn parse_refinement_type_test() {
         "10",
       )),
     ),
-    // InclusiveRange(Float) happy path - basic range
     #(
       "Float { x | x in ( 0.0..100.0 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -211,7 +253,6 @@ pub fn parse_refinement_type_test() {
         "100.0",
       )),
     ),
-    // InclusiveRange(Float) happy path - negative range
     #(
       "Float { x | x in ( -100.5..-50.5 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -222,7 +263,6 @@ pub fn parse_refinement_type_test() {
         "-50.5",
       )),
     ),
-    // InclusiveRange(Float) happy path - zero crossing range
     #(
       "Float { x | x in ( -10.5..10.5 ) }",
       Ok(refinement_types.InclusiveRange(
@@ -233,31 +273,122 @@ pub fn parse_refinement_type_test() {
         "10.5",
       )),
     ),
-    // InclusiveRange sad path - String not supported (only Integer/Float)
+    // InclusiveRange flexible spacing
+    #(
+      "Integer { x | x in (0..100) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Integer { x | x in (0..100 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Integer { x | x in ( 0..100) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Float { x | x in (0.0..100.0) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "0.0",
+        "100.0",
+      )),
+    ),
+    // InclusiveRange flexible spacing - around outer brace and pipe
+    #(
+      "Integer {x | x in ( 0..100 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Integer { x| x in ( 0..100 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Integer { x |x in ( 0..100 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    #(
+      "Integer { x | x in( 0..100 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+        "100",
+      )),
+    ),
+    // ==== Sad Path (OneOf) ====
+    #("Boolean { x | x in { True, False } }", Error(Nil)),
+    #("Integer { x | x in {  } }", Error(Nil)),
+    #("Float { x | x in {  } }", Error(Nil)),
+    #("String { x | x in {  } }", Error(Nil)),
+    #("Integer { x | x in { 10.0 } }", Error(Nil)),
+    #("Float { x | x in { pizza } }", Error(Nil)),
+    #("Unknown { x | x in { 1, 2, 3 } }", Error(Nil)),
+    #("List(String) { x | x in { a, b, c } }", Error(Nil)),
+    #("Dict(String, String) { x | x in { a, b, c } }", Error(Nil)),
+    #("Optional(String) { x | x in { a, b, c } }", Error(Nil)),
+    #("Defaulted(Boolean, True) { x | x in { True, False } }", Error(Nil)),
+    #("Defaulted(List(String), a) { x | x in { a, b, c } }", Error(Nil)),
+    #("Defaulted(Dict(String, String), a) { x | x in { a, b } }", Error(Nil)),
+    #("Defaulted(Optional(String), a) { x | x in { a, b, c } }", Error(Nil)),
+    #("Integer { x | x in { 10, 20, 30 }", Error(Nil)),
+    #("Integer { x | x in 10, 20, 30 } }", Error(Nil)),
+    #("Integer x | x in { 10, 20, 30 } }", Error(Nil)),
+    #("Integer { y | y in { 10, 20, 30 } }", Error(Nil)),
+    #("Integer { x | x IN { 10, 20, 30 } }", Error(Nil)),
+    #("Integer { x | xin { 10, 20, 30 } }", Error(Nil)),
+    #("Integer { x | x in { 10, 10, 20 } }", Error(Nil)),
+    #("String { x | x in { pizza, pizza, pasta } }", Error(Nil)),
+    // ==== Sad Path (InclusiveRange) ====
     #("String { x | x in ( a..z ) }", Error(Nil)),
-    // InclusiveRange(Integer) sad path - non-integer bounds
     #("Integer { x | x in ( 0.5..100.5 ) }", Error(Nil)),
-    // InclusiveRange(Float) sad path - non-float bounds (integers in float range)
     #("Float { x | x in ( a..z ) }", Error(Nil)),
-    // InclusiveRange sad path - missing low bound
     #("Integer { x | x in ( ..100 ) }", Error(Nil)),
-    // InclusiveRange sad path - missing high bound
     #("Integer { x | x in ( 0.. ) }", Error(Nil)),
-    // InclusiveRange sad path - too many bounds
     #("Integer { x | x in ( 0..50..100 ) }", Error(Nil)),
-    // InclusiveRange sad path - wrong parens (using curly braces for range)
     #("Integer { x | x in { 0..100 } }", Error(Nil)),
-    // InclusiveRange sad path - missing space after opening paren
-    #("Integer { x | x in (0..100 ) }", Error(Nil)),
-    // InclusiveRange sad path - missing space before closing paren
-    #("Integer { x | x in ( 0..100) }", Error(Nil)),
-    // InclusiveRange(Integer) sad path - low > high (invalid range)
     #("Integer { x | x in ( 100..0 ) }", Error(Nil)),
-    // InclusiveRange(Float) sad path - low > high (invalid range)
     #("Float { x | x in ( 100.0..0.0 ) }", Error(Nil)),
-    // InclusiveRange sad path - Defaulted(Integer) not supported
     #("Defaulted(Integer, 50) { x | x in ( 0..100 ) }", Error(Nil)),
-    // InclusiveRange sad path - Defaulted(Float) not supported
     #("Defaulted(Float, 1.5) { x | x in ( 0.0..100.0 ) }", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
