@@ -1,6 +1,6 @@
+import caffeine_lang/common/numeric_types
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
@@ -17,13 +17,13 @@ pub type RefinementTypes(accepted) {
   OneOf(accepted, set.Set(String))
   /// Restricts values to a user-defined range.
   /// I.E. Int { x | x in (0..100) }
-  /// 
+  ///
   /// At this time we only support:
-  ///   * Primitives: Integer
-  /// 
+  ///   * Primitives: Integer, Float
+  ///
   /// Furthermore, we initially will only support an inclusive
   /// range, as noted in the type name here.
-  InclusiveRange(accepted, Int, Int)
+  InclusiveRange(accepted, String, String)
 }
 
 /// Converts a RefinementTypes to its string representation.
@@ -44,9 +44,9 @@ pub fn refinement_type_to_string(
     InclusiveRange(typ, low, high) ->
       accepted_type_to_string(typ)
       <> " { x | x in { ("
-      <> int.to_string(low)
+      <> low
       <> ".."
-      <> int.to_string(high)
+      <> high
       <> " ) }"
   }
 }
@@ -92,6 +92,7 @@ pub fn validate_value(
   refinement: RefinementTypes(accepted),
   value: Dynamic,
   decode_inner_to_string: fn(accepted) -> decode.Decoder(String),
+  get_numeric_type: fn(accepted) -> numeric_types.NumericTypes,
 ) -> Result(Dynamic, List(decode.DecodeError)) {
   case refinement {
     OneOf(inner_type, allowed_values) -> {
@@ -122,32 +123,10 @@ pub fn validate_value(
         value,
         decode_inner_to_string(inner_type),
       ))
-      case int.parse(as_str) {
-        Ok(int_val) -> {
-          case int_val >= low, int_val <= high {
-            True, True -> Ok(value)
-            False, _ ->
-              Error([
-                decode.DecodeError(
-                  expected: " > " <> int.to_string(low),
-                  found: as_str,
-                  path: [],
-                ),
-              ])
-            _, False ->
-              Error([
-                decode.DecodeError(
-                  expected: " < " <> int.to_string(high),
-                  found: as_str,
-                  path: [],
-                ),
-              ])
-          }
-        }
-        Error(_) ->
-          Error([
-            decode.DecodeError(expected: "Ineger", found: as_str, path: []),
-          ])
+      let numeric = get_numeric_type(inner_type)
+      case numeric_types.validate_in_range(numeric, as_str, low, high) {
+        Ok(_) -> Ok(value)
+        Error(errs) -> Error(errs)
       }
     }
   }
@@ -224,9 +203,9 @@ fn do_parse_refinement(
       }
     }
     " x | x in ( " <> rest_rest -> {
-      // InclusiveRange only supports Integer primitive, not Defaulted or other types
+      // InclusiveRange only supports Integer/Float primitives, not Defaulted or other types
       case raw_typ {
-        "Integer" -> {
+        "Integer" | "Float" -> {
           // Must end with " ) }" (inner closing paren, space, outer closing brace)
           case string.ends_with(rest_rest, " ) }") {
             True -> {
@@ -241,19 +220,20 @@ fn do_parse_refinement(
                 |> list.filter(fn(s) { s != "" })
               case values {
                 [] -> Error(Nil)
-                _ -> {
+                [low, high] -> {
                   // Validate all values are valid for the type
                   case list.try_each(values, validate_set_value(typ, _)) {
                     Ok(_) -> {
-                      case values |> list.map(int.parse) {
-                        [Ok(low), Ok(high)] if low <= high ->
-                          Ok(InclusiveRange(typ, low, high))
-                        _ -> Error(Nil)
+                      // Validate bounds based on type and ensure low <= high
+                      case validate_bounds_order(raw_typ, low, high) {
+                        Ok(_) -> Ok(InclusiveRange(typ, low, high))
+                        Error(_) -> Error(Nil)
                       }
                     }
                     Error(_) -> Error(Nil)
                   }
                 }
+                _ -> Error(Nil)
               }
             }
             False -> Error(Nil)
@@ -265,3 +245,18 @@ fn do_parse_refinement(
     _ -> Error(Nil)
   }
 }
+
+/// Validates that bounds are in valid order (low <= high) for a numeric type.
+fn validate_bounds_order(
+  raw_typ: String,
+  low: String,
+  high: String,
+) -> Result(Nil, Nil) {
+  case numeric_types.parse_numeric_type(raw_typ) {
+    Ok(numeric) ->
+      numeric_types.validate_in_range(numeric, low, low, high)
+      |> result.replace_error(Nil)
+    Error(Nil) -> Error(Nil)
+  }
+}
+

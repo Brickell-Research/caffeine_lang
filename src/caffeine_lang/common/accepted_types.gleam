@@ -55,7 +55,12 @@ pub fn validate_value(
     ModifierType(modifier) ->
       modifier_types.validate_value(modifier, value, validate_value)
     RefinementType(refinement) ->
-      refinement_types.validate_value(refinement, value, decode_value_to_string)
+      refinement_types.validate_value(
+        refinement,
+        value,
+        decode_value_to_string,
+        get_numeric_type,
+      )
   }
 }
 
@@ -152,6 +157,17 @@ pub fn resolve_to_string(
         decode_value_to_string,
         resolve_string,
       )
+  }
+}
+
+/// Extracts the NumericTypes from an AcceptedTypes.
+/// Used by InclusiveRange validation - only Integer/Float primitives are valid.
+@internal
+pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
+  case typ {
+    PrimitiveType(primitive_types.NumericType(numeric)) -> numeric
+    // InclusiveRange only allows Integer/Float, so this shouldn't happen
+    _ -> numeric_types.Integer
   }
 }
 

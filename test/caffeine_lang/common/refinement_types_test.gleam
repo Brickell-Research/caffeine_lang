@@ -20,6 +20,9 @@ import test_helpers
 // * ✅ InclusiveRange(Integer) - basic range
 // * ✅ InclusiveRange(Integer) - negative range
 // * ✅ InclusiveRange(Integer) - zero crossing range
+// * ✅ InclusiveRange(Float) - basic range
+// * ✅ InclusiveRange(Float) - negative range
+// * ✅ InclusiveRange(Float) - zero crossing range
 // ==== Sad Path (OneOf) ====
 // * ✅ Refinement(Integer) - with empty set
 // * ✅ Refinement(Float) - with empty set
@@ -49,16 +52,18 @@ import test_helpers
 // * ✅ Malformed syntax - missing space after inner opening bracket
 // * ✅ OneOf - duplicate values in set (invalid)
 // ==== Sad Path (InclusiveRange) ====
-// * ✅ InclusiveRange(Float) - not supported (only Integer)
-// * ✅ InclusiveRange(String) - not supported (only Integer)
-// * ✅ InclusiveRange - non-integer bounds
+// * ✅ InclusiveRange(String) - not supported (only Integer/Float)
+// * ✅ InclusiveRange(Integer) - non-integer bounds
+// * ✅ InclusiveRange(Float) - non-float bounds
 // * ✅ InclusiveRange - missing bounds
 // * ✅ InclusiveRange - too many bounds
 // * ✅ InclusiveRange - malformed syntax (wrong parens)
 // * ✅ InclusiveRange - malformed syntax (missing space after opening paren)
 // * ✅ InclusiveRange - malformed syntax (missing space before closing paren)
-// * ✅ InclusiveRange - low > high (invalid range)
+// * ✅ InclusiveRange(Integer) - low > high (invalid range)
+// * ✅ InclusiveRange(Float) - low > high (invalid range)
 // * ✅ InclusiveRange(Defaulted(Integer, 50)) - Defaulted not supported
+// * ✅ InclusiveRange(Defaulted(Float, 1.5)) - Defaulted not supported
 pub fn parse_refinement_type_test() {
   [
     #(
@@ -169,8 +174,8 @@ pub fn parse_refinement_type_test() {
         accepted_types.PrimitiveType(primitive_types.NumericType(
           numeric_types.Integer,
         )),
-        0,
-        100,
+        "0",
+        "100",
       )),
     ),
     // InclusiveRange happy path - negative range
@@ -180,8 +185,8 @@ pub fn parse_refinement_type_test() {
         accepted_types.PrimitiveType(primitive_types.NumericType(
           numeric_types.Integer,
         )),
-        -100,
-        -50,
+        "-100",
+        "-50",
       )),
     ),
     // InclusiveRange happy path - zero crossing range
@@ -191,16 +196,49 @@ pub fn parse_refinement_type_test() {
         accepted_types.PrimitiveType(primitive_types.NumericType(
           numeric_types.Integer,
         )),
-        -10,
-        10,
+        "-10",
+        "10",
       )),
     ),
-    // InclusiveRange sad path - Float not supported (bounds must be integers)
-    #("Float { x | x in ( 0.0..100.0 ) }", Error(Nil)),
-    // InclusiveRange sad path - String not supported
+    // InclusiveRange(Float) happy path - basic range
+    #(
+      "Float { x | x in ( 0.0..100.0 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "0.0",
+        "100.0",
+      )),
+    ),
+    // InclusiveRange(Float) happy path - negative range
+    #(
+      "Float { x | x in ( -100.5..-50.5 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "-100.5",
+        "-50.5",
+      )),
+    ),
+    // InclusiveRange(Float) happy path - zero crossing range
+    #(
+      "Float { x | x in ( -10.5..10.5 ) }",
+      Ok(refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "-10.5",
+        "10.5",
+      )),
+    ),
+    // InclusiveRange sad path - String not supported (only Integer/Float)
     #("String { x | x in ( a..z ) }", Error(Nil)),
-    // InclusiveRange sad path - non-integer bounds
+    // InclusiveRange(Integer) sad path - non-integer bounds
     #("Integer { x | x in ( 0.5..100.5 ) }", Error(Nil)),
+    // InclusiveRange(Float) sad path - non-float bounds (integers in float range)
+    #("Float { x | x in ( a..z ) }", Error(Nil)),
     // InclusiveRange sad path - missing low bound
     #("Integer { x | x in ( ..100 ) }", Error(Nil)),
     // InclusiveRange sad path - missing high bound
@@ -213,10 +251,14 @@ pub fn parse_refinement_type_test() {
     #("Integer { x | x in (0..100 ) }", Error(Nil)),
     // InclusiveRange sad path - missing space before closing paren
     #("Integer { x | x in ( 0..100) }", Error(Nil)),
-    // InclusiveRange sad path - low > high (invalid range)
+    // InclusiveRange(Integer) sad path - low > high (invalid range)
     #("Integer { x | x in ( 100..0 ) }", Error(Nil)),
-    // InclusiveRange sad path - Defaulted not supported (only Integer primitive)
+    // InclusiveRange(Float) sad path - low > high (invalid range)
+    #("Float { x | x in ( 100.0..0.0 ) }", Error(Nil)),
+    // InclusiveRange sad path - Defaulted(Integer) not supported
     #("Defaulted(Integer, 50) { x | x in ( 0..100 ) }", Error(Nil)),
+    // InclusiveRange sad path - Defaulted(Float) not supported
+    #("Defaulted(Float, 1.5) { x | x in ( 0.0..100.0 ) }", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     refinement_types.parse_refinement_type(
@@ -237,6 +279,8 @@ pub fn parse_refinement_type_test() {
 // * ✅ InclusiveRange(T, low, high) -> "T { x | x in { (low..high ) }"
 //   * ✅ Integer - basic range
 //   * ✅ Integer - negative range
+//   * ✅ Float - basic range
+//   * ✅ Float - negative range
 pub fn refinement_type_to_string_test() {
   [
     #(
@@ -286,27 +330,49 @@ pub fn refinement_type_to_string_test() {
       ),
       "Defaulted(Integer, 10) { x | x in { 10, 20, 30 } }",
     ),
-    // InclusiveRange - basic range
+    // InclusiveRange(Integer) - basic range
     #(
       refinement_types.InclusiveRange(
         accepted_types.PrimitiveType(primitive_types.NumericType(
           numeric_types.Integer,
         )),
-        0,
-        100,
+        "0",
+        "100",
       ),
       "Integer { x | x in { (0..100 ) }",
     ),
-    // InclusiveRange - negative range
+    // InclusiveRange(Integer) - negative range
     #(
       refinement_types.InclusiveRange(
         accepted_types.PrimitiveType(primitive_types.NumericType(
           numeric_types.Integer,
         )),
-        -100,
-        -50,
+        "-100",
+        "-50",
       ),
       "Integer { x | x in { (-100..-50 ) }",
+    ),
+    // InclusiveRange(Float) - basic range
+    #(
+      refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "0.0",
+        "100.0",
+      ),
+      "Float { x | x in { (0.0..100.0 ) }",
+    ),
+    // InclusiveRange(Float) - negative range
+    #(
+      refinement_types.InclusiveRange(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "-100.5",
+        "-50.5",
+      ),
+      "Float { x | x in { (-100.5..-50.5 ) }",
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -329,7 +395,13 @@ pub fn refinement_type_to_string_test() {
 // * ✅ InclusiveRange(Integer) - value below range
 // * ✅ InclusiveRange(Integer) - value above range
 // * ✅ InclusiveRange(Integer) - negative range
-// * ✅ InclusiveRange - wrong type entirely -> Error
+// * ✅ InclusiveRange(Integer) - wrong type entirely -> Error
+// * ✅ InclusiveRange(Float) - value in range
+// * ✅ InclusiveRange(Float) - value at low boundary
+// * ✅ InclusiveRange(Float) - value at high boundary
+// * ✅ InclusiveRange(Float) - value below range
+// * ✅ InclusiveRange(Float) - value above range
+// * ✅ InclusiveRange(Float) - wrong type entirely -> Error
 pub fn validate_value_test() {
   [
     // Integer happy path - value in set
@@ -447,115 +519,199 @@ pub fn validate_value_test() {
       ),
       False,
     ),
-    // InclusiveRange happy path - value in range
+    // InclusiveRange(Integer) happy path - value in range
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(50),
       ),
       True,
     ),
-    // InclusiveRange happy path - value at low boundary (inclusive)
+    // InclusiveRange(Integer) happy path - value at low boundary (inclusive)
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(0),
       ),
       True,
     ),
-    // InclusiveRange happy path - value at high boundary (inclusive)
+    // InclusiveRange(Integer) happy path - value at high boundary (inclusive)
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(100),
       ),
       True,
     ),
-    // InclusiveRange sad path - value below range
+    // InclusiveRange(Integer) sad path - value below range
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(-1),
       ),
       False,
     ),
-    // InclusiveRange sad path - value above range
+    // InclusiveRange(Integer) sad path - value above range
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(101),
       ),
       False,
     ),
-    // InclusiveRange happy path - negative range
+    // InclusiveRange(Integer) happy path - negative range
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          -100,
-          -50,
+          "-100",
+          "-50",
         ),
         dynamic.int(-75),
       ),
       True,
     ),
-    // InclusiveRange sad path - negative range, value outside
+    // InclusiveRange(Integer) sad path - negative range, value outside
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          -100,
-          -50,
+          "-100",
+          "-50",
         ),
         dynamic.int(-49),
       ),
       False,
     ),
-    // InclusiveRange sad path - wrong type entirely
+    // InclusiveRange(Integer) sad path - wrong type entirely
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.string("not an integer"),
+      ),
+      False,
+    ),
+    // InclusiveRange(Float) happy path - value in range
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(50.5),
+      ),
+      True,
+    ),
+    // InclusiveRange(Float) happy path - value at low boundary (inclusive)
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(0.0),
+      ),
+      True,
+    ),
+    // InclusiveRange(Float) happy path - value at high boundary (inclusive)
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(100.0),
+      ),
+      True,
+    ),
+    // InclusiveRange(Float) sad path - value below range
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(-0.1),
+      ),
+      False,
+    ),
+    // InclusiveRange(Float) sad path - value above range
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(100.1),
+      ),
+      False,
+    ),
+    // InclusiveRange(Float) sad path - wrong type entirely
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.string("not a float"),
       ),
       False,
     ),
@@ -567,6 +723,7 @@ pub fn validate_value_test() {
         typ,
         value,
         accepted_types.decode_value_to_string,
+        accepted_types.get_numeric_type,
       )
     {
       Ok(_) -> True
@@ -582,7 +739,9 @@ pub fn validate_value_test() {
 // * ✅ OneOf(Defaulted(String, default)) - resolves value to string
 // * ✅ OneOf - decode error returns Error
 // * ✅ InclusiveRange(Integer) - resolves value to string
-// * ✅ InclusiveRange - decode error returns Error
+// * ✅ InclusiveRange(Integer) - decode error returns Error
+// * ✅ InclusiveRange(Float) - resolves value to string
+// * ✅ InclusiveRange(Float) - decode error returns Error
 pub fn resolve_to_string_test() {
   let resolve_string = fn(x: String) { x }
 
@@ -651,31 +810,59 @@ pub fn resolve_to_string_test() {
       ),
       Error("Unable to decode OneOf refinement type value."),
     ),
-    // InclusiveRange happy path - Integer
+    // InclusiveRange(Integer) happy path
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.int(50),
       ),
       Ok("50"),
     ),
-    // InclusiveRange decode error - wrong type
+    // InclusiveRange(Integer) decode error - wrong type
     #(
       #(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive_types.NumericType(
             numeric_types.Integer,
           )),
-          0,
-          100,
+          "0",
+          "100",
         ),
         dynamic.string("not an integer"),
+      ),
+      Error("Unable to decode InclusiveRange refinement type value."),
+    ),
+    // InclusiveRange(Float) happy path
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.float(50.5),
+      ),
+      Ok("50.5"),
+    ),
+    // InclusiveRange(Float) decode error - wrong type
+    #(
+      #(
+        refinement_types.InclusiveRange(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+          "0.0",
+          "100.0",
+        ),
+        dynamic.string("not a float"),
       ),
       Error("Unable to decode InclusiveRange refinement type value."),
     ),

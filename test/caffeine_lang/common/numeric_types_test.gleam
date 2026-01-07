@@ -89,3 +89,160 @@ pub fn validate_default_value_test() {
     numeric_types.validate_default_value(input.0, input.1)
   })
 }
+
+// ==== validate_value ====
+// ==== Happy Path ====
+// * ✅ Integer with valid int dynamic
+// * ✅ Float with valid float dynamic
+// ==== Sad Path ====
+// * ✅ Integer with non-integer dynamic
+// * ✅ Float with non-float dynamic
+pub fn validate_value_test() {
+  let int_val = dynamic.int(42)
+  let float_val = dynamic.float(3.14)
+  let string_val = dynamic.string("hello")
+
+  // Integer validation
+  [
+    #(#(numeric_types.Integer, int_val), Ok(int_val)),
+    #(
+      #(numeric_types.Integer, string_val),
+      Error([decode.DecodeError(expected: "Int", found: "String", path: [])]),
+    ),
+    #(
+      #(numeric_types.Integer, float_val),
+      Error([decode.DecodeError(expected: "Int", found: "Float", path: [])]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_value(input.0, input.1)
+  })
+
+  // Float validation
+  [
+    #(#(numeric_types.Float, float_val), Ok(float_val)),
+    #(
+      #(numeric_types.Float, string_val),
+      Error([decode.DecodeError(expected: "Float", found: "String", path: [])]),
+    ),
+    #(
+      #(numeric_types.Float, int_val),
+      Error([decode.DecodeError(expected: "Float", found: "Int", path: [])]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_value(input.0, input.1)
+  })
+}
+
+// ==== validate_in_range ====
+// ==== Happy Path ====
+// * ✅ Integer value within range
+// * ✅ Integer value at lower bound
+// * ✅ Integer value at upper bound
+// * ✅ Float value within range
+// * ✅ Float value at lower bound
+// * ✅ Float value at upper bound
+// ==== Sad Path ====
+// * ✅ Integer value out of range
+// * ✅ Float value out of range
+// * ✅ Invalid value string for type
+pub fn validate_in_range_test() {
+  // Integer - happy path
+  [
+    #(#(numeric_types.Integer, "50", "0", "100"), Ok(Nil)),
+    #(#(numeric_types.Integer, "0", "0", "100"), Ok(Nil)),
+    #(#(numeric_types.Integer, "100", "0", "100"), Ok(Nil)),
+    #(#(numeric_types.Integer, "-5", "-10", "10"), Ok(Nil)),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+
+  // Integer - sad path (out of range)
+  [
+    #(
+      #(numeric_types.Integer, "-1", "0", "100"),
+      Error([
+        decode.DecodeError(expected: "0 <= x <= 100", found: "-1", path: []),
+      ]),
+    ),
+    #(
+      #(numeric_types.Integer, "-20", "-10", "10"),
+      Error([
+        decode.DecodeError(expected: "-10 <= x <= 10", found: "-20", path: []),
+      ]),
+    ),
+    #(
+      #(numeric_types.Integer, "101", "0", "100"),
+      Error([
+        decode.DecodeError(expected: "0 <= x <= 100", found: "101", path: []),
+      ]),
+    ),
+    #(
+      #(numeric_types.Integer, "15", "-10", "10"),
+      Error([
+        decode.DecodeError(expected: "-10 <= x <= 10", found: "15", path: []),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+
+  // Integer - sad path (invalid value)
+  [
+    #(
+      #(numeric_types.Integer, "hello", "0", "100"),
+      Error([decode.DecodeError(expected: "Integer", found: "hello", path: [])]),
+    ),
+    #(
+      #(numeric_types.Integer, "3.14", "0", "100"),
+      Error([decode.DecodeError(expected: "Integer", found: "3.14", path: [])]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+
+  // Float - happy path
+  [
+    #(#(numeric_types.Float, "0.5", "0.0", "1.0"), Ok(Nil)),
+    #(#(numeric_types.Float, "0.0", "0.0", "1.0"), Ok(Nil)),
+    #(#(numeric_types.Float, "1.0", "0.0", "1.0"), Ok(Nil)),
+    #(#(numeric_types.Float, "-0.5", "-1.0", "1.0"), Ok(Nil)),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+
+  // Float - sad path (out of range)
+  [
+    #(
+      #(numeric_types.Float, "-0.1", "0.0", "1.0"),
+      Error([
+        decode.DecodeError(expected: "0.0 <= x <= 1.0", found: "-0.1", path: []),
+      ]),
+    ),
+    #(
+      #(numeric_types.Float, "1.1", "0.0", "1.0"),
+      Error([
+        decode.DecodeError(expected: "0.0 <= x <= 1.0", found: "1.1", path: []),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+
+  // Float - sad path (invalid value)
+  [
+    #(
+      #(numeric_types.Float, "hello", "0.0", "1.0"),
+      Error([decode.DecodeError(expected: "Float", found: "hello", path: [])]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    numeric_types.validate_in_range(input.0, input.1, input.2, input.3)
+  })
+}

@@ -49,9 +49,13 @@ pub fn validate_default_value(
   numeric: NumericTypes,
   default_val: String,
 ) -> Result(Nil, Nil) {
+  parse_string(numeric, default_val) |> result.replace(Nil)
+}
+
+fn parse_string(numeric: NumericTypes, value: String) -> Result(Float, Nil) {
   case numeric {
-    Integer -> int.parse(default_val) |> result.replace(Nil)
-    Float -> float.parse(default_val) |> result.replace(Nil)
+    Integer -> int.parse(value) |> result.map(int.to_float)
+    Float -> float.parse(value)
   }
 }
 
@@ -66,4 +70,38 @@ pub fn validate_value(
     Float -> decode.float |> decode.map(fn(_) { value })
   }
   decode.run(value, decoder)
+}
+
+/// Validates a string value is within an inclusive range for the given numeric type.
+@internal
+pub fn validate_in_range(
+  numeric: NumericTypes,
+  value_str: String,
+  low_str: String,
+  high_str: String,
+) -> Result(Nil, List(decode.DecodeError)) {
+  let type_name = numeric_type_to_string(numeric)
+  case
+    parse_string(numeric, value_str),
+    parse_string(numeric, low_str),
+    parse_string(numeric, high_str)
+  {
+    Ok(val), Ok(low), Ok(high) -> {
+      case val >=. low, val <=. high {
+        True, True -> Ok(Nil)
+        _, _ ->
+          Error([
+            decode.DecodeError(
+              expected: low_str <> " <= x <= " <> high_str,
+              found: value_str,
+              path: [],
+            ),
+          ])
+      }
+    }
+    _, _, _ ->
+      Error([
+        decode.DecodeError(expected: type_name, found: value_str, path: []),
+      ])
+  }
 }
