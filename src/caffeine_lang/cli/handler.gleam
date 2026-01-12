@@ -39,6 +39,14 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
       print_version(logger.Verbose)
       exit_status_codes.Success
     }
+    ["artifacts"] -> {
+      artifacts_catalog(logger.Verbose)
+      exit_status_codes.Success
+    }
+    ["artifacts", "--quiet"] | ["--quiet", "artifacts"] -> {
+      artifacts_catalog(logger.Minimal)
+      exit_status_codes.Success
+    }
     ["--quiet", "--help"]
     | ["--quiet", "-h"]
     | ["--help", "--quiet"]
@@ -118,6 +126,17 @@ fn print_usage(log_level: LogLevel) {
     log_level,
     "    caffeine compile [--quiet] <blueprint_file> <expectations_directory> [output_file]",
   )
+  log(log_level, "    caffeine artifacts [--quiet]")
+  log(log_level, "")
+  log(log_level, "COMMANDS:")
+  log(
+    log_level,
+    "    compile          Compile blueprints and expectations to output",
+  )
+  log(
+    log_level,
+    "    artifacts        List available artifacts from the standard library",
+  )
   log(log_level, "")
   log(log_level, "ARGUMENTS:")
   log(
@@ -133,6 +152,10 @@ fn print_usage(log_level: LogLevel) {
 
 fn print_version(log_level: LogLevel) {
   log(log_level, "caffeine " <> constants.version)
+}
+
+fn artifacts_catalog(log_level: LogLevel) {
+  log(log_level, "TO BE IMPLEMENTED")
 }
 
 fn log(log_level: LogLevel, message: String) {
