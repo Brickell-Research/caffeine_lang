@@ -92,6 +92,7 @@ fn tokenize_loop(
         "*" -> emit_token(state, rest, token.SymbolStar, acc)
         "+" -> emit_token(state, rest, token.SymbolPlus, acc)
         "|" -> emit_token(state, rest, token.SymbolPipe, acc)
+        "=" -> emit_token(state, rest, token.SymbolEquals, acc)
         "." -> {
           case string.pop_grapheme(rest) {
             Ok(#(".", after_dot)) ->

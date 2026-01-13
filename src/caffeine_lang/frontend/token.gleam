@@ -32,6 +32,7 @@ pub type Token {
   SymbolStar
   SymbolPlus
   SymbolPipe
+  SymbolEquals
   SymbolDotDot
   WhitespaceNewline
   WhitespaceIndent(Int)
