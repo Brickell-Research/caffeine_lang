@@ -1,4 +1,5 @@
 import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
@@ -20,6 +21,41 @@ fn artifacts() -> List(Artifact) {
       params: dict.from_list([
         #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
         #("value", accepted_types.PrimitiveType(primitive_types.String)),
+      ]),
+    ),
+  ]
+}
+
+/// Artifacts helper for multi-artifact tests
+fn multi_artifacts() -> List(Artifact) {
+  [
+    artifacts.Artifact(
+      name: "SLO",
+      params: dict.from_list([
+        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #("value", accepted_types.PrimitiveType(primitive_types.String)),
+      ]),
+    ),
+    artifacts.Artifact(
+      name: "Dependency",
+      params: dict.from_list([
+        #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+        #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
+      ]),
+    ),
+    // Artifact with conflicting param name but different type (for testing conflicts)
+    artifacts.Artifact(
+      name: "ConflictingArtifact",
+      params: dict.from_list([
+        #("threshold", accepted_types.PrimitiveType(primitive_types.String)),
+      ]),
+    ),
+    // Artifact with same param name AND same type (should merge successfully)
+    artifacts.Artifact(
+      name: "CompatibleArtifact",
+      params: dict.from_list([
+        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #("extra", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
   ]
@@ -62,7 +98,7 @@ pub fn parse_from_json_file_test() {
       Ok([
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           params: dict.from_list([
             #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
             #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
@@ -78,7 +114,7 @@ pub fn parse_from_json_file_test() {
       Ok([
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           params: dict.from_list([
             #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
             #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
@@ -88,7 +124,7 @@ pub fn parse_from_json_file_test() {
         ),
         blueprints.Blueprint(
           name: "latency_p99",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           params: dict.from_list([
             #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
@@ -103,7 +139,7 @@ pub fn parse_from_json_file_test() {
       Ok([
         blueprints.Blueprint(
           name: "minimal_blueprint",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           params: dict.from_list([
             #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
@@ -137,7 +173,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("missing_artifact_ref"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.artifact_ref)",
+        msg: "Incorrect types: expected (Field) received (Nothing) for (blueprints.0.artifact_refs)",
       )),
     ),
     #(
@@ -193,7 +229,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("wrong_type_artifact_ref"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (List) for (blueprints.0.artifact_ref)",
+        msg: "Incorrect types: expected (List) received (String) for (blueprints.0.artifact_refs)",
       )),
     ),
     #(
@@ -236,7 +272,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("semantic_artifact_ref"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_ref)",
+        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_refs.0)",
       )),
     ),
   ]
@@ -303,5 +339,175 @@ pub fn parse_from_json_file_test() {
   ]
   |> test_helpers.array_based_test_executor_1(fn(file_path) {
     blueprints.parse_from_json_file(file_path, artifacts())
+  })
+}
+
+// ==== artifact_refs (List) support ====
+// These tests validate the new artifact_refs field that accepts a list of artifact names.
+// * ✅ happy path - single artifact in list: ["SLO"]
+// * ✅ happy path - multiple artifacts: ["SLO", "Dependency"]
+// * ✅ happy path - overlapping params with same type merge correctly
+// * ✅ wrong type - artifact_refs is not a list
+// * ✅ wrong type - artifact_refs element is not a string
+// * ✅ empty - artifact_refs is empty list
+// * ✅ semantic - unknown artifact in list
+// * ✅ duplicates - same artifact appears twice in list
+// * ✅ conflicting params - artifacts have same param name with different types
+pub fn parse_from_json_file_artifact_refs_test() {
+  // Happy path - single artifact in list
+  [
+    #(
+      path("happy_path_single_artifact_refs"),
+      Ok([
+        blueprints.Blueprint(
+          name: "success_rate",
+          artifact_refs: ["SLO"],
+          params: dict.from_list([
+            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
+          ]),
+          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Happy path - multiple artifacts in list (params merged from both)
+  [
+    #(
+      path("happy_path_multiple_artifact_refs"),
+      Ok([
+        blueprints.Blueprint(
+          name: "tracked_slo",
+          artifact_refs: ["SLO", "Dependency"],
+          params: dict.from_list([
+            // From SLO
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
+            // From Dependency
+            #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+            #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
+          ]),
+          inputs: dict.from_list([
+            #("value", dynamic.string("foobar")),
+            #("isHard", dynamic.bool(True)),
+          ]),
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Happy path - overlapping params with same type (should merge successfully)
+  // SLO has threshold:Float, CompatibleArtifact has threshold:Float + extra:String
+  [
+    #(
+      path("happy_path_overlapping_params_same_type"),
+      Ok([
+        blueprints.Blueprint(
+          name: "overlapping_blueprint",
+          artifact_refs: ["SLO", "CompatibleArtifact"],
+          params: dict.from_list([
+            // From both SLO and CompatibleArtifact (same type, merged)
+            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            // From SLO only
+            #("value", accepted_types.PrimitiveType(primitive_types.String)),
+            // From CompatibleArtifact only
+            #("extra", accepted_types.PrimitiveType(primitive_types.String)),
+          ]),
+          inputs: dict.from_list([
+            #("value", dynamic.string("test")),
+            #("extra", dynamic.string("extra_value")),
+          ]),
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Wrong type - artifact_refs is not a list
+  [
+    #(
+      path("wrong_type_artifact_refs_not_list"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (List) received (String) for (blueprints.0.artifact_refs)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Wrong type - artifact_refs element is not a string
+  [
+    #(
+      path("wrong_type_artifact_refs_element"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (Int) for (blueprints.0.artifact_refs.0)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Empty artifact_refs list
+  [
+    #(
+      path("empty_artifact_refs"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NonEmptyList) received (List) for (blueprints.0.artifact_refs)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Semantic - unknown artifact in list
+  [
+    #(
+      path("semantic_artifact_refs_unknown"),
+      Error(errors.ParserJsonParserError(
+        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_refs.1)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Duplicate artifact refs in list
+  [
+    #(
+      path("duplicate_artifact_refs"),
+      Error(errors.ParserDuplicateError(
+        msg: "Duplicate artifact references in blueprint: SLO",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
+  })
+
+  // Conflicting params - same param name with different types across artifacts
+  [
+    #(
+      path("conflicting_artifact_params"),
+      Error(errors.ParserDuplicateError(
+        msg: "Conflicting param types across artifacts: threshold",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+    blueprints.parse_from_json_file(file_path, multi_artifacts())
   })
 }

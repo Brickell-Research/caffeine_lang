@@ -1,5 +1,5 @@
 {
   "blueprints": [
-    { "name": "success_rate", "artifact_ref": [], "params": {}, "inputs": {} }
+    { "name": "success_rate", "artifact_refs": "SLO", "params": {}, "inputs": {} }
   ]
 }

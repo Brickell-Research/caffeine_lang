@@ -2,7 +2,7 @@
   "blueprints": [
     {
       "name": "minimal_blueprint",
-      "artifact_ref": "SLO",
+      "artifact_refs": ["SLO"],
       "params": {},
       "inputs": { "value": "foobar" }
     }

@@ -1,6 +1,6 @@
 {
   "blueprints": [
-    { "name": "success_rate", "artifact_ref": "SLO", "params": {}, "inputs": {"value": "foobar"} },
-    { "name": "success_rate", "artifact_ref": "SLO", "params": {}, "inputs": {"value": "foobar"} }
+    { "name": "success_rate", "artifact_refs": ["SLO"], "params": {}, "inputs": {"value": "foobar"} },
+    { "name": "success_rate", "artifact_refs": ["SLO"], "params": {}, "inputs": {"value": "foobar"} }
   ]
 }

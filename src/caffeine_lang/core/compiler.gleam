@@ -13,6 +13,7 @@ import caffeine_lang/parser/linker
 import gleam/int
 import gleam/list
 import gleam/result
+import gleam/string
 import gleam_community/ansi
 
 /// Compiles a blueprint and expectations directory into Terraform configuration.
@@ -151,7 +152,7 @@ fn print_step2_start(
         <> " "
         <> ir.unique_identifier
         <> " "
-        <> ansi.dim("(artifact: " <> ir.artifact_ref <> ")"),
+        <> ansi.dim("(artifacts: " <> string.join(ir.artifact_refs, ", ") <> ")"),
     )
   })
 }

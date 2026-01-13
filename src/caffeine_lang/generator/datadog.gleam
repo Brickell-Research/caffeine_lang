@@ -146,8 +146,12 @@ pub fn ir_to_terraform_resource(
         hcl.StringLiteral("service:" <> ir.metadata.service_name),
         hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
         hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
-        hcl.StringLiteral("artifact:" <> ir.artifact_ref),
       ]
+      |> list.append(
+        // Generate artifact tags for each referenced artifact
+        ir.artifact_refs
+        |> list.map(fn(ref) { hcl.StringLiteral("artifact:" <> ref) }),
+      )
       |> list.append(
         // Also add misc tags (sorted for deterministic output across targets).
         ir.metadata.misc

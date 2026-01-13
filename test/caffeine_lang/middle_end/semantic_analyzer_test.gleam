@@ -34,7 +34,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -72,7 +72,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -112,7 +112,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -150,7 +150,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -202,7 +202,7 @@ pub fn resolve_vendor_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -222,7 +222,7 @@ pub fn resolve_vendor_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -256,7 +256,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -305,7 +305,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -357,7 +357,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -408,7 +408,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -462,7 +462,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -510,7 +510,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -562,7 +562,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -626,7 +626,7 @@ pub fn resolve_queries_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_ref: "SLO",
+        artifact_refs: ["SLO"],
         values: [
           helpers.ValueTuple(
             "vendor",

@@ -35,6 +35,23 @@ pub fn named_reference_decoder(
   })
 }
 
+/// Decoder for a non-empty list of named references.
+/// Each element must be a string that references an item in the collection.
+@internal
+pub fn non_empty_named_reference_list_decoder(
+  collection: List(a),
+  name_extraction: fn(a) -> String,
+) -> decode.Decoder(List(String)) {
+  let inner_decoder = named_reference_decoder(collection, name_extraction)
+
+  // Decode as a list first, then validate non-empty
+  use refs <- decode.then(decode.list(inner_decoder))
+  case refs {
+    [] -> decode.failure([], "NonEmptyList")
+    _ -> decode.success(refs)
+  }
+}
+
 /// Decoder for non-empty strings. Fails if the string is empty.
 @internal
 pub fn non_empty_string_decoder() -> decode.Decoder(String) {

@@ -17,7 +17,7 @@ pub type IntermediateRepresentation {
   IntermediateRepresentation(
     metadata: IntermediateRepresentationMetaData,
     unique_identifier: String,
-    artifact_ref: String,
+    artifact_refs: List(String),
     values: List(ValueTuple),
     // TODO: make this cleaner. An option is weird.
     vendor: Option(Vendor),

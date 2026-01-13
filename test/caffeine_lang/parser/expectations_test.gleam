@@ -20,7 +20,7 @@ fn blueprints() -> List(Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate",
-      artifact_ref: "SLO",
+      artifact_refs: ["SLO"],
       params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
       inputs: dict.from_list([]),
     ),
@@ -31,7 +31,7 @@ fn blueprints_with_inputs() -> List(Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaults",
-      artifact_ref: "SLO",
+      artifact_refs: ["SLO"],
       params: dict.from_list([
         #("vendor", accepted_types.PrimitiveType(primitive_types.String)),
         #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
@@ -47,7 +47,7 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaulted",
-      artifact_ref: "SLO",
+      artifact_refs: ["SLO"],
       params: dict.from_list([
         #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
         #(
@@ -104,7 +104,7 @@ pub fn parse_from_json_file_test() {
           ),
           blueprints.Blueprint(
             name: "success_rate",
-            artifact_ref: "SLO",
+            artifact_refs: ["SLO"],
             params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
@@ -129,7 +129,7 @@ pub fn parse_from_json_file_test() {
           ),
           blueprints.Blueprint(
             name: "success_rate",
-            artifact_ref: "SLO",
+            artifact_refs: ["SLO"],
             params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
@@ -142,7 +142,7 @@ pub fn parse_from_json_file_test() {
           ),
           blueprints.Blueprint(
             name: "success_rate",
-            artifact_ref: "SLO",
+            artifact_refs: ["SLO"],
             params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
             inputs: dict.from_list([]),
           ),
@@ -167,7 +167,7 @@ pub fn parse_from_json_file_test() {
           ),
           blueprints.Blueprint(
             name: "success_rate_with_defaulted",
-            artifact_ref: "SLO",
+            artifact_refs: ["SLO"],
             params: dict.from_list([
               #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
               #(

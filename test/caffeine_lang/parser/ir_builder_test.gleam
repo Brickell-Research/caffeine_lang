@@ -117,7 +117,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_ref: "TestArtifact",
+        artifact_refs: ["TestArtifact"],
         params: dict.from_list([
           #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
           #(
@@ -160,7 +160,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_ref: "TestArtifact",
+        artifact_refs: ["TestArtifact"],
         params: dict.from_list([
           #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
           #(
@@ -205,7 +205,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_ref: "TestArtifact",
+        artifact_refs: ["TestArtifact"],
         params: dict.from_list([
           #("required", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
           #(
@@ -260,7 +260,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_ref: "TestArtifact",
+        artifact_refs: ["TestArtifact"],
         params: dict.from_list([
           #("from_blueprint", accepted_types.PrimitiveType(primitive_types.String)),
           #("from_expectation", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
@@ -298,7 +298,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_ref: "TestArtifact",
+        artifact_refs: ["TestArtifact"],
         params: dict.from_list([
           #("env", accepted_types.PrimitiveType(primitive_types.String)),
           #("region", accepted_types.PrimitiveType(primitive_types.String)),
@@ -343,7 +343,7 @@ fn make_blueprint(
 ) -> blueprints.Blueprint {
   blueprints.Blueprint(
     name: name,
-    artifact_ref: "TestArtifact",
+    artifact_refs: ["TestArtifact"],
     params: params
       |> list.map(fn(p) {
         let #(label, typ) = p
@@ -390,7 +390,7 @@ fn make_ir(
       misc: misc,
     ),
     unique_identifier: org <> "_" <> service <> "_" <> name,
-    artifact_ref: "TestArtifact",
+    artifact_refs: ["TestArtifact"],
     values: values,
     vendor: option.None,
   )

@@ -1,5 +1,5 @@
 {
   "blueprints": [
-    { "name": 10, "artifact_ref": "SLO", "params": {}, "inputs": {} }
+    { "name": 10, "artifact_refs": ["SLO"], "params": {}, "inputs": {} }
   ]
 }

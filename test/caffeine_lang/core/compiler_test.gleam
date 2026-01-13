@@ -77,7 +77,7 @@ pub fn compile_from_strings_test() {
         "{
         \"blueprints\": [{
           \"name\": \"api_availability\",
-          \"artifact_ref\": \"SLO\",
+          \"artifact_refs\": [\"SLO\"],
           \"params\": { \"env\": \"String\", \"status\": \"Boolean\" },
           \"inputs\": {
             \"vendor\": \"datadog\",
@@ -111,7 +111,7 @@ pub fn compile_from_strings_test() {
         "{
         \"blueprints\": [{
           \"name\": \"simple_slo\",
-          \"artifact_ref\": \"SLO\",
+          \"artifact_refs\": [\"SLO\"],
           \"params\": {},
           \"inputs\": {
             \"vendor\": \"datadog\",
@@ -138,7 +138,7 @@ pub fn compile_from_strings_test() {
         "{
         \"blueprints\": [{
           \"name\": \"cpu_slo\",
-          \"artifact_ref\": \"SLO\",
+          \"artifact_refs\": [\"SLO\"],
           \"params\": { \"env\": \"String\" },
           \"inputs\": {
             \"vendor\": \"datadog\",
@@ -185,7 +185,7 @@ pub fn compile_from_strings_test() {
         "{
         \"blueprints\": [{
           \"name\": \"api_availability\",
-          \"artifact_ref\": \"SLO\",
+          \"artifact_refs\": [\"SLO\"],
           \"params\": {},
           \"inputs\": {
             \"vendor\": \"datadog\",

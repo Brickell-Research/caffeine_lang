@@ -2,7 +2,7 @@
   "blueprints": [
     {
       "name": "",
-      "artifact_ref": "SLO",
+      "artifact_refs": ["SLO"],
       "params": {},
       "inputs": { "value": "foobar" }
     }

@@ -2,7 +2,7 @@
   "blueprints": [
     {
       "name": "success_rate",
-      "artifact_refs": ["SLO"],
+      "artifact_refs": [],
       "params": {},
       "inputs": {}
     }

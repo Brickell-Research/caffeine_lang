@@ -2,7 +2,7 @@
   "blueprints": [
     {
       "name": "api_availability",
-      "artifact_ref": "SLO",
+      "artifact_refs": ["SLO"],
       "params": {
         "env": "String",
         "status": "Boolean"

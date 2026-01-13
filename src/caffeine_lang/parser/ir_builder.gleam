@@ -81,7 +81,7 @@ fn build(
         misc: misc_metadata,
       ),
       unique_identifier: unique_name,
-      artifact_ref: blueprint.artifact_ref,
+      artifact_refs: blueprint.artifact_refs,
       values: value_tuples,
       vendor: option.None,
     )

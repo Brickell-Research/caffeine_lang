@@ -1,0 +1,10 @@
+{
+  "blueprints": [
+    {
+      "name": "conflicting_blueprint",
+      "artifact_refs": ["SLO", "ConflictingArtifact"],
+      "params": {},
+      "inputs": {}
+    }
+  ]
+}

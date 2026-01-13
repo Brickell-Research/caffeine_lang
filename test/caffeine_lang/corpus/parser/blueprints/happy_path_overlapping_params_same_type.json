@@ -1,0 +1,10 @@
+{
+  "blueprints": [
+    {
+      "name": "overlapping_blueprint",
+      "artifact_refs": ["SLO", "CompatibleArtifact"],
+      "params": {},
+      "inputs": { "value": "test", "extra": "extra_value" }
+    }
+  ]
+}

@@ -106,7 +106,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -156,7 +156,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -206,7 +206,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -250,7 +250,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/api/availability_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -300,7 +300,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/composite_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -359,7 +359,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/time_slice_slo",
-          artifact_ref: "SLO",
+          artifact_refs: ["SLO"],
           values: [
             helpers.ValueTuple(
               "vendor",

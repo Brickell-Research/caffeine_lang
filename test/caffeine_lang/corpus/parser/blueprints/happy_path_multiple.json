@@ -2,13 +2,13 @@
   "blueprints": [
     {
       "name": "success_rate",
-      "artifact_ref": "SLO",
+      "artifact_refs": ["SLO"],
       "params": { "percentile": "Float" },
       "inputs": { "value": "foobar" }
     },
     {
       "name": "latency_p99",
-      "artifact_ref": "SLO",
+      "artifact_refs": ["SLO"],
       "params": {},
       "inputs": { "value": "foobar" }
     }
