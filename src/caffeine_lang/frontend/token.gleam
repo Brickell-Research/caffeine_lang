@@ -1,0 +1,42 @@
+/// A token produced by the tokenizer.
+pub type Token {
+  KeywordBlueprints
+  KeywordExpects
+  KeywordFor
+  KeywordExtends
+  KeywordRequires
+  KeywordProvides
+  KeywordIn
+  KeywordX
+  KeywordString
+  KeywordInteger
+  KeywordFloat
+  KeywordBoolean
+  KeywordList
+  KeywordDict
+  KeywordOptional
+  KeywordDefaulted
+  LiteralString(String)
+  LiteralInteger(Int)
+  LiteralFloat(Float)
+  LiteralTrue
+  LiteralFalse
+  SymbolLeftBrace
+  SymbolRightBrace
+  SymbolLeftParen
+  SymbolRightParen
+  SymbolLeftBracket
+  SymbolRightBracket
+  SymbolColon
+  SymbolComma
+  SymbolStar
+  SymbolPlus
+  SymbolPipe
+  SymbolDotDot
+  WhitespaceNewline
+  WhitespaceIndent(Int)
+  CommentLine(String)
+  CommentSection(String)
+  Identifier(String)
+  EOF
+}
