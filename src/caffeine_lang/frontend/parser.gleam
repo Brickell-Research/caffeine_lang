@@ -461,6 +461,9 @@ fn parse_type_fields(
       use #(field, state) <- result.try(parse_type_field(state))
       parse_type_fields_loop(state, [field])
     }
+    // Helpful error for JSON-style quoted field names
+    token.LiteralString(name) ->
+      Error(parser_error.QuotedFieldName(name, state.line, state.column))
     tok ->
       Error(parser_error.UnexpectedToken(
         "field name or }",
@@ -478,8 +481,14 @@ fn parse_type_fields_loop(
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
-      use #(field, state) <- result.try(parse_type_field(state))
-      parse_type_fields_loop(state, [field, ..acc])
+      // Allow trailing comma
+      case peek(state) {
+        token.SymbolRightBrace -> Ok(#(list.reverse(acc), state))
+        _ -> {
+          use #(field, state) <- result.try(parse_type_field(state))
+          parse_type_fields_loop(state, [field, ..acc])
+        }
+      }
     }
     _ -> Ok(#(list.reverse(acc), state))
   }
@@ -495,6 +504,9 @@ fn parse_type_field(
       use #(type_, state) <- result.try(parse_type(state))
       Ok(#(ast.Field(name:, value: ast.TypeValue(type_)), state))
     }
+    // Helpful error for JSON-style quoted field names
+    token.LiteralString(name) ->
+      Error(parser_error.QuotedFieldName(name, state.line, state.column))
     tok ->
       Error(parser_error.UnexpectedToken(
         "field name",
@@ -527,6 +539,9 @@ fn parse_literal_fields(
       use #(field, state) <- result.try(parse_literal_field(state))
       parse_literal_fields_loop(state, [field])
     }
+    // Helpful error for JSON-style quoted field names
+    token.LiteralString(name) ->
+      Error(parser_error.QuotedFieldName(name, state.line, state.column))
     tok ->
       Error(parser_error.UnexpectedToken(
         "field name or }",
@@ -544,8 +559,14 @@ fn parse_literal_fields_loop(
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
-      use #(field, state) <- result.try(parse_literal_field(state))
-      parse_literal_fields_loop(state, [field, ..acc])
+      // Allow trailing comma
+      case peek(state) {
+        token.SymbolRightBrace -> Ok(#(list.reverse(acc), state))
+        _ -> {
+          use #(field, state) <- result.try(parse_literal_field(state))
+          parse_literal_fields_loop(state, [field, ..acc])
+        }
+      }
     }
     _ -> Ok(#(list.reverse(acc), state))
   }
@@ -561,6 +582,9 @@ fn parse_literal_field(
       use #(literal, state) <- result.try(parse_literal(state))
       Ok(#(ast.Field(name:, value: ast.LiteralValue(literal)), state))
     }
+    // Helpful error for JSON-style quoted field names
+    token.LiteralString(name) ->
+      Error(parser_error.QuotedFieldName(name, state.line, state.column))
     tok ->
       Error(parser_error.UnexpectedToken(
         "field name",

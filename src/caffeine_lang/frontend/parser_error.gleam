@@ -9,6 +9,7 @@ pub type ParserError {
   UnknownType(name: String, line: Int, column: Int)
   InvalidRefinement(message: String, line: Int, column: Int)
   EmptyFile(line: Int, column: Int)
+  QuotedFieldName(name: String, line: Int, column: Int)
 }
 
 /// Converts a parser error to a human-readable string.
@@ -50,5 +51,15 @@ pub fn to_string(err: ParserError) -> String {
       <> int.to_string(line)
       <> ", column "
       <> int.to_string(column)
+    QuotedFieldName(name, line, column) ->
+      "Quoted field name at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+      <> ": field names should not be quoted. Use '"
+      <> name
+      <> "' instead of '\""
+      <> name
+      <> "\"'"
   }
 }
