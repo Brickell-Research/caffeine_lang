@@ -4,7 +4,7 @@ Blueprints for "SLO"
     Provides {
       value: "numerator / denominator",
       queries: {
-        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
-        denominator: "sum:http.requests{${env->env}}"
+        numerator: "sum:http.requests{$env->env$, $status->status.not$}",
+        denominator: "sum:http.requests{$env->env$}"
       }
     }

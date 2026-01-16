@@ -5,7 +5,7 @@ Blueprints for "SLO"
       vendor: "datadog",
       value: "numerator / denominator",
       queries: {
-        numerator: "sum:http.requests{${env->env} AND ${status->status.not}}",
-        denominator: "sum:http.requests{${env->env}}"
+        numerator: "sum:http.requests{$env->env$ AND $status->status.not$}",
+        denominator: "sum:http.requests{$env->env$}"
       }
     }

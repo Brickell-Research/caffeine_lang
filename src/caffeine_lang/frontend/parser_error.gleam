@@ -1,7 +1,9 @@
+import caffeine_lang/frontend/tokenizer_error
 import gleam/int
 
 /// Errors that can occur during parsing.
 pub type ParserError {
+  TokenizerError(tokenizer_error.TokenizerError)
   UnexpectedToken(expected: String, got: String, line: Int, column: Int)
   UnexpectedEOF(expected: String, line: Int, column: Int)
   UnknownType(name: String, line: Int, column: Int)
@@ -12,6 +14,7 @@ pub type ParserError {
 /// Converts a parser error to a human-readable string.
 pub fn to_string(err: ParserError) -> String {
   case err {
+    TokenizerError(tok_err) -> tokenizer_error.to_string(tok_err)
     UnexpectedToken(expected, got, line, column) ->
       "Unexpected token at line "
       <> int.to_string(line)

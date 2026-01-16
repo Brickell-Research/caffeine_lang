@@ -29,7 +29,7 @@ pub fn parse_blueprints_file(
 ) -> Result(BlueprintsFile, ParserError) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
-    |> result.map_error(fn(_) { parser_error.EmptyFile(1, 1) }),
+    |> result.map_error(parser_error.TokenizerError),
   )
   let state =
     ParserState(tokens: filter_whitespace_comments(tokens), line: 1, column: 1)
@@ -42,7 +42,7 @@ pub fn parse_blueprints_file(
 pub fn parse_expects_file(source: String) -> Result(ExpectsFile, ParserError) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
-    |> result.map_error(fn(_) { parser_error.EmptyFile(1, 1) }),
+    |> result.map_error(parser_error.TokenizerError),
   )
   let state =
     ParserState(tokens: filter_whitespace_comments(tokens), line: 1, column: 1)
@@ -672,13 +672,88 @@ fn parse_defaulted_type(
   use state <- result.try(expect(state, token.SymbolComma, ","))
   use #(default, state) <- result.try(parse_literal(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(
+  let defaulted =
     accepted_types.ModifierType(modifier_types.Defaulted(
       inner,
       literal_to_string(default),
-    )),
+    ))
+  // Check for optional refinement: Defaulted(String, "x") { x | x in { ... } }
+  case peek(state) {
+    token.SymbolLeftBrace -> {
+      use #(refinement, state) <- result.try(parse_defaulted_refinement(
+        state,
+        defaulted,
+      ))
+      Ok(#(accepted_types.RefinementType(refinement), state))
+    }
+    _ -> Ok(#(defaulted, state))
+  }
+}
+
+/// Parse refinement on a Defaulted type: { x | x in { ... } } or { x | x in ( ... ) }
+fn parse_defaulted_refinement(
+  state: ParserState,
+  defaulted: AcceptedTypes,
+) -> Result(
+  #(refinement_types.RefinementTypes(AcceptedTypes), ParserState),
+  ParserError,
+) {
+  use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
+  use state <- result.try(expect_x(state))
+  use state <- result.try(expect(state, token.SymbolPipe, "|"))
+  use state <- result.try(expect_x(state))
+  use state <- result.try(expect(state, token.KeywordIn, "in"))
+  use #(refinement, state) <- result.try(parse_defaulted_refinement_body(
     state,
+    defaulted,
   ))
+  use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
+  Ok(#(refinement, state))
+}
+
+fn parse_defaulted_refinement_body(
+  state: ParserState,
+  defaulted: AcceptedTypes,
+) -> Result(
+  #(refinement_types.RefinementTypes(AcceptedTypes), ParserState),
+  ParserError,
+) {
+  case peek(state) {
+    // OneOf: { value1, value2, ... }
+    token.SymbolLeftBrace -> {
+      let state = advance(state)
+      use #(values, state) <- result.try(parse_literal_list_contents(state))
+      use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
+      let string_values = list.map(values, literal_to_string)
+      Ok(#(
+        refinement_types.OneOf(defaulted, set.from_list(string_values)),
+        state,
+      ))
+    }
+    // Range: ( min..max )
+    token.SymbolLeftParen -> {
+      let state = advance(state)
+      use #(min, state) <- result.try(parse_literal(state))
+      use state <- result.try(expect(state, token.SymbolDotDot, ".."))
+      use #(max, state) <- result.try(parse_literal(state))
+      use state <- result.try(expect(state, token.SymbolRightParen, ")"))
+      Ok(#(
+        refinement_types.InclusiveRange(
+          defaulted,
+          literal_to_string(min),
+          literal_to_string(max),
+        ),
+        state,
+      ))
+    }
+    tok ->
+      Error(parser_error.UnexpectedToken(
+        "{ or (",
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
 }
 
 fn parse_primitive_type(

@@ -38,6 +38,9 @@ fn tokenize_loop(
           tokenize_loop(new_state, [token.WhitespaceNewline, ..acc])
         }
 
+        // Skip carriage return (handles Windows CRLF line endings)
+        "\r" -> tokenize_loop(advance(state, rest, 1), acc)
+
         " " | "\t" if state.at_line_start -> {
           let #(indent_count, remaining) = count_indentation(state.source, 0)
           tokenize_loop(advance(state, remaining, indent_count), [

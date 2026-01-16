@@ -223,33 +223,45 @@ fn literal_struct_to_json(fields: List(Field)) -> Json {
   |> json.object
 }
 
-/// Transforms template variables from ${var->attr} to $$var->attr$$ format.
-/// Also handles ${var->attr.not} to $$var->attr:not$$ format.
+/// Transforms template variables from $var->attr$ to $$var->attr$$ format.
+/// Also handles $var->attr.not$ to $$var->attr:not$$ format.
 fn transform_template_vars(s: String) -> String {
   transform_template_vars_loop(s, "")
 }
 
 fn transform_template_vars_loop(remaining: String, acc: String) -> String {
-  case string.split_once(remaining, "${") {
+  case string.split_once(remaining, "$") {
     Ok(#(before, after)) -> {
-      // Found ${, now find the closing }
-      case string.split_once(after, "}") {
-        Ok(#(var_content, rest)) -> {
-          // Transform the variable content: .not -> :not
-          let transformed = string.replace(var_content, ".not", ":not")
+      // Check if this is an escaped $$ (already transformed)
+      case string.starts_with(after, "$") {
+        True -> {
+          // Skip escaped $$, keep both dollars
           transform_template_vars_loop(
-            rest,
-            acc <> before <> "$$" <> transformed <> "$$",
+            string.drop_start(after, 1),
+            acc <> before <> "$$",
           )
         }
-        Error(Nil) -> {
-          // No closing }, just append as-is
-          acc <> before <> "${" <> after
+        False -> {
+          // Found single $, now find the closing $
+          case string.split_once(after, "$") {
+            Ok(#(var_content, rest)) -> {
+              // Transform the variable content: .not -> :not
+              let transformed = string.replace(var_content, ".not", ":not")
+              transform_template_vars_loop(
+                rest,
+                acc <> before <> "$$" <> transformed <> "$$",
+              )
+            }
+            Error(Nil) -> {
+              // No closing $, just append as-is
+              acc <> before <> "$" <> after
+            }
+          }
         }
       }
     }
     Error(Nil) -> {
-      // No more ${, append the rest and we're done
+      // No more $, append the rest and we're done
       acc <> remaining
     }
   }
