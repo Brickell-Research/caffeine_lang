@@ -43,6 +43,10 @@ fn float_type() -> accepted_types.AcceptedTypes {
   accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))
 }
 
+fn boolean_type() -> accepted_types.AcceptedTypes {
+  accepted_types.PrimitiveType(primitive_types.Boolean)
+}
+
 fn list_type(
   inner: primitive_types.PrimitiveTypes,
 ) -> accepted_types.AcceptedTypes {
@@ -98,7 +102,8 @@ fn range_type(
 // * ✅ happy path - single block
 // * ✅ happy path - multiple blocks
 // * ✅ happy path - multi artifact
-// * ✅ happy path - with extendable
+// * ✅ happy path - with Provides extendable
+// * ✅ happy path - with Requires extendable
 // * ✅ happy path - with extends
 // * ✅ happy path - multiple extends
 // * ✅ happy path - advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
@@ -217,6 +222,41 @@ pub fn parse_blueprints_file_test() {
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("test")),
+                  ),
+                ]),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    ),
+    // with Requires extendable
+    #(
+      blueprints_path("happy_path_requires_extendable"),
+      Ok(
+        ast.BlueprintsFile(
+          extendables: [
+            ast.Extendable(
+              name: "_common",
+              kind: ast.ExtendableRequires,
+              body: ast.Struct([
+                ast.Field("env", ast.TypeValue(string_type())),
+                ast.Field("status", ast.TypeValue(boolean_type())),
+              ]),
+            ),
+          ],
+          blocks: [
+            ast.BlueprintsBlock(artifacts: ["SLO"], items: [
+              ast.BlueprintItem(
+                name: "api",
+                extends: ["_common"],
+                requires: ast.Struct([
+                  ast.Field("threshold", ast.TypeValue(float_type())),
+                ]),
+                provides: ast.Struct([
+                  ast.Field(
+                    "vendor",
+                    ast.LiteralValue(ast.LiteralString("datadog")),
                   ),
                 ]),
               ),

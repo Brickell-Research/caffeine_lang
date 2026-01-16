@@ -1,0 +1,10 @@
+_base (Provides): { vendor: "datadog" }
+
+Blueprints for "SLO"
+  * "api" extends [_base]:
+    Requires { env: String }
+    Provides { value: "test" }
+
+  * "latency" extends [_nonexistent]:
+    Requires { threshold_ms: Integer }
+    Provides { value: "latency" }

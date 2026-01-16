@@ -131,7 +131,11 @@ fn parse_extendable(
   use #(kind, state) <- result.try(parse_extendable_kind(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  use #(body, state) <- result.try(parse_literal_struct(state))
+  // Parse body based on kind: Requires has types, Provides has literals.
+  use #(body, state) <- result.try(case kind {
+    ast.ExtendableRequires -> parse_type_struct(state)
+    ast.ExtendableProvides -> parse_literal_struct(state)
+  })
   Ok(#(ast.Extendable(name:, kind:, body:), state))
 }
 
