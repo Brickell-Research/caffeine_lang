@@ -12,6 +12,7 @@ import gleam/dict
 import gleam/dynamic
 import gleam/list
 import gleam/option
+import gleam/string
 import gleeunit/should
 import simplifile
 import terra_madre/terraform
@@ -24,7 +25,8 @@ fn corpus_path(file_name: String) {
 
 fn read_corpus(file_name: String) -> String {
   let assert Ok(content) = simplifile.read(corpus_path(file_name))
-  content
+  // Replace version placeholder with actual version constant
+  string.replace(content, "{{VERSION}}", constants.version)
 }
 
 // ==== terraform_settings ====

@@ -1,3 +1,4 @@
+import caffeine_lang/common/constants
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger
@@ -12,7 +13,8 @@ fn corpus_path(file_name: String) -> String {
 
 fn read_corpus(file_name: String) -> String {
   let assert Ok(content) = simplifile.read(corpus_path(file_name))
-  content
+  // Replace version placeholder with actual version constant
+  string.replace(content, "{{VERSION}}", constants.version)
 }
 
 // ==== compile ====
