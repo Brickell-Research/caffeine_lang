@@ -1,0 +1,9 @@
+Expects for "test"
+  * "item":
+    Provides {
+      tags: ["a", "b", "c"],
+      config: { key: "value", nested: { inner: 42 } },
+      enabled: true,
+      count: 100,
+      rate: 0.95
+    }

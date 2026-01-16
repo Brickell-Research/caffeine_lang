@@ -1,0 +1,20 @@
+{
+  "expectations": [
+    {
+      "name": "item",
+      "blueprint_ref": "test",
+      "inputs": {
+        "config": {
+          "key": "value",
+          "nested": {
+            "inner": 42
+          }
+        },
+        "count": 100,
+        "enabled": true,
+        "rate": 0.95,
+        "tags": ["a", "b", "c"]
+      }
+    }
+  ]
+}

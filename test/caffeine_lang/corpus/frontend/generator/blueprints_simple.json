@@ -1,0 +1,16 @@
+{
+  "blueprints": [
+    {
+      "name": "api_availability",
+      "artifact_refs": ["SLO"],
+      "params": {
+        "env": "String",
+        "threshold": "Float"
+      },
+      "inputs": {
+        "value": "test",
+        "vendor": "datadog"
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
 Blueprints for "SLO"
   * "test":
-    Requires { tags: List(String), counts: Dict(String, Integer), name: Optional(String), env: Defaulted(String, "production"), status: String { x | x in { "active", "inactive" } }, threshold: Float { x | x in 0.0 to 100.0 } }
+    Requires { tags: List(String), counts: Dict(String, Integer), name: Optional(String), env: Defaulted(String, "production"), status: String { x | x in { "active", "inactive" } }, threshold: Float { x | x in ( 0.0..100.0 ) } }
     Provides { value: "x" }

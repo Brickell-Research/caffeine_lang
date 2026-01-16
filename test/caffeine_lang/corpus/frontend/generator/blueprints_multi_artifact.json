@@ -1,0 +1,16 @@
+{
+  "blueprints": [
+    {
+      "name": "tracked_slo",
+      "artifact_refs": ["SLO", "DependencyRelation"],
+      "params": {
+        "env": "String",
+        "upstream": "String"
+      },
+      "inputs": {
+        "type": "hard",
+        "vendor": "datadog"
+      }
+    }
+  ]
+}

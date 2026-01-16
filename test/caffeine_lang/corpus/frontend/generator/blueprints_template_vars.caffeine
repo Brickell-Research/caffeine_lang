@@ -1,0 +1,10 @@
+Blueprints for "SLO"
+  * "api":
+    Requires { env: String, status: Boolean }
+    Provides {
+      value: "numerator / denominator",
+      queries: {
+        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
+        denominator: "sum:http.requests{${env->env}}"
+      }
+    }

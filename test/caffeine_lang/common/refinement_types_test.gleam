@@ -470,7 +470,7 @@ pub fn refinement_type_to_string_test() {
         "0",
         "100",
       ),
-      "Integer { x | x in { (0..100 ) }",
+      "Integer { x | x in ( 0..100 ) }",
     ),
     // InclusiveRange(Integer) - negative range
     #(
@@ -481,7 +481,7 @@ pub fn refinement_type_to_string_test() {
         "-100",
         "-50",
       ),
-      "Integer { x | x in { (-100..-50 ) }",
+      "Integer { x | x in ( -100..-50 ) }",
     ),
     // InclusiveRange(Float) - basic range
     #(
@@ -492,7 +492,7 @@ pub fn refinement_type_to_string_test() {
         "0.0",
         "100.0",
       ),
-      "Float { x | x in { (0.0..100.0 ) }",
+      "Float { x | x in ( 0.0..100.0 ) }",
     ),
     // InclusiveRange(Float) - negative range
     #(
@@ -503,7 +503,7 @@ pub fn refinement_type_to_string_test() {
         "-100.5",
         "-50.5",
       ),
-      "Float { x | x in { (-100.5..-50.5 ) }",
+      "Float { x | x in ( -100.5..-50.5 ) }",
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {

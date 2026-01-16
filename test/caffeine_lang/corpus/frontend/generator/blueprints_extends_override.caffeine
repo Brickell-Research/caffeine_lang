@@ -1,0 +1,6 @@
+_base (Provides): { vendor: "datadog", value: "base_value" }
+
+Blueprints for "SLO"
+  * "api" extends [_base]:
+    Requires { env: String }
+    Provides { value: "overridden" }

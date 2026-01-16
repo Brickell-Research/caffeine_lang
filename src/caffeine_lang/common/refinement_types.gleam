@@ -43,7 +43,7 @@ pub fn refinement_type_to_string(
       <> " } }"
     InclusiveRange(typ, low, high) ->
       accepted_type_to_string(typ)
-      <> " { x | x in { ("
+      <> " { x | x in ( "
       <> low
       <> ".."
       <> high

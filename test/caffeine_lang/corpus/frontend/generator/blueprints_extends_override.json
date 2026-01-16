@@ -1,0 +1,15 @@
+{
+  "blueprints": [
+    {
+      "name": "api",
+      "artifact_refs": ["SLO"],
+      "params": {
+        "env": "String"
+      },
+      "inputs": {
+        "value": "overridden",
+        "vendor": "datadog"
+      }
+    }
+  ]
+}

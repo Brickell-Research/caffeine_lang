@@ -741,6 +741,7 @@ fn parse_refinement_body(
   ParserError,
 ) {
   case peek(state) {
+    // OneOf: { value1, value2, ... }
     token.SymbolLeftBrace -> {
       let state = advance(state)
       use #(values, state) <- result.try(parse_literal_list_contents(state))
@@ -754,10 +755,13 @@ fn parse_refinement_body(
         state,
       ))
     }
-    _ -> {
+    // Range: ( min..max )
+    token.SymbolLeftParen -> {
+      let state = advance(state)
       use #(min, state) <- result.try(parse_literal(state))
-      use state <- result.try(expect_to(state))
+      use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
+      use state <- result.try(expect(state, token.SymbolRightParen, ")"))
       Ok(#(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive),
@@ -767,15 +771,9 @@ fn parse_refinement_body(
         state,
       ))
     }
-  }
-}
-
-fn expect_to(state: ParserState) -> Result(ParserState, ParserError) {
-  case peek(state) {
-    token.Identifier("to") -> Ok(advance(state))
     tok ->
       Error(parser_error.UnexpectedToken(
-        "to",
+        "{ or (",
         token.to_string(tok),
         state.line,
         state.column,

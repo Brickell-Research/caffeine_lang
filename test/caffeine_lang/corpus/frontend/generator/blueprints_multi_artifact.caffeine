@@ -1,0 +1,4 @@
+Blueprints for "SLO" + "DependencyRelation"
+  * "tracked_slo":
+    Requires { env: String, upstream: String }
+    Provides { vendor: "datadog", type: "hard" }

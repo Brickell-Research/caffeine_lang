@@ -1,0 +1,19 @@
+{
+  "blueprints": [
+    {
+      "name": "test",
+      "artifact_refs": ["SLO"],
+      "params": {
+        "counts": "Dict(String, Integer)",
+        "env": "Defaulted(String, production)",
+        "name": "Optional(String)",
+        "status": "String { x | x in { active, inactive } }",
+        "tags": "List(String)",
+        "threshold": "Float { x | x in ( 0.0..100.0 ) }"
+      },
+      "inputs": {
+        "value": "x"
+      }
+    }
+  ]
+}
