@@ -9,7 +9,6 @@ import caffeine_lang/parser/blueprints.{type Blueprint}
 import caffeine_lang/parser/expectations.{type Expectation}
 import gleam/dict
 import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/list
 import gleam/option
 import gleam/string
@@ -157,18 +156,51 @@ fn is_optional_or_defaulted(typ: accepted_types.AcceptedTypes) -> Bool {
 
 /// Extract misc metadata from value tuples.
 /// Filters out non-string values and specific reserved labels.
+/// Uses type-aware resolution to apply defaults from Defaulted types.
 fn extract_misc_metadata(
   value_tuples: List(helpers.ValueTuple),
 ) -> dict.Dict(String, String) {
   value_tuples
   |> list.filter_map(fn(value_tuple) {
-    case value_tuple.label, decode.run(value_tuple.value, decode.string) {
-      // For some reason we cannot parse the value.
-      _, Error(_) -> Error(Nil)
+    // Skip reserved labels
+    case value_tuple.label {
       // TODO: Make the tag filtering dynamic.
-      "window_in_days", _ | "threshold", _ | "value", _ -> Error(Nil)
-      _, Ok(value_string) -> Ok(#(value_tuple.label, value_string))
+      "window_in_days" | "threshold" | "value" -> Error(Nil)
+      _ -> {
+        // Use type-aware resolution to handle defaults
+        case resolve_value_for_tag(value_tuple) {
+          Ok(value_string) -> Ok(#(value_tuple.label, value_string))
+          Error(_) -> Error(Nil)
+        }
+      }
     }
   })
   |> dict.from_list
+}
+
+/// Resolves a value tuple to a string for use as a tag.
+/// Handles Defaulted types by applying their default values when not provided.
+fn resolve_value_for_tag(
+  value_tuple: helpers.ValueTuple,
+) -> Result(String, Nil) {
+  // Identity function for string resolution (tags don't need template transformation)
+  let identity = fn(s) { s }
+  // For lists, join with comma (though tags typically don't use lists)
+  let list_join = fn(items) { string.join(items, ",") }
+
+  accepted_types.resolve_to_string(
+    value_tuple.typ,
+    value_tuple.value,
+    identity,
+    list_join,
+  )
+  |> result_to_nil_error
+}
+
+/// Convert Result(a, String) to Result(a, Nil)
+fn result_to_nil_error(result: Result(a, String)) -> Result(a, Nil) {
+  case result {
+    Ok(val) -> Ok(val)
+    Error(_) -> Error(Nil)
+  }
 }
