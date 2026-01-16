@@ -1,3 +1,3 @@
-Expects for "api_availability"
+Expectations for "api_availability"
   * "checkout":
     Provides { env: "production", threshold: 99.95 }

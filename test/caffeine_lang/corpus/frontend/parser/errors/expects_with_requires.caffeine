@@ -1,4 +1,4 @@
-Expects for "test"
+Expectations for "test"
   * "item":
     Requires { env: String }
     Provides { value: "x" }

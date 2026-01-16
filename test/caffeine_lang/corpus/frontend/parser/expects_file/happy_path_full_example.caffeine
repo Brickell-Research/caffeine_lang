@@ -1,6 +1,6 @@
 _defaults (Provides): { env: "production", window_in_days: 30 }
 
-Expects for "api_availability"
+Expectations for "api_availability"
   ## Core Services
   * "checkout_availability" extends [_defaults]:
     Provides { threshold: 99.95, status: true }

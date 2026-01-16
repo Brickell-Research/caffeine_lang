@@ -1,3 +1,3 @@
-Expects for "test"
+Expectations for "test"
   * "item":
     Provides { tags: ["a", "b"], config: { key: "value" }, enabled: false }

@@ -1,4 +1,4 @@
-Expects for "api_availability"
+Expectations for "api_availability"
   * "auth_service_availability":
     Provides {
       env: "production",

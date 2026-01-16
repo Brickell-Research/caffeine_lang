@@ -1,5 +1,5 @@
 _defaults (Provides): { env: "production" }
 
-Expects for "api_availability"
+Expectations for "api_availability"
   * "checkout" extends [_defaults, _defaults]:
     Provides { threshold: 99.95 }

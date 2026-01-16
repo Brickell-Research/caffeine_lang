@@ -294,14 +294,14 @@ fn parse_expects_blocks_loop(
   acc: List(ExpectsBlock),
 ) -> Result(#(List(ExpectsBlock), ParserState), ParserError) {
   case peek(state) {
-    token.KeywordExpects -> {
+    token.KeywordExpectations -> {
       use #(block, state) <- result.try(parse_expects_block(state))
       parse_expects_blocks_loop(state, [block, ..acc])
     }
     token.EOF -> Ok(#(list.reverse(acc), state))
     tok ->
       Error(parser_error.UnexpectedToken(
-        "Expects",
+        "Expectations",
         token.to_string(tok),
         state.line,
         state.column,
@@ -312,7 +312,7 @@ fn parse_expects_blocks_loop(
 fn parse_expects_block(
   state: ParserState,
 ) -> Result(#(ExpectsBlock, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.KeywordExpects, "Expects"))
+  use state <- result.try(expect(state, token.KeywordExpectations, "Expectations"))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(blueprint, state) <- result.try(parse_string_literal(state))
   use #(items, state) <- result.try(parse_expect_items(state))

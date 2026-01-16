@@ -1,3 +1,3 @@
-Expects for "api_availability"
+Expectations for "api_availability"
   * "checkout" extends [_defaults]:
     Provides { threshold: 99.95, status: true }

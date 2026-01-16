@@ -1,7 +1,7 @@
 /// A token produced by the tokenizer.
 pub type Token {
   KeywordBlueprints
-  KeywordExpects
+  KeywordExpectations
   KeywordFor
   KeywordExtends
   KeywordRequires
@@ -46,7 +46,7 @@ pub type Token {
 pub fn to_string(tok: Token) -> String {
   case tok {
     KeywordBlueprints -> "Blueprints"
-    KeywordExpects -> "Expects"
+    KeywordExpectations -> "Expectations"
     KeywordFor -> "for"
     KeywordExtends -> "extends"
     KeywordRequires -> "Requires"

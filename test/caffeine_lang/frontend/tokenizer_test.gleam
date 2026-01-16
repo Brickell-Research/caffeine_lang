@@ -15,7 +15,7 @@ import test_helpers
 pub fn tokenize_keywords_test() {
   [
     #("Blueprints", Ok([token.KeywordBlueprints, token.EOF])),
-    #("Expects", Ok([token.KeywordExpects, token.EOF])),
+    #("Expectations", Ok([token.KeywordExpectations, token.EOF])),
     #("for", Ok([token.KeywordFor, token.EOF])),
     #("extends", Ok([token.KeywordExtends, token.EOF])),
     #("Requires", Ok([token.KeywordRequires, token.EOF])),
@@ -239,9 +239,9 @@ pub fn tokenize_blueprint_header_test() {
 pub fn tokenize_expects_header_test() {
   [
     #(
-      "Expects for \"api_availability\"",
+      "Expectations for \"api_availability\"",
       Ok([
-        token.KeywordExpects,
+        token.KeywordExpectations,
         token.KeywordFor,
         token.LiteralString("api_availability"),
         token.EOF,
