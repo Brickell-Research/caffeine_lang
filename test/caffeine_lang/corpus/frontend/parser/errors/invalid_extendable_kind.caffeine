@@ -1,0 +1,6 @@
+_base (Invalid): { vendor: "datadog" }
+
+Blueprints for "SLO"
+  * "test":
+    Requires { env: String }
+    Provides { value: "x" }

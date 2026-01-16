@@ -1,0 +1,9 @@
+Blueprints for "SLO"
+  * "availability":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
+
+Blueprints for "DependencyRelation"
+  * "hard_dep":
+    Requires { from: String, to: String }
+    Provides { type: "hard" }

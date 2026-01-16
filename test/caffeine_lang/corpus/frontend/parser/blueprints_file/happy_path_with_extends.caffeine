@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api" extends [_base]:
+    Requires { env: String }
+    Provides { value: "test" }

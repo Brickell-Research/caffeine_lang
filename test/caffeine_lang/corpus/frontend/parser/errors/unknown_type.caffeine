@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "test":
+    Requires { field: Unknown }
+    Provides { value: "x" }

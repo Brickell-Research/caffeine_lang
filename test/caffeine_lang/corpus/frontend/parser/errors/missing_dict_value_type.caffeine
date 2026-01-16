@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "test":
+    Requires { counts: Dict(String) }
+    Provides { value: "x" }

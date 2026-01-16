@@ -1,0 +1,18 @@
+_base_slo (Provides): { vendor: "datadog" }
+
+Blueprints for "SLO"
+  ## API Availability
+  * "api_availability" extends [_base_slo]:
+    Requires {
+      env: String,
+      status: Boolean,
+      threshold: Float { x | x in ( 0.0 .. 100.0 ) },
+      window_in_days: Integer
+    }
+    Provides {
+      value: "numerator / denominator",
+      queries: {
+        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
+        denominator: "sum:http.requests{${env->env}}"
+      }
+    }

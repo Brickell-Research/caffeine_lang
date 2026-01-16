@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api" extends [_base, _common]:
+    Requires { threshold: Float }
+    Provides { value: "test" }
