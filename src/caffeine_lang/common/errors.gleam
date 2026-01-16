@@ -6,6 +6,9 @@ import gleam/string
 
 /// Represents top level compilation errors.
 pub type CompilationError {
+  // Frontend Phase (parsing .caffeine files)
+  FrontendParseError(msg: String)
+  FrontendValidationError(msg: String)
   // Parser Phase (part of initial parse & link step)
   ParserFileReadError(msg: String)
   ParserJsonParserError(msg: String)

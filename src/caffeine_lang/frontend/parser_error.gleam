@@ -1,3 +1,5 @@
+import gleam/int
+
 /// Errors that can occur during parsing.
 pub type ParserError {
   UnexpectedToken(expected: String, got: String, line: Int, column: Int)
@@ -5,4 +7,45 @@ pub type ParserError {
   UnknownType(name: String, line: Int, column: Int)
   InvalidRefinement(message: String, line: Int, column: Int)
   EmptyFile(line: Int, column: Int)
+}
+
+/// Converts a parser error to a human-readable string.
+pub fn to_string(err: ParserError) -> String {
+  case err {
+    UnexpectedToken(expected, got, line, column) ->
+      "Unexpected token at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+      <> ": expected "
+      <> expected
+      <> ", got "
+      <> got
+    UnexpectedEOF(expected, line, column) ->
+      "Unexpected end of file at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+      <> ": expected "
+      <> expected
+    UnknownType(name, line, column) ->
+      "Unknown type '"
+      <> name
+      <> "' at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+    InvalidRefinement(message, line, column) ->
+      "Invalid refinement at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+      <> ": "
+      <> message
+    EmptyFile(line, column) ->
+      "Empty file at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+  }
 }

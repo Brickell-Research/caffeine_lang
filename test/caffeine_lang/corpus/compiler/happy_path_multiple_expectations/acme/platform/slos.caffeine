@@ -1,0 +1,8 @@
+Expects for "api_availability"
+  * "auth_service_availability":
+    Provides {
+      env: "production",
+      service: "auth-service",
+      threshold: 99.99,
+      window_in_days: 30
+    }

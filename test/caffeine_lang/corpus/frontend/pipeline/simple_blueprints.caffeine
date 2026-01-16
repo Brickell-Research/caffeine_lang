@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api_availability":
+    Requires { env: String, threshold: Float }
+    Provides { vendor: "datadog", value: "test" }

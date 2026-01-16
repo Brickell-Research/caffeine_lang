@@ -1,0 +1,17 @@
+Expects for "api_availability"
+  * "checkout_availability":
+    Provides {
+      env: "production",
+      service: "checkout-api",
+      threshold: 99.95,
+      window_in_days: 30
+    }
+
+Expects for "api_latency_p99"
+  * "checkout_latency_p99":
+    Provides {
+      env: "production",
+      service: "checkout-api",
+      threshold: 99.0,
+      window_in_days: 7
+    }

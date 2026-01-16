@@ -25,7 +25,7 @@ pub fn compile_test() {
     // happy path - none
     #(
       #(
-        corpus_path("happy_path_no_expectations_blueprints.json"),
+        corpus_path("happy_path_no_expectations_blueprints.caffeine"),
         corpus_path("happy_path_no_expectations"),
       ),
       Ok(read_corpus("happy_path_no_expectations_output.tf")),
@@ -33,7 +33,7 @@ pub fn compile_test() {
     // happy path - single
     #(
       #(
-        corpus_path("happy_path_single_blueprints.json"),
+        corpus_path("happy_path_single_blueprints.caffeine"),
         corpus_path("happy_path_single_expectations"),
       ),
       Ok(read_corpus("happy_path_single_output.tf")),
@@ -41,7 +41,7 @@ pub fn compile_test() {
     // happy path - multiple (3 SLOs across 2 teams)
     #(
       #(
-        corpus_path("happy_path_multiple_blueprints.json"),
+        corpus_path("happy_path_multiple_blueprints.caffeine"),
         corpus_path("happy_path_multiple_expectations"),
       ),
       Ok(read_corpus("happy_path_multiple_output.tf")),

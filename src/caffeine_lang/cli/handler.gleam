@@ -124,14 +124,14 @@ fn print_usage(log_level: LogLevel) {
   log(log_level, "USAGE:")
   log(
     log_level,
-    "    caffeine compile [--quiet] <blueprint_file> <expectations_directory> [output_file]",
+    "    caffeine compile [--quiet] <blueprint.caffeine> <expectations_directory> [output_file]",
   )
   log(log_level, "    caffeine artifacts [--quiet]")
   log(log_level, "")
   log(log_level, "COMMANDS:")
   log(
     log_level,
-    "    compile          Compile blueprints and expectations to output",
+    "    compile          Compile .caffeine blueprints and expectations to output",
   )
   log(
     log_level,
@@ -141,7 +141,15 @@ fn print_usage(log_level: LogLevel) {
   log(log_level, "ARGUMENTS:")
   log(
     log_level,
-    "    [output_file]    Output file path or directory (prints to stdout if omitted)",
+    "    <blueprint.caffeine>       Path to the blueprints .caffeine file",
+  )
+  log(
+    log_level,
+    "    <expectations_directory>   Directory containing expectations .caffeine files",
+  )
+  log(
+    log_level,
+    "    [output_file]              Output file path or directory (prints to stdout if omitted)",
   )
   log(log_level, "")
   log(log_level, "OPTIONS:")

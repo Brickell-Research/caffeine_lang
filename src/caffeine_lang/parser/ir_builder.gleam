@@ -28,7 +28,7 @@ pub fn build_all(
 }
 
 /// Extract a meaningful prefix from the source path.
-/// e.g., "examples/org/platform_team/authentication.json" -> #("org", "platform_team", "authentication")
+/// e.g., "examples/org/platform_team/authentication.caffeine" -> #("org", "platform_team", "authentication")
 @internal
 pub fn extract_path_prefix(path: String) -> #(String, String, String) {
   case
@@ -38,10 +38,14 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
     |> list.take(3)
     |> list.reverse
     |> list.map(fn(segment) {
-      // Remove .json extension if present.
-      case string.ends_with(segment, ".json") {
-        True -> string.drop_end(segment, 5)
-        False -> segment
+      // Remove file extension if present.
+      case string.ends_with(segment, ".caffeine") {
+        True -> string.drop_end(segment, 9)
+        False ->
+          case string.ends_with(segment, ".json") {
+            True -> string.drop_end(segment, 5)
+            False -> segment
+          }
       }
     })
   {

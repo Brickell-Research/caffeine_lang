@@ -1,0 +1,8 @@
+Expects for "api_availability"
+  * "checkout_availability":
+    Provides {
+      env: "production",
+      status: true,
+      threshold: 99.95,
+      window_in_days: 30
+    }

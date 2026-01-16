@@ -4,23 +4,21 @@ import gleam/result
 import gleam/string
 import simplifile
 
-/// This function returns a list of all JSON files in the given directory.
+/// Returns a list of all .caffeine files in the given directory.
 @internal
-pub fn get_json_files(
+pub fn get_caffeine_files(
   base_directory: String,
 ) -> Result(List(String), CompilationError) {
   use top_level_items <- result.try(read_directory_or_error(base_directory))
 
-  let json_file_paths =
+  let file_paths =
     top_level_items
     |> list.try_fold([], fn(accumulated_files, item_name) {
       process_top_level_item(base_directory, item_name, accumulated_files)
     })
 
-  case json_file_paths {
+  case file_paths {
     Error(err) -> Error(err)
-    Ok([]) ->
-      Error(errors.LinkerParseError("No files found in: " <> base_directory))
     Ok(files) -> Ok(files)
   }
 }
@@ -46,13 +44,13 @@ fn process_top_level_item(
 
   case simplifile.is_directory(item_path) {
     Ok(True) ->
-      collect_json_files_from_subdirectory(item_path, accumulated_files)
+      collect_caffeine_files_from_subdirectory(item_path, accumulated_files)
     _ -> Ok(accumulated_files)
     // Skip files at the top level
   }
 }
 
-fn collect_json_files_from_subdirectory(
+fn collect_caffeine_files_from_subdirectory(
   subdirectory_path: String,
   accumulated_files: List(String),
 ) -> Result(List(String), CompilationError) {
@@ -60,27 +58,27 @@ fn collect_json_files_from_subdirectory(
     subdirectory_path,
   ))
 
-  // Go one level deeper - iterate over nested directories and collect JSON files from each
+  // Go one level deeper - iterate over nested directories and collect .caffeine files
   items_in_subdirectory
   |> list.try_fold(accumulated_files, fn(acc, item_name) {
     let nested_path = subdirectory_path <> "/" <> item_name
     case simplifile.is_directory(nested_path) {
       Ok(True) -> {
         use files_in_nested <- result.try(read_directory_or_error(nested_path))
-        let json_files =
-          extract_json_files_with_full_paths(files_in_nested, nested_path)
-        Ok(list.append(acc, json_files))
+        let caffeine_files =
+          extract_caffeine_files_with_full_paths(files_in_nested, nested_path)
+        Ok(list.append(acc, caffeine_files))
       }
       _ -> Ok(acc)
     }
   })
 }
 
-fn extract_json_files_with_full_paths(
+fn extract_caffeine_files_with_full_paths(
   files: List(String),
   directory_path: String,
 ) -> List(String) {
   files
-  |> list.filter(fn(file) { string.ends_with(file, ".json") })
+  |> list.filter(fn(file) { string.ends_with(file, ".caffeine") })
   |> list.map(fn(file) { directory_path <> "/" <> file })
 }

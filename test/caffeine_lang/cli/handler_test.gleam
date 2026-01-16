@@ -19,20 +19,20 @@ pub fn cli_exit_code_test() {
         [
           "compile",
           "--quiet",
-          "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
+          "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
           "test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
         ],
         exit_status_codes.Success,
       ),
       #(
-        ["compile", "--quiet", "/nonexistent/path.json", "/nonexistent/dir"],
+        ["compile", "--quiet", "/nonexistent/path.caffeine", "/nonexistent/dir"],
         exit_status_codes.Failure,
       ),
       #(
         [
           "compile",
           "--quiet",
-          "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.json",
+          "test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
           "/nonexistent/expectations",
         ],
         exit_status_codes.Failure,
