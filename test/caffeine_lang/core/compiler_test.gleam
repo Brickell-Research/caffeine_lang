@@ -22,7 +22,8 @@ fn read_corpus(file_name: String) -> String {
 // * ✅ happy path - single
 // * ✅ happy path - multiple (3 SLOs across 2 teams)
 pub fn compile_test() {
-  let config = compilation_configuration.CompilationConfig(log_level: logger.Minimal)
+  let config =
+    compilation_configuration.CompilationConfig(log_level: logger.Minimal)
   [
     // happy path - none
     #(

@@ -5,9 +5,9 @@ import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsBlock, type BlueprintsFile,
-  type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type ExtendableKind, type Field, type Literal, type Struct,
+  type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type ExpectItem,
+  type ExpectsBlock, type ExpectsFile, type Extendable, type ExtendableKind,
+  type Field, type Literal, type Struct,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type Token}
@@ -628,9 +628,9 @@ fn parse_list_type(
   use #(element, state) <- result.try(parse_primitive_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
   Ok(#(
-    accepted_types.CollectionType(collection_types.List(
-      accepted_types.PrimitiveType(element),
-    )),
+    accepted_types.CollectionType(
+      collection_types.List(accepted_types.PrimitiveType(element)),
+    ),
     state,
   ))
 }

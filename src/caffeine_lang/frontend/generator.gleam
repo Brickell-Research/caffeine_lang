@@ -159,7 +159,9 @@ fn merge_expect_extends(
 /// Returns fields sorted by name for consistent JSON output.
 fn dedupe_fields(fields: List(Field)) -> List(Field) {
   fields
-  |> list.fold(dict.new(), fn(acc, field) { dict.insert(acc, field.name, field) })
+  |> list.fold(dict.new(), fn(acc, field) {
+    dict.insert(acc, field.name, field)
+  })
   |> dict.to_list
   |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
   |> list.map(fn(pair) { pair.1 })
@@ -235,7 +237,10 @@ fn transform_template_vars_loop(remaining: String, acc: String) -> String {
         Ok(#(var_content, rest)) -> {
           // Transform the variable content: .not -> :not
           let transformed = string.replace(var_content, ".not", ":not")
-          transform_template_vars_loop(rest, acc <> before <> "$$" <> transformed <> "$$")
+          transform_template_vars_loop(
+            rest,
+            acc <> before <> "$$" <> transformed <> "$$",
+          )
         }
         Error(Nil) -> {
           // No closing }, just append as-is

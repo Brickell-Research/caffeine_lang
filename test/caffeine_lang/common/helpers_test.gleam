@@ -44,7 +44,9 @@ pub fn extract_value_test() {
     ),
     helpers.ValueTuple(
       "count",
-      accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
       dynamic.int(42),
     ),
   ]

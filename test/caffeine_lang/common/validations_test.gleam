@@ -75,56 +75,179 @@ pub fn validate_value_type_test() {
 
   [
     // Basic types
-    #(some_bool, accepted_types.PrimitiveType(primitive_types.Boolean), Ok(some_bool)),
-    #(some_int, accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), Ok(some_int)),
-    #(some_float, accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)), Ok(some_float)),
-    #(some_string, accepted_types.PrimitiveType(primitive_types.String), Ok(some_string)),
+    #(
+      some_bool,
+      accepted_types.PrimitiveType(primitive_types.Boolean),
+      Ok(some_bool),
+    ),
+    #(
+      some_int,
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
+      Ok(some_int),
+    ),
+    #(
+      some_float,
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Float,
+      )),
+      Ok(some_float),
+    ),
+    #(
+      some_string,
+      accepted_types.PrimitiveType(primitive_types.String),
+      Ok(some_string),
+    ),
     // Dict types
     #(
       dict_string_string,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.String),
+      )),
       Ok(dict_string_string),
     ),
     #(
       dict_string_int,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+      )),
       Ok(dict_string_int),
     ),
     #(
       dict_string_float,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+      )),
       Ok(dict_string_float),
     ),
     #(
       dict_string_bool,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.Boolean))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.Boolean),
+      )),
       Ok(dict_string_bool),
     ),
     // List types
-    #(list_string, accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))), Ok(list_string)),
-    #(list_int, accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))), Ok(list_int)),
-    #(list_bool, accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.Boolean))), Ok(list_bool)),
-    #(list_float, accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))), Ok(list_float)),
+    #(
+      list_string,
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
+      Ok(list_string),
+    ),
+    #(
+      list_int,
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ),
+      Ok(list_int),
+    ),
+    #(
+      list_bool,
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.Boolean,
+        )),
+      ),
+      Ok(list_bool),
+    ),
+    #(
+      list_float,
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+      ),
+      Ok(list_float),
+    ),
     // Empty collections
-    #(empty_list, accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))), Ok(empty_list)),
+    #(
+      empty_list,
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
+      Ok(empty_list),
+    ),
     #(
       empty_dict,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.String),
+      )),
       Ok(empty_dict),
     ),
     // Optional types with values
     #(
       some_string,
-      accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.ModifierType(
+        modifier_types.Optional(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
       Ok(some_string),
     ),
-    #(some_int, accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))), Ok(some_int)),
-    #(some_float, accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))), Ok(some_float)),
-    #(some_bool, accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.Boolean))), Ok(some_bool)),
+    #(
+      some_int,
+      accepted_types.ModifierType(
+        modifier_types.Optional(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ),
+      Ok(some_int),
+    ),
+    #(
+      some_float,
+      accepted_types.ModifierType(
+        modifier_types.Optional(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+      ),
+      Ok(some_float),
+    ),
+    #(
+      some_bool,
+      accepted_types.ModifierType(
+        modifier_types.Optional(accepted_types.PrimitiveType(
+          primitive_types.Boolean,
+        )),
+      ),
+      Ok(some_bool),
+    ),
     // Optional List types
     #(
       list_string,
-      accepted_types.ModifierType(modifier_types.Optional(accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))))),
+      accepted_types.ModifierType(
+        modifier_types.Optional(
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
+      ),
       Ok(list_string),
     ),
     // Optional Dict types
@@ -132,7 +255,10 @@ pub fn validate_value_type_test() {
       dict_string_string,
       accepted_types.ModifierType(
         modifier_types.Optional(
-          accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
         ),
       ),
       Ok(dict_string_string),
@@ -140,42 +266,76 @@ pub fn validate_value_type_test() {
     // Defaulted types with values
     #(
       some_string,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "default")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.String),
+        "default",
+      )),
       Ok(some_string),
     ),
     #(
       some_int,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "0")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+      )),
       Ok(some_int),
     ),
     #(
       some_float,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)), "0.0")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        "0.0",
+      )),
       Ok(some_float),
     ),
     #(
       some_bool,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.Boolean), "False")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.Boolean),
+        "False",
+      )),
       Ok(some_bool),
     ),
     // Nested types
     #(
       dynamic.list([list_string, list_string]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))))),
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
+      ),
       Ok(dynamic.list([list_string, list_string])),
     ),
     #(
       dynamic.properties([#(some_string, dict_string_int)]),
       accepted_types.CollectionType(collection_types.Dict(
         accepted_types.PrimitiveType(primitive_types.String),
-        accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))),
+        accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        )),
       )),
       Ok(dynamic.properties([#(some_string, dict_string_int)])),
     ),
     #(
       dynamic.list([dict_string_string]),
       accepted_types.CollectionType(
-        collection_types.List(accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String)))),
+        collection_types.List(
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+        ),
       ),
       Ok(dynamic.list([dict_string_string])),
     ),
@@ -196,12 +356,16 @@ pub fn validate_value_type_test() {
     ),
     #(
       some_string,
-      accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Float,
+      )),
       json_error("expected (Float) received (String) for (some_key)"),
     ),
     #(
@@ -212,54 +376,97 @@ pub fn validate_value_type_test() {
     // Dict types
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.String),
+      )),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+      )),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+      )),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.Boolean))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.Boolean),
+      )),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     // List types
     #(
       dynamic.list([some_string, some_bool]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))),
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ),
       json_error("expected (Int) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([some_bool, some_string]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.Boolean))),
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.Boolean,
+        )),
+      ),
       json_error("expected (Bool) received (String) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))),
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+      ),
       json_error("expected (Float) received (Bool) for (some_key)"),
     ),
     // Wrong structure types
     #(
       some_string,
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
       json_error("expected (List) received (String) for (some_key)"),
     ),
     #(
       some_string,
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.String),
+      )),
       json_error("expected (Dict) received (String) for (some_key)"),
     ),
     // Multi-entry collection with one bad value
@@ -268,30 +475,55 @@ pub fn validate_value_type_test() {
         #(some_string, other_string),
         #(dynamic.string("key2"), some_bool),
       ]),
-      accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(collection_types.Dict(
+        accepted_types.PrimitiveType(primitive_types.String),
+        accepted_types.PrimitiveType(primitive_types.String),
+      )),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // List with first element wrong
     #(
       dynamic.list([some_bool, some_string]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional types with wrong inner type
     #(
       some_bool,
-      accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String))),
+      accepted_types.ModifierType(
+        modifier_types.Optional(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))),
+      accepted_types.ModifierType(
+        modifier_types.Optional(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Optional List with wrong inner type
     #(
       dynamic.list([some_bool]),
-      accepted_types.ModifierType(modifier_types.Optional(accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))))),
+      accepted_types.ModifierType(
+        modifier_types.Optional(
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     // Optional Dict with wrong value type
@@ -299,7 +531,10 @@ pub fn validate_value_type_test() {
       dynamic.properties([#(some_string, some_bool)]),
       accepted_types.ModifierType(
         modifier_types.Optional(
-          accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
         ),
       ),
       json_error("expected (String) received (Bool) for (some_key)"),
@@ -307,18 +542,34 @@ pub fn validate_value_type_test() {
     // Defaulted types with wrong inner type
     #(
       some_bool,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "default")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.String),
+        "default",
+      )),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       some_string,
-      accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "0")),
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        "0",
+      )),
       json_error("expected (Int) received (String) for (some_key)"),
     ),
     // Nested types with wrong inner type
     #(
       dynamic.list([dynamic.list([some_bool])]),
-      accepted_types.CollectionType(collection_types.List(accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String))))),
+      accepted_types.CollectionType(
+        collection_types.List(
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
+      ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
@@ -327,14 +578,22 @@ pub fn validate_value_type_test() {
       ]),
       accepted_types.CollectionType(collection_types.Dict(
         accepted_types.PrimitiveType(primitive_types.String),
-        accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+        accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.PrimitiveType(primitive_types.String),
+        )),
       )),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
     #(
       dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
       accepted_types.CollectionType(
-        collection_types.List(accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String)))),
+        collection_types.List(
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+        ),
       ),
       json_error("expected (String) received (Bool) for (some_key)"),
     ),
@@ -376,7 +635,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
       ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
@@ -388,7 +652,14 @@ pub fn inputs_validator_test() {
     // optional param omitted - should pass
     #(
       dict.from_list([
-        #("maybe_name", accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)))),
+        #(
+          "maybe_name",
+          accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
       ]),
       dict.from_list([]),
       False,
@@ -397,7 +668,14 @@ pub fn inputs_validator_test() {
     // optional param provided - should pass
     #(
       dict.from_list([
-        #("maybe_name", accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)))),
+        #(
+          "maybe_name",
+          accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
       ]),
       dict.from_list([#("maybe_name", dynamic.string("foo"))]),
       False,
@@ -407,7 +685,16 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("maybe_count", accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))))),
+        #(
+          "maybe_count",
+          accepted_types.ModifierType(
+            modifier_types.Optional(
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
+          ),
+        ),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       False,
@@ -416,7 +703,15 @@ pub fn inputs_validator_test() {
     // defaulted param omitted - should pass
     #(
       dict.from_list([
-        #("count", accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "10"))),
+        #(
+          "count",
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+            "10",
+          )),
+        ),
       ]),
       dict.from_list([]),
       False,
@@ -425,7 +720,15 @@ pub fn inputs_validator_test() {
     // defaulted param provided - should pass
     #(
       dict.from_list([
-        #("count", accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "10"))),
+        #(
+          "count",
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+            "10",
+          )),
+        ),
       ]),
       dict.from_list([#("count", dynamic.int(42))]),
       False,
@@ -435,7 +738,15 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "10"))),
+        #(
+          "count",
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+            "10",
+          )),
+        ),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       False,
@@ -447,15 +758,13 @@ pub fn inputs_validator_test() {
         #("view_path", accepted_types.PrimitiveType(primitive_types.String)),
         #(
           "environment",
-          accepted_types.RefinementType(
-            refinement_types.OneOf(
-              accepted_types.ModifierType(modifier_types.Defaulted(
-                accepted_types.PrimitiveType(primitive_types.String),
-                "production",
-              )),
-              set.from_list(["production"]),
-            ),
-          ),
+          accepted_types.RefinementType(refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production"]),
+          )),
         ),
       ]),
       dict.from_list([#("view_path", dynamic.string("/members/messages"))]),
@@ -466,7 +775,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
       False,
@@ -474,7 +788,9 @@ pub fn inputs_validator_test() {
     ),
     // extra inputs
     #(
-      dict.from_list([#("name", accepted_types.PrimitiveType(primitive_types.String))]),
+      dict.from_list([
+        #("name", accepted_types.PrimitiveType(primitive_types.String)),
+      ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
@@ -497,7 +813,14 @@ pub fn inputs_validator_test() {
     ),
     // type validation error - single
     #(
-      dict.from_list([#("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))]),
+      dict.from_list([
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       False,
       Error("expected (Int) received (String) for (count)"),
@@ -506,7 +829,16 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("maybe_count", accepted_types.ModifierType(modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))))),
+        #(
+          "maybe_count",
+          accepted_types.ModifierType(
+            modifier_types.Optional(
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
+          ),
+        ),
       ]),
       dict.from_list([]),
       False,
@@ -516,7 +848,15 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)), "10"))),
+        #(
+          "count",
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+            "10",
+          )),
+        ),
       ]),
       dict.from_list([]),
       False,
@@ -527,7 +867,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
       ]),
       dict.from_list([]),
       True,
@@ -537,7 +882,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
         #("flag", accepted_types.PrimitiveType(primitive_types.Boolean)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
@@ -548,7 +898,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
       ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
@@ -559,7 +914,9 @@ pub fn inputs_validator_test() {
     ),
     // extra inputs still rejected
     #(
-      dict.from_list([#("name", accepted_types.PrimitiveType(primitive_types.String))]),
+      dict.from_list([
+        #("name", accepted_types.PrimitiveType(primitive_types.String)),
+      ]),
       dict.from_list([
         #("name", dynamic.string("foo")),
         #("extra", dynamic.int(42)),
@@ -569,7 +926,14 @@ pub fn inputs_validator_test() {
     ),
     // type validation still enforced
     #(
-      dict.from_list([#("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))]),
+      dict.from_list([
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       True,
       Error("expected (Int) received (String) for (count)"),
@@ -587,7 +951,12 @@ pub fn inputs_validator_test() {
     #(
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
         #("flag", accepted_types.PrimitiveType(primitive_types.Boolean)),
       ]),
       dict.from_list([#("name", dynamic.string("foo"))]),
@@ -597,7 +966,12 @@ pub fn inputs_validator_test() {
     // type validation error - multiple - missing_inputs_ok: False
     #(
       dict.from_list([
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
         #("flag", accepted_types.PrimitiveType(primitive_types.Boolean)),
       ]),
       dict.from_list([
@@ -676,7 +1050,9 @@ pub fn validate_inputs_for_collection_test() {
     [
       #(
         dict.from_list([#("name", dynamic.string("foo"))]),
-        dict.from_list([#("name", accepted_types.PrimitiveType(primitive_types.String))]),
+        dict.from_list([
+          #("name", accepted_types.PrimitiveType(primitive_types.String)),
+        ]),
       ),
     ],
   ]
@@ -696,7 +1072,12 @@ pub fn validate_inputs_for_collection_test() {
       dict.from_list([]),
       dict.from_list([
         #("name", accepted_types.PrimitiveType(primitive_types.String)),
-        #("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
       ]),
     ),
   ]
@@ -712,7 +1093,14 @@ pub fn validate_inputs_for_collection_test() {
   let collection_type_error = [
     #(
       dict.from_list([#("count", dynamic.string("not an int"))]),
-      dict.from_list([#("count", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)))]),
+      dict.from_list([
+        #(
+          "count",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+        ),
+      ]),
     ),
   ]
   validations.validate_inputs_for_collection(

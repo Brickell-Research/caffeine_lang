@@ -39,7 +39,11 @@ pub fn resolve_primitives_test() {
   let rhs_complex =
     parens(parser.OperatorExpr(
       prim_word("C"),
-      parser.OperatorExpr(parens(simple_op_cont("D", "E", parser.Add)), prim_word("F"), parser.Mul),
+      parser.OperatorExpr(
+        parens(simple_op_cont("D", "E", parser.Add)),
+        prim_word("F"),
+        parser.Mul,
+      ),
       parser.Add,
     ))
 
@@ -49,7 +53,10 @@ pub fn resolve_primitives_test() {
     // moderately complex good over total ((A + B) / C)
     #(
       "(A + B) / C",
-      Ok(resolver.GoodOverTotal(parens(simple_op_cont("A", "B", parser.Add)), prim_word("C"))),
+      Ok(resolver.GoodOverTotal(
+        parens(simple_op_cont("A", "B", parser.Add)),
+        prim_word("C"),
+      )),
     ),
     // nested and complex good over total
     #(

@@ -48,9 +48,11 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "faz",
           typ: accepted_types.CollectionType(
-            collection_types.List(accepted_types.PrimitiveType(
-              primitive_types.NumericType(numeric_types.Integer),
-            )),
+            collection_types.List(
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
           ),
           value: dynamic.list([
             dynamic.int(10),
@@ -67,7 +69,9 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "threshold",
-          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
           value: dynamic.int(2_500_000),
         ),
       ],
@@ -79,7 +83,9 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "threshold",
-          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
           value: dynamic.float(99.5),
         ),
       ],
@@ -108,7 +114,9 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "threshold",
-          typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+          typ: accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
           value: dynamic.int(80),
         ),
       ],
@@ -120,15 +128,13 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "environment",
-          typ: accepted_types.RefinementType(
-            refinement_types.OneOf(
-              accepted_types.ModifierType(modifier_types.Defaulted(
-                accepted_types.PrimitiveType(primitive_types.String),
-                "production",
-              )),
-              set.from_list(["production", "staging"]),
-            ),
-          ),
+          typ: accepted_types.RefinementType(refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production", "staging"]),
+          )),
           value: dynamic.string("staging"),
         ),
       ],
@@ -140,15 +146,13 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "environment",
-          typ: accepted_types.RefinementType(
-            refinement_types.OneOf(
-              accepted_types.ModifierType(modifier_types.Defaulted(
-                accepted_types.PrimitiveType(primitive_types.String),
-                "production",
-              )),
-              set.from_list(["production", "staging"]),
-            ),
-          ),
+          typ: accepted_types.RefinementType(refinement_types.OneOf(
+            accepted_types.ModifierType(modifier_types.Defaulted(
+              accepted_types.PrimitiveType(primitive_types.String),
+              "production",
+            )),
+            set.from_list(["production", "staging"]),
+          )),
           value: dynamic.nil(),
         ),
       ],
@@ -306,7 +310,9 @@ pub fn resolve_template_test() {
       templatizer.TemplateVariable("count", "", templatizer.Raw),
       helpers.ValueTuple(
         label: "count",
-        typ: accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+        typ: accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
         value: dynamic.int(42),
       ),
       Ok("42"),

@@ -44,11 +44,24 @@ pub fn parse_from_json_file_test() {
         artifacts.Artifact(
           name: "SLO",
           params: dict.from_list([
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
-            #("window_in_days", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
+            #(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
             #(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
             ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
@@ -62,11 +75,24 @@ pub fn parse_from_json_file_test() {
         artifacts.Artifact(
           name: "SLO",
           params: dict.from_list([
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
-            #("window_in_days", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
+            #(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
             #(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
             ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
@@ -74,7 +100,14 @@ pub fn parse_from_json_file_test() {
         artifacts.Artifact(
           name: "Dependency",
           params: dict.from_list([
-            #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+            #(
+              "relationship",
+              accepted_types.CollectionType(
+                collection_types.List(accepted_types.PrimitiveType(
+                  primitive_types.String,
+                )),
+              ),
+            ),
             #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
           ]),
         ),

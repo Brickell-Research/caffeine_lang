@@ -372,7 +372,9 @@ pub fn resolve_queries_test() {
           helpers.ValueTuple(
             "threshold_in_ms",
             accepted_types.ModifierType(modifier_types.Defaulted(
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               "2500000000",
             )),
             dynamic.nil(),
@@ -423,7 +425,9 @@ pub fn resolve_queries_test() {
           helpers.ValueTuple(
             "threshold_in_ms",
             accepted_types.ModifierType(modifier_types.Defaulted(
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               "2500000000",
             )),
             dynamic.nil(),
@@ -471,15 +475,13 @@ pub fn resolve_queries_test() {
           ),
           helpers.ValueTuple(
             "environment",
-            accepted_types.RefinementType(
-              refinement_types.OneOf(
-                accepted_types.ModifierType(modifier_types.Defaulted(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  "production",
-                )),
-                set.from_list(["production", "staging"]),
-              ),
-            ),
+            accepted_types.RefinementType(refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production", "staging"]),
+            )),
             dynamic.nil(),
           ),
           helpers.ValueTuple(
@@ -491,9 +493,7 @@ pub fn resolve_queries_test() {
             dynamic.properties([
               #(
                 dynamic.string("query"),
-                dynamic.string(
-                  "p75:rum.lcp.duration{$$env->environment$$}",
-                ),
+                dynamic.string("p75:rum.lcp.duration{$$env->environment$$}"),
               ),
             ]),
           ),
@@ -519,15 +519,13 @@ pub fn resolve_queries_test() {
           ),
           helpers.ValueTuple(
             "environment",
-            accepted_types.RefinementType(
-              refinement_types.OneOf(
-                accepted_types.ModifierType(modifier_types.Defaulted(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  "production",
-                )),
-                set.from_list(["production", "staging"]),
-              ),
-            ),
+            accepted_types.RefinementType(refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production", "staging"]),
+            )),
             dynamic.nil(),
           ),
           helpers.ValueTuple(
@@ -572,15 +570,13 @@ pub fn resolve_queries_test() {
           // environment: Defaulted(String, production) { x | x in { production } } - NOT provided
           helpers.ValueTuple(
             "environment",
-            accepted_types.RefinementType(
-              refinement_types.OneOf(
-                accepted_types.ModifierType(modifier_types.Defaulted(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  "production",
-                )),
-                set.from_list(["production"]),
-              ),
-            ),
+            accepted_types.RefinementType(refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production"]),
+            )),
             dynamic.nil(),
           ),
           // application_name: Defaulted(String, member_portal) - NOT provided
@@ -635,15 +631,13 @@ pub fn resolve_queries_test() {
           ),
           helpers.ValueTuple(
             "environment",
-            accepted_types.RefinementType(
-              refinement_types.OneOf(
-                accepted_types.ModifierType(modifier_types.Defaulted(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  "production",
-                )),
-                set.from_list(["production"]),
-              ),
-            ),
+            accepted_types.RefinementType(refinement_types.OneOf(
+              accepted_types.ModifierType(modifier_types.Defaulted(
+                accepted_types.PrimitiveType(primitive_types.String),
+                "production",
+              )),
+              set.from_list(["production"]),
+            )),
             dynamic.nil(),
           ),
           helpers.ValueTuple(

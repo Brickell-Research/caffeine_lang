@@ -19,7 +19,12 @@ fn artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       params: dict.from_list([
-        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
         #("value", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
@@ -32,14 +37,26 @@ fn multi_artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "SLO",
       params: dict.from_list([
-        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
         #("value", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
     artifacts.Artifact(
       name: "Dependency",
       params: dict.from_list([
-        #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+        #(
+          "relationship",
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
         #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
       ]),
     ),
@@ -54,7 +71,12 @@ fn multi_artifacts() -> List(Artifact) {
     artifacts.Artifact(
       name: "CompatibleArtifact",
       params: dict.from_list([
-        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
         #("extra", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
@@ -100,8 +122,18 @@ pub fn parse_from_json_file_test() {
           name: "success_rate",
           artifact_refs: ["SLO"],
           params: dict.from_list([
-            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "percentile",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
@@ -116,8 +148,18 @@ pub fn parse_from_json_file_test() {
           name: "success_rate",
           artifact_refs: ["SLO"],
           params: dict.from_list([
-            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "percentile",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
@@ -126,7 +168,12 @@ pub fn parse_from_json_file_test() {
           name: "latency_p99",
           artifact_refs: ["SLO"],
           params: dict.from_list([
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
@@ -141,7 +188,12 @@ pub fn parse_from_json_file_test() {
           name: "minimal_blueprint",
           artifact_refs: ["SLO"],
           params: dict.from_list([
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
@@ -363,8 +415,18 @@ pub fn parse_from_json_file_artifact_refs_test() {
           name: "success_rate",
           artifact_refs: ["SLO"],
           params: dict.from_list([
-            #("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "percentile",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
           ]),
           inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
@@ -386,10 +448,22 @@ pub fn parse_from_json_file_artifact_refs_test() {
           artifact_refs: ["SLO", "Dependency"],
           params: dict.from_list([
             // From SLO
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
             // From Dependency
-            #("relationship", accepted_types.CollectionType(collection_types.List(accepted_types.PrimitiveType(primitive_types.String)))),
+            #(
+              "relationship",
+              accepted_types.CollectionType(
+                collection_types.List(accepted_types.PrimitiveType(
+                  primitive_types.String,
+                )),
+              ),
+            ),
             #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
           ]),
           inputs: dict.from_list([
@@ -415,7 +489,12 @@ pub fn parse_from_json_file_artifact_refs_test() {
           artifact_refs: ["SLO", "CompatibleArtifact"],
           params: dict.from_list([
             // From both SLO and CompatibleArtifact (same type, merged)
-            #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+            #(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+            ),
             // From SLO only
             #("value", accepted_types.PrimitiveType(primitive_types.String)),
             // From CompatibleArtifact only

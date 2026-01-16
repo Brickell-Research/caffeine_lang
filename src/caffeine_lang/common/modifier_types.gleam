@@ -41,7 +41,8 @@ pub fn parse_modifier_type(
 ) -> Result(ModifierTypes(accepted), Nil) {
   case raw {
     "Optional" <> rest -> parse_optional_type(rest, parse_inner)
-    "Defaulted" <> rest -> parse_defaulted_type(rest, parse_inner, validate_default)
+    "Defaulted" <> rest ->
+      parse_defaulted_type(rest, parse_inner, validate_default)
     _ -> Error(Nil)
   }
 }
@@ -104,7 +105,8 @@ pub fn decode_modifier_to_string(
 pub fn validate_value(
   modifier: ModifierTypes(accepted),
   value: Dynamic,
-  validate_inner: fn(accepted, Dynamic) -> Result(Dynamic, List(decode.DecodeError)),
+  validate_inner: fn(accepted, Dynamic) ->
+    Result(Dynamic, List(decode.DecodeError)),
 ) -> Result(Dynamic, List(decode.DecodeError)) {
   case modifier {
     Optional(inner_type) -> {
@@ -190,8 +192,7 @@ fn find_matching_close_paren(
 ) -> Result(#(String, String), Nil) {
   case string.pop_grapheme(s) {
     Error(_) -> Error(Nil)
-    Ok(#("(", rest)) ->
-      find_matching_close_paren(rest, depth + 1, acc <> "(")
+    Ok(#("(", rest)) -> find_matching_close_paren(rest, depth + 1, acc <> "(")
     Ok(#(")", rest)) -> {
       case depth {
         1 -> Ok(#(acc, rest))

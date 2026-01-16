@@ -38,7 +38,11 @@ pub fn exp_to_string(exp: Exp) -> String {
           let left =
             exp_to_string_with_context(numerator, option.Some(operator), True)
           let right =
-            exp_to_string_with_context(denominator, option.Some(operator), False)
+            exp_to_string_with_context(
+              denominator,
+              option.Some(operator),
+              False,
+            )
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }
@@ -129,7 +133,11 @@ fn exp_to_string_with_context(
           let left =
             exp_to_string_with_context(numerator, option.Some(operator), True)
           let right =
-            exp_to_string_with_context(denominator, option.Some(operator), False)
+            exp_to_string_with_context(
+              denominator,
+              option.Some(operator),
+              False,
+            )
           let op = operator_to_datadog_query(operator)
           left <> " " <> op <> " " <> right
         }

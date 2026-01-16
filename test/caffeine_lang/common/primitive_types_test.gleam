@@ -19,7 +19,9 @@ pub fn parse_primitive_type_test() {
     // Sad path
     #("Unknown", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(primitive_types.parse_primitive_type)
+  |> test_helpers.array_based_test_executor_1(
+    primitive_types.parse_primitive_type,
+  )
 }
 
 // ==== primitive_type_to_string ====
@@ -66,9 +68,9 @@ pub fn decode_primitive_to_string_test() {
   |> test_helpers.array_based_test_executor_1(fn(input) {
     decode.run(
       input,
-      primitive_types.decode_primitive_to_string(
-        primitive_types.NumericType(numeric_types.Integer),
-      ),
+      primitive_types.decode_primitive_to_string(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
     )
   })
 }
@@ -106,8 +108,14 @@ pub fn validate_value_test() {
     #(#(primitive_types.String, dynamic.string("hello")), True),
     #(#(primitive_types.String, dynamic.int(42)), False),
     // Integration: delegates to numeric_types
-    #(#(primitive_types.NumericType(numeric_types.Integer), dynamic.int(42)), True),
-    #(#(primitive_types.NumericType(numeric_types.Float), dynamic.float(3.14)), True),
+    #(
+      #(primitive_types.NumericType(numeric_types.Integer), dynamic.int(42)),
+      True,
+    ),
+    #(
+      #(primitive_types.NumericType(numeric_types.Float), dynamic.float(3.14)),
+      True,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input

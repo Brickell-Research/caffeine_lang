@@ -161,7 +161,10 @@ pub fn validate_inputs_for_collection(
 
   case validation_errors {
     "" -> Ok(True)
-    _ -> Error(errors.ParserJsonParserError("Input validation errors: " <> validation_errors))
+    _ ->
+      Error(errors.ParserJsonParserError(
+        "Input validation errors: " <> validation_errors,
+      ))
   }
 }
 

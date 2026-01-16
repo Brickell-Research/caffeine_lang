@@ -21,7 +21,14 @@ fn blueprints() -> List(Blueprint) {
     blueprints.Blueprint(
       name: "success_rate",
       artifact_refs: ["SLO"],
-      params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
+      params: dict.from_list([
+        #(
+          "percentile",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+      ]),
       inputs: dict.from_list([]),
     ),
   ]
@@ -34,7 +41,12 @@ fn blueprints_with_inputs() -> List(Blueprint) {
       artifact_refs: ["SLO"],
       params: dict.from_list([
         #("vendor", accepted_types.PrimitiveType(primitive_types.String)),
-        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
       ]),
       inputs: dict.from_list([
         #("vendor", dynamic.string(constants.vendor_datadog)),
@@ -49,10 +61,18 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
       name: "success_rate_with_defaulted",
       artifact_refs: ["SLO"],
       params: dict.from_list([
-        #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
         #(
           "default_env",
-          accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "production")),
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.String),
+            "production",
+          )),
         ),
       ]),
       inputs: dict.from_list([]),
@@ -105,7 +125,14 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_refs: ["SLO"],
-            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
+            params: dict.from_list([
+              #(
+                "percentile",
+                accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+              ),
+            ]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -130,7 +157,14 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_refs: ["SLO"],
-            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
+            params: dict.from_list([
+              #(
+                "percentile",
+                accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+              ),
+            ]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -143,7 +177,14 @@ pub fn parse_from_json_file_test() {
           blueprints.Blueprint(
             name: "success_rate",
             artifact_refs: ["SLO"],
-            params: dict.from_list([#("percentile", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)))]),
+            params: dict.from_list([
+              #(
+                "percentile",
+                accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+              ),
+            ]),
             inputs: dict.from_list([]),
           ),
         ),
@@ -169,10 +210,18 @@ pub fn parse_from_json_file_test() {
             name: "success_rate_with_defaulted",
             artifact_refs: ["SLO"],
             params: dict.from_list([
-              #("threshold", accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))),
+              #(
+                "threshold",
+                accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+              ),
               #(
                 "default_env",
-                accepted_types.ModifierType(modifier_types.Defaulted(accepted_types.PrimitiveType(primitive_types.String), "production")),
+                accepted_types.ModifierType(modifier_types.Defaulted(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  "production",
+                )),
               ),
             ]),
             inputs: dict.from_list([]),

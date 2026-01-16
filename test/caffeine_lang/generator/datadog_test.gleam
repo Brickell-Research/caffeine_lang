@@ -117,17 +117,24 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -167,17 +174,24 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -217,17 +231,24 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -261,17 +282,24 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.5),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(7),
             ),
             helpers.ValueTuple(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("numerator"),
@@ -311,12 +339,16 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(30),
             ),
             helpers.ValueTuple(
@@ -326,7 +358,10 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
               dynamic.properties([
                 #(
                   dynamic.string("good"),
@@ -370,12 +405,16 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
               dynamic.float(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
               dynamic.int(30),
             ),
             helpers.ValueTuple(

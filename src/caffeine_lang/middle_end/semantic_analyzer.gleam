@@ -118,7 +118,10 @@ pub fn resolve_queries(
       let new_queries_value_tuple =
         helpers.ValueTuple(
           "queries",
-          accepted_types.CollectionType(collection_types.Dict(accepted_types.PrimitiveType(primitive_types.String), accepted_types.PrimitiveType(primitive_types.String))),
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
           resolved_queries_dynamic,
         )
 

@@ -152,7 +152,9 @@ fn print_step2_start(
         <> " "
         <> ir.unique_identifier
         <> " "
-        <> ansi.dim("(artifacts: " <> string.join(ir.artifact_refs, ", ") <> ")"),
+        <> ansi.dim(
+        "(artifacts: " <> string.join(ir.artifact_refs, ", ") <> ")",
+      ),
     )
   })
 }

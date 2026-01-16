@@ -86,7 +86,8 @@ pub fn decode_collection_to_string(
 pub fn validate_value(
   collection: CollectionTypes(accepted),
   value: Dynamic,
-  validate_inner: fn(accepted, Dynamic) -> Result(Dynamic, List(decode.DecodeError)),
+  validate_inner: fn(accepted, Dynamic) ->
+    Result(Dynamic, List(decode.DecodeError)),
 ) -> Result(Dynamic, List(decode.DecodeError)) {
   case collection {
     Dict(_key_type, value_type) -> {

@@ -58,9 +58,15 @@ pub fn parse_modifier_type_test() {
     #("Optional(Float)", Ok(modifier_types.Optional("Float"))),
     #("Optional(Boolean)", Ok(modifier_types.Optional("Boolean"))),
     // Defaulted
-    #("Defaulted(String, hello)", Ok(modifier_types.Defaulted("String", "hello"))),
+    #(
+      "Defaulted(String, hello)",
+      Ok(modifier_types.Defaulted("String", "hello")),
+    ),
     #("Defaulted(Integer, 10)", Ok(modifier_types.Defaulted("Integer", "10"))),
-    #("Defaulted(Boolean, True)", Ok(modifier_types.Defaulted("Boolean", "True"))),
+    #(
+      "Defaulted(Boolean, True)",
+      Ok(modifier_types.Defaulted("Boolean", "True")),
+    ),
     #("Defaulted(Float, 3.14)", Ok(modifier_types.Defaulted("Float", "3.14"))),
     // Invalid
     #("Unknown", Error(Nil)),

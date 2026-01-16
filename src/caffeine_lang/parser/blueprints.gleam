@@ -73,7 +73,9 @@ pub fn validate_blueprints(
     map_blueprints_to_artifacts(blueprints, artifacts)
 
   // Check for conflicting param types across artifacts in each blueprint.
-  use _ <- result.try(validate_no_conflicting_params(blueprint_artifacts_collection))
+  use _ <- result.try(validate_no_conflicting_params(
+    blueprint_artifacts_collection,
+  ))
 
   // Create a synthetic merged artifact for each blueprint for input validation.
   let blueprint_merged_artifact_collection =

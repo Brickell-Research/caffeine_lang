@@ -22,7 +22,9 @@ pub fn accepted_type_to_string_test() {
     // Collection dispatch
     #(
       accepted_types.CollectionType(
-        collection_types.List(accepted_types.PrimitiveType(primitive_types.String)),
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
       ),
       "List(String)",
     ),
@@ -30,12 +32,12 @@ pub fn accepted_type_to_string_test() {
     #(
       accepted_types.ModifierType(
         modifier_types.Optional(
-          accepted_types.CollectionType(
-            collection_types.Dict(
-              accepted_types.PrimitiveType(primitive_types.String),
-              accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
-            ),
-          ),
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+          )),
         ),
       ),
       "Optional(Dict(String, Integer))",
@@ -62,9 +64,9 @@ pub fn parse_accepted_type_test() {
         accepted_types.ModifierType(
           modifier_types.Optional(
             accepted_types.CollectionType(
-              collection_types.List(
-                accepted_types.PrimitiveType(primitive_types.String),
-              ),
+              collection_types.List(accepted_types.PrimitiveType(
+                primitive_types.String,
+              )),
             ),
           ),
         ),
@@ -82,19 +84,19 @@ pub fn parse_accepted_type_test() {
     #(
       "Defaulted(String, production) { x | x in { production } }",
       Ok(
-        accepted_types.RefinementType(
-          refinement_types.OneOf(
-            accepted_types.ModifierType(modifier_types.Defaulted(
-              accepted_types.PrimitiveType(primitive_types.String),
-              "production",
-            )),
-            set.from_list(["production"]),
-          ),
-        ),
+        accepted_types.RefinementType(refinement_types.OneOf(
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.String),
+            "production",
+          )),
+          set.from_list(["production"]),
+        )),
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(accepted_types.parse_accepted_type)
+  |> test_helpers.array_based_test_executor_1(
+    accepted_types.parse_accepted_type,
+  )
 }
 
 // ==== validate_value ====
@@ -106,7 +108,10 @@ pub fn validate_value_test() {
   [
     // Primitive dispatch
     #(
-      #(accepted_types.PrimitiveType(primitive_types.String), dynamic.string("hello")),
+      #(
+        accepted_types.PrimitiveType(primitive_types.String),
+        dynamic.string("hello"),
+      ),
       True,
     ),
     // Collection dispatch
@@ -114,7 +119,9 @@ pub fn validate_value_test() {
       #(
         accepted_types.CollectionType(
           collection_types.List(
-            accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
           ),
         ),
         dynamic.list([dynamic.int(1), dynamic.int(2)]),
@@ -125,7 +132,9 @@ pub fn validate_value_test() {
     #(
       #(
         accepted_types.ModifierType(
-          modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)),
+          modifier_types.Optional(accepted_types.PrimitiveType(
+            primitive_types.String,
+          )),
         ),
         dynamic.nil(),
       ),
@@ -149,14 +158,19 @@ pub fn decode_value_to_string_test() {
   [
     // Primitive dispatch
     #(
-      #(accepted_types.PrimitiveType(primitive_types.String), dynamic.string("hello")),
+      #(
+        accepted_types.PrimitiveType(primitive_types.String),
+        dynamic.string("hello"),
+      ),
       Ok("hello"),
     ),
     // Modifier dispatch (Optional with value)
     #(
       #(
         accepted_types.ModifierType(
-          modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)),
+          modifier_types.Optional(accepted_types.PrimitiveType(
+            primitive_types.String,
+          )),
         ),
         dynamic.string("present"),
       ),
@@ -194,7 +208,10 @@ pub fn resolve_to_string_test() {
   [
     // Primitive dispatch
     #(
-      #(accepted_types.PrimitiveType(primitive_types.String), dynamic.string("hello")),
+      #(
+        accepted_types.PrimitiveType(primitive_types.String),
+        dynamic.string("hello"),
+      ),
       Ok("resolved:hello"),
     ),
     // Collection dispatch
@@ -202,7 +219,9 @@ pub fn resolve_to_string_test() {
       #(
         accepted_types.CollectionType(
           collection_types.List(
-            accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
           ),
         ),
         dynamic.list([dynamic.int(1), dynamic.int(2)]),
@@ -213,7 +232,9 @@ pub fn resolve_to_string_test() {
     #(
       #(
         accepted_types.ModifierType(
-          modifier_types.Optional(accepted_types.PrimitiveType(primitive_types.String)),
+          modifier_types.Optional(accepted_types.PrimitiveType(
+            primitive_types.String,
+          )),
         ),
         dynamic.string("present"),
       ),
@@ -222,12 +243,12 @@ pub fn resolve_to_string_test() {
     // Modifier dispatch - Defaulted with None uses default
     #(
       #(
-        accepted_types.ModifierType(
-          modifier_types.Defaulted(
-            accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
-            "99",
-          ),
-        ),
+        accepted_types.ModifierType(modifier_types.Defaulted(
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Integer,
+          )),
+          "99",
+        )),
         dynamic.nil(),
       ),
       Ok("resolved:99"),
@@ -235,15 +256,13 @@ pub fn resolve_to_string_test() {
     // Refinement dispatch - OneOf(Defaulted(String)) with value provided
     #(
       #(
-        accepted_types.RefinementType(
-          refinement_types.OneOf(
-            accepted_types.ModifierType(modifier_types.Defaulted(
-              accepted_types.PrimitiveType(primitive_types.String),
-              "production",
-            )),
-            set.from_list(["production", "staging"]),
-          ),
-        ),
+        accepted_types.RefinementType(refinement_types.OneOf(
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.String),
+            "production",
+          )),
+          set.from_list(["production", "staging"]),
+        )),
         dynamic.string("staging"),
       ),
       Ok("resolved:staging"),
@@ -251,15 +270,13 @@ pub fn resolve_to_string_test() {
     // Refinement dispatch - OneOf(Defaulted(String)) with None uses default
     #(
       #(
-        accepted_types.RefinementType(
-          refinement_types.OneOf(
-            accepted_types.ModifierType(modifier_types.Defaulted(
-              accepted_types.PrimitiveType(primitive_types.String),
-              "production",
-            )),
-            set.from_list(["production", "staging"]),
-          ),
-        ),
+        accepted_types.RefinementType(refinement_types.OneOf(
+          accepted_types.ModifierType(modifier_types.Defaulted(
+            accepted_types.PrimitiveType(primitive_types.String),
+            "production",
+          )),
+          set.from_list(["production", "staging"]),
+        )),
         dynamic.nil(),
       ),
       Ok("resolved:production"),

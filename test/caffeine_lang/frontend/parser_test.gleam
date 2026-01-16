@@ -50,9 +50,9 @@ fn boolean_type() -> accepted_types.AcceptedTypes {
 fn list_type(
   inner: primitive_types.PrimitiveTypes,
 ) -> accepted_types.AcceptedTypes {
-  accepted_types.CollectionType(collection_types.List(
-    accepted_types.PrimitiveType(inner),
-  ))
+  accepted_types.CollectionType(
+    collection_types.List(accepted_types.PrimitiveType(inner)),
+  )
 }
 
 fn dict_type(
@@ -65,7 +65,9 @@ fn dict_type(
   ))
 }
 
-fn optional_type(inner: accepted_types.AcceptedTypes) -> accepted_types.AcceptedTypes {
+fn optional_type(
+  inner: accepted_types.AcceptedTypes,
+) -> accepted_types.AcceptedTypes {
   accepted_types.ModifierType(modifier_types.Optional(inner))
 }
 
@@ -326,10 +328,7 @@ pub fn parse_blueprints_file_test() {
                     primitive_types.NumericType(numeric_types.Integer),
                   )),
                 ),
-                ast.Field(
-                  "name",
-                  ast.TypeValue(optional_type(string_type())),
-                ),
+                ast.Field("name", ast.TypeValue(optional_type(string_type()))),
                 ast.Field(
                   "env",
                   ast.TypeValue(defaulted_type(string_type(), "production")),

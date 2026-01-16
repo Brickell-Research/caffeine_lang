@@ -81,7 +81,8 @@ pub fn validate_value(
       let decoder = decode.string |> decode.map(fn(_) { value })
       decode.run(value, decoder)
     }
-    NumericType(numeric_type) -> numeric_types.validate_value(numeric_type, value)
+    NumericType(numeric_type) ->
+      numeric_types.validate_value(numeric_type, value)
   }
 }
 

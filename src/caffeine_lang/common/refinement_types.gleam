@@ -174,8 +174,7 @@ fn do_parse_refinement(
     Ok(#("x | x in", rest)) -> {
       let rest_trimmed = string.trim(rest)
       case rest_trimmed {
-        "{" <> values_rest ->
-          parse_one_of(typ, values_rest, validate_set_value)
+        "{" <> values_rest -> parse_one_of(typ, values_rest, validate_set_value)
         "(" <> values_rest ->
           parse_inclusive_range(typ, raw_typ, values_rest, validate_set_value)
         _ -> Error(Nil)
@@ -302,4 +301,3 @@ fn validate_bounds_order(
     Error(Nil) -> Error(Nil)
   }
 }
-

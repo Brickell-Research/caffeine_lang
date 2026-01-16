@@ -18,11 +18,15 @@ pub fn compile_blueprints_file(
   use source <- result.try(read_file(file_path))
   use ast <- result.try(
     parser.parse_blueprints_file(source)
-    |> result.map_error(fn(err) { parser_error_to_compilation_error(err, file_path) }),
+    |> result.map_error(fn(err) {
+      parser_error_to_compilation_error(err, file_path)
+    }),
   )
   use validated <- result.try(
     validator.validate_blueprints_file(ast)
-    |> result.map_error(fn(err) { validator_error_to_compilation_error(err, file_path) }),
+    |> result.map_error(fn(err) {
+      validator_error_to_compilation_error(err, file_path)
+    }),
   )
   Ok(json.to_string(generator.generate_blueprints_json(validated)))
 }
@@ -35,11 +39,15 @@ pub fn compile_expects_file(
   use source <- result.try(read_file(file_path))
   use ast <- result.try(
     parser.parse_expects_file(source)
-    |> result.map_error(fn(err) { parser_error_to_compilation_error(err, file_path) }),
+    |> result.map_error(fn(err) {
+      parser_error_to_compilation_error(err, file_path)
+    }),
   )
   use validated <- result.try(
     validator.validate_expects_file(ast)
-    |> result.map_error(fn(err) { validator_error_to_compilation_error(err, file_path) }),
+    |> result.map_error(fn(err) {
+      validator_error_to_compilation_error(err, file_path)
+    }),
   )
   Ok(json.to_string(generator.generate_expects_json(validated)))
 }
@@ -57,9 +65,7 @@ fn parser_error_to_compilation_error(
   err: parser_error.ParserError,
   file_path: String,
 ) -> CompilationError {
-  errors.FrontendParseError(
-    file_path <> ": " <> parser_error.to_string(err),
-  )
+  errors.FrontendParseError(file_path <> ": " <> parser_error.to_string(err))
 }
 
 fn validator_error_to_compilation_error(
@@ -73,13 +79,25 @@ fn validator_error_to_compilation_error(
 
 fn validator_error_to_string(err: validator.ValidatorError) -> String {
   case err {
-    validator.DuplicateExtendable(name) ->
-      "Duplicate extendable: " <> name
+    validator.DuplicateExtendable(name) -> "Duplicate extendable: " <> name
     validator.UndefinedExtendable(name, referenced_by) ->
-      "Undefined extendable '" <> name <> "' referenced by '" <> referenced_by <> "'"
+      "Undefined extendable '"
+      <> name
+      <> "' referenced by '"
+      <> referenced_by
+      <> "'"
     validator.DuplicateExtendsReference(name, referenced_by) ->
-      "Duplicate extends reference '" <> name <> "' in '" <> referenced_by <> "'"
+      "Duplicate extends reference '"
+      <> name
+      <> "' in '"
+      <> referenced_by
+      <> "'"
     validator.InvalidExtendableKind(name, expected, got) ->
-      "Invalid extendable kind for '" <> name <> "': expected " <> expected <> ", got " <> got
+      "Invalid extendable kind for '"
+      <> name
+      <> "': expected "
+      <> expected
+      <> ", got "
+      <> got
   }
 }

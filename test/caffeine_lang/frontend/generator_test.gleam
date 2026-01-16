@@ -50,10 +50,7 @@ fn strip_whitespace(s: String) -> String {
 // * ✅ template variable transformation (${} -> $$$$)
 pub fn generate_blueprints_json_test() {
   [
-    #(
-      "blueprints_simple",
-      strip_whitespace(expected_json("blueprints_simple")),
-    ),
+    #("blueprints_simple", strip_whitespace(expected_json("blueprints_simple"))),
     #(
       "blueprints_multi_artifact",
       strip_whitespace(expected_json("blueprints_multi_artifact")),

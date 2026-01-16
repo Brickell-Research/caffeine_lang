@@ -5,10 +5,13 @@ import gleeunit/should
 const corpus_dir = "test/caffeine_lang/corpus/frontend/pipeline"
 
 // ==== compile_blueprints_file ====
-// * Simple blueprints file compiles to valid JSON
+// * ✅ simple blueprints file compiles to valid JSON
+// * ✅ nonexistent file returns error
 pub fn compile_blueprints_file_test() {
   let assert Ok(json) =
-    pipeline.compile_blueprints_file(corpus_dir <> "/simple_blueprints.caffeine")
+    pipeline.compile_blueprints_file(
+      corpus_dir <> "/simple_blueprints.caffeine",
+    )
 
   // Verify JSON contains expected content
   json |> string.contains("\"blueprints\"") |> should.be_true

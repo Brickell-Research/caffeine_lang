@@ -71,14 +71,8 @@ pub fn non_empty_string_decoder_test() {
 // * ✅ Invalid type returns decoder error format
 pub fn accepted_types_decoder_test() {
   [
-    #(
-      "String",
-      Ok(accepted_types.PrimitiveType(primitive_types.String)),
-    ),
-    #(
-      "UnknownType",
-      Error([decode.DecodeError("AcceptedType", "String", [])]),
-    ),
+    #("String", Ok(accepted_types.PrimitiveType(primitive_types.String))),
+    #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     decode.run(dynamic.string(input), decoders.accepted_types_decoder())
