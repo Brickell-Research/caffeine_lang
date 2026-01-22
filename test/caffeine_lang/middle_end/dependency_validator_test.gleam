@@ -256,7 +256,7 @@ pub fn validate_dependency_relations_test() {
           "auth",
           "login_slo",
           ["bad_format", "also.bad"],
-          ["another.invalid.ref"],
+          [],
         ),
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
