@@ -113,6 +113,8 @@ fn make_ir_with_dependencies(
 // * ✅ sad path - dependency target has invalid format (not 4 parts)
 // * ✅ sad path - self-reference (IR depends on itself)
 // * ✅ sad path - multiple invalid dependencies (all reported)
+// * ✅ sad path - duplicate dependency within same relation type
+// * ✅ sad path - duplicate dependency across relation types
 pub fn validate_dependency_relations_test() {
   // Happy path: no IRs with dependency relations
   [
@@ -261,6 +263,52 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference 'bad_format' in 'acme.platform.auth.login_slo': expected format 'org.team.service.name'",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // Sad path: duplicate dependency within same relation type
+  [
+    #(
+      [
+        make_slo_ir("acme", "platform", "db", "availability_slo"),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.platform.db.availability_slo", "acme.platform.db.availability_slo"],
+          [],
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Duplicate dependency reference 'acme.platform.db.availability_slo' in 'acme.platform.auth.login_slo'",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // Sad path: duplicate dependency across relation types
+  [
+    #(
+      [
+        make_slo_ir("acme", "platform", "db", "availability_slo"),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.platform.db.availability_slo"],
+          ["acme.platform.db.availability_slo"],
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Duplicate dependency reference 'acme.platform.db.availability_slo' in 'acme.platform.auth.login_slo'",
       )),
     ),
   ]

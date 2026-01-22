@@ -6,6 +6,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
+import gleam/set
 import gleam/string
 
 /// Validates that all dependency relations reference existing expectations.
@@ -71,6 +72,9 @@ fn validate_ir_dependencies(
       // Get all dependency targets (from both hard and soft)
       let all_targets = get_all_dependency_targets(relations)
 
+      // Check for duplicates
+      use _ <- result.try(check_for_duplicates(all_targets, self_path))
+
       // Validate each target
       all_targets
       |> list.try_each(fn(target) {
@@ -100,6 +104,36 @@ fn get_all_dependency_targets(relations: Dict(String, List(String))) -> List(Str
   relations
   |> dict.values
   |> list.flatten
+}
+
+fn check_for_duplicates(
+  targets: List(String),
+  self_path: String,
+) -> Result(Nil, CompilationError) {
+  do_check_for_duplicates(targets, set.new(), self_path)
+}
+
+fn do_check_for_duplicates(
+  targets: List(String),
+  seen: set.Set(String),
+  self_path: String,
+) -> Result(Nil, CompilationError) {
+  case targets {
+    [] -> Ok(Nil)
+    [target, ..rest] ->
+      case set.contains(seen, target) {
+        True ->
+          Error(errors.SemanticAnalysisDependencyValidationError(
+            msg: "Duplicate dependency reference '"
+              <> target
+              <> "' in '"
+              <> self_path
+              <> "'",
+          ))
+        False ->
+          do_check_for_duplicates(rest, set.insert(seen, target), self_path)
+      }
+  }
 }
 
 fn validate_dependency_target(
