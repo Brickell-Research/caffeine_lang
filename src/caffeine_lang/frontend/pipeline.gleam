@@ -99,5 +99,22 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> expected
       <> ", got "
       <> got
+    validator.UndefinedTypeAlias(name, referenced_by) ->
+      "Undefined type alias '"
+      <> name
+      <> "' referenced by '"
+      <> referenced_by
+      <> "'"
+    validator.DuplicateTypeAlias(name) -> "Duplicate type alias: " <> name
+    validator.CircularTypeAlias(name, _cycle) ->
+      "Circular type alias reference detected in '" <> name <> "'"
+    validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) ->
+      "Type alias '"
+      <> alias_name
+      <> "' used as Dict key resolves to '"
+      <> resolved_to
+      <> "' which is not String-based, in '"
+      <> referenced_by
+      <> "'"
   }
 }

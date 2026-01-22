@@ -6,6 +6,7 @@ import caffeine_lang/common/refinement_types.{type RefinementTypes}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
+import gleam/string
 
 /// AcceptedTypes is a union of all the types that can be used as a "filter" over the set
 /// of all possible values. This allows us to _type_ params and thus provide annotations
@@ -15,6 +16,9 @@ pub type AcceptedTypes {
   CollectionType(CollectionTypes(AcceptedTypes))
   ModifierType(ModifierTypes(AcceptedTypes))
   RefinementType(RefinementTypes(AcceptedTypes))
+  /// A reference to a type alias (e.g., _env). Must be resolved before validation.
+  /// This is a compile-time construct that gets inlined during code generation.
+  TypeAliasRef(String)
 }
 
 /// Converts an AcceptedTypes to its string representation.
@@ -38,6 +42,10 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
         refinement_type,
         accepted_type_to_string,
       )
+    TypeAliasRef(name) ->
+      // Type alias refs should be resolved before serialization.
+      // If we hit this, the alias wasn't resolved - return the name for debugging.
+      name
   }
 }
 
@@ -61,6 +69,9 @@ pub fn validate_value(
         decode_value_to_string,
         get_numeric_type,
       )
+    TypeAliasRef(name) ->
+      // Type alias refs must be resolved before validation
+      Error([decode.DecodeError("Unresolved type alias: " <> name, "Type", [])])
   }
 }
 
@@ -83,6 +94,9 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
         refinement,
         decode_value_to_string,
       )
+    TypeAliasRef(name) ->
+      // Type alias refs must be resolved before decoding
+      decode.failure("Unresolved type alias: " <> name, "Type")
   }
 }
 
@@ -100,7 +114,10 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
+    collection_types.parse_collection_type(
+      raw,
+      parse_primitive_or_nested_collection,
+    )
     |> result.map(CollectionType)
   })
   |> result.lazy_or(fn() {
@@ -118,6 +135,13 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
       validate_string_literal_or_defaulted,
     )
     |> result.map(RefinementType)
+  })
+  |> result.lazy_or(fn() {
+    // Type alias reference (must start with _ and have more characters)
+    case string.starts_with(raw, "_") && string.length(raw) > 1 {
+      True -> Ok(TypeAliasRef(raw))
+      False -> Error(Nil)
+    }
   })
 }
 
@@ -157,39 +181,80 @@ pub fn resolve_to_string(
         decode_value_to_string,
         resolve_string,
       )
+    TypeAliasRef(name) ->
+      // Type alias refs must be resolved before resolution
+      Error("Unresolved type alias: " <> name)
   }
 }
 
 /// Extracts the NumericTypes from an AcceptedTypes.
 /// Used by InclusiveRange validation - only Integer/Float primitives are valid.
+///
+/// INVARIANT: This function should only be called with types that are known to be
+/// numeric (Integer or Float). The caller is responsible for ensuring this.
+/// If a non-numeric type is passed, this returns Integer as a fallback but the
+/// validation will likely fail with a type mismatch error upstream.
+///
+/// TypeAliasRef should never reach this function - they must be resolved before
+/// validation. If one does, it indicates a bug in the resolution pipeline.
 @internal
 pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
   case typ {
     PrimitiveType(primitive_types.NumericType(numeric)) -> numeric
-    // InclusiveRange only allows Integer/Float, so this shouldn't happen
-    _ -> numeric_types.Integer
+    // TypeAliasRef should be resolved before reaching validation
+    // If we get here, there's a bug - but we fall through to avoid crashing
+    TypeAliasRef(_) -> numeric_types.Integer
+    // InclusiveRange only allows Integer/Float, so these shouldn't happen
+    // Fallback to Integer - upstream validation will catch the mismatch
+    PrimitiveType(primitive_types.String) -> numeric_types.Integer
+    PrimitiveType(primitive_types.Boolean) -> numeric_types.Integer
+    CollectionType(_) -> numeric_types.Integer
+    ModifierType(_) -> numeric_types.Integer
+    RefinementType(_) -> numeric_types.Integer
   }
 }
 
-/// Parser for primitives or nested collections - used for collection inner types.
+/// Parser for primitives, nested collections, or type alias refs - used for collection inner types.
 /// Supports recursive nesting: Dict(String, List(Integer)), List(List(String)), etc.
-fn parse_primitive_or_nested_collection(raw: String) -> Result(AcceptedTypes, Nil) {
+fn parse_primitive_or_nested_collection(
+  raw: String,
+) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
     // Recursively parse nested collections
-    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
+    collection_types.parse_collection_type(
+      raw,
+      parse_primitive_or_nested_collection,
+    )
     |> result.map(CollectionType)
+  })
+  |> result.lazy_or(fn() {
+    // Type alias reference
+    case string.starts_with(raw, "_") && string.length(raw) > 1 {
+      True -> Ok(TypeAliasRef(raw))
+      False -> Error(Nil)
+    }
   })
 }
 
-/// Parser for primitives or collections - used for modifier inner types.
+/// Parser for primitives, collections, or type alias refs - used for modifier inner types.
 fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
+    collection_types.parse_collection_type(
+      raw,
+      parse_primitive_or_nested_collection,
+    )
     |> result.map(CollectionType)
+  })
+  |> result.lazy_or(fn() {
+    // Type alias reference
+    case string.starts_with(raw, "_") && string.length(raw) > 1 {
+      True -> Ok(TypeAliasRef(raw))
+      False -> Error(Nil)
+    }
   })
 }
 
@@ -235,6 +300,7 @@ fn validate_string_literal(
     CollectionType(_) -> Error(Nil)
     ModifierType(_) -> Error(Nil)
     RefinementType(_) -> Error(Nil)
+    TypeAliasRef(_) -> Error(Nil)
   }
 }
 

@@ -1,0 +1,12 @@
+_env (Type): String { x | x in { "production", "staging" } }
+_relation (Type): String { x | x in { "friend", "colleague" } }
+
+Blueprints for "SLO"
+  * "test":
+    Requires {
+      env: _env,
+      config: Dict(_relation, String),
+      items: List(_env),
+      settings: Dict(String, _env)
+    }
+    Provides { value: "x" }

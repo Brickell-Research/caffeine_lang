@@ -1,0 +1,6 @@
+_count (Type): Integer { x | x in ( 1..100 ) }
+
+Blueprints for "SLO"
+  * "test":
+    Requires { config: Dict(_count, String) }
+    Provides { value: "x" }

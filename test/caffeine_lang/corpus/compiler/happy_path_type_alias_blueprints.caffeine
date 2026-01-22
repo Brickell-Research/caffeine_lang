@@ -1,0 +1,13 @@
+_env (Type): String { x | x in { "production", "staging" } }
+
+Blueprints for "SLO"
+  * "api_availability_with_type_alias":
+    Requires { env: _env, status: Boolean }
+    Provides {
+      vendor: "datadog",
+      value: "numerator / denominator",
+      queries: {
+        numerator: "sum:http.requests{$env->env$ AND $status->status.not$}",
+        denominator: "sum:http.requests{$env->env$}"
+      }
+    }

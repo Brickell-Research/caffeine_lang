@@ -132,7 +132,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_single_block"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "api_availability",
@@ -155,7 +155,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_multiple_blocks"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "availability",
@@ -191,7 +191,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_multi_artifact"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO", "DependencyRelation"], items: [
             ast.BlueprintItem(
               name: "tracked_slo",
@@ -217,6 +217,7 @@ pub fn parse_blueprints_file_test() {
       blueprints_path("happy_path_with_extendable"),
       Ok(
         ast.BlueprintsFile(
+          type_aliases: [],
           extendables: [
             ast.Extendable(
               name: "_base",
@@ -254,6 +255,7 @@ pub fn parse_blueprints_file_test() {
       blueprints_path("happy_path_requires_extendable"),
       Ok(
         ast.BlueprintsFile(
+          type_aliases: [],
           extendables: [
             ast.Extendable(
               name: "_common",
@@ -288,7 +290,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_with_extends"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "api",
@@ -308,7 +310,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_multiple_extends"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "api",
@@ -328,7 +330,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_advanced_types"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "test",
@@ -377,7 +379,7 @@ pub fn parse_blueprints_file_test() {
     #(
       blueprints_path("happy_path_nested_collections"),
       Ok(
-        ast.BlueprintsFile(extendables: [], blocks: [
+        ast.BlueprintsFile(type_aliases: [], extendables: [], blocks: [
           ast.BlueprintsBlock(artifacts: ["SLO"], items: [
             ast.BlueprintItem(
               name: "test_nested",
@@ -386,9 +388,13 @@ pub fn parse_blueprints_file_test() {
                 // Order must match corpus file
                 ast.Field(
                   "nested_list",
-                  ast.TypeValue(nested_list_type(nested_list_type(
-                    accepted_types.PrimitiveType(primitive_types.String),
-                  ))),
+                  ast.TypeValue(
+                    nested_list_type(
+                      nested_list_type(accepted_types.PrimitiveType(
+                        primitive_types.String,
+                      )),
+                    ),
+                  ),
                 ),
                 ast.Field(
                   "nested_dict",
@@ -406,19 +412,23 @@ pub fn parse_blueprints_file_test() {
                   "dict_of_list",
                   ast.TypeValue(nested_dict_type(
                     primitive_types.String,
-                    nested_list_type(accepted_types.PrimitiveType(
-                      primitive_types.NumericType(numeric_types.Integer),
-                    )),
+                    nested_list_type(
+                      accepted_types.PrimitiveType(primitive_types.NumericType(
+                        numeric_types.Integer,
+                      )),
+                    ),
                   )),
                 ),
                 ast.Field(
                   "list_of_dict",
-                  ast.TypeValue(nested_list_type(accepted_types.CollectionType(
-                    collection_types.Dict(
-                      accepted_types.PrimitiveType(primitive_types.String),
-                      accepted_types.PrimitiveType(primitive_types.Boolean),
+                  ast.TypeValue(
+                    nested_list_type(
+                      accepted_types.CollectionType(collection_types.Dict(
+                        accepted_types.PrimitiveType(primitive_types.String),
+                        accepted_types.PrimitiveType(primitive_types.Boolean),
+                      )),
                     ),
-                  ))),
+                  ),
                 ),
               ]),
               provides: ast.Struct([
@@ -427,6 +437,41 @@ pub fn parse_blueprints_file_test() {
             ),
           ]),
         ]),
+      ),
+    ),
+    // type alias
+    #(
+      blueprints_path("happy_path_type_alias"),
+      Ok(
+        ast.BlueprintsFile(
+          type_aliases: [
+            ast.TypeAlias(
+              name: "_env",
+              type_: accepted_types.RefinementType(refinement_types.OneOf(
+                accepted_types.PrimitiveType(primitive_types.String),
+                set.from_list(["production", "staging", "development"]),
+              )),
+            ),
+          ],
+          extendables: [],
+          blocks: [
+            ast.BlueprintsBlock(artifacts: ["SLO"], items: [
+              ast.BlueprintItem(
+                name: "test",
+                extends: [],
+                requires: ast.Struct([
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(accepted_types.TypeAliasRef("_env")),
+                  ),
+                ]),
+                provides: ast.Struct([
+                  ast.Field("value", ast.LiteralValue(ast.LiteralString("x"))),
+                ]),
+              ),
+            ]),
+          ],
+        ),
       ),
     ),
   ]

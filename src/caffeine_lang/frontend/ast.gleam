@@ -5,9 +5,24 @@ import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 // FILE-LEVEL NODES
 // =============================================================================
 
-/// A blueprints file containing extendables and blueprint blocks.
+/// A blueprints file containing type aliases, extendables, and blueprint blocks.
+/// Type aliases must come before extendables, which must come before blocks.
 pub type BlueprintsFile {
-  BlueprintsFile(extendables: List(Extendable), blocks: List(BlueprintsBlock))
+  BlueprintsFile(
+    type_aliases: List(TypeAlias),
+    extendables: List(Extendable),
+    blocks: List(BlueprintsBlock),
+  )
+}
+
+// =============================================================================
+// TYPE ALIASES
+// =============================================================================
+
+/// A type alias that defines a named, reusable refined type.
+/// Example: _env (Type): String { x | x in { prod, staging, dev } }
+pub type TypeAlias {
+  TypeAlias(name: String, type_: AcceptedTypes)
 }
 
 /// An expects file containing extendables and expects blocks.

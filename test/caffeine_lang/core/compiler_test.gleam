@@ -21,6 +21,7 @@ fn read_corpus(file_name: String) -> String {
 // * ✅ happy path - none
 // * ✅ happy path - single
 // * ✅ happy path - multiple (3 SLOs across 2 teams)
+// * ✅ happy path - type alias (E2E test with type alias in Requires)
 pub fn compile_test() {
   let config =
     compilation_configuration.CompilationConfig(log_level: logger.Minimal)
@@ -48,6 +49,14 @@ pub fn compile_test() {
         corpus_path("happy_path_multiple_expectations"),
       ),
       Ok(read_corpus("happy_path_multiple_output.tf")),
+    ),
+    // happy path - type alias (E2E test with type alias in Requires)
+    #(
+      #(
+        corpus_path("happy_path_type_alias_blueprints.caffeine"),
+        corpus_path("happy_path_type_alias_expectations"),
+      ),
+      Ok(read_corpus("happy_path_type_alias_output.tf")),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {

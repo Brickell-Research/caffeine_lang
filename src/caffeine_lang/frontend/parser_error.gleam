@@ -10,6 +10,7 @@ pub type ParserError {
   InvalidRefinement(message: String, line: Int, column: Int)
   EmptyFile(line: Int, column: Int)
   QuotedFieldName(name: String, line: Int, column: Int)
+  InvalidTypeAliasName(name: String, message: String, line: Int, column: Int)
 }
 
 /// Converts a parser error to a human-readable string.
@@ -61,5 +62,14 @@ pub fn to_string(err: ParserError) -> String {
       <> "' instead of '\""
       <> name
       <> "\"'"
+    InvalidTypeAliasName(name, message, line, column) ->
+      "Invalid type alias name '"
+      <> name
+      <> "' at line "
+      <> int.to_string(line)
+      <> ", column "
+      <> int.to_string(column)
+      <> ": "
+      <> message
   }
 }

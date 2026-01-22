@@ -180,9 +180,7 @@ fn extract_misc_metadata(
 
 /// Resolves a value tuple to a string for use as a tag.
 /// Handles Defaulted types by applying their default values when not provided.
-fn resolve_value_for_tag(
-  value_tuple: helpers.ValueTuple,
-) -> Result(String, Nil) {
+fn resolve_value_for_tag(value_tuple: helpers.ValueTuple) -> Result(String, Nil) {
   // Identity function for string resolution (tags don't need template transformation)
   let identity = fn(s) { s }
   // For lists, join with comma (though tags typically don't use lists)

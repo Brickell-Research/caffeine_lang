@@ -30,16 +30,22 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile {
 // ==== Happy Paths ====
 // * ✅ valid - extendables exist, no duplicates
 // * ✅ valid - no extendables at all
-// ==== Error Cases ====
+// * ✅ valid - type aliases with references in Requires
+// ==== Error Cases - Extendables ====
 // * ❌ duplicate extendable names
 // * ❌ extends references non-existent extendable
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
+// ==== Error Cases - Type Aliases ====
+// * ❌ duplicate type alias names
+// * ❌ undefined type alias reference
+// * ❌ invalid Dict key type alias (non-String)
 pub fn validate_blueprints_file_test() {
   // Happy paths
   [
     #(parse_blueprints("blueprints_valid"), Ok(Nil)),
     #(parse_blueprints("blueprints_no_extendables"), Ok(Nil)),
+    #(parse_blueprints("blueprints_valid_type_alias"), Ok(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
     case validator.validate_blueprints_file(file) {
@@ -94,6 +100,46 @@ pub fn validate_blueprints_file_test() {
       Error(validator.DuplicateExtendsReference(
         name: "_base",
         referenced_by: "api",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Duplicate type alias
+  [
+    #(
+      parse_blueprints("blueprints_duplicate_type_alias"),
+      Error(validator.DuplicateTypeAlias(name: "_env")),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Undefined type alias reference
+  [
+    #(
+      parse_blueprints("blueprints_undefined_type_alias"),
+      Error(validator.UndefinedTypeAlias(
+        name: "_undefined",
+        referenced_by: "test",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Invalid Dict key type alias (non-String type)
+  [
+    #(
+      parse_blueprints("blueprints_invalid_dict_key_type_alias"),
+      Error(validator.InvalidDictKeyTypeAlias(
+        alias_name: "_count",
+        resolved_to: "Integer { x | x in ( 1..100 ) }",
+        referenced_by: "test",
       )),
     ),
   ]

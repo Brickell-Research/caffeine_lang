@@ -7,7 +7,7 @@ import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type ExpectItem,
   type ExpectsBlock, type ExpectsFile, type Extendable, type ExtendableKind,
-  type Field, type Literal, type Struct,
+  type Field, type Literal, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type Token}
@@ -17,6 +17,7 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
+import gleam/string
 
 /// Parser state tracking position in token stream.
 type ParserState {
@@ -33,9 +34,10 @@ pub fn parse_blueprints_file(
   )
   let state =
     ParserState(tokens: filter_whitespace_comments(tokens), line: 1, column: 1)
+  use #(type_aliases, state) <- result.try(parse_type_aliases(state))
   use #(extendables, state) <- result.try(parse_extendables(state))
   use #(blocks, _state) <- result.try(parse_blueprints_blocks(state))
-  Ok(ast.BlueprintsFile(extendables:, blocks:))
+  Ok(ast.BlueprintsFile(type_aliases:, extendables:, blocks:))
 }
 
 /// Parses an expects file from source text.
@@ -95,6 +97,85 @@ fn expect(
         state.line,
         state.column,
       ))
+  }
+}
+
+// =============================================================================
+// TYPE ALIASES
+// =============================================================================
+
+/// Parse zero or more type aliases at file start.
+/// Type alias syntax: _name (Type): <refinement_type>
+fn parse_type_aliases(
+  state: ParserState,
+) -> Result(#(List(TypeAlias), ParserState), ParserError) {
+  parse_type_aliases_loop(state, [])
+}
+
+fn parse_type_aliases_loop(
+  state: ParserState,
+  acc: List(TypeAlias),
+) -> Result(#(List(TypeAlias), ParserState), ParserError) {
+  case peek(state) {
+    token.Identifier(name) -> {
+      // Check if this is a type alias by peeking ahead for (Type)
+      case is_type_alias(state) {
+        True -> {
+          use #(type_alias, state) <- result.try(parse_type_alias(state, name))
+          parse_type_aliases_loop(state, [type_alias, ..acc])
+        }
+        False -> Ok(#(list.reverse(acc), state))
+      }
+    }
+    _ -> Ok(#(list.reverse(acc), state))
+  }
+}
+
+/// Check if current position is a type alias definition.
+/// Looks for pattern: Identifier ( Identifier("Type") )
+fn is_type_alias(state: ParserState) -> Bool {
+  case state.tokens {
+    [token.Identifier(_), token.SymbolLeftParen, token.Identifier("Type"), ..] ->
+      True
+    _ -> False
+  }
+}
+
+fn parse_type_alias(
+  state: ParserState,
+  name: String,
+) -> Result(#(TypeAlias, ParserState), ParserError) {
+  // Validate type alias name - must be more than just underscore
+  case name {
+    "_" ->
+      Error(parser_error.InvalidTypeAliasName(
+        name,
+        "type alias name must have at least one character after the underscore",
+        state.line,
+        state.column,
+      ))
+    _ -> {
+      let state = advance(state)
+      use state <- result.try(expect(state, token.SymbolLeftParen, "("))
+      // Expect "Type" identifier
+      case peek(state) {
+        token.Identifier("Type") -> {
+          let state = advance(state)
+          use state <- result.try(expect(state, token.SymbolRightParen, ")"))
+          use state <- result.try(expect(state, token.SymbolColon, ":"))
+          // Parse the refinement type - must be a refined primitive type
+          use #(type_, state) <- result.try(parse_type(state))
+          Ok(#(ast.TypeAlias(name:, type_:), state))
+        }
+        tok ->
+          Error(parser_error.UnexpectedToken(
+            "Type",
+            token.to_string(tok),
+            state.line,
+            state.column,
+          ))
+      }
+    }
   }
 }
 
@@ -312,7 +393,11 @@ fn parse_expects_blocks_loop(
 fn parse_expects_block(
   state: ParserState,
 ) -> Result(#(ExpectsBlock, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.KeywordExpectations, "Expectations"))
+  use state <- result.try(expect(
+    state,
+    token.KeywordExpectations,
+    "Expectations",
+  ))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(blueprint, state) <- result.try(parse_string_literal(state))
   use #(items, state) <- result.try(parse_expect_items(state))
@@ -621,6 +706,15 @@ fn parse_type(
     token.KeywordDict -> parse_dict_type(state)
     token.KeywordOptional -> parse_optional_type(state)
     token.KeywordDefaulted -> parse_defaulted_type(state)
+    // Type alias reference (must start with _, e.g., _env)
+    token.Identifier(name) ->
+      case string.starts_with(name, "_") {
+        True -> {
+          let state = advance(state)
+          Ok(#(accepted_types.TypeAliasRef(name), state))
+        }
+        False -> Error(parser_error.UnknownType(name, state.line, state.column))
+      }
     tok ->
       Error(parser_error.UnknownType(
         token.to_string(tok),
@@ -644,7 +738,7 @@ fn parse_type_with_refinement(
   }
 }
 
-/// Parses types valid inside collections: primitives or nested collections.
+/// Parses types valid inside collections: primitives, nested collections, or type alias refs.
 /// Does not allow modifiers (Optional/Defaulted) or refinements directly.
 fn parse_collection_inner_type(
   state: ParserState,
@@ -678,6 +772,15 @@ fn parse_collection_inner_type(
     }
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
+    // Type alias reference (must start with _, e.g., _env)
+    token.Identifier(name) ->
+      case string.starts_with(name, "_") {
+        True -> {
+          let state = advance(state)
+          Ok(#(accepted_types.TypeAliasRef(name), state))
+        }
+        False -> Error(parser_error.UnknownType(name, state.line, state.column))
+      }
     tok ->
       Error(parser_error.UnknownType(
         token.to_string(tok),
@@ -702,19 +805,41 @@ fn parse_dict_type(
 ) -> Result(#(AcceptedTypes, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
-  // Dict keys must be primitives (for JSON compatibility)
-  use #(key, state) <- result.try(parse_primitive_type(state))
+  // Dict keys must be String primitive or type alias ref (for JSON compatibility)
+  use #(key, state) <- result.try(parse_dict_key_type(state))
   use state <- result.try(expect(state, token.SymbolComma, ","))
-  // Dict values can be primitives or nested collections
+  // Dict values can be primitives, nested collections, or type alias refs
   use #(value, state) <- result.try(parse_collection_inner_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(
-    accepted_types.CollectionType(collection_types.Dict(
-      accepted_types.PrimitiveType(key),
-      value,
-    )),
-    state,
-  ))
+  Ok(#(accepted_types.CollectionType(collection_types.Dict(key, value)), state))
+}
+
+/// Parses types valid as Dict keys: String primitive or type alias ref.
+/// Only String is allowed as a primitive key (JSON keys must be strings).
+fn parse_dict_key_type(
+  state: ParserState,
+) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordString -> {
+      let state = advance(state)
+      Ok(#(accepted_types.PrimitiveType(primitive_types.String), state))
+    }
+    // Type alias reference (must start with _, e.g., _env) - must resolve to a String-based type
+    token.Identifier(name) ->
+      case string.starts_with(name, "_") {
+        True -> {
+          let state = advance(state)
+          Ok(#(accepted_types.TypeAliasRef(name), state))
+        }
+        False -> Error(parser_error.UnknownType(name, state.line, state.column))
+      }
+    tok ->
+      Error(parser_error.UnknownType(
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
 }
 
 fn parse_optional_type(
@@ -813,25 +938,6 @@ fn parse_defaulted_refinement_body(
     tok ->
       Error(parser_error.UnexpectedToken(
         "{ or (",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-fn parse_primitive_type(
-  state: ParserState,
-) -> Result(#(primitive_types.PrimitiveTypes, ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordString -> Ok(#(primitive_types.String, advance(state)))
-    token.KeywordInteger ->
-      Ok(#(primitive_types.NumericType(numeric_types.Integer), advance(state)))
-    token.KeywordFloat ->
-      Ok(#(primitive_types.NumericType(numeric_types.Float), advance(state)))
-    token.KeywordBoolean -> Ok(#(primitive_types.Boolean, advance(state)))
-    tok ->
-      Error(parser_error.UnknownType(
         token.to_string(tok),
         state.line,
         state.column,

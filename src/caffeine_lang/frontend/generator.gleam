@@ -1,9 +1,12 @@
 /// JSON generator for Caffeine frontend AST.
 /// Converts validated AST to JSON for the compiler pipeline.
-import caffeine_lang/common/accepted_types
+import caffeine_lang/common/accepted_types.{type AcceptedTypes}
+import caffeine_lang/common/collection_types
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Literal, type Struct,
+  type Extendable, type Field, type Literal, type Struct, type TypeAlias,
 }
 import gleam/dict.{type Dict}
 import gleam/json.{type Json}
@@ -13,6 +16,7 @@ import gleam/string
 /// Generates JSON for a blueprints file.
 @internal
 pub fn generate_blueprints_json(file: BlueprintsFile) -> Json {
+  let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
   let blueprints =
@@ -20,7 +24,12 @@ pub fn generate_blueprints_json(file: BlueprintsFile) -> Json {
     |> list.flat_map(fn(block) {
       block.items
       |> list.map(fn(item) {
-        generate_blueprint_item_json(item, block.artifacts, extendables)
+        generate_blueprint_item_json(
+          item,
+          block.artifacts,
+          extendables,
+          type_aliases,
+        )
       })
     })
 
@@ -53,18 +62,28 @@ fn build_extendable_map(
   |> dict.from_list
 }
 
+/// Builds a map of type alias name to its resolved type for quick lookup.
+fn build_type_alias_map(
+  type_aliases: List(TypeAlias),
+) -> Dict(String, AcceptedTypes) {
+  type_aliases
+  |> list.map(fn(ta) { #(ta.name, ta.type_) })
+  |> dict.from_list
+}
+
 /// Generates JSON for a single blueprint item.
 fn generate_blueprint_item_json(
   item: BlueprintItem,
   artifacts: List(String),
   extendables: Dict(String, Extendable),
+  type_aliases: Dict(String, AcceptedTypes),
 ) -> Json {
   // Merge extended fields into requires/provides
   let #(merged_requires, merged_provides) =
     merge_blueprint_extends(item, extendables)
 
-  // Convert requires (types) to params
-  let params = struct_to_params_json(merged_requires)
+  // Convert requires (types) to params, resolving type aliases
+  let params = struct_to_params_json(merged_requires, type_aliases)
 
   // Convert provides (literals) to inputs
   let inputs = struct_to_inputs_json(merged_provides)
@@ -168,17 +187,98 @@ fn dedupe_fields(fields: List(Field)) -> List(Field) {
 }
 
 /// Converts a struct with type values to a JSON params object.
-fn struct_to_params_json(s: Struct) -> Json {
+/// Resolves type alias references before converting to strings.
+fn struct_to_params_json(
+  s: Struct,
+  type_aliases: Dict(String, AcceptedTypes),
+) -> Json {
   s.fields
   |> list.sort(fn(a, b) { string.compare(a.name, b.name) })
   |> list.map(fn(field) {
     let type_string = case field.value {
-      ast.TypeValue(t) -> accepted_types.accepted_type_to_string(t)
+      ast.TypeValue(t) -> {
+        let resolved = resolve_type_aliases(t, type_aliases)
+        accepted_types.accepted_type_to_string(resolved)
+      }
       ast.LiteralValue(_) -> ""
     }
     #(field.name, json.string(type_string))
   })
   |> json.object
+}
+
+/// Resolves all TypeAliasRef instances in a type by looking them up in the alias map.
+/// Recursively resolves nested types (in collections, modifiers, refinements).
+fn resolve_type_aliases(
+  t: AcceptedTypes,
+  aliases: Dict(String, AcceptedTypes),
+) -> AcceptedTypes {
+  case t {
+    accepted_types.PrimitiveType(_) -> t
+    accepted_types.TypeAliasRef(name) ->
+      case dict.get(aliases, name) {
+        Ok(resolved) -> resolve_type_aliases(resolved, aliases)
+        Error(_) -> t
+      }
+    accepted_types.CollectionType(collection) ->
+      accepted_types.CollectionType(resolve_collection_aliases(
+        collection,
+        aliases,
+      ))
+    accepted_types.ModifierType(modifier) ->
+      accepted_types.ModifierType(resolve_modifier_aliases(modifier, aliases))
+    accepted_types.RefinementType(refinement) ->
+      accepted_types.RefinementType(resolve_refinement_aliases(
+        refinement,
+        aliases,
+      ))
+  }
+}
+
+/// Resolves type aliases in collection types.
+fn resolve_collection_aliases(
+  collection: collection_types.CollectionTypes(AcceptedTypes),
+  aliases: Dict(String, AcceptedTypes),
+) -> collection_types.CollectionTypes(AcceptedTypes) {
+  case collection {
+    collection_types.List(inner) ->
+      collection_types.List(resolve_type_aliases(inner, aliases))
+    collection_types.Dict(key, value) ->
+      collection_types.Dict(
+        resolve_type_aliases(key, aliases),
+        resolve_type_aliases(value, aliases),
+      )
+  }
+}
+
+/// Resolves type aliases in modifier types.
+fn resolve_modifier_aliases(
+  modifier: modifier_types.ModifierTypes(AcceptedTypes),
+  aliases: Dict(String, AcceptedTypes),
+) -> modifier_types.ModifierTypes(AcceptedTypes) {
+  case modifier {
+    modifier_types.Optional(inner) ->
+      modifier_types.Optional(resolve_type_aliases(inner, aliases))
+    modifier_types.Defaulted(inner, default) ->
+      modifier_types.Defaulted(resolve_type_aliases(inner, aliases), default)
+  }
+}
+
+/// Resolves type aliases in refinement types.
+fn resolve_refinement_aliases(
+  refinement: refinement_types.RefinementTypes(AcceptedTypes),
+  aliases: Dict(String, AcceptedTypes),
+) -> refinement_types.RefinementTypes(AcceptedTypes) {
+  case refinement {
+    refinement_types.OneOf(inner, values) ->
+      refinement_types.OneOf(resolve_type_aliases(inner, aliases), values)
+    refinement_types.InclusiveRange(inner, min, max) ->
+      refinement_types.InclusiveRange(
+        resolve_type_aliases(inner, aliases),
+        min,
+        max,
+      )
+  }
 }
 
 /// Converts a struct with literal values to a JSON inputs object.
