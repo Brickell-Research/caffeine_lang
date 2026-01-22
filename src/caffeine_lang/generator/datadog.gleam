@@ -201,19 +201,19 @@ pub fn ir_to_terraform_resource(
   ))
 }
 
-/// Build dependency relation tags from the "relation" value.
-/// Extracts the relation dict (maps relation type to list of targets) and generates
+/// Build dependency relation tags from the "relations" value.
+/// Extracts the relations dict (maps relation type to list of targets) and generates
 /// tags like "soft_dependency:target1,target2", "hard_dependency:target3,target4".
 fn build_dependency_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
-  let relation_dict =
+  let relations_dict =
     helpers.extract_value(
       values,
-      "relation",
+      "relations",
       decode.dict(decode.string, decode.list(decode.string)),
     )
     |> result.unwrap(dict.new())
 
-  relation_dict
+  relations_dict
   |> dict.to_list
   |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
   |> list.map(fn(pair) {

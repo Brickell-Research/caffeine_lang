@@ -482,7 +482,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
             helpers.ValueTuple(
-              "relation",
+              "relations",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.CollectionType(
@@ -566,7 +566,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
             helpers.ValueTuple(
-              "relation",
+              "relations",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.CollectionType(
@@ -643,7 +643,7 @@ pub fn generate_terraform_test() {
               ]),
             ),
             helpers.ValueTuple(
-              "relation",
+              "relations",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.CollectionType(
