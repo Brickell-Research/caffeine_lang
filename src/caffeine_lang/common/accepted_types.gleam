@@ -6,6 +6,7 @@ import caffeine_lang/common/refinement_types.{type RefinementTypes}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
+import gleam/set
 import gleam/string
 
 /// AcceptedTypes is a union of all the types that can be used as a "filter" over the set
@@ -248,7 +249,7 @@ fn parse_primitive_or_nested_collection(
   })
 }
 
-/// Parser for primitives, collections, or type alias refs - used for modifier inner types.
+// Parser for primitives, collections, refinements, or type alias refs - used for modifier inner types.
 fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
@@ -258,6 +259,14 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
       parse_primitive_or_nested_collection,
     )
     |> result.map(CollectionType)
+  })
+  |> result.lazy_or(fn() {
+    refinement_types.parse_refinement_type(
+      raw,
+      parse_primitive_or_defaulted,
+      validate_string_literal_or_defaulted,
+    )
+    |> result.map(RefinementType)
   })
   |> result.lazy_or(fn() {
     // Type alias reference
@@ -298,8 +307,8 @@ fn parse_refinement_compatible_primitive(
   }
 }
 
-/// Validates a string literal value is valid for a type - only primitives are supported.
-/// Used for default values in modifiers and set values in refinement types.
+// Validates a string literal value is valid for a type.
+// Used for default values in modifiers and set values in refinement types.
 fn validate_string_literal(
   typ: AcceptedTypes,
   value: String,
@@ -307,14 +316,45 @@ fn validate_string_literal(
   case typ {
     PrimitiveType(primitive) ->
       primitive_types.validate_default_value(primitive, value)
+    RefinementType(refinement) ->
+      validate_refinement_default(refinement, value)
     CollectionType(_) -> Error(Nil)
     ModifierType(_) -> Error(Nil)
-    RefinementType(_) -> Error(Nil)
     TypeAliasRef(_) -> Error(Nil)
   }
 }
 
-/// Validates a string literal for refinement types - supports primitives and Defaulted.
+// Validates a default value is valid for a refinement type.
+fn validate_refinement_default(
+  refinement: refinement_types.RefinementTypes(AcceptedTypes),
+  value: String,
+) -> Result(Nil, Nil) {
+  case refinement {
+    refinement_types.OneOf(_inner, allowed_values) ->
+      case set.contains(allowed_values, value) {
+        True -> Ok(Nil)
+        False -> Error(Nil)
+      }
+    refinement_types.InclusiveRange(inner, low, high) ->
+      case inner {
+        PrimitiveType(primitive) -> {
+          use _ <- result.try(primitive_types.validate_default_value(
+            primitive,
+            value,
+          ))
+          case primitive {
+            primitive_types.NumericType(numeric) ->
+              numeric_types.validate_in_range(numeric, value, low, high)
+              |> result.replace_error(Nil)
+            _ -> Error(Nil)
+          }
+        }
+        _ -> Error(Nil)
+      }
+  }
+}
+
+// Validates a string literal for refinement types - supports primitives and Defaulted.
 fn validate_string_literal_or_defaulted(
   typ: AcceptedTypes,
   value: String,

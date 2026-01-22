@@ -53,7 +53,8 @@ pub fn accepted_type_to_string_test() {
 // * ✅ Composite: Optional(List(String)) - modifier wrapping collection
 // * ✅ Nested collections: List(List(String)), Dict(String, List(String))
 // * ✅ Invalid: nested modifiers not allowed
-// * ✅ Invalid: Defaulted only allows primitives
+// * ✅ Invalid: Defaulted only allows primitives or refinements
+// * ✅ Defaulted with refinement inner type (resolved type alias)
 // * ✅ Refinement with Defaulted inner: parses as RefinementType, not ModifierType
 pub fn parse_accepted_type_test() {
   [
@@ -103,8 +104,26 @@ pub fn parse_accepted_type_test() {
     // Invalid - nested modifiers not allowed
     #("Optional(Optional(String))", Error(Nil)),
     #("Defaulted(Optional(String), default)", Error(Nil)),
-    // Invalid - Defaulted only allows primitives
+    // Invalid - Defaulted only allows primitives, refinements, or collections
     #("Defaulted(List(String), default)", Error(Nil)),
+    // Defaulted with refinement inner type (what happens after type alias resolution)
+    #(
+      "Defaulted(String { x | x in { demo, development, production } }, production)",
+      Ok(
+        accepted_types.ModifierType(modifier_types.Defaulted(
+          accepted_types.RefinementType(refinement_types.OneOf(
+            accepted_types.PrimitiveType(primitive_types.String),
+            set.from_list(["demo", "development", "production"]),
+          )),
+          "production",
+        )),
+      ),
+    ),
+    // Invalid - Defaulted with refinement but default not in set
+    #(
+      "Defaulted(String { x | x in { demo, production } }, invalid)",
+      Error(Nil),
+    ),
     // Refinement type with Defaulted inner type - should parse as RefinementType, not ModifierType
     #(
       "Defaulted(String, production) { x | x in { production } }",
