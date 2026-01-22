@@ -11,7 +11,13 @@ import gleam/result
 
 /// A reusable artifact template with named parameters.
 pub type Artifact {
-  Artifact(name: String, params: dict.Dict(String, AcceptedTypes))
+  Artifact(type_: ArtifactType, params: dict.Dict(String, AcceptedTypes))
+}
+
+/// Types of supported artifacts
+pub type ArtifactType {
+  SLO
+  DependencyRelations
 }
 
 /// Parses the embedded standard library artifacts.
@@ -30,6 +36,25 @@ pub fn parse_from_json_file(
   internal_parse_from_json_string(json_string)
 }
 
+/// Converts an ArtifactType to its corresponding string representation.
+@internal
+pub fn artifact_type_to_string(type_: ArtifactType) -> String {
+  case type_ {
+    SLO -> "SLO"
+    DependencyRelations -> "DependencyRelations"
+  }
+}
+
+/// Decoder for ArtifactType from a string.
+fn artifact_type_decoder() -> decode.Decoder(ArtifactType) {
+  use type_string <- decode.then(decode.string)
+  case type_string {
+    "SLO" -> decode.success(SLO)
+    "DependencyRelations" -> decode.success(DependencyRelations)
+    _ -> decode.failure(SLO, "SLO or DependencyRelations")
+  }
+}
+
 /// The actual, common parsing logic.
 fn internal_parse_from_json_string(
   content: String,
@@ -41,7 +66,7 @@ fn internal_parse_from_json_string(
 
   use _ <- result.try(validations.validate_relevant_uniqueness(
     artifacts,
-    fn(a) { a.name },
+    fn(a) { a.type_ |> artifact_type_to_string },
     "artifact names",
   ))
 
@@ -52,13 +77,13 @@ fn parse_from_json_string(
   json_string: String,
 ) -> Result(List(Artifact), json.DecodeError) {
   let artifact_decoder = {
-    use name <- decode.field("name", decoders.non_empty_string_decoder())
+    use type_ <- decode.field("type_", artifact_type_decoder())
     use params <- decode.field(
       "params",
       decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
 
-    decode.success(Artifact(name:, params:))
+    decode.success(Artifact(type_:, params:))
   }
   let artifacts_decoded = {
     use artifacts <- decode.field("artifacts", decode.list(artifact_decoder))

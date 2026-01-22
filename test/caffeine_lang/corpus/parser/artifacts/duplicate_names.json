@@ -1,11 +1,11 @@
 {
   "artifacts": [
     {
-      "name": "SLO",
+      "type_": "SLO",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     },
     {
-      "name": "SLO",
+      "type_": "SLO",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     }
   ]

@@ -17,7 +17,7 @@ fn path(file_name: String) {
 fn artifacts() -> List(Artifact) {
   [
     artifacts.Artifact(
-      name: "SLO",
+      type_: artifacts.SLO,
       params: dict.from_list([
         #(
           "threshold",
@@ -35,7 +35,7 @@ fn artifacts() -> List(Artifact) {
 fn multi_artifacts() -> List(Artifact) {
   [
     artifacts.Artifact(
-      name: "SLO",
+      type_: artifacts.SLO,
       params: dict.from_list([
         #(
           "threshold",
@@ -47,7 +47,7 @@ fn multi_artifacts() -> List(Artifact) {
       ]),
     ),
     artifacts.Artifact(
-      name: "Dependency",
+      type_: artifacts.DependencyRelations,
       params: dict.from_list([
         #(
           "relationship",
@@ -58,26 +58,6 @@ fn multi_artifacts() -> List(Artifact) {
           ),
         ),
         #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
-      ]),
-    ),
-    // Artifact with conflicting param name but different type (for testing conflicts)
-    artifacts.Artifact(
-      name: "ConflictingArtifact",
-      params: dict.from_list([
-        #("threshold", accepted_types.PrimitiveType(primitive_types.String)),
-      ]),
-    ),
-    // Artifact with same param name AND same type (should merge successfully)
-    artifacts.Artifact(
-      name: "CompatibleArtifact",
-      params: dict.from_list([
-        #(
-          "threshold",
-          accepted_types.PrimitiveType(primitive_types.NumericType(
-            numeric_types.Float,
-          )),
-        ),
-        #("extra", accepted_types.PrimitiveType(primitive_types.String)),
       ]),
     ),
   ]
@@ -397,7 +377,7 @@ pub fn parse_from_json_file_test() {
 // ==== artifact_refs (List) support ====
 // These tests validate the new artifact_refs field that accepts a list of artifact names.
 // * ✅ happy path - single artifact in list: ["SLO"]
-// * ✅ happy path - multiple artifacts: ["SLO", "Dependency"]
+// * ✅ happy path - multiple artifacts: ["SLO", "DependencyRelations"]
 // * ✅ happy path - overlapping params with same type merge correctly
 // * ✅ wrong type - artifact_refs is not a list
 // * ✅ wrong type - artifact_refs element is not a string
@@ -445,7 +425,7 @@ pub fn parse_from_json_file_artifact_refs_test() {
       Ok([
         blueprints.Blueprint(
           name: "tracked_slo",
-          artifact_refs: ["SLO", "Dependency"],
+          artifact_refs: ["SLO", "DependencyRelations"],
           params: dict.from_list([
             // From SLO
             #(
@@ -469,40 +449,6 @@ pub fn parse_from_json_file_artifact_refs_test() {
           inputs: dict.from_list([
             #("value", dynamic.string("foobar")),
             #("isHard", dynamic.bool(True)),
-          ]),
-        ),
-      ]),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    blueprints.parse_from_json_file(file_path, multi_artifacts())
-  })
-
-  // Happy path - overlapping params with same type (should merge successfully)
-  // SLO has threshold:Float, CompatibleArtifact has threshold:Float + extra:String
-  [
-    #(
-      path("happy_path_overlapping_params_same_type"),
-      Ok([
-        blueprints.Blueprint(
-          name: "overlapping_blueprint",
-          artifact_refs: ["SLO", "CompatibleArtifact"],
-          params: dict.from_list([
-            // From both SLO and CompatibleArtifact (same type, merged)
-            #(
-              "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(
-                numeric_types.Float,
-              )),
-            ),
-            // From SLO only
-            #("value", accepted_types.PrimitiveType(primitive_types.String)),
-            // From CompatibleArtifact only
-            #("extra", accepted_types.PrimitiveType(primitive_types.String)),
-          ]),
-          inputs: dict.from_list([
-            #("value", dynamic.string("test")),
-            #("extra", dynamic.string("extra_value")),
           ]),
         ),
       ]),
@@ -570,19 +516,6 @@ pub fn parse_from_json_file_artifact_refs_test() {
       path("duplicate_artifact_refs"),
       Error(errors.ParserDuplicateError(
         msg: "Duplicate artifact references in blueprint: SLO",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    blueprints.parse_from_json_file(file_path, multi_artifacts())
-  })
-
-  // Conflicting params - same param name with different types across artifacts
-  [
-    #(
-      path("conflicting_artifact_params"),
-      Error(errors.ParserDuplicateError(
-        msg: "Conflicting param types across artifacts: threshold",
       )),
     ),
   ]

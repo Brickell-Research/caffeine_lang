@@ -42,7 +42,7 @@ pub fn parse_from_json_file_test() {
       path("happy_path_single"),
       Ok([
         artifacts.Artifact(
-          name: "SLO",
+          type_: artifacts.SLO,
           params: dict.from_list([
             #(
               "threshold",
@@ -73,7 +73,7 @@ pub fn parse_from_json_file_test() {
       path("happy_path_multiple"),
       Ok([
         artifacts.Artifact(
-          name: "SLO",
+          type_: artifacts.SLO,
           params: dict.from_list([
             #(
               "threshold",
@@ -98,7 +98,7 @@ pub fn parse_from_json_file_test() {
           ]),
         ),
         artifacts.Artifact(
-          name: "Dependency",
+          type_: artifacts.DependencyRelations,
           params: dict.from_list([
             #(
               "relationship",
@@ -116,7 +116,7 @@ pub fn parse_from_json_file_test() {
     // empty params
     #(
       path("happy_path_empty_params"),
-      Ok([artifacts.Artifact(name: "MinimalArtifact", params: dict.new())]),
+      Ok([artifacts.Artifact(type_: artifacts.SLO, params: dict.new())]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(artifacts.parse_from_json_file)
@@ -132,7 +132,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("missing_name"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.name)",
+        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.type_)",
       )),
     ),
     #(
@@ -144,7 +144,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("missing_multiple"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.name), expected (Field) received (Nothing) for (artifacts.0.params)",
+        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.type_), expected (Field) received (Nothing) for (artifacts.0.params)",
       )),
     ),
   ]
@@ -170,7 +170,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("wrong_type_name"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name)",
+        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_)",
       )),
     ),
     #(
@@ -200,7 +200,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("wrong_type_multiple"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (artifacts.0.name), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
       )),
     ),
   ]
@@ -242,7 +242,7 @@ pub fn parse_from_json_file_test() {
     #(
       path("empty_name"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (String) for (artifacts.0.name)",
+        msg: "Incorrect types: expected (SLO or DependencyRelations) received (String) for (artifacts.0.type_)",
       )),
     ),
   ]

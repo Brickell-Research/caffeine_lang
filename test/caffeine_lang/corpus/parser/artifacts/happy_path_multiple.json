@@ -1,11 +1,11 @@
 {
   "artifacts": [
     {
-      "name": "SLO",
+      "type_": "SLO",
       "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
     },
     {
-      "name": "Dependency",
+      "type_": "DependencyRelations",
       "params": { "relationship": "List(String)", "isHard": "Boolean" }
     }
   ]

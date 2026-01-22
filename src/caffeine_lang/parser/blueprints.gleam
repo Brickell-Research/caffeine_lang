@@ -83,7 +83,10 @@ pub fn validate_blueprints(
     |> list.map(fn(pair) {
       let #(blueprint, artifact_list) = pair
       let merged_params = merge_artifact_params(artifact_list)
-      #(blueprint, artifacts.Artifact(name: "merged", params: merged_params))
+      #(
+        blueprint,
+        artifacts.Artifact(type_: artifacts.SLO, params: merged_params),
+      )
     })
 
   // Validate exactly the right number of inputs and each input is the
@@ -148,7 +151,7 @@ fn map_blueprints_to_artifacts(
 ) -> List(#(Blueprint, List(Artifact))) {
   let artifact_map =
     artifacts
-    |> list.map(fn(a) { #(a.name, a) })
+    |> list.map(fn(a) { #(artifacts.artifact_type_to_string(a.type_), a) })
     |> dict.from_list
 
   blueprints
@@ -266,7 +269,7 @@ pub fn blueprints_from_json(
     use artifact_refs <- decode.field(
       "artifact_refs",
       decoders.non_empty_named_reference_list_decoder(artifacts, fn(a) {
-        a.name
+        artifacts.artifact_type_to_string(a.type_)
       }),
     )
     use params <- decode.field(

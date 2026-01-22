@@ -1,7 +1,7 @@
 {
   "artifacts": [
     {
-      "name": 10,
+      "type_": 10,
       "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "MadeUp1", "value": "String" }
     }
   ]
