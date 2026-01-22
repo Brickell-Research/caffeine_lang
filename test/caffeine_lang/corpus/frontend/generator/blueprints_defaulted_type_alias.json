@@ -1,0 +1,15 @@
+{
+  "blueprints": [
+    {
+      "name": "test",
+      "artifact_refs": ["SLO"],
+      "params": {
+        "environment": "Defaulted(String { x | x in { development, production, staging } }, production)",
+        "threshold": "Integer"
+      },
+      "inputs": {
+        "value": "x"
+      }
+    }
+  ]
+}

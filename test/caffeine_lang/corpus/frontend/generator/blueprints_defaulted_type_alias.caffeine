@@ -1,0 +1,12 @@
+_env (Type): String { x | x in { "production", "staging", "development" } }
+
+_env_requires (Requires): {
+  environment: Defaulted(_env, "production")
+}
+
+Blueprints for "SLO"
+  * "test" extends [_env_requires]:
+    Requires {
+      threshold: Integer
+    }
+    Provides { value: "x" }

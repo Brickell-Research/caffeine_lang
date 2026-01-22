@@ -19,7 +19,7 @@ import test_helpers
 // * ✅ Defaulted with invalid default value
 // * ✅ Modifier with refinement suffix (should fail, let refinement parser handle)
 pub fn parse_modifier_type_test() {
-  // Helper to parse inner types (handles primitives and nested collections)
+  // Helper to parse inner types (handles primitives, nested collections, and refinements)
   let parse_inner = fn(raw: String) {
     case raw {
       "String" -> Ok("String")
@@ -30,6 +30,12 @@ pub fn parse_modifier_type_test() {
       "Dict(String, String)" -> Ok("Dict(String, String)")
       "Dict(String, List(Integer))" -> Ok("Dict(String, List(Integer))")
       "List(List(String))" -> Ok("List(List(String))")
+      // Refinement types (inner type contains braces)
+      "String { x | x in { demo, development, pre-production, production } }" ->
+        Ok("String { x | x in { demo, development, pre-production, production } }")
+      "Integer { x | x in { 1, 2, 3 } }" -> Ok("Integer { x | x in { 1, 2, 3 } }")
+      "String { x | x in { a, b, c } }" ->
+        Ok("String { x | x in { a, b, c } }")
       _ -> Error(Nil)
     }
   }
@@ -40,7 +46,7 @@ pub fn parse_modifier_type_test() {
       "String" -> Ok(Nil)
       "Integer" ->
         case default_val {
-          "10" | "42" | "0" -> Ok(Nil)
+          "10" | "42" | "0" | "1" -> Ok(Nil)
           _ -> Error(Nil)
         }
       "Boolean" ->
@@ -59,6 +65,22 @@ pub fn parse_modifier_type_test() {
       | "List(List(String))" ->
         case default_val {
           "{}" | "[]" -> Ok(Nil)
+          _ -> Error(Nil)
+        }
+      // Refinement types - accept values that would be in the set
+      "String { x | x in { demo, development, pre-production, production } }" ->
+        case default_val {
+          "demo" | "development" | "pre-production" | "production" -> Ok(Nil)
+          _ -> Error(Nil)
+        }
+      "Integer { x | x in { 1, 2, 3 } }" ->
+        case default_val {
+          "1" | "2" | "3" -> Ok(Nil)
+          _ -> Error(Nil)
+        }
+      "String { x | x in { a, b, c } }" ->
+        case default_val {
+          "a" | "b" | "c" -> Ok(Nil)
           _ -> Error(Nil)
         }
       _ -> Error(Nil)
@@ -103,6 +125,23 @@ pub fn parse_modifier_type_test() {
     #(
       "Defaulted(Dict(String, List(Integer)), {})",
       Ok(modifier_types.Defaulted("Dict(String, List(Integer))", "{}")),
+    ),
+    // Defaulted with refinement types - tests brace tracking in top-level comma split
+    // This was the bug: commas inside { } were incorrectly treated as top-level separators
+    #(
+      "Defaulted(String { x | x in { demo, development, pre-production, production } }, production)",
+      Ok(modifier_types.Defaulted(
+        "String { x | x in { demo, development, pre-production, production } }",
+        "production",
+      )),
+    ),
+    #(
+      "Defaulted(Integer { x | x in { 1, 2, 3 } }, 1)",
+      Ok(modifier_types.Defaulted("Integer { x | x in { 1, 2, 3 } }", "1")),
+    ),
+    #(
+      "Defaulted(String { x | x in { a, b, c } }, a)",
+      Ok(modifier_types.Defaulted("String { x | x in { a, b, c } }", "a")),
     ),
     // Invalid
     #("Unknown", Error(Nil)),

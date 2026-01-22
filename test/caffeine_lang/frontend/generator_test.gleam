@@ -49,6 +49,7 @@ fn strip_whitespace(s: String) -> String {
 // * ✅ advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ template variable transformation (${} -> $$$$)
 // * ✅ type alias resolution (inlines type aliases in output)
+// * ✅ Defaulted with type alias (Defaulted containing refinement type from alias)
 pub fn generate_blueprints_json_test() {
   [
     #("blueprints_simple", strip_whitespace(expected_json("blueprints_simple"))),
@@ -75,6 +76,10 @@ pub fn generate_blueprints_json_test() {
     #(
       "blueprints_type_alias",
       strip_whitespace(expected_json("blueprints_type_alias")),
+    ),
+    #(
+      "blueprints_defaulted_type_alias",
+      strip_whitespace(expected_json("blueprints_defaulted_type_alias")),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(name) {
