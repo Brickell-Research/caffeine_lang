@@ -44,8 +44,13 @@ pub fn resolve_intermediate_representations(
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   irs
   |> list.try_map(fn(ir) {
-    use ir_with_vendor <- result.try(resolve_vendor(ir))
-    resolve_queries(ir_with_vendor)
+    case ir.artifact_refs |> list.contains("SLO") {
+      True -> {
+        use ir_with_vendor <- result.try(resolve_vendor(ir))
+        resolve_queries(ir_with_vendor)
+      }
+      False -> Ok(ir)
+    }
   })
 }
 
