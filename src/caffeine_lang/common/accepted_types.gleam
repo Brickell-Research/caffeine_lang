@@ -214,8 +214,9 @@ pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
   }
 }
 
-/// Parser for primitives, nested collections, or type alias refs - used for collection inner types.
+/// Parser for primitives, nested collections, refinements, or type alias refs - used for collection inner types.
 /// Supports recursive nesting: Dict(String, List(Integer)), List(List(String)), etc.
+/// Also supports refinement types: Dict(String { x | x in { a, b } }, Integer)
 fn parse_primitive_or_nested_collection(
   raw: String,
 ) -> Result(AcceptedTypes, Nil) {
@@ -228,6 +229,15 @@ fn parse_primitive_or_nested_collection(
       parse_primitive_or_nested_collection,
     )
     |> result.map(CollectionType)
+  })
+  |> result.lazy_or(fn() {
+    // Refinement types (e.g., String { x | x in { a, b } })
+    refinement_types.parse_refinement_type(
+      raw,
+      parse_primitive_or_defaulted,
+      validate_string_literal_or_defaulted,
+    )
+    |> result.map(RefinementType)
   })
   |> result.lazy_or(fn() {
     // Type alias reference

@@ -16,7 +16,7 @@ pub const standard_library = "
     },
     {
       \"name\": \"DependencyRelation\",
-      \"params\": { \"relation\": \"String { x | x in { soft, hard } }\", \"dependent\": \"String\" }
+      \"params\": { \"relation\": \"Dict(String { x | x in { soft, hard } }, String)\", \"dependent\": \"String\" }
     }
   ]
 }
