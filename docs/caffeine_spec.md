@@ -12,6 +12,7 @@
 | **Blueprint** | A partially-configured artifact. Blueprints fix some values and declare which parameters users must provide. Defined in `blueprints.caffeine`. Example: an `api_availability` blueprint might fix the query structure but require users to specify `env` and `threshold`. |
 | **Expectation** | A fully-configured blueprint with all required values provided. Defined in `expectations/**/*.caffeine`. Example: `checkout_availability` extends `api_availability` and provides `env: "production"`, `threshold: 99.95`. |
 | **Extendable** | A reusable block of values (prefixed with `_`) that can be inherited by blueprints or expectations to reduce repetition. |
+| **Type Alias** | A named, reusable refined type (prefixed with `_`) that can be referenced in type positions. Inlined at compile time. |
 
 ---
 
@@ -68,9 +69,11 @@ This specification uses the following conventions:
 # A file contains EITHER blueprints OR expectations, never both
 <file>              ::= <blueprints_file> | <expects_file>
 
-<blueprints_file>   ::= { <blueprint_extendable> } <blueprints_block> { <blueprints_block> }
+<blueprints_file>   ::= { <type_alias> } { <blueprint_extendable> } <blueprints_block> { <blueprints_block> }
 
 <expects_file>      ::= { <expects_extendable> } <expects_block> { <expects_block> }
+
+<type_alias>           ::= "_" IDENTIFIER "(Type)" ":" <refinement_type>
 
 <blueprint_extendable> ::= "_" IDENTIFIER ( "(Requires)" | "(Provides)" ) ":" <struct>
 
@@ -110,21 +113,29 @@ This specification uses the following conventions:
 <list>              ::= "[" [ <literal> { "," <literal> } ] "]"
 
 <type>              ::= <primitive_type>
+                      | <type_alias_ref>
                       | <collection_type>
                       | <modifier_type>
                       | <refinement_type>
 
 <primitive_type>    ::= "String" | "Integer" | "Float" | "Boolean"
 
-# Collections: inner types must be primitives only
-<collection_type>   ::= "List" "(" <primitive_type> ")"
-                      | "Dict" "(" <primitive_type> "," <primitive_type> ")"
+# Type alias reference: refers to a previously defined type alias
+<type_alias_ref>    ::= "_" IDENTIFIER
 
-# Modifiers: inner types can be primitives or collections
+# Collections: inner types can be primitives, type aliases, or nested collections
+<collection_type>   ::= "List" "(" <collection_inner> ")"
+                      | "Dict" "(" <dict_key_type> "," <collection_inner> ")"
+
+<dict_key_type>     ::= <primitive_type> | <type_alias_ref>
+
+<collection_inner>  ::= <primitive_type> | <type_alias_ref> | <collection_type>
+
+# Modifiers: inner types can be primitives, type aliases, or collections
 <modifier_type>     ::= "Optional" "(" <modifier_inner> ")"
                       | "Defaulted" "(" <modifier_inner> "," <default_value> ")"
 
-<modifier_inner>    ::= <primitive_type> | <collection_type>
+<modifier_inner>    ::= <primitive_type> | <type_alias_ref> | <collection_type>
 
 <refinement_type>   ::= <oneof_type> | <range_type>
 
@@ -199,6 +210,67 @@ See [Errors](caffeine_errors.md) for error categories and message format.
 
 ---
 
+## Type Aliases
+
+Reusable refined types that can be referenced in type positions.
+
+**Rules:**
+- Must start with `_` prefix
+- Must specify kind: `(Type)`
+- Must be at top of file (before extendables and blocks)
+- File-scoped only (cannot reference across files)
+- Can only alias refined primitive types (no chaining/inheritance)
+- Inlined at compile time (do not appear in JSON output)
+
+**Definition:**
+```caffeine
+_env (Type): String { x | x in { prod, staging, dev } }
+_vendor (Type): String { x | x in { datadog, prometheus } }
+_threshold (Type): Float { x | x in ( 0.0..100.0 ) }
+_window (Type): Integer { x | x in { 7, 30, 90 } }
+_relation (Type): String { x | x in { hard, soft } }
+```
+
+**Usage in Types:**
+```caffeine
+# Direct usage
+env: _env
+
+# With modifiers
+env: Defaulted(_env, "prod")
+env: Optional(_env)
+
+# In collections
+tags: List(_env)
+config: Dict(_env, String)
+dependencies: Dict(_relation, List(String))
+```
+
+**Usage in Extendables:**
+```caffeine
+_env (Type): String { x | x in { prod, staging, dev } }
+_common (Requires): { env: Defaulted(_env, "prod"), vendor: _vendor }
+```
+
+**Compilation:**
+Type aliases are fully inlined during compilation. For example:
+
+```caffeine
+_env (Type): String { x | x in { prod, staging, dev } }
+Requires { env: Defaulted(_env, "prod") }
+```
+
+Compiles to JSON as:
+```json
+{
+  "params": {
+    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)"
+  }
+}
+```
+
+---
+
 ## Extendables
 
 Reusable value blocks that can be extended by blueprints or expectations.
@@ -206,8 +278,9 @@ Reusable value blocks that can be extended by blueprints or expectations.
 **Rules:**
 - Must start with `_` prefix
 - Must specify kind: `(Requires)` for type definitions, `(Provides)` for value definitions
-- Must be at top of file (before any `Blueprints for` or `Expects for`)
+- Must appear after type aliases but before any `Blueprints for` or `Expects for`
 - File-scoped only (cannot reference across files)
+- Can reference type aliases defined in the same file
 
 **In Blueprints:**
 ```caffeine
@@ -340,17 +413,22 @@ ${environment->env}    # variable 'environment', produces attr 'env'
 ### blueprints.caffeine
 
 ```caffeine
+# Type Aliases
+_env (Type): String { x | x in { prod, staging, dev } }
+_threshold (Type): Float { x | x in ( 0.0..100.0 ) }
+_window (Type): Integer { x | x in { 7, 30, 90 } }
+_relation (Type): String { x | x in { hard, soft } }
+
 # Extendables
 _base_slo (Provides): { vendor: "datadog" }
+_common (Requires): { env: Defaulted(_env, "prod"), window_in_days: Defaulted(_window, 30) }
 
 Blueprints for "SLO"
   ## API Availability
-  * "api_availability" extends [_base_slo]:
+  * "api_availability" extends [_base_slo, _common]:
     Requires {
-      env: String,
       status: Boolean,
-      threshold: Float { x | x in ( 0.0..100.0 ) },
-      window_in_days: Integer
+      threshold: _threshold
     }
     Provides {
       value: "numerator / denominator",
@@ -361,19 +439,32 @@ Blueprints for "SLO"
     }
 
   ## Latency
-  * "latency":
+  * "latency" extends [_common]:
     Requires {
-      env: String,
       service: String,
       threshold_ms: Integer,
-      threshold: Float { x | x in ( 0.0..100.0 ) },
-      window_in_days: Integer
+      threshold: _threshold
     }
     Provides {
       vendor: "datadog",
       value: "time_slice(latency < ${threshold_ms} per 5m)",
       queries: {
         latency: "avg:http.latency{${env->env}, ${service->service}}"
+      }
+    }
+
+  ## Service with Dependencies
+  * "service_with_deps" extends [_base_slo, _common]:
+    Requires {
+      status: Boolean,
+      threshold: _threshold,
+      dependencies: Dict(_relation, List(String))
+    }
+    Provides {
+      value: "numerator / denominator",
+      queries: {
+        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
+        denominator: "sum:http.requests{${env->env}}"
       }
     }
 
@@ -464,15 +555,17 @@ Expects for "tracked_slo"
 
 ### Single-Artifact Blueprint
 
+Type aliases are fully inlined in JSON output:
+
 ```json
 {
   "name": "api_availability",
   "artifact_refs": ["SLO"],
   "params": {
-    "env": "String",
+    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)",
+    "window_in_days": "Defaulted(Integer { x | x in { 7, 30, 90 } }, 30)",
     "status": "Boolean",
-    "threshold": "Float { x | x in ( 0.0..100.0 ) }",
-    "window_in_days": "Integer"
+    "threshold": "Float { x | x in ( 0.0..100.0 ) }"
   },
   "inputs": {
     "vendor": "datadog",
@@ -481,6 +574,27 @@ Expects for "tracked_slo"
       "numerator": "sum:http.requests{$$env->env$$, $$status->status:not$$}",
       "denominator": "sum:http.requests{$$env->env$$}"
     }
+  }
+}
+```
+
+### Blueprint with Dict Type Alias Keys
+
+```json
+{
+  "name": "service_with_deps",
+  "artifact_refs": ["SLO"],
+  "params": {
+    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)",
+    "window_in_days": "Defaulted(Integer { x | x in { 7, 30, 90 } }, 30)",
+    "status": "Boolean",
+    "threshold": "Float { x | x in ( 0.0..100.0 ) }",
+    "dependencies": "Dict(String { x | x in { hard, soft } }, List(String))"
+  },
+  "inputs": {
+    "vendor": "datadog",
+    "value": "numerator / denominator",
+    "queries": { ... }
   }
 }
 ```
