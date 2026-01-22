@@ -45,7 +45,6 @@ pub fn build_expectation_index(
   |> dict.from_list
 }
 
-/// Converts an IR to its path identifier "org.team.service.name".
 fn ir_to_path(ir: IntermediateRepresentation) -> String {
   ir.metadata.org_name
   <> "."
@@ -56,7 +55,6 @@ fn ir_to_path(ir: IntermediateRepresentation) -> String {
   <> ir.metadata.friendly_label
 }
 
-/// Validates dependencies for a single IR.
 fn validate_ir_dependencies(
   ir: IntermediateRepresentation,
   expectation_index: Dict(String, IntermediateRepresentation),
@@ -82,7 +80,6 @@ fn validate_ir_dependencies(
   }
 }
 
-/// Extracts the relations dict from an IR's values.
 fn extract_relations(
   ir: IntermediateRepresentation,
 ) -> Dict(String, List(String)) {
@@ -99,14 +96,12 @@ fn extract_relations(
   |> result.unwrap(dict.new())
 }
 
-/// Gets all dependency targets from a relations dict.
 fn get_all_dependency_targets(relations: Dict(String, List(String))) -> List(String) {
   relations
   |> dict.values
   |> list.flatten
 }
 
-/// Validates a single dependency target.
 fn validate_dependency_target(
   target: String,
   self_path: String,

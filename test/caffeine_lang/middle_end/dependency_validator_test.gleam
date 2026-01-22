@@ -9,6 +9,7 @@ import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
 import gleam/dict
 import gleam/dynamic
+import gleam/list
 import gleam/option
 import test_helpers
 
@@ -103,8 +104,6 @@ fn make_ir_with_dependencies(
     vendor: option.Some(vendor.Datadog),
   )
 }
-
-import gleam/list
 
 // ==== validate_dependency_relations ====
 // * ✅ happy path - no IRs with dependency relations (nothing to validate)

@@ -217,9 +217,7 @@ fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
   }
 }
 
-/// Splits a string at commas that are not inside parentheses or braces.
-/// Handles nested types like "Dict(String, List(Integer)), default"
-/// and refinement types like "String { x | x in { a, b } }, default"
+// Splits a string at commas that are not inside parentheses or braces.
 fn split_at_top_level_comma(s: String) -> List(String) {
   let chars = string.to_graphemes(s)
   do_split_at_top_level_comma(chars, 0, 0, "", [])
