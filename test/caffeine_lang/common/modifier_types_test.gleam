@@ -7,9 +7,11 @@ import test_helpers
 // ==== Happy Path - Optional ====
 // * ✅ Optional(String)
 // * ✅ Optional(Integer)
+// * ✅ Optional with nested collection: Optional(Dict(String, List(Integer)))
 // ==== Happy Path - Defaulted ====
 // * ✅ Defaulted(String, default)
 // * ✅ Defaulted(Integer, 10)
+// * ✅ Defaulted with nested collection: Defaulted(Dict(String, List(Integer)), {})
 // ==== Sad Path ====
 // * ✅ Unknown type
 // * ✅ Empty string
@@ -17,13 +19,17 @@ import test_helpers
 // * ✅ Defaulted with invalid default value
 // * ✅ Modifier with refinement suffix (should fail, let refinement parser handle)
 pub fn parse_modifier_type_test() {
-  // Helper to parse inner types (simulating primitive-only parsing)
+  // Helper to parse inner types (handles primitives and nested collections)
   let parse_inner = fn(raw: String) {
     case raw {
       "String" -> Ok("String")
       "Integer" -> Ok("Integer")
       "Float" -> Ok("Float")
       "Boolean" -> Ok("Boolean")
+      // Nested collection types
+      "Dict(String, String)" -> Ok("Dict(String, String)")
+      "Dict(String, List(Integer))" -> Ok("Dict(String, List(Integer))")
+      "List(List(String))" -> Ok("List(List(String))")
       _ -> Error(Nil)
     }
   }
@@ -47,6 +53,14 @@ pub fn parse_modifier_type_test() {
           "3.14" | "1.5" -> Ok(Nil)
           _ -> Error(Nil)
         }
+      // Collection types accept {} as default
+      "Dict(String, String)"
+      | "Dict(String, List(Integer))"
+      | "List(List(String))" ->
+        case default_val {
+          "{}" | "[]" -> Ok(Nil)
+          _ -> Error(Nil)
+        }
       _ -> Error(Nil)
     }
   }
@@ -57,6 +71,19 @@ pub fn parse_modifier_type_test() {
     #("Optional(Integer)", Ok(modifier_types.Optional("Integer"))),
     #("Optional(Float)", Ok(modifier_types.Optional("Float"))),
     #("Optional(Boolean)", Ok(modifier_types.Optional("Boolean"))),
+    // Optional with nested collections
+    #(
+      "Optional(Dict(String, String))",
+      Ok(modifier_types.Optional("Dict(String, String)")),
+    ),
+    #(
+      "Optional(Dict(String, List(Integer)))",
+      Ok(modifier_types.Optional("Dict(String, List(Integer))")),
+    ),
+    #(
+      "Optional(List(List(String)))",
+      Ok(modifier_types.Optional("List(List(String))")),
+    ),
     // Defaulted
     #(
       "Defaulted(String, hello)",
@@ -68,6 +95,15 @@ pub fn parse_modifier_type_test() {
       Ok(modifier_types.Defaulted("Boolean", "True")),
     ),
     #("Defaulted(Float, 3.14)", Ok(modifier_types.Defaulted("Float", "3.14"))),
+    // Defaulted with nested collections - tests the top-level comma split fix
+    #(
+      "Defaulted(Dict(String, String), {})",
+      Ok(modifier_types.Defaulted("Dict(String, String)", "{}")),
+    ),
+    #(
+      "Defaulted(Dict(String, List(Integer)), {})",
+      Ok(modifier_types.Defaulted("Dict(String, List(Integer))", "{}")),
+    ),
     // Invalid
     #("Unknown", Error(Nil)),
     #("", Error(Nil)),

@@ -10,19 +10,25 @@ import test_helpers
 // * ✅ List(Integer)
 // * ✅ Dict(String, String)
 // * ✅ Dict(String, Integer)
+// * ✅ Dict(String, List(Integer)) - nested collection
+// * ✅ Dict(String, Dict(String, Integer)) - deeply nested
+// * ✅ List(List(String)) - nested list
 // ==== Sad Path ====
 // * ✅ Unknown type
 // * ✅ Empty string
 // * ✅ List without parens
 // * ✅ List with invalid inner type
 pub fn parse_collection_type_test() {
-  // Helper to parse inner types (simulating primitive-only parsing)
+  // Helper to parse inner types (handles primitives and nested collections)
   let parse_inner = fn(raw: String) {
     case raw {
       "String" -> Ok("String")
       "Integer" -> Ok("Integer")
       "Float" -> Ok("Float")
       "Boolean" -> Ok("Boolean")
+      "List(String)" -> Ok("List(String)")
+      "List(Integer)" -> Ok("List(Integer)")
+      "Dict(String, Integer)" -> Ok("Dict(String, Integer)")
       _ -> Error(Nil)
     }
   }
@@ -35,6 +41,17 @@ pub fn parse_collection_type_test() {
     #("Dict(String, String)", Ok(collection_types.Dict("String", "String"))),
     #("Dict(String, Integer)", Ok(collection_types.Dict("String", "Integer"))),
     #("Dict(Integer, String)", Ok(collection_types.Dict("Integer", "String"))),
+    // Nested collections
+    #(
+      "Dict(String, List(Integer))",
+      Ok(collection_types.Dict("String", "List(Integer)")),
+    ),
+    #(
+      "Dict(String, Dict(String, Integer))",
+      Ok(collection_types.Dict("String", "Dict(String, Integer)")),
+    ),
+    #("List(List(String))", Ok(collection_types.List("List(String)"))),
+    // Sad paths
     #("Unknown", Error(Nil)),
     #("", Error(Nil)),
     #("List", Error(Nil)),
@@ -68,8 +85,9 @@ pub fn collection_type_to_string_test() {
 // ==== validate_value ====
 // * ✅ List validates list of inner type
 // * ✅ List rejects non-list
-// * ✅ Dict validates dict with inner types
+// * ✅ Dict validates dict with inner types (both keys AND values)
 // * ✅ Dict rejects non-dict
+// * ✅ Dict key validation - rejects invalid keys
 pub fn validate_value_test() {
   // Simple validator that always succeeds (simulates inner type validation)
   let validate_inner = fn(_typ: String, value: dynamic.Dynamic) { Ok(value) }
@@ -105,6 +123,69 @@ pub fn validate_value_test() {
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
     case collection_types.validate_value(typ, value, validate_inner) {
+      Ok(_) -> True
+      Error(_) -> False
+    }
+  })
+
+  // Dict key validation test - validates that keys ARE validated
+  // Validator that only accepts "valid_key" as a key type
+  let validate_key_selective = fn(typ: String, value: dynamic.Dynamic) {
+    case typ {
+      "ValidKeyType" -> {
+        case decode.run(value, decode.string) {
+          Ok("valid_key") -> Ok(value)
+          Ok("another_valid") -> Ok(value)
+          _ -> Error([decode.DecodeError("InvalidKey", "String", [])])
+        }
+      }
+      _ -> Ok(value)
+    }
+  }
+
+  [
+    // Dict with valid key passes
+    #(
+      #(
+        collection_types.Dict("ValidKeyType", "String"),
+        dynamic.properties([#(dynamic.string("valid_key"), dynamic.string("v"))]),
+      ),
+      True,
+    ),
+    // Dict with invalid key fails - key "bad_key" not in allowed set
+    #(
+      #(
+        collection_types.Dict("ValidKeyType", "String"),
+        dynamic.properties([#(dynamic.string("bad_key"), dynamic.string("v"))]),
+      ),
+      False,
+    ),
+    // Dict with multiple keys - all must be valid
+    #(
+      #(
+        collection_types.Dict("ValidKeyType", "String"),
+        dynamic.properties([
+          #(dynamic.string("valid_key"), dynamic.string("v1")),
+          #(dynamic.string("another_valid"), dynamic.string("v2")),
+        ]),
+      ),
+      True,
+    ),
+    // Dict with one invalid key among valid ones - fails
+    #(
+      #(
+        collection_types.Dict("ValidKeyType", "String"),
+        dynamic.properties([
+          #(dynamic.string("valid_key"), dynamic.string("v1")),
+          #(dynamic.string("invalid_key"), dynamic.string("v2")),
+        ]),
+      ),
+      False,
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    let #(typ, value) = input
+    case collection_types.validate_value(typ, value, validate_key_selective) {
       Ok(_) -> True
       Error(_) -> False
     }

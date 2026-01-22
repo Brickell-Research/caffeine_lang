@@ -51,7 +51,7 @@ pub fn accepted_type_to_string_test() {
 // ==== parse_accepted_type ====
 // Integration test: verifies parsing dispatch and composition rules
 // * ✅ Composite: Optional(List(String)) - modifier wrapping collection
-// * ✅ Invalid: nested collections not allowed
+// * ✅ Nested collections: List(List(String)), Dict(String, List(String))
 // * ✅ Invalid: nested modifiers not allowed
 // * ✅ Invalid: Defaulted only allows primitives
 // * ✅ Refinement with Defaulted inner: parses as RefinementType, not ModifierType
@@ -72,9 +72,34 @@ pub fn parse_accepted_type_test() {
         ),
       ),
     ),
-    // Invalid - nested collections not allowed
-    #("List(List(String))", Error(Nil)),
-    #("Dict(String, List(String))", Error(Nil)),
+    // Nested collections - now allowed
+    #(
+      "List(List(String))",
+      Ok(
+        accepted_types.CollectionType(
+          collection_types.List(
+            accepted_types.CollectionType(
+              collection_types.List(accepted_types.PrimitiveType(
+                primitive_types.String,
+              )),
+            ),
+          ),
+        ),
+      ),
+    ),
+    #(
+      "Dict(String, List(String))",
+      Ok(
+        accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        )),
+      ),
+    ),
     // Invalid - nested modifiers not allowed
     #("Optional(Optional(String))", Error(Nil)),
     #("Defaulted(Optional(String), default)", Error(Nil)),

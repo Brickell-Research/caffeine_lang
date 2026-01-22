@@ -65,6 +65,22 @@ fn dict_type(
   ))
 }
 
+fn nested_list_type(
+  inner: accepted_types.AcceptedTypes,
+) -> accepted_types.AcceptedTypes {
+  accepted_types.CollectionType(collection_types.List(inner))
+}
+
+fn nested_dict_type(
+  key: primitive_types.PrimitiveTypes,
+  value: accepted_types.AcceptedTypes,
+) -> accepted_types.AcceptedTypes {
+  accepted_types.CollectionType(collection_types.Dict(
+    accepted_types.PrimitiveType(key),
+    value,
+  ))
+}
+
 fn optional_type(
   inner: accepted_types.AcceptedTypes,
 ) -> accepted_types.AcceptedTypes {
@@ -109,6 +125,7 @@ fn range_type(
 // * ✅ happy path - with extends
 // * ✅ happy path - multiple extends
 // * ✅ happy path - advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
+// * ✅ happy path - nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
 pub fn parse_blueprints_file_test() {
   [
     // single block
@@ -346,6 +363,62 @@ pub fn parse_blueprints_file_test() {
                     "0.0",
                     "100.0",
                   )),
+                ),
+              ]),
+              provides: ast.Struct([
+                ast.Field("value", ast.LiteralValue(ast.LiteralString("x"))),
+              ]),
+            ),
+          ]),
+        ]),
+      ),
+    ),
+    // nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
+    #(
+      blueprints_path("happy_path_nested_collections"),
+      Ok(
+        ast.BlueprintsFile(extendables: [], blocks: [
+          ast.BlueprintsBlock(artifacts: ["SLO"], items: [
+            ast.BlueprintItem(
+              name: "test_nested",
+              extends: [],
+              requires: ast.Struct([
+                // Order must match corpus file
+                ast.Field(
+                  "nested_list",
+                  ast.TypeValue(nested_list_type(nested_list_type(
+                    accepted_types.PrimitiveType(primitive_types.String),
+                  ))),
+                ),
+                ast.Field(
+                  "nested_dict",
+                  ast.TypeValue(nested_dict_type(
+                    primitive_types.String,
+                    nested_dict_type(
+                      primitive_types.String,
+                      accepted_types.PrimitiveType(primitive_types.NumericType(
+                        numeric_types.Integer,
+                      )),
+                    ),
+                  )),
+                ),
+                ast.Field(
+                  "dict_of_list",
+                  ast.TypeValue(nested_dict_type(
+                    primitive_types.String,
+                    nested_list_type(accepted_types.PrimitiveType(
+                      primitive_types.NumericType(numeric_types.Integer),
+                    )),
+                  )),
+                ),
+                ast.Field(
+                  "list_of_dict",
+                  ast.TypeValue(nested_list_type(accepted_types.CollectionType(
+                    collection_types.Dict(
+                      accepted_types.PrimitiveType(primitive_types.String),
+                      accepted_types.PrimitiveType(primitive_types.Boolean),
+                    ),
+                  ))),
                 ),
               ]),
               provides: ast.Struct([

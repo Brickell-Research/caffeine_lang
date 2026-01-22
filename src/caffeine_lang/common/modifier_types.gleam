@@ -212,10 +212,41 @@ fn paren_innerds_trimmed(raw: String) -> String {
 
 fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
   case extract_paren_content(raw) {
-    Ok(content) ->
-      content
-      |> string.split(",")
-      |> list.map(string.trim)
+    Ok(content) -> split_at_top_level_comma(content)
     Error(_) -> []
+  }
+}
+
+/// Splits a string at commas that are not inside parentheses.
+/// Handles nested types like "Dict(String, List(Integer)), default"
+fn split_at_top_level_comma(s: String) -> List(String) {
+  let chars = string.to_graphemes(s)
+  do_split_at_top_level_comma(chars, 0, "", [])
+}
+
+fn do_split_at_top_level_comma(
+  chars: List(String),
+  depth: Int,
+  current: String,
+  acc: List(String),
+) -> List(String) {
+  case chars {
+    [] -> {
+      let trimmed = string.trim(current)
+      case trimmed {
+        "" -> list.reverse(acc)
+        _ -> list.reverse([trimmed, ..acc])
+      }
+    }
+    ["(", ..rest] ->
+      do_split_at_top_level_comma(rest, depth + 1, current <> "(", acc)
+    [")", ..rest] ->
+      do_split_at_top_level_comma(rest, depth - 1, current <> ")", acc)
+    [",", ..rest] if depth == 0 -> {
+      let trimmed = string.trim(current)
+      do_split_at_top_level_comma(rest, depth, "", [trimmed, ..acc])
+    }
+    [char, ..rest] ->
+      do_split_at_top_level_comma(rest, depth, current <> char, acc)
   }
 }

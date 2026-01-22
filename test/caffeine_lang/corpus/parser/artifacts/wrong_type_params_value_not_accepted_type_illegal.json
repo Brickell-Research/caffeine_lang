@@ -2,7 +2,7 @@
   "artifacts": [
     {
       "name": "SLO",
-      "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "List(List(Float))", "value": "String" }
+      "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Optional(Optional(String))", "value": "String" }
     }
   ]
 }

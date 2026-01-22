@@ -100,7 +100,7 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(raw, parse_primitive_only)
+    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
     |> result.map(CollectionType)
   })
   |> result.lazy_or(fn() {
@@ -171,10 +171,16 @@ pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
   }
 }
 
-/// Parser for primitives only - used for collection inner types.
-fn parse_primitive_only(raw: String) -> Result(AcceptedTypes, Nil) {
+/// Parser for primitives or nested collections - used for collection inner types.
+/// Supports recursive nesting: Dict(String, List(Integer)), List(List(String)), etc.
+fn parse_primitive_or_nested_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
+  |> result.lazy_or(fn() {
+    // Recursively parse nested collections
+    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
+    |> result.map(CollectionType)
+  })
 }
 
 /// Parser for primitives or collections - used for modifier inner types.
@@ -182,7 +188,7 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(raw, parse_primitive_only)
+    collection_types.parse_collection_type(raw, parse_primitive_or_nested_collection)
     |> result.map(CollectionType)
   })
 }

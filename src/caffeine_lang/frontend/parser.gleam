@@ -644,19 +644,57 @@ fn parse_type_with_refinement(
   }
 }
 
+/// Parses types valid inside collections: primitives or nested collections.
+/// Does not allow modifiers (Optional/Defaulted) or refinements directly.
+fn parse_collection_inner_type(
+  state: ParserState,
+) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordString -> {
+      let state = advance(state)
+      Ok(#(accepted_types.PrimitiveType(primitive_types.String), state))
+    }
+    token.KeywordInteger -> {
+      let state = advance(state)
+      Ok(#(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Integer,
+        )),
+        state,
+      ))
+    }
+    token.KeywordFloat -> {
+      let state = advance(state)
+      Ok(#(
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        state,
+      ))
+    }
+    token.KeywordBoolean -> {
+      let state = advance(state)
+      Ok(#(accepted_types.PrimitiveType(primitive_types.Boolean), state))
+    }
+    token.KeywordList -> parse_list_type(state)
+    token.KeywordDict -> parse_dict_type(state)
+    tok ->
+      Error(parser_error.UnknownType(
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
+}
+
 fn parse_list_type(
   state: ParserState,
 ) -> Result(#(AcceptedTypes, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
-  use #(element, state) <- result.try(parse_primitive_type(state))
+  use #(element, state) <- result.try(parse_collection_inner_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(
-    accepted_types.CollectionType(
-      collection_types.List(accepted_types.PrimitiveType(element)),
-    ),
-    state,
-  ))
+  Ok(#(accepted_types.CollectionType(collection_types.List(element)), state))
 }
 
 fn parse_dict_type(
@@ -664,14 +702,16 @@ fn parse_dict_type(
 ) -> Result(#(AcceptedTypes, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
+  // Dict keys must be primitives (for JSON compatibility)
   use #(key, state) <- result.try(parse_primitive_type(state))
   use state <- result.try(expect(state, token.SymbolComma, ","))
-  use #(value, state) <- result.try(parse_primitive_type(state))
+  // Dict values can be primitives or nested collections
+  use #(value, state) <- result.try(parse_collection_inner_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
   Ok(#(
     accepted_types.CollectionType(collection_types.Dict(
       accepted_types.PrimitiveType(key),
-      accepted_types.PrimitiveType(value),
+      value,
     )),
     state,
   ))

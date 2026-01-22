@@ -82,6 +82,7 @@ pub fn decode_collection_to_string(
 
 /// Validates a dynamic value matches the collection type.
 /// Returns the original value if valid, or an error with decode errors.
+/// For Dict types, validates both keys and values against their respective types.
 @internal
 pub fn validate_value(
   collection: CollectionTypes(accepted),
@@ -90,12 +91,18 @@ pub fn validate_value(
     Result(Dynamic, List(decode.DecodeError)),
 ) -> Result(Dynamic, List(decode.DecodeError)) {
   case collection {
-    Dict(_key_type, value_type) -> {
+    Dict(key_type, value_type) -> {
       case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
         Ok(dict_val) -> {
           dict_val
-          |> dict.values
-          |> list.try_map(fn(v) { validate_inner(value_type, v) })
+          |> dict.to_list
+          |> list.try_map(fn(pair) {
+            let #(k, v) = pair
+            // Validate key - convert string key to dynamic for validation
+            use _ <- result.try(validate_inner(key_type, dynamic.string(k)))
+            // Validate value
+            validate_inner(value_type, v)
+          })
           |> result.map(fn(_) { value })
         }
         Error(err) -> Error(err)
@@ -141,14 +148,48 @@ pub fn resolve_to_string(
 
 fn paren_innerds_trimmed(raw: String) -> String {
   raw
-  |> string.replace("(", "")
-  |> string.replace(")", "")
+  |> string.drop_start(1)
+  |> string.drop_end(1)
   |> string.trim
 }
 
+/// Splits a parenthesized type string at the top-level comma only.
+/// Handles nested parentheses correctly.
+/// Example: "(String, Dict(String, Integer))" -> ["String", "Dict(String, Integer)"]
 fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
-  raw
-  |> paren_innerds_trimmed
-  |> string.split(",")
-  |> list.map(string.trim)
+  let inner = paren_innerds_trimmed(raw)
+  split_at_top_level_comma(inner)
+}
+
+/// Splits a string at commas that are not inside parentheses.
+fn split_at_top_level_comma(s: String) -> List(String) {
+  let chars = string.to_graphemes(s)
+  do_split_at_top_level_comma(chars, 0, "", [])
+}
+
+fn do_split_at_top_level_comma(
+  chars: List(String),
+  depth: Int,
+  current: String,
+  acc: List(String),
+) -> List(String) {
+  case chars {
+    [] -> {
+      let trimmed = string.trim(current)
+      case trimmed {
+        "" -> list.reverse(acc)
+        _ -> list.reverse([trimmed, ..acc])
+      }
+    }
+    ["(", ..rest] ->
+      do_split_at_top_level_comma(rest, depth + 1, current <> "(", acc)
+    [")", ..rest] ->
+      do_split_at_top_level_comma(rest, depth - 1, current <> ")", acc)
+    [",", ..rest] if depth == 0 -> {
+      let trimmed = string.trim(current)
+      do_split_at_top_level_comma(rest, depth, "", [trimmed, ..acc])
+    }
+    [char, ..rest] ->
+      do_split_at_top_level_comma(rest, depth, current <> char, acc)
+  }
 }
