@@ -20,6 +20,7 @@ pub type CompilationError {
   SemanticAnalysisVendorResolutionError(msg: String)
   SemanticAnalysisTemplateParseError(msg: String)
   SemanticAnalysisTemplateResolutionError(msg: String)
+  SemanticAnalysisDependencyValidationError(msg: String)
   // Code Generation Phase
   GeneratorSloQueryResolutionError(msg: String)
   GeneratorDatadogTerraformResolutionError(msg: String)

@@ -228,6 +228,90 @@ pub fn compile_from_strings_test() {
       ),
       False,
     ),
+    // sad path - invalid dependency reference (target does not exist)
+    #(
+      #(
+        "{
+        \"blueprints\": [{
+          \"name\": \"slo_with_deps\",
+          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
+          \"params\": {},
+          \"inputs\": {
+            \"vendor\": \"datadog\",
+            \"value\": \"numerator / denominator\",
+            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
+            \"relations\": { \"hard\": [\"nonexistent.org.team.slo\"] }
+          }
+        }]
+      }",
+        "{
+        \"expectations\": [{
+          \"name\": \"my_slo\",
+          \"blueprint_ref\": \"slo_with_deps\",
+          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
+        }]
+      }",
+        "myorg/myteam/myservice.json",
+        [],
+      ),
+      False,
+    ),
+    // sad path - invalid dependency format (not 4 parts)
+    #(
+      #(
+        "{
+        \"blueprints\": [{
+          \"name\": \"slo_with_deps\",
+          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
+          \"params\": {},
+          \"inputs\": {
+            \"vendor\": \"datadog\",
+            \"value\": \"numerator / denominator\",
+            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
+            \"relations\": { \"hard\": [\"invalid_format\"] }
+          }
+        }]
+      }",
+        "{
+        \"expectations\": [{
+          \"name\": \"my_slo\",
+          \"blueprint_ref\": \"slo_with_deps\",
+          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
+        }]
+      }",
+        "myorg/myteam/myservice.json",
+        [],
+      ),
+      False,
+    ),
+    // sad path - self-reference in dependency
+    #(
+      #(
+        "{
+        \"blueprints\": [{
+          \"name\": \"slo_with_deps\",
+          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
+          \"params\": {},
+          \"inputs\": {
+            \"vendor\": \"datadog\",
+            \"value\": \"numerator / denominator\",
+            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
+            \"relations\": { \"hard\": [\"myorg.myteam.myservice.my_slo\"] }
+          }
+        }]
+      }",
+        "{
+        \"expectations\": [{
+          \"name\": \"my_slo\",
+          \"blueprint_ref\": \"slo_with_deps\",
+          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
+        }]
+      }",
+        "myorg/myteam/myservice.json",
+        [],
+      ),
+      False,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(blueprints_json, expectations_json, path, expected_substrings) = input

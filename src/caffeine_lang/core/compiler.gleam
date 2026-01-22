@@ -2,6 +2,7 @@ import caffeine_lang/common/errors
 import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/generator/datadog
+import caffeine_lang/middle_end/dependency_validator
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -244,7 +245,12 @@ fn run_parse_and_link(
 fn run_semantic_analysis(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
-  semantic_analyzer.resolve_intermediate_representations(irs)
+  // First validate dependency relations (if any)
+  use validated_irs <- result.try(
+    dependency_validator.validate_dependency_relations(irs),
+  )
+  // Then resolve vendors and queries
+  semantic_analyzer.resolve_intermediate_representations(validated_irs)
 }
 
 fn run_code_generation(
