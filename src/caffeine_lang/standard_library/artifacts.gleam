@@ -12,7 +12,11 @@ pub const standard_library = "
   \"artifacts\": [
     {
       \"name\": \"SLO\",
-      \"params\": { \"threshold\": \"Float { x | x in ( 0.0..100.0 ) }\", \"window_in_days\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String { x | x in { datadog } }\"}
+      \"params\": { \"threshold\": \"Float { x | x in ( 0.0..100.0 ) }\", \"window_in_days\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String { x | x in { datadog } }\" }
+    },
+    {
+      \"name\": \"DependencyRelation\",
+      \"params\": { \"relation\": \"String { x | x in { soft, hard } }\", \"dependent\": \"String\" }
     }
   ]
 }
