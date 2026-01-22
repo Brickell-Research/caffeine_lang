@@ -134,6 +134,14 @@ pub fn ir_to_terraform_resource(
     }),
   )
 
+  // Build dependency relation tags if artifact refs include DependencyRelations.
+  let dependency_tags = case
+    ir.artifact_refs |> list.contains("DependencyRelations")
+  {
+    True -> build_dependency_tags(ir.values)
+    False -> []
+  }
+
   // Build tags (common to both types).
   let tags =
     hcl.ListExpr(
@@ -152,6 +160,7 @@ pub fn ir_to_terraform_resource(
         ir.artifact_refs
         |> list.map(fn(ref) { hcl.StringLiteral("artifact:" <> ref) }),
       )
+      |> list.append(dependency_tags)
       |> list.append(
         // Also add misc tags (sorted for deterministic output across targets).
         ir.metadata.misc
@@ -190,6 +199,30 @@ pub fn ir_to_terraform_resource(
     meta: hcl.empty_meta(),
     lifecycle: option.None,
   ))
+}
+
+/// Build dependency relation tags from the "relation" value.
+/// Extracts the relation dict (maps relation type to list of targets) and generates
+/// tags like "soft_dependency:target1,target2", "hard_dependency:target3,target4".
+fn build_dependency_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
+  let relation_dict =
+    helpers.extract_value(
+      values,
+      "relation",
+      decode.dict(decode.string, decode.list(decode.string)),
+    )
+    |> result.unwrap(dict.new())
+
+  relation_dict
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.map(fn(pair) {
+    let #(relation_type, targets) = pair
+    let sorted_targets = targets |> list.sort(string.compare)
+    hcl.StringLiteral(
+      relation_type <> "_dependency:" <> string.join(sorted_targets, ","),
+    )
+  })
 }
 
 /// Convert window_in_days to Datadog timeframe string.

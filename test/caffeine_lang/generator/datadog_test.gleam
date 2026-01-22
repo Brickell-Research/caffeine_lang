@@ -430,6 +430,248 @@ pub fn generate_terraform_test() {
       ],
       "resolved_time_slice_expression",
     ),
+    // SLO with both hard and soft dependencies (multiple each)
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO", "DependencyRelations"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "relation",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.CollectionType(
+                  collection_types.List(accepted_types.PrimitiveType(
+                    primitive_types.String,
+                  )),
+                ),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("soft"),
+                  dynamic.list([
+                    dynamic.string("cache_slo"),
+                    dynamic.string("logging_slo"),
+                  ]),
+                ),
+                #(
+                  dynamic.string("hard"),
+                  dynamic.list([
+                    dynamic.string("db_slo"),
+                    dynamic.string("storage_slo"),
+                  ]),
+                ),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_both_dependencies",
+    ),
+    // SLO with only hard dependencies
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO", "DependencyRelations"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "relation",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.CollectionType(
+                  collection_types.List(accepted_types.PrimitiveType(
+                    primitive_types.String,
+                  )),
+                ),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("hard"),
+                  dynamic.list([
+                    dynamic.string("db_slo"),
+                    dynamic.string("storage_slo"),
+                  ]),
+                ),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_hard_dependency_only",
+    ),
+    // SLO with mixed dependencies (soft has multiple, hard has one)
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO", "DependencyRelations"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "relation",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.CollectionType(
+                  collection_types.List(accepted_types.PrimitiveType(
+                    primitive_types.String,
+                  )),
+                ),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("soft"),
+                  dynamic.list([
+                    dynamic.string("cache_slo"),
+                    dynamic.string("logging_slo"),
+                  ]),
+                ),
+                #(
+                  dynamic.string("hard"),
+                  dynamic.list([dynamic.string("db_slo")]),
+                ),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_mixed_dependencies",
+    ),
   ]
   |> list.each(fn(pair) {
     let #(input, corpus_file) = pair
