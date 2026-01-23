@@ -1,0 +1,6 @@
+_bad_type (Type): String { x | x in { "valid", 10 } }
+
+Blueprints for "SLO"
+  * "test":
+    Requires { env: _bad_type }
+    Provides { value: "x" }

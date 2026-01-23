@@ -662,6 +662,7 @@ pub fn parse_expects_file_test() {
 // * ✅ invalid extendable kind
 // * ✅ empty file
 // * ✅ missing dict value type
+// * ✅ refinement type mismatch (e.g. Integer in String OneOf)
 // * ✅ expects with Requires
 pub fn parse_errors_test() {
   // Blueprints file errors - check that parsing returns Error
@@ -681,6 +682,7 @@ pub fn parse_errors_test() {
     #(errors_path("invalid_extendable_kind"), True),
     #(errors_path("empty_file"), True),
     #(errors_path("missing_dict_value_type"), True),
+    #(errors_path("refinement_type_mismatch"), True),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file_path) {
     case parser.parse_blueprints_file(read_file(file_path)) {

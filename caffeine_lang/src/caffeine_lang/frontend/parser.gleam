@@ -907,12 +907,17 @@ fn parse_defaulted_refinement_body(
   #(refinement_types.RefinementTypes(AcceptedTypes), ParserState),
   ParserError,
 ) {
+  let primitive = extract_primitive_from_accepted(defaulted)
   case peek(state) {
     // OneOf: { value1, value2, ... }
     token.SymbolLeftBrace -> {
       let state = advance(state)
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
+      use _ <- result.try(case primitive {
+        Ok(prim) -> validate_oneof_literals(values, prim, state)
+        Error(_) -> Ok(Nil)
+      })
       let string_values = list.map(values, literal_to_string)
       Ok(#(
         refinement_types.OneOf(defaulted, set.from_list(string_values)),
@@ -926,6 +931,10 @@ fn parse_defaulted_refinement_body(
       use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
+      use _ <- result.try(case primitive {
+        Ok(prim) -> validate_oneof_literals([min, max], prim, state)
+        Error(_) -> Ok(Nil)
+      })
       Ok(#(
         refinement_types.InclusiveRange(
           defaulted,
@@ -991,6 +1000,7 @@ fn parse_refinement_body(
       let state = advance(state)
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
+      use _ <- result.try(validate_oneof_literals(values, primitive, state))
       let string_values = list.map(values, literal_to_string)
       Ok(#(
         refinement_types.OneOf(
@@ -1007,6 +1017,11 @@ fn parse_refinement_body(
       use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
+      use _ <- result.try(validate_oneof_literals(
+        [min, max],
+        primitive,
+        state,
+      ))
       Ok(#(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive),
@@ -1105,5 +1120,59 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralFalse -> "False"
     ast.LiteralList(_) -> "[]"
     ast.LiteralStruct(_) -> "{}"
+  }
+}
+
+/// Validates that all literals in a OneOf set match the declared primitive type.
+fn validate_oneof_literals(
+  literals: List(Literal),
+  primitive: primitive_types.PrimitiveTypes,
+  state: ParserState,
+) -> Result(Nil, ParserError) {
+  case literals {
+    [] -> Ok(Nil)
+    [first, ..rest] -> {
+      case literal_matches_primitive(first, primitive) {
+        True -> validate_oneof_literals(rest, primitive, state)
+        False ->
+          Error(parser_error.InvalidRefinement(
+            "value '"
+              <> literal_to_string(first)
+              <> "' is not a valid "
+              <> primitive_types.primitive_type_to_string(primitive)
+              <> " literal",
+            state.line,
+            state.column,
+          ))
+      }
+    }
+  }
+}
+
+/// Checks if a literal value is compatible with the declared primitive type.
+fn literal_matches_primitive(
+  literal: Literal,
+  primitive: primitive_types.PrimitiveTypes,
+) -> Bool {
+  case primitive, literal {
+    primitive_types.String, ast.LiteralString(_) -> True
+    primitive_types.NumericType(numeric_types.Integer), ast.LiteralInteger(_) ->
+      True
+    primitive_types.NumericType(numeric_types.Float), ast.LiteralFloat(_) -> True
+    primitive_types.Boolean, ast.LiteralTrue -> True
+    primitive_types.Boolean, ast.LiteralFalse -> True
+    _, _ -> False
+  }
+}
+
+/// Extracts the primitive type from an AcceptedTypes, unwrapping Defaulted modifiers.
+fn extract_primitive_from_accepted(
+  typ: AcceptedTypes,
+) -> Result(primitive_types.PrimitiveTypes, Nil) {
+  case typ {
+    accepted_types.PrimitiveType(primitive) -> Ok(primitive)
+    accepted_types.ModifierType(modifier_types.Defaulted(inner, _)) ->
+      extract_primitive_from_accepted(inner)
+    _ -> Error(Nil)
   }
 }
