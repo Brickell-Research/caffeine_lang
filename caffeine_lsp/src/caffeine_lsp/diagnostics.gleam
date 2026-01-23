@@ -22,10 +22,12 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
         Error(blueprint_err) -> {
           case parser.parse_expects_file(content) {
             Ok(_) -> []
-            Error(_expects_err) -> {
-              // Both failed - report the blueprints error
-              // (or whichever is more relevant)
-              [parser_error_to_diagnostic(blueprint_err)]
+            Error(expects_err) -> {
+              // Report the error from the relevant parser based on file content
+              case string.starts_with(string.trim_start(content), "Expectations") {
+                True -> [parser_error_to_diagnostic(expects_err)]
+                False -> [parser_error_to_diagnostic(blueprint_err)]
+              }
             }
           }
         }
