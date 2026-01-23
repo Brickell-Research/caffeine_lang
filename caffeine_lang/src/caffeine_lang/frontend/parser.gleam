@@ -21,7 +21,13 @@ import gleam/string
 
 /// Parser state tracking position in token stream.
 type ParserState {
-  ParserState(tokens: List(PositionedToken), line: Int, column: Int)
+  ParserState(
+    tokens: List(PositionedToken),
+    line: Int,
+    column: Int,
+    prev_line: Int,
+    prev_column: Int,
+  )
 }
 
 /// Parses a blueprints file from source text.
@@ -72,8 +78,9 @@ fn filter_whitespace_comments(
 fn init_state(tokens: List(PositionedToken)) -> ParserState {
   case tokens {
     [token.PositionedToken(_, line, column), ..] ->
-      ParserState(tokens:, line:, column:)
-    [] -> ParserState(tokens:, line: 1, column: 1)
+      ParserState(tokens:, line:, column:, prev_line: line, prev_column: column)
+    [] ->
+      ParserState(tokens:, line: 1, column: 1, prev_line: 1, prev_column: 1)
   }
 }
 
@@ -91,8 +98,20 @@ fn advance(state: ParserState) -> ParserState {
     [_, ..rest] ->
       case rest {
         [token.PositionedToken(_, line, column), ..] ->
-          ParserState(tokens: rest, line:, column:)
-        [] -> ParserState(..state, tokens: rest)
+          ParserState(
+            tokens: rest,
+            line:,
+            column:,
+            prev_line: state.line,
+            prev_column: state.column,
+          )
+        [] ->
+          ParserState(
+            ..state,
+            tokens: rest,
+            prev_line: state.line,
+            prev_column: state.column,
+          )
       }
     [] -> state
   }
@@ -110,8 +129,8 @@ fn expect(
       Error(parser_error.UnexpectedToken(
         expected_name,
         token.to_string(tok),
-        state.line,
-        state.column,
+        state.prev_line,
+        state.prev_column,
       ))
   }
 }
