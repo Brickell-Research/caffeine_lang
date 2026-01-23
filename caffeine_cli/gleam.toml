@@ -7,6 +7,7 @@ target = "erlang"
 
 [dependencies]
 caffeine_lang = { path = "../caffeine_lang" }
+caffeine_lsp = { path = "../caffeine_lsp" }
 gleam_stdlib = ">= 0.63.0 and < 1.0.2"
 simplifile = ">= 2.3.0 and < 3.0.0"
 argv = ">= 1.0.2 and < 2.0.0"

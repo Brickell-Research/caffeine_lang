@@ -5,6 +5,7 @@ import caffeine_lang/common/source_file.{SourceFile}
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
+import caffeine_lsp
 import gleam/io
 import gleam/list
 import gleam/option.{type Option}
@@ -62,6 +63,10 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
     | ["--version", "--quiet"]
     | ["-V", "--quiet"] -> {
       print_version(logger.Minimal)
+      exit_status_codes.Success
+    }
+    ["lsp"] -> {
+      caffeine_lsp.start()
       exit_status_codes.Success
     }
     ["--quiet"] -> {
@@ -167,6 +172,7 @@ fn print_usage(log_level: LogLevel) {
     "    caffeine compile [--quiet] <blueprint.caffeine> <expectations_directory> [output_file]",
   )
   log(log_level, "    caffeine artifacts [--quiet]")
+  log(log_level, "    caffeine lsp")
   log(log_level, "")
   log(log_level, "COMMANDS:")
   log(
@@ -176,6 +182,10 @@ fn print_usage(log_level: LogLevel) {
   log(
     log_level,
     "    artifacts        List available artifacts from the standard library",
+  )
+  log(
+    log_level,
+    "    lsp              Start the Language Server Protocol server",
   )
   log(log_level, "")
   log(log_level, "ARGUMENTS:")

@@ -1,0 +1,14 @@
+name = "caffeine_lsp"
+version = "0.1.0"
+description = "Language Server Protocol implementation for the Caffeine language."
+licences = ["GPL-3.0"]
+
+target = "erlang"
+
+[dependencies]
+caffeine_lang = { path = "../caffeine_lang" }
+gleam_stdlib = ">= 0.63.0 and < 1.0.2"
+gleam_json = ">= 3.1.0 and < 4.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.2"
