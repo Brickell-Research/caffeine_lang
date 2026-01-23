@@ -6,7 +6,9 @@ import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast
 import caffeine_lang/frontend/parser
+import caffeine_lang/frontend/parser_error
 import gleam/set
+import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -699,4 +701,51 @@ pub fn parse_errors_test() {
       Ok(_) -> False
     }
   })
+}
+
+// ==== parse_error_line_numbers ====
+// * ✅ error on line 1 reports line 1
+// * ✅ error on line 2 reports line 2
+// * ✅ error on line 3 reports line 3
+// * ✅ error after blank lines reports correct line
+// * ✅ expects file error reports correct line
+pub fn parse_error_line_numbers_test() {
+  // Error on line 1: first token is wrong
+  parser.parse_blueprints_file("\"SLO\"")
+  |> should.equal(Error(parser_error.UnexpectedToken(
+    "Blueprints",
+    "\"SLO\"",
+    1,
+    1,
+  )))
+
+  // Error on line 2: unexpected token after valid first line
+  parser.parse_blueprints_file("Blueprints for \"SLO\"\ninvalid")
+  |> should.equal(Error(parser_error.UnexpectedToken(
+    "Blueprints",
+    "invalid",
+    2,
+    1,
+  )))
+
+  // Error on line 3: unknown type
+  parser.parse_blueprints_file(
+    "Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }",
+  )
+  |> should.equal(Error(parser_error.UnknownType("bad", 3, 19)))
+
+  // Error after blank lines: blank lines are counted
+  parser.parse_blueprints_file(
+    "Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }",
+  )
+  |> should.equal(Error(parser_error.UnknownType("bad", 5, 19)))
+
+  // Expects file: error on line 2
+  parser.parse_expects_file("Expectations for \"test\"\ninvalid")
+  |> should.equal(Error(parser_error.UnexpectedToken(
+    "Expectations",
+    "invalid",
+    2,
+    1,
+  )))
 }

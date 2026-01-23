@@ -1,4 +1,4 @@
-import caffeine_lang/frontend/token.{type Token}
+import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import gleam/float
 import gleam/int
@@ -11,8 +11,10 @@ type TokenizerState {
   TokenizerState(source: String, line: Int, column: Int, at_line_start: Bool)
 }
 
-/// Tokenizes source text into a list of tokens.
-pub fn tokenize(source: String) -> Result(List(Token), TokenizerError) {
+/// Tokenizes source text into a list of positioned tokens.
+pub fn tokenize(
+  source: String,
+) -> Result(List(PositionedToken), TokenizerError) {
   let state = TokenizerState(source:, line: 1, column: 1, at_line_start: True)
   tokenize_loop(state, [])
   |> result.map(list.reverse)
@@ -20,22 +22,31 @@ pub fn tokenize(source: String) -> Result(List(Token), TokenizerError) {
 
 fn tokenize_loop(
   state: TokenizerState,
-  acc: List(Token),
-) -> Result(List(Token), TokenizerError) {
+  acc: List(PositionedToken),
+) -> Result(List(PositionedToken), TokenizerError) {
   case string.pop_grapheme(state.source) {
-    Error(Nil) -> Ok([token.EOF, ..acc])
+    Error(Nil) ->
+      Ok([token.PositionedToken(token.EOF, state.line, state.column), ..acc])
 
     Ok(#(char, rest)) -> {
       case char {
         "\n" -> {
+          let #(remaining, skipped) = skip_empty_lines(rest, 0)
           let new_state =
             TokenizerState(
-              source: skip_empty_lines(rest),
-              line: state.line + 1,
+              source: remaining,
+              line: state.line + 1 + skipped,
               column: 1,
               at_line_start: True,
             )
-          tokenize_loop(new_state, [token.WhitespaceNewline, ..acc])
+          tokenize_loop(new_state, [
+            token.PositionedToken(
+              token.WhitespaceNewline,
+              state.line,
+              state.column,
+            ),
+            ..acc
+          ])
         }
 
         // Skip carriage return (handles Windows CRLF line endings)
@@ -44,7 +55,11 @@ fn tokenize_loop(
         " " | "\t" if state.at_line_start -> {
           let #(indent_count, remaining) = count_indentation(state.source, 0)
           tokenize_loop(advance(state, remaining, indent_count), [
-            token.WhitespaceIndent(indent_count),
+            token.PositionedToken(
+              token.WhitespaceIndent(indent_count),
+              state.line,
+              state.column,
+            ),
             ..acc
           ])
         }
@@ -59,14 +74,28 @@ fn tokenize_loop(
               let #(comment_text, remaining) = read_until_newline(after_hash)
               tokenize_loop(
                 advance(state, remaining, 2 + string.length(comment_text)),
-                [token.CommentSection(comment_text), ..acc],
+                [
+                  token.PositionedToken(
+                    token.CommentSection(comment_text),
+                    state.line,
+                    state.column,
+                  ),
+                  ..acc
+                ],
               )
             }
             _ -> {
               let #(comment_text, remaining) = read_until_newline(rest)
               tokenize_loop(
                 advance(state, remaining, 1 + string.length(comment_text)),
-                [token.CommentLine(comment_text), ..acc],
+                [
+                  token.PositionedToken(
+                    token.CommentLine(comment_text),
+                    state.line,
+                    state.column,
+                  ),
+                  ..acc
+                ],
               )
             }
           }
@@ -77,7 +106,14 @@ fn tokenize_loop(
             Ok(#(str_content, remaining)) ->
               tokenize_loop(
                 advance(state, remaining, 2 + string.length(str_content)),
-                [token.LiteralString(str_content), ..acc],
+                [
+                  token.PositionedToken(
+                    token.LiteralString(str_content),
+                    state.line,
+                    state.column,
+                  ),
+                  ..acc
+                ],
               )
             Error(Nil) ->
               Error(tokenizer_error.UnterminatedString(state.line, state.column))
@@ -112,7 +148,10 @@ fn tokenize_loop(
         "-" -> {
           case read_number(rest, "-") {
             Ok(#(tok, remaining, len)) ->
-              tokenize_loop(advance(state, remaining, len), [tok, ..acc])
+              tokenize_loop(advance(state, remaining, len), [
+                token.PositionedToken(tok, state.line, state.column),
+                ..acc
+              ])
             Error(Nil) ->
               Error(tokenizer_error.InvalidCharacter(
                 state.line,
@@ -125,7 +164,10 @@ fn tokenize_loop(
         "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> {
           case read_number(state.source, "") {
             Ok(#(tok, remaining, len)) ->
-              tokenize_loop(advance(state, remaining, len), [tok, ..acc])
+              tokenize_loop(advance(state, remaining, len), [
+                token.PositionedToken(tok, state.line, state.column),
+                ..acc
+              ])
             Error(Nil) ->
               Error(tokenizer_error.InvalidCharacter(
                 state.line,
@@ -140,7 +182,11 @@ fn tokenize_loop(
             True -> {
               let #(word, remaining) = read_identifier(state.source)
               tokenize_loop(advance(state, remaining, string.length(word)), [
-                keyword_or_identifier(word),
+                token.PositionedToken(
+                  keyword_or_identifier(word),
+                  state.line,
+                  state.column,
+                ),
                 ..acc
               ])
             }
@@ -170,8 +216,8 @@ fn emit_token(
   state: TokenizerState,
   rest: String,
   tok: Token,
-  acc: List(Token),
-) -> Result(List(Token), TokenizerError) {
+  acc: List(PositionedToken),
+) -> Result(List(PositionedToken), TokenizerError) {
   emit_token_n(state, rest, 1, tok, acc)
 }
 
@@ -180,15 +226,18 @@ fn emit_token_n(
   rest: String,
   len: Int,
   tok: Token,
-  acc: List(Token),
-) -> Result(List(Token), TokenizerError) {
-  tokenize_loop(advance(state, rest, len), [tok, ..acc])
+  acc: List(PositionedToken),
+) -> Result(List(PositionedToken), TokenizerError) {
+  tokenize_loop(advance(state, rest, len), [
+    token.PositionedToken(tok, state.line, state.column),
+    ..acc
+  ])
 }
 
-fn skip_empty_lines(source: String) -> String {
+fn skip_empty_lines(source: String, count: Int) -> #(String, Int) {
   case string.pop_grapheme(source) {
-    Ok(#("\n", rest)) -> skip_empty_lines(rest)
-    _ -> source
+    Ok(#("\n", rest)) -> skip_empty_lines(rest, count + 1)
+    _ -> #(source, count)
   }
 }
 

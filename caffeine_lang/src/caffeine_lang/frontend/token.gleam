@@ -1,3 +1,8 @@
+/// A token with source position information.
+pub type PositionedToken {
+  PositionedToken(token: Token, line: Int, column: Int)
+}
+
 /// A token produced by the tokenizer.
 pub type Token {
   KeywordBlueprints

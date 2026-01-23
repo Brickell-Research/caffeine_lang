@@ -10,7 +10,7 @@ import caffeine_lang/frontend/ast.{
   type Field, type Literal, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
-import caffeine_lang/frontend/token.{type Token}
+import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer
 import gleam/float
 import gleam/int
@@ -21,7 +21,7 @@ import gleam/string
 
 /// Parser state tracking position in token stream.
 type ParserState {
-  ParserState(tokens: List(Token), line: Int, column: Int)
+  ParserState(tokens: List(PositionedToken), line: Int, column: Int)
 }
 
 /// Parses a blueprints file from source text.
@@ -32,8 +32,8 @@ pub fn parse_blueprints_file(
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),
   )
-  let state =
-    ParserState(tokens: filter_whitespace_comments(tokens), line: 1, column: 1)
+  let filtered = filter_whitespace_comments(tokens)
+  let state = init_state(filtered)
   use #(type_aliases, state) <- result.try(parse_type_aliases(state))
   use #(extendables, state) <- result.try(parse_extendables(state))
   use #(blocks, _state) <- result.try(parse_blueprints_blocks(state))
@@ -46,30 +46,41 @@ pub fn parse_expects_file(source: String) -> Result(ExpectsFile, ParserError) {
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),
   )
-  let state =
-    ParserState(tokens: filter_whitespace_comments(tokens), line: 1, column: 1)
+  let filtered = filter_whitespace_comments(tokens)
+  let state = init_state(filtered)
   use #(extendables, state) <- result.try(parse_extendables(state))
   use #(blocks, _state) <- result.try(parse_expects_blocks(state))
   Ok(ast.ExpectsFile(extendables:, blocks:))
 }
 
 /// Filter out whitespace and comment tokens.
-fn filter_whitespace_comments(tokens: List(Token)) -> List(Token) {
-  list.filter(tokens, fn(tok) {
-    case tok {
-      token.WhitespaceNewline
-      | token.WhitespaceIndent(_)
-      | token.CommentLine(_)
-      | token.CommentSection(_) -> False
+fn filter_whitespace_comments(
+  tokens: List(PositionedToken),
+) -> List(PositionedToken) {
+  list.filter(tokens, fn(ptok) {
+    case ptok {
+      token.PositionedToken(token.WhitespaceNewline, _, _)
+      | token.PositionedToken(token.WhitespaceIndent(_), _, _)
+      | token.PositionedToken(token.CommentLine(_), _, _)
+      | token.PositionedToken(token.CommentSection(_), _, _) -> False
       _ -> True
     }
   })
 }
 
+/// Initialize parser state from a list of positioned tokens.
+fn init_state(tokens: List(PositionedToken)) -> ParserState {
+  case tokens {
+    [token.PositionedToken(_, line, column), ..] ->
+      ParserState(tokens:, line:, column:)
+    [] -> ParserState(tokens:, line: 1, column: 1)
+  }
+}
+
 /// Peek at the current token without consuming it.
 fn peek(state: ParserState) -> Token {
   case state.tokens {
-    [tok, ..] -> tok
+    [token.PositionedToken(tok, _, _), ..] -> tok
     [] -> token.EOF
   }
 }
@@ -77,7 +88,12 @@ fn peek(state: ParserState) -> Token {
 /// Consume current token and advance state.
 fn advance(state: ParserState) -> ParserState {
   case state.tokens {
-    [_, ..rest] -> ParserState(..state, tokens: rest)
+    [_, ..rest] ->
+      case rest {
+        [token.PositionedToken(_, line, column), ..] ->
+          ParserState(tokens: rest, line:, column:)
+        [] -> ParserState(..state, tokens: rest)
+      }
     [] -> state
   }
 }
@@ -135,8 +151,12 @@ fn parse_type_aliases_loop(
 /// Looks for pattern: Identifier ( Identifier("Type") )
 fn is_type_alias(state: ParserState) -> Bool {
   case state.tokens {
-    [token.Identifier(_), token.SymbolLeftParen, token.Identifier("Type"), ..] ->
-      True
+    [
+      token.PositionedToken(token.Identifier(_), _, _),
+      token.PositionedToken(token.SymbolLeftParen, _, _),
+      token.PositionedToken(token.Identifier("Type"), _, _),
+      ..,
+    ] -> True
     _ -> False
   }
 }
