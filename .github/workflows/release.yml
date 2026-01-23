@@ -41,22 +41,20 @@ jobs:
       with:
         path: |
           ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-release-${{ hashFiles('manifest.toml') }}
+          caffeine_lang/build
+          caffeine_cli/build
+        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-release-
           ${{ runner.os }}-gleam-
 
-    - name: Download dependencies
-      run: gleam deps download
-
     - name: Build Gleam to JavaScript
-      run: gleam build --target javascript
+      run: cd caffeine_cli && gleam build --target javascript
 
     - name: Extract version from gleam.toml
       id: version
       run: |
-        VERSION=$(grep '^version' gleam.toml | sed 's/version = "\(.*\)"/\1/')
+        VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Extracted version: $VERSION"
 
@@ -171,6 +169,7 @@ jobs:
       run: |
         VERSION=${{ steps.version.outputs.version }}
         echo "Publishing caffeine_lang v${VERSION} to Hex..."
+        cd caffeine_lang
         if gleam publish --yes 2>&1; then
           echo "Published to Hex successfully"
         else

@@ -10,8 +10,8 @@ OUTPUT_DIR="${1:-$PROJECT_DIR/dist}"
 
 echo "Building Caffeine for browser..."
 
-# Ensure JavaScript build is up to date
-cd "$PROJECT_DIR"
+# Ensure JavaScript build is up to date (build caffeine_lang for the pure compiler API)
+cd "$PROJECT_DIR/caffeine_lang"
 gleam build --target=javascript
 
 # Create output directory
@@ -55,11 +55,12 @@ EOF
 # Create a wrapper module that exports the compiler API
 cat > "$OUTPUT_DIR/caffeine-entry.mjs" << 'EOF'
 // Browser entry point for Caffeine compiler
-export { compile_from_strings } from "../build/dev/javascript/caffeine_lang/caffeine_lang/core/compiler.mjs";
+export { compile_from_strings } from "../caffeine_lang/build/dev/javascript/caffeine_lang/caffeine_lang/core/compiler.mjs";
 EOF
 
 # Bundle with esbuild (using deno), with node shims
 echo "Bundling with esbuild..."
+cd "$PROJECT_DIR"
 deno run -A npm:esbuild "$OUTPUT_DIR/caffeine-entry.mjs" \
   --bundle \
   --format=esm \

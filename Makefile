@@ -1,29 +1,29 @@
-.PHONY: lint lint-fix test build docs ci watch watch-js watch-cql watch-glaml-extended watch-all
+.PHONY: lint lint-fix test build ci watch watch-js lines-of-code
 
 # Check code formatting
 lint:
-	gleam format --check
+	cd caffeine_lang && gleam format --check
+	cd caffeine_cli && gleam format --check
 
 # Fix code formatting
 lint-fix:
-	gleam format
+	cd caffeine_lang && gleam format
+	cd caffeine_cli && gleam format
 
-# Build the project
+# Build both packages
 build:
-	gleam build
+	cd caffeine_lang && gleam build
+	cd caffeine_cli && gleam build
 
-# Run tests
+# Run tests for both packages
 test:
-	gleam test
+	cd caffeine_lang && gleam test
+	cd caffeine_cli && gleam test
 
 # Run CI pipeline: format check, build, then test
 ci: lint build test
 
-# Generate documentation (if needed)
-docs:
-	@echo "Documentation generation not configured yet"
-
-# Watch for changes and run tests automatically (main project only)
+# Watch for changes and run tests automatically
 watch:
 	@./watch.sh
 
@@ -34,6 +34,3 @@ watch-js:
 # Generate a report of the codebase
 lines-of-code:
 	cloc . --exclude-dir=node_modules,vendor,dist,.git,build
-
-run-example:
-	gleam run -- compile test/artifacts/some_organization/specifications test/artifacts/some_organization

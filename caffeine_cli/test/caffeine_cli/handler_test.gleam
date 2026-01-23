@@ -1,0 +1,48 @@
+import caffeine_cli
+import caffeine_cli/exit_status_codes
+import test_helpers
+
+// ==== CLI Exit Codes ====
+// * ✅ successful compile returns Success
+// * ✅ compile with nonexistent blueprint file returns Failure
+// * ✅ compile with nonexistent expectations dir returns Failure
+// * ✅ invalid arguments returns Failure
+// * ✅ --help returns Success
+// * ✅ -h returns Success
+// * ✅ --version returns Success
+// * ✅ -V returns Success
+// * ✅ no arguments returns Success
+pub fn cli_exit_code_test() {
+  test_helpers.array_based_test_executor_1(
+    [
+      #(
+        [
+          "compile",
+          "--quiet",
+          "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+          "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
+        ],
+        exit_status_codes.Success,
+      ),
+      #(
+        ["compile", "--quiet", "/nonexistent/path.caffeine", "/nonexistent/dir"],
+        exit_status_codes.Failure,
+      ),
+      #(
+        [
+          "compile",
+          "--quiet",
+          "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+          "/nonexistent/expectations",
+        ],
+        exit_status_codes.Failure,
+      ),
+      #(["--quiet", "--help"], exit_status_codes.Success),
+      #(["--quiet", "-h"], exit_status_codes.Success),
+      #(["--quiet", "--version"], exit_status_codes.Success),
+      #(["--quiet", "-V"], exit_status_codes.Success),
+      #(["--quiet"], exit_status_codes.Success),
+    ],
+    caffeine_cli.run,
+  )
+}

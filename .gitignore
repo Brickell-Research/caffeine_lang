@@ -26,7 +26,7 @@
 !.env.example
 
 # Build artifacts
-/build/
+build/
 /dist/
 /out/
 

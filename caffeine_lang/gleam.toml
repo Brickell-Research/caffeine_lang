@@ -1,0 +1,30 @@
+name = "caffeine_lang"
+version = "3.0.6"
+description = "A compiler for generating reliability artifacts from service expectation definitions."
+licences = ["GPL-3.0"]
+
+repository = { type = "github", user = "Brickell-Research", repo = "caffeine_lang" }
+links = [
+    { title = "Website", href = "https://github.com/Brickell-Research/caffeine_lang" },
+]
+
+target = "erlang"
+
+[dependencies]
+gleam_stdlib = ">= 0.63.0 and < 1.0.2"
+gleam_json = ">= 3.1.0 and < 4.0.0"
+terra_madre = ">=0.0.4"
+gleam_community_ansi = ">= 1.4.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.2"
+simplifile = ">= 2.3.0 and < 3.0.0"
+gleamy_bench = ">= 0.6.0 and < 1.0.2"
+
+# Mark implementation-detail modules as internal (hidden from docs)
+[internal-modules]
+"caffeine_lang/parser/artifacts" = true
+"caffeine_lang/parser/blueprints" = true
+"caffeine_lang/parser/expectations" = true
+"caffeine_lang/common/validations" = true
+"caffeine_lang/common/decoders" = true

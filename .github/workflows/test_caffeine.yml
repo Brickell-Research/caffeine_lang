@@ -27,20 +27,18 @@ jobs:
       with:
         path: |
           ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
+          caffeine_lang/build
+          caffeine_cli/build
+        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-erlang-
           ${{ runner.os }}-gleam-
 
-    - name: Download dependencies
-      run: gleam deps download
+    - name: Test caffeine_lang
+      run: cd caffeine_lang && gleam test
 
-    - name: Compile
-      run: gleam build
-
-    - name: Run tests
-      run: gleam test
+    - name: Test caffeine_cli
+      run: cd caffeine_cli && gleam test
 
   test-javascript:
     name: Test JavaScript Target
@@ -67,20 +65,18 @@ jobs:
       with:
         path: |
           ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
+          caffeine_lang/build
+          caffeine_cli/build
+        key: ${{ runner.os }}-gleam-js-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-js-
           ${{ runner.os }}-gleam-
 
-    - name: Download dependencies
-      run: gleam deps download
-
     - name: Install npm dependencies
       run: npm install
 
-    - name: Compile
-      run: gleam build --target javascript
+    - name: Test caffeine_lang (JavaScript)
+      run: cd caffeine_lang && gleam test --target javascript
 
-    - name: Run tests
-      run: gleam test --target javascript
+    - name: Test caffeine_cli (JavaScript)
+      run: cd caffeine_cli && gleam test --target javascript
