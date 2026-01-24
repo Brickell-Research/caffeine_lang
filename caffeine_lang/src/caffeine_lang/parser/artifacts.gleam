@@ -1,12 +1,16 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/common/validations
 import caffeine_lang/standard_library/artifacts
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/json
+import gleam/list
 import gleam/result
+import gleam/string
 
 /// A reusable artifact template with named parameters.
 pub type Artifact {
@@ -50,6 +54,41 @@ pub fn artifact_type_to_string(type_: ArtifactType) -> String {
   case type_ {
     SLO -> "SLO"
     DependencyRelations -> "DependencyRelations"
+  }
+}
+
+/// Pretty-prints an artifact showing its type and parameters.
+@internal
+pub fn pretty_print_artifact(artifact: Artifact) -> String {
+  let header = artifact_type_to_string(artifact.type_)
+  let params =
+    artifact.params
+    |> dict.to_list
+    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+    |> list.map(fn(pair) {
+      let #(name, typ) = pair
+      "  "
+      <> name
+      <> "\n    type: "
+      <> accepted_types.accepted_type_to_string(typ)
+      <> "\n    "
+      <> param_status(typ)
+    })
+    |> string.join("\n")
+
+  header <> "\n\n" <> params
+}
+
+/// Returns the status of a parameter: "required", "optional", or "default: <value>".
+@internal
+pub fn param_status(typ: AcceptedTypes) -> String {
+  case typ {
+    accepted_types.ModifierType(modifier_types.Optional(_)) -> "optional"
+    accepted_types.ModifierType(modifier_types.Defaulted(_, default)) ->
+      "default: " <> default
+    accepted_types.RefinementType(refinement_types.OneOf(inner, _)) ->
+      param_status(inner)
+    _ -> "required"
   }
 }
 

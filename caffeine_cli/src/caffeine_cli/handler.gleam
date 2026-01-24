@@ -5,6 +5,7 @@ import caffeine_lang/common/source_file.{SourceFile}
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
+import caffeine_lang/parser/artifacts
 import caffeine_lsp
 import gleam/io
 import gleam/list
@@ -43,14 +44,9 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
       print_version(logger.Verbose)
       exit_status_codes.Success
     }
-    ["artifacts"] -> {
-      artifacts_catalog(logger.Verbose)
-      exit_status_codes.Success
-    }
-    ["artifacts", "--quiet"] | ["--quiet", "artifacts"] -> {
+    ["artifacts"] -> artifacts_catalog(logger.Verbose)
+    ["artifacts", "--quiet"] | ["--quiet", "artifacts"] ->
       artifacts_catalog(logger.Minimal)
-      exit_status_codes.Success
-    }
     ["--quiet", "--help"]
     | ["--quiet", "-h"]
     | ["--help", "--quiet"]
@@ -212,8 +208,26 @@ fn print_version(log_level: LogLevel) {
   log(log_level, "caffeine " <> constants.version)
 }
 
-fn artifacts_catalog(log_level: LogLevel) {
-  log(log_level, "TO BE IMPLEMENTED")
+fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
+  case artifacts.parse_standard_library() {
+    Error(_) -> {
+      log(log_level, "Error: Failed to parse standard library artifacts")
+      exit_status_codes.Failure
+    }
+    Ok(artifact_list) -> {
+      log(log_level, "Artifact Catalog")
+      log(log_level, string.repeat("=", 16))
+      log(log_level, "")
+
+      artifact_list
+      |> list.map(artifacts.pretty_print_artifact)
+      |> string.join("\n\n")
+      |> log(log_level, _)
+
+      log(log_level, "")
+      exit_status_codes.Success
+    }
+  }
 }
 
 fn log(log_level: LogLevel, message: String) {
