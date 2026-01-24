@@ -1,4 +1,5 @@
 import caffeine_lang/common/errors.{type CompilationError}
+import gleam/bool
 import gleam/float
 import gleam/option.{type Option}
 import gleam/result
@@ -105,16 +106,13 @@ fn try_operators(
         Ok(exp) -> Ok(exp)
         Error(err) -> {
           // If it looks like a time_slice but has invalid syntax, propagate error
-          case
-            string.starts_with(input, "time_slice(")
-            && string.ends_with(input, ")")
-          {
-            True -> Error(err)
-            False -> {
-              let word = Word(input)
-              Ok(Primary(PrimaryWord(word)))
-            }
-          }
+          use <- bool.guard(
+            when: string.starts_with(input, "time_slice(")
+              && string.ends_with(input, ")"),
+            return: Error(err),
+          )
+          let word = Word(input)
+          Ok(Primary(PrimaryWord(word)))
         }
       }
     }
@@ -135,19 +133,17 @@ fn try_operators(
 /// Returns Error if the input is not a keyword expression.
 fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
   // Check for time_slice keyword
-  case
-    string.starts_with(input, "time_slice(") && string.ends_with(input, ")")
-  {
-    True -> {
-      // Extract the inner content (everything between "time_slice(" and ")")
-      let prefix_len = string.length("time_slice(")
-      let inner_len = string.length(input) - prefix_len - 1
-      let inner = string.slice(input, prefix_len, inner_len)
-      use spec <- result.try(parse_time_slice_spec(inner))
-      Ok(TimeSliceExpr(spec))
-    }
-    False -> Error("Not a keyword expression")
-  }
+  use <- bool.guard(
+    when: !{ string.starts_with(input, "time_slice(")
+      && string.ends_with(input, ")") },
+    return: Error("Not a keyword expression"),
+  )
+  // Extract the inner content (everything between "time_slice(" and ")")
+  let prefix_len = string.length("time_slice(")
+  let inner_len = string.length(input) - prefix_len - 1
+  let inner = string.slice(input, prefix_len, inner_len)
+  use spec <- result.try(parse_time_slice_spec(inner))
+  Ok(TimeSliceExpr(spec))
 }
 
 /// Parses the inner content of a time_slice expression.
@@ -238,15 +234,12 @@ fn find_substring_position_loop(
   let needle_len = string.length(needle)
   let haystack_len = string.length(haystack)
 
-  case pos + needle_len > haystack_len {
-    True -> option.None
-    False -> {
-      case string.slice(haystack, pos, needle_len) == needle {
-        True -> option.Some(pos)
-        False -> find_substring_position_loop(haystack, needle, pos + 1)
-      }
-    }
-  }
+  use <- bool.guard(when: pos + needle_len > haystack_len, return: option.None)
+  use <- bool.guard(
+    when: string.slice(haystack, pos, needle_len) == needle,
+    return: option.Some(pos),
+  )
+  find_substring_position_loop(haystack, needle, pos + 1)
 }
 
 /// Splits on "per" keyword, returning (threshold_str, interval_str).
@@ -286,12 +279,11 @@ fn parse_threshold(input: String) -> Result(Float, String) {
 
 /// Parses an integer string as a float.
 fn parse_int_as_float(input: String) -> Result(Float, String) {
-  case string.contains(input, ".") {
-    True -> Error("Not an integer")
-    False ->
-      float.parse(input <> ".0")
-      |> result.map_error(fn(_) { "Invalid number" })
-  }
+  use <- bool.guard(when: string.contains(input, "."), return: Error(
+    "Not an integer",
+  ))
+  float.parse(input <> ".0")
+  |> result.map_error(fn(_) { "Invalid number" })
 }
 
 /// Parses an interval like "10s", "5m", "1h", "1.5h" into seconds.
@@ -338,16 +330,12 @@ fn find_operator(
 /// Used to validate parenthesized expressions during parsing.
 @internal
 pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
-  case pos >= string.length(input) {
-    True -> count == 0
-    False -> {
-      let new_count = count_parens(count, input, pos)
-      let does_not_close_too_early =
-        !{ { new_count == 0 } && !is_last_char(input, pos) }
+  use <- bool.guard(when: pos >= string.length(input), return: count == 0)
+  let new_count = count_parens(count, input, pos)
+  let does_not_close_too_early =
+    !{ { new_count == 0 } && !is_last_char(input, pos) }
 
-      does_not_close_too_early && is_balanced_parens(input, pos + 1, new_count)
-    }
-  }
+  does_not_close_too_early && is_balanced_parens(input, pos + 1, new_count)
 }
 
 /// Returns true if the position is at the last character of the input string.

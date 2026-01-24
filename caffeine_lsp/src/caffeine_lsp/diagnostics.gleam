@@ -2,6 +2,7 @@ import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
+import gleam/bool
 import gleam/string
 
 /// A diagnostic to send to the editor.
@@ -18,36 +19,31 @@ const severity_warning = 2
 /// Tries to parse as blueprints first, then as expects.
 /// If parsing succeeds, runs the validator for additional checks.
 pub fn get_diagnostics(content: String) -> List(Diagnostic) {
-  case string.trim(content) {
-    "" -> []
-    _ -> {
-      case parser.parse_blueprints_file(content) {
-        Ok(file) -> {
-          case validator.validate_blueprints_file(file) {
+  use <- bool.guard(when: string.trim(content) == "", return: [])
+  case parser.parse_blueprints_file(content) {
+    Ok(file) ->
+      case validator.validate_blueprints_file(file) {
+        Ok(_) -> []
+        Error(err) -> [validator_error_to_diagnostic(content, err)]
+      }
+    Error(blueprint_err) ->
+      case parser.parse_expects_file(content) {
+        Ok(file) ->
+          case validator.validate_expects_file(file) {
             Ok(_) -> []
             Error(err) -> [validator_error_to_diagnostic(content, err)]
           }
-        }
-        Error(blueprint_err) -> {
-          case parser.parse_expects_file(content) {
-            Ok(file) -> {
-              case validator.validate_expects_file(file) {
-                Ok(_) -> []
-                Error(err) -> [validator_error_to_diagnostic(content, err)]
-              }
-            }
-            Error(expects_err) -> {
-              case
-                string.starts_with(string.trim_start(content), "Expectations")
-              {
-                True -> [parser_error_to_diagnostic(expects_err)]
-                False -> [parser_error_to_diagnostic(blueprint_err)]
-              }
-            }
-          }
+        Error(expects_err) -> {
+          use <- bool.guard(
+            when: string.starts_with(
+              string.trim_start(content),
+              "Expectations",
+            ),
+            return: [parser_error_to_diagnostic(expects_err)],
+          )
+          [parser_error_to_diagnostic(blueprint_err)]
         }
       }
-    }
   }
 }
 

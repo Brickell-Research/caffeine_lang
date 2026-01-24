@@ -111,12 +111,12 @@ pub fn inputs_validator(
 /// Returns a ParserDuplicateError listing any duplicate values found.
 @internal
 pub fn validate_relevant_uniqueness(
-  things_to_validate_uniqueness_for: List(a),
-  fetch_property: fn(a) -> String,
-  thing_label: String,
+  items: List(a),
+  by fetch_property: fn(a) -> String,
+  label thing_label: String,
 ) -> Result(Bool, CompilationError) {
   let dupe_names =
-    things_to_validate_uniqueness_for
+    items
     |> list.group(fn(thing) { fetch_property(thing) })
     |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
     |> dict.keys
@@ -172,9 +172,9 @@ pub fn validate_inputs_for_collection(
 /// Returns an error with the overlapping keys if overshadowing is detected.
 @internal
 pub fn check_collection_key_overshadowing(
-  reference_collection: Dict(String, a),
-  referrer_collection: Dict(String, b),
-  error_msg: String,
+  in reference_collection: Dict(String, a),
+  against referrer_collection: Dict(String, b),
+  with error_msg: String,
 ) -> Result(Bool, String) {
   let reference_names = reference_collection |> dict.keys |> set.from_list
   let referrer_names = referrer_collection |> dict.keys |> set.from_list

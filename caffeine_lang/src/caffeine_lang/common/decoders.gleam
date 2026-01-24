@@ -16,8 +16,8 @@ import gleam/list
 /// Decoder that validates a string references an item in a collection by name.
 @internal
 pub fn named_reference_decoder(
-  collection: List(a),
-  name_extraction: fn(a) -> String,
+  from collection: List(a),
+  by name_extraction: fn(a) -> String,
 ) -> decode.Decoder(String) {
   let names = collection |> list.map(name_extraction)
   let default = Error("")
@@ -39,10 +39,10 @@ pub fn named_reference_decoder(
 /// Each element must be a string that references an item in the collection.
 @internal
 pub fn non_empty_named_reference_list_decoder(
-  collection: List(a),
-  name_extraction: fn(a) -> String,
+  from collection: List(a),
+  by name_extraction: fn(a) -> String,
 ) -> decode.Decoder(List(String)) {
-  let inner_decoder = named_reference_decoder(collection, name_extraction)
+  let inner_decoder = named_reference_decoder(from: collection, by: name_extraction)
 
   // Decode as a list first, then validate non-empty
   use refs <- decode.then(decode.list(inner_decoder))

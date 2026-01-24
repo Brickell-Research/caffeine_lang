@@ -37,8 +37,8 @@ pub fn parse_from_json_string(
 
   use _ <- result.try(validations.validate_relevant_uniqueness(
     artifacts,
-    fn(a) { a.type_ |> artifact_type_to_string },
-    "artifact names",
+    by: fn(a) { a.type_ |> artifact_type_to_string },
+    label: "artifact names",
   ))
 
   Ok(artifacts)

@@ -12,7 +12,7 @@ import test_helpers
 // * ✅ name doesn't exist in collection
 pub fn named_reference_decoder_test() {
   let collection = [#("alice", 1), #("bob", 2)]
-  let decoder = decoders.named_reference_decoder(collection, fn(x) { x.0 })
+  let decoder = decoders.named_reference_decoder(from: collection, by: fn(x) { x.0 })
 
   [
     #(dynamic.string("alice"), Ok("alice")),

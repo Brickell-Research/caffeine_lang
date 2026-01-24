@@ -139,8 +139,13 @@ pub fn resolve_to_string(
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       )
     List(inner_type) -> {
-      let assert Ok(vals) =
+      use vals <- result.try(
         decode.run(value, decode.list(decode_inner_to_string(inner_type)))
+        |> result.map_error(fn(_) {
+          "Failed to decode list values for type: "
+          <> type_to_string(collection)
+        }),
+      )
       Ok(resolve_list(vals))
     }
   }

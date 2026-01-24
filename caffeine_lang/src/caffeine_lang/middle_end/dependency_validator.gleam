@@ -2,6 +2,7 @@ import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
 import gleam/list
@@ -61,27 +62,27 @@ fn validate_ir_dependencies(
   expectation_index: Dict(String, IntermediateRepresentation),
 ) -> Result(Nil, CompilationError) {
   // Skip IRs that don't have DependencyRelations
-  case ir.artifact_refs |> list.contains("DependencyRelations") {
-    False -> Ok(Nil)
-    True -> {
-      let self_path = ir_to_path(ir)
+  use <- bool.guard(
+    when: !list.contains(ir.artifact_refs, "DependencyRelations"),
+    return: Ok(Nil),
+  )
 
-      // Extract the relations value from the IR
-      let relations = extract_relations(ir)
+  let self_path = ir_to_path(ir)
 
-      // Get all dependency targets (from both hard and soft)
-      let all_targets = get_all_dependency_targets(relations)
+  // Extract the relations value from the IR
+  let relations = extract_relations(ir)
 
-      // Check for duplicates
-      use _ <- result.try(check_for_duplicates(all_targets, self_path))
+  // Get all dependency targets (from both hard and soft)
+  let all_targets = get_all_dependency_targets(relations)
 
-      // Validate each target
-      all_targets
-      |> list.try_each(fn(target) {
-        validate_dependency_target(target, self_path, expectation_index)
-      })
-    }
-  }
+  // Check for duplicates
+  use _ <- result.try(check_for_duplicates(all_targets, self_path))
+
+  // Validate each target
+  all_targets
+  |> list.try_each(fn(target) {
+    validate_dependency_target(target, self_path, expectation_index)
+  })
 }
 
 fn extract_relations(
@@ -120,19 +121,18 @@ fn do_check_for_duplicates(
 ) -> Result(Nil, CompilationError) {
   case targets {
     [] -> Ok(Nil)
-    [target, ..rest] ->
-      case set.contains(seen, target) {
-        True ->
-          Error(errors.SemanticAnalysisDependencyValidationError(
-            msg: "Duplicate dependency reference '"
-              <> target
-              <> "' in '"
-              <> self_path
-              <> "'",
-          ))
-        False ->
-          do_check_for_duplicates(rest, set.insert(seen, target), self_path)
-      }
+    [target, ..rest] -> {
+      use <- bool.guard(when: set.contains(seen, target), return: Error(
+        errors.SemanticAnalysisDependencyValidationError(
+          msg: "Duplicate dependency reference '"
+            <> target
+            <> "' in '"
+            <> self_path
+            <> "'",
+        ),
+      ))
+      do_check_for_duplicates(rest, set.insert(seen, target), self_path)
+    }
   }
 }
 
@@ -153,29 +153,26 @@ fn validate_dependency_target(
       ))
     Ok(_) -> {
       // Check for self-reference
-      case target == self_path {
-        True ->
+      use <- bool.guard(when: target == self_path, return: Error(
+        errors.SemanticAnalysisDependencyValidationError(
+          msg: "Invalid dependency reference '"
+            <> target
+            <> "' in '"
+            <> self_path
+            <> "': self-reference not allowed",
+        ),
+      ))
+      // Check if target exists
+      case dict.get(expectation_index, target) {
+        Ok(_) -> Ok(Nil)
+        Error(Nil) ->
           Error(errors.SemanticAnalysisDependencyValidationError(
             msg: "Invalid dependency reference '"
               <> target
               <> "' in '"
               <> self_path
-              <> "': self-reference not allowed",
+              <> "': target does not exist",
           ))
-        False -> {
-          // Check if target exists
-          case dict.get(expectation_index, target) {
-            Ok(_) -> Ok(Nil)
-            Error(Nil) ->
-              Error(errors.SemanticAnalysisDependencyValidationError(
-                msg: "Invalid dependency reference '"
-                  <> target
-                  <> "' in '"
-                  <> self_path
-                  <> "': target does not exist",
-              ))
-          }
-        }
       }
     }
   }

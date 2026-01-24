@@ -9,6 +9,7 @@ import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type TypeAlias,
 }
+import gleam/bool
 import gleam/list
 import gleam/result
 import gleam/set
@@ -109,14 +110,10 @@ fn validate_no_duplicate_extendables_loop(
   case extendables {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(seen, first.name) {
-        True -> Error(DuplicateExtendable(name: first.name))
-        False ->
-          validate_no_duplicate_extendables_loop(
-            rest,
-            set.insert(seen, first.name),
-          )
-      }
+      use <- bool.guard(when: set.contains(seen, first.name), return: Error(
+        DuplicateExtendable(name: first.name),
+      ))
+      validate_no_duplicate_extendables_loop(rest, set.insert(seen, first.name))
     }
   }
 }
@@ -190,11 +187,10 @@ fn validate_extends_exist(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(extendable_names, first) {
-        True -> validate_extends_exist(rest, item_name, extendable_names)
-        False ->
-          Error(UndefinedExtendable(name: first, referenced_by: item_name))
-      }
+      use <- bool.guard(when: !set.contains(extendable_names, first), return: Error(
+        UndefinedExtendable(name: first, referenced_by: item_name),
+      ))
+      validate_extends_exist(rest, item_name, extendable_names)
     }
   }
 }
@@ -215,16 +211,10 @@ fn validate_no_duplicate_extends_loop(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(seen, first) {
-        True ->
-          Error(DuplicateExtendsReference(name: first, referenced_by: item_name))
-        False ->
-          validate_no_duplicate_extends_loop(
-            rest,
-            item_name,
-            set.insert(seen, first),
-          )
-      }
+      use <- bool.guard(when: set.contains(seen, first), return: Error(
+        DuplicateExtendsReference(name: first, referenced_by: item_name),
+      ))
+      validate_no_duplicate_extends_loop(rest, item_name, set.insert(seen, first))
     }
   }
 }
@@ -247,11 +237,10 @@ fn lookup_type_alias(
 ) -> Result(AcceptedTypes, Nil) {
   case type_alias_map {
     [] -> Error(Nil)
-    [#(n, t), ..rest] ->
-      case n == name {
-        True -> Ok(t)
-        False -> lookup_type_alias(name, rest)
-      }
+    [#(n, t), ..rest] -> {
+      use <- bool.guard(when: n == name, return: Ok(t))
+      lookup_type_alias(name, rest)
+    }
   }
 }
 
@@ -269,14 +258,10 @@ fn validate_no_duplicate_type_aliases_loop(
   case type_aliases {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(seen, first.name) {
-        True -> Error(DuplicateTypeAlias(name: first.name))
-        False ->
-          validate_no_duplicate_type_aliases_loop(
-            rest,
-            set.insert(seen, first.name),
-          )
-      }
+      use <- bool.guard(when: set.contains(seen, first.name), return: Error(
+        DuplicateTypeAlias(name: first.name),
+      ))
+      validate_no_duplicate_type_aliases_loop(rest, set.insert(seen, first.name))
     }
   }
 }
@@ -303,21 +288,19 @@ fn validate_type_alias_not_circular(
   case typ {
     accepted_types.PrimitiveType(_) -> Ok(Nil)
     accepted_types.TypeAliasRef(name) -> {
-      case list.contains(visited, name) {
-        True -> Error(CircularTypeAlias(name: original_name, cycle: visited))
-        False -> {
-          case lookup_type_alias(name, type_alias_map) {
-            Ok(resolved) ->
-              validate_type_alias_not_circular(
-                original_name,
-                resolved,
-                type_alias_map,
-                [name, ..visited],
-              )
-            Error(_) -> Ok(Nil)
-            // Undefined ref is caught elsewhere
-          }
-        }
+      use <- bool.guard(when: list.contains(visited, name), return: Error(
+        CircularTypeAlias(name: original_name, cycle: visited),
+      ))
+      case lookup_type_alias(name, type_alias_map) {
+        Ok(resolved) ->
+          validate_type_alias_not_circular(
+            original_name,
+            resolved,
+            type_alias_map,
+            [name, ..visited],
+          )
+        Error(_) -> Ok(Nil)
+        // Undefined ref is caught elsewhere
       }
     }
     accepted_types.CollectionType(collection) ->
@@ -481,11 +464,10 @@ fn validate_type_refs(
   case typ {
     accepted_types.PrimitiveType(_) -> Ok(Nil)
     accepted_types.TypeAliasRef(name) -> {
-      case set.contains(type_alias_names, name) {
-        True -> Ok(Nil)
-        False ->
-          Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
-      }
+      use <- bool.guard(when: set.contains(type_alias_names, name), return: Ok(
+        Nil,
+      ))
+      Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
     }
     accepted_types.CollectionType(collection) ->
       validate_collection_type_refs(
@@ -580,40 +562,25 @@ fn validate_dict_key_type(
     // TypeAliasRef must resolve to String-based type
     accepted_types.TypeAliasRef(alias_name) -> {
       case lookup_type_alias(alias_name, type_alias_map) {
-        Ok(resolved) ->
-          case is_string_based_type(resolved) {
-            True -> Ok(Nil)
-            False ->
-              Error(InvalidDictKeyTypeAlias(
-                alias_name: alias_name,
-                resolved_to: accepted_types.accepted_type_to_string(resolved),
-                referenced_by: context_name,
-              ))
-          }
+        Ok(resolved) -> {
+          use <- bool.guard(when: is_string_based_type(resolved), return: Ok(
+            Nil,
+          ))
+          Error(InvalidDictKeyTypeAlias(
+            alias_name: alias_name,
+            resolved_to: accepted_types.accepted_type_to_string(resolved),
+            referenced_by: context_name,
+          ))
+        }
         Error(_) -> Ok(Nil)
         // Undefined ref is caught elsewhere
       }
     }
     // Refinement of String is valid
-    accepted_types.RefinementType(refinement) ->
-      case refinement {
-        refinement_types.OneOf(inner, _) ->
-          case inner {
-            accepted_types.PrimitiveType(primitive_types.String) -> Ok(Nil)
-            _ ->
-              Error(InvalidDictKeyTypeAlias(
-                alias_name: "inline",
-                resolved_to: accepted_types.accepted_type_to_string(key_type),
-                referenced_by: context_name,
-              ))
-          }
-        refinement_types.InclusiveRange(_, _, _) ->
-          Error(InvalidDictKeyTypeAlias(
-            alias_name: "inline",
-            resolved_to: accepted_types.accepted_type_to_string(key_type),
-            referenced_by: context_name,
-          ))
-      }
+    accepted_types.RefinementType(refinement_types.OneOf(
+      accepted_types.PrimitiveType(primitive_types.String),
+      _,
+    )) -> Ok(Nil)
     // Other types are not valid Dict keys
     _ ->
       Error(InvalidDictKeyTypeAlias(
@@ -628,15 +595,10 @@ fn validate_dict_key_type(
 fn is_string_based_type(typ: AcceptedTypes) -> Bool {
   case typ {
     accepted_types.PrimitiveType(primitive_types.String) -> True
-    accepted_types.RefinementType(refinement) ->
-      case refinement {
-        refinement_types.OneOf(inner, _) ->
-          case inner {
-            accepted_types.PrimitiveType(primitive_types.String) -> True
-            _ -> False
-          }
-        refinement_types.InclusiveRange(_, _, _) -> False
-      }
+    accepted_types.RefinementType(refinement_types.OneOf(
+      accepted_types.PrimitiveType(primitive_types.String),
+      _,
+    )) -> True
     _ -> False
   }
 }

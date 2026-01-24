@@ -3,6 +3,7 @@ import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/validations
 import caffeine_lang/parser/artifacts.{type Artifact}
+import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -48,8 +49,8 @@ pub fn validate_blueprints(
   // Validate all names are unique.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     blueprints,
-    fn(b) { b.name },
-    "blueprint names",
+    by: fn(b) { b.name },
+    label: "blueprint names",
   ))
 
   // Check for duplicate artifact refs within each blueprint.
@@ -94,9 +95,9 @@ pub fn validate_blueprints(
 
       case
         validations.check_collection_key_overshadowing(
-          blueprint.params,
-          merged_artifact.params,
-          "Blueprint overshadowing inherited_params from artifact: ",
+          in: blueprint.params,
+          against: merged_artifact.params,
+          with: "Blueprint overshadowing inherited_params from artifact: ",
         )
       {
         Ok(_) -> Error(Nil)
@@ -169,19 +170,18 @@ fn validate_no_duplicate_artifact_refs(
     |> list.filter_map(fn(blueprint) {
       let refs = blueprint.artifact_refs
       let unique_refs = refs |> list.unique
-      case list.length(refs) == list.length(unique_refs) {
-        True -> Error(Nil)
-        False -> {
-          // Find the duplicate(s)
-          let duplicate_refs =
-            refs
-            |> list.group(fn(r) { r })
-            |> dict.filter(fn(_, v) { list.length(v) > 1 })
-            |> dict.keys
-            |> string.join(", ")
-          Ok(duplicate_refs)
-        }
-      }
+      use <- bool.guard(
+        when: list.length(refs) == list.length(unique_refs),
+        return: Error(Nil),
+      )
+      // Find the duplicate(s)
+      let duplicate_refs =
+        refs
+        |> list.group(fn(r) { r })
+        |> dict.filter(fn(_, v) { list.length(v) > 1 })
+        |> dict.keys
+        |> string.join(", ")
+      Ok(duplicate_refs)
     })
 
   case duplicates {
@@ -255,7 +255,7 @@ pub fn blueprints_from_json(
     use name <- decode.field("name", decoders.non_empty_string_decoder())
     use artifact_refs <- decode.field(
       "artifact_refs",
-      decoders.non_empty_named_reference_list_decoder(artifacts, fn(a) {
+      decoders.non_empty_named_reference_list_decoder(from: artifacts, by: fn(a) {
         artifacts.artifact_type_to_string(a.type_)
       }),
     )

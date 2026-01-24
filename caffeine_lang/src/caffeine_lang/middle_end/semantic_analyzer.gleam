@@ -5,6 +5,7 @@ import caffeine_lang/common/helpers.{type ValueTuple}
 import caffeine_lang/common/primitive_types
 import caffeine_lang/middle_end/templatizer
 import caffeine_lang/middle_end/vendor.{type Vendor}
+import gleam/bool
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -44,13 +45,12 @@ pub fn resolve_intermediate_representations(
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   irs
   |> list.try_map(fn(ir) {
-    case ir.artifact_refs |> list.contains("SLO") {
-      True -> {
-        use ir_with_vendor <- result.try(resolve_vendor(ir))
-        resolve_queries(ir_with_vendor)
-      }
-      False -> Ok(ir)
-    }
+    use <- bool.guard(
+      when: !list.contains(ir.artifact_refs, "SLO"),
+      return: Ok(ir),
+    )
+    use ir_with_vendor <- result.try(resolve_vendor(ir))
+    resolve_queries(ir_with_vendor)
   })
 }
 
@@ -86,16 +86,32 @@ pub fn resolve_queries(
 ) -> Result(IntermediateRepresentation, CompilationError) {
   case ir.vendor {
     option.Some(vendor.Datadog) -> {
-      let assert Ok(queries_value_tuple) =
+      use queries_value_tuple <- result.try(
         ir.values
         |> list.filter(fn(vt) { vt.label == "queries" })
         |> list.first
+        |> result.replace_error(
+          errors.SemanticAnalysisTemplateResolutionError(
+            msg: "Missing 'queries' field in IR for '"
+              <> ir.metadata.friendly_label
+              <> "'",
+          ),
+        ),
+      )
 
-      let assert Ok(queries_dict) =
+      use queries_dict <- result.try(
         decode.run(
           queries_value_tuple.value,
           decode.dict(decode.string, decode.string),
         )
+        |> result.map_error(fn(_) {
+          errors.SemanticAnalysisTemplateResolutionError(
+            msg: "Failed to decode queries for '"
+              <> ir.metadata.friendly_label
+              <> "'",
+          )
+        }),
+      )
 
       // Resolve all queries and collect results.
       use resolved_queries <- result.try(
@@ -139,24 +155,24 @@ pub fn resolve_queries(
       use resolved_value_tuple <- result.try(case value_tuple_result {
         Error(_) -> Ok(option.None)
         Ok(value_tuple) -> {
-          let assert Ok(value_string) =
+          use value_string <- result.try(
             decode.run(value_tuple.value, decode.string)
-          case
-            templatizer.parse_and_resolve_query_template(
-              value_string,
-              ir.values,
-            )
-          {
-            Ok(resolved_value) ->
-              Ok(
-                option.Some(helpers.ValueTuple(
-                  "value",
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  dynamic.string(resolved_value),
-                )),
+            |> result.map_error(fn(_) {
+              errors.SemanticAnalysisTemplateResolutionError(
+                msg: "Failed to decode 'value' field as string for '"
+                  <> ir.metadata.friendly_label
+                  <> "'",
               )
-            Error(err) -> Error(err)
-          }
+            }),
+          )
+          templatizer.parse_and_resolve_query_template(value_string, ir.values)
+          |> result.map(fn(resolved_value) {
+            option.Some(helpers.ValueTuple(
+              "value",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(resolved_value),
+            ))
+          })
         }
       })
 

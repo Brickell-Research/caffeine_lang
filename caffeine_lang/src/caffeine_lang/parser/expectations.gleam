@@ -47,7 +47,7 @@ pub fn expectations_from_json(
     use name <- decode.field("name", decoders.non_empty_string_decoder())
     use blueprint_ref <- decode.field(
       "blueprint_ref",
-      decoders.named_reference_decoder(blueprints, fn(b) { b.name }),
+      decoders.named_reference_decoder(from: blueprints, by: fn(b) { b.name }),
     )
     use inputs <- decode.field(
       "inputs",
@@ -103,8 +103,8 @@ fn validate_expectations(
   // Validate unique names within a file.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     expectations,
-    fn(e) { e.name },
-    "expectation names",
+    by: fn(e) { e.name },
+    label: "expectation names",
   ))
 
   Ok(expectations_blueprint_collection)
@@ -119,9 +119,9 @@ fn check_input_overshadowing(
       let #(expectation, blueprint) = pair
       case
         validations.check_collection_key_overshadowing(
-          expectation.inputs,
-          blueprint.inputs,
-          "Expectation '"
+          in: expectation.inputs,
+          against: blueprint.inputs,
+          with: "Expectation '"
             <> expectation.name
             <> "' overshadowing inputs from blueprint: ",
         )

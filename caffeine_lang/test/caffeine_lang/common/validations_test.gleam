@@ -1006,7 +1006,7 @@ pub fn validate_relevant_uniqueness_test() {
     #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(True)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
-    validations.validate_relevant_uniqueness(things, fetch_name, "names")
+    validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
   })
 
   // sad paths - exact match
@@ -1017,7 +1017,7 @@ pub fn validate_relevant_uniqueness_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
-    validations.validate_relevant_uniqueness(things, fetch_name, "names")
+    validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
   })
 
   // sad paths - order not guaranteed (check contains)
@@ -1030,7 +1030,7 @@ pub fn validate_relevant_uniqueness_test() {
   |> list.each(fn(pair) {
     let #(things, expected_substring) = pair
     let result =
-      validations.validate_relevant_uniqueness(things, fetch_name, "names")
+      validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
     result |> should.be_error
     let assert Error(errors.ParserDuplicateError(msg)) = result
     string.contains(msg, expected_substring) |> should.be_true
@@ -1148,9 +1148,9 @@ pub fn check_collection_key_overshadowing_test() {
   |> list.each(fn(pair) {
     let #(reference, referrer) = pair
     validations.check_collection_key_overshadowing(
-      reference,
-      referrer,
-      error_prefix,
+      in: reference,
+      against: referrer,
+      with: error_prefix,
     )
     |> should.equal(Ok(True))
   })

@@ -2,6 +2,7 @@ import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_query_language/parser.{
   type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr, TimeSliceExpr,
 }
+import gleam/bool
 import gleam/float
 
 /// Supported primitive query types that can be resolved from CQL expressions.
@@ -65,13 +66,13 @@ pub fn resolve_primitives(
       case exp {
         OperatorExpr(left, right, Div) -> {
           // Check that neither operand contains a time_slice expression
-          case contains_time_slice(left) || contains_time_slice(right) {
-            True ->
-              Error(errors.CQLResolverError(
-                msg: "time_slice cannot be used as an operand. It must be the entire expression.",
-              ))
-            False -> Ok(GoodOverTotal(left, right))
-          }
+          use <- bool.guard(
+            when: contains_time_slice(left) || contains_time_slice(right),
+            return: Error(errors.CQLResolverError(
+              msg: "time_slice cannot be used as an operand. It must be the entire expression.",
+            )),
+          )
+          Ok(GoodOverTotal(left, right))
         }
         TimeSliceExpr(spec) ->
           Ok(TimeSlice(
