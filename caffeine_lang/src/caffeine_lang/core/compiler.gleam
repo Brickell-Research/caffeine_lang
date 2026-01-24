@@ -1,7 +1,8 @@
 import caffeine_lang/common/errors
-import caffeine_lang/common/source_file.{type SourceFile}
+import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
+import caffeine_lang/frontend/pipeline
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/dependency_validator
 import caffeine_lang/middle_end/semantic_analyzer.{
@@ -263,10 +264,22 @@ fn run_code_generation(
 }
 
 fn parse_from_strings(
-  blueprints_json: String,
-  expectations_json: String,
+  blueprints_source: String,
+  expectations_source: String,
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+  // Run the DSL frontend pipeline to produce JSON
+  use blueprints_json <- result.try(pipeline.compile_blueprints(SourceFile(
+    path: "browser/blueprints.caffeine",
+    content: blueprints_source,
+  )))
+
+  use expectations_json <- result.try(pipeline.compile_expects(SourceFile(
+    path: "browser/expectations.caffeine",
+    content: expectations_source,
+  )))
+
+  // Parse the generated JSON
   use artifacts <- result.try(artifacts.parse_standard_library())
 
   use validated_blueprints <- result.try(blueprints.parse_from_json_string(

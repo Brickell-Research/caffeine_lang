@@ -108,8 +108,8 @@ fn contains_all_substrings(result: Result(String, a), substrings: List(String)) 
 // * ✅ happy path - single expectation with templated queries
 // * ✅ happy path - path extraction (org/team/service from file path)
 // * ✅ happy path - time_slice SLO expression
-// * ✅ sad path   - invalid blueprint JSON
-// * ✅ sad path   - invalid expectations JSON
+// * ✅ sad path   - invalid blueprint DSL
+// * ✅ sad path   - invalid expectations DSL
 // * ✅ sad path   - missing blueprint reference
 pub fn compile_from_strings_test() {
   // happy paths - check that output contains expected substrings
@@ -117,29 +117,28 @@ pub fn compile_from_strings_test() {
     // single expectation with templated queries
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"api_availability\",
-          \"artifact_refs\": [\"SLO\"],
-          \"params\": { \"env\": \"String\", \"status\": \"Boolean\" },
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"numerator / denominator\",
-            \"queries\": {
-              \"numerator\": \"sum:http.requests{$$env->env$$ AND $$status->status:not$$}\",
-              \"denominator\": \"sum:http.requests{$$env->env$$}\"
-            }
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"checkout_availability\",
-          \"blueprint_ref\": \"api_availability\",
-          \"inputs\": { \"env\": \"production\", \"status\": true, \"threshold\": 99.95, \"window_in_days\": 30 }
-        }]
-      }",
-        "acme/payments/slos.json",
+        "Blueprints for \"SLO\"
+  * \"api_availability\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      value: \"numerator / denominator\",
+      queries: {
+        numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+",
+        "Expectations for \"api_availability\"
+  * \"checkout_availability\":
+    Provides {
+      env: \"production\",
+      status: true,
+      threshold: 99.95,
+      window_in_days: 30
+    }
+",
+        "acme/payments/slos.caffeine",
         [
           "datadog_service_level_objective",
           "checkout_availability",
@@ -151,26 +150,23 @@ pub fn compile_from_strings_test() {
     // path extraction (org/team/service from file path)
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"simple_slo\",
-          \"artifact_refs\": [\"SLO\"],
-          \"params\": {},
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"numerator / denominator\",
-            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" }
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"my_slo\",
-          \"blueprint_ref\": \"simple_slo\",
-          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
-        }]
-      }",
-        "myorg/myteam/myservice.json",
+        "Blueprints for \"SLO\"
+  * \"simple_slo\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"numerator / denominator\",
+      queries: { numerator: \"count:test\", denominator: \"count:test\" }
+    }
+",
+        "Expectations for \"simple_slo\"
+  * \"my_slo\":
+    Provides {
+      threshold: 99.0,
+      window_in_days: 7
+    }
+",
+        "myorg/myteam/myservice.caffeine",
         ["org:myorg", "team:myteam", "service:myservice"],
       ),
       True,
@@ -178,26 +174,24 @@ pub fn compile_from_strings_test() {
     // time_slice SLO expression
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"cpu_slo\",
-          \"artifact_refs\": [\"SLO\"],
-          \"params\": { \"env\": \"String\" },
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"time_slice(avg:system.cpu.user{$$env->env$$} > 99.5 per 300s)\",
-            \"queries\": {}
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"cpu_availability\",
-          \"blueprint_ref\": \"cpu_slo\",
-          \"inputs\": { \"env\": \"production\", \"threshold\": 99.9, \"window_in_days\": 30 }
-        }]
-      }",
-        "acme/infra/slos.json",
+        "Blueprints for \"SLO\"
+  * \"cpu_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      value: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
+      queries: {}
+    }
+",
+        "Expectations for \"cpu_slo\"
+  * \"cpu_availability\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9,
+      window_in_days: 30
+    }
+",
+        "acme/infra/slos.caffeine",
         [
           "datadog_service_level_objective",
           "cpu_availability",
@@ -212,33 +206,33 @@ pub fn compile_from_strings_test() {
       ),
       True,
     ),
-    // sad path - invalid blueprint JSON
+    // sad path - invalid blueprint DSL
     #(
       #(
-        "{ invalid json }",
-        "{\"expectations\": []}",
-        "playground/demo/service.json",
+        "this is not valid caffeine syntax !!!",
+        "Expectations for \"x\"
+  * \"y\":
+    Provides {}
+",
+        "playground/demo/service.caffeine",
         [],
       ),
       False,
     ),
-    // sad path - invalid expectations JSON
+    // sad path - invalid expectations DSL
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"api_availability\",
-          \"artifact_refs\": [\"SLO\"],
-          \"params\": {},
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"1\",
-            \"queries\": { \"numerator\": \"1\", \"denominator\": \"1\" }
-          }
-        }]
-      }",
-        "not valid json",
-        "playground/demo/service.json",
+        "Blueprints for \"SLO\"
+  * \"api_availability\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"1\",
+      queries: { numerator: \"1\", denominator: \"1\" }
+    }
+",
+        "not valid caffeine syntax !!!",
+        "playground/demo/service.caffeine",
         [],
       ),
       False,
@@ -246,15 +240,20 @@ pub fn compile_from_strings_test() {
     // sad path - missing blueprint reference
     #(
       #(
-        "{\"blueprints\": []}",
-        "{
-        \"expectations\": [{
-          \"name\": \"my_slo\",
-          \"blueprint_ref\": \"nonexistent_blueprint\",
-          \"inputs\": {}
-        }]
-      }",
-        "playground/demo/service.json",
+        "Blueprints for \"SLO\"
+  * \"some_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"1\",
+      queries: { numerator: \"1\", denominator: \"1\" }
+    }
+",
+        "Expectations for \"nonexistent_blueprint\"
+  * \"my_slo\":
+    Provides {}
+",
+        "playground/demo/service.caffeine",
         [],
       ),
       False,
@@ -262,27 +261,24 @@ pub fn compile_from_strings_test() {
     // sad path - invalid dependency reference (target does not exist)
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"slo_with_deps\",
-          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
-          \"params\": {},
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"numerator / denominator\",
-            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
-            \"relations\": { \"hard\": [\"nonexistent.org.team.slo\"] }
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"my_slo\",
-          \"blueprint_ref\": \"slo_with_deps\",
-          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
-        }]
-      }",
-        "myorg/myteam/myservice.json",
+        "Blueprints for \"SLO\" + \"DependencyRelations\"
+  * \"slo_with_deps\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"numerator / denominator\",
+      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      relations: { hard: [\"nonexistent.org.team.slo\"] }
+    }
+",
+        "Expectations for \"slo_with_deps\"
+  * \"my_slo\":
+    Provides {
+      threshold: 99.0,
+      window_in_days: 7
+    }
+",
+        "myorg/myteam/myservice.caffeine",
         [],
       ),
       False,
@@ -290,27 +286,24 @@ pub fn compile_from_strings_test() {
     // sad path - invalid dependency format (not 4 parts)
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"slo_with_deps\",
-          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
-          \"params\": {},
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"numerator / denominator\",
-            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
-            \"relations\": { \"hard\": [\"invalid_format\"] }
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"my_slo\",
-          \"blueprint_ref\": \"slo_with_deps\",
-          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
-        }]
-      }",
-        "myorg/myteam/myservice.json",
+        "Blueprints for \"SLO\" + \"DependencyRelations\"
+  * \"slo_with_deps\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"numerator / denominator\",
+      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      relations: { hard: [\"invalid_format\"] }
+    }
+",
+        "Expectations for \"slo_with_deps\"
+  * \"my_slo\":
+    Provides {
+      threshold: 99.0,
+      window_in_days: 7
+    }
+",
+        "myorg/myteam/myservice.caffeine",
         [],
       ),
       False,
@@ -318,36 +311,33 @@ pub fn compile_from_strings_test() {
     // sad path - self-reference in dependency
     #(
       #(
-        "{
-        \"blueprints\": [{
-          \"name\": \"slo_with_deps\",
-          \"artifact_refs\": [\"SLO\", \"DependencyRelations\"],
-          \"params\": {},
-          \"inputs\": {
-            \"vendor\": \"datadog\",
-            \"value\": \"numerator / denominator\",
-            \"queries\": { \"numerator\": \"count:test\", \"denominator\": \"count:test\" },
-            \"relations\": { \"hard\": [\"myorg.myteam.myservice.my_slo\"] }
-          }
-        }]
-      }",
-        "{
-        \"expectations\": [{
-          \"name\": \"my_slo\",
-          \"blueprint_ref\": \"slo_with_deps\",
-          \"inputs\": { \"threshold\": 99.0, \"window_in_days\": 7 }
-        }]
-      }",
-        "myorg/myteam/myservice.json",
+        "Blueprints for \"SLO\" + \"DependencyRelations\"
+  * \"slo_with_deps\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      value: \"numerator / denominator\",
+      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      relations: { hard: [\"myorg.myteam.myservice.my_slo\"] }
+    }
+",
+        "Expectations for \"slo_with_deps\"
+  * \"my_slo\":
+    Provides {
+      threshold: 99.0,
+      window_in_days: 7
+    }
+",
+        "myorg/myteam/myservice.caffeine",
         [],
       ),
       False,
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
-    let #(blueprints_json, expectations_json, path, expected_substrings) = input
+    let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_json, expectations_json, path)
+      compiler.compile_from_strings(blueprints_src, expectations_src, path)
     case expected_substrings {
       [] ->
         case result {
