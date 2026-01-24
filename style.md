@@ -89,17 +89,40 @@ Use plain `fn` (not `pub fn`) for truly private helpers that don't need test acc
 ## Function Design
 
 - **Data-first**: Put the main data as the first argument to enable piping
-- **Labelled arguments**: Use labels for clarity when functions have multiple parameters
+- **Labelled arguments**: Use semantic labels (`with`, `from`, `in`, `by`, `or`, `over`, `into`, `against`) for multi-parameter functions
+- **No `name name:` pattern**: Use distinct labels instead
+
+```gleam
+pub fn validate(items: List(a), by fetcher: fn(a) -> String)
+```
+
+## Boolean Conditionals
+
+Use `bool.guard` instead of `case bool { True -> ... False -> ... }`:
+
+```gleam
+use <- bool.guard(line <= 0, 0)
+line - 1
+```
 
 ## Error Handling
 
 - **Use `Result`**: Not exceptions
 - **Custom error types**: Prefer over `String` for detailed, type-safe error handling
+- **Flatten nested cases**: Use `result.try` chains instead of 3+ level nesting
+- **Use `result.map_error`**: Instead of `case` that only converts error types
+- **Extract helpers**: Break per-variant logic into separate functions when nesting grows
+
+## `let assert`
+
+- **Allowed**: Structural invariants only (e.g., `dict.get` after `dict.keys`)
+- **Not allowed**: `decode.run`, `list.first` on filtered lists, or anything that can genuinely fail
+- **Rule**: If removing upstream validation would make it crash, use `result.try` instead
 
 ## Use Sparingly
 
-- **`panic` / `let assert`**: Avoid in library code
-- **`use` expression**: Excessive use makes code unclear
+- **`panic` / `todo`**: Never in production code
+- **`use` expression**: Only when it reduces nesting; prefer regular function calls for simple cases
 - **External functions**: Prefer Gleam code where possible
 - **Type aliases**: Prefer custom types for clarity and type safety
 
@@ -107,5 +130,5 @@ Use plain `fn` (not `pub fn`) for truly private helpers that don't need test acc
 
 - **Pipe operator**: Primary composition method
 - **Recursion over loops**: Use `list.map`, `list.fold`, or explicit recursion
-- **Tail recursion**: Public wrapper calls private recursive function with accumulator
+- **Tail recursion**: Public wrapper calls private `_loop` function with accumulator
 - **Smart constructors**: Use opaque types with validation functions to enforce invariants
