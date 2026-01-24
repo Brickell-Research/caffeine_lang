@@ -2,10 +2,12 @@
   "artifacts": [
     {
       "type_": "SLO",
+      "description": "First SLO",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     },
     {
       "type_": "SLO",
+      "description": "Second SLO",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     }
   ]

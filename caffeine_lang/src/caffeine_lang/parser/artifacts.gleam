@@ -14,7 +14,11 @@ import gleam/string
 
 /// A reusable artifact template with named parameters.
 pub type Artifact {
-  Artifact(type_: ArtifactType, params: dict.Dict(String, AcceptedTypes))
+  Artifact(
+    type_: ArtifactType,
+    description: String,
+    params: dict.Dict(String, AcceptedTypes),
+  )
 }
 
 /// Types of supported artifacts
@@ -57,10 +61,11 @@ pub fn artifact_type_to_string(type_: ArtifactType) -> String {
   }
 }
 
-/// Pretty-prints an artifact showing its type and parameters.
+/// Pretty-prints an artifact showing its type, description, and parameters.
 @internal
 pub fn pretty_print_artifact(artifact: Artifact) -> String {
   let header = artifact_type_to_string(artifact.type_)
+  let description = "  \"" <> artifact.description <> "\""
   let params =
     artifact.params
     |> dict.to_list
@@ -76,7 +81,7 @@ pub fn pretty_print_artifact(artifact: Artifact) -> String {
     })
     |> string.join("\n")
 
-  header <> "\n\n" <> params
+  header <> "\n" <> description <> "\n\n" <> params
 }
 
 /// Returns the status of a parameter: "required", "optional", or "default: <value>".
@@ -107,12 +112,13 @@ fn decode_artifacts_json(
 ) -> Result(List(Artifact), json.DecodeError) {
   let artifact_decoder = {
     use type_ <- decode.field("type_", artifact_type_decoder())
+    use description <- decode.field("description", decode.string)
     use params <- decode.field(
       "params",
       decode.dict(decode.string, decoders.accepted_types_decoder()),
     )
 
-    decode.success(Artifact(type_:, params:))
+    decode.success(Artifact(type_:, description:, params:))
   }
   let artifacts_decoded = {
     use artifacts <- decode.field("artifacts", decode.list(artifact_decoder))

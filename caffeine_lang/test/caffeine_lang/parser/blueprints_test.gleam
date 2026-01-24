@@ -24,6 +24,7 @@ fn artifacts() -> List(Artifact) {
   [
     artifacts.Artifact(
       type_: artifacts.SLO,
+      description: "",
       params: dict.from_list([
         #(
           "threshold",
@@ -42,6 +43,7 @@ fn multi_artifacts() -> List(Artifact) {
   [
     artifacts.Artifact(
       type_: artifacts.SLO,
+      description: "",
       params: dict.from_list([
         #(
           "threshold",
@@ -54,6 +56,7 @@ fn multi_artifacts() -> List(Artifact) {
     ),
     artifacts.Artifact(
       type_: artifacts.DependencyRelations,
+      description: "",
       params: dict.from_list([
         #(
           "relationship",

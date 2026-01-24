@@ -2,6 +2,7 @@
   "artifacts": [
     {
       "type_": 10,
+      "description": "A test artifact",
       "version": "0.0.1",
       "params": { "threshold": "Float", "window_in_days": "Integer" }
     }

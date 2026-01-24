@@ -12,10 +12,12 @@ pub const standard_library = "
   \"artifacts\": [
     {
       \"type_\": \"SLO\",
+      \"description\": \"A Service Level Objective that monitors a metric query against a threshold over a rolling window.\",
       \"params\": { \"threshold\": \"Float { x | x in ( 0.0..100.0 ) }\", \"window_in_days\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String { x | x in { datadog } }\" }
     },
     {
       \"type_\": \"DependencyRelations\",
+      \"description\": \"Declares soft and hard dependencies between services for dependency mapping.\",
       \"params\": { \"relations\": \"Dict(String { x | x in { soft, hard } }, List(String))\" }
     }
   ]

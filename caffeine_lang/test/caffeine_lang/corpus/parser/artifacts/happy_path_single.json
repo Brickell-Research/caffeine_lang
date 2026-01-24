@@ -2,6 +2,7 @@
   "artifacts": [
     {
       "type_": "SLO",
+      "description": "A test SLO artifact",
       "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
     }
   ]

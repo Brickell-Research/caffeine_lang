@@ -2,6 +2,7 @@
   "artifacts": [
     {
       "type_": "SLO",
+      "description": "A test SLO artifact",
       "params": {}
     }
   ]

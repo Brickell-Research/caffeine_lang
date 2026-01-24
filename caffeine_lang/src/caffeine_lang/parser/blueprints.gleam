@@ -73,7 +73,11 @@ pub fn validate_blueprints(
       let merged_params = merge_artifact_params(artifact_list)
       #(
         blueprint,
-        artifacts.Artifact(type_: artifacts.SLO, params: merged_params),
+        artifacts.Artifact(
+          type_: artifacts.SLO,
+          description: "",
+          params: merged_params,
+        ),
       )
     })
 

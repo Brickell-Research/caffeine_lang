@@ -1,7 +1,8 @@
 {
   "artifacts": [
     {
-      "type_": "SLO"
+      "type_": "SLO",
+      "description": "A test SLO artifact"
     }
   ]
 }

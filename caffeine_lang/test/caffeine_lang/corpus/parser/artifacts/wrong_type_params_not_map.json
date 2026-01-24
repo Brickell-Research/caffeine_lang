@@ -2,10 +2,12 @@
   "artifacts": [
     {
       "type_": "SLO",
+      "description": "A test SLO artifact",
       "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
     },
     {
       "type_": "DependencyRelations",
+      "description": "A test dependency relations artifact",
       "params": 11.1
     }
   ]

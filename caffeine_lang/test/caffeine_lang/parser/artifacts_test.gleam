@@ -48,6 +48,7 @@ pub fn parse_from_json_string_test() {
       Ok([
         artifacts.Artifact(
           type_: artifacts.SLO,
+          description: "A test SLO artifact",
           params: dict.from_list([
             #(
               "threshold",
@@ -79,6 +80,7 @@ pub fn parse_from_json_string_test() {
       Ok([
         artifacts.Artifact(
           type_: artifacts.SLO,
+          description: "A test SLO artifact",
           params: dict.from_list([
             #(
               "threshold",
@@ -104,6 +106,7 @@ pub fn parse_from_json_string_test() {
         ),
         artifacts.Artifact(
           type_: artifacts.DependencyRelations,
+          description: "A test dependency relations artifact",
           params: dict.from_list([
             #(
               "relationship",
@@ -121,7 +124,13 @@ pub fn parse_from_json_string_test() {
     // empty params
     #(
       path("happy_path_empty_params"),
-      Ok([artifacts.Artifact(type_: artifacts.SLO, params: dict.new())]),
+      Ok([
+        artifacts.Artifact(
+          type_: artifacts.SLO,
+          description: "A test SLO artifact",
+          params: dict.new(),
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(parse_from_file)
@@ -149,7 +158,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("missing_multiple"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.type_), expected (Field) received (Nothing) for (artifacts.0.params)",
+        msg: "Incorrect types: expected (Field) received (Nothing) for (artifacts.0.type_), expected (Field) received (Nothing) for (artifacts.0.description), expected (Field) received (Nothing) for (artifacts.0.params)",
       )),
     ),
   ]
