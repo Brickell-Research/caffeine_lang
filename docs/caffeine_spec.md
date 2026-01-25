@@ -378,23 +378,23 @@ Provides {
 Used in blueprint query strings for value interpolation.
 
 ```caffeine
-${var}             # raw value: inserts value directly
-${var->attr}       # key-value: produces attr:value
-${var->attr.not}   # negated: produces !attr:value
+$$var$$             # raw value: inserts value directly
+$$var->attr$$       # key-value: produces attr:value
+$$var->attr:not$$   # negated: produces !attr:value
 ```
 
 **Examples:**
 
 ```caffeine
-"sum:requests{${env->env}, ${status->status.not}}"    # env:production, !status:true
-"threshold < ${threshold}"                             # threshold < 99.9
-"service:${service->service}"                          # service:checkout
+"sum:requests{$$env->env$$, $$status->status:not$$}"    # env:production, !status:true
+"threshold < $$threshold$$"                             # threshold < 99.9
+"service:$$service->service$$"                          # service:checkout
 ```
 
 When variable and attribute names differ:
 
 ```caffeine
-${environment->env}    # variable 'environment', produces attr 'env'
+$$environment->env$$    # variable 'environment', produces attr 'env'
 ```
 
 ---
@@ -433,8 +433,8 @@ Blueprints for "SLO"
     Provides {
       value: "numerator / denominator",
       queries: {
-        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
-        denominator: "sum:http.requests{${env->env}}"
+        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
+        denominator: "sum:http.requests{$$env->env$$}"
       }
     }
 
@@ -447,9 +447,9 @@ Blueprints for "SLO"
     }
     Provides {
       vendor: "datadog",
-      value: "time_slice(latency < ${threshold_ms} per 5m)",
+      value: "time_slice(latency < $$threshold_ms$$ per 5m)",
       queries: {
-        latency: "avg:http.latency{${env->env}, ${service->service}}"
+        latency: "avg:http.latency{$$env->env$$, $$service->service$$}"
       }
     }
 
@@ -463,8 +463,8 @@ Blueprints for "SLO"
     Provides {
       value: "numerator / denominator",
       queries: {
-        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
-        denominator: "sum:http.requests{${env->env}}"
+        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
+        denominator: "sum:http.requests{$$env->env$$}"
       }
     }
 
@@ -492,8 +492,8 @@ Blueprints for "SLO" + "DependencyRelation"
     Provides {
       value: "numerator / denominator",
       queries: {
-        numerator: "sum:http.requests{${env->env}, ${status->status.not}}",
-        denominator: "sum:http.requests{${env->env}}"
+        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
+        denominator: "sum:http.requests{$$env->env$$}"
       },
       type: "hard"
     }
