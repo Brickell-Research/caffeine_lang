@@ -45,7 +45,6 @@ fn strip_whitespace(s: String) -> String {
 // * ✅ simple blueprint
 // * ✅ multi-artifact blueprint
 // * ✅ blueprint with extends (extendable flattening)
-// * ✅ blueprint with extends override (later values win)
 // * ✅ advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ template variable transformation (${} -> $$$$)
 // * ✅ type alias resolution (inlines type aliases in output)
@@ -60,10 +59,6 @@ pub fn generate_blueprints_json_test() {
     #(
       "blueprints_with_extends",
       strip_whitespace(expected_json("blueprints_with_extends")),
-    ),
-    #(
-      "blueprints_extends_override",
-      strip_whitespace(expected_json("blueprints_extends_override")),
     ),
     #(
       "blueprints_advanced_types",
@@ -91,7 +86,6 @@ pub fn generate_blueprints_json_test() {
 // ==== generate_expects_json ====
 // * ✅ simple expectation
 // * ✅ expectation with extends (extendable flattening)
-// * ✅ expectation with extends override (later values win)
 // * ✅ multiple extends (merge order: left to right, then item)
 // * ✅ complex literals (lists, nested structs, booleans, numbers)
 pub fn generate_expects_json_test() {
@@ -100,10 +94,6 @@ pub fn generate_expects_json_test() {
     #(
       "expects_with_extends",
       strip_whitespace(expected_json("expects_with_extends")),
-    ),
-    #(
-      "expects_extends_override",
-      strip_whitespace(expected_json("expects_extends_override")),
     ),
     #(
       "expects_multiple_extends",

@@ -148,6 +148,21 @@ fn validator_error_to_diagnostic(
           <> "'",
       )
     }
+    validator.ExtendableOvershadowing(field_name, item_name, extendable_name) -> {
+      let #(line, col) = find_name_position(content, field_name)
+      Diagnostic(
+        line: line,
+        column: col,
+        severity: severity_error,
+        message: "Field '"
+          <> field_name
+          <> "' in '"
+          <> item_name
+          <> "' overshadows field from extendable '"
+          <> extendable_name
+          <> "'",
+      )
+    }
   }
 }
 

@@ -105,5 +105,13 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> "' which is not String-based, in '"
       <> referenced_by
       <> "'"
+    validator.ExtendableOvershadowing(field_name, item_name, extendable_name) ->
+      "Field '"
+      <> field_name
+      <> "' in '"
+      <> item_name
+      <> "' overshadows field from extendable '"
+      <> extendable_name
+      <> "'"
   }
 }

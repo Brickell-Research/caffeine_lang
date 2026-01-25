@@ -10,6 +10,7 @@ import caffeine_lang/frontend/ast.{
   type Extendable, type Field, type TypeAlias,
 }
 import gleam/bool
+import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/set
@@ -27,6 +28,11 @@ pub type ValidatorError {
     alias_name: String,
     resolved_to: String,
     referenced_by: String,
+  )
+  ExtendableOvershadowing(
+    field_name: String,
+    item_name: String,
+    extendable_name: String,
   )
 }
 
@@ -148,13 +154,17 @@ fn validate_blueprint_items_extends(
     |> list.map(fn(e) { e.name })
     |> set.from_list
 
+  let extendable_map = build_extendable_field_map(extendables)
+
   list.try_each(items, fn(item) {
     use _ <- result.try(validate_extends_exist(
       item.extends,
       item.name,
       extendable_names,
     ))
-    validate_no_duplicate_extends(item.extends, item.name)
+    use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
+    // Check that item's requires/provides don't overshadow extended fields
+    validate_no_blueprint_overshadowing(item, extendable_map)
   })
 }
 
@@ -168,13 +178,17 @@ fn validate_expect_items_extends(
     |> list.map(fn(e) { e.name })
     |> set.from_list
 
+  let extendable_map = build_extendable_field_map(extendables)
+
   list.try_each(items, fn(item) {
     use _ <- result.try(validate_extends_exist(
       item.extends,
       item.name,
       extendable_names,
     ))
-    validate_no_duplicate_extends(item.extends, item.name)
+    use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
+    // Check that item's provides don't overshadow extended fields
+    validate_no_expect_overshadowing(item, extendable_map)
   })
 }
 
@@ -217,6 +231,99 @@ fn validate_no_duplicate_extends_loop(
       validate_no_duplicate_extends_loop(rest, item_name, set.insert(seen, first))
     }
   }
+}
+
+/// Builds a map of extendable name to its field names for overshadowing checks.
+fn build_extendable_field_map(
+  extendables: List(Extendable),
+) -> dict.Dict(String, set.Set(String)) {
+  extendables
+  |> list.map(fn(e) {
+    let field_names =
+      e.body.fields
+      |> list.map(fn(f) { f.name })
+      |> set.from_list
+    #(e.name, field_names)
+  })
+  |> dict.from_list
+}
+
+/// Validates that a blueprint item doesn't overshadow fields from its extended extendables.
+fn validate_no_blueprint_overshadowing(
+  item: BlueprintItem,
+  extendable_map: dict.Dict(String, set.Set(String)),
+) -> Result(Nil, ValidatorError) {
+  // Get all field names from item's requires and provides
+  let item_requires_fields =
+    item.requires.fields
+    |> list.map(fn(f) { f.name })
+    |> set.from_list
+  let item_provides_fields =
+    item.provides.fields
+    |> list.map(fn(f) { f.name })
+    |> set.from_list
+
+  // Check each extended extendable for overshadowing
+  list.try_each(item.extends, fn(ext_name) {
+    case dict.get(extendable_map, ext_name) {
+      Error(_) -> Ok(Nil)
+      Ok(ext_fields) -> {
+        // Check requires overshadowing
+        let requires_overlap = set.intersection(item_requires_fields, ext_fields)
+        use _ <- result.try(case set.to_list(requires_overlap) {
+          [] -> Ok(Nil)
+          [field, ..] ->
+            Error(ExtendableOvershadowing(
+              field_name: field,
+              item_name: item.name,
+              extendable_name: ext_name,
+            ))
+        })
+        // Check provides overshadowing
+        let provides_overlap = set.intersection(item_provides_fields, ext_fields)
+        case set.to_list(provides_overlap) {
+          [] -> Ok(Nil)
+          [field, ..] ->
+            Error(ExtendableOvershadowing(
+              field_name: field,
+              item_name: item.name,
+              extendable_name: ext_name,
+            ))
+        }
+      }
+    }
+  })
+}
+
+/// Validates that an expect item doesn't overshadow fields from its extended extendables.
+fn validate_no_expect_overshadowing(
+  item: ExpectItem,
+  extendable_map: dict.Dict(String, set.Set(String)),
+) -> Result(Nil, ValidatorError) {
+  // Get all field names from item's provides
+  let item_provides_fields =
+    item.provides.fields
+    |> list.map(fn(f) { f.name })
+    |> set.from_list
+
+  // Check each extended extendable for overshadowing
+  list.try_each(item.extends, fn(ext_name) {
+    case dict.get(extendable_map, ext_name) {
+      Error(_) -> Ok(Nil)
+      Ok(ext_fields) -> {
+        let provides_overlap = set.intersection(item_provides_fields, ext_fields)
+        case set.to_list(provides_overlap) {
+          [] -> Ok(Nil)
+          [field, ..] ->
+            Error(ExtendableOvershadowing(
+              field_name: field,
+              item_name: item.name,
+              extendable_name: ext_name,
+            ))
+        }
+      }
+    }
+  })
 }
 
 // =============================================================================

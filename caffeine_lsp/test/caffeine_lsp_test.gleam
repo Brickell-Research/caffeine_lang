@@ -221,3 +221,24 @@ Expectations for \"api_availability\"
   diagnostics.get_diagnostics(source)
   |> should.equal([])
 }
+
+pub fn extendable_overshadowing_diagnostic_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\", threshold: 99.0 }
+
+Expectations for \"api_availability\"
+  * \"checkout\" extends [_defaults]:
+    Provides { env: \"staging\", status: true }
+"
+  let diags = diagnostics.get_diagnostics(source)
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(1)
+      diag.message
+      |> should.equal(
+        "Field 'env' in 'checkout' overshadows field from extendable '_defaults'",
+      )
+    }
+    _ -> should.fail()
+  }
+}
