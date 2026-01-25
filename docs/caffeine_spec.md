@@ -352,19 +352,19 @@ Expects for "<BlueprintName>"
 
 Some artifacts (like `DependencyRelation`) have params that reference other expectations. References use the format:
 
-```caffeine
-":expectation_name"                           # Same file
-"path/to/file.caffeine:expectation_name"      # Cross-file
+```
+ORG_DIRECTORY.TEAM_NAME.SERVICE_NAME.EXPECTATION_NAME
 ```
 
 **Examples:**
 
 ```caffeine
-# Same file reference
-Provides { from: ":checkout_availability", to: ":payment_availability" }
-
-# Cross-file reference
-Provides { from: ":checkout_availability", to: "acme/inventory/main.caffeine:inventory_availability" }
+Provides {
+  relations: {
+    hard: ["acme.payments.checkout.payment_availability"],
+    soft: ["acme.recommendations.main.recs_availability"]
+  }
+}
 ```
 
 **Validation:**
@@ -522,30 +522,15 @@ Expects for "latency"
   * "checkout_p99" extends [_defaults]:
     Provides { threshold: 99.0, service: "checkout", threshold_ms: 500 }
 
-Expects for "hard_dependency"
-  ## Critical Path Dependencies
-  * "checkout_to_payment":
-    Provides { from: ":checkout_availability", to: ":payment_availability" }
-
-Expects for "soft_dependency"
-  ## Non-Critical Dependencies
-  * "checkout_to_inventory":
-    Provides { from: ":checkout_availability", to: ":inventory_availability" }
-
-  ## Cross-File Dependency
-  * "checkout_to_recommendations":
-    Provides {
-      from: ":checkout_availability",
-      to: "acme/recommendations/main.caffeine:recs_availability"
-    }
-
 Expects for "tracked_slo"
   ## Frontend with Upstream Awareness
   * "frontend_availability" extends [_defaults]:
     Provides {
       threshold: 99.9,
       status: true,
-      upstream: ":checkout_availability"
+      relations: {
+        hard: ["acme.payments.checkout.checkout_availability"]
+      }
     }
 ```
 
@@ -636,15 +621,18 @@ Type aliases are fully inlined in JSON output:
 }
 ```
 
-### Dependency Expectation
+### Expectation with Dependencies
 
 ```json
 {
-  "name": "checkout_to_payment",
-  "blueprint_ref": "hard_dependency",
+  "name": "frontend_availability",
+  "blueprint_ref": "tracked_slo",
   "inputs": {
-    "from": "acme/payments/checkout.caffeine:checkout_availability",
-    "to": "acme/payments/checkout.caffeine:payment_availability"
+    "threshold": 99.9,
+    "status": true,
+    "relations": {
+      "hard": ["acme.payments.checkout.checkout_availability"]
+    }
   }
 }
 ```
