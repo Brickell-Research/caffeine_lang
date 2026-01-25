@@ -20,6 +20,9 @@ import test_helpers
 // * ✅ happy path - mixed raw and Datadog format
 // * ✅ happy path - refinement type with Defaulted inner (value provided)
 // * ✅ happy path - refinement type with Defaulted inner (None uses default)
+// * ✅ happy path - optional field at end resolves to empty (no hanging comma)
+// * ✅ happy path - optional field at start resolves to empty (no hanging comma)
+// * ✅ happy path - optional field in middle resolves to empty (no double comma)
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
@@ -157,6 +160,68 @@ pub fn parse_and_resolve_query_template_test() {
         ),
       ],
       Ok("metric{env:production}"),
+    ),
+    // Optional field at end resolves to empty - no hanging comma
+    #(
+      "metric{$$env->environment$$, $$region->region$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Optional field at start resolves to empty - no hanging comma
+    #(
+      "metric{$$region->region$$, $$env->environment$$}",
+      [
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Optional field in middle resolves to empty - no double comma
+    #(
+      "metric{$$env->environment$$, $$region->region$$, $$team->team$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "team",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("platform"),
+        ),
+      ],
+      Ok("metric{env:production, team:platform}"),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(

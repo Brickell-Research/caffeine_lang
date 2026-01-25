@@ -79,6 +79,18 @@ pub fn parse_and_resolve_query_template(
   query: String,
   value_tuples: List(ValueTuple),
 ) -> Result(String, CompilationError) {
+  use resolved <- result.try(do_parse_and_resolve_query_template(
+    query,
+    value_tuples,
+  ))
+  Ok(cleanup_empty_template_artifacts(resolved))
+}
+
+/// Internal recursive implementation of template resolution.
+fn do_parse_and_resolve_query_template(
+  query: String,
+  value_tuples: List(ValueTuple),
+) -> Result(String, CompilationError) {
   case string.split_once(query, "$$") {
     // No more `$$`.
     Error(_) -> Ok(query)
@@ -89,7 +101,7 @@ pub fn parse_and_resolve_query_template(
             msg: "Unexpected incomplete `$$` for substring: " <> query,
           ))
         Ok(#(inside, rest)) -> {
-          use rest_of_items <- result.try(parse_and_resolve_query_template(
+          use rest_of_items <- result.try(do_parse_and_resolve_query_template(
             rest,
             value_tuples,
           ))
@@ -118,6 +130,39 @@ pub fn parse_and_resolve_query_template(
       }
     }
   }
+}
+
+/// Cleans up artifacts from empty optional template resolutions.
+/// When optional fields resolve to empty strings, they can leave behind
+/// hanging commas in the query. This function removes those artifacts.
+///
+/// Examples:
+/// - "{env:prod, }" -> "{env:prod}"
+/// - "{, env:prod}" -> "{env:prod}"
+/// - "{env:prod, , region:us}" -> "{env:prod, region:us}"
+/// - "(, value1)" -> "(value1)"
+/// - "(value1, )" -> "(value1)"
+fn cleanup_empty_template_artifacts(query: String) -> String {
+  query
+  // Handle ", }" and ",}" - empty optional at end of filter
+  |> string.replace(", }", "}")
+  |> string.replace(",}", "}")
+  // Handle "{, " and "{," - empty optional at start of filter
+  |> string.replace("{, ", "{")
+  |> string.replace("{,", "{")
+  // Handle ", )" and ",)" - empty optional at end of IN clause
+  |> string.replace(", )", ")")
+  |> string.replace(",)", ")")
+  // Handle "(, " and "(," - empty optional at start of IN clause
+  |> string.replace("(, ", "(")
+  |> string.replace("(,", "(")
+  // Handle ", ," and ",," - consecutive empty optionals
+  |> string.replace(", ,", ",")
+  |> string.replace(",,", ",")
+  // Handle " AND " with empty - e.g., " AND }" or "{ AND "
+  |> string.replace(" AND }", "}")
+  |> string.replace("{ AND ", "{")
+  |> string.replace(" AND  AND ", " AND ")
 }
 
 /// Parses a template variable string. Supports two formats:
