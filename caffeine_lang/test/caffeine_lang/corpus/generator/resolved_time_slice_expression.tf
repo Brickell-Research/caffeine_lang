@@ -1,6 +1,9 @@
 terraform {
   required_providers {
-    datadog = { source = "DataDog/datadog", version = "~> 3.0" }
+    datadog = {
+      source = "DataDog/datadog"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -23,7 +26,16 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "org_team_auth_time_slice_slo" {
   name = "Time Slice SLO"
-  tags = ["managed_by:caffeine", "caffeine_version:{{VERSION}}", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Time Slice SLO", "artifact:SLO"]
+  tags = [
+    "managed_by:caffeine",
+    "caffeine_version:{{VERSION}}",
+    "org:org",
+    "team:test_team",
+    "service:team",
+    "blueprint:test_blueprint",
+    "expectation:Time Slice SLO",
+    "artifact:SLO",
+  ]
   type = "time_slice"
 
   sli_specification {

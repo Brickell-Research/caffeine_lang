@@ -1,6 +1,9 @@
 terraform {
   required_providers {
-    datadog = { source = "DataDog/datadog", version = "~> 3.0" }
+    datadog = {
+      source = "DataDog/datadog"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -23,7 +26,19 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "acme_slos_checkout_availability_type_alias" {
   name = "checkout_availability_type_alias"
-  tags = ["managed_by:caffeine", "caffeine_version:{{VERSION}}", "org:acme", "team:payments", "service:slos", "blueprint:api_availability_with_type_alias", "expectation:checkout_availability_type_alias", "artifact:SLO", "env:production", "status:True", "vendor:datadog"]
+  tags = [
+    "managed_by:caffeine",
+    "caffeine_version:{{VERSION}}",
+    "org:acme",
+    "team:payments",
+    "service:slos",
+    "blueprint:api_availability_with_type_alias",
+    "expectation:checkout_availability_type_alias",
+    "artifact:SLO",
+    "env:production",
+    "status:True",
+    "vendor:datadog",
+  ]
   type = "metric"
 
   query {

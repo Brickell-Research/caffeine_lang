@@ -1,6 +1,9 @@
 terraform {
   required_providers {
-    datadog = { source = "DataDog/datadog", version = "~> 3.0" }
+    datadog = {
+      source = "DataDog/datadog"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -23,7 +26,19 @@ variable "datadog_app_key" {
 
 resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
   name = "Auth Latency SLO"
-  tags = ["managed_by:caffeine", "caffeine_version:{{VERSION}}", "org:org", "team:test_team", "service:team", "blueprint:test_blueprint", "expectation:Auth Latency SLO", "artifact:SLO", "artifact:DependencyRelations", "hard_dependency:db_slo", "soft_dependency:cache_slo,logging_slo"]
+  tags = [
+    "managed_by:caffeine",
+    "caffeine_version:{{VERSION}}",
+    "org:org",
+    "team:test_team",
+    "service:team",
+    "blueprint:test_blueprint",
+    "expectation:Auth Latency SLO",
+    "artifact:SLO",
+    "artifact:DependencyRelations",
+    "hard_dependency:db_slo",
+    "soft_dependency:cache_slo,logging_slo",
+  ]
   type = "metric"
 
   query {
