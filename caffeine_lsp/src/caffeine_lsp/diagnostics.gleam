@@ -223,13 +223,6 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         severity: severity_error,
         message: "Invalid refinement: " <> message,
       )
-    parser_error.EmptyFile(line, column) ->
-      Diagnostic(
-        line: to_lsp_line(line),
-        column: to_lsp_column(column),
-        severity: severity_error,
-        message: "Empty file",
-      )
     parser_error.QuotedFieldName(name, line, column) ->
       Diagnostic(
         line: to_lsp_line(line),

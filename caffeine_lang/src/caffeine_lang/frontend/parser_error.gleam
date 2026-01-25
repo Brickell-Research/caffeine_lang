@@ -8,7 +8,6 @@ pub type ParserError {
   UnexpectedEOF(expected: String, line: Int, column: Int)
   UnknownType(name: String, line: Int, column: Int)
   InvalidRefinement(message: String, line: Int, column: Int)
-  EmptyFile(line: Int, column: Int)
   QuotedFieldName(name: String, line: Int, column: Int)
   InvalidTypeAliasName(name: String, message: String, line: Int, column: Int)
 }
@@ -47,11 +46,6 @@ pub fn to_string(err: ParserError) -> String {
       <> int.to_string(column)
       <> ": "
       <> message
-    EmptyFile(line, column) ->
-      "Empty file at line "
-      <> int.to_string(line)
-      <> ", column "
-      <> int.to_string(column)
     QuotedFieldName(name, line, column) ->
       "Quoted field name at line "
       <> int.to_string(line)

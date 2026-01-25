@@ -662,7 +662,6 @@ pub fn parse_expects_file_test() {
 // * ✅ missing provides
 // * ✅ missing item colon
 // * ✅ invalid extendable kind
-// * ✅ empty file
 // * ✅ missing dict value type
 // * ✅ refinement type mismatch (e.g. Integer in String OneOf)
 // * ✅ expects with Requires
@@ -682,7 +681,6 @@ pub fn parse_errors_test() {
     #(errors_path("missing_provides"), True),
     #(errors_path("missing_item_colon"), True),
     #(errors_path("invalid_extendable_kind"), True),
-    #(errors_path("empty_file"), True),
     #(errors_path("missing_dict_value_type"), True),
     #(errors_path("refinement_type_mismatch"), True),
   ]

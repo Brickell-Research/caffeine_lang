@@ -279,14 +279,11 @@ fn parse_extendable_kind(
 // BLUEPRINTS BLOCKS
 // =============================================================================
 
-/// Parse one or more blueprints blocks.
+/// Parse zero or more blueprints blocks.
 fn parse_blueprints_blocks(
   state: ParserState,
 ) -> Result(#(List(BlueprintsBlock), ParserState), ParserError) {
-  case peek(state) {
-    token.EOF -> Error(parser_error.EmptyFile(state.line, state.column))
-    _ -> parse_blueprints_blocks_loop(state, [])
-  }
+  parse_blueprints_blocks_loop(state, [])
 }
 
 fn parse_blueprints_blocks_loop(
@@ -399,14 +396,11 @@ fn parse_blueprint_item(
 // EXPECTS BLOCKS
 // =============================================================================
 
-/// Parse one or more expects blocks.
+/// Parse zero or more expects blocks.
 fn parse_expects_blocks(
   state: ParserState,
 ) -> Result(#(List(ExpectsBlock), ParserState), ParserError) {
-  case peek(state) {
-    token.EOF -> Error(parser_error.EmptyFile(state.line, state.column))
-    _ -> parse_expects_blocks_loop(state, [])
-  }
+  parse_expects_blocks_loop(state, [])
 }
 
 fn parse_expects_blocks_loop(
