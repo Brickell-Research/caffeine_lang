@@ -1,3 +1,4 @@
+import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -9,6 +10,34 @@ import gleam/string
 pub type CollectionTypes(accepted) {
   Dict(accepted, accepted)
   List(accepted)
+}
+
+/// Returns metadata for all CollectionTypes variants.
+/// IMPORTANT: Update this when adding new variants!
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  [collection_type_meta(List(Nil)), collection_type_meta(Dict(Nil, Nil))]
+}
+
+/// Returns metadata for a CollectionTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+fn collection_type_meta(typ: CollectionTypes(accepted)) -> TypeMeta {
+  case typ {
+    List(_) ->
+      TypeMeta(
+        name: "List",
+        description: "An ordered sequence where each element shares the same type",
+        syntax: "List(T)",
+        example: "List(String), List(Integer)",
+      )
+    Dict(_, _) ->
+      TypeMeta(
+        name: "Dict",
+        description: "A key-value map with typed keys and values",
+        syntax: "Dict(K, V)",
+        example: "Dict(String, String), Dict(String, Integer)",
+      )
+  }
 }
 
 /// Converts a CollectionTypes to its string representation.

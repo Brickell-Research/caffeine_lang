@@ -1,4 +1,5 @@
 import caffeine_lang/common/numeric_types.{type NumericTypes}
+import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/bool
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -10,6 +11,39 @@ pub type PrimitiveTypes {
   Boolean
   String
   NumericType(NumericTypes)
+}
+
+/// Returns metadata for all PrimitiveTypes variants.
+/// IMPORTANT: Update this when adding new variants!
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  [
+    primitive_type_meta(Boolean),
+    primitive_type_meta(String),
+    ..numeric_types.all_type_metas()
+  ]
+}
+
+/// Returns metadata for a PrimitiveTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+fn primitive_type_meta(typ: PrimitiveTypes) -> TypeMeta {
+  case typ {
+    Boolean ->
+      TypeMeta(
+        name: "Boolean",
+        description: "True or false",
+        syntax: "Boolean",
+        example: "true, false",
+      )
+    String ->
+      TypeMeta(
+        name: "String",
+        description: "Any text between double quotes",
+        syntax: "String",
+        example: "\"hello\", \"my-service\"",
+      )
+    NumericType(n) -> numeric_types.numeric_type_meta(n)
+  }
 }
 
 /// Converts a PrimitiveTypes to its string representation.

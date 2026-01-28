@@ -1,7 +1,12 @@
 import caffeine_cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_cli/file_discovery
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/common/source_file.{SourceFile}
+import caffeine_lang/common/type_info
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
@@ -47,6 +52,8 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
     ["artifacts"] -> artifacts_catalog(logger.Verbose)
     ["artifacts", "--quiet"] | ["--quiet", "artifacts"] ->
       artifacts_catalog(logger.Minimal)
+    ["types"] -> types_catalog(logger.Verbose)
+    ["types", "--quiet"] | ["--quiet", "types"] -> types_catalog(logger.Minimal)
     ["--quiet", "--help"]
     | ["--quiet", "-h"]
     | ["--help", "--quiet"]
@@ -168,6 +175,7 @@ fn print_usage(log_level: LogLevel) {
     "    caffeine compile [--quiet] <blueprint.caffeine> <expectations_directory> [output_file]",
   )
   log(log_level, "    caffeine artifacts [--quiet]")
+  log(log_level, "    caffeine types [--quiet]")
   log(log_level, "    caffeine lsp")
   log(log_level, "")
   log(log_level, "COMMANDS:")
@@ -178,6 +186,10 @@ fn print_usage(log_level: LogLevel) {
   log(
     log_level,
     "    artifacts        List available artifacts from the standard library",
+  )
+  log(
+    log_level,
+    "    types            Show the type system reference with all supported types",
   )
   log(
     log_level,
@@ -228,6 +240,40 @@ fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
       exit_status_codes.Success
     }
   }
+}
+
+fn types_catalog(log_level: LogLevel) -> ExitStatusCodes {
+  log(log_level, "Type System Reference")
+  log(log_level, string.repeat("=", 21))
+  log(log_level, "")
+
+  [
+    type_info.pretty_print_category(
+      "PrimitiveTypes",
+      "Base value types for simple data",
+      primitive_types.all_type_metas(),
+    ),
+    type_info.pretty_print_category(
+      "CollectionTypes",
+      "Container types for grouping values",
+      collection_types.all_type_metas(),
+    ),
+    type_info.pretty_print_category(
+      "ModifierTypes",
+      "Wrappers that change how values are handled",
+      modifier_types.all_type_metas(),
+    ),
+    type_info.pretty_print_category(
+      "RefinementTypes",
+      "Constraints that restrict allowed values",
+      refinement_types.all_type_metas(),
+    ),
+  ]
+  |> string.join("\n\n")
+  |> log(log_level, _)
+
+  log(log_level, "")
+  exit_status_codes.Success
 }
 
 fn log(log_level: LogLevel, message: String) {

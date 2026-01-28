@@ -1,3 +1,4 @@
+import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/float
@@ -8,6 +9,35 @@ import gleam/result
 pub type NumericTypes {
   Float
   Integer
+}
+
+/// Returns metadata for all NumericTypes variants.
+/// IMPORTANT: Update this when adding new variants!
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  [numeric_type_meta(Integer), numeric_type_meta(Float)]
+}
+
+/// Returns metadata for a NumericTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+@internal
+pub fn numeric_type_meta(typ: NumericTypes) -> TypeMeta {
+  case typ {
+    Integer ->
+      TypeMeta(
+        name: "Integer",
+        description: "Whole numbers",
+        syntax: "Integer",
+        example: "42, 0, -10",
+      )
+    Float ->
+      TypeMeta(
+        name: "Float",
+        description: "Decimal numbers",
+        syntax: "Float",
+        example: "3.14, 99.9, 0.0",
+      )
+  }
 }
 
 /// Converts a NumericTypes to its string representation.

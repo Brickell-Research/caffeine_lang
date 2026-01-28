@@ -1,4 +1,5 @@
 import caffeine_lang/common/numeric_types
+import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
@@ -10,7 +11,7 @@ import gleam/string
 pub type RefinementTypes(accepted) {
   /// Restricts values to a user-defined set.
   /// I.E. String { x | x in { pasta, pizza, salad } }
-  /// 
+  ///
   /// At this time we only support:
   ///   * Primitives: Integer, Float, String
   ///   * Modifiers:  Defaulted with Integer, Float, String
@@ -24,6 +25,37 @@ pub type RefinementTypes(accepted) {
   /// Furthermore, we initially will only support an inclusive
   /// range, as noted in the type name here.
   InclusiveRange(accepted, String, String)
+}
+
+/// Returns metadata for all RefinementTypes variants.
+/// IMPORTANT: Update this when adding new variants!
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  [
+    refinement_type_meta(OneOf(Nil, set.new())),
+    refinement_type_meta(InclusiveRange(Nil, "", "")),
+  ]
+}
+
+/// Returns metadata for a RefinementTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+fn refinement_type_meta(typ: RefinementTypes(accepted)) -> TypeMeta {
+  case typ {
+    OneOf(_, _) ->
+      TypeMeta(
+        name: "OneOf",
+        description: "Value must be one of a finite set",
+        syntax: "T { x | x in { val1, val2, ... } }",
+        example: "String { x | x in { datadog, prometheus } }",
+      )
+    InclusiveRange(_, _, _) ->
+      TypeMeta(
+        name: "InclusiveRange",
+        description: "Value must be within a numeric range (inclusive)",
+        syntax: "T { x | x in ( low..high ) }",
+        example: "Integer { x | x in ( 0..100 ) }",
+      )
+  }
 }
 
 /// Converts a RefinementTypes to its string representation.

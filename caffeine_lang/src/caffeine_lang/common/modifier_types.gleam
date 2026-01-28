@@ -1,3 +1,4 @@
+import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
@@ -12,6 +13,34 @@ pub type ModifierTypes(accepted) {
   /// Defaulted type stores the inner type and its default value as a string
   /// e.g., Defaulted(Integer, "10") means an optional integer with default 10
   Defaulted(accepted, String)
+}
+
+/// Returns metadata for all ModifierTypes variants.
+/// IMPORTANT: Update this when adding new variants!
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  [modifier_type_meta(Optional(Nil)), modifier_type_meta(Defaulted(Nil, ""))]
+}
+
+/// Returns metadata for a ModifierTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+fn modifier_type_meta(typ: ModifierTypes(accepted)) -> TypeMeta {
+  case typ {
+    Optional(_) ->
+      TypeMeta(
+        name: "Optional",
+        description: "A type where the value may be left unspecified",
+        syntax: "Optional(T)",
+        example: "Optional(String), Optional(Integer)",
+      )
+    Defaulted(_, _) ->
+      TypeMeta(
+        name: "Defaulted",
+        description: "A type with a default value if none is provided",
+        syntax: "Defaulted(T, default)",
+        example: "Defaulted(Integer, 30), Defaulted(String, \"prod\")",
+      )
+  }
 }
 
 /// Converts a ModifierTypes to its string representation.
