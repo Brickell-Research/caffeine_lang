@@ -3,7 +3,12 @@
     {
       "type_": "SLO",
       "description": "A test SLO artifact",
-      "params": { "threshold": "Intege", "window_in_days": "Integer", "queries": "Dict(String, String)", "value": "String" }
+      "params": {
+        "threshold": { "type_": "Intege", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" },
+        "queries": { "type_": "Dict(String, String)", "description": "Queries" },
+        "value": { "type_": "String", "description": "The value" }
+      }
     }
   ]
 }

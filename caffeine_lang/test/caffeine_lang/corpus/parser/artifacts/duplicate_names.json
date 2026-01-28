@@ -3,12 +3,18 @@
     {
       "type_": "SLO",
       "description": "First SLO",
-      "params": { "threshold": "Float", "window_in_days": "Integer" }
+      "params": {
+        "threshold": { "type_": "Float", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" }
+      }
     },
     {
       "type_": "SLO",
       "description": "Second SLO",
-      "params": { "threshold": "Float", "window_in_days": "Integer" }
+      "params": {
+        "threshold": { "type_": "Float", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" }
+      }
     }
   ]
 }

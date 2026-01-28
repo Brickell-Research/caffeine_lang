@@ -4,7 +4,10 @@
       "type_": 10,
       "description": "A test artifact",
       "version": "0.0.1",
-      "params": { "threshold": "Float", "window_in_days": "Integer" }
+      "params": {
+        "threshold": { "type_": "Float", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" }
+      }
     }
   ]
 }

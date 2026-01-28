@@ -2,7 +2,10 @@
   "artifacts": [
     {
       "description": "A test artifact",
-      "params": { "threshold": "Float", "window_in_days": "Integer" }
+      "params": {
+        "threshold": { "type_": "Float", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" }
+      }
     }
   ]
 }

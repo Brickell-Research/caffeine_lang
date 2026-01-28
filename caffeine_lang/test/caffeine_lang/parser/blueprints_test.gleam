@@ -3,7 +3,7 @@ import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
-import caffeine_lang/parser/artifacts.{type Artifact}
+import caffeine_lang/parser/artifacts.{type Artifact, ParamInfo}
 import caffeine_lang/parser/blueprints
 import gleam/dict
 import gleam/dynamic
@@ -28,11 +28,20 @@ fn artifacts() -> List(Artifact) {
       params: dict.from_list([
         #(
           "threshold",
-          accepted_types.PrimitiveType(primitive_types.NumericType(
-            numeric_types.Float,
-          )),
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Float,
+            )),
+            description: "",
+          ),
         ),
-        #("value", accepted_types.PrimitiveType(primitive_types.String)),
+        #(
+          "value",
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.String),
+            description: "",
+          ),
+        ),
       ]),
     ),
   ]
@@ -47,11 +56,20 @@ fn multi_artifacts() -> List(Artifact) {
       params: dict.from_list([
         #(
           "threshold",
-          accepted_types.PrimitiveType(primitive_types.NumericType(
-            numeric_types.Float,
-          )),
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Float,
+            )),
+            description: "",
+          ),
         ),
-        #("value", accepted_types.PrimitiveType(primitive_types.String)),
+        #(
+          "value",
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.String),
+            description: "",
+          ),
+        ),
       ]),
     ),
     artifacts.Artifact(
@@ -60,13 +78,22 @@ fn multi_artifacts() -> List(Artifact) {
       params: dict.from_list([
         #(
           "relationship",
-          accepted_types.CollectionType(
-            collection_types.List(accepted_types.PrimitiveType(
-              primitive_types.String,
-            )),
+          ParamInfo(
+            type_: accepted_types.CollectionType(
+              collection_types.List(accepted_types.PrimitiveType(
+                primitive_types.String,
+              )),
+            ),
+            description: "",
           ),
         ),
-        #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
+        #(
+          "isHard",
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.Boolean),
+            description: "",
+          ),
+        ),
       ]),
     ),
   ]

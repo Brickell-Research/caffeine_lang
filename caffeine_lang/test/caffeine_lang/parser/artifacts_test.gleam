@@ -3,8 +3,9 @@ import caffeine_lang/common/collection_types
 import caffeine_lang/common/errors
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
-import caffeine_lang/parser/artifacts
+import caffeine_lang/parser/artifacts.{ParamInfo}
 import gleam/dict
+import gleam/string
 import simplifile
 import test_helpers
 
@@ -52,24 +53,39 @@ pub fn parse_from_json_string_test() {
           params: dict.from_list([
             #(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(
-                numeric_types.Float,
-              )),
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+                description: "The threshold value",
+              ),
             ),
             #(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(
-                numeric_types.Integer,
-              )),
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Integer,
+                )),
+                description: "Window period in days",
+              ),
             ),
             #(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(
-                accepted_types.PrimitiveType(primitive_types.String),
-                accepted_types.PrimitiveType(primitive_types.String),
-              )),
+              ParamInfo(
+                type_: accepted_types.CollectionType(collection_types.Dict(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
+                )),
+                description: "Metric queries",
+              ),
             ),
-            #("value", accepted_types.PrimitiveType(primitive_types.String)),
+            #(
+              "value",
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.String),
+                description: "The SLO value",
+              ),
+            ),
           ]),
         ),
       ]),
@@ -84,24 +100,39 @@ pub fn parse_from_json_string_test() {
           params: dict.from_list([
             #(
               "threshold",
-              accepted_types.PrimitiveType(primitive_types.NumericType(
-                numeric_types.Float,
-              )),
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Float,
+                )),
+                description: "The threshold value",
+              ),
             ),
             #(
               "window_in_days",
-              accepted_types.PrimitiveType(primitive_types.NumericType(
-                numeric_types.Integer,
-              )),
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.NumericType(
+                  numeric_types.Integer,
+                )),
+                description: "Window period in days",
+              ),
             ),
             #(
               "queries",
-              accepted_types.CollectionType(collection_types.Dict(
-                accepted_types.PrimitiveType(primitive_types.String),
-                accepted_types.PrimitiveType(primitive_types.String),
-              )),
+              ParamInfo(
+                type_: accepted_types.CollectionType(collection_types.Dict(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
+                )),
+                description: "Metric queries",
+              ),
             ),
-            #("value", accepted_types.PrimitiveType(primitive_types.String)),
+            #(
+              "value",
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.String),
+                description: "The SLO value",
+              ),
+            ),
           ]),
         ),
         artifacts.Artifact(
@@ -110,13 +141,22 @@ pub fn parse_from_json_string_test() {
           params: dict.from_list([
             #(
               "relationship",
-              accepted_types.CollectionType(
-                collection_types.List(accepted_types.PrimitiveType(
-                  primitive_types.String,
-                )),
+              ParamInfo(
+                type_: accepted_types.CollectionType(
+                  collection_types.List(accepted_types.PrimitiveType(
+                    primitive_types.String,
+                  )),
+                ),
+                description: "List of related services",
               ),
             ),
-            #("isHard", accepted_types.PrimitiveType(primitive_types.Boolean)),
+            #(
+              "isHard",
+              ParamInfo(
+                type_: accepted_types.PrimitiveType(primitive_types.Boolean),
+                description: "Whether this is a hard dependency",
+              ),
+            ),
           ]),
         ),
       ]),
@@ -196,25 +236,25 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_params_value_not_accepted_type_made_up"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_params_value_not_accepted_type_typo"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_params_value_not_accepted_type_illegal"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_multiple"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_), expected (AcceptedType) received (String) for (artifacts.0.params.values)",
+        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_), expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
   ]
@@ -261,5 +301,44 @@ pub fn parse_standard_library_test() {
       Ok(_) -> True
       Error(_) -> False
     }
+  })
+}
+
+// ==== pretty_print_artifact ====
+// * ✅ includes artifact name
+// * ✅ includes artifact description
+// * ✅ includes param names
+// * ✅ includes param descriptions
+// * ✅ includes param types
+// * ✅ includes param status (required/optional/default)
+pub fn pretty_print_artifact_test() {
+  let artifact =
+    artifacts.Artifact(
+      type_: artifacts.SLO,
+      description: "Test artifact description",
+      params: dict.from_list([
+        #(
+          "my_param",
+          ParamInfo(
+            type_: accepted_types.PrimitiveType(primitive_types.String),
+            description: "My param description",
+          ),
+        ),
+      ]),
+    )
+  let output = artifacts.pretty_print_artifact(artifact)
+
+  // Verify all expected content is present in the output
+  // Each test checks if a substring is present
+  [
+    #("SLO", True),
+    #("Test artifact description", True),
+    #("my_param", True),
+    #("My param description", True),
+    #("String", True),
+    #("required", True),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(substring) {
+    string.contains(output, substring)
   })
 }

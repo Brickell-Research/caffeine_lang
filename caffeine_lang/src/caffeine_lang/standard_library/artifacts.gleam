@@ -13,12 +13,20 @@ pub const standard_library = "
     {
       \"type_\": \"SLO\",
       \"description\": \"A Service Level Objective that monitors a metric query against a threshold over a rolling window.\",
-      \"params\": { \"threshold\": \"Float { x | x in ( 0.0..100.0 ) }\", \"window_in_days\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"queries\": \"Dict(String, String)\", \"value\": \"String\", \"vendor\": \"String { x | x in { datadog } }\" }
+      \"params\": {
+        \"threshold\": { \"type_\": \"Float { x | x in ( 0.0..100.0 ) }\", \"description\": \"Target availability percentage (e.g., 99.9)\" },
+        \"window_in_days\": { \"type_\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"description\": \"Rolling window period for SLO calculation\" },
+        \"queries\": { \"type_\": \"Dict(String, String)\", \"description\": \"Metric queries keyed by name\" },
+        \"value\": { \"type_\": \"String\", \"description\": \"The SLO value expression\" },
+        \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Monitoring vendor (e.g., datadog)\" }
+      }
     },
     {
       \"type_\": \"DependencyRelations\",
       \"description\": \"Declares soft and hard dependencies between services for dependency mapping.\",
-      \"params\": { \"relations\": \"Dict(String { x | x in { soft, hard } }, List(String))\" }
+      \"params\": {
+        \"relations\": { \"type_\": \"Dict(String { x | x in { soft, hard } }, List(String))\", \"description\": \"Map of dependency type to list of service names\" }
+      }
     }
   ]
 }

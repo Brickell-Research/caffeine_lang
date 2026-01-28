@@ -3,7 +3,12 @@
     {
       "type_": "SLO",
       "description": "A test SLO artifact",
-      "params": { "threshold": "Float", "window_in_days": "Integer", "queries": "Optional(Optional(String))", "value": "String" }
+      "params": {
+        "threshold": { "type_": "Float", "description": "Threshold value" },
+        "window_in_days": { "type_": "Integer", "description": "Window in days" },
+        "queries": { "type_": "Optional(Optional(String))", "description": "Queries" },
+        "value": { "type_": "String", "description": "The value" }
+      }
     }
   ]
 }

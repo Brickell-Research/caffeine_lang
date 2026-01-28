@@ -65,42 +65,35 @@ pub fn validate_blueprints(
     blueprint_artifacts_collection,
   ))
 
-  // Create a synthetic merged artifact for each blueprint for input validation.
-  let blueprint_merged_artifact_collection =
+  // Create merged params for each blueprint for input validation.
+  let blueprint_merged_params_collection =
     blueprint_artifacts_collection
     |> list.map(fn(pair) {
       let #(blueprint, artifact_list) = pair
       let merged_params = merge_artifact_params(artifact_list)
-      #(
-        blueprint,
-        artifacts.Artifact(
-          type_: artifacts.SLO,
-          description: "",
-          params: merged_params,
-        ),
-      )
+      #(blueprint, merged_params)
     })
 
   // Validate exactly the right number of inputs and each input is the
   // correct type as per the param. A blueprint needs to specify inputs for
   // all required_params from the artifacts.
   use _ <- result.try(validations.validate_inputs_for_collection(
-    input_param_collections: blueprint_merged_artifact_collection,
+    input_param_collections: blueprint_merged_params_collection,
     get_inputs: fn(blueprint) { blueprint.inputs },
-    get_params: fn(artifact) { artifact.params },
+    get_params: fn(merged_params) { merged_params },
     missing_inputs_ok: True,
   ))
 
   // Ensure no param name overshadowing by the blueprint against any artifact.
   let overshadow_params_error =
-    blueprint_merged_artifact_collection
-    |> list.filter_map(fn(blueprint_artifact_pair) {
-      let #(blueprint, merged_artifact) = blueprint_artifact_pair
+    blueprint_merged_params_collection
+    |> list.filter_map(fn(blueprint_params_pair) {
+      let #(blueprint, merged_params) = blueprint_params_pair
 
       case
         validations.check_collection_key_overshadowing(
           in: blueprint.params,
-          against: merged_artifact.params,
+          against: merged_params,
           with: "Blueprint overshadowing inherited_params from artifact: ",
         )
       {
@@ -156,12 +149,13 @@ fn map_blueprints_to_artifacts(
 }
 
 /// Merge params from multiple artifacts into a single dict.
+/// Extracts just the types from ParamInfo since blueprints work with types only.
 fn merge_artifact_params(
   artifact_list: List(Artifact),
 ) -> dict.Dict(String, AcceptedTypes) {
   artifact_list
   |> list.fold(dict.new(), fn(acc, artifact) {
-    dict.merge(acc, artifact.params)
+    dict.merge(acc, artifacts.params_to_types(artifact.params))
   })
 }
 
@@ -218,11 +212,15 @@ fn validate_no_conflicting_params(
 }
 
 /// Find param names that have different types across artifacts.
-fn find_conflicting_params(artifacts: List(Artifact)) -> Result(String, Nil) {
-  // Collect all param name -> type mappings
+fn find_conflicting_params(artifact_list: List(Artifact)) -> Result(String, Nil) {
+  // Collect all param name -> type mappings (extract types from ParamInfo)
   let all_params =
-    artifacts
-    |> list.flat_map(fn(a) { dict.to_list(a.params) })
+    artifact_list
+    |> list.flat_map(fn(a) {
+      a.params
+      |> dict.to_list
+      |> list.map(fn(pair) { #(pair.0, pair.1.type_) })
+    })
 
   // Group by param name
   let grouped =
