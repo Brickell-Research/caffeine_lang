@@ -14,11 +14,11 @@ pub const standard_library = "
       \"type_\": \"SLO\",
       \"description\": \"A Service Level Objective that monitors a metric query against a threshold over a rolling window.\",
       \"params\": {
-        \"threshold\": { \"type_\": \"Float { x | x in ( 0.0..100.0 ) }\", \"description\": \"Target availability percentage (e.g., 99.9)\" },
-        \"window_in_days\": { \"type_\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"description\": \"Rolling window period for SLO calculation\" },
-        \"queries\": { \"type_\": \"Dict(String, String)\", \"description\": \"Metric queries keyed by name\" },
-        \"value\": { \"type_\": \"String\", \"description\": \"The SLO value expression\" },
-        \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Monitoring vendor (e.g., datadog)\" }
+        \"threshold\": { \"type_\": \"Float { x | x in ( 0.0..100.0 ) }\", \"description\": \"Target percentage (e.g., 99.9)\" },
+        \"window_in_days\": { \"type_\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"description\": \"Rolling window for measurement\" },
+        \"queries\": { \"type_\": \"Dict(String, String)\", \"description\": \"Named queries for the SLI calculation\" },
+        \"value\": { \"type_\": \"String\", \"description\": \"CQL expression combining queries\" },
+        \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Observability platform\" }
       }
     },
     {
