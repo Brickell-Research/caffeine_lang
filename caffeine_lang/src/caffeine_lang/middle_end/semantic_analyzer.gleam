@@ -215,7 +215,8 @@ pub fn resolve_queries(
 }
 
 /// Build a dotted identifier from IR metadata: org.team.service.name
-fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
+@internal
+pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
   ir.metadata.org_name
   <> "."
   <> ir.metadata.team_name

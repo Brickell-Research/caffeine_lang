@@ -1,7 +1,5 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/refinement_types
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/list
@@ -39,7 +37,7 @@ pub fn inputs_validator(
   // Filter out optional and defaulted params - they're not required
   let required_params =
     params
-    |> dict.filter(fn(_, typ) { !is_optional_or_defaulted(typ) })
+    |> dict.filter(fn(_, typ) { !accepted_types.is_optional_or_defaulted(typ) })
 
   let required_param_keys = required_params |> dict.keys |> set.from_list
   let param_keys = params |> dict.keys |> set.from_list
@@ -190,18 +188,3 @@ pub fn check_collection_key_overshadowing(
   }
 }
 
-/// Checks if a type is optional or has a default value.
-/// This includes:
-/// - ModifierType(Optional(_))
-/// - ModifierType(Defaulted(_, _))
-/// - RefinementType(OneOf(ModifierType(Optional(_)), _))
-/// - RefinementType(OneOf(ModifierType(Defaulted(_, _)), _))
-fn is_optional_or_defaulted(typ: AcceptedTypes) -> Bool {
-  case typ {
-    accepted_types.ModifierType(modifier_types.Optional(_)) -> True
-    accepted_types.ModifierType(modifier_types.Defaulted(_, _)) -> True
-    accepted_types.RefinementType(refinement_types.OneOf(inner, _)) ->
-      is_optional_or_defaulted(inner)
-    _ -> False
-  }
-}

@@ -1,7 +1,7 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/validations
+import caffeine_lang/parser/decoders
+import caffeine_lang/parser/validations
 import caffeine_lang/parser/artifacts.{type Artifact}
 import gleam/bool
 import gleam/dict

@@ -6,7 +6,7 @@ import caffeine_lang/common/errors.{
 import caffeine_lang/common/helpers
 import caffeine_lang/core/logger
 import caffeine_lang/middle_end/semantic_analyzer.{
-  type IntermediateRepresentation,
+  type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
@@ -347,13 +347,3 @@ fn build_user_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
   })
 }
 
-/// Build a dotted identifier from IR metadata: org.team.service.name
-fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
-  ir.metadata.org_name
-  <> "."
-  <> ir.metadata.team_name
-  <> "."
-  <> ir.metadata.service_name
-  <> "."
-  <> ir.metadata.friendly_label
-}

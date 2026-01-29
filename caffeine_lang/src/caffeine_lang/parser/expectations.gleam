@@ -1,7 +1,7 @@
-import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
-import caffeine_lang/common/validations
+import caffeine_lang/parser/decoders
+import caffeine_lang/parser/validations
 import caffeine_lang/parser/blueprints.{type Blueprint}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}

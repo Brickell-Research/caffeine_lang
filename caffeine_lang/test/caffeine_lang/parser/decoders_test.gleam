@@ -1,5 +1,5 @@
 import caffeine_lang/common/accepted_types
-import caffeine_lang/common/decoders
+import caffeine_lang/parser/decoders
 import caffeine_lang/common/primitive_types
 import gleam/dynamic
 import gleam/dynamic/decode

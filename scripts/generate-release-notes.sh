@@ -37,7 +37,7 @@ OTHER=()
 
 # Strip conventional commit prefix: "feat: msg" -> "msg", "feat(scope): msg" -> "msg"
 strip_prefix() {
-  echo "$1" | sed -E 's/^[a-z]+(\([^)]*\))?:[[:space:]]*//'
+  printf '%s\n' "$1" | sed -E 's/^[a-z]+(\([^)]*\))?:[[:space:]]*//'
 }
 
 while IFS= read -r line; do
@@ -48,13 +48,13 @@ while IFS= read -r line; do
   msg="${line#* }"
 
   # Skip version bump commits
-  if echo "$msg" | grep -qiE '^[0-9]+\.[0-9]+\.[0-9]+ bump'; then
+  if printf '%s\n' "$msg" | grep -qiE '^[0-9]+\.[0-9]+\.[0-9]+ bump'; then
     continue
   fi
-  if echo "$msg" | grep -qiE '^bump.*[0-9]+\.[0-9]+\.[0-9]+'; then
+  if printf '%s\n' "$msg" | grep -qiE '^bump.*[0-9]+\.[0-9]+\.[0-9]+'; then
     continue
   fi
-  if echo "$msg" | grep -qiE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+  if printf '%s\n' "$msg" | grep -qiE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
     continue
   fi
 
@@ -82,9 +82,9 @@ print_section() {
     echo "### ${title}"
     for item in "${items[@]}"; do
       # Trim leading whitespace and capitalize first letter
-      item="$(echo "$item" | sed 's/^[[:space:]]*//')"
-      first="$(echo "$item" | cut -c1 | tr '[:lower:]' '[:upper:]')"
-      rest="$(echo "$item" | cut -c2-)"
+      item="$(printf '%s' "$item" | sed 's/^[[:space:]]*//')"
+      first="$(printf '%s' "$item" | cut -c1 | tr '[:lower:]' '[:upper:]')"
+      rest="$(printf '%s' "$item" | cut -c2-)"
       item="${first}${rest}"
       echo "- ${item}"
     done

@@ -1,8 +1,9 @@
 import caffeine_lang/common/collection_types.{type CollectionTypes}
-import caffeine_lang/common/modifier_types.{type ModifierTypes}
+import caffeine_lang/common/modifier_types.{type ModifierTypes, Defaulted,
+  Optional}
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
-import caffeine_lang/common/refinement_types.{type RefinementTypes}
+import caffeine_lang/common/refinement_types.{type RefinementTypes, OneOf}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/result
@@ -366,6 +367,18 @@ fn validate_string_literal_or_defaulted(
     ModifierType(modifier_types.Defaulted(inner, _)) ->
       validate_string_literal_or_defaulted(inner, value)
     _ -> Error(Nil)
+  }
+}
+
+/// Checks if a type is optional or has a default value.
+/// Recurses through OneOf refinement types to check the inner type.
+@internal
+pub fn is_optional_or_defaulted(typ: AcceptedTypes) -> Bool {
+  case typ {
+    ModifierType(Optional(_)) -> True
+    ModifierType(Defaulted(_, _)) -> True
+    RefinementType(OneOf(inner, _)) -> is_optional_or_defaulted(inner)
+    _ -> False
   }
 }
 

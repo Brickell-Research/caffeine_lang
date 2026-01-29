@@ -63,14 +63,14 @@ jobs:
       id: release_notes
       run: |
         TAG="${{ inputs.tag || github.ref_name }}"
+        mkdir -p dist
         # Find the previous tag
-        PREV_TAG=$(git tag --sort=-v:refname | grep -A1 "^${TAG}$" | tail -1)
-        if [ "$PREV_TAG" = "$TAG" ] || [ -z "$PREV_TAG" ]; then
+        PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+        if [ -z "$PREV_TAG" ]; then
           echo "No previous tag found, using basic release notes"
           echo "## What's New in Caffeine v${{ steps.version.outputs.version }}" > dist/release-notes.md
         else
           echo "Generating release notes: ${TAG} <- ${PREV_TAG}"
-          mkdir -p dist
           ./scripts/generate-release-notes.sh "$TAG" "$PREV_TAG" > dist/release-notes.md
         fi
         echo "Release notes:"

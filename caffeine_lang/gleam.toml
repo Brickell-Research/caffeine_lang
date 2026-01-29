@@ -26,5 +26,5 @@ gleamy_bench = ">= 0.6.0 and < 1.0.2"
 "caffeine_lang/parser/artifacts" = true
 "caffeine_lang/parser/blueprints" = true
 "caffeine_lang/parser/expectations" = true
-"caffeine_lang/common/validations" = true
-"caffeine_lang/common/decoders" = true
+"caffeine_lang/parser/validations" = true
+"caffeine_lang/parser/decoders" = true

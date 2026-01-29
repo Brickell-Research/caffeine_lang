@@ -5,7 +5,7 @@ import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
-import caffeine_lang/common/validations
+import caffeine_lang/parser/validations
 import gleam/dict
 import gleam/dynamic
 import gleam/list

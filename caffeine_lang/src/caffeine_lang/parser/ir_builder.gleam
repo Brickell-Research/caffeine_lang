@@ -1,12 +1,11 @@
 import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/refinement_types
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
 import caffeine_lang/parser/blueprints.{type Blueprint}
 import caffeine_lang/parser/expectations.{type Expectation}
+import gleam/bool
 import gleam/dict
 import gleam/dynamic
 import gleam/list
@@ -105,31 +104,12 @@ fn build_unprovided_optional_value_tuples(
   |> dict.to_list
   |> list.filter_map(fn(param) {
     let #(label, typ) = param
-    case dict.has_key(merged_inputs, label) {
-      True -> Error(Nil)
-      False ->
-        case is_optional_or_defaulted(typ) {
-          True -> Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
-          False -> Error(Nil)
-        }
+    use <- bool.guard(when: dict.has_key(merged_inputs, label), return: Error(Nil))
+    case accepted_types.is_optional_or_defaulted(typ) {
+      True -> Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
+      False -> Error(Nil)
     }
   })
-}
-
-/// Checks if a type is optional or has a default value.
-/// This includes:
-/// - ModifierType(Optional(_))
-/// - ModifierType(Defaulted(_, _))
-/// - RefinementType(OneOf(ModifierType(Optional(_)), _))
-/// - RefinementType(OneOf(ModifierType(Defaulted(_, _)), _))
-fn is_optional_or_defaulted(typ: accepted_types.AcceptedTypes) -> Bool {
-  case typ {
-    accepted_types.ModifierType(modifier_types.Optional(_)) -> True
-    accepted_types.ModifierType(modifier_types.Defaulted(_, _)) -> True
-    accepted_types.RefinementType(refinement_types.OneOf(inner, _)) ->
-      is_optional_or_defaulted(inner)
-    _ -> False
-  }
 }
 
 /// Extract misc metadata from value tuples.

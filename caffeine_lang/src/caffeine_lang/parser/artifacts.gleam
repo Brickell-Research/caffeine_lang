@@ -1,9 +1,9 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/decoders
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/refinement_types
-import caffeine_lang/common/validations
+import caffeine_lang/parser/decoders
+import caffeine_lang/parser/validations
 import caffeine_lang/standard_library/artifacts
 import gleam/dict
 import gleam/dynamic/decode
