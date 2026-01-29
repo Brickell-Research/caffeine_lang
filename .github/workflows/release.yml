@@ -23,6 +23,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ inputs.tag || github.ref }}
+        fetch-depth: 0
 
     - name: Setup BEAM (Erlang + Gleam)
       uses: erlef/setup-beam@v1
@@ -57,6 +58,23 @@ jobs:
         VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Extracted version: $VERSION"
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        TAG="${{ inputs.tag || github.ref_name }}"
+        # Find the previous tag
+        PREV_TAG=$(git tag --sort=-v:refname | grep -A1 "^${TAG}$" | tail -1)
+        if [ "$PREV_TAG" = "$TAG" ] || [ -z "$PREV_TAG" ]; then
+          echo "No previous tag found, using basic release notes"
+          echo "## What's New in Caffeine v${{ steps.version.outputs.version }}" > dist/release-notes.md
+        else
+          echo "Generating release notes: ${TAG} <- ${PREV_TAG}"
+          mkdir -p dist
+          ./scripts/generate-release-notes.sh "$TAG" "$PREV_TAG" > dist/release-notes.md
+        fi
+        echo "Release notes:"
+        cat dist/release-notes.md
 
     - name: Check disk space
       run: df -h
@@ -154,7 +172,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ inputs.tag || github.ref_name }}
-        generate_release_notes: true
+        body_path: dist/release-notes.md
         files: |
           dist/caffeine-${{ steps.version.outputs.version }}-linux-x64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-linux-arm64.tar.gz
@@ -162,6 +180,21 @@ jobs:
           dist/caffeine-${{ steps.version.outputs.version }}-macos-arm64.tar.gz
           dist/caffeine-${{ steps.version.outputs.version }}-windows-x64.zip
           dist/caffeine-${{ steps.version.outputs.version }}-checksums.sha256
+
+    - name: Send release email
+      if: steps.check_release.outputs.exists == 'false'
+      continue-on-error: true
+      env:
+        NOTIFICATIONS_API_KEY: ${{ secrets.NOTIFICATIONS_API_KEY }}
+        NOTIFICATIONS_URL: ${{ secrets.NOTIFICATIONS_URL }}
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        BODY=$(cat dist/release-notes.md)
+        curl -s -X POST "${NOTIFICATIONS_URL}/send-blast" \
+          -H "X-API-Key: ${NOTIFICATIONS_API_KEY}" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n --arg subject "Caffeine v${VERSION} Released" --arg body "$BODY" '{subject: $subject, body: $body}')"
+        echo "Release email sent (or attempted)"
 
     - name: Publish to Hex
       env:
