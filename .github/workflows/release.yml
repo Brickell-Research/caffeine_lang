@@ -188,7 +188,8 @@ jobs:
         NOTIFICATIONS_API_KEY: ${{ secrets.NOTIFICATIONS_API_KEY }}
         NOTIFICATIONS_URL: ${{ secrets.NOTIFICATIONS_URL }}
       run: |
-        VERSION=${{ steps.version.outputs.version }}
+        TAG="${{ inputs.tag || github.ref_name }}"
+        VERSION="${TAG#v}"
         BODY=$(cat dist/release-notes.md)
         curl -s -X POST "${NOTIFICATIONS_URL}/send-blast" \
           -H "X-API-Key: ${NOTIFICATIONS_API_KEY}" \
