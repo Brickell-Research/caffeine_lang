@@ -44,7 +44,7 @@ fn parse_expectation_sources(
   |> list.map(fn(source) {
     pipeline.compile_expects(source)
     |> result.try(fn(json) {
-      expectations.parse_from_json_string(json, blueprints)
+      expectations.parse_from_json_string(json, blueprints, source_path: source.path)
     })
     |> result.map(fn(exps) { #(exps, source.path) })
   })

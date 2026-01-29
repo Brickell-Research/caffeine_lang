@@ -25,6 +25,7 @@ pub type Expectation {
 pub fn parse_from_json_string(
   json_string: String,
   blueprints: List(Blueprint),
+  source_path source_path: String,
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
   // Parse the JSON string.
   use expectations <- result.try(
@@ -34,7 +35,7 @@ pub fn parse_from_json_string(
     },
   )
 
-  validate_expectations(expectations, blueprints)
+  validate_expectations(expectations, blueprints, source_path)
 }
 
 /// Parse expectations from a JSON string.
@@ -72,6 +73,7 @@ pub fn expectations_from_json(
 fn validate_expectations(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
+  source_path: String,
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
   // Map expectations to blueprints since we'll reuse that numerous times
   // and we've already validated all blueprint_refs.
@@ -82,6 +84,9 @@ fn validate_expectations(
       reference_name: fn(b) { b.name },
       referrer_reference: fn(e) { e.blueprint_ref },
     )
+
+  let #(org, team, service) = helpers.extract_path_prefix(source_path)
+  let path_prefix = org <> "." <> team <> "." <> service <> "."
 
   // Validate that expectation inputs don't overshadow blueprint inputs.
   use _ <- result.try(check_input_overshadowing(
@@ -96,6 +101,9 @@ fn validate_expectations(
       let blueprint_input_keys = blueprint.inputs |> dict.keys
       blueprint.params
       |> dict.filter(fn(key, _) { !list.contains(blueprint_input_keys, key) })
+    },
+    get_identifier: fn(expectation) {
+      "expectation '" <> path_prefix <> expectation.name <> "'"
     },
     missing_inputs_ok: False,
   ))

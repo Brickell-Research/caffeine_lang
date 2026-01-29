@@ -326,7 +326,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_input_value"),
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expected (String) received (Int) for (value)",
+        msg: "Input validation errors: blueprint 'success_rate' - expected (String) received (Int) for (value)",
       )),
     ),
   ]
@@ -387,7 +387,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("input_extra_field"),
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: Extra keys in input: extra",
+        msg: "Input validation errors: blueprint 'success_rate' - Extra keys in input: extra",
       )),
     ),
   ]

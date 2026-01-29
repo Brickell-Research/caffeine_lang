@@ -81,6 +81,7 @@ pub fn validate_blueprints(
     input_param_collections: blueprint_merged_params_collection,
     get_inputs: fn(blueprint) { blueprint.inputs },
     get_params: fn(merged_params) { merged_params },
+    get_identifier: fn(blueprint) { "blueprint '" <> blueprint.name <> "'" },
     missing_inputs_ok: True,
   ))
 

@@ -18,7 +18,7 @@ fn path(file_name: String) {
 
 fn parse_from_file(file_path: String, blueprints: List(Blueprint)) {
   let assert Ok(json) = simplifile.read(file_path)
-  expectations.parse_from_json_string(json, blueprints)
+  expectations.parse_from_json_string(json, blueprints, source_path: file_path)
 }
 
 fn blueprints() -> List(Blueprint) {
@@ -299,7 +299,7 @@ pub fn parse_from_json_string_test() {
     #(
       "wrong_type_input_value",
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expected (Float) received (String) for (percentile)",
+        msg: "Input validation errors: expectation 'parser.expectations.wrong_type_input_value.my_expectation' - expected (Float) received (String) for (percentile)",
       )),
     ),
   ]
@@ -364,13 +364,13 @@ pub fn parse_from_json_string_test() {
     #(
       "input_missing_required",
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: Missing keys in input: percentile",
+        msg: "Input validation errors: expectation 'parser.expectations.input_missing_required.my_expectation' - Missing keys in input: percentile",
       )),
     ),
     #(
       "input_extra_field",
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: Extra keys in input: extra",
+        msg: "Input validation errors: expectation 'parser.expectations.input_extra_field.my_expectation' - Extra keys in input: extra",
       )),
     ),
   ]

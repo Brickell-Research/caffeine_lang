@@ -288,7 +288,11 @@ fn parse_from_strings(
   ))
 
   use expectations_blueprint_collection <- result.try(
-    expectations.parse_from_json_string(expectations_json, validated_blueprints),
+    expectations.parse_from_json_string(
+      expectations_json,
+      validated_blueprints,
+      source_path: expectations_path,
+    ),
   )
 
   Ok(

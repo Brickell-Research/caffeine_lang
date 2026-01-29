@@ -3,6 +3,7 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
+import gleam/string
 
 /// A tuple of a label, type, and value used for template resolution.
 pub type ValueTuple {
@@ -29,6 +30,35 @@ pub fn map_reference_to_referrer_over_collection(
       |> list.first
     #(referrer, reference)
   })
+}
+
+/// Extract a meaningful prefix from the source path.
+/// e.g., "examples/org/platform_team/authentication.caffeine" -> #("org", "platform_team", "authentication")
+@internal
+pub fn extract_path_prefix(path: String) -> #(String, String, String) {
+  case
+    path
+    |> string.split("/")
+    |> list.reverse
+    |> list.take(3)
+    |> list.reverse
+    |> list.map(fn(segment) {
+      // Remove file extension if present.
+      case string.ends_with(segment, ".caffeine") {
+        True -> string.drop_end(segment, 9)
+        False ->
+          case string.ends_with(segment, ".json") {
+            True -> string.drop_end(segment, 5)
+            False -> segment
+          }
+      }
+    })
+  {
+    [org, team, service] -> #(org, team, service)
+    // This is not actually a possible state, however for pattern matching completeness we
+    // include it here.
+    _ -> #("unknown", "unknown", "unknown")
+  }
 }
 
 /// Extract a value from a list of ValueTuple by label using the provided decoder.

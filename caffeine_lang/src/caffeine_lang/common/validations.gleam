@@ -140,6 +140,7 @@ pub fn validate_inputs_for_collection(
   input_param_collections input_param_collections: List(#(a, b)),
   get_inputs get_inputs: fn(a) -> Dict(String, Dynamic),
   get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
+  get_identifier get_identifier: fn(a) -> String,
   missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, CompilationError) {
   let validation_errors =
@@ -154,7 +155,8 @@ pub fn validate_inputs_for_collection(
         )
       {
         Ok(_) -> Error(Nil)
-        Error(msg) -> Ok(msg)
+        Error(msg) ->
+          Ok(get_identifier(input_collection) <> " - " <> msg)
       }
     })
     |> string.join(", ")
