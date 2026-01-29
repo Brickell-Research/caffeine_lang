@@ -22,6 +22,7 @@ pub type Token {
   KeywordOptional
   KeywordDefaulted
   KeywordType
+  KeywordURL
   LiteralString(String)
   LiteralInteger(Int)
   LiteralFloat(Float)
@@ -68,6 +69,7 @@ pub fn to_string(tok: Token) -> String {
     KeywordOptional -> "Optional"
     KeywordDefaulted -> "Defaulted"
     KeywordType -> "Type"
+    KeywordURL -> "URL"
     LiteralString(s) -> "\"" <> s <> "\""
     LiteralInteger(_) -> "integer"
     LiteralFloat(_) -> "float"

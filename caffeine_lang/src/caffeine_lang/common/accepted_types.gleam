@@ -207,6 +207,7 @@ pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
     TypeAliasRef(_) -> numeric_types.Integer
     // InclusiveRange only allows Integer/Float, so these shouldn't happen
     // Fallback to Integer - upstream validation will catch the mismatch
+    PrimitiveType(primitive_types.SemanticType(_)) -> numeric_types.Integer
     PrimitiveType(primitive_types.String) -> numeric_types.Integer
     PrimitiveType(primitive_types.Boolean) -> numeric_types.Integer
     CollectionType(_) -> numeric_types.Integer

@@ -1,8 +1,10 @@
 import caffeine_lang/common/numeric_types.{type NumericTypes}
+import caffeine_lang/common/semantic_types.{type SemanticStringTypes}
 import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/bool
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/list
 import gleam/result
 
 /// PrimitiveTypes are the most _atomic_ of types. I.E. the simple ones
@@ -11,17 +13,18 @@ pub type PrimitiveTypes {
   Boolean
   String
   NumericType(NumericTypes)
+  SemanticType(SemanticStringTypes)
 }
 
 /// Returns metadata for all PrimitiveTypes variants.
 /// IMPORTANT: Update this when adding new variants!
 @internal
 pub fn all_type_metas() -> List(TypeMeta) {
-  [
-    primitive_type_meta(Boolean),
-    primitive_type_meta(String),
-    ..numeric_types.all_type_metas()
-  ]
+  list.flatten([
+    [primitive_type_meta(Boolean), primitive_type_meta(String)],
+    numeric_types.all_type_metas(),
+    semantic_types.all_type_metas(),
+  ])
 }
 
 /// Returns metadata for a PrimitiveTypes variant.
@@ -43,6 +46,7 @@ fn primitive_type_meta(typ: PrimitiveTypes) -> TypeMeta {
         example: "\"hello\", \"my-service\"",
       )
     NumericType(n) -> numeric_types.numeric_type_meta(n)
+    SemanticType(s) -> semantic_types.semantic_type_meta(s)
   }
 }
 
@@ -54,6 +58,8 @@ pub fn primitive_type_to_string(primitive_type: PrimitiveTypes) -> String {
     String -> "String"
     NumericType(numeric_type) ->
       numeric_types.numeric_type_to_string(numeric_type)
+    SemanticType(semantic_type) ->
+      semantic_types.semantic_type_to_string(semantic_type)
   }
 }
 
@@ -66,6 +72,10 @@ pub fn parse_primitive_type(raw: String) -> Result(PrimitiveTypes, Nil) {
     _ ->
       numeric_types.parse_numeric_type(raw)
       |> result.map(NumericType)
+      |> result.lazy_or(fn() {
+        semantic_types.parse_semantic_type(raw)
+        |> result.map(SemanticType)
+      })
   }
 }
 
@@ -82,6 +92,8 @@ pub fn decode_primitive_to_string(
     String -> decode.string
     NumericType(numeric_type) ->
       numeric_types.decode_numeric_to_string(numeric_type)
+    SemanticType(semantic_type) ->
+      semantic_types.decode_semantic_to_string(semantic_type)
   }
 }
 
@@ -97,6 +109,8 @@ pub fn validate_default_value(
     String -> Ok(Nil)
     NumericType(numeric_type) ->
       numeric_types.validate_default_value(numeric_type, default_val)
+    SemanticType(semantic_type) ->
+      semantic_types.validate_default_value(semantic_type, default_val)
   }
 }
 
@@ -117,6 +131,8 @@ pub fn validate_value(
     }
     NumericType(numeric_type) ->
       numeric_types.validate_value(numeric_type, value)
+    SemanticType(semantic_type) ->
+      semantic_types.validate_value(semantic_type, value)
   }
 }
 

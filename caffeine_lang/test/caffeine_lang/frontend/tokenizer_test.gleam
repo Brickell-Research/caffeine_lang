@@ -43,6 +43,7 @@ pub fn tokenize_keywords_test() {
 // * ✅ Integer type
 // * ✅ Float type
 // * ✅ Boolean type
+// * ✅ URL type
 // * ✅ List type
 // * ✅ Dict type
 // * ✅ Optional type
@@ -53,6 +54,7 @@ pub fn tokenize_type_keywords_test() {
     #("Integer", Ok([token.KeywordInteger, token.EOF])),
     #("Float", Ok([token.KeywordFloat, token.EOF])),
     #("Boolean", Ok([token.KeywordBoolean, token.EOF])),
+    #("URL", Ok([token.KeywordURL, token.EOF])),
     #("List", Ok([token.KeywordList, token.EOF])),
     #("Dict", Ok([token.KeywordDict, token.EOF])),
     #("Optional", Ok([token.KeywordOptional, token.EOF])),

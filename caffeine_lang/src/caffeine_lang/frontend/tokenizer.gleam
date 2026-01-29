@@ -394,6 +394,7 @@ fn keyword_or_identifier(word: String) -> Token {
     "Optional" -> token.KeywordOptional
     "Defaulted" -> token.KeywordDefaulted
     "Type" -> token.KeywordType
+    "URL" -> token.KeywordURL
     "true" -> token.LiteralTrue
     "false" -> token.LiteralFalse
     _ -> token.Identifier(word)

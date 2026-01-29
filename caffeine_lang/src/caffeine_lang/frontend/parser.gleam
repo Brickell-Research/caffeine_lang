@@ -4,6 +4,7 @@ import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
+import caffeine_lang/common/semantic_types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type ExpectItem,
   type ExpectsBlock, type ExpectsFile, type Extendable, type ExtendableKind,
@@ -735,6 +736,11 @@ fn parse_type(
       )
     token.KeywordBoolean ->
       parse_type_with_refinement(state, primitive_types.Boolean)
+    token.KeywordURL ->
+      parse_type_with_refinement(
+        state,
+        primitive_types.SemanticType(semantic_types.URL),
+      )
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
     token.KeywordOptional -> parse_optional_type(state)
@@ -802,6 +808,15 @@ fn parse_collection_inner_type(
     token.KeywordBoolean -> {
       let state = advance(state)
       Ok(#(accepted_types.PrimitiveType(primitive_types.Boolean), state))
+    }
+    token.KeywordURL -> {
+      let state = advance(state)
+      Ok(#(
+        accepted_types.PrimitiveType(primitive_types.SemanticType(
+          semantic_types.URL,
+        )),
+        state,
+      ))
     }
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
@@ -1194,6 +1209,7 @@ fn literal_matches_primitive(
     primitive_types.NumericType(numeric_types.Float), ast.LiteralFloat(_) -> True
     primitive_types.Boolean, ast.LiteralTrue -> True
     primitive_types.Boolean, ast.LiteralFalse -> True
+    primitive_types.SemanticType(_), ast.LiteralString(_) -> True
     _, _ -> False
   }
 }

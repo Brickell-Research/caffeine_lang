@@ -20,7 +20,7 @@ pub const standard_library = "
         \"value\": { \"type_\": \"String\", \"description\": \"CQL expression combining queries\" },
         \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Observability platform\" },
         \"tags\": { \"type_\": \"Optional(Dict(String, String))\", \"description\": \"An optional set of tags to append to the SLO artifact\" },
-        \"runbook\": { \"type_\": \"Optional(String)\", \"description\": \"An optional runbook URL surfaced via the SLO description\" }
+        \"runbook\": { \"type_\": \"Optional(URL)\", \"description\": \"An optional runbook URL surfaced via the SLO description\" }
       }
     },
     {

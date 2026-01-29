@@ -6,6 +6,7 @@ import caffeine_lang/common/helpers
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
+import caffeine_lang/common/semantic_types
 import caffeine_lang/generator/datadog
 import caffeine_lang/middle_end/semantic_analyzer
 import caffeine_lang/middle_end/vendor
@@ -933,7 +934,9 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "runbook",
               accepted_types.ModifierType(modifier_types.Optional(
-                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.SemanticType(
+                  semantic_types.URL,
+                )),
               )),
               dynamic.string(
                 "https://wiki.example.com/runbook/auth-latency",
