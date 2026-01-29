@@ -271,7 +271,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("duplicate_overshadowing_inherited_param"),
       Error(errors.ParserDuplicateError(
-        msg: "Overshadowed inherited_params in blueprint error: Blueprint overshadowing inherited_params from artifact: threshold",
+        msg: "blueprint 'success_rate' - overshadowing inherited_params from artifact: threshold",
       )),
     ),
   ]
@@ -537,7 +537,7 @@ pub fn parse_from_json_string_artifact_refs_test() {
     #(
       path("duplicate_artifact_refs"),
       Error(errors.ParserDuplicateError(
-        msg: "Duplicate artifact references in blueprint: SLO",
+        msg: "blueprint 'success_rate' - duplicate artifact references: SLO",
       )),
     ),
   ]

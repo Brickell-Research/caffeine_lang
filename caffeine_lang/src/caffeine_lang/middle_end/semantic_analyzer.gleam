@@ -66,7 +66,9 @@ pub fn resolve_vendor(
   {
     Error(_) ->
       Error(errors.SemanticAnalysisVendorResolutionError(
-        msg: "No vendor input for: " <> ir.unique_identifier,
+        msg: "expectation '"
+        <> ir_to_identifier(ir)
+        <> "' - no vendor input",
       ))
     Ok(vendor_value_tuple) -> {
       // Safe to assert since already type checked in parser phase.
@@ -92,9 +94,9 @@ pub fn resolve_queries(
         |> list.first
         |> result.replace_error(
           errors.SemanticAnalysisTemplateResolutionError(
-            msg: "Missing 'queries' field in IR for '"
-              <> ir.metadata.friendly_label
-              <> "'",
+            msg: "expectation '"
+              <> ir_to_identifier(ir)
+              <> "' - missing 'queries' field in IR",
           ),
         ),
       )
@@ -106,12 +108,14 @@ pub fn resolve_queries(
         )
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
-            msg: "Failed to decode queries for '"
-              <> ir.metadata.friendly_label
-              <> "'",
+            msg: "expectation '"
+              <> ir_to_identifier(ir)
+              <> "' - failed to decode queries",
           )
         }),
       )
+
+      let identifier = ir_to_identifier(ir)
 
       // Resolve all queries and collect results.
       use resolved_queries <- result.try(
@@ -120,7 +124,11 @@ pub fn resolve_queries(
         |> list.try_map(fn(pair) {
           let #(key, query) = pair
           use resolved <- result.map(
-            templatizer.parse_and_resolve_query_template(query, ir.values),
+            templatizer.parse_and_resolve_query_template(
+              query,
+              ir.values,
+              identifier:,
+            ),
           )
           #(key, resolved)
         }),
@@ -159,13 +167,17 @@ pub fn resolve_queries(
             decode.run(value_tuple.value, decode.string)
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
-                msg: "Failed to decode 'value' field as string for '"
-                  <> ir.metadata.friendly_label
-                  <> "'",
+                msg: "expectation '"
+                  <> ir_to_identifier(ir)
+                  <> "' - failed to decode 'value' field as string",
               )
             }),
           )
-          templatizer.parse_and_resolve_query_template(value_string, ir.values)
+          templatizer.parse_and_resolve_query_template(
+            value_string,
+            ir.values,
+            identifier:,
+          )
           |> result.map(fn(resolved_value) {
             option.Some(helpers.ValueTuple(
               "value",
@@ -195,7 +207,20 @@ pub fn resolve_queries(
     }
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
-        msg: "No vendor for expectation: " <> ir.unique_identifier,
+        msg: "expectation '"
+        <> ir_to_identifier(ir)
+        <> "' - no vendor resolved",
       ))
   }
+}
+
+/// Build a dotted identifier from IR metadata: org.team.service.name
+fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
+  ir.metadata.org_name
+  <> "."
+  <> ir.metadata.team_name
+  <> "."
+  <> ir.metadata.service_name
+  <> "."
+  <> ir.metadata.friendly_label
 }

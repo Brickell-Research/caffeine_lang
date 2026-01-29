@@ -126,9 +126,9 @@ pub fn ir_to_terraform_resource(
     cql_generator.resolve_slo_to_hcl(value_expr, queries)
     |> result.map_error(fn(err) {
       GeneratorSloQueryResolutionError(
-        msg: "Failed to resolve SLO query for '"
-        <> ir.metadata.friendly_label
-        <> "': "
+        msg: "expectation '"
+        <> ir_to_identifier(ir)
+        <> "' - failed to resolve SLO query: "
         <> err,
       )
     }),
@@ -173,7 +173,12 @@ pub fn ir_to_terraform_resource(
       ),
     )
 
-  use window_in_days_string <- result.try(window_to_timeframe(window_in_days))
+  let identifier = ir_to_identifier(ir)
+
+  use window_in_days_string <- result.try(
+    window_to_timeframe(window_in_days)
+    |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
+  )
 
   // Build the thresholds block (common to both types).
   let thresholds_block =
@@ -239,4 +244,15 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
         <> ". Accepted values are 7, 30, or 90.",
       ))
   }
+}
+
+/// Build a dotted identifier from IR metadata: org.team.service.name
+fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
+  ir.metadata.org_name
+  <> "."
+  <> ir.metadata.team_name
+  <> "."
+  <> ir.metadata.service_name
+  <> "."
+  <> ir.metadata.friendly_label
 }

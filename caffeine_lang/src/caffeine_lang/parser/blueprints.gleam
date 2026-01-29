@@ -95,7 +95,9 @@ pub fn validate_blueprints(
         validations.check_collection_key_overshadowing(
           in: blueprint.params,
           against: merged_params,
-          with: "Blueprint overshadowing inherited_params from artifact: ",
+          with: "blueprint '"
+            <> blueprint.name
+            <> "' - overshadowing inherited_params from artifact: ",
         )
       {
         Ok(_) -> Error(Nil)
@@ -107,10 +109,7 @@ pub fn validate_blueprints(
   use _ <- result.try(case overshadow_params_error {
     "" -> Ok(True)
     _ ->
-      Error(errors.ParserDuplicateError(
-        msg: "Overshadowed inherited_params in blueprint error: "
-        <> overshadow_params_error,
-      ))
+      Error(errors.ParserDuplicateError(msg: overshadow_params_error))
   })
 
   // At this point everything is validated, so we can merge params from all artifacts + blueprint params.
@@ -180,15 +179,18 @@ fn validate_no_duplicate_artifact_refs(
         |> dict.filter(fn(_, v) { list.length(v) > 1 })
         |> dict.keys
         |> string.join(", ")
-      Ok(duplicate_refs)
+      Ok(
+        "blueprint '"
+        <> blueprint.name
+        <> "' - duplicate artifact references: "
+        <> duplicate_refs,
+      )
     })
 
   case duplicates {
     [] -> Ok(True)
     [first, ..] ->
-      Error(errors.ParserDuplicateError(
-        msg: "Duplicate artifact references in blueprint: " <> first,
-      ))
+      Error(errors.ParserDuplicateError(msg: first))
   }
 }
 
@@ -199,16 +201,23 @@ fn validate_no_conflicting_params(
   let conflicts =
     blueprint_artifacts_collection
     |> list.filter_map(fn(pair) {
-      let #(_blueprint, artifact_list) = pair
-      find_conflicting_params(artifact_list)
+      let #(blueprint, artifact_list) = pair
+      case find_conflicting_params(artifact_list) {
+        Ok(conflict) ->
+          Ok(
+            "blueprint '"
+            <> blueprint.name
+            <> "' - conflicting param types across artifacts: "
+            <> conflict,
+          )
+        Error(Nil) -> Error(Nil)
+      }
     })
 
   case conflicts {
     [] -> Ok(True)
     [first, ..] ->
-      Error(errors.ParserDuplicateError(
-        msg: "Conflicting param types across artifacts: " <> first,
-      ))
+      Error(errors.ParserDuplicateError(msg: first))
   }
 }
 

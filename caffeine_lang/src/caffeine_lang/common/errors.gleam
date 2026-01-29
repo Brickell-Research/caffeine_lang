@@ -30,6 +30,40 @@ pub type CompilationError {
   CQLGeneratorError(msg: String)
 }
 
+/// Prefixes a CompilationError's message with an identifier string.
+/// Useful for adding context like which expectation or blueprint caused the error.
+@internal
+pub fn prefix_error(
+  error: CompilationError,
+  identifier: String,
+) -> CompilationError {
+  let prefix = identifier <> " - "
+  case error {
+    FrontendParseError(msg:) -> FrontendParseError(msg: prefix <> msg)
+    FrontendValidationError(msg:) -> FrontendValidationError(msg: prefix <> msg)
+    ParserFileReadError(msg:) -> ParserFileReadError(msg: prefix <> msg)
+    ParserJsonParserError(msg:) -> ParserJsonParserError(msg: prefix <> msg)
+    ParserDuplicateError(msg:) -> ParserDuplicateError(msg: prefix <> msg)
+    LinkerParseError(msg:) -> LinkerParseError(msg: prefix <> msg)
+    LinkerSemanticError(msg:) -> LinkerSemanticError(msg: prefix <> msg)
+    SemanticAnalysisVendorResolutionError(msg:) ->
+      SemanticAnalysisVendorResolutionError(msg: prefix <> msg)
+    SemanticAnalysisTemplateParseError(msg:) ->
+      SemanticAnalysisTemplateParseError(msg: prefix <> msg)
+    SemanticAnalysisTemplateResolutionError(msg:) ->
+      SemanticAnalysisTemplateResolutionError(msg: prefix <> msg)
+    SemanticAnalysisDependencyValidationError(msg:) ->
+      SemanticAnalysisDependencyValidationError(msg: prefix <> msg)
+    GeneratorSloQueryResolutionError(msg:) ->
+      GeneratorSloQueryResolutionError(msg: prefix <> msg)
+    GeneratorDatadogTerraformResolutionError(msg:) ->
+      GeneratorDatadogTerraformResolutionError(msg: prefix <> msg)
+    CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
+    CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
+    CQLGeneratorError(msg:) -> CQLGeneratorError(msg: prefix <> msg)
+  }
+}
+
 /// Converts a JSON decode error into a CompilationError. Useful for leveraging the
 /// custom errors we have per compilation phase vs. the lower level ones from
 /// various libraries we leverage.

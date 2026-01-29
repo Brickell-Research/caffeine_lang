@@ -351,7 +351,7 @@ pub fn parse_from_json_string_test() {
     #(
       "overshadowing_blueprint_input",
       Error(errors.ParserDuplicateError(
-        msg: "Expectation 'my_expectation' overshadowing inputs from blueprint: vendor",
+        msg: "expectation 'parser.expectations.overshadowing_blueprint_input.my_expectation' - overshadowing inputs from blueprint: vendor",
       )),
     ),
   ]

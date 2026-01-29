@@ -91,6 +91,7 @@ fn validate_expectations(
   // Validate that expectation inputs don't overshadow blueprint inputs.
   use _ <- result.try(check_input_overshadowing(
     expectations_blueprint_collection,
+    path_prefix,
   ))
 
   // Validate that expectation.inputs provides params NOT already provided by blueprint.inputs.
@@ -120,6 +121,7 @@ fn validate_expectations(
 
 fn check_input_overshadowing(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+  path_prefix: String,
 ) -> Result(Bool, CompilationError) {
   let overshadow_errors =
     expectations_blueprint_collection
@@ -129,9 +131,10 @@ fn check_input_overshadowing(
         validations.check_collection_key_overshadowing(
           in: expectation.inputs,
           against: blueprint.inputs,
-          with: "Expectation '"
+          with: "expectation '"
+            <> path_prefix
             <> expectation.name
-            <> "' overshadowing inputs from blueprint: ",
+            <> "' - overshadowing inputs from blueprint: ",
         )
       {
         Ok(_) -> Error(Nil)

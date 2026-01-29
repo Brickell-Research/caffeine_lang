@@ -29,14 +29,14 @@ pub fn parse_and_resolve_query_template_test() {
       "foo.sum$$baz->faz$$",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Missing input for template: faz",
+        "test - Missing input for template: faz",
       )),
     ),
     #(
       "foo.sum$$baz",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Unexpected incomplete `$$` for substring: foo.sum$$baz",
+        "test - Unexpected incomplete `$$` for substring: foo.sum$$baz",
       )),
     ),
     #("foo", [], Ok("foo")),
@@ -224,9 +224,13 @@ pub fn parse_and_resolve_query_template_test() {
       Ok("metric{env:production, team:platform}"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(
-    templatizer.parse_and_resolve_query_template,
-  )
+  |> test_helpers.array_based_test_executor_2(fn(query, value_tuples) {
+    templatizer.parse_and_resolve_query_template(
+      query,
+      value_tuples,
+      identifier: "test",
+    )
+  })
 }
 
 // ==== Parse Template Variable ====
