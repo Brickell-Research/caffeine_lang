@@ -118,7 +118,7 @@ This specification uses the following conventions:
                       | <modifier_type>
                       | <refinement_type>
 
-<primitive_type>    ::= "String" | "Integer" | "Float" | "Boolean"
+<primitive_type>    ::= "String" | "Integer" | "Float" | "Boolean" | "URL"
 
 # Type alias reference: refers to a previously defined type alias
 <type_alias_ref>    ::= "_" IDENTIFIER

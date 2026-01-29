@@ -13,7 +13,7 @@ Formal type system for Caffeine blueprint parameters.
     | Optional(τ') | Defaulted(τ', v)  modifiers
     | β { x | P(x) }                 refinements (inline)
 
-β ::= String | Integer | Float | Boolean
+β ::= String | Integer | Float | Boolean | URL
 
 α ::= _identifier                    type alias (resolves to refined β)
 
@@ -46,6 +46,7 @@ and do not appear in JSON output.
 | `Integer` | ℤ (arbitrary precision) |
 | `Float` | ℝ (IEEE 754 double) |
 | `Boolean` | {true, false} |
+| `URL` | Valid URL starting with http:// or https:// |
 
 ---
 
