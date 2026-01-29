@@ -3,6 +3,7 @@ import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
 import caffeine_lang/common/errors
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/generator/datadog
@@ -671,6 +672,212 @@ pub fn generate_terraform_test() {
         ),
       ],
       "slo_with_mixed_dependencies",
+    ),
+    // SLO with empty tags dict
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "tags",
+              accepted_types.ModifierType(modifier_types.Optional(
+                accepted_types.CollectionType(collection_types.Dict(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
+                )),
+              )),
+              dynamic.properties([]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_empty_tags",
+    ),
+    // SLO with user-provided tags
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "tags",
+              accepted_types.ModifierType(modifier_types.Optional(
+                accepted_types.CollectionType(collection_types.Dict(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
+                )),
+              )),
+              dynamic.properties([
+                #(dynamic.string("env"), dynamic.string("prod")),
+                #(dynamic.string("tier"), dynamic.string("1")),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_tags",
+    ),
+    // SLO with overshadowing user tag
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "tags",
+              accepted_types.ModifierType(modifier_types.Optional(
+                accepted_types.CollectionType(collection_types.Dict(
+                  accepted_types.PrimitiveType(primitive_types.String),
+                  accepted_types.PrimitiveType(primitive_types.String),
+                )),
+              )),
+              dynamic.properties([
+                #(dynamic.string("team"), dynamic.string("override_team")),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_overshadowing_tags",
     ),
   ]
   |> list.each(fn(pair) {

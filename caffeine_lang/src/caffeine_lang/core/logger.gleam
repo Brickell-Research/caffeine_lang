@@ -14,3 +14,9 @@ pub fn log(log_level: LogLevel, message: String) {
     Minimal -> Nil
   }
 }
+
+/// Logs a warning message to stderr. Always prints regardless of log level.
+@internal
+pub fn warn(message: String) {
+  io.println_error("warning: " <> message)
+}

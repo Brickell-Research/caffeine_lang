@@ -143,7 +143,7 @@ fn extract_misc_metadata(
     // Skip reserved labels
     case value_tuple.label {
       // TODO: Make the tag filtering dynamic.
-      "window_in_days" | "threshold" | "value" -> Error(Nil)
+      "window_in_days" | "threshold" | "value" | "tags" -> Error(Nil)
       _ -> {
         // Use type-aware resolution to handle defaults
         case resolve_value_for_tag(value_tuple) {
