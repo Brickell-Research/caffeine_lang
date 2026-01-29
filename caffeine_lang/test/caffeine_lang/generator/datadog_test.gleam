@@ -879,6 +879,72 @@ pub fn generate_terraform_test() {
       ],
       "slo_with_overshadowing_tags",
     ),
+    // SLO with runbook URL
+    #(
+      [
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "Auth Latency SLO",
+            org_name: "org",
+            service_name: "team",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Float,
+              )),
+              dynamic.float(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+              dynamic.int(30),
+            ),
+            helpers.ValueTuple(
+              "queries",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("numerator"),
+                  dynamic.string("sum:http.requests{status:2xx}"),
+                ),
+                #(
+                  dynamic.string("denominator"),
+                  dynamic.string("sum:http.requests{*}"),
+                ),
+              ]),
+            ),
+            helpers.ValueTuple(
+              "runbook",
+              accepted_types.ModifierType(modifier_types.Optional(
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.string(
+                "https://wiki.example.com/runbook/auth-latency",
+              ),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_runbook",
+    ),
   ]
   |> list.each(fn(pair) {
     let #(input, corpus_file) = pair

@@ -19,7 +19,8 @@ pub const standard_library = "
         \"queries\": { \"type_\": \"Dict(String, String)\", \"description\": \"Named queries for the SLI calculation\" },
         \"value\": { \"type_\": \"String\", \"description\": \"CQL expression combining queries\" },
         \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Observability platform\" },
-        \"tags\": { \"type_\": \"Optional(Dict(String, String))\", \"description\": \"An optional set of tags to append to the SLO artifact\" }
+        \"tags\": { \"type_\": \"Optional(Dict(String, String))\", \"description\": \"An optional set of tags to append to the SLO artifact\" },
+        \"runbook\": { \"type_\": \"Optional(String)\", \"description\": \"An optional runbook URL surfaced via the SLO description\" }
       }
     },
     {

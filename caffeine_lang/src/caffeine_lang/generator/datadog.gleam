@@ -122,6 +122,13 @@ pub fn ir_to_terraform_resource(
   let value_expr =
     helpers.extract_value(ir.values, "value", decode.string)
     |> result.unwrap("numerator / denominator")
+  let runbook =
+    helpers.extract_value(
+      ir.values,
+      "runbook",
+      decode.optional(decode.string),
+    )
+    |> result.unwrap(option.None)
 
   // Parse the value expression using CQL and get HCL blocks.
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
@@ -255,14 +262,24 @@ pub fn ir_to_terraform_resource(
     cql_generator.MetricSlo -> "metric"
   }
 
+  let base_attributes = [
+    #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+    #("type", hcl.StringLiteral(type_str)),
+    #("tags", tags),
+  ]
+
+  let attributes = case runbook {
+    option.Some(url) -> [
+      #("description", hcl.StringLiteral("[Runbook](" <> url <> ")")),
+      ..base_attributes
+    ]
+    option.None -> base_attributes
+  }
+
   Ok(terraform.Resource(
     type_: "datadog_service_level_objective",
     name: resource_name,
-    attributes: dict.from_list([
-      #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
-      #("type", hcl.StringLiteral(type_str)),
-      #("tags", tags),
-    ]),
+    attributes: dict.from_list(attributes),
     blocks: list.append(slo_blocks, [thresholds_block]),
     meta: hcl.empty_meta(),
     lifecycle: option.None,
