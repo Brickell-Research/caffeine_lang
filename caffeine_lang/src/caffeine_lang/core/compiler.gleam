@@ -291,7 +291,7 @@ fn parse_from_strings(
     expectations.parse_from_json_string(
       expectations_json,
       validated_blueprints,
-      source_path: expectations_path,
+      from: expectations_path,
     ),
   )
 

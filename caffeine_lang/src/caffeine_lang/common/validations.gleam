@@ -140,7 +140,7 @@ pub fn validate_inputs_for_collection(
   input_param_collections input_param_collections: List(#(a, b)),
   get_inputs get_inputs: fn(a) -> Dict(String, Dynamic),
   get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
-  get_identifier get_identifier: fn(a) -> String,
+  with get_identifier: fn(a) -> String,
   missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, CompilationError) {
   let validation_errors =

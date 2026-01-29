@@ -228,7 +228,7 @@ pub fn parse_and_resolve_query_template_test() {
     templatizer.parse_and_resolve_query_template(
       query,
       value_tuples,
-      identifier: "test",
+      from: "test",
     )
   })
 }

@@ -40,7 +40,6 @@ pub fn parse_from_json_string(
 }
 
 /// Validates and transforms blueprints after JSON parsing.
-/// Validates and transforms blueprints after JSON parsing.
 @internal
 pub fn validate_blueprints(
   blueprints: List(Blueprint),
@@ -81,7 +80,7 @@ pub fn validate_blueprints(
     input_param_collections: blueprint_merged_params_collection,
     get_inputs: fn(blueprint) { blueprint.inputs },
     get_params: fn(merged_params) { merged_params },
-    get_identifier: fn(blueprint) { "blueprint '" <> blueprint.name <> "'" },
+    with: fn(blueprint) { "blueprint '" <> blueprint.name <> "'" },
     missing_inputs_ok: True,
   ))
 

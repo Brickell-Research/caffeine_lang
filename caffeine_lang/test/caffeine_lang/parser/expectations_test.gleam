@@ -18,7 +18,7 @@ fn path(file_name: String) {
 
 fn parse_from_file(file_path: String, blueprints: List(Blueprint)) {
   let assert Ok(json) = simplifile.read(file_path)
-  expectations.parse_from_json_string(json, blueprints, source_path: file_path)
+  expectations.parse_from_json_string(json, blueprints, from: file_path)
 }
 
 fn blueprints() -> List(Blueprint) {

@@ -25,7 +25,7 @@ pub type Expectation {
 pub fn parse_from_json_string(
   json_string: String,
   blueprints: List(Blueprint),
-  source_path source_path: String,
+  from source_path: String,
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
   // Parse the JSON string.
   use expectations <- result.try(
@@ -103,7 +103,7 @@ fn validate_expectations(
       blueprint.params
       |> dict.filter(fn(key, _) { !list.contains(blueprint_input_keys, key) })
     },
-    get_identifier: fn(expectation) {
+    with: fn(expectation) {
       "expectation '" <> path_prefix <> expectation.name <> "'"
     },
     missing_inputs_ok: False,

@@ -1061,7 +1061,7 @@ pub fn validate_inputs_for_collection_test() {
       input_param_collections: collection,
       get_inputs: fn(p) { p },
       get_params: fn(p) { p },
-      get_identifier: fn(_) { "test" },
+      with: fn(_) { "test" },
       missing_inputs_ok: False,
     )
     |> should.equal(Ok(True))
@@ -1086,7 +1086,7 @@ pub fn validate_inputs_for_collection_test() {
     input_param_collections: collection_partial,
     get_inputs: fn(p) { p },
     get_params: fn(p) { p },
-    get_identifier: fn(_) { "test" },
+    with: fn(_) { "test" },
     missing_inputs_ok: True,
   )
   |> should.equal(Ok(True))
@@ -1109,7 +1109,7 @@ pub fn validate_inputs_for_collection_test() {
     input_param_collections: collection_type_error,
     get_inputs: fn(p) { p },
     get_params: fn(p) { p },
-    get_identifier: fn(_) { "test" },
+    with: fn(_) { "test" },
     missing_inputs_ok: False,
   )
   |> should.be_error
@@ -1118,7 +1118,7 @@ pub fn validate_inputs_for_collection_test() {
     input_param_collections: collection_type_error,
     get_inputs: fn(p) { p },
     get_params: fn(p) { p },
-    get_identifier: fn(_) { "test" },
+    with: fn(_) { "test" },
     missing_inputs_ok: True,
   )
   |> should.be_error
@@ -1128,7 +1128,7 @@ pub fn validate_inputs_for_collection_test() {
     input_param_collections: collection_partial,
     get_inputs: fn(p) { p },
     get_params: fn(p) { p },
-    get_identifier: fn(_) { "test" },
+    with: fn(_) { "test" },
     missing_inputs_ok: False,
   )
   |> should.be_error

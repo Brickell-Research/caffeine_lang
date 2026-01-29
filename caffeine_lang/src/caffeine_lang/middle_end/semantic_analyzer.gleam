@@ -127,7 +127,7 @@ pub fn resolve_queries(
             templatizer.parse_and_resolve_query_template(
               query,
               ir.values,
-              identifier:,
+              from: identifier,
             ),
           )
           #(key, resolved)
@@ -176,7 +176,7 @@ pub fn resolve_queries(
           templatizer.parse_and_resolve_query_template(
             value_string,
             ir.values,
-            identifier:,
+            from: identifier,
           )
           |> result.map(fn(resolved_value) {
             option.Some(helpers.ValueTuple(
