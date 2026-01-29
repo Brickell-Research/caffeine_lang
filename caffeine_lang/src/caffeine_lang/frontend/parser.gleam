@@ -167,13 +167,13 @@ fn parse_type_aliases_loop(
 }
 
 /// Check if current position is a type alias definition.
-/// Looks for pattern: Identifier ( Identifier("Type") )
+/// Looks for pattern: Identifier ( KeywordType )
 fn is_type_alias(state: ParserState) -> Bool {
   case state.tokens {
     [
       token.PositionedToken(token.Identifier(_), _, _),
       token.PositionedToken(token.SymbolLeftParen, _, _),
-      token.PositionedToken(token.Identifier("Type"), _, _),
+      token.PositionedToken(token.KeywordType, _, _),
       ..,
     ] -> True
     _ -> False
@@ -198,7 +198,7 @@ fn parse_type_alias(
       use state <- result.try(expect(state, token.SymbolLeftParen, "("))
       // Expect "Type" identifier
       case peek(state) {
-        token.Identifier("Type") -> {
+        token.KeywordType -> {
           let state = advance(state)
           use state <- result.try(expect(state, token.SymbolRightParen, ")"))
           use state <- result.try(expect(state, token.SymbolColon, ":"))
@@ -267,7 +267,7 @@ fn parse_extendable_kind(
     token.KeywordProvides -> Ok(#(ast.ExtendableProvides, advance(state)))
     tok ->
       Error(parser_error.UnexpectedToken(
-        "Requires or Provides",
+        "Type, Requires, or Provides",
         token.to_string(tok),
         state.line,
         state.column,

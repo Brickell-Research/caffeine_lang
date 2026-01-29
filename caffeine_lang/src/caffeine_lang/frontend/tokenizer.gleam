@@ -393,6 +393,7 @@ fn keyword_or_identifier(word: String) -> Token {
     "Dict" -> token.KeywordDict
     "Optional" -> token.KeywordOptional
     "Defaulted" -> token.KeywordDefaulted
+    "Type" -> token.KeywordType
     "true" -> token.LiteralTrue
     "false" -> token.LiteralFalse
     _ -> token.Identifier(word)

@@ -20,6 +20,7 @@ fn tokenize_tokens(
 // * ✅ extends keyword
 // * ✅ Requires keyword
 // * ✅ Provides keyword
+// * ✅ Type keyword
 // * ✅ in keyword
 // * ✅ x keyword
 pub fn tokenize_keywords_test() {
@@ -30,6 +31,7 @@ pub fn tokenize_keywords_test() {
     #("extends", Ok([token.KeywordExtends, token.EOF])),
     #("Requires", Ok([token.KeywordRequires, token.EOF])),
     #("Provides", Ok([token.KeywordProvides, token.EOF])),
+    #("Type", Ok([token.KeywordType, token.EOF])),
     #("in", Ok([token.KeywordIn, token.EOF])),
     #("x", Ok([token.KeywordX, token.EOF])),
   ]
