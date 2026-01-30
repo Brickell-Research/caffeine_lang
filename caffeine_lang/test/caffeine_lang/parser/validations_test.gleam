@@ -352,26 +352,34 @@ pub fn validate_value_type_test() {
     #(
       some_string,
       accepted_types.PrimitiveType(primitive_types.Boolean),
-      json_error("expected (Bool) received (String) for (some_key)"),
+      json_error(
+        "expected (Bool) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     #(
       some_string,
       accepted_types.PrimitiveType(primitive_types.NumericType(
         numeric_types.Integer,
       )),
-      json_error("expected (Int) received (String) for (some_key)"),
+      json_error(
+        "expected (Int) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     #(
       some_string,
       accepted_types.PrimitiveType(primitive_types.NumericType(
         numeric_types.Float,
       )),
-      json_error("expected (Float) received (String) for (some_key)"),
+      json_error(
+        "expected (Float) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     #(
       some_bool,
       accepted_types.PrimitiveType(primitive_types.String),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (True) for (some_key)",
+      ),
     ),
     // Dict types
     #(
@@ -380,7 +388,9 @@ pub fn validate_value_type_test() {
         accepted_types.PrimitiveType(primitive_types.String),
         accepted_types.PrimitiveType(primitive_types.String),
       )),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (Dict) for (some_key.a)",
+      ),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
@@ -390,7 +400,9 @@ pub fn validate_value_type_test() {
           numeric_types.Integer,
         )),
       )),
-      json_error("expected (Int) received (Bool) for (some_key)"),
+      json_error(
+        "expected (Int) received (Bool) value (Dict) for (some_key.a)",
+      ),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
@@ -400,7 +412,9 @@ pub fn validate_value_type_test() {
           numeric_types.Float,
         )),
       )),
-      json_error("expected (Float) received (Bool) for (some_key)"),
+      json_error(
+        "expected (Float) received (Bool) value (Dict) for (some_key.a)",
+      ),
     ),
     #(
       dynamic.properties([#(some_string, some_string)]),
@@ -408,7 +422,9 @@ pub fn validate_value_type_test() {
         accepted_types.PrimitiveType(primitive_types.String),
         accepted_types.PrimitiveType(primitive_types.Boolean),
       )),
-      json_error("expected (Bool) received (String) for (some_key)"),
+      json_error(
+        "expected (Bool) received (String) value (Dict) for (some_key.a)",
+      ),
     ),
     // List types
     #(
@@ -418,7 +434,9 @@ pub fn validate_value_type_test() {
           primitive_types.String,
         )),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (List) for (some_key.1)",
+      ),
     ),
     #(
       dynamic.list([dynamic.int(1), some_bool]),
@@ -429,7 +447,9 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error("expected (Int) received (Bool) for (some_key)"),
+      json_error(
+        "expected (Int) received (Bool) value (List) for (some_key.1)",
+      ),
     ),
     #(
       dynamic.list([some_bool, some_string]),
@@ -438,7 +458,9 @@ pub fn validate_value_type_test() {
           primitive_types.Boolean,
         )),
       ),
-      json_error("expected (Bool) received (String) for (some_key)"),
+      json_error(
+        "expected (Bool) received (String) value (List) for (some_key.1)",
+      ),
     ),
     #(
       dynamic.list([dynamic.float(1.1), some_bool]),
@@ -449,7 +471,9 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error("expected (Float) received (Bool) for (some_key)"),
+      json_error(
+        "expected (Float) received (Bool) value (List) for (some_key.1)",
+      ),
     ),
     // Wrong structure types
     #(
@@ -459,7 +483,9 @@ pub fn validate_value_type_test() {
           primitive_types.String,
         )),
       ),
-      json_error("expected (List) received (String) for (some_key)"),
+      json_error(
+        "expected (List) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     #(
       some_string,
@@ -467,7 +493,9 @@ pub fn validate_value_type_test() {
         accepted_types.PrimitiveType(primitive_types.String),
         accepted_types.PrimitiveType(primitive_types.String),
       )),
-      json_error("expected (Dict) received (String) for (some_key)"),
+      json_error(
+        "expected (Dict) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     // Multi-entry collection with one bad value
     #(
@@ -479,7 +507,9 @@ pub fn validate_value_type_test() {
         accepted_types.PrimitiveType(primitive_types.String),
         accepted_types.PrimitiveType(primitive_types.String),
       )),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (Dict) for (some_key.key2)",
+      ),
     ),
     // List with first element wrong
     #(
@@ -489,7 +519,9 @@ pub fn validate_value_type_test() {
           primitive_types.String,
         )),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (List) for (some_key.0)",
+      ),
     ),
     // Optional types with wrong inner type
     #(
@@ -499,7 +531,9 @@ pub fn validate_value_type_test() {
           primitive_types.String,
         )),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (True) for (some_key)",
+      ),
     ),
     #(
       some_string,
@@ -510,7 +544,9 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error("expected (Int) received (String) for (some_key)"),
+      json_error(
+        "expected (Int) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     // Optional List with wrong inner type
     #(
@@ -524,7 +560,9 @@ pub fn validate_value_type_test() {
           ),
         ),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (List) for (some_key.0)",
+      ),
     ),
     // Optional Dict with wrong value type
     #(
@@ -537,7 +575,9 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (Dict) for (some_key.a)",
+      ),
     ),
     // Defaulted types with wrong inner type
     #(
@@ -546,7 +586,9 @@ pub fn validate_value_type_test() {
         accepted_types.PrimitiveType(primitive_types.String),
         "default",
       )),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (True) for (some_key)",
+      ),
     ),
     #(
       some_string,
@@ -556,7 +598,9 @@ pub fn validate_value_type_test() {
         )),
         "0",
       )),
-      json_error("expected (Int) received (String) for (some_key)"),
+      json_error(
+        "expected (Int) received (String) value (\"a\") for (some_key)",
+      ),
     ),
     // Nested types with wrong inner type
     #(
@@ -570,7 +614,9 @@ pub fn validate_value_type_test() {
           ),
         ),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (List) for (some_key.0.0)",
+      ),
     ),
     #(
       dynamic.properties([
@@ -583,7 +629,9 @@ pub fn validate_value_type_test() {
           accepted_types.PrimitiveType(primitive_types.String),
         )),
       )),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (Dict) for (some_key.a.a)",
+      ),
     ),
     #(
       dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
@@ -595,7 +643,9 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error("expected (String) received (Bool) for (some_key)"),
+      json_error(
+        "expected (String) received (Bool) value (List) for (some_key.0.a)",
+      ),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
@@ -823,7 +873,9 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       False,
-      Error("expected (Int) received (String) for (count)"),
+      Error(
+        "expected (Int) received (String) value (\"not an int\") for (count)",
+      ),
     ),
     // missing required when optional param exists - should fail for required only
     #(
@@ -936,7 +988,9 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("count", dynamic.string("not an int"))]),
       True,
-      Error("expected (Int) received (String) for (count)"),
+      Error(
+        "expected (Int) received (String) value (\"not an int\") for (count)",
+      ),
     ),
   ]
   |> list.each(fn(tuple) {

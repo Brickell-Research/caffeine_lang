@@ -21,6 +21,7 @@ pub fn validate_value_type(
     errors.ParserJsonParserError(errors.format_decode_error_message(
       err,
       option.Some(type_key_identifier),
+      option.Some(value),
     ))
   })
 }

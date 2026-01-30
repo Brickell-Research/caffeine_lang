@@ -12,6 +12,7 @@ import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/primitive_types
 import gleam/dynamic/decode
 import gleam/list
+import gleam/string
 
 /// Decoder that validates a string references an item in a collection by name.
 @internal
@@ -22,7 +23,9 @@ pub fn named_reference_decoder(
   let names = collection |> list.map(name_extraction)
   let default = Error("")
 
-  decode.new_primitive_decoder("NamedReference", fn(dyn) {
+  let expected_name =
+    "NamedReference (one of: " <> string.join(names, ", ") <> ")"
+  decode.new_primitive_decoder(expected_name, fn(dyn) {
     case decode.run(dyn, decode.string) {
       Ok(x) -> {
         case names |> list.contains(x) {
@@ -55,15 +58,11 @@ pub fn non_empty_named_reference_list_decoder(
 /// Decoder for non-empty strings. Fails if the string is empty.
 @internal
 pub fn non_empty_string_decoder() -> decode.Decoder(String) {
-  let default = Error("")
-
-  decode.new_primitive_decoder("NonEmptyString", fn(dyn) {
-    case decode.run(dyn, decode.string) {
-      Ok("") -> default
-      Ok(s) -> Ok(s)
-      _ -> default
-    }
-  })
+  use str <- decode.then(decode.string)
+  case str {
+    "" -> decode.failure("", "NonEmptyString (got empty string)")
+    s -> decode.success(s)
+  }
 }
 
 /// Decoder for AcceptedTypes from a string like "Dict(String, String)".
@@ -75,7 +74,7 @@ pub fn accepted_types_decoder() -> decode.Decoder(AcceptedTypes) {
     Error(Nil) ->
       decode.failure(
         accepted_types.PrimitiveType(primitive_types.Boolean),
-        "AcceptedType",
+        "AcceptedType (unknown: " <> raw_string <> ")",
       )
   }
 }

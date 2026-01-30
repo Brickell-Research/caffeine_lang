@@ -18,7 +18,13 @@ pub fn named_reference_decoder_test() {
     #(dynamic.string("alice"), Ok("alice")),
     #(
       dynamic.string("charlie"),
-      Error([decode.DecodeError("NamedReference", "String", [])]),
+      Error([
+        decode.DecodeError(
+          "NamedReference (one of: alice, bob)",
+          "String",
+          [],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -45,15 +51,17 @@ pub fn non_empty_string_decoder_test() {
     #(dynamic.string("hello world"), Ok("hello world")),
     #(
       dynamic.string(""),
-      Error([decode.DecodeError("NonEmptyString", "String", [])]),
+      Error([
+        decode.DecodeError("NonEmptyString (got empty string)", "String", []),
+      ]),
     ),
     #(
       dynamic.int(123),
-      Error([decode.DecodeError("NonEmptyString", "Int", [])]),
+      Error([decode.DecodeError("String", "Int", [])]),
     ),
     #(
       dynamic.bool(True),
-      Error([decode.DecodeError("NonEmptyString", "Bool", [])]),
+      Error([decode.DecodeError("String", "Bool", [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -72,7 +80,12 @@ pub fn non_empty_string_decoder_test() {
 pub fn accepted_types_decoder_test() {
   [
     #("String", Ok(accepted_types.PrimitiveType(primitive_types.String))),
-    #("UnknownType", Error([decode.DecodeError("AcceptedType", "String", [])])),
+    #(
+      "UnknownType",
+      Error([
+        decode.DecodeError("AcceptedType (unknown: UnknownType)", "String", []),
+      ]),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     decode.run(dynamic.string(input), decoders.accepted_types_decoder())

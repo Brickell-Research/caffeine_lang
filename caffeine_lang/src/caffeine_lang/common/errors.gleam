@@ -1,4 +1,8 @@
+import gleam/bool
+import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/float
+import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option
@@ -83,7 +87,7 @@ pub fn format_json_decode_error_to_string(error: json.DecodeError) -> String {
     json.UnexpectedSequence(val) -> "Unexpected sequence: " <> val <> "."
     json.UnableToDecode(suberrors) -> {
       "Incorrect types: "
-      <> suberrors |> format_decode_error_message(option.None)
+      <> suberrors |> format_decode_error_message(option.None, option.None)
     }
   }
 }
@@ -96,29 +100,53 @@ fn normalize_type_name(name: String) -> String {
   }
 }
 
+/// Converts a Dynamic value to a short preview string for error messages.
+fn dynamic_to_preview_string(value: dynamic.Dynamic) -> String {
+  case decode.run(value, decode.string) {
+    Ok(s) -> "\"" <> s <> "\""
+    _ ->
+      case decode.run(value, decode.int) {
+        Ok(i) -> int.to_string(i)
+        _ ->
+          case decode.run(value, decode.float) {
+            Ok(f) -> float.to_string(f)
+            _ ->
+              case decode.run(value, decode.bool) {
+                Ok(b) -> bool.to_string(b)
+                _ -> dynamic.classify(value)
+              }
+          }
+      }
+  }
+}
+
 /// Formats a list of decode errors into a human-readable string.
 @internal
 pub fn format_decode_error_message(
   errors: List(decode.DecodeError),
   type_key_identifier: option.Option(String),
+  value: option.Option(dynamic.Dynamic),
 ) -> String {
+  let value_part = case value {
+    option.Some(v) -> " value (" <> dynamic_to_preview_string(v) <> ")"
+    option.None -> ""
+  }
+
   errors
   |> list.map(fn(error) {
     "expected ("
     <> error.expected
     <> ") received ("
     <> normalize_type_name(error.found)
-    <> ") for ("
+    <> ")"
+    <> value_part
+    <> " for ("
     <> {
       case { error.path |> string.join(".") }, type_key_identifier {
         "", option.None -> "Unknown"
-        _, option.None -> {
-          error.path |> string.join(".")
-        }
+        path, option.None -> path
         "", option.Some(val) -> val
-        _, _ -> {
-          error.path |> string.join(".")
-        }
+        path, option.Some(val) -> val <> "." <> path
       }
     }
     <> ")"

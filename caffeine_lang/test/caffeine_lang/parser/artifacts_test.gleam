@@ -236,25 +236,25 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_params_value_not_accepted_type_made_up"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
+        msg: "Incorrect types: expected (AcceptedType (unknown: LolNotAType)) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_params_value_not_accepted_type_typo"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
+        msg: "Incorrect types: expected (AcceptedType (unknown: Intege)) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_params_value_not_accepted_type_illegal"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
+        msg: "Incorrect types: expected (AcceptedType (unknown: Optional(Optional(String)))) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
     #(
       path("wrong_type_multiple"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_), expected (AcceptedType) received (String) for (artifacts.0.params.values.type_)",
+        msg: "Incorrect types: expected (String) received (Int) for (artifacts.0.type_), expected (AcceptedType (unknown: MadeUp1)) received (String) for (artifacts.0.params.values.type_)",
       )),
     ),
   ]

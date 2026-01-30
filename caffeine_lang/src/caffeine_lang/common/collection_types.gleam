@@ -3,6 +3,7 @@ import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
@@ -129,9 +130,21 @@ pub fn validate_value(
           |> list.try_map(fn(pair) {
             let #(k, v) = pair
             // Validate key - convert string key to dynamic for validation
-            use _ <- result.try(validate_inner(key_type, dynamic.string(k)))
+            use _ <- result.try(
+              validate_inner(key_type, dynamic.string(k))
+              |> result.map_error(fn(errs) {
+                list.map(errs, fn(e) {
+                  decode.DecodeError(..e, path: [k, ..e.path])
+                })
+              }),
+            )
             // Validate value
             validate_inner(value_type, v)
+            |> result.map_error(fn(errs) {
+              list.map(errs, fn(e) {
+                decode.DecodeError(..e, path: [k, ..e.path])
+              })
+            })
           })
           |> result.map(fn(_) { value })
         }
@@ -142,7 +155,16 @@ pub fn validate_value(
       case decode.run(value, decode.list(decode.dynamic)) {
         Ok(list_val) -> {
           list_val
-          |> list.try_map(fn(v) { validate_inner(inner_type, v) })
+          |> list.index_map(fn(v, i) { #(v, i) })
+          |> list.try_map(fn(pair) {
+            let #(v, i) = pair
+            validate_inner(inner_type, v)
+            |> result.map_error(fn(errs) {
+              list.map(errs, fn(e) {
+                decode.DecodeError(..e, path: [int.to_string(i), ..e.path])
+              })
+            })
+          })
           |> result.map(fn(_) { value })
         }
         Error(err) -> Error(err)

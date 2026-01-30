@@ -281,13 +281,13 @@ pub fn parse_from_json_string_test() {
     #(
       "wrong_type_name",
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (expectations.0.name)",
+        msg: "Incorrect types: expected (String) received (Int) for (expectations.0.name)",
       )),
     ),
     #(
       "wrong_type_blueprint_ref",
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (List) for (expectations.0.blueprint_ref)",
+        msg: "Incorrect types: expected (NamedReference (one of: success_rate)) received (List) for (expectations.0.blueprint_ref)",
       )),
     ),
     #(
@@ -299,7 +299,7 @@ pub fn parse_from_json_string_test() {
     #(
       "wrong_type_input_value",
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expectation 'parser.expectations.wrong_type_input_value.my_expectation' - expected (Float) received (String) for (percentile)",
+        msg: "Input validation errors: expectation 'parser.expectations.wrong_type_input_value.my_expectation' - expected (Float) received (String) value (\"not a float\") for (percentile)",
       )),
     ),
   ]
@@ -325,7 +325,7 @@ pub fn parse_from_json_string_test() {
     #(
       "empty_name",
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (String) for (expectations.0.name)",
+        msg: "Incorrect types: expected (NonEmptyString (got empty string)) received (String) for (expectations.0.name)",
       )),
     ),
   ]
@@ -338,7 +338,7 @@ pub fn parse_from_json_string_test() {
     #(
       "semantic_blueprint_ref",
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (String) for (expectations.0.blueprint_ref)",
+        msg: "Incorrect types: expected (NamedReference (one of: success_rate)) received (String) for (expectations.0.blueprint_ref)",
       )),
     ),
   ]

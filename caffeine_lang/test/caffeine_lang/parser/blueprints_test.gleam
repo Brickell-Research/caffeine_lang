@@ -290,7 +290,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_name"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (Int) for (blueprints.0.name)",
+        msg: "Incorrect types: expected (String) received (Int) for (blueprints.0.name)",
       )),
     ),
     #(
@@ -308,13 +308,13 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_params_value_typo"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
+        msg: "Incorrect types: expected (AcceptedType (unknown: Stringg)) received (String) for (blueprints.0.params.values)",
       )),
     ),
     #(
       path("wrong_type_params_value_illegal"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (AcceptedType) received (String) for (blueprints.0.params.values)",
+        msg: "Incorrect types: expected (AcceptedType (unknown: Optional(Optional(String)))) received (String) for (blueprints.0.params.values)",
       )),
     ),
     #(
@@ -326,7 +326,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("wrong_type_input_value"),
       Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: blueprint 'success_rate' - expected (String) received (Int) for (value)",
+        msg: "Input validation errors: blueprint 'success_rate' - expected (String) received (Int) value (123) for (value)",
       )),
     ),
   ]
@@ -339,7 +339,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("semantic_artifact_ref"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_refs.0)",
+        msg: "Incorrect types: expected (NamedReference (one of: SLO)) received (String) for (blueprints.0.artifact_refs.0)",
       )),
     ),
   ]
@@ -374,7 +374,7 @@ pub fn parse_from_json_string_test() {
     #(
       path("empty_name"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString) received (String) for (blueprints.0.name)",
+        msg: "Incorrect types: expected (NonEmptyString (got empty string)) received (String) for (blueprints.0.name)",
       )),
     ),
   ]
@@ -498,7 +498,7 @@ pub fn parse_from_json_string_artifact_refs_test() {
     #(
       path("wrong_type_artifact_refs_element"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (Int) for (blueprints.0.artifact_refs.0)",
+        msg: "Incorrect types: expected (NamedReference (one of: SLO, DependencyRelations)) received (Int) for (blueprints.0.artifact_refs.0)",
       )),
     ),
   ]
@@ -524,7 +524,7 @@ pub fn parse_from_json_string_artifact_refs_test() {
     #(
       path("semantic_artifact_refs_unknown"),
       Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference) received (String) for (blueprints.0.artifact_refs.1)",
+        msg: "Incorrect types: expected (NamedReference (one of: SLO, DependencyRelations)) received (String) for (blueprints.0.artifact_refs.1)",
       )),
     ),
   ]
