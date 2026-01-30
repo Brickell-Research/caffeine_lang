@@ -11,6 +11,58 @@ import gleam/dynamic
 import gleam/set
 import test_helpers
 
+// ==== Cleanup Empty Template Artifacts ====
+// * ✅ no artifacts - unchanged
+// * ✅ trailing comma in braces: ", }" and ",}"
+// * ✅ leading comma in braces: "{, " and "{,"
+// * ✅ trailing comma in parens: ", )" and ",)"
+// * ✅ leading comma in parens: "(, " and "(,"
+// * ✅ consecutive commas: ", ," and ",,"
+// * ✅ AND artifacts: " AND }", "{ AND ", " AND  AND "
+// * ✅ all empty in braces (two optionals)
+// * ✅ all empty in parens (two optionals)
+// * ✅ multiple artifacts in one query
+pub fn cleanup_empty_template_artifacts_test() {
+  [
+    // No artifacts - unchanged
+    #("metric{env:prod}", "metric{env:prod}"),
+    // Trailing comma in braces
+    #("metric{env:prod, }", "metric{env:prod}"),
+    #("metric{env:prod,}", "metric{env:prod}"),
+    // Leading comma in braces
+    #("metric{, env:prod}", "metric{env:prod}"),
+    #("metric{,env:prod}", "metric{env:prod}"),
+    // Trailing comma in parens
+    #("tag IN (a, b, )", "tag IN (a, b)"),
+    #("tag IN (a, b,)", "tag IN (a, b)"),
+    // Leading comma in parens
+    #("tag IN (, a, b)", "tag IN (a, b)"),
+    #("tag IN (,a, b)", "tag IN (a, b)"),
+    // Consecutive commas (middle empty)
+    #("metric{env:prod, , team:platform}", "metric{env:prod, team:platform}"),
+    #("metric{env:prod,,team:platform}", "metric{env:prod,team:platform}"),
+    // AND artifacts
+    #("metric{env:prod AND }", "metric{env:prod}"),
+    #("metric{ AND env:prod}", "metric{env:prod}"),
+    #(
+      "metric{env:prod AND  AND team:platform}",
+      "metric{env:prod AND team:platform}",
+    ),
+    // All empty in braces (two optionals)
+    #("metric{, }", "metric{}"),
+    // All empty in parens (two optionals)
+    #("tag IN (, )", "tag IN ()"),
+    // Multiple artifacts in one query
+    #(
+      "avg:my.metric{, env:prod, }.as_count()",
+      "avg:my.metric{env:prod}.as_count()",
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(
+    templatizer.cleanup_empty_template_artifacts,
+  )
+}
+
 // ==== Parse and Resolve Query Template ====
 // * ✅ missing value tuple for a value
 // * ✅ query template var incomplete, missing ending `$$`
@@ -23,6 +75,9 @@ import test_helpers
 // * ✅ happy path - optional field at end resolves to empty (no hanging comma)
 // * ✅ happy path - optional field at start resolves to empty (no hanging comma)
 // * ✅ happy path - optional field in middle resolves to empty (no double comma)
+// * ✅ happy path - all optional fields empty (no dangling commas)
+// * ✅ happy path - optional list field with None value (no hanging comma)
+// * ✅ happy path - optional with AND operator and empty field
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
@@ -222,6 +277,88 @@ pub fn parse_and_resolve_query_template_test() {
         ),
       ],
       Ok("metric{env:production, team:platform}"),
+    ),
+    // All optional fields empty - no dangling commas
+    #(
+      "metric{$$env->environment$$, $$region->region$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{}"),
+    ),
+    // Optional List field with None value - no hanging comma
+    #(
+      "metric{$$env->environment$$, $$tags->tag$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "tag",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.CollectionType(
+              collection_types.List(
+                accepted_types.PrimitiveType(primitive_types.String),
+              ),
+            ),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Optional with AND operator - empty field at end
+    #(
+      "metric{$$env->environment$$ AND $$region->region$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Optional with AND operator - empty field at start
+    #(
+      "metric{$$region->region$$ AND $$env->environment$$}",
+      [
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+      ],
+      Ok("metric{env:production}"),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(query, value_tuples) {

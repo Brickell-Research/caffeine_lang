@@ -145,7 +145,8 @@ fn do_parse_and_resolve_query_template(
 /// - "{env:prod, , region:us}" -> "{env:prod, region:us}"
 /// - "(, value1)" -> "(value1)"
 /// - "(value1, )" -> "(value1)"
-fn cleanup_empty_template_artifacts(query: String) -> String {
+@internal
+pub fn cleanup_empty_template_artifacts(query: String) -> String {
   query
   // Handle ", }" and ",}" - empty optional at end of filter
   |> string.replace(", }", "}")
