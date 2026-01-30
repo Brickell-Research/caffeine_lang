@@ -147,7 +147,19 @@ fn do_parse_and_resolve_query_template(
 /// - "(value1, )" -> "(value1)"
 @internal
 pub fn cleanup_empty_template_artifacts(query: String) -> String {
+  let cleaned = do_cleanup(query)
+  case cleaned == query {
+    True -> cleaned
+    False -> cleanup_empty_template_artifacts(cleaned)
+  }
+}
+
+fn do_cleanup(query: String) -> String {
   query
+  // Handle consecutive empty optionals first (before bracket cleanup)
+  |> string.replace(", ,", ",")
+  |> string.replace(",,", ",")
+  |> string.replace(" AND  AND ", " AND ")
   // Handle ", }" and ",}" - empty optional at end of filter
   |> string.replace(", }", "}")
   |> string.replace(",}", "}")
@@ -160,13 +172,12 @@ pub fn cleanup_empty_template_artifacts(query: String) -> String {
   // Handle "(, " and "(," - empty optional at start of IN clause
   |> string.replace("(, ", "(")
   |> string.replace("(,", "(")
-  // Handle ", ," and ",," - consecutive empty optionals
-  |> string.replace(", ,", ",")
-  |> string.replace(",,", ",")
   // Handle " AND " with empty - e.g., " AND }" or "{ AND "
   |> string.replace(" AND }", "}")
   |> string.replace("{ AND ", "{")
-  |> string.replace(" AND  AND ", " AND ")
+  // Handle remaining whitespace-only content in brackets
+  |> string.replace("{ }", "{}")
+  |> string.replace("( )", "()")
 }
 
 /// Parses a template variable string. Supports two formats:

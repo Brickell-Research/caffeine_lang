@@ -22,6 +22,11 @@ import test_helpers
 // * ✅ all empty in braces (two optionals)
 // * ✅ all empty in parens (two optionals)
 // * ✅ multiple artifacts in one query
+// * ✅ 3 consecutive empty optionals in braces
+// * ✅ 4 consecutive empty optionals in braces
+// * ✅ 3 consecutive empty optionals in parens
+// * ✅ multiple AND all empty
+// * ✅ mixed artifacts in complex query (multi-pass)
 pub fn cleanup_empty_template_artifacts_test() {
   [
     // No artifacts - unchanged
@@ -57,6 +62,19 @@ pub fn cleanup_empty_template_artifacts_test() {
       "avg:my.metric{, env:prod, }.as_count()",
       "avg:my.metric{env:prod}.as_count()",
     ),
+    // 3 consecutive empty optionals in braces
+    #("metric{, , }", "metric{}"),
+    // 4 consecutive empty optionals in braces
+    #("metric{, , , }", "metric{}"),
+    // 3 consecutive empty optionals in parens
+    #("tag IN (, , )", "tag IN ()"),
+    // Multiple AND all empty
+    #("metric{ AND  AND  AND }", "metric{}"),
+    // Mixed artifacts in complex query (multi-pass)
+    #(
+      "avg:m{, , env:prod, }.rollup(avg, )",
+      "avg:m{env:prod}.rollup(avg)",
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(
     templatizer.cleanup_empty_template_artifacts,
@@ -78,6 +96,11 @@ pub fn cleanup_empty_template_artifacts_test() {
 // * ✅ happy path - all optional fields empty (no dangling commas)
 // * ✅ happy path - optional list field with None value (no hanging comma)
 // * ✅ happy path - optional with AND operator and empty field
+// * ✅ happy path - 3 optional fields all empty (multi-pass cleanup)
+// * ✅ happy path - optional with Not template type and None value
+// * ✅ happy path - optional list with Not template type and None value
+// * ✅ happy path - mixed some empty some provided with AND operator
+// * ✅ happy path - optional raw value with None
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
@@ -359,6 +382,123 @@ pub fn parse_and_resolve_query_template_test() {
         ),
       ],
       Ok("metric{env:production}"),
+    ),
+    // 3 optional fields all empty (multi-pass cleanup)
+    #(
+      "metric{$$a->a$$, $$b->b$$, $$c->c$$}",
+      [
+        helpers.ValueTuple(
+          "a",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "b",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "c",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{}"),
+    ),
+    // Optional with Not template type and None value
+    #(
+      "metric{$$env->environment$$ AND $$region->region:not$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "region",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Optional List with Not template type and None value
+    #(
+      "metric{$$env->environment$$, $$excluded->excluded:not$$}",
+      [
+        helpers.ValueTuple(
+          "environment",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("production"),
+        ),
+        helpers.ValueTuple(
+          "excluded",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.CollectionType(
+              collection_types.List(
+                accepted_types.PrimitiveType(primitive_types.String),
+              ),
+            ),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("metric{env:production}"),
+    ),
+    // Mixed: some Optional fields empty, some provided, with AND operator
+    #(
+      "metric{$$a->a$$ AND $$b->b$$ AND $$c->c$$ AND $$d->d$$}",
+      [
+        helpers.ValueTuple(
+          "a",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "b",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("val_b"),
+        ),
+        helpers.ValueTuple(
+          "c",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          value: dynamic.nil(),
+        ),
+        helpers.ValueTuple(
+          "d",
+          typ: accepted_types.PrimitiveType(primitive_types.String),
+          value: dynamic.string("val_d"),
+        ),
+      ],
+      Ok("metric{b:val_b AND d:val_d}"),
+    ),
+    // Optional Raw value with None
+    #(
+      "time_slice(query < $$threshold$$ per 10s)",
+      [
+        helpers.ValueTuple(
+          "threshold",
+          typ: accepted_types.ModifierType(modifier_types.Optional(
+            accepted_types.PrimitiveType(primitive_types.NumericType(
+              numeric_types.Integer,
+            )),
+          )),
+          value: dynamic.nil(),
+        ),
+      ],
+      Ok("time_slice(query <  per 10s)"),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(query, value_tuples) {
