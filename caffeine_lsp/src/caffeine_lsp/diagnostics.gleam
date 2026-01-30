@@ -163,6 +163,17 @@ fn validator_error_to_diagnostic(
           <> "'",
       )
     }
+    validator.ExtendableTypeAliasNameCollision(name) -> {
+      let #(line, col) = find_name_position(content, name)
+      Diagnostic(
+        line: line,
+        column: col,
+        severity: severity_error,
+        message: "Name '"
+          <> name
+          <> "' is used as both an extendable and a type alias",
+      )
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import caffeine_cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_cli/file_discovery
+import caffeine_cli/format_file_discovery
 import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
 import caffeine_lang/common/modifier_types
@@ -10,6 +11,7 @@ import caffeine_lang/common/type_info
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
+import caffeine_lang/frontend/formatter
 import caffeine_lang/parser/artifacts
 import caffeine_lsp
 import gleam/io
@@ -68,6 +70,12 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
       print_version(logger.Minimal)
       exit_status_codes.Success
     }
+    ["format", "--check", "--quiet", path]
+    | ["format", "--quiet", "--check", path] ->
+      format_command(path, True, logger.Minimal)
+    ["format", "--check", path] -> format_command(path, True, logger.Verbose)
+    ["format", "--quiet", path] -> format_command(path, False, logger.Minimal)
+    ["format", path] -> format_command(path, False, logger.Verbose)
     ["lsp"] -> {
       caffeine_lsp.start()
       exit_status_codes.Success
@@ -162,6 +170,77 @@ fn compile(
   |> result_to_exit_status(log_level)
 }
 
+fn format_command(
+  path: String,
+  check_only: Bool,
+  log_level: LogLevel,
+) -> ExitStatusCodes {
+  {
+    use file_paths <- result.try(
+      format_file_discovery.discover(path)
+      |> result.map_error(fn(err) { "Format error: " <> err }),
+    )
+
+    use has_unformatted <- result.try(
+      list.try_fold(file_paths, False, fn(acc, file_path) {
+        use changed <- result.try(format_single_file(
+          file_path,
+          check_only,
+          log_level,
+        ))
+        Ok(acc || changed)
+      }),
+    )
+
+    case check_only && has_unformatted {
+      True -> Error("Some files are not formatted")
+      False -> Ok(Nil)
+    }
+  }
+  |> result_to_exit_status(log_level)
+}
+
+fn format_single_file(
+  file_path: String,
+  check_only: Bool,
+  log_level: LogLevel,
+) -> Result(Bool, String) {
+  use content <- result.try(read_file(file_path))
+  use formatted <- result.try(
+    formatter.format(content)
+    |> result.map_error(fn(err) {
+      "Error formatting " <> file_path <> ": " <> err
+    }),
+  )
+
+  case formatted == content {
+    True -> Ok(False)
+    False if check_only -> {
+      log(log_level, file_path)
+      Ok(True)
+    }
+    False -> {
+      use _ <- result.try(write_file(file_path, formatted))
+      log(log_level, "Formatted " <> file_path)
+      Ok(False)
+    }
+  }
+}
+
+fn read_file(path: String) -> Result(String, String) {
+  simplifile.read(path)
+  |> result.map_error(fn(err) {
+    "Error reading file: " <> simplifile.describe_error(err) <> " (" <> path <> ")"
+  })
+}
+
+fn write_file(path: String, content: String) -> Result(Nil, String) {
+  simplifile.write(path, content)
+  |> result.map_error(fn(err) {
+    "Error writing file: " <> simplifile.describe_error(err) <> " (" <> path <> ")"
+  })
+}
+
 fn print_usage(log_level: LogLevel) {
   log(log_level, "caffeine " <> constants.version)
   log(
@@ -176,6 +255,7 @@ fn print_usage(log_level: LogLevel) {
   )
   log(log_level, "    caffeine artifacts [--quiet]")
   log(log_level, "    caffeine types [--quiet]")
+  log(log_level, "    caffeine format [--quiet] [--check] <path>")
   log(log_level, "    caffeine lsp")
   log(log_level, "")
   log(log_level, "COMMANDS:")
@@ -190,6 +270,10 @@ fn print_usage(log_level: LogLevel) {
   log(
     log_level,
     "    types            Show the type system reference with all supported types",
+  )
+  log(
+    log_level,
+    "    format           Format .caffeine files",
   )
   log(
     log_level,

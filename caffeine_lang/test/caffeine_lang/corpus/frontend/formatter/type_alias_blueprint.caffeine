@@ -1,0 +1,6 @@
+_env (Type): String { x | x in { "development", "production", "staging" } }
+
+Blueprints for "SLO"
+  * "test":
+    Requires { env: _env }
+    Provides { value: "x" }

@@ -113,5 +113,9 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> "' overshadows field from extendable '"
       <> extendable_name
       <> "'"
+    validator.ExtendableTypeAliasNameCollision(name) ->
+      "Name '"
+      <> name
+      <> "' is used as both an extendable and a type alias"
   }
 }

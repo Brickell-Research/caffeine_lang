@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
