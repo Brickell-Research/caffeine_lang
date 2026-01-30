@@ -1,5 +1,7 @@
+import caffeine_lang/frontend/formatter
 import caffeine_lsp/diagnostics
 import gleam/bit_array
+import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/int
@@ -36,17 +38,17 @@ fn write_stderr(data: String) -> Nil
 pub fn run() -> Nil {
   init_io()
   log("Caffeine LSP starting...")
-  loop()
+  loop(dict.new())
 }
 
 // --- Main loop ---
 
-fn loop() -> Nil {
+fn loop(docs: Dict(String, String)) -> Nil {
   case read_message() {
     Ok(body) -> {
-      case handle_message(body) {
-        True -> loop()
-        False -> Nil
+      case handle_message(body, docs) {
+        #(True, new_docs) -> loop(new_docs)
+        #(False, _) -> Nil
       }
     }
     Error(_) -> Nil
@@ -134,17 +136,23 @@ fn text_from_did_change() -> decode.Decoder(String) {
 
 // --- Message handling ---
 
-fn handle_message(body: String) -> Bool {
+fn handle_message(
+  body: String,
+  docs: Dict(String, String),
+) -> #(Bool, Dict(String, String)) {
   case json.parse(body, any_decoder()) {
-    Ok(dyn) -> dispatch(dyn)
+    Ok(dyn) -> dispatch(dyn, docs)
     Error(_) -> {
       log("Failed to parse JSON message")
-      True
+      #(True, docs)
     }
   }
 }
 
-fn dispatch(dyn: Dynamic) -> Bool {
+fn dispatch(
+  dyn: Dynamic,
+  docs: Dict(String, String),
+) -> #(Bool, Dict(String, String)) {
   let method = decode.run(dyn, method_decoder())
   let id = case decode.run(dyn, id_decoder()) {
     Ok(n) -> option.Some(n)
@@ -154,32 +162,36 @@ fn dispatch(dyn: Dynamic) -> Bool {
   case method {
     Ok("initialize") -> {
       handle_initialize(id)
-      True
+      #(True, docs)
     }
-    Ok("initialized") -> True
+    Ok("initialized") -> #(True, docs)
     Ok("textDocument/didOpen") -> {
-      handle_did_open(dyn)
-      True
+      let new_docs = handle_did_open(dyn, docs)
+      #(True, new_docs)
     }
     Ok("textDocument/didChange") -> {
-      handle_did_change(dyn)
-      True
+      let new_docs = handle_did_change(dyn, docs)
+      #(True, new_docs)
     }
     Ok("textDocument/didClose") -> {
-      handle_did_close(dyn)
-      True
+      let new_docs = handle_did_close(dyn, docs)
+      #(True, new_docs)
     }
-    Ok("textDocument/didSave") -> True
+    Ok("textDocument/didSave") -> #(True, docs)
+    Ok("textDocument/formatting") -> {
+      handle_formatting(dyn, id, docs)
+      #(True, docs)
+    }
     Ok("shutdown") -> {
       handle_shutdown(id)
-      False
+      #(False, docs)
     }
-    Ok("exit") -> False
+    Ok("exit") -> #(False, docs)
     Ok(other) -> {
       log("Unhandled method: " <> other)
-      True
+      #(True, docs)
     }
-    Error(_) -> True
+    Error(_) -> #(True, docs)
   }
 }
 
@@ -192,6 +204,7 @@ fn handle_initialize(id: Option(Int)) -> Nil {
         "capabilities",
         json.object([
           #("textDocumentSync", json.int(1)),
+          #("documentFormattingProvider", json.bool(True)),
         ]),
       ),
       #(
@@ -205,27 +218,48 @@ fn handle_initialize(id: Option(Int)) -> Nil {
   send_response(id, result_json)
 }
 
-fn handle_did_open(dyn: Dynamic) -> Nil {
+fn handle_did_open(
+  dyn: Dynamic,
+  docs: Dict(String, String),
+) -> Dict(String, String) {
   let uri_result = decode.run(dyn, uri_from_params())
   let text_result = decode.run(dyn, text_from_did_open())
 
   case uri_result, text_result {
-    Ok(uri), Ok(text) -> publish_diagnostics(uri, text)
-    _, _ -> log("Failed to extract uri/text from didOpen")
+    Ok(uri), Ok(text) -> {
+      publish_diagnostics(uri, text)
+      dict.insert(docs, uri, text)
+    }
+    _, _ -> {
+      log("Failed to extract uri/text from didOpen")
+      docs
+    }
   }
 }
 
-fn handle_did_change(dyn: Dynamic) -> Nil {
+fn handle_did_change(
+  dyn: Dynamic,
+  docs: Dict(String, String),
+) -> Dict(String, String) {
   let uri_result = decode.run(dyn, uri_from_params())
   let text_result = decode.run(dyn, text_from_did_change())
 
   case uri_result, text_result {
-    Ok(uri), Ok(text) -> publish_diagnostics(uri, text)
-    _, _ -> log("Failed to extract uri/text from didChange")
+    Ok(uri), Ok(text) -> {
+      publish_diagnostics(uri, text)
+      dict.insert(docs, uri, text)
+    }
+    _, _ -> {
+      log("Failed to extract uri/text from didChange")
+      docs
+    }
   }
 }
 
-fn handle_did_close(dyn: Dynamic) -> Nil {
+fn handle_did_close(
+  dyn: Dynamic,
+  docs: Dict(String, String),
+) -> Dict(String, String) {
   let uri_result = decode.run(dyn, uri_from_params())
 
   case uri_result {
@@ -237,8 +271,66 @@ fn handle_did_close(dyn: Dynamic) -> Nil {
           #("diagnostics", json.preprocessed_array([])),
         ]),
       )
+      dict.delete(docs, uri)
     }
-    Error(_) -> log("Failed to extract uri from didClose")
+    Error(_) -> {
+      log("Failed to extract uri from didClose")
+      docs
+    }
+  }
+}
+
+fn handle_formatting(
+  dyn: Dynamic,
+  id: Option(Int),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+
+  case uri_result {
+    Ok(uri) -> {
+      case dict.get(docs, uri) {
+        Ok(text) -> {
+          case formatter.format(text) {
+            Ok(formatted) -> {
+              let edit =
+                json.object([
+                  #(
+                    "range",
+                    json.object([
+                      #(
+                        "start",
+                        json.object([
+                          #("line", json.int(0)),
+                          #("character", json.int(0)),
+                        ]),
+                      ),
+                      #(
+                        "end",
+                        json.object([
+                          #("line", json.int(999_999)),
+                          #("character", json.int(0)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                  #("newText", json.string(formatted)),
+                ])
+              send_response(id, json.preprocessed_array([edit]))
+            }
+            Error(_) -> {
+              send_response(id, json.preprocessed_array([]))
+            }
+          }
+        }
+        Error(_) -> {
+          send_response(id, json.preprocessed_array([]))
+        }
+      }
+    }
+    Error(_) -> {
+      send_response(id, json.preprocessed_array([]))
+    }
   }
 }
 
