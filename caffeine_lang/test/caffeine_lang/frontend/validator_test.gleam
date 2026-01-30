@@ -36,6 +36,8 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile {
 // * ❌ extends references non-existent extendable
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
+// ==== Error Cases - Name Collisions ====
+// * ❌ extendable name collides with type alias name
 // ==== Error Cases - Type Aliases ====
 // * ❌ duplicate type alias names
 // * ❌ undefined type alias reference
@@ -101,6 +103,17 @@ pub fn validate_blueprints_file_test() {
         name: "_base",
         referenced_by: "api",
       )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Extendable name collides with type alias name
+  [
+    #(
+      parse_blueprints("blueprints_extendable_type_alias_collision"),
+      Error(validator.ExtendableTypeAliasNameCollision(name: "_env")),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {

@@ -34,6 +34,7 @@ pub type ValidatorError {
     item_name: String,
     extendable_name: String,
   )
+  ExtendableTypeAliasNameCollision(name: String)
 }
 
 /// Validates a blueprints file.
@@ -78,6 +79,10 @@ pub fn validate_blueprints_file(
   ))
 
   use _ <- result.try(validate_no_duplicate_extendables(extendables))
+  use _ <- result.try(validate_no_extendable_type_alias_collision(
+    extendables,
+    type_aliases,
+  ))
   use _ <- result.try(validate_blueprint_items_extends(items, extendables))
 
   Ok(file)
@@ -122,6 +127,25 @@ fn validate_no_duplicate_extendables_loop(
       validate_no_duplicate_extendables_loop(rest, set.insert(seen, first.name))
     }
   }
+}
+
+/// Validates that no extendable shares a name with a type alias.
+fn validate_no_extendable_type_alias_collision(
+  extendables: List(Extendable),
+  type_aliases: List(TypeAlias),
+) -> Result(Nil, ValidatorError) {
+  let type_alias_names =
+    type_aliases
+    |> list.map(fn(ta) { ta.name })
+    |> set.from_list
+
+  list.try_each(extendables, fn(ext) {
+    use <- bool.guard(
+      when: set.contains(type_alias_names, ext.name),
+      return: Error(ExtendableTypeAliasNameCollision(name: ext.name)),
+    )
+    Ok(Nil)
+  })
 }
 
 /// Validates that all extendables in an expects file are Provides kind.

@@ -72,11 +72,11 @@ fn validate_ir_dependencies(
   // Extract the relations value from the IR
   let relations = extract_relations(ir)
 
-  // Get all dependency targets (from both hard and soft)
-  let all_targets = get_all_dependency_targets(relations)
+  // Check for duplicates within each relation type (hard and soft independently)
+  use _ <- result.try(check_for_duplicates_per_relation(relations, self_path))
 
-  // Check for duplicates
-  use _ <- result.try(check_for_duplicates(all_targets, self_path))
+  // Get all dependency targets (from both hard and soft) for further validation
+  let all_targets = get_all_dependency_targets(relations)
 
   // Validate each target
   all_targets
@@ -107,11 +107,16 @@ fn get_all_dependency_targets(relations: Dict(String, List(String))) -> List(Str
   |> list.flatten
 }
 
-fn check_for_duplicates(
-  targets: List(String),
+fn check_for_duplicates_per_relation(
+  relations: Dict(String, List(String)),
   self_path: String,
 ) -> Result(Nil, CompilationError) {
-  do_check_for_duplicates(targets, set.new(), self_path)
+  relations
+  |> dict.to_list
+  |> list.try_each(fn(pair) {
+    let #(_, targets) = pair
+    do_check_for_duplicates(targets, set.new(), self_path)
+  })
 }
 
 fn do_check_for_duplicates(

@@ -113,8 +113,8 @@ fn make_ir_with_dependencies(
 // * ✅ sad path - dependency target has invalid format (not 4 parts)
 // * ✅ sad path - self-reference (IR depends on itself)
 // * ✅ sad path - multiple invalid dependencies (all reported)
+// * ✅ happy path - same dependency in both hard and soft (allowed)
 // * ✅ sad path - duplicate dependency within same relation type
-// * ✅ sad path - duplicate dependency across relation types
 pub fn validate_dependency_relations_test() {
   // Happy path: no IRs with dependency relations
   [
@@ -293,7 +293,7 @@ pub fn validate_dependency_relations_test() {
     dependency_validator.validate_dependency_relations(irs)
   })
 
-  // Sad path: duplicate dependency across relation types
+  // Happy path: same dependency in both hard and soft (allowed)
   [
     #(
       [
@@ -307,13 +307,14 @@ pub fn validate_dependency_relations_test() {
           ["acme.platform.db.availability_slo"],
         ),
       ],
-      Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: "Duplicate dependency reference 'acme.platform.db.availability_slo' in 'acme.platform.auth.login_slo'",
-      )),
+      Ok(True),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(irs) {
-    dependency_validator.validate_dependency_relations(irs)
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
   })
 }
 
