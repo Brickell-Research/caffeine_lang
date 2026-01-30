@@ -360,53 +360,38 @@ fn handle_formatting(
   id: Option(Int),
   docs: Dict(String, String),
 ) -> Nil {
-  let uri_result = decode.run(dyn, uri_from_params())
-
-  case uri_result {
-    Ok(uri) -> {
-      case dict.get(docs, uri) {
-        Ok(text) -> {
-          case formatter.format(text) {
-            Ok(formatted) -> {
-              let edit =
-                json.object([
-                  #(
-                    "range",
-                    json.object([
-                      #(
-                        "start",
-                        json.object([
-                          #("line", json.int(0)),
-                          #("character", json.int(0)),
-                        ]),
-                      ),
-                      #(
-                        "end",
-                        json.object([
-                          #("line", json.int(999_999)),
-                          #("character", json.int(0)),
-                        ]),
-                      ),
-                    ]),
-                  ),
-                  #("newText", json.string(formatted)),
-                ])
-              send_response(id, json.preprocessed_array([edit]))
-            }
-            Error(_) -> {
-              send_response(id, json.preprocessed_array([]))
-            }
-          }
-        }
-        Error(_) -> {
-          send_response(id, json.preprocessed_array([]))
-        }
+  let empty = json.preprocessed_array([])
+  with_document(dyn, id, docs, empty, fn(text) {
+    case formatter.format(text) {
+      Ok(formatted) -> {
+        let edit =
+          json.object([
+            #(
+              "range",
+              json.object([
+                #(
+                  "start",
+                  json.object([
+                    #("line", json.int(0)),
+                    #("character", json.int(0)),
+                  ]),
+                ),
+                #(
+                  "end",
+                  json.object([
+                    #("line", json.int(999_999)),
+                    #("character", json.int(0)),
+                  ]),
+                ),
+              ]),
+            ),
+            #("newText", json.string(formatted)),
+          ])
+        json.preprocessed_array([edit])
       }
+      Error(_) -> empty
     }
-    Error(_) -> {
-      send_response(id, json.preprocessed_array([]))
-    }
-  }
+  })
 }
 
 fn handle_document_symbol(
@@ -414,24 +399,9 @@ fn handle_document_symbol(
   id: Option(Int),
   docs: Dict(String, String),
 ) -> Nil {
-  let uri_result = decode.run(dyn, uri_from_params())
-
-  case uri_result {
-    Ok(uri) -> {
-      case dict.get(docs, uri) {
-        Ok(text) -> {
-          let symbols = document_symbols.get_symbols(text)
-          send_response(id, json.preprocessed_array(symbols))
-        }
-        Error(_) -> {
-          send_response(id, json.preprocessed_array([]))
-        }
-      }
-    }
-    Error(_) -> {
-      send_response(id, json.preprocessed_array([]))
-    }
-  }
+  with_document(dyn, id, docs, json.preprocessed_array([]), fn(text) {
+    json.preprocessed_array(document_symbols.get_symbols(text))
+  })
 }
 
 fn handle_semantic_tokens(
@@ -439,30 +409,11 @@ fn handle_semantic_tokens(
   id: Option(Int),
   docs: Dict(String, String),
 ) -> Nil {
-  let uri_result = decode.run(dyn, uri_from_params())
-  case uri_result {
-    Ok(uri) -> {
-      case dict.get(docs, uri) {
-        Ok(text) -> {
-          let data = semantic_tokens.get_semantic_tokens(text)
-          send_response(
-            id,
-            json.object([#("data", json.preprocessed_array(data))]),
-          )
-        }
-        Error(_) ->
-          send_response(
-            id,
-            json.object([#("data", json.preprocessed_array([]))]),
-          )
-      }
-    }
-    Error(_) ->
-      send_response(
-        id,
-        json.object([#("data", json.preprocessed_array([]))]),
-      )
-  }
+  let empty = json.object([#("data", json.preprocessed_array([]))])
+  with_document(dyn, id, docs, empty, fn(text) {
+    let data = semantic_tokens.get_semantic_tokens(text)
+    json.object([#("data", json.preprocessed_array(data))])
+  })
 }
 
 fn handle_code_action(dyn: Dynamic, id: Option(Int)) -> Nil {
@@ -587,6 +538,25 @@ fn send_raw(body: String) -> Nil {
 }
 
 // --- Helpers ---
+
+/// Decode URI, look up document text, call handler, send response.
+/// Falls back to on_error if URI decode or doc lookup fails.
+fn with_document(
+  dyn: Dynamic,
+  id: Option(Int),
+  docs: Dict(String, String),
+  on_error: json.Json,
+  handler: fn(String) -> json.Json,
+) -> Nil {
+  case decode.run(dyn, uri_from_params()) {
+    Ok(uri) ->
+      case dict.get(docs, uri) {
+        Ok(text) -> send_response(id, handler(text))
+        Error(_) -> send_response(id, on_error)
+      }
+    Error(_) -> send_response(id, on_error)
+  }
+}
 
 fn log(msg: String) -> Nil {
   write_stderr(msg)

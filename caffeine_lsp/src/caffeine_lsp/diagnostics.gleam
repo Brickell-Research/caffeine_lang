@@ -1,7 +1,8 @@
-import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
+import caffeine_lsp/file_utils
+import caffeine_lsp/position_utils
 import gleam/bool
 import gleam/string
 
@@ -20,30 +21,27 @@ const severity_warning = 2
 /// If parsing succeeds, runs the validator for additional checks.
 pub fn get_diagnostics(content: String) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
-  case parser.parse_blueprints_file(content) {
-    Ok(file) ->
+  case file_utils.parse(content) {
+    Ok(file_utils.Blueprints(file)) ->
       case validator.validate_blueprints_file(file) {
         Ok(_) -> []
         Error(err) -> [validator_error_to_diagnostic(content, err)]
       }
-    Error(blueprint_err) ->
-      case parser.parse_expects_file(content) {
-        Ok(file) ->
-          case validator.validate_expects_file(file) {
-            Ok(_) -> []
-            Error(err) -> [validator_error_to_diagnostic(content, err)]
-          }
-        Error(expects_err) -> {
-          use <- bool.guard(
-            when: string.starts_with(
-              string.trim_start(content),
-              "Expectations",
-            ),
-            return: [parser_error_to_diagnostic(expects_err)],
-          )
-          [parser_error_to_diagnostic(blueprint_err)]
-        }
+    Ok(file_utils.Expects(file)) ->
+      case validator.validate_expects_file(file) {
+        Ok(_) -> []
+        Error(err) -> [validator_error_to_diagnostic(content, err)]
       }
+    Error(#(blueprint_err, expects_err)) -> {
+      use <- bool.guard(
+        when: string.starts_with(
+          string.trim_start(content),
+          "Expectations",
+        ),
+        return: [parser_error_to_diagnostic(expects_err)],
+      )
+      [parser_error_to_diagnostic(blueprint_err)]
+    }
   }
 }
 
@@ -53,7 +51,7 @@ fn validator_error_to_diagnostic(
 ) -> Diagnostic {
   case err {
     validator.DuplicateExtendable(name) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -62,7 +60,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.UndefinedExtendable(name, referenced_by) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -75,7 +73,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.DuplicateExtendsReference(name, referenced_by) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -88,7 +86,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.InvalidExtendableKind(name, expected, got) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -102,7 +100,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.UndefinedTypeAlias(name, referenced_by) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -115,7 +113,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.DuplicateTypeAlias(name) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -124,7 +122,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.CircularTypeAlias(name, cycle) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       let cycle_str = string.join(cycle, " -> ")
       Diagnostic(
         line: line,
@@ -134,7 +132,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) -> {
-      let #(line, col) = find_name_position(content, alias_name)
+      let #(line, col) = position_utils.find_name_position(content,alias_name)
       Diagnostic(
         line: line,
         column: col,
@@ -149,7 +147,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.ExtendableOvershadowing(field_name, item_name, extendable_name) -> {
-      let #(line, col) = find_name_position(content, field_name)
+      let #(line, col) = position_utils.find_name_position(content,field_name)
       Diagnostic(
         line: line,
         column: col,
@@ -164,7 +162,7 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.ExtendableTypeAliasNameCollision(name) -> {
-      let #(line, col) = find_name_position(content, name)
+      let #(line, col) = position_utils.find_name_position(content,name)
       Diagnostic(
         line: line,
         column: col,
@@ -173,43 +171,6 @@ fn validator_error_to_diagnostic(
           <> name
           <> "' is used as both an extendable and a type alias",
       )
-    }
-  }
-}
-
-/// Find the 0-indexed line and column of the first occurrence of a name in source.
-fn find_name_position(content: String, name: String) -> #(Int, Int) {
-  let lines = string.split(content, "\n")
-  find_in_lines(lines, name, 0)
-}
-
-fn find_in_lines(
-  lines: List(String),
-  name: String,
-  line_idx: Int,
-) -> #(Int, Int) {
-  case lines {
-    [] -> #(0, 0)
-    [first, ..rest] -> {
-      case string.contains(first, name) {
-        True -> {
-          let col = find_column(first, name, 0)
-          #(line_idx, col)
-        }
-        False -> find_in_lines(rest, name, line_idx + 1)
-      }
-    }
-  }
-}
-
-fn find_column(line: String, name: String, offset: Int) -> Int {
-  case string.starts_with(line, name) {
-    True -> offset
-    False -> {
-      case string.pop_grapheme(line) {
-        Ok(#(_, rest)) -> find_column(rest, name, offset + 1)
-        Error(_) -> 0
-      }
     }
   }
 }

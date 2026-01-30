@@ -46,9 +46,11 @@ fn encode_loop(
             True -> col
             False -> col - prev_col
           }
+          // LSP order: deltaLine, deltaStartChar, length, tokenType, tokenModifiers
+          // Prepended in reverse since the list is reversed at the end
           let new_acc =
             list.flatten([
-              [0, length, token_type, delta_col, delta_line],
+              [0, token_type, length, delta_col, delta_line],
               acc,
             ])
           encode_loop(rest, line, col, new_acc)
@@ -95,9 +97,9 @@ fn classify_token(tok: Token) -> Result(#(Int, Int), Nil) {
     // Identifiers (index 4)
     token.Identifier(name) -> Ok(#(4, string.length(name)))
 
-    // Comments (index 5)
-    token.CommentLine(text) -> Ok(#(5, string.length(text) + 2))
-    token.CommentSection(text) -> Ok(#(5, string.length(text) + 4))
+    // Comments (index 5) — text excludes the leading # or ##
+    token.CommentLine(text) -> Ok(#(5, string.length(text) + 1))
+    token.CommentSection(text) -> Ok(#(5, string.length(text) + 2))
 
     // Operators (index 6)
     token.SymbolColon -> Ok(#(6, 1))

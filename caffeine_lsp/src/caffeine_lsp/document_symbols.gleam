@@ -4,7 +4,8 @@ import caffeine_lang/frontend/ast.{
   type ExpectItem, type ExpectsFile, type Extendable,
   type Field, type TypeAlias,
 }
-import caffeine_lang/frontend/parser
+import caffeine_lsp/file_utils
+import caffeine_lsp/position_utils
 import gleam/json
 import gleam/list
 import gleam/string
@@ -22,13 +23,10 @@ const symbol_kind_type_parameter = 26
 
 /// Analyze source text and return DocumentSymbol JSON objects for the outline.
 pub fn get_symbols(content: String) -> List(json.Json) {
-  case parser.parse_blueprints_file(content) {
-    Ok(file) -> blueprints_file_symbols(file, content)
-    Error(_) ->
-      case parser.parse_expects_file(content) {
-        Ok(file) -> expects_file_symbols(file, content)
-        Error(_) -> []
-      }
+  case file_utils.parse(content) {
+    Ok(file_utils.Blueprints(file)) -> blueprints_file_symbols(file, content)
+    Ok(file_utils.Expects(file)) -> expects_file_symbols(file, content)
+    Error(_) -> []
   }
 }
 
@@ -67,13 +65,13 @@ fn expects_file_symbols(
 }
 
 fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
-  let #(line, col) = find_name_position(content, ta.name)
+  let #(line, col) = position_utils.find_name_position(content,ta.name)
   let detail = accepted_types.accepted_type_to_string(ta.type_)
   symbol_json(ta.name, detail, symbol_kind_type_parameter, line, col, string.length(ta.name), [])
 }
 
 fn extendable_symbol(ext: Extendable, content: String) -> json.Json {
-  let #(line, col) = find_name_position(content, ext.name)
+  let #(line, col) = position_utils.find_name_position(content,ext.name)
   let detail = case ext.kind {
     ast.ExtendableRequires -> "Requires"
     ast.ExtendableProvides -> "Provides"
@@ -91,7 +89,7 @@ fn block_symbol(
     True -> "Blueprints"
     False -> "Expectations"
   }
-  let #(line, col) = find_name_position(content, search)
+  let #(line, col) = position_utils.find_name_position(content,search)
   symbol_json(name, "", symbol_kind_module, line, col, string.length(name), children)
 }
 
@@ -99,7 +97,7 @@ fn blueprint_item_symbol(
   item: BlueprintItem,
   content: String,
 ) -> json.Json {
-  let #(line, col) = find_name_position(content, item.name)
+  let #(line, col) = position_utils.find_name_position(content,item.name)
   let req_fields =
     list.map(item.requires.fields, fn(f) { field_symbol(f, content) })
   let prov_fields =
@@ -109,14 +107,14 @@ fn blueprint_item_symbol(
 }
 
 fn expect_item_symbol(item: ExpectItem, content: String) -> json.Json {
-  let #(line, col) = find_name_position(content, item.name)
+  let #(line, col) = position_utils.find_name_position(content,item.name)
   let children =
     list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
   symbol_json(item.name, "", symbol_kind_class, line, col, string.length(item.name), children)
 }
 
 fn field_symbol(field: Field, content: String) -> json.Json {
-  let #(line, col) = find_name_position(content, field.name)
+  let #(line, col) = position_utils.find_name_position(content,field.name)
   let detail = case field.value {
     ast.TypeValue(t) -> accepted_types.accepted_type_to_string(t)
     ast.LiteralValue(lit) -> literal_to_string(lit)
@@ -133,44 +131,6 @@ fn literal_to_string(lit: ast.Literal) -> String {
     ast.LiteralFalse -> "false"
     ast.LiteralList(_) -> "[...]"
     ast.LiteralStruct(_) -> "{...}"
-  }
-}
-
-// --- Position helpers ---
-
-fn find_name_position(content: String, name: String) -> #(Int, Int) {
-  let lines = string.split(content, "\n")
-  find_in_lines(lines, name, 0)
-}
-
-fn find_in_lines(
-  lines: List(String),
-  name: String,
-  line_idx: Int,
-) -> #(Int, Int) {
-  case lines {
-    [] -> #(0, 0)
-    [first, ..rest] -> {
-      case string.contains(first, name) {
-        True -> {
-          let col = find_column(first, name, 0)
-          #(line_idx, col)
-        }
-        False -> find_in_lines(rest, name, line_idx + 1)
-      }
-    }
-  }
-}
-
-fn find_column(line: String, name: String, offset: Int) -> Int {
-  case string.starts_with(line, name) {
-    True -> offset
-    False -> {
-      case string.pop_grapheme(line) {
-        Ok(#(_, rest)) -> find_column(rest, name, offset + 1)
-        Error(_) -> 0
-      }
-    }
   }
 }
 

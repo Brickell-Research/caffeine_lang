@@ -1,3 +1,9 @@
+import caffeine_lang/common/collection_types
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/primitive_types
+import caffeine_lang/common/refinement_types
+import caffeine_lang/common/type_info.{type TypeMeta}
+import caffeine_lsp/keyword_info
 import gleam/json
 import gleam/list
 
@@ -7,35 +13,31 @@ const kind_keyword = 14
 const kind_class = 7
 
 /// Returns a list of completion item JSON objects.
-/// Phase 1: static list of all keywords and type names.
 pub fn get_completions() -> List(json.Json) {
   list.flatten([keyword_items(), type_items()])
 }
 
 fn keyword_items() -> List(json.Json) {
-  [
-    completion_item("Blueprints", kind_keyword, "Declare a blueprints block"),
-    completion_item("Expectations", kind_keyword, "Declare an expectations block"),
-    completion_item("for", kind_keyword, "Specify target artifacts"),
-    completion_item("extends", kind_keyword, "Inherit from extendable blocks"),
-    completion_item("Requires", kind_keyword, "Define required typed parameters"),
-    completion_item("Provides", kind_keyword, "Define provided values"),
-    completion_item("Type", kind_keyword, "Declare a type alias"),
-  ]
+  keyword_info.all_keywords()
+  |> list.map(fn(kw) {
+    completion_item(kw.name, kind_keyword, kw.description)
+  })
 }
 
 fn type_items() -> List(json.Json) {
-  [
-    completion_item("String", kind_class, "Any text between double quotes"),
-    completion_item("Integer", kind_class, "Whole numbers"),
-    completion_item("Float", kind_class, "Decimal numbers"),
-    completion_item("Boolean", kind_class, "True or false"),
-    completion_item("URL", kind_class, "A valid URL (http:// or https://)"),
-    completion_item("List", kind_class, "An ordered sequence: List(T)"),
-    completion_item("Dict", kind_class, "A key-value map: Dict(K, V)"),
-    completion_item("Optional", kind_class, "Value may be unspecified: Optional(T)"),
-    completion_item("Defaulted", kind_class, "Value with default: Defaulted(T, default)"),
-  ]
+  all_type_metas()
+  |> list.map(fn(m: TypeMeta) {
+    completion_item(m.name, kind_class, m.description)
+  })
+}
+
+fn all_type_metas() -> List(TypeMeta) {
+  list.flatten([
+    primitive_types.all_type_metas(),
+    collection_types.all_type_metas(),
+    modifier_types.all_type_metas(),
+    refinement_types.all_type_metas(),
+  ])
 }
 
 fn completion_item(
