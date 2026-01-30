@@ -1,5 +1,8 @@
 import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/helpers
+import caffeine_lang/common/modifier_types
+import caffeine_lang/common/refinement_types
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
@@ -8,9 +11,9 @@ import caffeine_lang/parser/expectations.{type Expectation}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option
-import gleam/string
 
 /// Build intermediate representations from validated expectations across multiple files.
 @internal
@@ -113,11 +116,12 @@ fn build_unprovided_optional_value_tuples(
 }
 
 /// Extract misc metadata from value tuples.
-/// Filters out non-string values and specific reserved labels.
-/// Uses type-aware resolution to apply defaults from Defaulted types.
+/// Filters out reserved labels and unsupported types.
+/// Each key maps to a list of string values (primitives become single-element
+/// lists, collection lists are exploded, nulls are excluded).
 fn extract_misc_metadata(
   value_tuples: List(helpers.ValueTuple),
-) -> dict.Dict(String, String) {
+) -> dict.Dict(String, List(String)) {
   value_tuples
   |> list.filter_map(fn(value_tuple) {
     // Skip reserved labels
@@ -126,9 +130,9 @@ fn extract_misc_metadata(
       "window_in_days" | "threshold" | "value" | "tags" | "runbook" ->
         Error(Nil)
       _ -> {
-        // Use type-aware resolution to handle defaults
-        case resolve_value_for_tag(value_tuple) {
-          Ok(value_string) -> Ok(#(value_tuple.label, value_string))
+        case resolve_values_for_tag(value_tuple.typ, value_tuple.value) {
+          Ok([]) -> Error(Nil)
+          Ok(values) -> Ok(#(value_tuple.label, values))
           Error(_) -> Error(Nil)
         }
       }
@@ -137,27 +141,62 @@ fn extract_misc_metadata(
   |> dict.from_list
 }
 
-/// Resolves a value tuple to a string for use as a tag.
-/// Handles Defaulted types by applying their default values when not provided.
-fn resolve_value_for_tag(value_tuple: helpers.ValueTuple) -> Result(String, Nil) {
-  // Identity function for string resolution (tags don't need template transformation)
-  let identity = fn(s) { s }
-  // For lists, join with comma (though tags typically don't use lists)
-  let list_join = fn(items) { string.join(items, ",") }
-
-  accepted_types.resolve_to_string(
-    value_tuple.typ,
-    value_tuple.value,
-    identity,
-    list_join,
-  )
-  |> result_to_nil_error
-}
-
-/// Convert Result(a, String) to Result(a, Nil)
-fn result_to_nil_error(result: Result(a, String)) -> Result(a, Nil) {
-  case result {
-    Ok(val) -> Ok(val)
-    Error(_) -> Error(Nil)
+/// Resolves a value tuple to a list of strings for use as tags.
+/// Primitives and refinements produce a single-element list.
+/// Lists are exploded into multiple string values.
+/// Dicts and type alias refs are unsupported.
+/// Optional(None) produces an empty list (filtered out).
+/// Defaulted(None) produces the default value.
+fn resolve_values_for_tag(
+  typ: accepted_types.AcceptedTypes,
+  value: dynamic.Dynamic,
+) -> Result(List(String), Nil) {
+  case typ {
+    accepted_types.PrimitiveType(_) -> {
+      case
+        decode.run(
+          value,
+          accepted_types.decode_value_to_string(typ),
+        )
+      {
+        Ok(s) -> Ok([s])
+        Error(_) -> Error(Nil)
+      }
+    }
+    accepted_types.RefinementType(refinement) -> {
+      case refinement {
+        refinement_types.OneOf(inner, _) ->
+          resolve_values_for_tag(inner, value)
+        refinement_types.InclusiveRange(inner, _, _) ->
+          resolve_values_for_tag(inner, value)
+      }
+    }
+    accepted_types.CollectionType(collection_types.List(inner)) -> {
+      case
+        decode.run(
+          value,
+          accepted_types.decode_list_values_to_strings(inner),
+        )
+      {
+        Ok(strings) -> Ok(strings)
+        Error(_) -> Error(Nil)
+      }
+    }
+    accepted_types.CollectionType(collection_types.Dict(_, _)) -> Error(Nil)
+    accepted_types.ModifierType(modifier_types.Optional(inner)) -> {
+      case decode.run(value, decode.optional(decode.dynamic)) {
+        Ok(option.Some(inner_val)) -> resolve_values_for_tag(inner, inner_val)
+        Ok(option.None) -> Ok([])
+        Error(_) -> Ok([])
+      }
+    }
+    accepted_types.ModifierType(modifier_types.Defaulted(inner, default)) -> {
+      case decode.run(value, decode.optional(decode.dynamic)) {
+        Ok(option.Some(inner_val)) -> resolve_values_for_tag(inner, inner_val)
+        Ok(option.None) -> Ok([default])
+        Error(_) -> Ok([default])
+      }
+    }
+    accepted_types.TypeAliasRef(_) -> Error(Nil)
   }
 }

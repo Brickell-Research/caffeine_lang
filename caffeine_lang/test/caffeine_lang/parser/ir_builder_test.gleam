@@ -1,4 +1,5 @@
 import caffeine_lang/common/accepted_types
+import caffeine_lang/common/collection_types
 import caffeine_lang/common/helpers
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
@@ -363,9 +364,95 @@ pub fn build_all_test() {
     // misc should contain string values but NOT threshold or non-strings
     ir.metadata.misc
     |> should.equal(
-      dict.from_list([#("env", "production"), #("region", "us-east-1")]),
+      dict.from_list([#("env", ["production"]), #("region", ["us-east-1"])]),
     )
   }
+}
+
+// ==== build_all - list-type params produce multiple values in misc ====
+pub fn build_all_list_misc_test() {
+  let blueprint =
+    blueprints.Blueprint(
+      name: "test_blueprint",
+      artifact_refs: ["TestArtifact"],
+      params: dict.from_list([
+        #(
+          "job_name",
+          accepted_types.CollectionType(collection_types.List(
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+        ),
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+      ]),
+      inputs: dict.from_list([]),
+    )
+  let expectation =
+    expectations.Expectation(
+      name: "my_test",
+      blueprint_ref: "test_blueprint",
+      inputs: dict.from_list([
+        #(
+          "job_name",
+          dynamic.list([
+            dynamic.string("deploy-prod"),
+            dynamic.string("deploy-demo"),
+          ]),
+        ),
+        #("threshold", dynamic.float(99.9)),
+      ]),
+    )
+
+  let assert [ir] =
+    ir_builder.build_all([
+      #([#(expectation, blueprint)], "org/team/svc.json"),
+    ])
+
+  ir.metadata.misc
+  |> should.equal(
+    dict.from_list([#("job_name", ["deploy-prod", "deploy-demo"])]),
+  )
+}
+
+// ==== build_all - Optional(None) excluded from misc ====
+pub fn build_all_optional_none_misc_test() {
+  let blueprint =
+    blueprints.Blueprint(
+      name: "test_blueprint",
+      artifact_refs: ["TestArtifact"],
+      params: dict.from_list([
+        #(
+          "threshold",
+          accepted_types.PrimitiveType(primitive_types.NumericType(
+            numeric_types.Float,
+          )),
+        ),
+        #(
+          "env",
+          accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        ),
+      ]),
+      inputs: dict.from_list([]),
+    )
+  let expectation =
+    make_expectation("my_test", [#("threshold", dynamic.float(1.0))])
+
+  let assert [ir] =
+    ir_builder.build_all([
+      #([#(expectation, blueprint)], "org/team/svc.json"),
+    ])
+
+  // Optional(None) should be excluded from misc (threshold is filtered by label)
+  ir.metadata.misc
+  |> should.equal(dict.new())
 }
 
 // ==== Helpers ====
@@ -416,7 +503,7 @@ fn make_ir(
   team team: String,
   service service: String,
   values values: List(helpers.ValueTuple),
-  misc misc: dict.Dict(String, String),
+  misc misc: dict.Dict(String, List(String)),
 ) -> semantic_analyzer.IntermediateRepresentation {
   semantic_analyzer.IntermediateRepresentation(
     metadata: semantic_analyzer.IntermediateRepresentationMetaData(

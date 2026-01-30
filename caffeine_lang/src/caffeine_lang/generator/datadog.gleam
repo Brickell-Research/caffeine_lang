@@ -175,9 +175,13 @@ pub fn ir_to_terraform_resource(
     ir.metadata.misc
     |> dict.keys
     |> list.sort(string.compare)
-    |> list.map(fn(key) {
-      let assert Ok(value) = ir.metadata.misc |> dict.get(key)
-      hcl.StringLiteral(key <> ":" <> value)
+    |> list.flat_map(fn(key) {
+      let assert Ok(values) = ir.metadata.misc |> dict.get(key)
+      values
+      |> list.sort(string.compare)
+      |> list.map(fn(value) {
+        hcl.StringLiteral(key <> ":" <> value)
+      })
     }),
   )
 

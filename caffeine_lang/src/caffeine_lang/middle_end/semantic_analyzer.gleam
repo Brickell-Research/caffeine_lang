@@ -34,7 +34,7 @@ pub type IntermediateRepresentationMetaData {
     blueprint_name: String,
     team_name: String,
     // Metadata specific to any given expectation.
-    misc: dict.Dict(String, String),
+    misc: dict.Dict(String, List(String)),
   )
 }
 
