@@ -1,6 +1,10 @@
 import caffeine_lang/frontend/formatter
+import caffeine_lsp/code_actions
+import caffeine_lsp/completion
 import caffeine_lsp/diagnostics
 import caffeine_lsp/document_symbols
+import caffeine_lsp/hover
+import caffeine_lsp/semantic_tokens
 import gleam/bit_array
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -111,6 +115,18 @@ fn uri_from_params() -> decode.Decoder(String) {
   decode.success(uri)
 }
 
+fn position_from_params() -> decode.Decoder(#(Int, Int)) {
+  use line <- decode.subfield(
+    ["params", "position", "line"],
+    decode.int,
+  )
+  use character <- decode.subfield(
+    ["params", "position", "character"],
+    decode.int,
+  )
+  decode.success(#(line, character))
+}
+
 fn text_from_did_open() -> decode.Decoder(String) {
   use text <- decode.subfield(
     ["params", "textDocument", "text"],
@@ -187,6 +203,22 @@ fn dispatch(
       handle_document_symbol(dyn, id, docs)
       #(True, docs)
     }
+    Ok("textDocument/hover") -> {
+      handle_hover(dyn, id, docs)
+      #(True, docs)
+    }
+    Ok("textDocument/completion") -> {
+      handle_completion(id)
+      #(True, docs)
+    }
+    Ok("textDocument/codeAction") -> {
+      handle_code_action(dyn, id)
+      #(True, docs)
+    }
+    Ok("textDocument/semanticTokens/full") -> {
+      handle_semantic_tokens(dyn, id, docs)
+      #(True, docs)
+    }
     Ok("shutdown") -> {
       handle_shutdown(id)
       #(False, docs)
@@ -211,6 +243,43 @@ fn handle_initialize(id: Option(Int)) -> Nil {
           #("textDocumentSync", json.int(1)),
           #("documentFormattingProvider", json.bool(True)),
           #("documentSymbolProvider", json.bool(True)),
+          #("hoverProvider", json.bool(True)),
+          #(
+            "completionProvider",
+            json.object([
+              #("triggerCharacters", json.preprocessed_array([])),
+            ]),
+          ),
+          #(
+            "codeActionProvider",
+            json.object([
+              #(
+                "codeActionKinds",
+                json.preprocessed_array([json.string("quickfix")]),
+              ),
+            ]),
+          ),
+          #(
+            "semanticTokensProvider",
+            json.object([
+              #(
+                "legend",
+                json.object([
+                  #(
+                    "tokenTypes",
+                    json.preprocessed_array(
+                      list.map(semantic_tokens.token_types, json.string),
+                    ),
+                  ),
+                  #(
+                    "tokenModifiers",
+                    json.preprocessed_array([]),
+                  ),
+                ]),
+              ),
+              #("full", json.bool(True)),
+            ]),
+          ),
         ]),
       ),
       #(
@@ -362,6 +431,77 @@ fn handle_document_symbol(
     Error(_) -> {
       send_response(id, json.preprocessed_array([]))
     }
+  }
+}
+
+fn handle_semantic_tokens(
+  dyn: Dynamic,
+  id: Option(Int),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+  case uri_result {
+    Ok(uri) -> {
+      case dict.get(docs, uri) {
+        Ok(text) -> {
+          let data = semantic_tokens.get_semantic_tokens(text)
+          send_response(
+            id,
+            json.object([#("data", json.preprocessed_array(data))]),
+          )
+        }
+        Error(_) ->
+          send_response(
+            id,
+            json.object([#("data", json.preprocessed_array([]))]),
+          )
+      }
+    }
+    Error(_) ->
+      send_response(
+        id,
+        json.object([#("data", json.preprocessed_array([]))]),
+      )
+  }
+}
+
+fn handle_code_action(dyn: Dynamic, id: Option(Int)) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+  case uri_result {
+    Ok(uri) -> {
+      let actions = code_actions.get_code_actions(dyn, uri)
+      send_response(id, json.preprocessed_array(actions))
+    }
+    Error(_) -> send_response(id, json.preprocessed_array([]))
+  }
+}
+
+fn handle_completion(id: Option(Int)) -> Nil {
+  let items = completion.get_completions()
+  send_response(id, json.preprocessed_array(items))
+}
+
+fn handle_hover(
+  dyn: Dynamic,
+  id: Option(Int),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+  let pos_result = decode.run(dyn, position_from_params())
+
+  case uri_result, pos_result {
+    Ok(uri), Ok(#(line, character)) -> {
+      case dict.get(docs, uri) {
+        Ok(text) -> {
+          case hover.get_hover(text, line, character) {
+            option.Some(hover_json) -> send_response(id, hover_json)
+            option.None -> send_response(id, json.null())
+          }
+        }
+        Error(_) -> send_response(id, json.null())
+      }
+    }
+    _, _ -> send_response(id, json.null())
   }
 }
 
