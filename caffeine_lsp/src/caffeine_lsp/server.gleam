@@ -1,5 +1,6 @@
 import caffeine_lang/frontend/formatter
 import caffeine_lsp/diagnostics
+import caffeine_lsp/document_symbols
 import gleam/bit_array
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
@@ -182,6 +183,10 @@ fn dispatch(
       handle_formatting(dyn, id, docs)
       #(True, docs)
     }
+    Ok("textDocument/documentSymbol") -> {
+      handle_document_symbol(dyn, id, docs)
+      #(True, docs)
+    }
     Ok("shutdown") -> {
       handle_shutdown(id)
       #(False, docs)
@@ -205,6 +210,7 @@ fn handle_initialize(id: Option(Int)) -> Nil {
         json.object([
           #("textDocumentSync", json.int(1)),
           #("documentFormattingProvider", json.bool(True)),
+          #("documentSymbolProvider", json.bool(True)),
         ]),
       ),
       #(
@@ -322,6 +328,31 @@ fn handle_formatting(
               send_response(id, json.preprocessed_array([]))
             }
           }
+        }
+        Error(_) -> {
+          send_response(id, json.preprocessed_array([]))
+        }
+      }
+    }
+    Error(_) -> {
+      send_response(id, json.preprocessed_array([]))
+    }
+  }
+}
+
+fn handle_document_symbol(
+  dyn: Dynamic,
+  id: Option(Int),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+
+  case uri_result {
+    Ok(uri) -> {
+      case dict.get(docs, uri) {
+        Ok(text) -> {
+          let symbols = document_symbols.get_symbols(text)
+          send_response(id, json.preprocessed_array(symbols))
         }
         Error(_) -> {
           send_response(id, json.preprocessed_array([]))
