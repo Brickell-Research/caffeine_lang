@@ -95,6 +95,7 @@ fn remove_quotes_action(
   json.object([
     #("title", json.string("Remove quotes from field name")),
     #("kind", json.string("quickfix")),
+    #("isPreferred", json.bool(True)),
     #("diagnostics", json.preprocessed_array([diag_json])),
     #(
       "edit",

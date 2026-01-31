@@ -50,7 +50,7 @@ fn encode_loop(
           // Prepended in reverse since the list is reversed at the end
           let new_acc =
             list.flatten([
-              [0, token_type, length, delta_col, delta_line],
+              [delta_line, delta_col, length, token_type, 0],
               acc,
             ])
           encode_loop(rest, line, col, new_acc)

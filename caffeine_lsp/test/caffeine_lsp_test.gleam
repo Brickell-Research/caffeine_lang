@@ -1,4 +1,12 @@
+import caffeine_lsp/completion
+import caffeine_lsp/definition
 import caffeine_lsp/diagnostics
+import caffeine_lsp/document_symbols
+import caffeine_lsp/hover
+import caffeine_lsp/semantic_tokens
+import gleam/json
+import gleam/list
+import gleam/option
 import gleam/string
 import gleeunit
 import gleeunit/should
@@ -241,4 +249,222 @@ Expectations for \"api_availability\"
     }
     _ -> should.fail()
   }
+}
+
+// ==========================================================================
+// Hover tests
+// ==========================================================================
+
+pub fn hover_builtin_type_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  case hover.get_hover(source, 2, 20) {
+    option.Some(json_val) -> {
+      let s = json.to_string(json_val)
+      { string.contains(s, "String") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn hover_keyword_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  case hover.get_hover(source, 0, 3) {
+    option.Some(json_val) -> {
+      let s = json.to_string(json_val)
+      { string.contains(s, "Blueprints") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn hover_empty_space_returns_none_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  hover.get_hover(source, 0, 10)
+  |> should.equal(option.None)
+}
+
+pub fn hover_extendable_test() {
+  let source = "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  case hover.get_hover(source, 0, 2) {
+    option.Some(json_val) -> {
+      let s = json.to_string(json_val)
+      { string.contains(s, "_defaults") } |> should.be_true()
+      { string.contains(s, "Provides") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn hover_type_alias_test() {
+  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  // Hover on _env in the definition
+  case hover.get_hover(source, 0, 1) {
+    option.Some(json_val) -> {
+      let s = json.to_string(json_val)
+      { string.contains(s, "_env") } |> should.be_true()
+      { string.contains(s, "Type alias") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Completion tests
+// ==========================================================================
+
+pub fn completion_returns_items_test() {
+  let items = completion.get_completions("", 0, 0)
+  { items != [] } |> should.be_true()
+}
+
+pub fn completion_includes_keywords_test() {
+  let items = completion.get_completions("", 0, 0)
+  let labels =
+    list.map(items, fn(item) { json.to_string(item) })
+  let has_blueprints =
+    list.any(labels, fn(s) { string.contains(s, "Blueprints") })
+  has_blueprints |> should.be_true()
+}
+
+pub fn completion_extends_context_test() {
+  let source = "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Line 3 (0-indexed), cursor inside "extends [_defaults]"
+  let items = completion.get_completions(source, 3, 22)
+  let labels =
+    list.map(items, fn(item) { json.to_string(item) })
+  let has_defaults =
+    list.any(labels, fn(s) { string.contains(s, "_defaults") })
+  has_defaults |> should.be_true()
+}
+
+pub fn completion_type_context_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
+  // After the colon
+  let items = completion.get_completions(source, 2, 21)
+  let labels =
+    list.map(items, fn(item) { json.to_string(item) })
+  // Should include type names but not keywords like "Blueprints"
+  let has_string =
+    list.any(labels, fn(s) { string.contains(s, "String") })
+  has_string |> should.be_true()
+}
+
+pub fn completion_includes_extendables_test() {
+  let source = "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let items = completion.get_completions(source, 4, 0)
+  let labels =
+    list.map(items, fn(item) { json.to_string(item) })
+  let has_base =
+    list.any(labels, fn(s) { string.contains(s, "_base") })
+  has_base |> should.be_true()
+}
+
+// ==========================================================================
+// Document symbols tests
+// ==========================================================================
+
+pub fn document_symbols_empty_test() {
+  document_symbols.get_symbols("")
+  |> should.equal([])
+}
+
+pub fn document_symbols_blueprints_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let symbols = document_symbols.get_symbols(source)
+  { symbols != [] } |> should.be_true()
+}
+
+pub fn document_symbols_with_extendable_test() {
+  let source = "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let symbols = document_symbols.get_symbols(source)
+  let names =
+    list.map(symbols, fn(s) { json.to_string(s) })
+  let has_defaults =
+    list.any(names, fn(s) { string.contains(s, "_defaults") })
+  has_defaults |> should.be_true()
+}
+
+pub fn document_symbols_type_alias_test() {
+  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  let symbols = document_symbols.get_symbols(source)
+  let names =
+    list.map(symbols, fn(s) { json.to_string(s) })
+  let has_env =
+    list.any(names, fn(s) { string.contains(s, "_env") })
+  has_env |> should.be_true()
+}
+
+pub fn document_symbols_expects_test() {
+  let source = "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let symbols = document_symbols.get_symbols(source)
+  { symbols != [] } |> should.be_true()
+}
+
+// ==========================================================================
+// Semantic tokens tests
+// ==========================================================================
+
+pub fn semantic_tokens_empty_test() {
+  semantic_tokens.get_semantic_tokens("")
+  |> should.equal([])
+}
+
+pub fn semantic_tokens_produces_output_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  { tokens != [] } |> should.be_true()
+}
+
+pub fn semantic_tokens_multiple_of_five_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  // Each token is 5 integers: deltaLine, deltaStartChar, length, tokenType, modifiers
+  { list.length(tokens) % 5 == 0 } |> should.be_true()
+}
+
+pub fn semantic_tokens_with_comment_test() {
+  let source = "# This is a comment\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  { tokens != [] } |> should.be_true()
+}
+
+// ==========================================================================
+// Definition tests
+// ==========================================================================
+
+pub fn definition_extendable_test() {
+  let source = "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  // Hover on _defaults in extends list (line 3)
+  case definition.get_definition(source, 3, 25) {
+    option.Some(#(line, _col, _len)) -> {
+      // Should point to line 0 where _defaults is defined
+      line |> should.equal(0)
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn definition_type_alias_test() {
+  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  // Hover on _env in Requires (line 4)
+  case definition.get_definition(source, 4, 20) {
+    option.Some(#(line, _col, _len)) -> {
+      // Should point to line 0 where _env is defined
+      line |> should.equal(0)
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn definition_not_found_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // "for" is a keyword, not a definition
+  definition.get_definition(source, 0, 12)
+  |> should.equal(option.None)
+}
+
+pub fn definition_empty_space_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  definition.get_definition(source, 0, 10)
+  |> should.equal(option.None)
 }

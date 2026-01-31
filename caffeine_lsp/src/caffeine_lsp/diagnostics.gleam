@@ -8,7 +8,13 @@ import gleam/string
 
 /// A diagnostic to send to the editor.
 pub type Diagnostic {
-  Diagnostic(line: Int, column: Int, severity: Int, message: String)
+  Diagnostic(
+    line: Int,
+    column: Int,
+    end_column: Int,
+    severity: Int,
+    message: String,
+  )
 }
 
 /// LSP severity constants.
@@ -51,19 +57,21 @@ fn validator_error_to_diagnostic(
 ) -> Diagnostic {
   case err {
     validator.DuplicateExtendable(name) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Duplicate extendable '" <> name <> "'",
       )
     }
     validator.UndefinedExtendable(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Undefined extendable '"
           <> name
@@ -73,10 +81,11 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.DuplicateExtendsReference(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_warning,
         message: "Duplicate extends reference '"
           <> name
@@ -86,10 +95,11 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.InvalidExtendableKind(name, expected, got) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Extendable '"
           <> name
@@ -100,10 +110,11 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.UndefinedTypeAlias(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Undefined type alias '"
           <> name
@@ -113,29 +124,32 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.DuplicateTypeAlias(name) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Duplicate type alias '" <> name <> "'",
       )
     }
     validator.CircularTypeAlias(name, cycle) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       let cycle_str = string.join(cycle, " -> ")
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Circular type alias '" <> name <> "': " <> cycle_str,
       )
     }
     validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content,alias_name)
+      let #(line, col) = position_utils.find_name_position(content, alias_name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(alias_name),
         severity: severity_error,
         message: "Dict key type '"
           <> alias_name
@@ -147,10 +161,11 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.ExtendableOvershadowing(field_name, item_name, extendable_name) -> {
-      let #(line, col) = position_utils.find_name_position(content,field_name)
+      let #(line, col) = position_utils.find_name_position(content, field_name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(field_name),
         severity: severity_error,
         message: "Field '"
           <> field_name
@@ -162,10 +177,11 @@ fn validator_error_to_diagnostic(
       )
     }
     validator.ExtendableTypeAliasNameCollision(name) -> {
-      let #(line, col) = position_utils.find_name_position(content,name)
+      let #(line, col) = position_utils.find_name_position(content, name)
       Diagnostic(
         line: line,
         column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Name '"
           <> name
@@ -179,72 +195,96 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
   case err {
     parser_error.TokenizerError(tok_err) ->
       tokenizer_error_to_diagnostic(tok_err)
-    parser_error.UnexpectedToken(expected, got, line, column) ->
+    parser_error.UnexpectedToken(expected, got, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + string.length(got),
         severity: severity_error,
         message: "Unexpected token: expected "
           <> expected
           <> ", got "
           <> got,
       )
-    parser_error.UnexpectedEOF(expected, line, column) ->
+    }
+    parser_error.UnexpectedEOF(expected, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + 1,
         severity: severity_error,
         message: "Unexpected end of file: expected " <> expected,
       )
-    parser_error.UnknownType(name, line, column) ->
+    }
+    parser_error.UnknownType(name, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Unknown type '" <> name <> "'",
       )
-    parser_error.InvalidRefinement(message, line, column) ->
+    }
+    parser_error.InvalidRefinement(message, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + 1,
         severity: severity_error,
         message: "Invalid refinement: " <> message,
       )
-    parser_error.QuotedFieldName(name, line, column) ->
+    }
+    parser_error.QuotedFieldName(name, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + string.length(name) + 2,
         severity: severity_error,
         message: "Field names should not be quoted. Use '"
           <> name
           <> "' instead",
       )
-    parser_error.InvalidTypeAliasName(name, message, line, column) ->
+    }
+    parser_error.InvalidTypeAliasName(name, message, line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + string.length(name),
         severity: severity_error,
         message: "Invalid type alias name '" <> name <> "': " <> message,
       )
+    }
   }
 }
 
 fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
   case err {
-    tokenizer_error.UnterminatedString(line, column) ->
+    tokenizer_error.UnterminatedString(line, column) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + 1,
         severity: severity_error,
         message: "Unterminated string",
       )
-    tokenizer_error.InvalidCharacter(line, column, char) ->
+    }
+    tokenizer_error.InvalidCharacter(line, column, char) -> {
+      let col = to_lsp_column(column)
       Diagnostic(
         line: to_lsp_line(line),
-        column: to_lsp_column(column),
+        column: col,
+        end_column: col + string.length(char),
         severity: severity_error,
         message: "Invalid character '" <> char <> "'",
       )
+    }
   }
 }
 

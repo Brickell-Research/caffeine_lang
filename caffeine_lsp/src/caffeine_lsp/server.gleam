@@ -1,6 +1,7 @@
 import caffeine_lang/frontend/formatter
 import caffeine_lsp/code_actions
 import caffeine_lsp/completion
+import caffeine_lsp/definition
 import caffeine_lsp/diagnostics
 import caffeine_lsp/document_symbols
 import caffeine_lsp/hover
@@ -42,21 +43,31 @@ fn write_stderr(data: String) -> Nil
 @external(javascript, "../caffeine_lsp_ffi.mjs", "rescue")
 fn rescue(f: fn() -> a) -> Result(a, Nil)
 
+// --- Server state ---
+
+type ServerState {
+  ServerState(
+    docs: Dict(String, String),
+    initialized: Bool,
+    shutdown: Bool,
+  )
+}
+
 // --- Public API ---
 
 pub fn run() -> Nil {
   init_io()
   log("Caffeine LSP starting...")
-  loop(dict.new())
+  loop(ServerState(docs: dict.new(), initialized: False, shutdown: False))
 }
 
 // --- Main loop ---
 
-fn loop(docs: Dict(String, String)) -> Nil {
+fn loop(state: ServerState) -> Nil {
   case read_message() {
     Ok(body) -> {
-      case handle_message(body, docs) {
-        #(True, new_docs) -> loop(new_docs)
+      case handle_message(body, state) {
+        #(True, new_state) -> loop(new_state)
         #(False, _) -> Nil
       }
     }
@@ -109,8 +120,19 @@ fn method_decoder() -> decode.Decoder(String) {
   decode.success(method)
 }
 
-fn id_decoder() -> decode.Decoder(Int) {
-  use id <- decode.field("id", decode.int)
+fn id_decoder() -> decode.Decoder(json.Json) {
+  let id_value_decoder =
+    decode.new_primitive_decoder("id", fn(dyn) {
+      case decode.run(dyn, decode.int) {
+        Ok(n) -> Ok(json.int(n))
+        Error(_) ->
+          case decode.run(dyn, decode.string) {
+            Ok(s) -> Ok(json.string(s))
+            Error(_) -> Error(json.null())
+          }
+      }
+    })
+  use id <- decode.field("id", id_value_decoder)
   decode.success(id)
 }
 
@@ -159,99 +181,122 @@ fn text_from_did_change() -> decode.Decoder(String) {
 
 fn handle_message(
   body: String,
-  docs: Dict(String, String),
-) -> #(Bool, Dict(String, String)) {
+  state: ServerState,
+) -> #(Bool, ServerState) {
   case json.parse(body, any_decoder()) {
-    Ok(dyn) -> dispatch(dyn, docs)
+    Ok(dyn) -> dispatch(dyn, state)
     Error(_) -> {
       log("Failed to parse JSON message")
-      #(True, docs)
+      #(True, state)
     }
   }
 }
 
 fn dispatch(
   dyn: Dynamic,
-  docs: Dict(String, String),
-) -> #(Bool, Dict(String, String)) {
+  state: ServerState,
+) -> #(Bool, ServerState) {
   let method = decode.run(dyn, method_decoder())
   let id = case decode.run(dyn, id_decoder()) {
-    Ok(n) -> option.Some(n)
+    Ok(id_json) -> option.Some(id_json)
     Error(_) -> option.None
   }
 
+  // Handle lifecycle methods regardless of state
   case method {
     Ok("initialize") -> {
       handle_initialize(id)
-      #(True, docs)
+      #(True, ServerState(..state, initialized: True))
     }
-    Ok("initialized") -> #(True, docs)
+    Ok("initialized") -> #(True, state)
+    Ok("exit") -> #(False, state)
+    Ok("shutdown") -> {
+      handle_shutdown(id)
+      #(False, ServerState(..state, shutdown: True))
+    }
+    // After shutdown, reject everything except exit
+    _ if state.shutdown -> {
+      case id {
+        option.Some(_) -> send_error(id, -32600, "Server is shutting down")
+        option.None -> Nil
+      }
+      #(True, state)
+    }
+    // Before initialization, reject non-lifecycle requests
+    _ if !state.initialized -> {
+      case id {
+        option.Some(_) -> send_error(id, -32002, "Server not initialized")
+        option.None -> Nil
+      }
+      #(True, state)
+    }
+    // Normal dispatch after initialization
     Ok("textDocument/didOpen") -> {
-      let new_docs = handle_did_open(dyn, docs)
-      #(True, new_docs)
+      let new_docs = handle_did_open(dyn, state.docs)
+      #(True, ServerState(..state, docs: new_docs))
     }
     Ok("textDocument/didChange") -> {
-      let new_docs = handle_did_change(dyn, docs)
-      #(True, new_docs)
+      let new_docs = handle_did_change(dyn, state.docs)
+      #(True, ServerState(..state, docs: new_docs))
     }
     Ok("textDocument/didClose") -> {
-      let new_docs = handle_did_close(dyn, docs)
-      #(True, new_docs)
+      let new_docs = handle_did_close(dyn, state.docs)
+      #(True, ServerState(..state, docs: new_docs))
     }
-    Ok("textDocument/didSave") -> #(True, docs)
-    Ok("$/cancelRequest") -> #(True, docs)
-    Ok("$/setTrace") -> #(True, docs)
-    Ok("textDocument/willSave") -> #(True, docs)
+    Ok("textDocument/didSave") -> #(True, state)
+    Ok("$/cancelRequest") -> #(True, state)
+    Ok("$/setTrace") -> #(True, state)
+    Ok("textDocument/willSave") -> #(True, state)
     Ok("textDocument/formatting") -> {
-      handle_formatting(dyn, id, docs)
-      #(True, docs)
+      handle_formatting(dyn, id, state.docs)
+      #(True, state)
     }
     Ok("textDocument/documentSymbol") -> {
-      handle_document_symbol(dyn, id, docs)
-      #(True, docs)
+      handle_document_symbol(dyn, id, state.docs)
+      #(True, state)
     }
     Ok("textDocument/hover") -> {
-      handle_hover(dyn, id, docs)
-      #(True, docs)
+      handle_hover(dyn, id, state.docs)
+      #(True, state)
     }
     Ok("textDocument/completion") -> {
-      handle_completion(id)
-      #(True, docs)
+      handle_completion(dyn, id, state.docs)
+      #(True, state)
     }
     Ok("textDocument/codeAction") -> {
       handle_code_action(dyn, id)
-      #(True, docs)
+      #(True, state)
     }
     Ok("textDocument/semanticTokens/full") -> {
-      handle_semantic_tokens(dyn, id, docs)
-      #(True, docs)
+      handle_semantic_tokens(dyn, id, state.docs)
+      #(True, state)
     }
-    Ok("shutdown") -> {
-      handle_shutdown(id)
-      #(False, docs)
+    Ok("textDocument/definition") -> {
+      handle_definition(dyn, id, state.docs)
+      #(True, state)
     }
-    Ok("exit") -> #(False, docs)
     Ok(other) -> {
       log("Unhandled method: " <> other)
       case id {
-        option.Some(_) -> send_response(id, json.null())
+        option.Some(_) ->
+          send_error(id, -32601, "Method not found: " <> other)
         option.None -> Nil
       }
-      #(True, docs)
+      #(True, state)
     }
     Error(_) -> {
       case id {
-        option.Some(_) -> send_response(id, json.null())
+        option.Some(_) -> send_error(id, -32600, "Invalid request")
         option.None -> Nil
       }
-      #(True, docs)
+      #(True, state)
     }
   }
 }
 
 // --- Handlers ---
 
-fn handle_initialize(id: Option(Int)) -> Nil {
+fn handle_initialize(id: Option(json.Json)) -> Nil {
   let result_json =
     json.object([
       #(
@@ -261,10 +306,17 @@ fn handle_initialize(id: Option(Int)) -> Nil {
           #("documentFormattingProvider", json.bool(True)),
           #("documentSymbolProvider", json.bool(True)),
           #("hoverProvider", json.bool(True)),
+          #("definitionProvider", json.bool(True)),
           #(
             "completionProvider",
             json.object([
-              #("triggerCharacters", json.preprocessed_array([])),
+              #(
+                "triggerCharacters",
+                json.preprocessed_array([
+                  json.string(":"),
+                  json.string("["),
+                ]),
+              ),
             ]),
           ),
           #(
@@ -374,13 +426,14 @@ fn handle_did_close(
 
 fn handle_formatting(
   dyn: Dynamic,
-  id: Option(Int),
+  id: Option(json.Json),
   docs: Dict(String, String),
 ) -> Nil {
   let empty = json.preprocessed_array([])
   with_document(dyn, id, docs, empty, fn(text) {
     case formatter.format(text) {
       Ok(formatted) -> {
+        let line_count = list.length(string.split(text, "\n"))
         let edit =
           json.object([
             #(
@@ -396,7 +449,7 @@ fn handle_formatting(
                 #(
                   "end",
                   json.object([
-                    #("line", json.int(999_999)),
+                    #("line", json.int(line_count)),
                     #("character", json.int(0)),
                   ]),
                 ),
@@ -413,7 +466,7 @@ fn handle_formatting(
 
 fn handle_document_symbol(
   dyn: Dynamic,
-  id: Option(Int),
+  id: Option(json.Json),
   docs: Dict(String, String),
 ) -> Nil {
   with_document(dyn, id, docs, json.preprocessed_array([]), fn(text) {
@@ -423,7 +476,7 @@ fn handle_document_symbol(
 
 fn handle_semantic_tokens(
   dyn: Dynamic,
-  id: Option(Int),
+  id: Option(json.Json),
   docs: Dict(String, String),
 ) -> Nil {
   let empty = json.object([#("data", json.preprocessed_array([]))])
@@ -433,7 +486,7 @@ fn handle_semantic_tokens(
   })
 }
 
-fn handle_code_action(dyn: Dynamic, id: Option(Int)) -> Nil {
+fn handle_code_action(dyn: Dynamic, id: Option(json.Json)) -> Nil {
   let uri_result = decode.run(dyn, uri_from_params())
   case uri_result {
     Ok(uri) -> {
@@ -446,14 +499,32 @@ fn handle_code_action(dyn: Dynamic, id: Option(Int)) -> Nil {
   }
 }
 
-fn handle_completion(id: Option(Int)) -> Nil {
-  let items = completion.get_completions()
-  send_response(id, json.preprocessed_array(items))
+fn handle_completion(
+  dyn: Dynamic,
+  id: Option(json.Json),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+  let pos_result = decode.run(dyn, position_from_params())
+  case uri_result, pos_result {
+    Ok(uri), Ok(#(line, character)) -> {
+      let text = case dict.get(docs, uri) {
+        Ok(t) -> t
+        Error(_) -> ""
+      }
+      let items = completion.get_completions(text, line, character)
+      send_response(id, json.preprocessed_array(items))
+    }
+    _, _ -> {
+      let items = completion.get_completions("", 0, 0)
+      send_response(id, json.preprocessed_array(items))
+    }
+  }
 }
 
 fn handle_hover(
   dyn: Dynamic,
-  id: Option(Int),
+  id: Option(json.Json),
   docs: Dict(String, String),
 ) -> Nil {
   let uri_result = decode.run(dyn, uri_from_params())
@@ -475,7 +546,60 @@ fn handle_hover(
   }
 }
 
-fn handle_shutdown(id: Option(Int)) -> Nil {
+fn handle_definition(
+  dyn: Dynamic,
+  id: Option(json.Json),
+  docs: Dict(String, String),
+) -> Nil {
+  let uri_result = decode.run(dyn, uri_from_params())
+  let pos_result = decode.run(dyn, position_from_params())
+
+  case uri_result, pos_result {
+    Ok(uri), Ok(#(line, character)) -> {
+      case dict.get(docs, uri) {
+        Ok(text) -> {
+          case
+            rescue(fn() {
+              definition.get_definition(text, line, character)
+            })
+          {
+            Ok(option.Some(#(def_line, def_col, name_len))) ->
+              send_response(
+                id,
+                json.object([
+                  #("uri", json.string(uri)),
+                  #(
+                    "range",
+                    json.object([
+                      #(
+                        "start",
+                        json.object([
+                          #("line", json.int(def_line)),
+                          #("character", json.int(def_col)),
+                        ]),
+                      ),
+                      #(
+                        "end",
+                        json.object([
+                          #("line", json.int(def_line)),
+                          #("character", json.int(def_col + name_len)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                ]),
+              )
+            _ -> send_response(id, json.null())
+          }
+        }
+        Error(_) -> send_response(id, json.null())
+      }
+    }
+    _, _ -> send_response(id, json.null())
+  }
+}
+
+fn handle_shutdown(id: Option(json.Json)) -> Nil {
   send_response(id, json.null())
 }
 
@@ -515,7 +639,7 @@ fn diagnostic_to_json(d: diagnostics.Diagnostic) -> json.Json {
           "end",
           json.object([
             #("line", json.int(d.line)),
-            #("character", json.int(d.column)),
+            #("character", json.int(d.end_column)),
           ]),
         ),
       ]),
@@ -528,9 +652,9 @@ fn diagnostic_to_json(d: diagnostics.Diagnostic) -> json.Json {
 
 // --- JSON-RPC transport ---
 
-fn send_response(id: Option(Int), result_json: json.Json) -> Nil {
+fn send_response(id: Option(json.Json), result_json: json.Json) -> Nil {
   let id_json = case id {
-    option.Some(n) -> json.int(n)
+    option.Some(id_val) -> id_val
     option.None -> json.null()
   }
   let msg =
@@ -538,6 +662,25 @@ fn send_response(id: Option(Int), result_json: json.Json) -> Nil {
       #("jsonrpc", json.string("2.0")),
       #("id", id_json),
       #("result", result_json),
+    ])
+  send_raw(json.to_string(msg))
+}
+
+fn send_error(id: Option(json.Json), code: Int, message: String) -> Nil {
+  let id_json = case id {
+    option.Some(id_val) -> id_val
+    option.None -> json.null()
+  }
+  let msg =
+    json.object([
+      #("jsonrpc", json.string("2.0")),
+      #("id", id_json),
+      #("error",
+        json.object([
+          #("code", json.int(code)),
+          #("message", json.string(message)),
+        ]),
+      ),
     ])
   send_raw(json.to_string(msg))
 }
@@ -565,7 +708,7 @@ fn send_raw(body: String) -> Nil {
 /// Falls back to on_error if URI decode or doc lookup fails.
 fn with_document(
   dyn: Dynamic,
-  id: Option(Int),
+  id: Option(json.Json),
   docs: Dict(String, String),
   on_error: json.Json,
   handler: fn(String) -> json.Json,
