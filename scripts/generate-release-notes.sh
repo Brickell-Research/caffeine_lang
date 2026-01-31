@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Generate categorized release notes from git log between two tags.
 # Usage: ./scripts/generate-release-notes.sh <current-tag> <previous-tag>
-# Example: ./scripts/generate-release-notes.sh v3.0.23 v3.0.17
+# Example: ./scripts/generate-release-notes.sh v3.0.24 v3.0.17
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <current-tag> <previous-tag>" >&2
