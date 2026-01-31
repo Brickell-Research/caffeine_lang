@@ -36,12 +36,24 @@ export function read_bytes(n) {
 }
 
 export function write_stdout(data) {
-  Deno.stdout.writeSync(new TextEncoder().encode(data));
+  const buf = new TextEncoder().encode(data);
+  let offset = 0;
+  while (offset < buf.length) {
+    const written = Deno.stdout.writeSync(buf.subarray(offset));
+    if (written === null || written === 0) break;
+    offset += written;
+  }
   return undefined;
 }
 
 export function write_stderr(data) {
-  Deno.stderr.writeSync(new TextEncoder().encode(data + "\n"));
+  const buf = new TextEncoder().encode(data + "\n");
+  let offset = 0;
+  while (offset < buf.length) {
+    const written = Deno.stderr.writeSync(buf.subarray(offset));
+    if (written === null || written === 0) break;
+    offset += written;
+  }
   return undefined;
 }
 

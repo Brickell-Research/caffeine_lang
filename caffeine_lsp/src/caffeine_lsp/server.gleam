@@ -217,6 +217,11 @@ fn dispatch(
 ) -> #(Bool, ServerState) {
   let method = decode.run(dyn, method_decoder())
 
+  case method {
+    Ok(m) -> log("-> " <> m)
+    Error(_) -> log("-> (unknown method)")
+  }
+
   // Handle lifecycle methods regardless of state
   case method {
     Ok("initialize") -> {
@@ -673,6 +678,11 @@ fn diagnostic_to_json(d: diagnostics.Diagnostic) -> json.Json {
 // --- JSON-RPC transport ---
 
 fn send_response(id: Option(json.Json), result_json: json.Json) -> Nil {
+  let id_str = case id {
+    option.Some(id_val) -> json.to_string(id_val)
+    option.None -> "null"
+  }
+  log("<- response id=" <> id_str)
   let id_json = case id {
     option.Some(id_val) -> id_val
     option.None -> json.null()
