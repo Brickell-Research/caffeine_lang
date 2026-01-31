@@ -46,11 +46,11 @@ fn encode_loop(
             True -> col
             False -> col - prev_col
           }
-          // LSP order: deltaLine, deltaStartChar, length, tokenType, tokenModifiers
-          // Prepended in reverse since the list is reversed at the end
+          // Prepended in reverse field order since the list is reversed at the end.
+          // After reversal, each group becomes: deltaLine, deltaStartChar, length, tokenType, tokenModifiers
           let new_acc =
             list.flatten([
-              [delta_line, delta_col, length, token_type, 0],
+              [0, token_type, length, delta_col, delta_line],
               acc,
             ])
           encode_loop(rest, line, col, new_acc)

@@ -422,6 +422,28 @@ pub fn semantic_tokens_multiple_of_five_test() {
   { list.length(tokens) % 5 == 0 } |> should.be_true()
 }
 
+pub fn semantic_tokens_field_order_test() {
+  // "Blueprints" is at line 0, col 0, length 10, type 0 (keyword), mods 0
+  // The first 5 values should be: [0, 0, 10, 0, 0]
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  case tokens {
+    [dl, dc, len, tt, mods, ..] -> {
+      // deltaLine = 0 (first line)
+      dl |> should.equal(json.int(0))
+      // deltaCol = 0 (first column)
+      dc |> should.equal(json.int(0))
+      // length = 10 ("Blueprints")
+      len |> should.equal(json.int(10))
+      // tokenType = 0 (keyword)
+      tt |> should.equal(json.int(0))
+      // modifiers = 0
+      mods |> should.equal(json.int(0))
+    }
+    _ -> should.fail()
+  }
+}
+
 pub fn semantic_tokens_with_comment_test() {
   let source = "# This is a comment\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)

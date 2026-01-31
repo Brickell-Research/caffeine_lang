@@ -28,6 +28,8 @@ pub fn format_test() {
     #("formatted_expects", "formatted_expects"),
     #("type_alias_blueprint", "type_alias_blueprint"),
     #("complex_types", "complex_types"),
+    #("comments_blueprint", "comments_blueprint"),
+    #("comments_expects", "comments_expects"),
   ]
   |> list.each(fn(pair) {
     let #(input_name, expected_name) = pair
@@ -42,7 +44,12 @@ pub fn format_test() {
 // * ✅ format(format(blueprint)) == format(blueprint)
 // * ✅ format(format(expects)) == format(expects)
 pub fn format_idempotent_test() {
-  ["unformatted_blueprint", "unformatted_expects"]
+  [
+    "unformatted_blueprint",
+    "unformatted_expects",
+    "comments_blueprint",
+    "comments_expects",
+  ]
   |> list.each(fn(file_name) {
     let input = read_file(corpus_path(file_name))
     let assert Ok(first) = formatter.format(input)

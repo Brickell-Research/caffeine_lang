@@ -184,7 +184,25 @@ fn handle_message(
   state: ServerState,
 ) -> #(Bool, ServerState) {
   case json.parse(body, any_decoder()) {
-    Ok(dyn) -> dispatch(dyn, state)
+    Ok(dyn) -> {
+      // Extract the request ID early so we can send error responses on crash
+      let id = case decode.run(dyn, id_decoder()) {
+        Ok(id_json) -> option.Some(id_json)
+        Error(_) -> option.None
+      }
+      case rescue(fn() { dispatch(dyn, id, state) }) {
+        Ok(result) -> result
+        Error(_) -> {
+          // Handler crashed — send error response if this was a request
+          case id {
+            option.Some(_) ->
+              send_error(id, -32603, "Internal error")
+            option.None -> Nil
+          }
+          #(True, state)
+        }
+      }
+    }
     Error(_) -> {
       log("Failed to parse JSON message")
       #(True, state)
@@ -194,13 +212,10 @@ fn handle_message(
 
 fn dispatch(
   dyn: Dynamic,
+  id: Option(json.Json),
   state: ServerState,
 ) -> #(Bool, ServerState) {
   let method = decode.run(dyn, method_decoder())
-  let id = case decode.run(dyn, id_decoder()) {
-    Ok(id_json) -> option.Some(id_json)
-    Error(_) -> option.None
-  }
 
   // Handle lifecycle methods regardless of state
   case method {
@@ -504,6 +519,7 @@ fn handle_completion(
   id: Option(json.Json),
   docs: Dict(String, String),
 ) -> Nil {
+  let empty = json.preprocessed_array([])
   let uri_result = decode.run(dyn, uri_from_params())
   let pos_result = decode.run(dyn, position_from_params())
   case uri_result, pos_result {
@@ -512,12 +528,16 @@ fn handle_completion(
         Ok(t) -> t
         Error(_) -> ""
       }
-      let items = completion.get_completions(text, line, character)
-      send_response(id, json.preprocessed_array(items))
+      case rescue(fn() { completion.get_completions(text, line, character) }) {
+        Ok(items) -> send_response(id, json.preprocessed_array(items))
+        Error(_) -> send_response(id, empty)
+      }
     }
     _, _ -> {
-      let items = completion.get_completions("", 0, 0)
-      send_response(id, json.preprocessed_array(items))
+      case rescue(fn() { completion.get_completions("", 0, 0) }) {
+        Ok(items) -> send_response(id, json.preprocessed_array(items))
+        Error(_) -> send_response(id, empty)
+      }
     }
   }
 }

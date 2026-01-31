@@ -1,0 +1,9 @@
+## Service Expectations
+Expectations for "api_availability"
+  # Checkout service SLO
+  * "checkout":
+    Provides { threshold: 99.95 }
+
+  # Payment service SLO
+  * "payment":
+    Provides { threshold: 99.99 }

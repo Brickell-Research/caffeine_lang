@@ -6,9 +6,9 @@ import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import caffeine_lang/common/semantic_types
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type ExpectItem,
-  type ExpectsBlock, type ExpectsFile, type Extendable, type ExtendableKind,
-  type Field, type Literal, type Struct, type TypeAlias,
+  type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
+  type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
+  type ExtendableKind, type Field, type Literal, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -39,12 +39,27 @@ pub fn parse_blueprints_file(
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),
   )
-  let filtered = filter_whitespace_comments(tokens)
+  let filtered = filter_whitespace(tokens)
   let state = init_state(filtered)
-  use #(type_aliases, state) <- result.try(parse_type_aliases(state))
-  use #(extendables, state) <- result.try(parse_extendables(state))
-  use #(blocks, _state) <- result.try(parse_blueprints_blocks(state))
-  Ok(ast.BlueprintsFile(type_aliases:, extendables:, blocks:))
+  let #(pending, state) = consume_comments(state)
+  use #(type_aliases, pending, state) <- result.try(parse_type_aliases(
+    state,
+    pending,
+  ))
+  use #(extendables, pending, state) <- result.try(parse_extendables(
+    state,
+    pending,
+  ))
+  use #(blocks, pending, _state) <- result.try(parse_blueprints_blocks(
+    state,
+    pending,
+  ))
+  Ok(ast.BlueprintsFile(
+    type_aliases:,
+    extendables:,
+    blocks:,
+    trailing_comments: pending,
+  ))
 }
 
 /// Parses an expects file from source text.
@@ -53,26 +68,55 @@ pub fn parse_expects_file(source: String) -> Result(ExpectsFile, ParserError) {
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),
   )
-  let filtered = filter_whitespace_comments(tokens)
+  let filtered = filter_whitespace(tokens)
   let state = init_state(filtered)
-  use #(extendables, state) <- result.try(parse_extendables(state))
-  use #(blocks, _state) <- result.try(parse_expects_blocks(state))
-  Ok(ast.ExpectsFile(extendables:, blocks:))
+  let #(pending, state) = consume_comments(state)
+  use #(extendables, pending, state) <- result.try(parse_extendables(
+    state,
+    pending,
+  ))
+  use #(blocks, pending, _state) <- result.try(parse_expects_blocks(
+    state,
+    pending,
+  ))
+  Ok(ast.ExpectsFile(
+    extendables:,
+    blocks:,
+    trailing_comments: pending,
+  ))
 }
 
-/// Filter out whitespace and comment tokens.
-fn filter_whitespace_comments(
+/// Filter out whitespace tokens (keep comments in stream).
+fn filter_whitespace(
   tokens: List(PositionedToken),
 ) -> List(PositionedToken) {
   list.filter(tokens, fn(ptok) {
     case ptok {
       token.PositionedToken(token.WhitespaceNewline, _, _)
-      | token.PositionedToken(token.WhitespaceIndent(_), _, _)
-      | token.PositionedToken(token.CommentLine(_), _, _)
-      | token.PositionedToken(token.CommentSection(_), _, _) -> False
+      | token.PositionedToken(token.WhitespaceIndent(_), _, _) -> False
       _ -> True
     }
   })
+}
+
+/// Consume consecutive comment tokens from the stream, returning them as Comment list.
+fn consume_comments(
+  state: ParserState,
+) -> #(List(Comment), ParserState) {
+  consume_comments_loop(state, [])
+}
+
+fn consume_comments_loop(
+  state: ParserState,
+  acc: List(Comment),
+) -> #(List(Comment), ParserState) {
+  case peek(state) {
+    token.CommentLine(text) ->
+      consume_comments_loop(advance(state), [ast.LineComment(text), ..acc])
+    token.CommentSection(text) ->
+      consume_comments_loop(advance(state), [ast.SectionComment(text), ..acc])
+    _ -> #(list.reverse(acc), state)
+  }
 }
 
 /// Initialize parser state from a list of positioned tokens.
@@ -144,26 +188,33 @@ fn expect(
 /// Type alias syntax: _name (Type): <refinement_type>
 fn parse_type_aliases(
   state: ParserState,
-) -> Result(#(List(TypeAlias), ParserState), ParserError) {
-  parse_type_aliases_loop(state, [])
+  pending: List(Comment),
+) -> Result(#(List(TypeAlias), List(Comment), ParserState), ParserError) {
+  parse_type_aliases_loop(state, [], pending)
 }
 
 fn parse_type_aliases_loop(
   state: ParserState,
   acc: List(TypeAlias),
-) -> Result(#(List(TypeAlias), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(#(List(TypeAlias), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.Identifier(name) -> {
       // Check if this is a type alias by peeking ahead for (Type)
       case is_type_alias(state) {
         True -> {
-          use #(type_alias, state) <- result.try(parse_type_alias(state, name))
-          parse_type_aliases_loop(state, [type_alias, ..acc])
+          use #(type_alias, state) <- result.try(parse_type_alias(
+            state,
+            name,
+            pending,
+          ))
+          let #(next_pending, state) = consume_comments(state)
+          parse_type_aliases_loop(state, [type_alias, ..acc], next_pending)
         }
-        False -> Ok(#(list.reverse(acc), state))
+        False -> Ok(#(list.reverse(acc), pending, state))
       }
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 
@@ -184,6 +235,7 @@ fn is_type_alias(state: ParserState) -> Bool {
 fn parse_type_alias(
   state: ParserState,
   name: String,
+  leading_comments: List(Comment),
 ) -> Result(#(TypeAlias, ParserState), ParserError) {
   // Validate type alias name - must be more than just underscore
   case name {
@@ -205,7 +257,7 @@ fn parse_type_alias(
           use state <- result.try(expect(state, token.SymbolColon, ":"))
           // Parse the refinement type - must be a refined primitive type
           use #(type_, state) <- result.try(parse_type(state))
-          Ok(#(ast.TypeAlias(name:, type_:), state))
+          Ok(#(ast.TypeAlias(name:, type_:, leading_comments:), state))
         }
         tok ->
           Error(parser_error.UnexpectedToken(
@@ -226,26 +278,34 @@ fn parse_type_alias(
 /// Parse zero or more extendables at file start.
 fn parse_extendables(
   state: ParserState,
-) -> Result(#(List(Extendable), ParserState), ParserError) {
-  parse_extendables_loop(state, [])
+  pending: List(Comment),
+) -> Result(#(List(Extendable), List(Comment), ParserState), ParserError) {
+  parse_extendables_loop(state, [], pending)
 }
 
 fn parse_extendables_loop(
   state: ParserState,
   acc: List(Extendable),
-) -> Result(#(List(Extendable), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(#(List(Extendable), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.Identifier(name) -> {
-      use #(extendable, state) <- result.try(parse_extendable(state, name))
-      parse_extendables_loop(state, [extendable, ..acc])
+      use #(extendable, state) <- result.try(parse_extendable(
+        state,
+        name,
+        pending,
+      ))
+      let #(next_pending, state) = consume_comments(state)
+      parse_extendables_loop(state, [extendable, ..acc], next_pending)
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 
 fn parse_extendable(
   state: ParserState,
   name: String,
+  leading_comments: List(Comment),
 ) -> Result(#(Extendable, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
@@ -257,7 +317,7 @@ fn parse_extendable(
     ast.ExtendableRequires -> parse_type_struct(state)
     ast.ExtendableProvides -> parse_literal_struct(state)
   })
-  Ok(#(ast.Extendable(name:, kind:, body:), state))
+  Ok(#(ast.Extendable(name:, kind:, body:, leading_comments:), state))
 }
 
 fn parse_extendable_kind(
@@ -283,20 +343,29 @@ fn parse_extendable_kind(
 /// Parse zero or more blueprints blocks.
 fn parse_blueprints_blocks(
   state: ParserState,
-) -> Result(#(List(BlueprintsBlock), ParserState), ParserError) {
-  parse_blueprints_blocks_loop(state, [])
+  pending: List(Comment),
+) -> Result(
+  #(List(BlueprintsBlock), List(Comment), ParserState),
+  ParserError,
+) {
+  parse_blueprints_blocks_loop(state, [], pending)
 }
 
 fn parse_blueprints_blocks_loop(
   state: ParserState,
   acc: List(BlueprintsBlock),
-) -> Result(#(List(BlueprintsBlock), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(
+  #(List(BlueprintsBlock), List(Comment), ParserState),
+  ParserError,
+) {
   case peek(state) {
     token.KeywordBlueprints -> {
-      use #(block, state) <- result.try(parse_blueprints_block(state))
-      parse_blueprints_blocks_loop(state, [block, ..acc])
+      use #(block, state) <- result.try(parse_blueprints_block(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_blueprints_blocks_loop(state, [block, ..acc], next_pending)
     }
-    token.EOF -> Ok(#(list.reverse(acc), state))
+    token.EOF -> Ok(#(list.reverse(acc), pending, state))
     tok ->
       Error(parser_error.UnexpectedToken(
         "Blueprints",
@@ -309,12 +378,13 @@ fn parse_blueprints_blocks_loop(
 
 fn parse_blueprints_block(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(BlueprintsBlock, ParserState), ParserError) {
   use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(artifacts, state) <- result.try(parse_artifacts(state))
   use #(items, state) <- result.try(parse_blueprint_items(state))
-  Ok(#(ast.BlueprintsBlock(artifacts:, items:), state))
+  Ok(#(ast.BlueprintsBlock(artifacts:, items:, leading_comments:), state))
 }
 
 fn parse_artifacts(
@@ -363,17 +433,20 @@ fn parse_artifacts_loop(
 fn parse_blueprint_items(
   state: ParserState,
 ) -> Result(#(List(BlueprintItem), ParserState), ParserError) {
-  parse_blueprint_items_loop(state, [])
+  let #(pending, state) = consume_comments(state)
+  parse_blueprint_items_loop(state, [], pending)
 }
 
 fn parse_blueprint_items_loop(
   state: ParserState,
   acc: List(BlueprintItem),
+  pending: List(Comment),
 ) -> Result(#(List(BlueprintItem), ParserState), ParserError) {
   case peek(state) {
     token.SymbolStar -> {
-      use #(item, state) <- result.try(parse_blueprint_item(state))
-      parse_blueprint_items_loop(state, [item, ..acc])
+      use #(item, state) <- result.try(parse_blueprint_item(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_blueprint_items_loop(state, [item, ..acc], next_pending)
     }
     _ -> Ok(#(list.reverse(acc), state))
   }
@@ -381,6 +454,7 @@ fn parse_blueprint_items_loop(
 
 fn parse_blueprint_item(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(BlueprintItem, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolStar, "*"))
   use #(name, state) <- result.try(parse_string_literal(state))
@@ -390,7 +464,10 @@ fn parse_blueprint_item(
   use #(requires, state) <- result.try(parse_type_struct(state))
   use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
   use #(provides, state) <- result.try(parse_literal_struct(state))
-  Ok(#(ast.BlueprintItem(name:, extends:, requires:, provides:), state))
+  Ok(#(
+    ast.BlueprintItem(name:, extends:, requires:, provides:, leading_comments:),
+    state,
+  ))
 }
 
 // =============================================================================
@@ -400,20 +477,23 @@ fn parse_blueprint_item(
 /// Parse zero or more expects blocks.
 fn parse_expects_blocks(
   state: ParserState,
-) -> Result(#(List(ExpectsBlock), ParserState), ParserError) {
-  parse_expects_blocks_loop(state, [])
+  pending: List(Comment),
+) -> Result(#(List(ExpectsBlock), List(Comment), ParserState), ParserError) {
+  parse_expects_blocks_loop(state, [], pending)
 }
 
 fn parse_expects_blocks_loop(
   state: ParserState,
   acc: List(ExpectsBlock),
-) -> Result(#(List(ExpectsBlock), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(#(List(ExpectsBlock), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.KeywordExpectations -> {
-      use #(block, state) <- result.try(parse_expects_block(state))
-      parse_expects_blocks_loop(state, [block, ..acc])
+      use #(block, state) <- result.try(parse_expects_block(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_expects_blocks_loop(state, [block, ..acc], next_pending)
     }
-    token.EOF -> Ok(#(list.reverse(acc), state))
+    token.EOF -> Ok(#(list.reverse(acc), pending, state))
     tok ->
       Error(parser_error.UnexpectedToken(
         "Expectations",
@@ -426,6 +506,7 @@ fn parse_expects_blocks_loop(
 
 fn parse_expects_block(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(ExpectsBlock, ParserState), ParserError) {
   use state <- result.try(expect(
     state,
@@ -435,23 +516,26 @@ fn parse_expects_block(
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(blueprint, state) <- result.try(parse_string_literal(state))
   use #(items, state) <- result.try(parse_expect_items(state))
-  Ok(#(ast.ExpectsBlock(blueprint:, items:), state))
+  Ok(#(ast.ExpectsBlock(blueprint:, items:, leading_comments:), state))
 }
 
 fn parse_expect_items(
   state: ParserState,
 ) -> Result(#(List(ExpectItem), ParserState), ParserError) {
-  parse_expect_items_loop(state, [])
+  let #(pending, state) = consume_comments(state)
+  parse_expect_items_loop(state, [], pending)
 }
 
 fn parse_expect_items_loop(
   state: ParserState,
   acc: List(ExpectItem),
+  pending: List(Comment),
 ) -> Result(#(List(ExpectItem), ParserState), ParserError) {
   case peek(state) {
     token.SymbolStar -> {
-      use #(item, state) <- result.try(parse_expect_item(state))
-      parse_expect_items_loop(state, [item, ..acc])
+      use #(item, state) <- result.try(parse_expect_item(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_expect_items_loop(state, [item, ..acc], next_pending)
     }
     _ -> Ok(#(list.reverse(acc), state))
   }
@@ -459,6 +543,7 @@ fn parse_expect_items_loop(
 
 fn parse_expect_item(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(ExpectItem, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolStar, "*"))
   use #(name, state) <- result.try(parse_string_literal(state))
@@ -475,7 +560,7 @@ fn parse_expect_item(
     _ -> {
       use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
       use #(provides, state) <- result.try(parse_literal_struct(state))
-      Ok(#(ast.ExpectItem(name:, extends:, provides:), state))
+      Ok(#(ast.ExpectItem(name:, extends:, provides:, leading_comments:), state))
     }
   }
 }
@@ -566,19 +651,28 @@ fn parse_type_struct(
   state: ParserState,
 ) -> Result(#(Struct, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
-  use #(fields, state) <- result.try(parse_type_fields(state))
+  let #(pending, state) = consume_comments(state)
+  use #(fields, trailing_comments, state) <- result.try(parse_type_fields(
+    state,
+    pending,
+  ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-  Ok(#(ast.Struct(fields:), state))
+  Ok(#(ast.Struct(fields:, trailing_comments:), state))
 }
 
 fn parse_type_fields(
   state: ParserState,
-) -> Result(#(List(Field), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(
+  #(List(Field), List(Comment), ParserState),
+  ParserError,
+) {
   case peek(state) {
-    token.SymbolRightBrace -> Ok(#([], state))
+    token.SymbolRightBrace -> Ok(#([], pending, state))
     token.Identifier(_) -> {
-      use #(field, state) <- result.try(parse_type_field(state))
-      parse_type_fields_loop(state, [field])
+      use #(field, state) <- result.try(parse_type_field(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_type_fields_loop(state, [field], next_pending)
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -596,32 +690,46 @@ fn parse_type_fields(
 fn parse_type_fields_loop(
   state: ParserState,
   acc: List(Field),
-) -> Result(#(List(Field), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(
+  #(List(Field), List(Comment), ParserState),
+  ParserError,
+) {
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
+      let #(next_pending, state) = consume_comments(state)
       // Allow trailing comma
       case peek(state) {
-        token.SymbolRightBrace -> Ok(#(list.reverse(acc), state))
+        token.SymbolRightBrace ->
+          Ok(#(list.reverse(acc), next_pending, state))
         _ -> {
-          use #(field, state) <- result.try(parse_type_field(state))
-          parse_type_fields_loop(state, [field, ..acc])
+          use #(field, state) <- result.try(parse_type_field(
+            state,
+            next_pending,
+          ))
+          let #(next_pending, state) = consume_comments(state)
+          parse_type_fields_loop(state, [field, ..acc], next_pending)
         }
       }
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 
 fn parse_type_field(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(Field, ParserState), ParserError) {
   case peek(state) {
     token.Identifier(name) -> {
       let state = advance(state)
       use state <- result.try(expect(state, token.SymbolColon, ":"))
       use #(type_, state) <- result.try(parse_type(state))
-      Ok(#(ast.Field(name:, value: ast.TypeValue(type_)), state))
+      Ok(#(
+        ast.Field(name:, value: ast.TypeValue(type_), leading_comments:),
+        state,
+      ))
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -644,19 +752,27 @@ fn parse_literal_struct(
   state: ParserState,
 ) -> Result(#(Struct, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
-  use #(fields, state) <- result.try(parse_literal_fields(state))
+  let #(pending, state) = consume_comments(state)
+  use #(fields, trailing_comments, state) <- result.try(
+    parse_literal_fields(state, pending),
+  )
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-  Ok(#(ast.Struct(fields:), state))
+  Ok(#(ast.Struct(fields:, trailing_comments:), state))
 }
 
 fn parse_literal_fields(
   state: ParserState,
-) -> Result(#(List(Field), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(
+  #(List(Field), List(Comment), ParserState),
+  ParserError,
+) {
   case peek(state) {
-    token.SymbolRightBrace -> Ok(#([], state))
+    token.SymbolRightBrace -> Ok(#([], pending, state))
     token.Identifier(_) -> {
-      use #(field, state) <- result.try(parse_literal_field(state))
-      parse_literal_fields_loop(state, [field])
+      use #(field, state) <- result.try(parse_literal_field(state, pending))
+      let #(next_pending, state) = consume_comments(state)
+      parse_literal_fields_loop(state, [field], next_pending)
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -674,32 +790,46 @@ fn parse_literal_fields(
 fn parse_literal_fields_loop(
   state: ParserState,
   acc: List(Field),
-) -> Result(#(List(Field), ParserState), ParserError) {
+  pending: List(Comment),
+) -> Result(
+  #(List(Field), List(Comment), ParserState),
+  ParserError,
+) {
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
+      let #(next_pending, state) = consume_comments(state)
       // Allow trailing comma
       case peek(state) {
-        token.SymbolRightBrace -> Ok(#(list.reverse(acc), state))
+        token.SymbolRightBrace ->
+          Ok(#(list.reverse(acc), next_pending, state))
         _ -> {
-          use #(field, state) <- result.try(parse_literal_field(state))
-          parse_literal_fields_loop(state, [field, ..acc])
+          use #(field, state) <- result.try(parse_literal_field(
+            state,
+            next_pending,
+          ))
+          let #(next_pending, state) = consume_comments(state)
+          parse_literal_fields_loop(state, [field, ..acc], next_pending)
         }
       }
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 
 fn parse_literal_field(
   state: ParserState,
+  leading_comments: List(Comment),
 ) -> Result(#(Field, ParserState), ParserError) {
   case peek(state) {
     token.Identifier(name) -> {
       let state = advance(state)
       use state <- result.try(expect(state, token.SymbolColon, ":"))
       use #(literal, state) <- result.try(parse_literal(state))
-      Ok(#(ast.Field(name:, value: ast.LiteralValue(literal)), state))
+      Ok(#(
+        ast.Field(name:, value: ast.LiteralValue(literal), leading_comments:),
+        state,
+      ))
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -1153,7 +1283,10 @@ fn parse_literal_struct_value(
   state: ParserState,
 ) -> Result(#(Literal, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
-  use #(fields, state) <- result.try(parse_literal_fields(state))
+  let #(pending, state) = consume_comments(state)
+  use #(fields, _trailing_comments, state) <- result.try(
+    parse_literal_fields(state, pending),
+  )
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(ast.LiteralStruct(fields), state))
 }

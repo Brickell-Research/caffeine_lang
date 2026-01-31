@@ -2,6 +2,16 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 
 // =============================================================================
+// COMMENTS
+// =============================================================================
+
+/// A comment attached to an AST node.
+pub type Comment {
+  LineComment(text: String)
+  SectionComment(text: String)
+}
+
+// =============================================================================
 // FILE-LEVEL NODES
 // =============================================================================
 
@@ -12,6 +22,7 @@ pub type BlueprintsFile {
     type_aliases: List(TypeAlias),
     extendables: List(Extendable),
     blocks: List(BlueprintsBlock),
+    trailing_comments: List(Comment),
   )
 }
 
@@ -22,12 +33,16 @@ pub type BlueprintsFile {
 /// A type alias that defines a named, reusable refined type.
 /// Example: _env (Type): String { x | x in { prod, staging, dev } }
 pub type TypeAlias {
-  TypeAlias(name: String, type_: AcceptedTypes)
+  TypeAlias(name: String, type_: AcceptedTypes, leading_comments: List(Comment))
 }
 
 /// An expects file containing extendables and expects blocks.
 pub type ExpectsFile {
-  ExpectsFile(extendables: List(Extendable), blocks: List(ExpectsBlock))
+  ExpectsFile(
+    extendables: List(Extendable),
+    blocks: List(ExpectsBlock),
+    trailing_comments: List(Comment),
+  )
 }
 
 // =============================================================================
@@ -36,7 +51,12 @@ pub type ExpectsFile {
 
 /// An extendable block that can be inherited by blueprints or expectations.
 pub type Extendable {
-  Extendable(name: String, kind: ExtendableKind, body: Struct)
+  Extendable(
+    name: String,
+    kind: ExtendableKind,
+    body: Struct,
+    leading_comments: List(Comment),
+  )
 }
 
 /// The kind of extendable (Requires for types, Provides for values).
@@ -51,7 +71,11 @@ pub type ExtendableKind {
 
 /// A block of blueprints for one or more artifacts.
 pub type BlueprintsBlock {
-  BlueprintsBlock(artifacts: List(String), items: List(BlueprintItem))
+  BlueprintsBlock(
+    artifacts: List(String),
+    items: List(BlueprintItem),
+    leading_comments: List(Comment),
+  )
 }
 
 /// A single blueprint item with name, extends, requires, and provides.
@@ -61,6 +85,7 @@ pub type BlueprintItem {
     extends: List(String),
     requires: Struct,
     provides: Struct,
+    leading_comments: List(Comment),
   )
 }
 
@@ -70,12 +95,21 @@ pub type BlueprintItem {
 
 /// A block of expectations for a blueprint.
 pub type ExpectsBlock {
-  ExpectsBlock(blueprint: String, items: List(ExpectItem))
+  ExpectsBlock(
+    blueprint: String,
+    items: List(ExpectItem),
+    leading_comments: List(Comment),
+  )
 }
 
 /// A single expectation item with name, extends, and provides.
 pub type ExpectItem {
-  ExpectItem(name: String, extends: List(String), provides: Struct)
+  ExpectItem(
+    name: String,
+    extends: List(String),
+    provides: Struct,
+    leading_comments: List(Comment),
+  )
 }
 
 // =============================================================================
@@ -84,12 +118,12 @@ pub type ExpectItem {
 
 /// A struct containing a list of fields.
 pub type Struct {
-  Struct(fields: List(Field))
+  Struct(fields: List(Field), trailing_comments: List(Comment))
 }
 
 /// A field with a name and value (either a type or a literal).
 pub type Field {
-  Field(name: String, value: Value)
+  Field(name: String, value: Value, leading_comments: List(Comment))
 }
 
 /// A value in a field - either a type (in Requires) or a literal (in Provides).

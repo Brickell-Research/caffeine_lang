@@ -1,0 +1,13 @@
+## SLO Blueprints
+# This file defines SLO blueprints
+Blueprints for "SLO"
+  # The main API availability SLO
+  * "api_availability":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
+
+  ## Latency section
+  # Latency tracking
+  * "api_latency":
+    Requires { env: String }
+    Provides { vendor: "datadog" }

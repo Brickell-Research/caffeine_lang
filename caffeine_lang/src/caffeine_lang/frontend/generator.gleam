@@ -151,7 +151,7 @@ fn merge_blueprint_extends(
     |> list.append(item.provides.fields)
     |> dedupe_fields
 
-  #(ast.Struct(requires_fields), ast.Struct(provides_fields))
+  #(ast.Struct(requires_fields, trailing_comments: []), ast.Struct(provides_fields, trailing_comments: []))
 }
 
 /// Merges extended fields into an expect item's provides.
@@ -171,7 +171,7 @@ fn merge_expect_extends(
     |> list.append(item.provides.fields)
     |> dedupe_fields
 
-  ast.Struct(provides_fields)
+  ast.Struct(provides_fields, trailing_comments: [])
 }
 
 /// Removes duplicate field names, keeping the last occurrence (allows overrides).
