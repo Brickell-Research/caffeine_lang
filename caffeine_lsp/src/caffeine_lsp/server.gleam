@@ -38,6 +38,10 @@ fn write_stdout(data: String) -> Nil
 @external(javascript, "../caffeine_lsp_ffi.mjs", "write_stderr")
 fn write_stderr(data: String) -> Nil
 
+@external(erlang, "caffeine_lsp_ffi", "rescue")
+@external(javascript, "../caffeine_lsp_ffi.mjs", "rescue")
+fn rescue(f: fn() -> a) -> Result(a, Nil)
+
 // --- Public API ---
 
 pub fn run() -> Nil {
@@ -195,6 +199,9 @@ fn dispatch(
       #(True, new_docs)
     }
     Ok("textDocument/didSave") -> #(True, docs)
+    Ok("$/cancelRequest") -> #(True, docs)
+    Ok("$/setTrace") -> #(True, docs)
+    Ok("textDocument/willSave") -> #(True, docs)
     Ok("textDocument/formatting") -> {
       handle_formatting(dyn, id, docs)
       #(True, docs)
@@ -226,9 +233,19 @@ fn dispatch(
     Ok("exit") -> #(False, docs)
     Ok(other) -> {
       log("Unhandled method: " <> other)
+      case id {
+        option.Some(_) -> send_response(id, json.null())
+        option.None -> Nil
+      }
       #(True, docs)
     }
-    Error(_) -> #(True, docs)
+    Error(_) -> {
+      case id {
+        option.Some(_) -> send_response(id, json.null())
+        option.None -> Nil
+      }
+      #(True, docs)
+    }
   }
 }
 
@@ -420,8 +437,10 @@ fn handle_code_action(dyn: Dynamic, id: Option(Int)) -> Nil {
   let uri_result = decode.run(dyn, uri_from_params())
   case uri_result {
     Ok(uri) -> {
-      let actions = code_actions.get_code_actions(dyn, uri)
-      send_response(id, json.preprocessed_array(actions))
+      case rescue(fn() { code_actions.get_code_actions(dyn, uri) }) {
+        Ok(actions) -> send_response(id, json.preprocessed_array(actions))
+        Error(_) -> send_response(id, json.preprocessed_array([]))
+      }
     }
     Error(_) -> send_response(id, json.preprocessed_array([]))
   }
@@ -444,9 +463,9 @@ fn handle_hover(
     Ok(uri), Ok(#(line, character)) -> {
       case dict.get(docs, uri) {
         Ok(text) -> {
-          case hover.get_hover(text, line, character) {
-            option.Some(hover_json) -> send_response(id, hover_json)
-            option.None -> send_response(id, json.null())
+          case rescue(fn() { hover.get_hover(text, line, character) }) {
+            Ok(option.Some(hover_json)) -> send_response(id, hover_json)
+            _ -> send_response(id, json.null())
           }
         }
         Error(_) -> send_response(id, json.null())
@@ -463,7 +482,10 @@ fn handle_shutdown(id: Option(Int)) -> Nil {
 // --- Diagnostics ---
 
 fn publish_diagnostics(uri: String, text: String) -> Nil {
-  let diags = diagnostics.get_diagnostics(text)
+  let diags = case rescue(fn() { diagnostics.get_diagnostics(text) }) {
+    Ok(d) -> d
+    Error(_) -> []
+  }
   let diags_json =
     json.preprocessed_array(
       list.map(diags, fn(d) { diagnostic_to_json(d) }),
@@ -551,7 +573,11 @@ fn with_document(
   case decode.run(dyn, uri_from_params()) {
     Ok(uri) ->
       case dict.get(docs, uri) {
-        Ok(text) -> send_response(id, handler(text))
+        Ok(text) ->
+          case rescue(fn() { handler(text) }) {
+            Ok(result) -> send_response(id, result)
+            Error(_) -> send_response(id, on_error)
+          }
         Error(_) -> send_response(id, on_error)
       }
     Error(_) -> send_response(id, on_error)

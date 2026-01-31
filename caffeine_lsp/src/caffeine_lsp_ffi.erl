@@ -1,5 +1,5 @@
 -module(caffeine_lsp_ffi).
--export([init_io/0, read_line/0, read_bytes/1, write_stdout/1, write_stderr/1]).
+-export([init_io/0, read_line/0, read_bytes/1, write_stdout/1, write_stderr/1, rescue/1]).
 
 %% Set stdin/stdout to binary mode for correct byte-level reads.
 init_io() ->
@@ -32,3 +32,13 @@ write_stdout(Data) ->
 write_stderr(Data) ->
     io:put_chars(standard_error, [Data, "\n"]),
     nil.
+
+%% Safely call a zero-arg function, catching crashes.
+rescue(Fn) ->
+    try
+        {ok, Fn()}
+    catch
+        _:Reason ->
+            io:put_chars(standard_error, [<<"LSP handler crashed: ">>, io_lib:format("~p", [Reason]), <<"\n">>]),
+            {error, nil}
+    end.

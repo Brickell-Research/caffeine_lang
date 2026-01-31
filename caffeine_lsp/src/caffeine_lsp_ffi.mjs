@@ -44,3 +44,14 @@ export function write_stderr(data) {
   Deno.stderr.writeSync(new TextEncoder().encode(data + "\n"));
   return undefined;
 }
+
+export function rescue(fn) {
+  try {
+    return new Ok(fn());
+  } catch (e) {
+    Deno.stderr.writeSync(
+      new TextEncoder().encode("LSP handler crashed: " + String(e) + "\n"),
+    );
+    return new Error(undefined);
+  }
+}
