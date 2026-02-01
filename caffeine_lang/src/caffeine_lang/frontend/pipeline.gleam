@@ -1,20 +1,21 @@
-/// Frontend pipeline for compiling .caffeine source to JSON.
-/// This module orchestrates the tokenizer, parser, validator, and generator
-/// to transform .caffeine source into JSON for the compiler backend.
+/// Frontend pipeline for compiling .caffeine source files.
+/// Orchestrates the tokenizer, parser, validator, and generator
+/// to transform .caffeine source into Blueprint and Expectation types.
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/source_file.{type SourceFile}
 import caffeine_lang/frontend/generator
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
 import caffeine_lang/frontend/validator
-import gleam/json
+import caffeine_lang/parser/blueprints.{type Blueprint}
+import caffeine_lang/parser/expectations.{type Expectation}
 import gleam/result
 
-/// Compiles a blueprints .caffeine source to JSON string.
+/// Compiles a blueprints .caffeine source to a list of blueprints.
 @internal
 pub fn compile_blueprints(
   source: SourceFile,
-) -> Result(String, CompilationError) {
+) -> Result(List(Blueprint), CompilationError) {
   use ast <- result.try(
     parser.parse_blueprints_file(source.content)
     |> result.map_error(fn(err) {
@@ -27,12 +28,14 @@ pub fn compile_blueprints(
       validator_error_to_compilation_error(err, source.path)
     }),
   )
-  Ok(json.to_string(generator.generate_blueprints_json(validated)))
+  Ok(generator.generate_blueprints(validated))
 }
 
-/// Compiles an expects .caffeine source to JSON string.
+/// Compiles an expects .caffeine source to a list of expectations.
 @internal
-pub fn compile_expects(source: SourceFile) -> Result(String, CompilationError) {
+pub fn compile_expects(
+  source: SourceFile,
+) -> Result(List(Expectation), CompilationError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
     |> result.map_error(fn(err) {
@@ -45,7 +48,7 @@ pub fn compile_expects(source: SourceFile) -> Result(String, CompilationError) {
       validator_error_to_compilation_error(err, source.path)
     }),
   )
-  Ok(json.to_string(generator.generate_expects_json(validated)))
+  Ok(generator.generate_expectations(validated))
 }
 
 fn parser_error_to_compilation_error(
