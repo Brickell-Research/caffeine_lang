@@ -60,8 +60,14 @@ fn make_ir_with_dependencies(
 ) -> semantic_analyzer.IntermediateRepresentation {
   let relations_value =
     dynamic.properties([
-      #(dynamic.string("hard"), dynamic.list(hard_deps |> list.map(dynamic.string))),
-      #(dynamic.string("soft"), dynamic.list(soft_deps |> list.map(dynamic.string))),
+      #(
+        dynamic.string("hard"),
+        dynamic.list(hard_deps |> list.map(dynamic.string)),
+      ),
+      #(
+        dynamic.string("soft"),
+        dynamic.list(soft_deps |> list.map(dynamic.string)),
+      ),
     ])
 
   semantic_analyzer.IntermediateRepresentation(
@@ -102,6 +108,156 @@ fn make_ir_with_dependencies(
       ),
     ],
     vendor: option.Some(vendor.Datadog),
+  )
+}
+
+// Helper to create an IR with dependency relations and a custom threshold
+fn make_ir_with_dependencies_and_threshold(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+  hard_deps: List(String),
+  soft_deps: List(String),
+  threshold: Float,
+) -> semantic_analyzer.IntermediateRepresentation {
+  let relations_value =
+    dynamic.properties([
+      #(
+        dynamic.string("hard"),
+        dynamic.list(hard_deps |> list.map(dynamic.string)),
+      ),
+      #(
+        dynamic.string("soft"),
+        dynamic.list(soft_deps |> list.map(dynamic.string)),
+      ),
+    ])
+
+  semantic_analyzer.IntermediateRepresentation(
+    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+      friendly_label: name,
+      org_name: org,
+      service_name: service,
+      blueprint_name: "test_blueprint",
+      team_name: team,
+      misc: dict.new(),
+    ),
+    unique_identifier: org <> "_" <> service <> "_" <> name,
+    artifact_refs: ["SLO", "DependencyRelations"],
+    values: [
+      helpers.ValueTuple(
+        "vendor",
+        accepted_types.PrimitiveType(primitive_types.String),
+        dynamic.string("datadog"),
+      ),
+      helpers.ValueTuple(
+        "threshold",
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        dynamic.float(threshold),
+      ),
+      helpers.ValueTuple(
+        "relations",
+        accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        )),
+        relations_value,
+      ),
+    ],
+    vendor: option.Some(vendor.Datadog),
+  )
+}
+
+// Helper to create a minimal SLO IR with a custom threshold
+fn make_slo_ir_with_threshold(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+  threshold: Float,
+) -> semantic_analyzer.IntermediateRepresentation {
+  semantic_analyzer.IntermediateRepresentation(
+    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+      friendly_label: name,
+      org_name: org,
+      service_name: service,
+      blueprint_name: "test_blueprint",
+      team_name: team,
+      misc: dict.new(),
+    ),
+    unique_identifier: org <> "_" <> service <> "_" <> name,
+    artifact_refs: ["SLO"],
+    values: [
+      helpers.ValueTuple(
+        "vendor",
+        accepted_types.PrimitiveType(primitive_types.String),
+        dynamic.string("datadog"),
+      ),
+      helpers.ValueTuple(
+        "threshold",
+        accepted_types.PrimitiveType(primitive_types.NumericType(
+          numeric_types.Float,
+        )),
+        dynamic.float(threshold),
+      ),
+    ],
+    vendor: option.Some(vendor.Datadog),
+  )
+}
+
+// Helper to create an IR with DependencyRelations only (no SLO)
+fn make_deps_only_ir(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+  hard_deps: List(String),
+  soft_deps: List(String),
+) -> semantic_analyzer.IntermediateRepresentation {
+  let relations_value =
+    dynamic.properties([
+      #(
+        dynamic.string("hard"),
+        dynamic.list(hard_deps |> list.map(dynamic.string)),
+      ),
+      #(
+        dynamic.string("soft"),
+        dynamic.list(soft_deps |> list.map(dynamic.string)),
+      ),
+    ])
+
+  semantic_analyzer.IntermediateRepresentation(
+    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+      friendly_label: name,
+      org_name: org,
+      service_name: service,
+      blueprint_name: "test_blueprint",
+      team_name: team,
+      misc: dict.new(),
+    ),
+    unique_identifier: org <> "_" <> service <> "_" <> name,
+    artifact_refs: ["DependencyRelations"],
+    values: [
+      helpers.ValueTuple(
+        "relations",
+        accepted_types.CollectionType(collection_types.Dict(
+          accepted_types.PrimitiveType(primitive_types.String),
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
+        )),
+        relations_value,
+      ),
+    ],
+    vendor: option.None,
   )
 }
 
@@ -280,7 +436,10 @@ pub fn validate_dependency_relations_test() {
           "platform",
           "auth",
           "login_slo",
-          ["acme.platform.db.availability_slo", "acme.platform.db.availability_slo"],
+          [
+            "acme.platform.db.availability_slo",
+            "acme.platform.db.availability_slo",
+          ],
           [],
         ),
       ],
@@ -326,7 +485,10 @@ pub fn validate_dependency_relations_test() {
 pub fn parse_dependency_path_test() {
   [
     // Valid 4-part path
-    #("acme.platform.auth.login_slo", Ok(#("acme", "platform", "auth", "login_slo"))),
+    #(
+      "acme.platform.auth.login_slo",
+      Ok(#("acme", "platform", "auth", "login_slo")),
+    ),
     // Too few parts
     #("acme.platform.auth", Error(Nil)),
     #("acme.platform", Error(Nil)),
@@ -340,6 +502,336 @@ pub fn parse_dependency_path_test() {
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     dependency_validator.parse_dependency_path(input)
+  })
+}
+
+// ==== detect_cycles (via validate_dependency_relations) ====
+// * ✅ no cycle - linear chain A -> B -> C
+// * ✅ no cycle - diamond A -> B, A -> C, B -> D, C -> D
+// * ❌ 2-node cycle: A -> B -> A
+// * ❌ 3-node cycle: A -> B -> C -> A
+// * ❌ cycle across relation types: A ->hard B, B ->soft A
+pub fn detect_cycles_test() {
+  // No cycle: linear chain A -> B -> C
+  [
+    #(
+      [
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "a",
+          "slo",
+          ["acme.platform.b.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "b",
+          "slo",
+          ["acme.platform.c.slo"],
+          [],
+        ),
+        make_slo_ir("acme", "platform", "c", "slo"),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // No cycle: diamond A -> B, A -> C, B -> D, C -> D
+  [
+    #(
+      [
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "a",
+          "slo",
+          ["acme.platform.b.slo", "acme.platform.c.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "b",
+          "slo",
+          ["acme.platform.d.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "c",
+          "slo",
+          ["acme.platform.d.slo"],
+          [],
+        ),
+        make_slo_ir("acme", "platform", "d", "slo"),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // 2-node cycle: A -> B -> A
+  [
+    #(
+      [
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "a",
+          "slo",
+          ["acme.platform.b.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "b",
+          "slo",
+          ["acme.platform.a.slo"],
+          [],
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.a.slo",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // 3-node cycle: A -> B -> C -> A
+  [
+    #(
+      [
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "a",
+          "slo",
+          ["acme.platform.b.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "b",
+          "slo",
+          ["acme.platform.c.slo"],
+          [],
+        ),
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "c",
+          "slo",
+          ["acme.platform.a.slo"],
+          [],
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.c.slo -> acme.platform.a.slo",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // Cycle across relation types: A ->hard B, B ->soft A
+  [
+    #(
+      [
+        make_ir_with_dependencies(
+          "acme",
+          "platform",
+          "a",
+          "slo",
+          ["acme.platform.b.slo"],
+          [],
+        ),
+        make_ir_with_dependencies("acme", "platform", "b", "slo", [], [
+          "acme.platform.a.slo",
+        ]),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.a.slo",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+}
+
+// ==== validate_hard_dependency_thresholds (via validate_dependency_relations) ====
+// * ✅ source threshold <= target threshold (99.9 <= 99.99)
+// * ✅ equal thresholds (99.9 == 99.9)
+// * ❌ source threshold > target threshold (99.99 > 99.9)
+// * ✅ soft dependencies skip threshold check
+// * ✅ skip when source has no SLO artifact
+// * ✅ skip when target has no SLO artifact
+pub fn validate_hard_dependency_thresholds_test() {
+  // Source threshold <= target threshold (99.9 <= 99.99)
+  [
+    #(
+      [
+        make_ir_with_dependencies_and_threshold(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.infra.db.query_slo"],
+          [],
+          99.9,
+        ),
+        make_slo_ir_with_threshold("acme", "infra", "db", "query_slo", 99.99),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // Equal thresholds (99.9 == 99.9)
+  [
+    #(
+      [
+        make_ir_with_dependencies_and_threshold(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.infra.db.query_slo"],
+          [],
+          99.9,
+        ),
+        make_slo_ir_with_threshold("acme", "infra", "db", "query_slo", 99.9),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // Source threshold > target threshold (99.99 > 99.9) - ERROR
+  [
+    #(
+      [
+        make_ir_with_dependencies_and_threshold(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.infra.db.query_slo"],
+          [],
+          99.99,
+        ),
+        make_slo_ir_with_threshold("acme", "infra", "db", "query_slo", 99.9),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) cannot exceed its hard dependency 'acme.infra.db.query_slo' (threshold: 99.9)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // Soft dependencies skip threshold check
+  [
+    #(
+      [
+        make_ir_with_dependencies_and_threshold(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          [],
+          ["acme.infra.db.query_slo"],
+          99.99,
+        ),
+        make_slo_ir_with_threshold("acme", "infra", "db", "query_slo", 99.9),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // Skip when source has no SLO artifact
+  [
+    #(
+      [
+        make_deps_only_ir(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.infra.db.query_slo"],
+          [],
+        ),
+        make_slo_ir_with_threshold("acme", "infra", "db", "query_slo", 99.9),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
+  })
+
+  // Skip when target has no SLO artifact
+  [
+    #(
+      [
+        make_ir_with_dependencies_and_threshold(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          ["acme.infra.db.query_slo"],
+          [],
+          99.99,
+        ),
+        make_deps_only_ir("acme", "infra", "db", "query_slo", [], []),
+      ],
+      Ok(True),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    case dependency_validator.validate_dependency_relations(irs) {
+      Ok(_) -> Ok(True)
+      Error(err) -> Error(err)
+    }
   })
 }
 

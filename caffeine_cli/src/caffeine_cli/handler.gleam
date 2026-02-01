@@ -149,21 +149,48 @@ fn compile(
 
     case output_path {
       option.None -> {
-        log(log_level, output)
+        log(log_level, output.terraform)
+        case output.dependency_graph {
+          option.Some(graph) -> {
+            log(log_level, "")
+            log(log_level, "--- Dependency Graph (Mermaid) ---")
+            log(log_level, graph)
+          }
+          option.None -> Nil
+        }
         Ok(Nil)
       }
       option.Some(path) -> {
-        let output_file = case simplifile.is_directory(path) {
-          Ok(True) -> path <> "/main.tf"
-          _ -> path
+        let #(output_file, output_dir) = case simplifile.is_directory(path) {
+          Ok(True) -> #(path <> "/main.tf", path)
+          _ -> #(path, directory_of(path))
         }
-        simplifile.write(output_file, output)
-        |> result.map(fn(_) {
-          log(log_level, "Successfully compiled to " <> output_file)
-        })
-        |> result.map_error(fn(err) {
-          "Error writing output file: " <> string.inspect(err)
-        })
+        use _ <- result.try(
+          simplifile.write(output_file, output.terraform)
+          |> result.map_error(fn(err) {
+            "Error writing output file: " <> string.inspect(err)
+          }),
+        )
+        log(log_level, "Successfully compiled to " <> output_file)
+
+        // Write dependency graph if present
+        case output.dependency_graph {
+          option.Some(graph) -> {
+            let graph_file = output_dir <> "/dependency_graph.mmd"
+            case simplifile.write(graph_file, graph) {
+              Ok(_) ->
+                log(log_level, "Dependency graph written to " <> graph_file)
+              Error(err) ->
+                log(
+                  log_level,
+                  "Warning: could not write dependency graph: "
+                    <> string.inspect(err),
+                )
+            }
+          }
+          option.None -> Nil
+        }
+        Ok(Nil)
       }
     }
   }
@@ -230,14 +257,22 @@ fn format_single_file(
 fn read_file(path: String) -> Result(String, String) {
   simplifile.read(path)
   |> result.map_error(fn(err) {
-    "Error reading file: " <> simplifile.describe_error(err) <> " (" <> path <> ")"
+    "Error reading file: "
+    <> simplifile.describe_error(err)
+    <> " ("
+    <> path
+    <> ")"
   })
 }
 
 fn write_file(path: String, content: String) -> Result(Nil, String) {
   simplifile.write(path, content)
   |> result.map_error(fn(err) {
-    "Error writing file: " <> simplifile.describe_error(err) <> " (" <> path <> ")"
+    "Error writing file: "
+    <> simplifile.describe_error(err)
+    <> " ("
+    <> path
+    <> ")"
   })
 }
 
@@ -271,10 +306,7 @@ fn print_usage(log_level: LogLevel) {
     log_level,
     "    types            Show the type system reference with all supported types",
   )
-  log(
-    log_level,
-    "    format           Format .caffeine files",
-  )
+  log(log_level, "    format           Format .caffeine files")
   log(
     log_level,
     "    lsp              Start the Language Server Protocol server",
@@ -364,6 +396,17 @@ fn log(log_level: LogLevel, message: String) {
   case log_level {
     logger.Verbose -> io.println(message)
     logger.Minimal -> Nil
+  }
+}
+
+fn directory_of(path: String) -> String {
+  case string.split(path, "/") |> list.reverse {
+    [_, ..rest] ->
+      case list.reverse(rest) {
+        [] -> "."
+        parts -> string.join(parts, "/")
+      }
+    [] -> "."
   }
 }
 
