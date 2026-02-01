@@ -132,7 +132,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -189,7 +189,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -246,7 +246,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -297,7 +297,7 @@ pub fn generate_terraform_test() {
               dynamic.int(7),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -354,12 +354,12 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "value",
+              "evaluation",
               accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string("(good + partial) / total"),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -420,7 +420,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "value",
+              "evaluation",
               accepted_types.PrimitiveType(primitive_types.String),
               dynamic.string(
                 "time_slice(avg:system.cpu.user{env:production} > 99.5 per 300s)",
@@ -467,7 +467,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -551,7 +551,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -628,7 +628,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -709,7 +709,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -776,7 +776,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -846,7 +846,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -915,7 +915,7 @@ pub fn generate_terraform_test() {
               dynamic.int(30),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),

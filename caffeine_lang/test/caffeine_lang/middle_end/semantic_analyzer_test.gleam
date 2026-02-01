@@ -18,7 +18,7 @@ import gleam/set
 import test_helpers
 
 // ==== resolve_intermediate_representations ====
-// * ✅ happy path - two IRs with vendor resolution and query template resolution
+// * ✅ happy path - two IRs with vendor resolution and indicator template resolution
 pub fn resolve_intermediate_representations_test() {
   [
     // happy path - two IRs with vendor resolution and query template resolution
@@ -47,7 +47,7 @@ pub fn resolve_intermediate_representations_test() {
               dynamic.string("staging"),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -85,7 +85,7 @@ pub fn resolve_intermediate_representations_test() {
               dynamic.string("us-east"),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -125,7 +125,7 @@ pub fn resolve_intermediate_representations_test() {
               dynamic.string("staging"),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -163,7 +163,7 @@ pub fn resolve_intermediate_representations_test() {
               dynamic.string("us-east"),
             ),
             helpers.ValueTuple(
-              "queries",
+              "indicators",
               accepted_types.CollectionType(collection_types.Dict(
                 accepted_types.PrimitiveType(primitive_types.String),
                 accepted_types.PrimitiveType(primitive_types.String),
@@ -237,12 +237,12 @@ pub fn resolve_vendor_test() {
   |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_vendor)
 }
 
-// ==== resolve_queries ====
-// * ✅ happy path - multiple queries with template variable resolution
+// ==== resolve_indicators ====
+// * ✅ happy path - multiple indicators with template variable resolution
 // * ✅ happy path - defaulted param with nil uses default value
 // * ✅ happy path - refinement type with defaulted inner using nil gets default value
 // * ✅ happy path - lcp_p75_latency style with mix of defaulted, refinement, and provided values
-pub fn resolve_queries_test() {
+pub fn resolve_indicators_test() {
   [
     // happy path - multiple queries with template variable resolution
     #(
@@ -274,7 +274,7 @@ pub fn resolve_queries_test() {
             dynamic.bool(True),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -323,7 +323,7 @@ pub fn resolve_queries_test() {
             dynamic.bool(True),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -380,7 +380,7 @@ pub fn resolve_queries_test() {
             dynamic.nil(),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -393,7 +393,7 @@ pub fn resolve_queries_test() {
             ]),
           ),
           helpers.ValueTuple(
-            "value",
+            "evaluation",
             accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
@@ -433,7 +433,7 @@ pub fn resolve_queries_test() {
             dynamic.nil(),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -446,7 +446,7 @@ pub fn resolve_queries_test() {
             ]),
           ),
           helpers.ValueTuple(
-            "value",
+            "evaluation",
             accepted_types.PrimitiveType(primitive_types.String),
             dynamic.string("time_slice(query > 2500000000 per 5m)"),
           ),
@@ -485,7 +485,7 @@ pub fn resolve_queries_test() {
             dynamic.nil(),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -529,7 +529,7 @@ pub fn resolve_queries_test() {
             dynamic.nil(),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -595,7 +595,7 @@ pub fn resolve_queries_test() {
             dynamic.string("/members/messages"),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -654,7 +654,7 @@ pub fn resolve_queries_test() {
             dynamic.string("/members/messages"),
           ),
           helpers.ValueTuple(
-            "queries",
+            "indicators",
             accepted_types.CollectionType(collection_types.Dict(
               accepted_types.PrimitiveType(primitive_types.String),
               accepted_types.PrimitiveType(primitive_types.String),
@@ -674,5 +674,5 @@ pub fn resolve_queries_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_queries)
+  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_indicators)
 }

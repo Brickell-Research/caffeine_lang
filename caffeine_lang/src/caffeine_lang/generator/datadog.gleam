@@ -112,15 +112,15 @@ pub fn ir_to_terraform_resource(
   let window_in_days =
     helpers.extract_value(ir.values, "window_in_days", decode.int)
     |> result.unwrap(30)
-  let queries =
+  let indicators =
     helpers.extract_value(
       ir.values,
-      "queries",
+      "indicators",
       decode.dict(decode.string, decode.string),
     )
     |> result.unwrap(dict.new())
-  let value_expr =
-    helpers.extract_value(ir.values, "value", decode.string)
+  let evaluation_expr =
+    helpers.extract_value(ir.values, "evaluation", decode.string)
     |> result.unwrap("numerator / denominator")
   let runbook =
     helpers.extract_value(
@@ -130,9 +130,9 @@ pub fn ir_to_terraform_resource(
     )
     |> result.unwrap(option.None)
 
-  // Parse the value expression using CQL and get HCL blocks.
+  // Parse the evaluation expression using CQL and get HCL blocks.
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
-    cql_generator.resolve_slo_to_hcl(value_expr, queries)
+    cql_generator.resolve_slo_to_hcl(evaluation_expr, indicators)
     |> result.map_error(fn(err) {
       GeneratorSloQueryResolutionError(
         msg: "expectation '"

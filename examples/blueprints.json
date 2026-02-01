@@ -4,10 +4,10 @@
       "name": "lcp_of_views",
       "artifact_ref": "SLO",
       "inputs": {
-        "queries": {
+        "indicators": {
           "query": "p75:rum.lcp.duration{$$application.name->application_name$$, $$env->environment$$, $$view.url_path_group->view_path$$}"
         },
-        "value": "time_slice(query < 2500000000 per 5m)",
+        "evaluation": "time_slice(query < 2500000000 per 5m)",
         "vendor": "Datadog"
       },
       "params": {

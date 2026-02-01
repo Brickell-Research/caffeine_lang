@@ -4,10 +4,12 @@ import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/generator/datadog
+import caffeine_lang/generator/honeycomb
 import caffeine_lang/middle_end/dependency_validator
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
+import caffeine_lang/middle_end/vendor
 import caffeine_lang/parser/artifacts
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
@@ -15,6 +17,7 @@ import caffeine_lang/parser/ir_builder
 import caffeine_lang/parser/linker
 import gleam/int
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 import gleam_community/ansi
@@ -260,7 +263,18 @@ fn run_semantic_analysis(
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(String, errors.CompilationError) {
-  datadog.generate_terraform(resolved_irs)
+  // Determine vendor from the first IR's resolved vendor field.
+  // All IRs in a compilation share the same vendor (enforced by blueprint).
+  case resolved_irs {
+    [first, ..] ->
+      case first.vendor {
+        option.Some(vendor.Honeycomb) ->
+          honeycomb.generate_terraform(resolved_irs)
+        _ -> datadog.generate_terraform(resolved_irs)
+      }
+    // Default to Datadog for empty IR lists (generates provider boilerplate).
+    [] -> datadog.generate_terraform(resolved_irs)
+  }
 }
 
 fn parse_from_strings(

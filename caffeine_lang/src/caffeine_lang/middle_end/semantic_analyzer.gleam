@@ -38,7 +38,7 @@ pub type IntermediateRepresentationMetaData {
   )
 }
 
-/// Resolves vendor and queries for a list of intermediate representations.
+/// Resolves vendor and indicators for a list of intermediate representations.
 @internal
 pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation),
@@ -50,7 +50,7 @@ pub fn resolve_intermediate_representations(
       return: Ok(ir),
     )
     use ir_with_vendor <- result.try(resolve_vendor(ir))
-    resolve_queries(ir_with_vendor)
+    resolve_indicators(ir_with_vendor)
   })
 }
 
@@ -81,51 +81,51 @@ pub fn resolve_vendor(
   }
 }
 
-/// Resolves query templates in an intermediate representation.
+/// Resolves indicator templates in an intermediate representation.
 @internal
-pub fn resolve_queries(
+pub fn resolve_indicators(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, CompilationError) {
   case ir.vendor {
     option.Some(vendor.Datadog) -> {
-      use queries_value_tuple <- result.try(
+      use indicators_value_tuple <- result.try(
         ir.values
-        |> list.filter(fn(vt) { vt.label == "queries" })
+        |> list.filter(fn(vt) { vt.label == "indicators" })
         |> list.first
         |> result.replace_error(
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
               <> ir_to_identifier(ir)
-              <> "' - missing 'queries' field in IR",
+              <> "' - missing 'indicators' field in IR",
           ),
         ),
       )
 
-      use queries_dict <- result.try(
+      use indicators_dict <- result.try(
         decode.run(
-          queries_value_tuple.value,
+          indicators_value_tuple.value,
           decode.dict(decode.string, decode.string),
         )
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
               <> ir_to_identifier(ir)
-              <> "' - failed to decode queries",
+              <> "' - failed to decode indicators",
           )
         }),
       )
 
       let identifier = ir_to_identifier(ir)
 
-      // Resolve all queries and collect results.
-      use resolved_queries <- result.try(
-        queries_dict
+      // Resolve all indicators and collect results.
+      use resolved_indicators <- result.try(
+        indicators_dict
         |> dict.to_list
         |> list.try_map(fn(pair) {
-          let #(key, query) = pair
+          let #(key, indicator) = pair
           use resolved <- result.map(
             templatizer.parse_and_resolve_query_template(
-              query,
+              indicator,
               ir.values,
               from: identifier,
             ),
@@ -134,69 +134,69 @@ pub fn resolve_queries(
         }),
       )
 
-      // Build the new queries dict as a dynamic value.
-      let resolved_queries_dynamic =
-        resolved_queries
+      // Build the new indicators dict as a dynamic value.
+      let resolved_indicators_dynamic =
+        resolved_indicators
         |> list.map(fn(pair) {
           let #(key, value) = pair
           #(dynamic.string(key), dynamic.string(value))
         })
         |> dynamic.properties
 
-      // Create the new queries ValueTuple.
-      let new_queries_value_tuple =
+      // Create the new indicators ValueTuple.
+      let new_indicators_value_tuple =
         helpers.ValueTuple(
-          "queries",
+          "indicators",
           accepted_types.CollectionType(collection_types.Dict(
             accepted_types.PrimitiveType(primitive_types.String),
             accepted_types.PrimitiveType(primitive_types.String),
           )),
-          resolved_queries_dynamic,
+          resolved_indicators_dynamic,
         )
 
-      // Also resolve templates in the "value" field if present.
-      let value_tuple_result =
+      // Also resolve templates in the "evaluation" field if present.
+      let evaluation_tuple_result =
         ir.values
-        |> list.filter(fn(vt) { vt.label == "value" })
+        |> list.filter(fn(vt) { vt.label == "evaluation" })
         |> list.first
 
-      use resolved_value_tuple <- result.try(case value_tuple_result {
+      use resolved_evaluation_tuple <- result.try(case evaluation_tuple_result {
         Error(_) -> Ok(option.None)
-        Ok(value_tuple) -> {
-          use value_string <- result.try(
-            decode.run(value_tuple.value, decode.string)
+        Ok(evaluation_tuple) -> {
+          use evaluation_string <- result.try(
+            decode.run(evaluation_tuple.value, decode.string)
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
                 msg: "expectation '"
                   <> ir_to_identifier(ir)
-                  <> "' - failed to decode 'value' field as string",
+                  <> "' - failed to decode 'evaluation' field as string",
               )
             }),
           )
           templatizer.parse_and_resolve_query_template(
-            value_string,
+            evaluation_string,
             ir.values,
             from: identifier,
           )
-          |> result.map(fn(resolved_value) {
+          |> result.map(fn(resolved_evaluation) {
             option.Some(helpers.ValueTuple(
-              "value",
+              "evaluation",
               accepted_types.PrimitiveType(primitive_types.String),
-              dynamic.string(resolved_value),
+              dynamic.string(resolved_evaluation),
             ))
           })
         }
       })
 
-      // Update the IR with the resolved queries and value.
+      // Update the IR with the resolved indicators and evaluation.
       let new_values =
         ir.values
         |> list.map(fn(vt) {
           case vt.label {
-            "queries" -> new_queries_value_tuple
-            "value" ->
-              case resolved_value_tuple {
-                option.Some(new_value) -> new_value
+            "indicators" -> new_indicators_value_tuple
+            "evaluation" ->
+              case resolved_evaluation_tuple {
+                option.Some(new_evaluation) -> new_evaluation
                 option.None -> vt
               }
             _ -> vt
@@ -204,6 +204,10 @@ pub fn resolve_queries(
         })
 
       Ok(IntermediateRepresentation(..ir, values: new_values))
+    }
+    option.Some(vendor.Honeycomb) -> {
+      // Honeycomb does not use template resolution — indicators are passed through as-is.
+      Ok(ir)
     }
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(

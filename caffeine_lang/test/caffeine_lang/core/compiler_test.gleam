@@ -122,8 +122,8 @@ pub fn compile_from_strings_test() {
     Requires { env: String, status: Boolean }
     Provides {
       vendor: \"datadog\",
-      value: \"numerator / denominator\",
-      queries: {
+      evaluation: \"numerator / denominator\",
+      indicators: {
         numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
         denominator: \"sum:http.requests{$env->env$}\"
       }
@@ -155,8 +155,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"numerator / denominator\",
-      queries: { numerator: \"count:test\", denominator: \"count:test\" }
+      evaluation: \"numerator / denominator\",
+      indicators: { numerator: \"count:test\", denominator: \"count:test\" }
     }
 ",
         "Expectations for \"simple_slo\"
@@ -179,8 +179,8 @@ pub fn compile_from_strings_test() {
     Requires { env: String }
     Provides {
       vendor: \"datadog\",
-      value: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
-      queries: {}
+      evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
+      indicators: {}
     }
 ",
         "Expectations for \"cpu_slo\"
@@ -227,8 +227,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"1\",
-      queries: { numerator: \"1\", denominator: \"1\" }
+      evaluation: \"1\",
+      indicators: { numerator: \"1\", denominator: \"1\" }
     }
 ",
         "not valid caffeine syntax !!!",
@@ -245,8 +245,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"1\",
-      queries: { numerator: \"1\", denominator: \"1\" }
+      evaluation: \"1\",
+      indicators: { numerator: \"1\", denominator: \"1\" }
     }
 ",
         "Expectations for \"nonexistent_blueprint\"
@@ -266,8 +266,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"numerator / denominator\",
-      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      evaluation: \"numerator / denominator\",
+      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"nonexistent.org.team.slo\"] }
     }
 ",
@@ -291,8 +291,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"numerator / denominator\",
-      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      evaluation: \"numerator / denominator\",
+      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"invalid_format\"] }
     }
 ",
@@ -316,8 +316,8 @@ pub fn compile_from_strings_test() {
     Requires {}
     Provides {
       vendor: \"datadog\",
-      value: \"numerator / denominator\",
-      queries: { numerator: \"count:test\", denominator: \"count:test\" },
+      evaluation: \"numerator / denominator\",
+      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"myorg.myteam.myservice.my_slo\"] }
     }
 ",

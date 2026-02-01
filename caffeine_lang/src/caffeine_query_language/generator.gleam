@@ -258,8 +258,8 @@ pub type ResolvedSloQuery {
     threshold: Float,
     /// The formula expression (e.g., "build_time + deploy_time")
     formula_expression: String,
-    /// List of named queries referenced by the formula
-    queries: List(NamedQuery),
+    /// List of named indicators referenced by the formula
+    indicators: List(NamedQuery),
   )
 }
 

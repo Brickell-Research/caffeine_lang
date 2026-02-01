@@ -3,8 +3,8 @@ Blueprints for "SLO"
     Requires { env: String, status: Boolean }
     Provides {
       vendor: "datadog",
-      value: "numerator / denominator",
-      queries: {
+      evaluation: "numerator / denominator",
+      indicators: {
         numerator: "sum:http.requests{$env->env$ AND $status->status.not$}",
         denominator: "sum:http.requests{$env->env$}"
       }
