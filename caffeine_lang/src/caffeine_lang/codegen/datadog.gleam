@@ -2,13 +2,13 @@ import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_lang/codegen/generator_utils
-import caffeine_lang/common/constants
-import caffeine_lang/common/errors.{
+import caffeine_lang/constants
+import caffeine_lang/errors.{
   type CompilationError, GeneratorDatadogTerraformResolutionError,
   GeneratorSloQueryResolutionError,
 }
-import caffeine_lang/common/helpers
-import caffeine_lang/core/logger
+import caffeine_lang/helpers
+import caffeine_lang/logger
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/dynamic/decode

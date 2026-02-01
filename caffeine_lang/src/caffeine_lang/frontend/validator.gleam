@@ -1,12 +1,12 @@
 /// Validation for Caffeine frontend AST.
 /// Handles extendable-related validation that must occur before JSON generation.
-import caffeine_lang/common/types.{
-  type ParsedType, Dict, OneOf, ParsedCollection, ParsedPrimitive,
-  ParsedRefinement, ParsedTypeAliasRef, String as StringType,
-}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type TypeAlias,
+}
+import caffeine_lang/types.{
+  type ParsedType, Dict, OneOf, ParsedCollection, ParsedPrimitive,
+  ParsedRefinement, ParsedTypeAliasRef, String as StringType,
 }
 import gleam/bool
 import gleam/dict

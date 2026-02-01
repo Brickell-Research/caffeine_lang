@@ -1,12 +1,5 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
-import caffeine_lang/common/types.{
-  type CollectionTypes, type ModifierTypes, type ParsedType, type PrimitiveTypes,
-  type RefinementTypes, Boolean, Defaulted, Dict, Float, InclusiveRange, Integer,
-  List as ListType, NumericType, OneOf, Optional, ParsedCollection,
-  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
-  SemanticType, String as StringType, URL,
-}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
@@ -17,6 +10,13 @@ import caffeine_lang/frontend/ast.{
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
 import caffeine_lang/frontend/tokenizer
+import caffeine_lang/types.{
+  type CollectionTypes, type ModifierTypes, type ParsedType, type PrimitiveTypes,
+  type RefinementTypes, Boolean, Defaulted, Dict, Float, InclusiveRange, Integer,
+  List as ListType, NumericType, OneOf, Optional, ParsedCollection,
+  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
+  SemanticType, String as StringType, URL,
+}
 import gleam/bool
 import gleam/float
 import gleam/int

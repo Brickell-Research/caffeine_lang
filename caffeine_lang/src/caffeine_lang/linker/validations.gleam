@@ -1,5 +1,5 @@
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/types.{type AcceptedTypes}
+import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/types.{type AcceptedTypes}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/list

@@ -1,6 +1,6 @@
-import caffeine_lang/common/errors
-import caffeine_lang/common/types
+import caffeine_lang/errors
 import caffeine_lang/linker/validations
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic
 import gleam/list

@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/errors.{type CompilationError}
 import gleam/list
 import gleam/result
 import gleam/string

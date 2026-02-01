@@ -1,5 +1,5 @@
-import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/frontend/pipeline
+import caffeine_lang/source_file.{type SourceFile, SourceFile}
 import gleam/dict
 import gleam/list
 import gleeunit/should

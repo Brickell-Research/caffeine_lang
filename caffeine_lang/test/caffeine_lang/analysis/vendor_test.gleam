@@ -1,5 +1,5 @@
 import caffeine_lang/analysis/vendor
-import caffeine_lang/common/constants
+import caffeine_lang/constants
 import test_helpers
 
 // ==== Vendor Resolution ====

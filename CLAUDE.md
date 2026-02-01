@@ -48,7 +48,7 @@ Two file types: `BlueprintsFile` (templates with Requires/Provides) and `Expects
 
 ## Type System
 
-`AcceptedTypes` is defined in `common/types.gleam`, which consolidates all type categories into a single module:
+`AcceptedTypes` is defined in `types.gleam`, which consolidates all type categories into a single module:
 
 - **Primitives**: Boolean, String, Integer, Float, URL
 - **Collections**: List(T), Dict(K, V)
@@ -57,7 +57,7 @@ Two file types: `BlueprintsFile` (templates with Requires/Provides) and `Expects
 
 `ParsedType` is a parallel type union used in the frontend pipeline (parser → validator → formatter → lowering). It mirrors `AcceptedTypes` but includes `ParsedTypeAliasRef(String)` for type alias references. During lowering, all `ParsedType` values are resolved into `AcceptedTypes`, eliminating alias references. Downstream code (linker, semantic analyzer, codegen) works exclusively with `AcceptedTypes`.
 
-All type operations (parsing, validation, string conversion, resolution) live in `common/types.gleam`. Sub-type functions are private; the module exposes dispatch functions that route to the correct sub-type handler.
+All type operations (parsing, validation, string conversion, resolution) live in `types.gleam`. Sub-type functions are private; the module exposes dispatch functions that route to the correct sub-type handler.
 
 ## Coding Style
 
@@ -83,7 +83,7 @@ Key points:
 
 ## Error Handling
 
-`CompilationError` in `common/errors.gleam` has phase-specific variants:
+`CompilationError` in `errors.gleam` has phase-specific variants:
 - `FrontendParseError`, `FrontendValidationError` (tokenizer/parser/validator)
 - `ParserFileReadError`, `ParserJsonParserError`, `ParserDuplicateError`
 - `LinkerParseError`, `LinkerSemanticError`

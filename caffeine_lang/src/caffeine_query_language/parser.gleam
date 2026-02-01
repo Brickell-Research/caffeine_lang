@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/errors.{type CompilationError}
 import gleam/bool
 import gleam/float
 import gleam/option.{type Option}

@@ -1,4 +1,4 @@
-import caffeine_lang/common/parsing_utils
+import caffeine_lang/parsing_utils
 import test_helpers
 
 // ==== split_at_top_level_comma ====

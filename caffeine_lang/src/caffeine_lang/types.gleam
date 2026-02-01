@@ -1,5 +1,5 @@
-import caffeine_lang/common/parsing_utils
-import caffeine_lang/common/type_info.{type TypeMeta, TypeMeta}
+import caffeine_lang/parsing_utils
+import caffeine_lang/type_info.{type TypeMeta, TypeMeta}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}

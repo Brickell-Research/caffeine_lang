@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors
+import caffeine_lang/errors
 import caffeine_query_language/parser
 import caffeine_query_language/resolver
 import caffeine_query_language/test_helpers as cql_test_helpers

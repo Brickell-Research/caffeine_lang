@@ -1,16 +1,16 @@
 import caffeine_cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_cli/file_discovery
 import caffeine_cli/format_file_discovery
-import caffeine_lang/common/constants
-import caffeine_lang/common/source_file.{SourceFile}
-import caffeine_lang/common/type_info
-import caffeine_lang/common/types
-import caffeine_lang/core/compilation_configuration
-import caffeine_lang/core/compiler
-import caffeine_lang/core/logger.{type LogLevel}
+import caffeine_lang/compilation_configuration
+import caffeine_lang/compiler
+import caffeine_lang/constants
 import caffeine_lang/frontend/formatter
 import caffeine_lang/linker/artifacts
+import caffeine_lang/logger.{type LogLevel}
+import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
+import caffeine_lang/type_info
+import caffeine_lang/types
 import caffeine_lsp
 import gleam/io
 import gleam/list

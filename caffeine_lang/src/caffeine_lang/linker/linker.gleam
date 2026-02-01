@@ -1,10 +1,10 @@
 import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/source_file.{type SourceFile}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
+import caffeine_lang/source_file.{type SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/list
 import gleam/result

@@ -1,5 +1,5 @@
-import caffeine_lang/common/helpers
-import caffeine_lang/common/types
+import caffeine_lang/helpers
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode

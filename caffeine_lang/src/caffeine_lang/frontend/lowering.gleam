@@ -1,17 +1,17 @@
 /// Frontend lowering for Caffeine AST.
 /// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
-import caffeine_lang/common/types.{
-  type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
-  InclusiveRange, List, ModifierType, OneOf, Optional, ParsedCollection,
-  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
-  PrimitiveType, RefinementType,
-}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type Literal, type Struct, type TypeAlias,
 }
 import caffeine_lang/linker/blueprints.{type Blueprint, Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation, Expectation}
+import caffeine_lang/types.{
+  type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
+  InclusiveRange, List, ModifierType, OneOf, Optional, ParsedCollection,
+  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
+  PrimitiveType, RefinementType,
+}
 import gleam/dict.{type Dict}
 import gleam/dynamic
 import gleam/list

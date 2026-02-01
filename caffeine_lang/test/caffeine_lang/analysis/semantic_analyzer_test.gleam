@@ -3,9 +3,9 @@
 /// Uses array-based test pattern for consistency.
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
-import caffeine_lang/common/constants
-import caffeine_lang/common/helpers
-import caffeine_lang/common/types
+import caffeine_lang/constants
+import caffeine_lang/helpers
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic
 import gleam/option

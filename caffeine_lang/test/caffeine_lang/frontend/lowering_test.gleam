@@ -1,9 +1,9 @@
-import caffeine_lang/common/types
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/list

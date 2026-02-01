@@ -1,4 +1,4 @@
-import caffeine_lang/common/type_info.{TypeMeta}
+import caffeine_lang/type_info.{TypeMeta}
 import gleam/string
 import gleeunit/should
 

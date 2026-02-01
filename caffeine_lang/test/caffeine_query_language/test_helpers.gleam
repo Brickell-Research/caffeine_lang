@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_query_language/parser.{parse_expr}
 import caffeine_query_language/resolver.{resolve_primitives}
 

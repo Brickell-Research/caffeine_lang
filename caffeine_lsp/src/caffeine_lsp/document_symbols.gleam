@@ -1,8 +1,8 @@
-import caffeine_lang/common/types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type TypeAlias,
 }
+import caffeine_lang/types
 import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_utils
 import caffeine_lsp/position_utils

@@ -1,7 +1,7 @@
-import caffeine_lang/common/errors
-import caffeine_lang/common/types
+import caffeine_lang/errors
 import caffeine_lang/linker/artifacts.{type Artifact, ParamInfo}
 import caffeine_lang/linker/blueprints
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic
 import gleam/list

@@ -1,14 +1,14 @@
 /// Frontend pipeline for compiling .caffeine source files.
 /// Orchestrates the tokenizer, parser, validator, and generator
 /// to transform .caffeine source into Blueprint and Expectation types.
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/source_file.{type SourceFile}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
 import caffeine_lang/frontend/validator
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/source_file.{type SourceFile}
 import gleam/result
 
 /// Compiles a blueprints .caffeine source to a list of blueprints.

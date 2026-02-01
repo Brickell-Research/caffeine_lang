@@ -1,9 +1,3 @@
-import caffeine_lang/common/types.{
-  type ParsedType, type PrimitiveTypes, type RefinementTypes, Boolean, Defaulted,
-  Dict, Float, InclusiveRange, Integer, List, NumericType, OneOf, Optional,
-  ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRefinement,
-  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
-}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
@@ -12,6 +6,12 @@ import caffeine_lang/frontend/ast.{
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer
+import caffeine_lang/types.{
+  type ParsedType, type PrimitiveTypes, type RefinementTypes, Boolean, Defaulted,
+  Dict, Float, InclusiveRange, Integer, List, NumericType, OneOf, Optional,
+  ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRefinement,
+  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
+}
 import gleam/float
 import gleam/int
 import gleam/list

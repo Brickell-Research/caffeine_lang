@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors
+import caffeine_lang/errors
 import caffeine_query_language/parser.{
   Add, Div, ExpContainer, GreaterThan, GreaterThanOrEqualTo, LessThan,
   LessThanOrEqualTo, Mul, OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp,

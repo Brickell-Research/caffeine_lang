@@ -2,10 +2,10 @@ import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_lang/codegen/generator_utils
-import caffeine_lang/common/errors.{
+import caffeine_lang/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
-import caffeine_lang/common/helpers
+import caffeine_lang/helpers
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int

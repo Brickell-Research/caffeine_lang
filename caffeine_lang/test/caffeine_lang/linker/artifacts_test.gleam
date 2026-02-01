@@ -1,6 +1,6 @@
-import caffeine_lang/common/types
 import caffeine_lang/linker/artifacts.{ParamInfo}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
+import caffeine_lang/types
 import gleam/dict
 import gleam/list
 import gleam/string

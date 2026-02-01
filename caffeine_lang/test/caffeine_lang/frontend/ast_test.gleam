@@ -1,5 +1,5 @@
-import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
+import caffeine_lang/types
 import test_helpers
 
 // ==== extendable_kind_to_string ====

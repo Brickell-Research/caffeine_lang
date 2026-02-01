@@ -1,11 +1,11 @@
 import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
-import caffeine_lang/common/helpers
-import caffeine_lang/common/types.{
+import caffeine_lang/helpers
+import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
   List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RefinementType,
 }
-import caffeine_lang/linker/blueprints.{type Blueprint}
-import caffeine_lang/linker/expectations.{type Expectation}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic

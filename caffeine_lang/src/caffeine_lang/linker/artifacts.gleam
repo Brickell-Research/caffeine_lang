@@ -1,4 +1,4 @@
-import caffeine_lang/common/types.{
+import caffeine_lang/types.{
   type AcceptedTypes, Defaulted, ModifierType, OneOf, Optional, RefinementType,
 }
 import gleam/dict

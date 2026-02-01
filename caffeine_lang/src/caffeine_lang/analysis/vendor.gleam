@@ -1,4 +1,4 @@
-import caffeine_lang/common/constants
+import caffeine_lang/constants
 
 /// Supported monitoring and observability platform vendors.
 pub type Vendor {

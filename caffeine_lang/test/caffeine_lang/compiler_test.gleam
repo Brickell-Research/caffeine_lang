@@ -1,8 +1,8 @@
-import caffeine_lang/common/constants
-import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
-import caffeine_lang/core/compilation_configuration
-import caffeine_lang/core/compiler.{type CompilationOutput}
-import caffeine_lang/core/logger
+import caffeine_lang/compilation_configuration
+import caffeine_lang/compiler.{type CompilationOutput}
+import caffeine_lang/constants
+import caffeine_lang/logger
+import caffeine_lang/source_file.{type SourceFile, SourceFile}
 import gleam/list
 import gleam/result
 import gleam/string

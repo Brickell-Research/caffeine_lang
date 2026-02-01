@@ -1,4 +1,4 @@
-import caffeine_lang/common/types.{
+import caffeine_lang/types.{
   type AcceptedTypes, type PrimitiveTypes, Boolean, CollectionType, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
   Optional, PrimitiveType, RefinementType, SemanticType, String, URL,

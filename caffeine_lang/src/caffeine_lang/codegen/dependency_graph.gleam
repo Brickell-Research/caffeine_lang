@@ -1,7 +1,7 @@
 import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
-import caffeine_lang/common/helpers
+import caffeine_lang/helpers
 import gleam/dict
 import gleam/list
 import gleam/result

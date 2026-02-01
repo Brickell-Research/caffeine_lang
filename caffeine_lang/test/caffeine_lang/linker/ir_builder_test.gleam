@@ -1,9 +1,9 @@
 import caffeine_lang/analysis/semantic_analyzer
-import caffeine_lang/common/helpers
-import caffeine_lang/common/types
+import caffeine_lang/helpers
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
+import caffeine_lang/types
 import gleam/dict
 import gleam/dynamic
 import gleam/list

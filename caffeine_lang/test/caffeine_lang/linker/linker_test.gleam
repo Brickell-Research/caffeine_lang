@@ -1,5 +1,5 @@
-import caffeine_lang/common/source_file.{SourceFile}
 import caffeine_lang/linker/linker
+import caffeine_lang/source_file.{SourceFile}
 import gleeunit/should
 import simplifile
 

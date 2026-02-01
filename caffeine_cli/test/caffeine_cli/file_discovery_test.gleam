@@ -1,5 +1,5 @@
 import caffeine_cli/file_discovery
-import caffeine_lang/common/errors
+import caffeine_lang/errors
 import gleam/list
 import gleeunit/should
 import test_helpers

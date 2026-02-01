@@ -27,9 +27,9 @@
 /// - https://docs.datadoghq.com/metrics/advanced-filtering/
 /// - https://www.datadoghq.com/blog/boolean-filtered-metric-queries/
 /// - https://www.datadoghq.com/blog/wildcard-filter-queries/
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers.{type ValueTuple}
-import caffeine_lang/common/types
+import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/helpers.{type ValueTuple}
+import caffeine_lang/types
 import gleam/list
 import gleam/result
 import gleam/string

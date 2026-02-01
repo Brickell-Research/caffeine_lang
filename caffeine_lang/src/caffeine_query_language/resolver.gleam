@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_query_language/parser.{
   type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr, TimeSliceExpr,
 }

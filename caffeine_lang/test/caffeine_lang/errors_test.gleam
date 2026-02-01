@@ -1,4 +1,4 @@
-import caffeine_lang/common/errors
+import caffeine_lang/errors
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/option

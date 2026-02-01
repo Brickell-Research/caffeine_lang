@@ -3,13 +3,13 @@
 /// hardcoded string. That's way more offensive. We will work towards a better state, just know that even
 /// in its existing offensive state right now (02/01/2026), it's much better than it was before.
 /// - Rob
-import caffeine_lang/common/types.{
+import caffeine_lang/linker/artifacts.{
+  type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
+}
+import caffeine_lang/types.{
   CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer,
   List as ListType, ModifierType, NumericType, OneOf, Optional, PrimitiveType,
   RefinementType, SemanticType, String as StringType, URL,
-}
-import caffeine_lang/linker/artifacts.{
-  type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
 }
 import gleam/dict
 import gleam/set

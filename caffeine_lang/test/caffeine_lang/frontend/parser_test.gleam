@@ -1,7 +1,7 @@
-import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
+import caffeine_lang/types
 import gleam/set
 import gleeunit/should
 import simplifile

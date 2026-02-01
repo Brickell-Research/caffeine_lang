@@ -1,7 +1,7 @@
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/types.{type AcceptedTypes}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/artifacts.{type Artifact}
 import caffeine_lang/linker/validations
+import caffeine_lang/types.{type AcceptedTypes}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}

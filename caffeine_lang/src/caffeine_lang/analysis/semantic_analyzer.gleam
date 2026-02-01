@@ -1,8 +1,8 @@
 import caffeine_lang/analysis/templatizer
 import caffeine_lang/analysis/vendor.{type Vendor}
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers.{type ValueTuple}
-import caffeine_lang/common/types.{
+import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/helpers.{type ValueTuple}
+import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
 import gleam/bool

@@ -1,5 +1,5 @@
-import caffeine_lang/common/errors.{type CompilationError}
-import caffeine_lang/common/helpers
+import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/helpers
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/validations
 import gleam/dict
