@@ -676,3 +676,290 @@ pub fn resolve_indicators_test() {
   ]
   |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_indicators)
 }
+
+// ==== resolve_vendor ====
+// * ✅ happy path - known vendor, Honeycomb
+pub fn resolve_vendor_honeycomb_test() {
+  [
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "Foo SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "foo",
+        artifact_refs: ["SLO"],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_honeycomb),
+          ),
+        ],
+        vendor: option.None,
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "Foo SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "foo",
+        artifact_refs: ["SLO"],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_honeycomb),
+          ),
+        ],
+        vendor: option.Some(vendor.Honeycomb),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_vendor)
+}
+
+// ==== resolve_indicators ====
+// * ✅ happy path - Honeycomb indicators pass through without template resolution
+pub fn resolve_indicators_honeycomb_passthrough_test() {
+  [
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "HC SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "hc_slo",
+        artifact_refs: ["SLO"],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_honeycomb),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("sli"),
+                dynamic.string("LT($\"status_code\", 500)"),
+              ),
+            ]),
+          ),
+        ],
+        vendor: option.Some(vendor.Honeycomb),
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "HC SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "hc_slo",
+        artifact_refs: ["SLO"],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            accepted_types.PrimitiveType(primitive_types.String),
+            dynamic.string(constants.vendor_honeycomb),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            accepted_types.CollectionType(collection_types.Dict(
+              accepted_types.PrimitiveType(primitive_types.String),
+              accepted_types.PrimitiveType(primitive_types.String),
+            )),
+            dynamic.properties([
+              #(
+                dynamic.string("sli"),
+                dynamic.string("LT($\"status_code\", 500)"),
+              ),
+            ]),
+          ),
+        ],
+        vendor: option.Some(vendor.Honeycomb),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_indicators)
+}
+
+// ==== resolve_intermediate_representations ====
+// * ✅ happy path - mixed vendors (Datadog + Honeycomb) resolves both correctly
+pub fn resolve_intermediate_representations_mixed_vendor_test() {
+  let datadog_ir =
+    semantic_analyzer.IntermediateRepresentation(
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "DD SLO",
+        org_name: "test",
+        service_name: "service",
+        blueprint_name: "test_blueprint",
+        team_name: "test_team",
+        misc: dict.new(),
+      ),
+      unique_identifier: "dd_slo",
+      artifact_refs: ["SLO"],
+      values: [
+        helpers.ValueTuple(
+          "vendor",
+          accepted_types.PrimitiveType(primitive_types.String),
+          dynamic.string(constants.vendor_datadog),
+        ),
+        helpers.ValueTuple(
+          "env",
+          accepted_types.PrimitiveType(primitive_types.String),
+          dynamic.string("staging"),
+        ),
+        helpers.ValueTuple(
+          "indicators",
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          dynamic.properties([
+            #(
+              dynamic.string("query_a"),
+              dynamic.string("avg:memory{$$env->env$$}"),
+            ),
+          ]),
+        ),
+      ],
+      vendor: option.None,
+    )
+
+  let honeycomb_ir =
+    semantic_analyzer.IntermediateRepresentation(
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "HC SLO",
+        org_name: "test",
+        service_name: "service",
+        blueprint_name: "test_blueprint",
+        team_name: "test_team",
+        misc: dict.new(),
+      ),
+      unique_identifier: "hc_slo",
+      artifact_refs: ["SLO"],
+      values: [
+        helpers.ValueTuple(
+          "vendor",
+          accepted_types.PrimitiveType(primitive_types.String),
+          dynamic.string(constants.vendor_honeycomb),
+        ),
+        helpers.ValueTuple(
+          "indicators",
+          accepted_types.CollectionType(collection_types.Dict(
+            accepted_types.PrimitiveType(primitive_types.String),
+            accepted_types.PrimitiveType(primitive_types.String),
+          )),
+          dynamic.properties([
+            #(
+              dynamic.string("sli"),
+              dynamic.string("LT($\"status_code\", 500)"),
+            ),
+          ]),
+        ),
+      ],
+      vendor: option.None,
+    )
+
+  [
+    #(
+      [datadog_ir, honeycomb_ir],
+      Ok([
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "DD SLO",
+            org_name: "test",
+            service_name: "service",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "dd_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "env",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string("staging"),
+            ),
+            helpers.ValueTuple(
+              "indicators",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("query_a"),
+                  dynamic.string("avg:memory{env:staging}"),
+                ),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Datadog),
+        ),
+        semantic_analyzer.IntermediateRepresentation(
+          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+            friendly_label: "HC SLO",
+            org_name: "test",
+            service_name: "service",
+            blueprint_name: "test_blueprint",
+            team_name: "test_team",
+            misc: dict.new(),
+          ),
+          unique_identifier: "hc_slo",
+          artifact_refs: ["SLO"],
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              accepted_types.PrimitiveType(primitive_types.String),
+              dynamic.string(constants.vendor_honeycomb),
+            ),
+            helpers.ValueTuple(
+              "indicators",
+              accepted_types.CollectionType(collection_types.Dict(
+                accepted_types.PrimitiveType(primitive_types.String),
+                accepted_types.PrimitiveType(primitive_types.String),
+              )),
+              dynamic.properties([
+                #(
+                  dynamic.string("sli"),
+                  dynamic.string("LT($\"status_code\", 500)"),
+                ),
+              ]),
+            ),
+          ],
+          vendor: option.Some(vendor.Honeycomb),
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(
+    semantic_analyzer.resolve_intermediate_representations,
+  )
+}

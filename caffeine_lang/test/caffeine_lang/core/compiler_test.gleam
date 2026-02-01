@@ -348,3 +348,136 @@ pub fn compile_from_strings_test() {
     }
   })
 }
+
+// ==== compile_from_strings (Honeycomb) ====
+// * ✅ happy path - single Honeycomb SLO
+// * ✅ happy path - mixed vendors (Datadog + Honeycomb)
+// * ✅ sad path   - Honeycomb with invalid window (out of 1-90 range)
+pub fn compile_from_strings_honeycomb_test() {
+  [
+    // happy path - single Honeycomb SLO
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"honeycomb_availability\":
+    Requires { env: String }
+    Provides {
+      vendor: \"honeycomb\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"HEATMAP(duration_ms)\"
+      }
+    }
+",
+        "Expectations for \"honeycomb_availability\"
+  * \"api_success_rate\":
+    Provides {
+      env: \"production\",
+      threshold: 99.5,
+      window_in_days: 14
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "honeycombio_slo",
+          "honeycombio_derived_column",
+          "api_success_rate",
+          "var.honeycomb_dataset",
+          "var.honeycomb_api_key",
+          "target_percentage = 99.5",
+          "time_period = 14",
+        ],
+      ),
+      True,
+    ),
+    // happy path - mixed vendors (Datadog + Honeycomb)
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+  * \"hc_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"honeycomb\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"HEATMAP(duration_ms)\"
+      }
+    }
+",
+        "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9,
+      window_in_days: 30
+    }
+
+Expectations for \"hc_blueprint\"
+  * \"hc_slo\":
+    Provides {
+      threshold: 99.5,
+      window_in_days: 14
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "datadog_service_level_objective",
+          "honeycombio_slo",
+          "honeycombio_derived_column",
+          "var.datadog_api_key",
+          "var.honeycomb_api_key",
+        ],
+      ),
+      True,
+    ),
+    // sad path - Honeycomb with invalid window (out of 1-90 range)
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"hc_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"honeycomb\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"HEATMAP(duration_ms)\"
+      }
+    }
+",
+        "Expectations for \"hc_blueprint\"
+  * \"hc_slo\":
+    Provides {
+      threshold: 99.5,
+      window_in_days: 91
+    }
+",
+        "acme/platform/payments.caffeine",
+        [],
+      ),
+      False,
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let result =
+      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+    case expected_substrings {
+      [] ->
+        case result {
+          Ok(_) -> True
+          Error(_) -> False
+        }
+      _ -> contains_all_substrings(result, expected_substrings)
+    }
+  })
+}
