@@ -1,9 +1,14 @@
+import caffeine_lsp/code_actions
 import caffeine_lsp/completion
 import caffeine_lsp/definition
 import caffeine_lsp/diagnostics
 import caffeine_lsp/document_symbols
+import caffeine_lsp/file_utils
 import caffeine_lsp/hover
+import caffeine_lsp/keyword_info
+import caffeine_lsp/position_utils
 import caffeine_lsp/semantic_tokens
+import gleam/dynamic
 import gleam/json
 import gleam/list
 import gleam/option
@@ -493,4 +498,200 @@ pub fn definition_empty_space_test() {
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_definition(source, 0, 10)
   |> should.equal(option.None)
+}
+
+// ==========================================================================
+// Code action tests
+// ==========================================================================
+
+pub fn code_actions_quoted_field_name_test() {
+  // Build a dynamic value matching the expected codeAction params structure
+  let diag =
+    dynamic.properties([
+      #(
+        dynamic.string("range"),
+        dynamic.properties([
+          #(
+            dynamic.string("start"),
+            dynamic.properties([
+              #(dynamic.string("line"), dynamic.int(2)),
+              #(dynamic.string("character"), dynamic.int(4)),
+            ]),
+          ),
+          #(
+            dynamic.string("end"),
+            dynamic.properties([
+              #(dynamic.string("line"), dynamic.int(2)),
+              #(dynamic.string("character"), dynamic.int(9)),
+            ]),
+          ),
+        ]),
+      ),
+      #(
+        dynamic.string("message"),
+        dynamic.string(
+          "Field names should not be quoted. Use 'env' instead of '\"env\"'",
+        ),
+      ),
+    ])
+
+  let params =
+    dynamic.properties([
+      #(
+        dynamic.string("params"),
+        dynamic.properties([
+          #(
+            dynamic.string("context"),
+            dynamic.properties([
+              #(dynamic.string("diagnostics"), dynamic.list([diag])),
+            ]),
+          ),
+        ]),
+      ),
+    ])
+
+  let actions = code_actions.get_code_actions(params, "file:///test.caffeine")
+  { actions != [] } |> should.be_true()
+
+  let action_str = json.to_string(json.preprocessed_array(actions))
+  { string.contains(action_str, "Remove quotes from field name") }
+  |> should.be_true()
+}
+
+pub fn code_actions_no_matching_diagnostic_test() {
+  let diag =
+    dynamic.properties([
+      #(
+        dynamic.string("range"),
+        dynamic.properties([
+          #(
+            dynamic.string("start"),
+            dynamic.properties([
+              #(dynamic.string("line"), dynamic.int(0)),
+              #(dynamic.string("character"), dynamic.int(0)),
+            ]),
+          ),
+          #(
+            dynamic.string("end"),
+            dynamic.properties([
+              #(dynamic.string("line"), dynamic.int(0)),
+              #(dynamic.string("character"), dynamic.int(5)),
+            ]),
+          ),
+        ]),
+      ),
+      #(dynamic.string("message"), dynamic.string("Some other error")),
+    ])
+
+  let params =
+    dynamic.properties([
+      #(
+        dynamic.string("params"),
+        dynamic.properties([
+          #(
+            dynamic.string("context"),
+            dynamic.properties([
+              #(dynamic.string("diagnostics"), dynamic.list([diag])),
+            ]),
+          ),
+        ]),
+      ),
+    ])
+
+  let actions = code_actions.get_code_actions(params, "file:///test.caffeine")
+  actions |> should.equal([])
+}
+
+// ==========================================================================
+// Position utils tests
+// ==========================================================================
+
+pub fn find_name_position_found_test() {
+  let content = "line one\n_defaults here\nline three"
+  position_utils.find_name_position(content, "_defaults")
+  |> should.equal(#(1, 0))
+}
+
+pub fn find_name_position_not_found_test() {
+  let content = "line one\nline two"
+  position_utils.find_name_position(content, "_missing")
+  |> should.equal(#(0, 0))
+}
+
+pub fn extract_word_at_valid_test() {
+  let content = "hello world\nfoo bar_baz"
+  position_utils.extract_word_at(content, 0, 0)
+  |> should.equal("hello")
+
+  position_utils.extract_word_at(content, 0, 6)
+  |> should.equal("world")
+
+  position_utils.extract_word_at(content, 1, 4)
+  |> should.equal("bar_baz")
+}
+
+pub fn extract_word_at_boundary_test() {
+  let content = "hello world"
+  // Space between words
+  position_utils.extract_word_at(content, 0, 5)
+  |> should.equal("")
+}
+
+pub fn extract_word_at_out_of_bounds_test() {
+  let content = "hello"
+  // Negative line
+  position_utils.extract_word_at(content, -1, 0)
+  |> should.equal("")
+
+  // Line beyond content
+  position_utils.extract_word_at(content, 10, 0)
+  |> should.equal("")
+}
+
+// ==========================================================================
+// File utils tests
+// ==========================================================================
+
+pub fn file_utils_parse_blueprints_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  case file_utils.parse(source) {
+    Ok(file_utils.Blueprints(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn file_utils_parse_expectations_test() {
+  let source =
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  case file_utils.parse(source) {
+    Ok(file_utils.Expects(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn file_utils_parse_invalid_test() {
+  let source = "totally invalid {{{ source"
+  file_utils.parse(source) |> should.be_error()
+}
+
+// ==========================================================================
+// Keyword info tests
+// ==========================================================================
+
+pub fn keyword_info_all_keywords_test() {
+  let keywords = keyword_info.all_keywords()
+  list.length(keywords) |> should.equal(7)
+
+  let names = list.map(keywords, fn(k) { k.name })
+  list.contains(names, "Blueprints") |> should.be_true()
+  list.contains(names, "Expectations") |> should.be_true()
+  list.contains(names, "for") |> should.be_true()
+  list.contains(names, "extends") |> should.be_true()
+  list.contains(names, "Requires") |> should.be_true()
+  list.contains(names, "Provides") |> should.be_true()
+  list.contains(names, "Type") |> should.be_true()
+
+  // All descriptions should be non-empty
+  list.each(keywords, fn(k) { { k.description != "" } |> should.be_true() })
 }

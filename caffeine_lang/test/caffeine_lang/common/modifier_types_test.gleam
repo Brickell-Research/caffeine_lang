@@ -1,6 +1,9 @@
 import caffeine_lang/common/modifier_types
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/list
+import gleam/string
+import gleeunit/should
 import test_helpers
 
 // ==== parse_modifier_type ====
@@ -287,4 +290,73 @@ pub fn resolve_to_string_test() {
     let #(typ, value) = input
     modifier_types.resolve_to_string(typ, value, resolve_inner, resolve_string)
   })
+}
+
+// ==== all_type_metas ====
+// * ✅ returns 2 entries (Optional, Defaulted)
+pub fn all_type_metas_test() {
+  let metas = modifier_types.all_type_metas()
+  list.length(metas) |> should.equal(2)
+
+  let names = list.map(metas, fn(m) { m.name })
+  list.contains(names, "Optional") |> should.be_true()
+  list.contains(names, "Defaulted") |> should.be_true()
+}
+
+// ==== try_each_inner ====
+// * ✅ Optional calls f with inner type
+// * ✅ Defaulted calls f with inner type
+// * ✅ Error propagation
+pub fn try_each_inner_test() {
+  let always_ok = fn(_: String) { Ok(Nil) }
+
+  modifier_types.try_each_inner(modifier_types.Optional("String"), always_ok)
+  |> should.equal(Ok(Nil))
+
+  modifier_types.try_each_inner(
+    modifier_types.Defaulted("Integer", "10"),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  let always_err = fn(_: String) { Error("fail") }
+  modifier_types.try_each_inner(modifier_types.Optional("String"), always_err)
+  |> should.equal(Error("fail"))
+}
+
+// ==== map_inner ====
+// * ✅ Optional transforms inner type
+// * ✅ Defaulted transforms inner type, preserves default
+pub fn map_inner_test() {
+  let to_upper = fn(s: String) { string.uppercase(s) }
+
+  modifier_types.map_inner(modifier_types.Optional("string"), to_upper)
+  |> should.equal(modifier_types.Optional("STRING"))
+
+  modifier_types.map_inner(
+    modifier_types.Defaulted("string", "hello"),
+    to_upper,
+  )
+  |> should.equal(modifier_types.Defaulted("STRING", "hello"))
+}
+
+// ==== validate_default_value_recursive ====
+// * ✅ Defaulted delegates to callback
+// * ✅ Optional returns Error
+pub fn validate_default_value_recursive_test() {
+  let validate_inner = fn(_typ: String, _val: String) { Ok(Nil) }
+
+  modifier_types.validate_default_value_recursive(
+    modifier_types.Defaulted("String", "hello"),
+    "world",
+    validate_inner,
+  )
+  |> should.equal(Ok(Nil))
+
+  modifier_types.validate_default_value_recursive(
+    modifier_types.Optional("String"),
+    "world",
+    validate_inner,
+  )
+  |> should.equal(Error(Nil))
 }

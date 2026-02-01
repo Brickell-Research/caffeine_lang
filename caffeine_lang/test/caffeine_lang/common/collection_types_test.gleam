@@ -1,7 +1,9 @@
 import caffeine_lang/common/collection_types
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/list
 import gleam/string
+import gleeunit/should
 import test_helpers
 
 // ==== parse_collection_type ====
@@ -229,4 +231,70 @@ pub fn resolve_to_string_test() {
       type_to_string,
     )
   })
+}
+
+// ==== all_type_metas ====
+// * ✅ returns 2 entries (List, Dict)
+pub fn all_type_metas_test() {
+  let metas = collection_types.all_type_metas()
+  list.length(metas) |> should.equal(2)
+
+  let names = list.map(metas, fn(m) { m.name })
+  list.contains(names, "List") |> should.be_true()
+  list.contains(names, "Dict") |> should.be_true()
+}
+
+// ==== try_each_inner ====
+// * ✅ List calls f once with inner type
+// * ✅ Dict calls f twice (key and value)
+// * ✅ Error propagation from first call in Dict
+pub fn try_each_inner_test() {
+  let always_ok = fn(_: String) { Ok(Nil) }
+
+  // List calls f once
+  collection_types.try_each_inner(collection_types.List("String"), always_ok)
+  |> should.equal(Ok(Nil))
+
+  // Dict calls f twice
+  collection_types.try_each_inner(
+    collection_types.Dict("String", "Integer"),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // Error propagation
+  let fail_on = fn(typ: String) {
+    case typ {
+      "Integer" -> Error("bad type")
+      _ -> Ok(Nil)
+    }
+  }
+  collection_types.try_each_inner(
+    collection_types.Dict("String", "Integer"),
+    fail_on,
+  )
+  |> should.equal(Error("bad type"))
+
+  // Error on key stops early
+  collection_types.try_each_inner(
+    collection_types.Dict("Integer", "String"),
+    fail_on,
+  )
+  |> should.equal(Error("bad type"))
+}
+
+// ==== map_inner ====
+// * ✅ List transforms inner type
+// * ✅ Dict transforms both key and value types
+pub fn map_inner_test() {
+  let to_upper = fn(s: String) { string.uppercase(s) }
+
+  collection_types.map_inner(collection_types.List("string"), to_upper)
+  |> should.equal(collection_types.List("STRING"))
+
+  collection_types.map_inner(
+    collection_types.Dict("string", "integer"),
+    to_upper,
+  )
+  |> should.equal(collection_types.Dict("STRING", "INTEGER"))
 }

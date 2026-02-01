@@ -4,8 +4,11 @@ import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import gleam/dynamic
+import gleam/dynamic/decode
+import gleam/list
 import gleam/result
 import gleam/set
+import gleeunit/should
 import test_helpers
 
 // ==== parse_refinement_type ====
@@ -1070,4 +1073,144 @@ fn validate_refinement_compatible_default(
       numeric_types.validate_default_value(numeric, value)
     _ -> Error(Nil)
   }
+}
+
+// ==== all_type_metas ====
+// * ✅ returns 2 entries (OneOf, InclusiveRange)
+pub fn all_type_metas_test() {
+  let metas = refinement_types.all_type_metas()
+  list.length(metas) |> should.equal(2)
+
+  let names = list.map(metas, fn(m) { m.name })
+  list.contains(names, "OneOf") |> should.be_true()
+  list.contains(names, "InclusiveRange") |> should.be_true()
+}
+
+// ==== try_each_inner ====
+// * ✅ OneOf calls f with inner type
+// * ✅ InclusiveRange calls f with inner type
+// * ✅ Error propagation
+pub fn try_each_inner_test() {
+  let always_ok = fn(_: AcceptedTypes) { Ok(Nil) }
+  let string_type = accepted_types.PrimitiveType(primitive_types.String)
+
+  refinement_types.try_each_inner(
+    refinement_types.OneOf(string_type, set.from_list(["a"])),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  refinement_types.try_each_inner(
+    refinement_types.InclusiveRange(
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
+      "0",
+      "100",
+    ),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  let always_err = fn(_: AcceptedTypes) { Error("fail") }
+  refinement_types.try_each_inner(
+    refinement_types.OneOf(string_type, set.from_list(["a"])),
+    always_err,
+  )
+  |> should.equal(Error("fail"))
+}
+
+// ==== map_inner ====
+// * ✅ OneOf transforms inner, preserves set
+// * ✅ InclusiveRange transforms inner, preserves bounds
+pub fn map_inner_test() {
+  let string_type = accepted_types.PrimitiveType(primitive_types.String)
+  let bool_type = accepted_types.PrimitiveType(primitive_types.Boolean)
+  let to_bool = fn(_: AcceptedTypes) { bool_type }
+
+  refinement_types.map_inner(
+    refinement_types.OneOf(string_type, set.from_list(["a", "b"])),
+    to_bool,
+  )
+  |> should.equal(refinement_types.OneOf(bool_type, set.from_list(["a", "b"])))
+
+  let int_type =
+    accepted_types.PrimitiveType(primitive_types.NumericType(
+      numeric_types.Integer,
+    ))
+  refinement_types.map_inner(
+    refinement_types.InclusiveRange(int_type, "0", "100"),
+    to_bool,
+  )
+  |> should.equal(refinement_types.InclusiveRange(bool_type, "0", "100"))
+}
+
+// ==== validate_default_value ====
+// * ✅ OneOf - value in set -> Ok
+// * ✅ OneOf - value not in set -> Error
+// * ✅ InclusiveRange - value in range -> Ok
+// * ✅ InclusiveRange - value out of range -> Error
+pub fn validate_default_value_test() {
+  let string_type = accepted_types.PrimitiveType(primitive_types.String)
+  let int_type =
+    accepted_types.PrimitiveType(primitive_types.NumericType(
+      numeric_types.Integer,
+    ))
+  let validate_inner = fn(typ: AcceptedTypes, val: String) {
+    case typ {
+      accepted_types.PrimitiveType(primitive_types.String) -> Ok(Nil)
+      accepted_types.PrimitiveType(primitive_types.NumericType(numeric)) ->
+        numeric_types.validate_default_value(numeric, val)
+      _ -> Error(Nil)
+    }
+  }
+
+  // OneOf - value in set
+  refinement_types.validate_default_value(
+    refinement_types.OneOf(string_type, set.from_list(["a", "b", "c"])),
+    "b",
+    validate_inner,
+    accepted_types.get_numeric_type,
+  )
+  |> should.equal(Ok(Nil))
+
+  // OneOf - value not in set
+  refinement_types.validate_default_value(
+    refinement_types.OneOf(string_type, set.from_list(["a", "b", "c"])),
+    "z",
+    validate_inner,
+    accepted_types.get_numeric_type,
+  )
+  |> should.equal(Error(Nil))
+
+  // InclusiveRange - value in range
+  refinement_types.validate_default_value(
+    refinement_types.InclusiveRange(int_type, "0", "100"),
+    "50",
+    validate_inner,
+    accepted_types.get_numeric_type,
+  )
+  |> should.equal(Ok(Nil))
+
+  // InclusiveRange - value out of range
+  refinement_types.validate_default_value(
+    refinement_types.InclusiveRange(int_type, "0", "100"),
+    "200",
+    validate_inner,
+    accepted_types.get_numeric_type,
+  )
+  |> should.equal(Error(Nil))
+}
+
+// ==== decode_refinement_to_string ====
+// * ✅ always returns failure decoder
+pub fn decode_refinement_to_string_test() {
+  let string_type = accepted_types.PrimitiveType(primitive_types.String)
+  let decoder =
+    refinement_types.decode_refinement_to_string(
+      refinement_types.OneOf(string_type, set.from_list(["a"])),
+      accepted_types.decode_value_to_string,
+    )
+  decode.run(dynamic.string("a"), decoder)
+  |> should.be_error()
 }

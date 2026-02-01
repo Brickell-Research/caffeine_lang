@@ -6,8 +6,10 @@ import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/list
 import gleam/set
 import gleam/string
+import gleeunit/should
 import test_helpers
 
 // ==== accepted_type_to_string ====
@@ -340,4 +342,273 @@ fn result_to_ok_string_from_string_error(
     Ok(s) -> Ok(s)
     Error(_) -> Error(Nil)
   }
+}
+
+// ==== decode_list_values_to_strings ====
+// * ✅ decodes list of strings
+// * ✅ decodes list of integers to strings
+// * ✅ fails on non-list input
+pub fn decode_list_values_to_strings_test() {
+  // List of strings
+  decode.run(
+    dynamic.list([dynamic.string("a"), dynamic.string("b")]),
+    accepted_types.decode_list_values_to_strings(accepted_types.PrimitiveType(
+      primitive_types.String,
+    )),
+  )
+  |> should.equal(Ok(["a", "b"]))
+
+  // List of integers decoded to strings
+  decode.run(
+    dynamic.list([dynamic.int(1), dynamic.int(2)]),
+    accepted_types.decode_list_values_to_strings(
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
+    ),
+  )
+  |> should.equal(Ok(["1", "2"]))
+
+  // Non-list input fails
+  decode.run(
+    dynamic.string("not a list"),
+    accepted_types.decode_list_values_to_strings(accepted_types.PrimitiveType(
+      primitive_types.String,
+    )),
+  )
+  |> should.be_error()
+}
+
+// ==== get_numeric_type ====
+// * ✅ Integer primitive -> Integer
+// * ✅ Float primitive -> Float
+// * ✅ Non-numeric types fall back to Integer
+pub fn get_numeric_type_test() {
+  [
+    #(
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Integer,
+      )),
+      numeric_types.Integer,
+    ),
+    #(
+      accepted_types.PrimitiveType(primitive_types.NumericType(
+        numeric_types.Float,
+      )),
+      numeric_types.Float,
+    ),
+    // Fallback cases
+    #(
+      accepted_types.PrimitiveType(primitive_types.String),
+      numeric_types.Integer,
+    ),
+    #(
+      accepted_types.PrimitiveType(primitive_types.Boolean),
+      numeric_types.Integer,
+    ),
+    #(accepted_types.TypeAliasRef("_env"), numeric_types.Integer),
+    #(
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
+      numeric_types.Integer,
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(accepted_types.get_numeric_type)
+}
+
+// ==== is_optional_or_defaulted ====
+// * ✅ Optional -> True
+// * ✅ Defaulted -> True
+// * ✅ OneOf wrapping Optional -> True
+// * ✅ Plain primitive -> False
+// * ✅ Collection -> False
+pub fn is_optional_or_defaulted_test() {
+  [
+    #(
+      accepted_types.ModifierType(
+        modifier_types.Optional(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
+      True,
+    ),
+    #(
+      accepted_types.ModifierType(modifier_types.Defaulted(
+        accepted_types.PrimitiveType(primitive_types.String),
+        "hello",
+      )),
+      True,
+    ),
+    #(
+      accepted_types.RefinementType(refinement_types.OneOf(
+        accepted_types.ModifierType(
+          modifier_types.Optional(accepted_types.PrimitiveType(
+            primitive_types.String,
+          )),
+        ),
+        set.from_list(["a", "b"]),
+      )),
+      True,
+    ),
+    #(accepted_types.PrimitiveType(primitive_types.String), False),
+    #(
+      accepted_types.CollectionType(
+        collection_types.List(accepted_types.PrimitiveType(
+          primitive_types.String,
+        )),
+      ),
+      False,
+    ),
+    #(accepted_types.TypeAliasRef("_env"), False),
+  ]
+  |> test_helpers.array_based_test_executor_1(
+    accepted_types.is_optional_or_defaulted,
+  )
+}
+
+// ==== all_type_metas ====
+// * ✅ returns non-empty list with entries from all 4 categories
+pub fn all_type_metas_test() {
+  let metas = accepted_types.all_type_metas()
+  // Should have entries from primitives, collections, modifiers, and refinements
+  { metas != [] } |> should.be_true()
+
+  // Verify it includes entries from each category by checking known names
+  let names = list.map(metas, fn(m) { m.name })
+  list.contains(names, "Boolean") |> should.be_true()
+  list.contains(names, "List") |> should.be_true()
+  list.contains(names, "Optional") |> should.be_true()
+  list.contains(names, "OneOf") |> should.be_true()
+}
+
+// ==== try_each_inner ====
+// * ✅ PrimitiveType -> calls f with self
+// * ✅ TypeAliasRef -> calls f with self
+// * ✅ CollectionType -> delegates to collection_types.try_each_inner
+// * ✅ ModifierType -> delegates to modifier_types.try_each_inner
+// * ✅ RefinementType -> delegates to refinement_types.try_each_inner
+// * ✅ Error propagation
+pub fn try_each_inner_test() {
+  let always_ok = fn(_) { Ok(Nil) }
+
+  // PrimitiveType calls f with self
+  accepted_types.try_each_inner(
+    accepted_types.PrimitiveType(primitive_types.String),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // TypeAliasRef calls f with self
+  accepted_types.try_each_inner(accepted_types.TypeAliasRef("_env"), always_ok)
+  |> should.equal(Ok(Nil))
+
+  // CollectionType - List calls f once
+  accepted_types.try_each_inner(
+    accepted_types.CollectionType(
+      collection_types.List(accepted_types.PrimitiveType(primitive_types.String)),
+    ),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // ModifierType - Optional calls f with inner
+  accepted_types.try_each_inner(
+    accepted_types.ModifierType(
+      modifier_types.Optional(accepted_types.PrimitiveType(
+        primitive_types.String,
+      )),
+    ),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // RefinementType - OneOf calls f with inner
+  accepted_types.try_each_inner(
+    accepted_types.RefinementType(refinement_types.OneOf(
+      accepted_types.PrimitiveType(primitive_types.String),
+      set.from_list(["a"]),
+    )),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // Error propagation - f returns error
+  let always_err = fn(_) { Error("fail") }
+  accepted_types.try_each_inner(
+    accepted_types.PrimitiveType(primitive_types.String),
+    always_err,
+  )
+  |> should.equal(Error("fail"))
+}
+
+// ==== map_inner ====
+// * ✅ PrimitiveType -> calls f with self
+// * ✅ TypeAliasRef -> calls f with self
+// * ✅ CollectionType -> transforms inner types
+// * ✅ ModifierType -> transforms inner type
+// * ✅ RefinementType -> transforms inner type
+pub fn map_inner_test() {
+  let identity = fn(t) { t }
+
+  // PrimitiveType -> f is called on self
+  accepted_types.map_inner(
+    accepted_types.PrimitiveType(primitive_types.String),
+    identity,
+  )
+  |> should.equal(accepted_types.PrimitiveType(primitive_types.String))
+
+  // TypeAliasRef -> f is called on self
+  accepted_types.map_inner(accepted_types.TypeAliasRef("_env"), identity)
+  |> should.equal(accepted_types.TypeAliasRef("_env"))
+
+  // CollectionType List -> inner is transformed
+  let to_bool = fn(_) { accepted_types.PrimitiveType(primitive_types.Boolean) }
+  accepted_types.map_inner(
+    accepted_types.CollectionType(
+      collection_types.List(accepted_types.PrimitiveType(primitive_types.String)),
+    ),
+    to_bool,
+  )
+  |> should.equal(
+    accepted_types.CollectionType(
+      collection_types.List(accepted_types.PrimitiveType(
+        primitive_types.Boolean,
+      )),
+    ),
+  )
+
+  // ModifierType Optional -> inner is transformed
+  accepted_types.map_inner(
+    accepted_types.ModifierType(
+      modifier_types.Optional(accepted_types.PrimitiveType(
+        primitive_types.String,
+      )),
+    ),
+    to_bool,
+  )
+  |> should.equal(
+    accepted_types.ModifierType(
+      modifier_types.Optional(accepted_types.PrimitiveType(
+        primitive_types.Boolean,
+      )),
+    ),
+  )
+
+  // RefinementType OneOf -> inner is transformed, set preserved
+  accepted_types.map_inner(
+    accepted_types.RefinementType(refinement_types.OneOf(
+      accepted_types.PrimitiveType(primitive_types.String),
+      set.from_list(["a", "b"]),
+    )),
+    to_bool,
+  )
+  |> should.equal(
+    accepted_types.RefinementType(refinement_types.OneOf(
+      accepted_types.PrimitiveType(primitive_types.Boolean),
+      set.from_list(["a", "b"]),
+    )),
+  )
 }

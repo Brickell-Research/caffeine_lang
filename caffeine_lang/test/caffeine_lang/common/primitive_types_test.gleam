@@ -2,6 +2,8 @@ import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/list
+import gleeunit/should
 import test_helpers
 
 // ==== parse_primitive_type ====
@@ -150,4 +152,38 @@ pub fn resolve_to_string_test() {
     let #(typ, value) = input
     primitive_types.resolve_to_string(typ, value, resolver)
   })
+}
+
+// ==== parse_refinement_compatible_primitive ====
+// * ✅ String -> Ok(String)
+// * ✅ Integer -> Ok(NumericType(Integer))
+// * ✅ Float -> Ok(NumericType(Float))
+// * ✅ Boolean -> Error(Nil) (excluded from refinements)
+// * ✅ URL -> Error(Nil) (excluded from refinements)
+// * ✅ Unknown -> Error(Nil)
+pub fn parse_refinement_compatible_primitive_test() {
+  [
+    #("String", Ok(primitive_types.String)),
+    #("Integer", Ok(primitive_types.NumericType(numeric_types.Integer))),
+    #("Float", Ok(primitive_types.NumericType(numeric_types.Float))),
+    #("Boolean", Error(Nil)),
+    #("URL", Error(Nil)),
+    #("Unknown", Error(Nil)),
+  ]
+  |> test_helpers.array_based_test_executor_1(
+    primitive_types.parse_refinement_compatible_primitive,
+  )
+}
+
+// ==== all_type_metas ====
+// * ✅ returns non-empty list with expected type names
+pub fn all_type_metas_test() {
+  let metas = primitive_types.all_type_metas()
+  { metas != [] } |> should.be_true()
+
+  let names = list.map(metas, fn(m) { m.name })
+  list.contains(names, "Boolean") |> should.be_true()
+  list.contains(names, "String") |> should.be_true()
+  list.contains(names, "Integer") |> should.be_true()
+  list.contains(names, "Float") |> should.be_true()
 }
