@@ -46,11 +46,7 @@ fn rescue(f: fn() -> a) -> Result(a, Nil)
 // --- Server state ---
 
 type ServerState {
-  ServerState(
-    docs: Dict(String, String),
-    initialized: Bool,
-    shutdown: Bool,
-  )
+  ServerState(docs: Dict(String, String), initialized: Bool, shutdown: Bool)
 }
 
 // --- Public API ---
@@ -142,10 +138,7 @@ fn uri_from_params() -> decode.Decoder(String) {
 }
 
 fn position_from_params() -> decode.Decoder(#(Int, Int)) {
-  use line <- decode.subfield(
-    ["params", "position", "line"],
-    decode.int,
-  )
+  use line <- decode.subfield(["params", "position", "line"], decode.int)
   use character <- decode.subfield(
     ["params", "position", "character"],
     decode.int,
@@ -154,10 +147,7 @@ fn position_from_params() -> decode.Decoder(#(Int, Int)) {
 }
 
 fn text_from_did_open() -> decode.Decoder(String) {
-  use text <- decode.subfield(
-    ["params", "textDocument", "text"],
-    decode.string,
-  )
+  use text <- decode.subfield(["params", "textDocument", "text"], decode.string)
   decode.success(text)
 }
 
@@ -179,10 +169,7 @@ fn text_from_did_change() -> decode.Decoder(String) {
 
 // --- Message handling ---
 
-fn handle_message(
-  body: String,
-  state: ServerState,
-) -> #(Bool, ServerState) {
+fn handle_message(body: String, state: ServerState) -> #(Bool, ServerState) {
   case json.parse(body, any_decoder()) {
     Ok(dyn) -> {
       // Extract the request ID early so we can send error responses on crash
@@ -195,8 +182,7 @@ fn handle_message(
         Error(_) -> {
           // Handler crashed — send error response if this was a request
           case id {
-            option.Some(_) ->
-              send_error(id, -32603, "Internal error")
+            option.Some(_) -> send_error(id, -32_603, "Internal error")
             option.None -> Nil
           }
           #(True, state)
@@ -237,7 +223,7 @@ fn dispatch(
     // After shutdown, reject everything except exit
     _ if state.shutdown -> {
       case id {
-        option.Some(_) -> send_error(id, -32600, "Server is shutting down")
+        option.Some(_) -> send_error(id, -32_600, "Server is shutting down")
         option.None -> Nil
       }
       #(True, state)
@@ -245,7 +231,7 @@ fn dispatch(
     // Before initialization, reject non-lifecycle requests
     _ if !state.initialized -> {
       case id {
-        option.Some(_) -> send_error(id, -32002, "Server not initialized")
+        option.Some(_) -> send_error(id, -32_002, "Server not initialized")
         option.None -> Nil
       }
       #(True, state)
@@ -298,15 +284,14 @@ fn dispatch(
     Ok(other) -> {
       log("Unhandled method: " <> other)
       case id {
-        option.Some(_) ->
-          send_error(id, -32601, "Method not found: " <> other)
+        option.Some(_) -> send_error(id, -32_601, "Method not found: " <> other)
         option.None -> Nil
       }
       #(True, state)
     }
     Error(_) -> {
       case id {
-        option.Some(_) -> send_error(id, -32600, "Invalid request")
+        option.Some(_) -> send_error(id, -32_600, "Invalid request")
         option.None -> Nil
       }
       #(True, state)
@@ -356,14 +341,12 @@ fn handle_initialize(id: Option(json.Json)) -> Nil {
                 json.object([
                   #(
                     "tokenTypes",
-                    json.preprocessed_array(
-                      list.map(semantic_tokens.token_types, json.string),
-                    ),
+                    json.preprocessed_array(list.map(
+                      semantic_tokens.token_types,
+                      json.string,
+                    )),
                   ),
-                  #(
-                    "tokenModifiers",
-                    json.preprocessed_array([]),
-                  ),
+                  #("tokenModifiers", json.preprocessed_array([])),
                 ]),
               ),
               #("full", json.bool(True)),
@@ -584,9 +567,7 @@ fn handle_definition(
       case dict.get(docs, uri) {
         Ok(text) -> {
           case
-            rescue(fn() {
-              definition.get_definition(text, line, character)
-            })
+            rescue(fn() { definition.get_definition(text, line, character) })
           {
             Ok(option.Some(#(def_line, def_col, name_len))) ->
               send_response(
@@ -636,9 +617,7 @@ fn publish_diagnostics(uri: String, text: String) -> Nil {
     Error(_) -> []
   }
   let diags_json =
-    json.preprocessed_array(
-      list.map(diags, fn(d) { diagnostic_to_json(d) }),
-    )
+    json.preprocessed_array(list.map(diags, fn(d) { diagnostic_to_json(d) }))
   send_notification(
     "textDocument/publishDiagnostics",
     json.object([
@@ -705,7 +684,8 @@ fn send_error(id: Option(json.Json), code: Int, message: String) -> Nil {
     json.object([
       #("jsonrpc", json.string("2.0")),
       #("id", id_json),
-      #("error",
+      #(
+        "error",
         json.object([
           #("code", json.int(code)),
           #("message", json.string(message)),

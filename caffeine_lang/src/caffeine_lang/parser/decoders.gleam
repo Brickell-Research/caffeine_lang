@@ -45,7 +45,8 @@ pub fn non_empty_named_reference_list_decoder(
   from collection: List(a),
   by name_extraction: fn(a) -> String,
 ) -> decode.Decoder(List(String)) {
-  let inner_decoder = named_reference_decoder(from: collection, by: name_extraction)
+  let inner_decoder =
+    named_reference_decoder(from: collection, by: name_extraction)
 
   // Decode as a list first, then validate non-empty
   use refs <- decode.then(decode.list(inner_decoder))

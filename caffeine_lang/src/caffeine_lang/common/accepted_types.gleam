@@ -1,6 +1,7 @@
 import caffeine_lang/common/collection_types.{type CollectionTypes}
-import caffeine_lang/common/modifier_types.{type ModifierTypes, Defaulted,
-  Optional}
+import caffeine_lang/common/modifier_types.{
+  type ModifierTypes, Defaulted, Optional,
+}
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
 import caffeine_lang/common/refinement_types.{type RefinementTypes, OneOf}
@@ -318,8 +319,7 @@ fn validate_string_literal(
   case typ {
     PrimitiveType(primitive) ->
       primitive_types.validate_default_value(primitive, value)
-    RefinementType(refinement) ->
-      validate_refinement_default(refinement, value)
+    RefinementType(refinement) -> validate_refinement_default(refinement, value)
     CollectionType(_) -> Error(Nil)
     ModifierType(_) -> Error(Nil)
     TypeAliasRef(_) -> Error(Nil)

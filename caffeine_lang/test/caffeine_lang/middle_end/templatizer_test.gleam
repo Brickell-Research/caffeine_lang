@@ -71,10 +71,7 @@ pub fn cleanup_empty_template_artifacts_test() {
     // Multiple AND all empty
     #("metric{ AND  AND  AND }", "metric{}"),
     // Mixed artifacts in complex query (multi-pass)
-    #(
-      "avg:m{, , env:prod, }.rollup(avg, )",
-      "avg:m{env:prod}.rollup(avg)",
-    ),
+    #("avg:m{, , env:prod, }.rollup(avg, )", "avg:m{env:prod}.rollup(avg)"),
   ]
   |> test_helpers.array_based_test_executor_1(
     templatizer.cleanup_empty_template_artifacts,
@@ -250,9 +247,11 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -264,9 +263,11 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
@@ -288,9 +289,11 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
@@ -307,16 +310,20 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "environment",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -333,13 +340,15 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "tag",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.CollectionType(
-              collection_types.List(
-                accepted_types.PrimitiveType(primitive_types.String),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(
+              accepted_types.CollectionType(
+                collection_types.List(accepted_types.PrimitiveType(
+                  primitive_types.String,
+                )),
               ),
             ),
-          )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -356,9 +365,11 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -370,9 +381,11 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
@@ -389,23 +402,29 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "a",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
           "b",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
           "c",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -422,9 +441,11 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "region",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -441,13 +462,15 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "excluded",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.CollectionType(
-              collection_types.List(
-                accepted_types.PrimitiveType(primitive_types.String),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(
+              accepted_types.CollectionType(
+                collection_types.List(accepted_types.PrimitiveType(
+                  primitive_types.String,
+                )),
               ),
             ),
-          )),
+          ),
           value: dynamic.nil(),
         ),
       ],
@@ -459,9 +482,11 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "a",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
@@ -471,9 +496,11 @@ pub fn parse_and_resolve_query_template_test() {
         ),
         helpers.ValueTuple(
           "c",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
           value: dynamic.nil(),
         ),
         helpers.ValueTuple(
@@ -490,11 +517,13 @@ pub fn parse_and_resolve_query_template_test() {
       [
         helpers.ValueTuple(
           "threshold",
-          typ: accepted_types.ModifierType(modifier_types.Optional(
-            accepted_types.PrimitiveType(primitive_types.NumericType(
-              numeric_types.Integer,
-            )),
-          )),
+          typ: accepted_types.ModifierType(
+            modifier_types.Optional(
+              accepted_types.PrimitiveType(primitive_types.NumericType(
+                numeric_types.Integer,
+              )),
+            ),
+          ),
           value: dynamic.nil(),
         ),
       ],

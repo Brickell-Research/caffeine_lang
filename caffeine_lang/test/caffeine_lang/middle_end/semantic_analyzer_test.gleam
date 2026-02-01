@@ -674,7 +674,9 @@ pub fn resolve_indicators_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_indicators)
+  |> test_helpers.array_based_test_executor_1(
+    semantic_analyzer.resolve_indicators,
+  )
 }
 
 // ==== resolve_vendor ====
@@ -800,7 +802,9 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_indicators)
+  |> test_helpers.array_based_test_executor_1(
+    semantic_analyzer.resolve_indicators,
+  )
 }
 
 // ==== resolve_intermediate_representations ====

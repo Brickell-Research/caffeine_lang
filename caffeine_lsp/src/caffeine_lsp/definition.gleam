@@ -21,15 +21,10 @@ pub fn get_definition(
 
 /// Look up definition of a name in the parsed file.
 /// Supports extendables (_name) and type aliases (_name (Type): ...).
-fn find_definition(
-  content: String,
-  name: String,
-) -> Option(#(Int, Int, Int)) {
+fn find_definition(content: String, name: String) -> Option(#(Int, Int, Int)) {
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) ->
-      find_in_blueprints(file, content, name)
-    Ok(file_utils.Expects(file)) ->
-      find_in_expects(file, content, name)
+    Ok(file_utils.Blueprints(file)) -> find_in_blueprints(file, content, name)
+    Ok(file_utils.Expects(file)) -> find_in_expects(file, content, name)
     Error(_) -> option.None
   }
 }
@@ -72,8 +67,7 @@ fn find_in_blueprint_items(
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
-  let items =
-    list.flat_map(blocks, fn(b) { b.items })
+  let items = list.flat_map(blocks, fn(b) { b.items })
   case list.find(items, fn(item) { item.name == name }) {
     Ok(_) -> find_name_location(content, name)
     Error(_) -> option.None
@@ -85,18 +79,14 @@ fn find_in_expect_items(
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
-  let items =
-    list.flat_map(blocks, fn(b) { b.items })
+  let items = list.flat_map(blocks, fn(b) { b.items })
   case list.find(items, fn(item) { item.name == name }) {
     Ok(_) -> find_name_location(content, name)
     Error(_) -> option.None
   }
 }
 
-fn find_name_location(
-  content: String,
-  name: String,
-) -> Option(#(Int, Int, Int)) {
+fn find_name_location(content: String, name: String) -> Option(#(Int, Int, Int)) {
   let #(line, col) = position_utils.find_name_position(content, name)
   case line == 0 && col == 0 {
     // Could be genuinely at 0,0 or not found — check if name is actually there
@@ -180,12 +170,7 @@ fn find_word_start(
   }
 }
 
-fn find_word_end(
-  graphemes: List(String),
-  col: Int,
-  idx: Int,
-  len: Int,
-) -> Int {
+fn find_word_end(graphemes: List(String), col: Int, idx: Int, len: Int) -> Int {
   case graphemes {
     [] -> len
     [g, ..rest] -> {
@@ -199,14 +184,58 @@ fn find_word_end(
 
 fn is_word_char(g: String) -> Bool {
   case g {
-    "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
-    | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
-    | "y" | "z"
-    -> True
-    "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L"
-    | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
-    | "Y" | "Z"
-    -> True
+    "a"
+    | "b"
+    | "c"
+    | "d"
+    | "e"
+    | "f"
+    | "g"
+    | "h"
+    | "i"
+    | "j"
+    | "k"
+    | "l"
+    | "m"
+    | "n"
+    | "o"
+    | "p"
+    | "q"
+    | "r"
+    | "s"
+    | "t"
+    | "u"
+    | "v"
+    | "w"
+    | "x"
+    | "y"
+    | "z" -> True
+    "A"
+    | "B"
+    | "C"
+    | "D"
+    | "E"
+    | "F"
+    | "G"
+    | "H"
+    | "I"
+    | "J"
+    | "K"
+    | "L"
+    | "M"
+    | "N"
+    | "O"
+    | "P"
+    | "Q"
+    | "R"
+    | "S"
+    | "T"
+    | "U"
+    | "V"
+    | "W"
+    | "X"
+    | "Y"
+    | "Z" -> True
     "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
     "_" -> True
     _ -> False

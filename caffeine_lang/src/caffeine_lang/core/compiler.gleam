@@ -4,6 +4,7 @@ import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/generator/datadog
+import caffeine_lang/generator/dependency_graph
 import caffeine_lang/generator/honeycomb
 import caffeine_lang/middle_end/dependency_validator
 import caffeine_lang/middle_end/semantic_analyzer.{
@@ -18,12 +19,17 @@ import caffeine_lang/parser/linker
 import gleam/dict
 import gleam/int
 import gleam/list
-import gleam/option
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import gleam_community/ansi
 import terra_madre/render
 import terra_madre/terraform
+
+/// Output of the compilation process containing Terraform and optional dependency graph.
+pub type CompilationOutput {
+  CompilationOutput(terraform: String, dependency_graph: Option(String))
+}
 
 /// Compiles a blueprint and expectation sources into Terraform configuration.
 /// All file reading happens before this function is called.
@@ -31,23 +37,21 @@ pub fn compile(
   blueprint: SourceFile,
   expectations: List(SourceFile),
   config: CompilationConfig,
-) -> Result(String, errors.CompilationError) {
+) -> Result(CompilationOutput, errors.CompilationError) {
   print_header(config)
 
   // Step 1: Parse and Link.
   print_step1_start(config, blueprint.path, expectations)
-  use irs <- result.try(
-    case run_parse_and_link(blueprint, expectations) {
-      Error(err) -> {
-        print_step1_error(config)
-        Error(err)
-      }
-      Ok(irs) -> {
-        print_step1_success(config, list.length(irs))
-        Ok(irs)
-      }
-    },
-  )
+  use irs <- result.try(case run_parse_and_link(blueprint, expectations) {
+    Error(err) -> {
+      print_step1_error(config)
+      Error(err)
+    }
+    Ok(irs) -> {
+      print_step1_success(config, list.length(irs))
+      Ok(irs)
+    }
+  })
 
   // Step 2: Semantic Analysis.
   print_step2_start(config, irs)
@@ -64,7 +68,7 @@ pub fn compile(
 
   // Step 3: Code Generation.
   print_step3_start(config, resolved_irs)
-  use terraform_output <- result.try(case run_code_generation(resolved_irs) {
+  use output <- result.try(case run_code_generation(resolved_irs) {
     Error(err) -> {
       print_step3_error(config)
       Error(err)
@@ -76,7 +80,7 @@ pub fn compile(
   })
 
   print_footer(config)
-  Ok(terraform_output)
+  Ok(output)
 }
 
 /// Compiles from JSON strings directly (no file I/O).
@@ -85,7 +89,7 @@ pub fn compile_from_strings(
   blueprints_json: String,
   expectations_json: String,
   expectations_path: String,
-) -> Result(String, errors.CompilationError) {
+) -> Result(CompilationOutput, errors.CompilationError) {
   // Step 1: Parse (no file I/O).
   use irs <- result.try(parse_from_strings(
     blueprints_json,
@@ -265,7 +269,7 @@ fn run_semantic_analysis(
 
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
-) -> Result(String, errors.CompilationError) {
+) -> Result(CompilationOutput, errors.CompilationError) {
   // Group IRs by vendor, generate resources per vendor, merge into one config.
   let #(datadog_irs, honeycomb_irs) = group_by_vendor(resolved_irs)
 
@@ -342,7 +346,21 @@ fn run_code_generation(
       modules: [],
     )
 
-  Ok(render.render_config(config))
+  let terraform_output = render.render_config(config)
+
+  // Generate dependency graph if any IRs have DependencyRelations
+  let has_deps =
+    resolved_irs
+    |> list.any(fn(ir) {
+      list.contains(ir.artifact_refs, "DependencyRelations")
+    })
+
+  let graph = case has_deps {
+    True -> option.Some(dependency_graph.generate(resolved_irs))
+    False -> option.None
+  }
+
+  Ok(CompilationOutput(terraform: terraform_output, dependency_graph: graph))
 }
 
 /// Group IRs by vendor into (datadog, honeycomb) lists.
@@ -364,15 +382,19 @@ fn parse_from_strings(
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   // Run the DSL frontend pipeline to produce JSON
-  use blueprints_json <- result.try(pipeline.compile_blueprints(SourceFile(
-    path: "browser/blueprints.caffeine",
-    content: blueprints_source,
-  )))
+  use blueprints_json <- result.try(
+    pipeline.compile_blueprints(SourceFile(
+      path: "browser/blueprints.caffeine",
+      content: blueprints_source,
+    )),
+  )
 
-  use expectations_json <- result.try(pipeline.compile_expects(SourceFile(
-    path: "browser/expectations.caffeine",
-    content: expectations_source,
-  )))
+  use expectations_json <- result.try(
+    pipeline.compile_expects(SourceFile(
+      path: "browser/expectations.caffeine",
+      content: expectations_source,
+    )),
+  )
 
   // Parse the generated JSON
   use artifacts <- result.try(artifacts.parse_standard_library())

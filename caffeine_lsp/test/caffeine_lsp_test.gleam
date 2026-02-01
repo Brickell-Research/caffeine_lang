@@ -85,9 +85,7 @@ Blueprints for \"SLO\"
     [diag] -> {
       diag.severity |> should.equal(1)
       diag.message
-      |> should.equal(
-        "Undefined extendable '_nonexistent' referenced by 'api'",
-      )
+      |> should.equal("Undefined extendable '_nonexistent' referenced by 'api'")
     }
     _ -> should.fail()
   }
@@ -148,9 +146,7 @@ pub fn undefined_type_alias_diagnostic_test() {
     [diag] -> {
       diag.severity |> should.equal(1)
       diag.message
-      |> should.equal(
-        "Undefined type alias '_undefined' referenced by 'test'",
-      )
+      |> should.equal("Undefined type alias '_undefined' referenced by 'test'")
     }
     _ -> should.fail()
   }
@@ -256,7 +252,8 @@ Expectations for \"api_availability\"
 // ==========================================================================
 
 pub fn hover_builtin_type_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 2, 20) {
     option.Some(json_val) -> {
       let s = json.to_string(json_val)
@@ -267,7 +264,8 @@ pub fn hover_builtin_type_test() {
 }
 
 pub fn hover_keyword_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 0, 3) {
     option.Some(json_val) -> {
       let s = json.to_string(json_val)
@@ -278,13 +276,15 @@ pub fn hover_keyword_test() {
 }
 
 pub fn hover_empty_space_returns_none_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   hover.get_hover(source, 0, 10)
   |> should.equal(option.None)
 }
 
 pub fn hover_extendable_test() {
-  let source = "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case hover.get_hover(source, 0, 2) {
     option.Some(json_val) -> {
       let s = json.to_string(json_val)
@@ -296,7 +296,8 @@ pub fn hover_extendable_test() {
 }
 
 pub fn hover_type_alias_test() {
-  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in the definition
   case hover.get_hover(source, 0, 1) {
     option.Some(json_val) -> {
@@ -319,21 +320,19 @@ pub fn completion_returns_items_test() {
 
 pub fn completion_includes_keywords_test() {
   let items = completion.get_completions("", 0, 0)
-  let labels =
-    list.map(items, fn(item) { json.to_string(item) })
+  let labels = list.map(items, fn(item) { json.to_string(item) })
   let has_blueprints =
     list.any(labels, fn(s) { string.contains(s, "Blueprints") })
   has_blueprints |> should.be_true()
 }
 
 pub fn completion_extends_context_test() {
-  let source = "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
   let items = completion.get_completions(source, 3, 22)
-  let labels =
-    list.map(items, fn(item) { json.to_string(item) })
-  let has_defaults =
-    list.any(labels, fn(s) { string.contains(s, "_defaults") })
+  let labels = list.map(items, fn(item) { json.to_string(item) })
+  let has_defaults = list.any(labels, fn(s) { string.contains(s, "_defaults") })
   has_defaults |> should.be_true()
 }
 
@@ -341,21 +340,18 @@ pub fn completion_type_context_test() {
   let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
   // After the colon
   let items = completion.get_completions(source, 2, 21)
-  let labels =
-    list.map(items, fn(item) { json.to_string(item) })
+  let labels = list.map(items, fn(item) { json.to_string(item) })
   // Should include type names but not keywords like "Blueprints"
-  let has_string =
-    list.any(labels, fn(s) { string.contains(s, "String") })
+  let has_string = list.any(labels, fn(s) { string.contains(s, "String") })
   has_string |> should.be_true()
 }
 
 pub fn completion_includes_extendables_test() {
-  let source = "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let items = completion.get_completions(source, 4, 0)
-  let labels =
-    list.map(items, fn(item) { json.to_string(item) })
-  let has_base =
-    list.any(labels, fn(s) { string.contains(s, "_base") })
+  let labels = list.map(items, fn(item) { json.to_string(item) })
+  let has_base = list.any(labels, fn(s) { string.contains(s, "_base") })
   has_base |> should.be_true()
 }
 
@@ -369,33 +365,33 @@ pub fn document_symbols_empty_test() {
 }
 
 pub fn document_symbols_blueprints_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
 
 pub fn document_symbols_with_extendable_test() {
-  let source = "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
-  let names =
-    list.map(symbols, fn(s) { json.to_string(s) })
-  let has_defaults =
-    list.any(names, fn(s) { string.contains(s, "_defaults") })
+  let names = list.map(symbols, fn(s) { json.to_string(s) })
+  let has_defaults = list.any(names, fn(s) { string.contains(s, "_defaults") })
   has_defaults |> should.be_true()
 }
 
 pub fn document_symbols_type_alias_test() {
-  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
-  let names =
-    list.map(symbols, fn(s) { json.to_string(s) })
-  let has_env =
-    list.any(names, fn(s) { string.contains(s, "_env") })
+  let names = list.map(symbols, fn(s) { json.to_string(s) })
+  let has_env = list.any(names, fn(s) { string.contains(s, "_env") })
   has_env |> should.be_true()
 }
 
 pub fn document_symbols_expects_test() {
-  let source = "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
@@ -410,13 +406,15 @@ pub fn semantic_tokens_empty_test() {
 }
 
 pub fn semantic_tokens_produces_output_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
 
 pub fn semantic_tokens_multiple_of_five_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Each token is 5 integers: deltaLine, deltaStartChar, length, tokenType, modifiers
   { list.length(tokens) % 5 == 0 } |> should.be_true()
@@ -425,7 +423,8 @@ pub fn semantic_tokens_multiple_of_five_test() {
 pub fn semantic_tokens_field_order_test() {
   // "Blueprints" is at line 0, col 0, length 10, type 0 (keyword), mods 0
   // The first 5 values should be: [0, 0, 10, 0, 0]
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   case tokens {
     [dl, dc, len, tt, mods, ..] -> {
@@ -445,7 +444,8 @@ pub fn semantic_tokens_field_order_test() {
 }
 
 pub fn semantic_tokens_with_comment_test() {
-  let source = "# This is a comment\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "# This is a comment\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
@@ -455,7 +455,8 @@ pub fn semantic_tokens_with_comment_test() {
 // ==========================================================================
 
 pub fn definition_extendable_test() {
-  let source = "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   // Hover on _defaults in extends list (line 3)
   case definition.get_definition(source, 3, 25) {
     option.Some(#(line, _col, _len)) -> {
@@ -467,7 +468,8 @@ pub fn definition_extendable_test() {
 }
 
 pub fn definition_type_alias_test() {
-  let source = "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in Requires (line 4)
   case definition.get_definition(source, 4, 20) {
     option.Some(#(line, _col, _len)) -> {
@@ -479,14 +481,16 @@ pub fn definition_type_alias_test() {
 }
 
 pub fn definition_not_found_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // "for" is a keyword, not a definition
   definition.get_definition(source, 0, 12)
   |> should.equal(option.None)
 }
 
 pub fn definition_empty_space_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_definition(source, 0, 10)
   |> should.equal(option.None)
 }

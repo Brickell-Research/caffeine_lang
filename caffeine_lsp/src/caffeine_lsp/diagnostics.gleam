@@ -40,10 +40,7 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
       }
     Error(#(blueprint_err, expects_err)) -> {
       use <- bool.guard(
-        when: string.starts_with(
-          string.trim_start(content),
-          "Expectations",
-        ),
+        when: string.starts_with(string.trim_start(content), "Expectations"),
         return: [parser_error_to_diagnostic(expects_err)],
       )
       [parser_error_to_diagnostic(blueprint_err)]
@@ -202,10 +199,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         column: col,
         end_column: col + string.length(got),
         severity: severity_error,
-        message: "Unexpected token: expected "
-          <> expected
-          <> ", got "
-          <> got,
+        message: "Unexpected token: expected " <> expected <> ", got " <> got,
       )
     }
     parser_error.UnexpectedEOF(expected, line, column) -> {

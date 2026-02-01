@@ -79,17 +79,11 @@ pub fn parse_expects_file(source: String) -> Result(ExpectsFile, ParserError) {
     state,
     pending,
   ))
-  Ok(ast.ExpectsFile(
-    extendables:,
-    blocks:,
-    trailing_comments: pending,
-  ))
+  Ok(ast.ExpectsFile(extendables:, blocks:, trailing_comments: pending))
 }
 
 /// Filter out whitespace tokens (keep comments in stream).
-fn filter_whitespace(
-  tokens: List(PositionedToken),
-) -> List(PositionedToken) {
+fn filter_whitespace(tokens: List(PositionedToken)) -> List(PositionedToken) {
   list.filter(tokens, fn(ptok) {
     case ptok {
       token.PositionedToken(token.WhitespaceNewline, _, _)
@@ -100,9 +94,7 @@ fn filter_whitespace(
 }
 
 /// Consume consecutive comment tokens from the stream, returning them as Comment list.
-fn consume_comments(
-  state: ParserState,
-) -> #(List(Comment), ParserState) {
+fn consume_comments(state: ParserState) -> #(List(Comment), ParserState) {
   consume_comments_loop(state, [])
 }
 
@@ -124,8 +116,7 @@ fn init_state(tokens: List(PositionedToken)) -> ParserState {
   case tokens {
     [token.PositionedToken(_, line, column), ..] ->
       ParserState(tokens:, line:, column:, prev_line: line, prev_column: column)
-    [] ->
-      ParserState(tokens:, line: 1, column: 1, prev_line: 1, prev_column: 1)
+    [] -> ParserState(tokens:, line: 1, column: 1, prev_line: 1, prev_column: 1)
   }
 }
 
@@ -226,7 +217,7 @@ fn is_type_alias(state: ParserState) -> Bool {
       token.PositionedToken(token.Identifier(_), _, _),
       token.PositionedToken(token.SymbolLeftParen, _, _),
       token.PositionedToken(token.KeywordType, _, _),
-      ..,
+      ..
     ] -> True
     _ -> False
   }
@@ -344,10 +335,7 @@ fn parse_extendable_kind(
 fn parse_blueprints_blocks(
   state: ParserState,
   pending: List(Comment),
-) -> Result(
-  #(List(BlueprintsBlock), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(BlueprintsBlock), List(Comment), ParserState), ParserError) {
   parse_blueprints_blocks_loop(state, [], pending)
 }
 
@@ -355,10 +343,7 @@ fn parse_blueprints_blocks_loop(
   state: ParserState,
   acc: List(BlueprintsBlock),
   pending: List(Comment),
-) -> Result(
-  #(List(BlueprintsBlock), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(BlueprintsBlock), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.KeywordBlueprints -> {
       use #(block, state) <- result.try(parse_blueprints_block(state, pending))
@@ -663,10 +648,7 @@ fn parse_type_struct(
 fn parse_type_fields(
   state: ParserState,
   pending: List(Comment),
-) -> Result(
-  #(List(Field), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolRightBrace -> Ok(#([], pending, state))
     token.Identifier(_) -> {
@@ -691,18 +673,14 @@ fn parse_type_fields_loop(
   state: ParserState,
   acc: List(Field),
   pending: List(Comment),
-) -> Result(
-  #(List(Field), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
       let #(next_pending, state) = consume_comments(state)
       // Allow trailing comma
       case peek(state) {
-        token.SymbolRightBrace ->
-          Ok(#(list.reverse(acc), next_pending, state))
+        token.SymbolRightBrace -> Ok(#(list.reverse(acc), next_pending, state))
         _ -> {
           use #(field, state) <- result.try(parse_type_field(
             state,
@@ -753,9 +731,10 @@ fn parse_literal_struct(
 ) -> Result(#(Struct, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   let #(pending, state) = consume_comments(state)
-  use #(fields, trailing_comments, state) <- result.try(
-    parse_literal_fields(state, pending),
-  )
+  use #(fields, trailing_comments, state) <- result.try(parse_literal_fields(
+    state,
+    pending,
+  ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(ast.Struct(fields:, trailing_comments:), state))
 }
@@ -763,10 +742,7 @@ fn parse_literal_struct(
 fn parse_literal_fields(
   state: ParserState,
   pending: List(Comment),
-) -> Result(
-  #(List(Field), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolRightBrace -> Ok(#([], pending, state))
     token.Identifier(_) -> {
@@ -791,18 +767,14 @@ fn parse_literal_fields_loop(
   state: ParserState,
   acc: List(Field),
   pending: List(Comment),
-) -> Result(
-  #(List(Field), List(Comment), ParserState),
-  ParserError,
-) {
+) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
       let #(next_pending, state) = consume_comments(state)
       // Allow trailing comma
       case peek(state) {
-        token.SymbolRightBrace ->
-          Ok(#(list.reverse(acc), next_pending, state))
+        token.SymbolRightBrace -> Ok(#(list.reverse(acc), next_pending, state))
         _ -> {
           use #(field, state) <- result.try(parse_literal_field(
             state,
@@ -1195,11 +1167,7 @@ fn parse_refinement_body(
       use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-      use _ <- result.try(validate_oneof_literals(
-        [min, max],
-        primitive,
-        state,
-      ))
+      use _ <- result.try(validate_oneof_literals([min, max], primitive, state))
       Ok(#(
         refinement_types.InclusiveRange(
           accepted_types.PrimitiveType(primitive),
@@ -1284,9 +1252,10 @@ fn parse_literal_struct_value(
 ) -> Result(#(Literal, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   let #(pending, state) = consume_comments(state)
-  use #(fields, _trailing_comments, state) <- result.try(
-    parse_literal_fields(state, pending),
-  )
+  use #(fields, _trailing_comments, state) <- result.try(parse_literal_fields(
+    state,
+    pending,
+  ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(ast.LiteralStruct(fields), state))
 }
@@ -1339,7 +1308,8 @@ fn literal_matches_primitive(
     primitive_types.String, ast.LiteralString(_) -> True
     primitive_types.NumericType(numeric_types.Integer), ast.LiteralInteger(_) ->
       True
-    primitive_types.NumericType(numeric_types.Float), ast.LiteralFloat(_) -> True
+    primitive_types.NumericType(numeric_types.Float), ast.LiteralFloat(_) ->
+      True
     primitive_types.Boolean, ast.LiteralTrue -> True
     primitive_types.Boolean, ast.LiteralFalse -> True
     primitive_types.SemanticType(_), ast.LiteralString(_) -> True

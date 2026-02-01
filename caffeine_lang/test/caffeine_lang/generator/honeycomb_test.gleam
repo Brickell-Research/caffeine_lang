@@ -134,9 +134,7 @@ pub fn variables_test() {
 
   // Find api_key variable
   let api_key_var =
-    list.find(vars, fn(v: terraform.Variable) {
-      v.name == "honeycomb_api_key"
-    })
+    list.find(vars, fn(v: terraform.Variable) { v.name == "honeycomb_api_key" })
   api_key_var |> should.be_ok
   let assert Ok(api_key) = api_key_var
   api_key.sensitive |> should.equal(option.Some(True))
@@ -144,9 +142,7 @@ pub fn variables_test() {
 
   // Find dataset variable (not sensitive)
   let dataset_var =
-    list.find(vars, fn(v: terraform.Variable) {
-      v.name == "honeycomb_dataset"
-    })
+    list.find(vars, fn(v: terraform.Variable) { v.name == "honeycomb_dataset" })
   dataset_var |> should.be_ok
   let assert Ok(dataset) = dataset_var
   dataset.sensitive |> should.equal(option.None)

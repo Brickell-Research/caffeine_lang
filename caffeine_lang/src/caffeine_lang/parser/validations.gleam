@@ -154,8 +154,7 @@ pub fn validate_inputs_for_collection(
         )
       {
         Ok(_) -> Error(Nil)
-        Error(msg) ->
-          Ok(get_identifier(input_collection) <> " - " <> msg)
+        Error(msg) -> Ok(get_identifier(input_collection) <> " - " <> msg)
       }
     })
     |> string.join(", ")
@@ -188,4 +187,3 @@ pub fn check_collection_key_overshadowing(
     _ -> Error(error_msg <> overshadowing_params |> string.join(", "))
   }
 }
-

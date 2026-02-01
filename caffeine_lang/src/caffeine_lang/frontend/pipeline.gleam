@@ -32,9 +32,7 @@ pub fn compile_blueprints(
 
 /// Compiles an expects .caffeine source to JSON string.
 @internal
-pub fn compile_expects(
-  source: SourceFile,
-) -> Result(String, CompilationError) {
+pub fn compile_expects(source: SourceFile) -> Result(String, CompilationError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
     |> result.map_error(fn(err) {
@@ -114,8 +112,6 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> extendable_name
       <> "'"
     validator.ExtendableTypeAliasNameCollision(name) ->
-      "Name '"
-      <> name
-      <> "' is used as both an extendable and a type alias"
+      "Name '" <> name <> "' is used as both an extendable and a type alias"
   }
 }

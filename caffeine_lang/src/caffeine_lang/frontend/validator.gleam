@@ -121,9 +121,10 @@ fn validate_no_duplicate_extendables_loop(
   case extendables {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      use <- bool.guard(when: set.contains(seen, first.name), return: Error(
-        DuplicateExtendable(name: first.name),
-      ))
+      use <- bool.guard(
+        when: set.contains(seen, first.name),
+        return: Error(DuplicateExtendable(name: first.name)),
+      )
       validate_no_duplicate_extendables_loop(rest, set.insert(seen, first.name))
     }
   }
@@ -225,9 +226,10 @@ fn validate_extends_exist(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      use <- bool.guard(when: !set.contains(extendable_names, first), return: Error(
-        UndefinedExtendable(name: first, referenced_by: item_name),
-      ))
+      use <- bool.guard(
+        when: !set.contains(extendable_names, first),
+        return: Error(UndefinedExtendable(name: first, referenced_by: item_name)),
+      )
       validate_extends_exist(rest, item_name, extendable_names)
     }
   }
@@ -249,10 +251,18 @@ fn validate_no_duplicate_extends_loop(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      use <- bool.guard(when: set.contains(seen, first), return: Error(
-        DuplicateExtendsReference(name: first, referenced_by: item_name),
-      ))
-      validate_no_duplicate_extends_loop(rest, item_name, set.insert(seen, first))
+      use <- bool.guard(
+        when: set.contains(seen, first),
+        return: Error(DuplicateExtendsReference(
+          name: first,
+          referenced_by: item_name,
+        )),
+      )
+      validate_no_duplicate_extends_loop(
+        rest,
+        item_name,
+        set.insert(seen, first),
+      )
     }
   }
 }
@@ -293,7 +303,8 @@ fn validate_no_blueprint_overshadowing(
       Error(_) -> Ok(Nil)
       Ok(ext_fields) -> {
         // Check requires overshadowing
-        let requires_overlap = set.intersection(item_requires_fields, ext_fields)
+        let requires_overlap =
+          set.intersection(item_requires_fields, ext_fields)
         use _ <- result.try(case set.to_list(requires_overlap) {
           [] -> Ok(Nil)
           [field, ..] ->
@@ -304,7 +315,8 @@ fn validate_no_blueprint_overshadowing(
             ))
         })
         // Check provides overshadowing
-        let provides_overlap = set.intersection(item_provides_fields, ext_fields)
+        let provides_overlap =
+          set.intersection(item_provides_fields, ext_fields)
         case set.to_list(provides_overlap) {
           [] -> Ok(Nil)
           [field, ..] ->
@@ -335,7 +347,8 @@ fn validate_no_expect_overshadowing(
     case dict.get(extendable_map, ext_name) {
       Error(_) -> Ok(Nil)
       Ok(ext_fields) -> {
-        let provides_overlap = set.intersection(item_provides_fields, ext_fields)
+        let provides_overlap =
+          set.intersection(item_provides_fields, ext_fields)
         case set.to_list(provides_overlap) {
           [] -> Ok(Nil)
           [field, ..] ->
@@ -389,10 +402,14 @@ fn validate_no_duplicate_type_aliases_loop(
   case type_aliases {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      use <- bool.guard(when: set.contains(seen, first.name), return: Error(
-        DuplicateTypeAlias(name: first.name),
-      ))
-      validate_no_duplicate_type_aliases_loop(rest, set.insert(seen, first.name))
+      use <- bool.guard(
+        when: set.contains(seen, first.name),
+        return: Error(DuplicateTypeAlias(name: first.name)),
+      )
+      validate_no_duplicate_type_aliases_loop(
+        rest,
+        set.insert(seen, first.name),
+      )
     }
   }
 }
@@ -419,9 +436,10 @@ fn validate_type_alias_not_circular(
   case typ {
     accepted_types.PrimitiveType(_) -> Ok(Nil)
     accepted_types.TypeAliasRef(name) -> {
-      use <- bool.guard(when: list.contains(visited, name), return: Error(
-        CircularTypeAlias(name: original_name, cycle: visited),
-      ))
+      use <- bool.guard(
+        when: list.contains(visited, name),
+        return: Error(CircularTypeAlias(name: original_name, cycle: visited)),
+      )
       case lookup_type_alias(name, type_alias_map) {
         Ok(resolved) ->
           validate_type_alias_not_circular(
@@ -595,9 +613,10 @@ fn validate_type_refs(
   case typ {
     accepted_types.PrimitiveType(_) -> Ok(Nil)
     accepted_types.TypeAliasRef(name) -> {
-      use <- bool.guard(when: set.contains(type_alias_names, name), return: Ok(
-        Nil,
-      ))
+      use <- bool.guard(
+        when: set.contains(type_alias_names, name),
+        return: Ok(Nil),
+      )
       Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
     }
     accepted_types.CollectionType(collection) ->
@@ -694,9 +713,10 @@ fn validate_dict_key_type(
     accepted_types.TypeAliasRef(alias_name) -> {
       case lookup_type_alias(alias_name, type_alias_map) {
         Ok(resolved) -> {
-          use <- bool.guard(when: is_string_based_type(resolved), return: Ok(
-            Nil,
-          ))
+          use <- bool.guard(
+            when: is_string_based_type(resolved),
+            return: Ok(Nil),
+          )
           Error(InvalidDictKeyTypeAlias(
             alias_name: alias_name,
             resolved_to: accepted_types.accepted_type_to_string(resolved),

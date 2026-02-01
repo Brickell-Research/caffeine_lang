@@ -14,8 +14,7 @@ fn read_source_file(path: String) -> SourceFile {
 // ==== compile_blueprints ====
 // * ✅ simple blueprints source compiles to valid JSON
 pub fn compile_blueprints_test() {
-  let source =
-    read_source_file(corpus_dir <> "/simple_blueprints.caffeine")
+  let source = read_source_file(corpus_dir <> "/simple_blueprints.caffeine")
   let assert Ok(json) = pipeline.compile_blueprints(source)
 
   // Verify JSON contains expected content
@@ -29,8 +28,7 @@ pub fn compile_blueprints_test() {
 // ==== compile_expects ====
 // * ✅ simple expects source compiles to valid JSON
 pub fn compile_expects_test() {
-  let source =
-    read_source_file(corpus_dir <> "/simple_expects.caffeine")
+  let source = read_source_file(corpus_dir <> "/simple_expects.caffeine")
   let assert Ok(json) = pipeline.compile_expects(source)
 
   // Verify JSON contains expected content

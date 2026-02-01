@@ -15,7 +15,9 @@ pub fn parse_semantic_type_test() {
     #("url", Error(Nil)),
     #("", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(semantic_types.parse_semantic_type)
+  |> test_helpers.array_based_test_executor_1(
+    semantic_types.parse_semantic_type,
+  )
 }
 
 // ==== semantic_type_to_string ====

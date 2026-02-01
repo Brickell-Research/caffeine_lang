@@ -66,9 +66,7 @@ pub fn resolve_vendor(
   {
     Error(_) ->
       Error(errors.SemanticAnalysisVendorResolutionError(
-        msg: "expectation '"
-        <> ir_to_identifier(ir)
-        <> "' - no vendor input",
+        msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor input",
       ))
     Ok(vendor_value_tuple) -> {
       // Safe to assert since already type checked in parser phase.
@@ -92,13 +90,11 @@ pub fn resolve_indicators(
         ir.values
         |> list.filter(fn(vt) { vt.label == "indicators" })
         |> list.first
-        |> result.replace_error(
-          errors.SemanticAnalysisTemplateResolutionError(
-            msg: "expectation '"
-              <> ir_to_identifier(ir)
-              <> "' - missing 'indicators' field in IR",
-          ),
-        ),
+        |> result.replace_error(errors.SemanticAnalysisTemplateResolutionError(
+          msg: "expectation '"
+          <> ir_to_identifier(ir)
+          <> "' - missing 'indicators' field in IR",
+        )),
       )
 
       use indicators_dict <- result.try(
@@ -109,8 +105,8 @@ pub fn resolve_indicators(
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
-              <> ir_to_identifier(ir)
-              <> "' - failed to decode indicators",
+            <> ir_to_identifier(ir)
+            <> "' - failed to decode indicators",
           )
         }),
       )
@@ -168,8 +164,8 @@ pub fn resolve_indicators(
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
                 msg: "expectation '"
-                  <> ir_to_identifier(ir)
-                  <> "' - failed to decode 'evaluation' field as string",
+                <> ir_to_identifier(ir)
+                <> "' - failed to decode 'evaluation' field as string",
               )
             }),
           )
@@ -211,9 +207,7 @@ pub fn resolve_indicators(
     }
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
-        msg: "expectation '"
-        <> ir_to_identifier(ir)
-        <> "' - no vendor resolved",
+        msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor resolved",
       ))
   }
 }

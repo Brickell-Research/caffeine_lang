@@ -32,10 +32,12 @@ pub fn parse_modifier_type_test() {
       "List(List(String))" -> Ok("List(List(String))")
       // Refinement types (inner type contains braces)
       "String { x | x in { demo, development, pre-production, production } }" ->
-        Ok("String { x | x in { demo, development, pre-production, production } }")
-      "Integer { x | x in { 1, 2, 3 } }" -> Ok("Integer { x | x in { 1, 2, 3 } }")
-      "String { x | x in { a, b, c } }" ->
-        Ok("String { x | x in { a, b, c } }")
+        Ok(
+          "String { x | x in { demo, development, pre-production, production } }",
+        )
+      "Integer { x | x in { 1, 2, 3 } }" ->
+        Ok("Integer { x | x in { 1, 2, 3 } }")
+      "String { x | x in { a, b, c } }" -> Ok("String { x | x in { a, b, c } }")
       _ -> Error(Nil)
     }
   }

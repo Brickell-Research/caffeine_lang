@@ -11,9 +11,7 @@ pub type ParsedFile {
 
 /// Try to parse content, detecting file type first to avoid double-parsing.
 /// Returns the parsed file or both parser errors.
-pub fn parse(
-  content: String,
-) -> Result(ParsedFile, #(ParserError, ParserError)) {
+pub fn parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError)) {
   case string.starts_with(string.trim_start(content), "Expectations") {
     True ->
       case parser.parse_expects_file(content) {

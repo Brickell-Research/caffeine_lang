@@ -1,8 +1,8 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/errors.{type CompilationError}
+import caffeine_lang/parser/artifacts.{type Artifact}
 import caffeine_lang/parser/decoders
 import caffeine_lang/parser/validations
-import caffeine_lang/parser/artifacts.{type Artifact}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -107,8 +107,7 @@ pub fn validate_blueprints(
 
   use _ <- result.try(case overshadow_params_error {
     "" -> Ok(True)
-    _ ->
-      Error(errors.ParserDuplicateError(msg: overshadow_params_error))
+    _ -> Error(errors.ParserDuplicateError(msg: overshadow_params_error))
   })
 
   // At this point everything is validated, so we can merge params from all artifacts + blueprint params.
@@ -188,8 +187,7 @@ fn validate_no_duplicate_artifact_refs(
 
   case duplicates {
     [] -> Ok(True)
-    [first, ..] ->
-      Error(errors.ParserDuplicateError(msg: first))
+    [first, ..] -> Error(errors.ParserDuplicateError(msg: first))
   }
 }
 
@@ -215,8 +213,7 @@ fn validate_no_conflicting_params(
 
   case conflicts {
     [] -> Ok(True)
-    [first, ..] ->
-      Error(errors.ParserDuplicateError(msg: first))
+    [first, ..] -> Error(errors.ParserDuplicateError(msg: first))
   }
 }
 
@@ -228,7 +225,7 @@ fn find_conflicting_params(artifact_list: List(Artifact)) -> Result(String, Nil)
     |> list.flat_map(fn(a) {
       a.params
       |> dict.to_list
-      |> list.map(fn(pair) { #(pair.0, pair.1.type_) })
+      |> list.map(fn(pair) { #(pair.0, { pair.1 }.type_) })
     })
 
   // Group by param name
@@ -266,9 +263,10 @@ pub fn blueprints_from_json(
     use name <- decode.field("name", decoders.non_empty_string_decoder())
     use artifact_refs <- decode.field(
       "artifact_refs",
-      decoders.non_empty_named_reference_list_decoder(from: artifacts, by: fn(a) {
-        artifacts.artifact_type_to_string(a.type_)
-      }),
+      decoders.non_empty_named_reference_list_decoder(
+        from: artifacts,
+        by: fn(a) { artifacts.artifact_type_to_string(a.type_) },
+      ),
     )
     use params <- decode.field(
       "params",

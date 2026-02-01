@@ -134,8 +134,9 @@ fn try_operators(
 fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
   // Check for time_slice keyword
   use <- bool.guard(
-    when: !{ string.starts_with(input, "time_slice(")
-      && string.ends_with(input, ")") },
+    when: !{
+      string.starts_with(input, "time_slice(") && string.ends_with(input, ")")
+    },
     return: Error("Not a keyword expression"),
   )
   // Extract the inner content (everything between "time_slice(" and ")")
@@ -279,9 +280,10 @@ fn parse_threshold(input: String) -> Result(Float, String) {
 
 /// Parses an integer string as a float.
 fn parse_int_as_float(input: String) -> Result(Float, String) {
-  use <- bool.guard(when: string.contains(input, "."), return: Error(
-    "Not an integer",
-  ))
+  use <- bool.guard(
+    when: string.contains(input, "."),
+    return: Error("Not an integer"),
+  )
   float.parse(input <> ".0")
   |> result.map_error(fn(_) { "Invalid number" })
 }

@@ -727,12 +727,14 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "tags",
-              accepted_types.ModifierType(modifier_types.Optional(
-                accepted_types.CollectionType(collection_types.Dict(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  accepted_types.PrimitiveType(primitive_types.String),
-                )),
-              )),
+              accepted_types.ModifierType(
+                modifier_types.Optional(
+                  accepted_types.CollectionType(collection_types.Dict(
+                    accepted_types.PrimitiveType(primitive_types.String),
+                    accepted_types.PrimitiveType(primitive_types.String),
+                  )),
+                ),
+              ),
               dynamic.properties([]),
             ),
           ],
@@ -794,12 +796,14 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "tags",
-              accepted_types.ModifierType(modifier_types.Optional(
-                accepted_types.CollectionType(collection_types.Dict(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  accepted_types.PrimitiveType(primitive_types.String),
-                )),
-              )),
+              accepted_types.ModifierType(
+                modifier_types.Optional(
+                  accepted_types.CollectionType(collection_types.Dict(
+                    accepted_types.PrimitiveType(primitive_types.String),
+                    accepted_types.PrimitiveType(primitive_types.String),
+                  )),
+                ),
+              ),
               dynamic.properties([
                 #(dynamic.string("env"), dynamic.string("prod")),
                 #(dynamic.string("tier"), dynamic.string("1")),
@@ -864,12 +868,14 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "tags",
-              accepted_types.ModifierType(modifier_types.Optional(
-                accepted_types.CollectionType(collection_types.Dict(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  accepted_types.PrimitiveType(primitive_types.String),
-                )),
-              )),
+              accepted_types.ModifierType(
+                modifier_types.Optional(
+                  accepted_types.CollectionType(collection_types.Dict(
+                    accepted_types.PrimitiveType(primitive_types.String),
+                    accepted_types.PrimitiveType(primitive_types.String),
+                  )),
+                ),
+              ),
               dynamic.properties([
                 #(dynamic.string("team"), dynamic.string("override_team")),
               ]),
@@ -933,14 +939,14 @@ pub fn generate_terraform_test() {
             ),
             helpers.ValueTuple(
               "runbook",
-              accepted_types.ModifierType(modifier_types.Optional(
-                accepted_types.PrimitiveType(primitive_types.SemanticType(
-                  semantic_types.URL,
-                )),
-              )),
-              dynamic.string(
-                "https://wiki.example.com/runbook/auth-latency",
+              accepted_types.ModifierType(
+                modifier_types.Optional(
+                  accepted_types.PrimitiveType(primitive_types.SemanticType(
+                    semantic_types.URL,
+                  )),
+                ),
               ),
+              dynamic.string("https://wiki.example.com/runbook/auth-latency"),
             ),
           ],
           vendor: option.Some(vendor.Datadog),

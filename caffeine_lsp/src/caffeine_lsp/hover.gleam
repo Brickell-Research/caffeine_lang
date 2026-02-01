@@ -75,9 +75,7 @@ fn format_type_meta(meta: TypeMeta) -> String {
 }
 
 fn lookup_keyword(word: String) -> Option(String) {
-  case
-    list.find(keyword_info.all_keywords(), fn(kw) { kw.name == word })
-  {
+  case list.find(keyword_info.all_keywords(), fn(kw) { kw.name == word }) {
     Ok(kw) -> option.Some("**" <> kw.name <> "** — " <> kw.description)
     Error(_) -> option.None
   }
@@ -92,8 +90,7 @@ fn lookup_user_defined(word: String, content: String) -> Option(String) {
         option.None -> lookup_type_alias(word, file.type_aliases)
       }
     }
-    Ok(file_utils.Expects(file)) ->
-      lookup_extendable(word, file.extendables)
+    Ok(file_utils.Expects(file)) -> lookup_extendable(word, file.extendables)
     Error(_) -> option.None
   }
 }
@@ -114,7 +111,11 @@ fn lookup_extendable(
         })
         |> string.join("\n")
       let md =
-        "**" <> ext.name <> "** — " <> kind <> " extendable"
+        "**"
+        <> ext.name
+        <> "** — "
+        <> kind
+        <> " extendable"
         <> case fields {
           "" -> ""
           f -> "\n\n**Fields:**\n" <> f
@@ -133,7 +134,11 @@ fn lookup_type_alias(
     Ok(ta) -> {
       let resolved = accepted_types.accepted_type_to_string(ta.type_)
       option.Some(
-        "**" <> ta.name <> "** — Type alias\n\nResolves to: `" <> resolved <> "`",
+        "**"
+        <> ta.name
+        <> "** — Type alias\n\nResolves to: `"
+        <> resolved
+        <> "`",
       )
     }
     Error(_) -> option.None
@@ -262,14 +267,58 @@ fn find_word_end_loop(
 
 fn is_word_char(g: String) -> Bool {
   case g {
-    "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
-    | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
-    | "y" | "z"
-    -> True
-    "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L"
-    | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
-    | "Y" | "Z"
-    -> True
+    "a"
+    | "b"
+    | "c"
+    | "d"
+    | "e"
+    | "f"
+    | "g"
+    | "h"
+    | "i"
+    | "j"
+    | "k"
+    | "l"
+    | "m"
+    | "n"
+    | "o"
+    | "p"
+    | "q"
+    | "r"
+    | "s"
+    | "t"
+    | "u"
+    | "v"
+    | "w"
+    | "x"
+    | "y"
+    | "z" -> True
+    "A"
+    | "B"
+    | "C"
+    | "D"
+    | "E"
+    | "F"
+    | "G"
+    | "H"
+    | "I"
+    | "J"
+    | "K"
+    | "L"
+    | "M"
+    | "N"
+    | "O"
+    | "P"
+    | "Q"
+    | "R"
+    | "S"
+    | "T"
+    | "U"
+    | "V"
+    | "W"
+    | "X"
+    | "Y"
+    | "Z" -> True
     "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
     "_" -> True
     _ -> False

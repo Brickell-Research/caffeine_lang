@@ -1,8 +1,7 @@
 import caffeine_lang/common/accepted_types
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile,
-  type ExpectItem, type ExpectsFile, type Extendable,
-  type Field, type TypeAlias,
+  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
+  type Extendable, type Field, type TypeAlias,
 }
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
@@ -48,10 +47,7 @@ fn blueprints_file_symbols(
   list.flatten([alias_syms, ext_syms, block_syms])
 }
 
-fn expects_file_symbols(
-  file: ExpectsFile,
-  content: String,
-) -> List(json.Json) {
+fn expects_file_symbols(file: ExpectsFile, content: String) -> List(json.Json) {
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, content) })
   let block_syms =
@@ -65,18 +61,34 @@ fn expects_file_symbols(
 }
 
 fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
-  let #(line, col) = position_utils.find_name_position(content,ta.name)
+  let #(line, col) = position_utils.find_name_position(content, ta.name)
   let detail = accepted_types.accepted_type_to_string(ta.type_)
-  symbol_json(ta.name, detail, symbol_kind_type_parameter, line, col, string.length(ta.name), [])
+  symbol_json(
+    ta.name,
+    detail,
+    symbol_kind_type_parameter,
+    line,
+    col,
+    string.length(ta.name),
+    [],
+  )
 }
 
 fn extendable_symbol(ext: Extendable, content: String) -> json.Json {
-  let #(line, col) = position_utils.find_name_position(content,ext.name)
+  let #(line, col) = position_utils.find_name_position(content, ext.name)
   let detail = case ext.kind {
     ast.ExtendableRequires -> "Requires"
     ast.ExtendableProvides -> "Provides"
   }
-  symbol_json(ext.name, detail, symbol_kind_variable, line, col, string.length(ext.name), [])
+  symbol_json(
+    ext.name,
+    detail,
+    symbol_kind_variable,
+    line,
+    col,
+    string.length(ext.name),
+    [],
+  )
 }
 
 fn block_symbol(
@@ -89,37 +101,66 @@ fn block_symbol(
     True -> "Blueprints"
     False -> "Expectations"
   }
-  let #(line, col) = position_utils.find_name_position(content,search)
-  symbol_json(name, "", symbol_kind_module, line, col, string.length(name), children)
+  let #(line, col) = position_utils.find_name_position(content, search)
+  symbol_json(
+    name,
+    "",
+    symbol_kind_module,
+    line,
+    col,
+    string.length(name),
+    children,
+  )
 }
 
-fn blueprint_item_symbol(
-  item: BlueprintItem,
-  content: String,
-) -> json.Json {
-  let #(line, col) = position_utils.find_name_position(content,item.name)
+fn blueprint_item_symbol(item: BlueprintItem, content: String) -> json.Json {
+  let #(line, col) = position_utils.find_name_position(content, item.name)
   let req_fields =
     list.map(item.requires.fields, fn(f) { field_symbol(f, content) })
   let prov_fields =
     list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
   let children = list.flatten([req_fields, prov_fields])
-  symbol_json(item.name, "", symbol_kind_class, line, col, string.length(item.name), children)
+  symbol_json(
+    item.name,
+    "",
+    symbol_kind_class,
+    line,
+    col,
+    string.length(item.name),
+    children,
+  )
 }
 
 fn expect_item_symbol(item: ExpectItem, content: String) -> json.Json {
-  let #(line, col) = position_utils.find_name_position(content,item.name)
+  let #(line, col) = position_utils.find_name_position(content, item.name)
   let children =
     list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
-  symbol_json(item.name, "", symbol_kind_class, line, col, string.length(item.name), children)
+  symbol_json(
+    item.name,
+    "",
+    symbol_kind_class,
+    line,
+    col,
+    string.length(item.name),
+    children,
+  )
 }
 
 fn field_symbol(field: Field, content: String) -> json.Json {
-  let #(line, col) = position_utils.find_name_position(content,field.name)
+  let #(line, col) = position_utils.find_name_position(content, field.name)
   let detail = case field.value {
     ast.TypeValue(t) -> accepted_types.accepted_type_to_string(t)
     ast.LiteralValue(lit) -> literal_to_string(lit)
   }
-  symbol_json(field.name, detail, symbol_kind_property, line, col, string.length(field.name), [])
+  symbol_json(
+    field.name,
+    detail,
+    symbol_kind_property,
+    line,
+    col,
+    string.length(field.name),
+    [],
+  )
 }
 
 fn literal_to_string(lit: ast.Literal) -> String {

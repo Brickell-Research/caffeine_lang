@@ -42,7 +42,9 @@ pub fn generate_terraform(
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(terraform.Resource), CompilationError) {
-  use resource_lists <- result.try(irs |> list.try_map(ir_to_terraform_resources))
+  use resource_lists <- result.try(
+    irs |> list.try_map(ir_to_terraform_resources),
+  )
   Ok(list.flatten(resource_lists))
 }
 
@@ -110,8 +112,7 @@ pub fn ir_to_terraform_resources(
   ir: IntermediateRepresentation,
 ) -> Result(List(terraform.Resource), CompilationError) {
   let identifier = ir_to_identifier(ir)
-  let resource_name =
-    common.sanitize_terraform_identifier(ir.unique_identifier)
+  let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR.
   let threshold =
@@ -171,9 +172,7 @@ pub fn ir_to_terraform_resources(
     #("dataset", hcl.ref("var.honeycomb_dataset")),
     #(
       "sli",
-      hcl.ref(
-        "honeycombio_derived_column." <> derived_column_alias <> ".alias",
-      ),
+      hcl.ref("honeycombio_derived_column." <> derived_column_alias <> ".alias"),
     ),
     #("target_percentage", hcl.FloatLiteral(threshold)),
     #("time_period", hcl.IntLiteral(time_period)),
@@ -196,11 +195,7 @@ pub fn ir_to_terraform_resources(
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
   let runbook =
-    helpers.extract_value(
-      ir.values,
-      "runbook",
-      decode.optional(decode.string),
-    )
+    helpers.extract_value(ir.values, "runbook", decode.optional(decode.string))
     |> result.unwrap(option.None)
 
   case runbook {

@@ -77,7 +77,12 @@ fn remove_quotes_action(
 ) -> json.Json {
   let name_len = string.length(name)
   let edit_range =
-    range_json(diag.line, diag.character, diag.line, diag.character + name_len + 2)
+    range_json(
+      diag.line,
+      diag.character,
+      diag.line,
+      diag.character + name_len + 2,
+    )
   let text_edit =
     json.object([
       #("range", edit_range),

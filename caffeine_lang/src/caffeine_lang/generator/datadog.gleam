@@ -131,11 +131,7 @@ pub fn ir_to_terraform_resource(
     helpers.extract_value(ir.values, "evaluation", decode.string)
     |> result.unwrap("numerator / denominator")
   let runbook =
-    helpers.extract_value(
-      ir.values,
-      "runbook",
-      decode.optional(decode.string),
-    )
+    helpers.extract_value(ir.values, "runbook", decode.optional(decode.string))
     |> result.unwrap(option.None)
 
   // Parse the evaluation expression using CQL and get HCL blocks.
@@ -163,35 +159,34 @@ pub fn ir_to_terraform_resource(
   let user_tags = build_user_tags(ir.values)
 
   // Build system tags (common to both types).
-  let system_tags = [
-    hcl.StringLiteral("managed_by:caffeine"),
-    hcl.StringLiteral("caffeine_version:" <> constants.version),
-    hcl.StringLiteral("org:" <> ir.metadata.org_name),
-    hcl.StringLiteral("team:" <> ir.metadata.team_name),
-    hcl.StringLiteral("service:" <> ir.metadata.service_name),
-    hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
-    hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
-  ]
-  |> list.append(
-    // Generate artifact tags for each referenced artifact
-    ir.artifact_refs
-    |> list.map(fn(ref) { hcl.StringLiteral("artifact:" <> ref) }),
-  )
-  |> list.append(dependency_tags)
-  |> list.append(
-    // Also add misc tags (sorted for deterministic output across targets).
-    ir.metadata.misc
-    |> dict.keys
-    |> list.sort(string.compare)
-    |> list.flat_map(fn(key) {
-      let assert Ok(values) = ir.metadata.misc |> dict.get(key)
-      values
+  let system_tags =
+    [
+      hcl.StringLiteral("managed_by:caffeine"),
+      hcl.StringLiteral("caffeine_version:" <> constants.version),
+      hcl.StringLiteral("org:" <> ir.metadata.org_name),
+      hcl.StringLiteral("team:" <> ir.metadata.team_name),
+      hcl.StringLiteral("service:" <> ir.metadata.service_name),
+      hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
+      hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
+    ]
+    |> list.append(
+      // Generate artifact tags for each referenced artifact
+      ir.artifact_refs
+      |> list.map(fn(ref) { hcl.StringLiteral("artifact:" <> ref) }),
+    )
+    |> list.append(dependency_tags)
+    |> list.append(
+      // Also add misc tags (sorted for deterministic output across targets).
+      ir.metadata.misc
+      |> dict.keys
       |> list.sort(string.compare)
-      |> list.map(fn(value) {
-        hcl.StringLiteral(key <> ":" <> value)
-      })
-    }),
-  )
+      |> list.flat_map(fn(key) {
+        let assert Ok(values) = ir.metadata.misc |> dict.get(key)
+        values
+        |> list.sort(string.compare)
+        |> list.map(fn(value) { hcl.StringLiteral(key <> ":" <> value) })
+      }),
+    )
 
   // Detect overshadowing: user tags whose key matches a system tag key.
   let system_tag_keys =
@@ -358,4 +353,3 @@ fn build_user_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
     hcl.StringLiteral(key <> ":" <> value)
   })
 }
-

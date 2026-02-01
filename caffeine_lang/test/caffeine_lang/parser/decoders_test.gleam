@@ -1,6 +1,6 @@
 import caffeine_lang/common/accepted_types
-import caffeine_lang/parser/decoders
 import caffeine_lang/common/primitive_types
+import caffeine_lang/parser/decoders
 import gleam/dynamic
 import gleam/dynamic/decode
 import test_helpers
@@ -12,18 +12,15 @@ import test_helpers
 // * ✅ name doesn't exist in collection
 pub fn named_reference_decoder_test() {
   let collection = [#("alice", 1), #("bob", 2)]
-  let decoder = decoders.named_reference_decoder(from: collection, by: fn(x) { x.0 })
+  let decoder =
+    decoders.named_reference_decoder(from: collection, by: fn(x) { x.0 })
 
   [
     #(dynamic.string("alice"), Ok("alice")),
     #(
       dynamic.string("charlie"),
       Error([
-        decode.DecodeError(
-          "NamedReference (one of: alice, bob)",
-          "String",
-          [],
-        ),
+        decode.DecodeError("NamedReference (one of: alice, bob)", "String", []),
       ]),
     ),
   ]
@@ -55,14 +52,8 @@ pub fn non_empty_string_decoder_test() {
         decode.DecodeError("NonEmptyString (got empty string)", "String", []),
       ]),
     ),
-    #(
-      dynamic.int(123),
-      Error([decode.DecodeError("String", "Int", [])]),
-    ),
-    #(
-      dynamic.bool(True),
-      Error([decode.DecodeError("String", "Bool", [])]),
-    ),
+    #(dynamic.int(123), Error([decode.DecodeError("String", "Int", [])])),
+    #(dynamic.bool(True), Error([decode.DecodeError("String", "Bool", [])])),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     decode.run(input, decoder)

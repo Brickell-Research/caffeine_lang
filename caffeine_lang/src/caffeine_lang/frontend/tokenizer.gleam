@@ -12,9 +12,7 @@ type TokenizerState {
 }
 
 /// Tokenizes source text into a list of positioned tokens.
-pub fn tokenize(
-  source: String,
-) -> Result(List(PositionedToken), TokenizerError) {
+pub fn tokenize(source: String) -> Result(List(PositionedToken), TokenizerError) {
   let state = TokenizerState(source:, line: 1, column: 1, at_line_start: True)
   tokenize_loop(state, [])
   |> result.map(list.reverse)

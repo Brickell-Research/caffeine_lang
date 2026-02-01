@@ -1,9 +1,10 @@
 import caffeine_lang/common/constants
 import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/core/compilation_configuration
-import caffeine_lang/core/compiler
+import caffeine_lang/core/compiler.{type CompilationOutput}
 import caffeine_lang/core/logger
 import gleam/list
+import gleam/result
 import gleam/string
 import simplifile
 import test_helpers
@@ -93,13 +94,17 @@ pub fn compile_test() {
       read_expectations_dir(input_expectations_dir),
       config,
     )
+    |> result.map(fn(output) { output.terraform })
   })
 }
 
-fn contains_all_substrings(result: Result(String, a), substrings: List(String)) {
+fn contains_all_substrings(
+  result: Result(CompilationOutput, a),
+  substrings: List(String),
+) {
   case result {
-    Ok(terraform) ->
-      list.all(substrings, fn(s) { string.contains(terraform, s) })
+    Ok(output) ->
+      list.all(substrings, fn(s) { string.contains(output.terraform, s) })
     Error(_) -> False
   }
 }

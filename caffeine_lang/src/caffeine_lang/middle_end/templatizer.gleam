@@ -82,9 +82,7 @@ pub fn parse_and_resolve_query_template(
 ) -> Result(String, CompilationError) {
   use resolved <- result.try(
     do_parse_and_resolve_query_template(query, value_tuples)
-    |> result.map_error(fn(err) {
-      errors.prefix_error(err, identifier)
-    }),
+    |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
   )
   Ok(cleanup_empty_template_artifacts(resolved))
 }

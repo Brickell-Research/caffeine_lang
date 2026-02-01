@@ -107,7 +107,10 @@ fn build_unprovided_optional_value_tuples(
   |> dict.to_list
   |> list.filter_map(fn(param) {
     let #(label, typ) = param
-    use <- bool.guard(when: dict.has_key(merged_inputs, label), return: Error(Nil))
+    use <- bool.guard(
+      when: dict.has_key(merged_inputs, label),
+      return: Error(Nil),
+    )
     case accepted_types.is_optional_or_defaulted(typ) {
       True -> Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
       False -> Error(Nil)
@@ -153,30 +156,21 @@ fn resolve_values_for_tag(
 ) -> Result(List(String), Nil) {
   case typ {
     accepted_types.PrimitiveType(_) -> {
-      case
-        decode.run(
-          value,
-          accepted_types.decode_value_to_string(typ),
-        )
-      {
+      case decode.run(value, accepted_types.decode_value_to_string(typ)) {
         Ok(s) -> Ok([s])
         Error(_) -> Error(Nil)
       }
     }
     accepted_types.RefinementType(refinement) -> {
       case refinement {
-        refinement_types.OneOf(inner, _) ->
-          resolve_values_for_tag(inner, value)
+        refinement_types.OneOf(inner, _) -> resolve_values_for_tag(inner, value)
         refinement_types.InclusiveRange(inner, _, _) ->
           resolve_values_for_tag(inner, value)
       }
     }
     accepted_types.CollectionType(collection_types.List(inner)) -> {
       case
-        decode.run(
-          value,
-          accepted_types.decode_list_values_to_strings(inner),
-        )
+        decode.run(value, accepted_types.decode_list_values_to_strings(inner))
       {
         Ok(strings) -> Ok(strings)
         Error(_) -> Error(Nil)

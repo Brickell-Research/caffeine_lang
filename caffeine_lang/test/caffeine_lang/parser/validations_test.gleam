@@ -400,9 +400,7 @@ pub fn validate_value_type_test() {
           numeric_types.Integer,
         )),
       )),
-      json_error(
-        "expected (Int) received (Bool) value (Dict) for (some_key.a)",
-      ),
+      json_error("expected (Int) received (Bool) value (Dict) for (some_key.a)"),
     ),
     #(
       dynamic.properties([#(some_string, some_bool)]),
@@ -447,9 +445,7 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      json_error(
-        "expected (Int) received (Bool) value (List) for (some_key.1)",
-      ),
+      json_error("expected (Int) received (Bool) value (List) for (some_key.1)"),
     ),
     #(
       dynamic.list([some_bool, some_string]),
@@ -1060,7 +1056,11 @@ pub fn validate_relevant_uniqueness_test() {
     #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(True)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
-    validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
+    validations.validate_relevant_uniqueness(
+      things,
+      by: fetch_name,
+      label: "names",
+    )
   })
 
   // sad paths - exact match
@@ -1071,7 +1071,11 @@ pub fn validate_relevant_uniqueness_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
-    validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
+    validations.validate_relevant_uniqueness(
+      things,
+      by: fetch_name,
+      label: "names",
+    )
   })
 
   // sad paths - order not guaranteed (check contains)
@@ -1084,7 +1088,11 @@ pub fn validate_relevant_uniqueness_test() {
   |> list.each(fn(pair) {
     let #(things, expected_substring) = pair
     let result =
-      validations.validate_relevant_uniqueness(things, by: fetch_name, label: "names")
+      validations.validate_relevant_uniqueness(
+        things,
+        by: fetch_name,
+        label: "names",
+      )
     result |> should.be_error
     let assert Error(errors.ParserDuplicateError(msg)) = result
     string.contains(msg, expected_substring) |> should.be_true

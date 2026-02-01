@@ -10,10 +10,9 @@ import caffeine_lang/common/semantic_types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type Field, type Literal, type Struct, type TypeAlias,
-  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
-  LiteralInteger, LiteralList, LiteralString, LiteralStruct, LiteralTrue,
-  LiteralValue, Struct, TypeValue,
+  type Field, type Literal, type Struct, type TypeAlias, ExtendableProvides,
+  ExtendableRequires, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
+  LiteralString, LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -52,18 +51,14 @@ pub fn format(source: String) -> Result(String, String) {
     Ok(token.PositionedToken(token.KeywordBlueprints, _, _)) -> {
       use parsed <- result.try(
         parser.parse_blueprints_file(source)
-        |> result.map_error(fn(err) {
-          "Parse error: " <> string.inspect(err)
-        }),
+        |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
       )
       Ok(format_blueprints_file(parsed))
     }
     Ok(token.PositionedToken(token.KeywordExpectations, _, _)) -> {
       use parsed <- result.try(
         parser.parse_expects_file(source)
-        |> result.map_error(fn(err) {
-          "Parse error: " <> string.inspect(err)
-        }),
+        |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
       )
       Ok(format_expects_file(parsed))
     }
@@ -95,8 +90,7 @@ fn format_blueprints_file(file: BlueprintsFile) -> String {
 
   let sections = case file.blocks {
     [] -> sections
-    blocks ->
-      list.append(sections, list.map(blocks, format_blueprints_block))
+    blocks -> list.append(sections, list.map(blocks, format_blueprints_block))
   }
 
   let trailing = format_comments(file.trailing_comments, "")
@@ -117,8 +111,7 @@ fn format_expects_file(file: ExpectsFile) -> String {
 
   let sections = case file.blocks {
     [] -> sections
-    blocks ->
-      list.append(sections, list.map(blocks, format_expects_block))
+    blocks -> list.append(sections, list.map(blocks, format_expects_block))
   }
 
   let trailing = format_comments(file.trailing_comments, "")
@@ -196,14 +189,9 @@ fn format_expects_block(block: ExpectsBlock) -> String {
 fn format_blueprint_item(item: BlueprintItem) -> String {
   let comments = format_comments(item.leading_comments, "  ")
   let name_line =
-    "  * \""
-    <> item.name
-    <> "\""
-    <> format_extends(item.extends)
-    <> ":"
+    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
-  let requires =
-    "    Requires " <> format_struct(item.requires, 4, TypeFields)
+  let requires = "    Requires " <> format_struct(item.requires, 4, TypeFields)
   let provides =
     "    Provides " <> format_struct(item.provides, 4, LiteralFields)
 
@@ -213,11 +201,7 @@ fn format_blueprint_item(item: BlueprintItem) -> String {
 fn format_expect_item(item: ExpectItem) -> String {
   let comments = format_comments(item.leading_comments, "  ")
   let name_line =
-    "  * \""
-    <> item.name
-    <> "\""
-    <> format_extends(item.extends)
-    <> ":"
+    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
   let provides =
     "    Provides " <> format_struct(item.provides, 4, LiteralFields)
@@ -242,21 +226,24 @@ fn format_struct(s: Struct, indent: Int, context: FieldContext) -> String {
       case has_trailing_comments {
         True ->
           "{\n"
-          <> format_comments(s.trailing_comments, string.repeat(" ", indent + 2))
+          <> format_comments(
+            s.trailing_comments,
+            string.repeat(" ", indent + 2),
+          )
           <> string.repeat(" ", indent)
           <> "}"
         False -> "{ }"
       }
     fields -> {
       // Force multiline if any comments are present
-      use <- bool.guard(has_any_comments, format_struct_multiline(s, indent + 2, context))
+      use <- bool.guard(
+        has_any_comments,
+        format_struct_multiline(s, indent + 2, context),
+      )
       let inline = format_struct_inline(fields, context)
       let prefix_len = indent + 10
       // Prefer inline when it fits within 80 columns
-      use <- bool.guard(
-        string.length(inline) + prefix_len < 80,
-        inline,
-      )
+      use <- bool.guard(string.length(inline) + prefix_len < 80, inline)
       format_struct_multiline(s, indent + 2, context)
     }
   }
@@ -295,8 +282,7 @@ fn format_struct_multiline(
 fn format_field(f: Field, indent: Int, context: FieldContext) -> String {
   case f.value {
     TypeValue(t) -> f.name <> ": " <> format_type(t)
-    LiteralValue(l) ->
-      f.name <> ": " <> format_literal(l, indent, context)
+    LiteralValue(l) -> f.name <> ": " <> format_literal(l, indent, context)
   }
 }
 
@@ -340,8 +326,7 @@ fn format_modifier_type(
   m: modifier_types.ModifierTypes(AcceptedTypes),
 ) -> String {
   case m {
-    modifier_types.Optional(inner) ->
-      "Optional(" <> format_type(inner) <> ")"
+    modifier_types.Optional(inner) -> "Optional(" <> format_type(inner) <> ")"
     modifier_types.Defaulted(inner, default_val) ->
       "Defaulted("
       <> format_type(inner)
@@ -408,12 +393,7 @@ fn format_refinement_type(
       format_type(inner) <> " { x | x in { " <> sorted_vals <> " } }"
     }
     refinement_types.InclusiveRange(inner, low, high) ->
-      format_type(inner)
-      <> " { x | x in ( "
-      <> low
-      <> ".."
-      <> high
-      <> " ) }"
+      format_type(inner) <> " { x | x in ( " <> low <> ".." <> high <> " ) }"
   }
 }
 

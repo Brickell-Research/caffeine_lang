@@ -76,8 +76,7 @@ fn is_extends_context(before: String) -> Bool {
 
 fn is_type_context(before: String) -> Bool {
   // After a colon (field type position) or after a type keyword like "List("
-  string.ends_with(string.trim(before), ":")
-  || string.ends_with(before, "(")
+  string.ends_with(string.trim(before), ":") || string.ends_with(before, "(")
 }
 
 /// Detect if we're inside a Requires/Provides block and suggest fields
@@ -141,12 +140,8 @@ fn type_completions(content: String) -> List(json.Json) {
   list.flatten([type_items, alias_items])
 }
 
-fn field_completions(
-  fields: List(#(String, String)),
-) -> List(json.Json) {
-  list.map(fields, fn(f) {
-    completion_item(f.0, kind_field, f.1)
-  })
+fn field_completions(fields: List(#(String, String))) -> List(json.Json) {
+  list.map(fields, fn(f) { completion_item(f.0, kind_field, f.1) })
 }
 
 fn general_completions(content: String) -> List(json.Json) {
@@ -171,8 +166,7 @@ fn general_completions(content: String) -> List(json.Json) {
       let alias_items =
         list.map(file.type_aliases, fn(ta) {
           let detail =
-            "Type alias → "
-            <> accepted_types.accepted_type_to_string(ta.type_)
+            "Type alias → " <> accepted_types.accepted_type_to_string(ta.type_)
           completion_item(ta.name, kind_variable, detail)
         })
       list.flatten([ext_items, alias_items])
@@ -195,9 +189,7 @@ fn general_completions(content: String) -> List(json.Json) {
 
 fn keyword_items() -> List(json.Json) {
   keyword_info.all_keywords()
-  |> list.map(fn(kw) {
-    completion_item(kw.name, kind_keyword, kw.description)
-  })
+  |> list.map(fn(kw) { completion_item(kw.name, kind_keyword, kw.description) })
 }
 
 fn all_type_metas() -> List(TypeMeta) {
@@ -209,11 +201,7 @@ fn all_type_metas() -> List(TypeMeta) {
   ])
 }
 
-fn completion_item(
-  label: String,
-  kind: Int,
-  detail: String,
-) -> json.Json {
+fn completion_item(label: String, kind: Int, detail: String) -> json.Json {
   json.object([
     #("label", json.string(label)),
     #("kind", json.int(kind)),

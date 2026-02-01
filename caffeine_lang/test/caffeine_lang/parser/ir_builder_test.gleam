@@ -378,9 +378,11 @@ pub fn build_all_list_misc_test() {
       params: dict.from_list([
         #(
           "job_name",
-          accepted_types.CollectionType(collection_types.List(
-            accepted_types.PrimitiveType(primitive_types.String),
-          )),
+          accepted_types.CollectionType(
+            collection_types.List(accepted_types.PrimitiveType(
+              primitive_types.String,
+            )),
+          ),
         ),
         #(
           "threshold",
