@@ -13,6 +13,7 @@ import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
 import caffeine_lang/frontend/formatter
 import caffeine_lang/parser/artifacts
+import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lsp
 import gleam/io
 import gleam/list
@@ -337,25 +338,17 @@ fn print_version(log_level: LogLevel) {
 }
 
 fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
-  case artifacts.parse_standard_library() {
-    Error(_) -> {
-      log(log_level, "Error: Failed to parse standard library artifacts")
-      exit_status_codes.Failure
-    }
-    Ok(artifact_list) -> {
-      log(log_level, "Artifact Catalog")
-      log(log_level, string.repeat("=", 16))
-      log(log_level, "")
+  log(log_level, "Artifact Catalog")
+  log(log_level, string.repeat("=", 16))
+  log(log_level, "")
 
-      artifact_list
-      |> list.map(artifacts.pretty_print_artifact)
-      |> string.join("\n\n")
-      |> log(log_level, _)
+  stdlib_artifacts.standard_library()
+  |> list.map(artifacts.pretty_print_artifact)
+  |> string.join("\n\n")
+  |> log(log_level, _)
 
-      log(log_level, "")
-      exit_status_codes.Success
-    }
-  }
+  log(log_level, "")
+  exit_status_codes.Success
 }
 
 fn types_catalog(log_level: LogLevel) -> ExitStatusCodes {

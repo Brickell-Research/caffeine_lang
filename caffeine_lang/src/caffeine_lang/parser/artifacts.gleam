@@ -1,15 +1,8 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/refinement_types
-import caffeine_lang/parser/decoders
-import caffeine_lang/parser/validations
-import caffeine_lang/standard_library/artifacts
 import gleam/dict
-import gleam/dynamic/decode
-import gleam/json
 import gleam/list
-import gleam/result
 import gleam/string
 import gleam_community/ansi
 
@@ -27,7 +20,7 @@ pub type Artifact {
   )
 }
 
-/// Types of supported artifacts
+/// Types of supported artifacts.
 pub type ArtifactType {
   SLO
   DependencyRelations
@@ -41,31 +34,6 @@ pub fn params_to_types(
 ) -> dict.Dict(String, AcceptedTypes) {
   params
   |> dict.map_values(fn(_, param_info) { param_info.type_ })
-}
-
-/// Parses the embedded standard library artifacts.
-@internal
-pub fn parse_standard_library() -> Result(List(Artifact), CompilationError) {
-  parse_from_json_string(artifacts.standard_library)
-}
-
-/// Parses artifacts from a JSON string.
-@internal
-pub fn parse_from_json_string(
-  content: String,
-) -> Result(List(Artifact), CompilationError) {
-  use artifacts <- result.try(
-    decode_artifacts_json(content)
-    |> errors.map_json_decode_error,
-  )
-
-  use _ <- result.try(validations.validate_relevant_uniqueness(
-    artifacts,
-    by: fn(a) { a.type_ |> artifact_type_to_string },
-    label: "artifact names",
-  ))
-
-  Ok(artifacts)
 }
 
 /// Converts an ArtifactType to its corresponding string representation.
@@ -116,42 +84,4 @@ pub fn param_status(typ: AcceptedTypes) -> String {
       param_status(inner)
     _ -> ansi.magenta("required")
   }
-}
-
-/// Decoder for ArtifactType from a string.
-fn artifact_type_decoder() -> decode.Decoder(ArtifactType) {
-  use type_string <- decode.then(decode.string)
-  case type_string {
-    "SLO" -> decode.success(SLO)
-    "DependencyRelations" -> decode.success(DependencyRelations)
-    _ -> decode.failure(SLO, "SLO or DependencyRelations")
-  }
-}
-
-/// Decoder for ParamInfo from a JSON object with type_ and description.
-fn param_info_decoder() -> decode.Decoder(ParamInfo) {
-  use type_ <- decode.field("type_", decoders.accepted_types_decoder())
-  use description <- decode.field("description", decode.string)
-  decode.success(ParamInfo(type_:, description:))
-}
-
-fn decode_artifacts_json(
-  json_string: String,
-) -> Result(List(Artifact), json.DecodeError) {
-  let artifact_decoder = {
-    use type_ <- decode.field("type_", artifact_type_decoder())
-    use description <- decode.field("description", decode.string)
-    use params <- decode.field(
-      "params",
-      decode.dict(decode.string, param_info_decoder()),
-    )
-
-    decode.success(Artifact(type_:, description:, params:))
-  }
-  let artifacts_decoded = {
-    use artifacts <- decode.field("artifacts", decode.list(artifact_decoder))
-    decode.success(artifacts)
-  }
-
-  json.parse(from: json_string, using: artifacts_decoded)
 }

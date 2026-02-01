@@ -4,10 +4,10 @@ import caffeine_lang/frontend/pipeline
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
-import caffeine_lang/parser/artifacts
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import caffeine_lang/parser/ir_builder
+import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/list
 import gleam/result
 
@@ -19,7 +19,7 @@ pub fn link(
   blueprint: SourceFile,
   expectation_sources: List(SourceFile),
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
-  use artifacts <- result.try(artifacts.parse_standard_library())
+  let artifacts = stdlib_artifacts.standard_library()
 
   // Compile blueprints .caffeine source to JSON, then parse
   use blueprints_json <- result.try(pipeline.compile_blueprints(blueprint))

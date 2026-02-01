@@ -118,10 +118,7 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(
-      raw,
-      parse_primitive_or_collection,
-    )
+    collection_types.parse_collection_type(raw, parse_primitive_or_collection)
     |> result.map(CollectionType)
   })
   |> result.lazy_or(fn() {
@@ -219,10 +216,7 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
-    collection_types.parse_collection_type(
-      raw,
-      parse_primitive_or_collection,
-    )
+    collection_types.parse_collection_type(raw, parse_primitive_or_collection)
     |> result.map(CollectionType)
   })
   |> result.lazy_or(fn() {

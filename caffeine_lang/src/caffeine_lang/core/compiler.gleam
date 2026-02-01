@@ -11,11 +11,11 @@ import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation,
 }
 import caffeine_lang/middle_end/vendor
-import caffeine_lang/parser/artifacts
 import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import caffeine_lang/parser/ir_builder
 import caffeine_lang/parser/linker
+import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -397,7 +397,7 @@ fn parse_from_strings(
   )
 
   // Parse the generated JSON
-  use artifacts <- result.try(artifacts.parse_standard_library())
+  let artifacts = stdlib_artifacts.standard_library()
 
   use validated_blueprints <- result.try(blueprints.parse_from_json_string(
     blueprints_json,
