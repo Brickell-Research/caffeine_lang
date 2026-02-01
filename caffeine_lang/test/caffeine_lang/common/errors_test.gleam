@@ -1,50 +1,8 @@
 import caffeine_lang/common/errors
 import gleam/dynamic
 import gleam/dynamic/decode
-import gleam/json
 import gleam/option
 import test_helpers
-
-// ==== Format JSON Decode Error Tests ====
-// * ✅ UnexpectedEndOfInput
-// * ✅ UnexpectedByte
-// * ✅ UnexpectedSequence
-// * ✅ UnableToDecode (single error)
-// * ✅ UnableToDecode (multiple errors)
-pub fn format_json_decode_error_test() {
-  [
-    #(
-      json.UnexpectedEndOfInput,
-      errors.ParserJsonParserError("Unexpected end of input."),
-    ),
-    #(
-      json.UnexpectedByte("x"),
-      errors.ParserJsonParserError("Unexpected byte: x."),
-    ),
-    #(
-      json.UnexpectedSequence("abc"),
-      errors.ParserJsonParserError("Unexpected sequence: abc."),
-    ),
-    #(
-      json.UnableToDecode([
-        decode.DecodeError("String", "Int", ["field", "nested"]),
-      ]),
-      errors.ParserJsonParserError(
-        "Incorrect types: expected (String) received (Int) for (field.nested)",
-      ),
-    ),
-    #(
-      json.UnableToDecode([
-        decode.DecodeError("String", "Int", ["first"]),
-        decode.DecodeError("Bool", "Float", ["second"]),
-      ]),
-      errors.ParserJsonParserError(
-        "Incorrect types: expected (String) received (Int) for (first), expected (Bool) received (Float) for (second)",
-      ),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(errors.format_json_decode_error)
-}
 
 // ==== Format Decode Error Message Tests ====
 // * ✅ empty list

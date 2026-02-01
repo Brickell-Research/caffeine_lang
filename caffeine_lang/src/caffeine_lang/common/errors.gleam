@@ -3,10 +3,8 @@ import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/option
-import gleam/result
 import gleam/string
 
 /// Represents top level compilation errors.
@@ -69,40 +67,6 @@ pub fn prefix_error(
     CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
     CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
     CQLGeneratorError(msg:) -> CQLGeneratorError(msg: prefix <> msg)
-  }
-}
-
-/// Converts a JSON decode error into a CompilationError. Useful for leveraging the
-/// custom errors we have per compilation phase vs. the lower level ones from
-/// various libraries we leverage.
-@internal
-pub fn format_json_decode_error(error: json.DecodeError) -> CompilationError {
-  let msg = format_json_decode_error_to_string(error)
-
-  ParserJsonParserError(msg:)
-}
-
-/// Wraps a JSON decode result by mapping the error to a CompilationError.
-/// Eliminates the repeated pattern of case-matching on decode results just
-/// to convert the error variant.
-@internal
-pub fn map_json_decode_error(
-  result: Result(a, json.DecodeError),
-) -> Result(a, CompilationError) {
-  result.map_error(result, format_json_decode_error)
-}
-
-/// Converts a JSON decode error directly to a string (for browser error messages).
-@internal
-pub fn format_json_decode_error_to_string(error: json.DecodeError) -> String {
-  case error {
-    json.UnexpectedEndOfInput -> "Unexpected end of input."
-    json.UnexpectedByte(val) -> "Unexpected byte: " <> val <> "."
-    json.UnexpectedSequence(val) -> "Unexpected sequence: " <> val <> "."
-    json.UnableToDecode(suberrors) -> {
-      "Incorrect types: "
-      <> suberrors |> format_decode_error_message(option.None, option.None)
-    }
   }
 }
 
