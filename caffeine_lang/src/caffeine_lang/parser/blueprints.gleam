@@ -1,13 +1,10 @@
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/parser/artifacts.{type Artifact}
-import caffeine_lang/parser/decoders
 import caffeine_lang/parser/validations
 import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
-import gleam/json
 import gleam/list
 import gleam/result
 import gleam/string
@@ -23,21 +20,7 @@ pub type Blueprint {
   )
 }
 
-/// Parse blueprints from a JSON string.
-@internal
-pub fn parse_from_json_string(
-  json_string: String,
-  artifacts: List(Artifact),
-) -> Result(List(Blueprint), CompilationError) {
-  use blueprints <- result.try(
-    blueprints_from_json(json_string, artifacts)
-    |> errors.map_json_decode_error,
-  )
-
-  validate_blueprints(blueprints, artifacts)
-}
-
-/// Validates and transforms blueprints after JSON parsing.
+/// Validates blueprints against artifacts and merges artifact params.
 @internal
 pub fn validate_blueprints(
   blueprints: List(Blueprint),
@@ -237,38 +220,4 @@ fn find_conflicting_params(artifact_list: List(Artifact)) -> Result(String, Nil)
     [] -> Error(Nil)
     [first, ..] -> Ok(first)
   }
-}
-
-/// Decodes a list of blueprints from a JSON dynamic value.
-@internal
-pub fn blueprints_from_json(
-  json_string: String,
-  artifacts: List(Artifact),
-) -> Result(List(Blueprint), json.DecodeError) {
-  let blueprint_decoded = {
-    use name <- decode.field("name", decoders.non_empty_string_decoder())
-    use artifact_refs <- decode.field(
-      "artifact_refs",
-      decoders.non_empty_named_reference_list_decoder(
-        from: artifacts,
-        by: fn(a) { artifacts.artifact_type_to_string(a.type_) },
-      ),
-    )
-    use params <- decode.field(
-      "params",
-      decode.dict(decode.string, decoders.accepted_types_decoder()),
-    )
-    use inputs <- decode.field(
-      "inputs",
-      decode.dict(decode.string, decode.dynamic),
-    )
-
-    decode.success(Blueprint(name:, artifact_refs:, params:, inputs:))
-  }
-  let blueprints_decoded = {
-    use blueprints <- decode.field("blueprints", decode.list(blueprint_decoded))
-    decode.success(blueprints)
-  }
-
-  json.parse(from: json_string, using: blueprints_decoded)
 }

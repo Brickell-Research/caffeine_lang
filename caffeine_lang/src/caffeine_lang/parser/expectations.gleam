@@ -1,12 +1,9 @@
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/parser/blueprints.{type Blueprint}
-import caffeine_lang/parser/decoders
 import caffeine_lang/parser/validations
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
-import gleam/json
 import gleam/list
 import gleam/result
 
@@ -19,58 +16,12 @@ pub type Expectation {
   )
 }
 
-/// Parse expectations from a JSON string.
+/// Validates expectations against blueprints and returns paired with their blueprints.
 @internal
-pub fn parse_from_json_string(
-  json_string: String,
-  blueprints: List(Blueprint),
-  from source_path: String,
-) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
-  // Parse the JSON string.
-  use expectations <- result.try(
-    expectations_from_json(json_string, blueprints)
-    |> errors.map_json_decode_error,
-  )
-
-  validate_expectations(expectations, blueprints, source_path)
-}
-
-/// Parse expectations from a JSON string.
-@internal
-pub fn expectations_from_json(
-  json_string: String,
-  blueprints: List(Blueprint),
-) -> Result(List(Expectation), json.DecodeError) {
-  let expectation_decoded = {
-    use name <- decode.field("name", decoders.non_empty_string_decoder())
-    use blueprint_ref <- decode.field(
-      "blueprint_ref",
-      decoders.named_reference_decoder(from: blueprints, by: fn(b) { b.name }),
-    )
-    use inputs <- decode.field(
-      "inputs",
-      decode.dict(decode.string, decode.dynamic),
-    )
-
-    decode.success(Expectation(name:, blueprint_ref:, inputs:))
-  }
-  let expectations_decoded = {
-    use expectations <- decode.field(
-      "expectations",
-      decode.list(expectation_decoded),
-    )
-    decode.success(expectations)
-  }
-
-  json.parse(from: json_string, using: expectations_decoded)
-}
-
-/// Validate expectations and return paired with their blueprints.
-/// TODO: This provides massive duplication and is an area of low hanging fruit for optimization.
-fn validate_expectations(
+pub fn validate_expectations(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
-  source_path: String,
+  from source_path: String,
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
   // Map expectations to blueprints since we'll reuse that numerous times
   // and we've already validated all blueprint_refs.
