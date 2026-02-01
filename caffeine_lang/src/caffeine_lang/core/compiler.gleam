@@ -83,17 +83,17 @@ pub fn compile(
   Ok(output)
 }
 
-/// Compiles from JSON strings directly (no file I/O).
+/// Compiles from source strings directly (no file I/O).
 /// Used for browser-based compilation.
 pub fn compile_from_strings(
-  blueprints_json: String,
-  expectations_json: String,
+  blueprints_source: String,
+  expectations_source: String,
   expectations_path: String,
 ) -> Result(CompilationOutput, errors.CompilationError) {
   // Step 1: Parse (no file I/O).
   use irs <- result.try(parse_from_strings(
-    blueprints_json,
-    expectations_json,
+    blueprints_source,
+    expectations_source,
     expectations_path,
   ))
 
@@ -381,32 +381,32 @@ fn parse_from_strings(
   expectations_source: String,
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
-  // Run the DSL frontend pipeline to produce JSON
-  use blueprints_json <- result.try(
+  let artifacts = stdlib_artifacts.standard_library()
+
+  // Run the DSL frontend pipeline to produce typed values
+  use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
       path: "browser/blueprints.caffeine",
       content: blueprints_source,
     )),
   )
 
-  use expectations_json <- result.try(
+  use raw_expectations <- result.try(
     pipeline.compile_expects(SourceFile(
       path: "browser/expectations.caffeine",
       content: expectations_source,
     )),
   )
 
-  // Parse the generated JSON
-  let artifacts = stdlib_artifacts.standard_library()
-
-  use validated_blueprints <- result.try(blueprints.parse_from_json_string(
-    blueprints_json,
+  // Validate
+  use validated_blueprints <- result.try(blueprints.validate_blueprints(
+    raw_blueprints,
     artifacts,
   ))
 
   use expectations_blueprint_collection <- result.try(
-    expectations.parse_from_json_string(
-      expectations_json,
+    expectations.validate_expectations(
+      raw_expectations,
       validated_blueprints,
       from: expectations_path,
     ),

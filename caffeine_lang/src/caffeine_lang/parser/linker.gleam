@@ -21,16 +21,16 @@ pub fn link(
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
 
-  // Compile blueprints .caffeine source to JSON, then parse
-  use blueprints_json <- result.try(pipeline.compile_blueprints(blueprint))
-  use blueprints <- result.try(blueprints.parse_from_json_string(
-    blueprints_json,
+  // Compile blueprints .caffeine source, then validate
+  use raw_blueprints <- result.try(pipeline.compile_blueprints(blueprint))
+  use validated_blueprints <- result.try(blueprints.validate_blueprints(
+    raw_blueprints,
     artifacts,
   ))
 
   use expectations_with_paths <- result.try(parse_expectation_sources(
     expectation_sources,
-    blueprints,
+    validated_blueprints,
   ))
 
   Ok(ir_builder.build_all(expectations_with_paths))
@@ -38,13 +38,17 @@ pub fn link(
 
 fn parse_expectation_sources(
   sources: List(SourceFile),
-  blueprints: List(blueprints.Blueprint),
+  validated_blueprints: List(blueprints.Blueprint),
 ) {
   sources
   |> list.map(fn(source) {
     pipeline.compile_expects(source)
-    |> result.try(fn(json) {
-      expectations.parse_from_json_string(json, blueprints, from: source.path)
+    |> result.try(fn(raw_expectations) {
+      expectations.validate_expectations(
+        raw_expectations,
+        validated_blueprints,
+        from: source.path,
+      )
     })
     |> result.map(fn(exps) { #(exps, source.path) })
   })
