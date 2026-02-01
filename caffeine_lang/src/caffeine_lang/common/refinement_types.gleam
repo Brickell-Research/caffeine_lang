@@ -83,6 +83,30 @@ pub fn refinement_type_to_string(
   }
 }
 
+/// Applies a fallible check to the inner type of a refinement type.
+@internal
+pub fn try_each_inner(
+  refinement: RefinementTypes(accepted),
+  f: fn(accepted) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case refinement {
+    OneOf(inner, _) -> f(inner)
+    InclusiveRange(inner, _, _) -> f(inner)
+  }
+}
+
+/// Transforms the inner type of a refinement type using a mapping function.
+@internal
+pub fn map_inner(
+  refinement: RefinementTypes(accepted),
+  f: fn(accepted) -> accepted,
+) -> RefinementTypes(accepted) {
+  case refinement {
+    OneOf(inner, values) -> OneOf(f(inner), values)
+    InclusiveRange(inner, min, max) -> InclusiveRange(f(inner), min, max)
+  }
+}
+
 /// Parses a string into a RefinementTypes.
 /// Returns the parsed refinement type with its inner types parsed using the provided function.
 /// The validate_set_value function validates that each value in the set is valid for the type.
@@ -188,6 +212,31 @@ pub fn resolve_to_string(
         Error(_) ->
           Error("Unable to decode InclusiveRange refinement type value.")
       }
+    }
+  }
+}
+
+/// Validates a default value is valid for a refinement type.
+/// The validate_inner_default callback lets the parent validate inner type defaults
+/// without creating a circular dependency. The get_numeric_type callback extracts
+/// the numeric type from the inner type for range validation.
+@internal
+pub fn validate_default_value(
+  refinement: RefinementTypes(accepted),
+  value: String,
+  validate_inner_default: fn(accepted, String) -> Result(Nil, Nil),
+  get_numeric_type: fn(accepted) -> numeric_types.NumericTypes,
+) -> Result(Nil, Nil) {
+  case refinement {
+    OneOf(_inner, allowed_values) ->
+      case set.contains(allowed_values, value) {
+        True -> Ok(Nil)
+        False -> Error(Nil)
+      }
+    InclusiveRange(inner, low, high) -> {
+      use _ <- result.try(validate_inner_default(inner, value))
+      numeric_types.validate_in_range(get_numeric_type(inner), value, low, high)
+      |> result.replace_error(Nil)
     }
   }
 }

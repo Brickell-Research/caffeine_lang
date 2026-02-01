@@ -7,6 +7,20 @@ import gleam/dynamic/decode
 import gleam/list
 import gleam/result
 
+/// Parses only refinement-compatible primitives: String, Integer, Float.
+/// Excludes Boolean and semantic types which are not valid in refinement contexts.
+@internal
+pub fn parse_refinement_compatible_primitive(
+  raw: String,
+) -> Result(PrimitiveTypes, Nil) {
+  case raw {
+    "String" -> Ok(String)
+    _ ->
+      numeric_types.parse_numeric_type(raw)
+      |> result.map(NumericType)
+  }
+}
+
 /// PrimitiveTypes are the most _atomic_ of types. I.E. the simple ones
 /// most folks think of: Boolean, Float, Integer, String.
 pub type PrimitiveTypes {

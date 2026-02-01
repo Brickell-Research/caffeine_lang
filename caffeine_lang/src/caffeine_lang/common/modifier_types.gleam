@@ -109,6 +109,45 @@ fn parse_defaulted_type(
   }
 }
 
+/// Applies a fallible check to the inner type of a modifier type.
+@internal
+pub fn try_each_inner(
+  modifier: ModifierTypes(accepted),
+  f: fn(accepted) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case modifier {
+    Optional(inner) -> f(inner)
+    Defaulted(inner, _) -> f(inner)
+  }
+}
+
+/// Transforms the inner type of a modifier type using a mapping function.
+@internal
+pub fn map_inner(
+  modifier: ModifierTypes(accepted),
+  f: fn(accepted) -> accepted,
+) -> ModifierTypes(accepted) {
+  case modifier {
+    Optional(inner) -> Optional(f(inner))
+    Defaulted(inner, default) -> Defaulted(f(inner), default)
+  }
+}
+
+/// Validates a default value for a modifier type by delegating to the inner type.
+/// The validate_inner callback lets the parent validate inner type defaults
+/// without creating a circular dependency.
+@internal
+pub fn validate_default_value_recursive(
+  modifier: ModifierTypes(accepted),
+  value: String,
+  validate_inner: fn(accepted, String) -> Result(Nil, Nil),
+) -> Result(Nil, Nil) {
+  case modifier {
+    Defaulted(inner, _) -> validate_inner(inner, value)
+    Optional(_) -> Error(Nil)
+  }
+}
+
 /// Decoder that converts a dynamic modifier value to its String representation.
 @internal
 pub fn decode_modifier_to_string(

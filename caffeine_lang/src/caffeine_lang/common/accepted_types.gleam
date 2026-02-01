@@ -10,7 +10,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 import gleam/result
-import gleam/set
 import gleam/string
 
 /// AcceptedTypes is a union of all the types that can be used as a "filter" over the set
@@ -121,7 +120,7 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
   |> result.lazy_or(fn() {
     collection_types.parse_collection_type(
       raw,
-      parse_primitive_or_nested_collection,
+      parse_primitive_or_collection,
     )
     |> result.map(CollectionType)
   })
@@ -141,13 +140,7 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
     )
     |> result.map(RefinementType)
   })
-  |> result.lazy_or(fn() {
-    // Type alias reference (must start with _ and have more characters)
-    case string.starts_with(raw, "_") && string.length(raw) > 1 {
-      True -> Ok(TypeAliasRef(raw))
-      False -> Error(Nil)
-    }
-  })
+  |> result.lazy_or(fn() { parse_type_alias_ref(raw) })
 }
 
 /// Resolves a value to a string using the provided resolver functions.
@@ -220,48 +213,15 @@ pub fn get_numeric_type(typ: AcceptedTypes) -> numeric_types.NumericTypes {
   }
 }
 
-/// Parser for primitives, nested collections, refinements, or type alias refs - used for collection inner types.
-/// Supports recursive nesting: Dict(String, List(Integer)), List(List(String)), etc.
-/// Also supports refinement types: Dict(String { x | x in { a, b } }, Integer)
-fn parse_primitive_or_nested_collection(
-  raw: String,
-) -> Result(AcceptedTypes, Nil) {
-  primitive_types.parse_primitive_type(raw)
-  |> result.map(PrimitiveType)
-  |> result.lazy_or(fn() {
-    // Recursively parse nested collections
-    collection_types.parse_collection_type(
-      raw,
-      parse_primitive_or_nested_collection,
-    )
-    |> result.map(CollectionType)
-  })
-  |> result.lazy_or(fn() {
-    // Refinement types (e.g., String { x | x in { a, b } })
-    refinement_types.parse_refinement_type(
-      raw,
-      parse_primitive_or_defaulted,
-      validate_string_literal_or_defaulted,
-    )
-    |> result.map(RefinementType)
-  })
-  |> result.lazy_or(fn() {
-    // Type alias reference
-    case string.starts_with(raw, "_") && string.length(raw) > 1 {
-      True -> Ok(TypeAliasRef(raw))
-      False -> Error(Nil)
-    }
-  })
-}
-
-// Parser for primitives, collections, refinements, or type alias refs - used for modifier inner types.
+/// Parser for primitives, collections (recursively nested), refinements, or type alias refs.
+/// Used as the inner parser for both collection and modifier type parsing.
 fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   primitive_types.parse_primitive_type(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
     collection_types.parse_collection_type(
       raw,
-      parse_primitive_or_nested_collection,
+      parse_primitive_or_collection,
     )
     |> result.map(CollectionType)
   })
@@ -273,43 +233,25 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
     )
     |> result.map(RefinementType)
   })
-  |> result.lazy_or(fn() {
-    // Type alias reference
-    case string.starts_with(raw, "_") && string.length(raw) > 1 {
-      True -> Ok(TypeAliasRef(raw))
-      False -> Error(Nil)
-    }
-  })
+  |> result.lazy_or(fn() { parse_type_alias_ref(raw) })
 }
 
 /// Parser for primitives or Defaulted modifiers - used for refinement type inner types.
 /// Only allows Integer, Float, String (not Boolean) or Defaulted with those types.
 fn parse_primitive_or_defaulted(raw: String) -> Result(AcceptedTypes, Nil) {
-  parse_refinement_compatible_primitive(raw)
+  primitive_types.parse_refinement_compatible_primitive(raw)
   |> result.map(PrimitiveType)
   |> result.lazy_or(fn() {
     modifier_types.parse_modifier_type(
       raw,
       fn(inner) {
-        parse_refinement_compatible_primitive(inner)
+        primitive_types.parse_refinement_compatible_primitive(inner)
         |> result.map(PrimitiveType)
       },
       validate_string_literal,
     )
     |> result.map(ModifierType)
   })
-}
-
-/// Parses only Integer, Float, or String primitives (excludes Boolean).
-fn parse_refinement_compatible_primitive(
-  raw: String,
-) -> Result(primitive_types.PrimitiveTypes, Nil) {
-  case raw {
-    "String" -> Ok(primitive_types.String)
-    _ ->
-      numeric_types.parse_numeric_type(raw)
-      |> result.map(primitive_types.NumericType)
-  }
 }
 
 // Validates a string literal value is valid for a type.
@@ -321,40 +263,21 @@ fn validate_string_literal(
   case typ {
     PrimitiveType(primitive) ->
       primitive_types.validate_default_value(primitive, value)
-    RefinementType(refinement) -> validate_refinement_default(refinement, value)
+    RefinementType(refinement) ->
+      refinement_types.validate_default_value(
+        refinement,
+        value,
+        validate_string_literal,
+        get_numeric_type,
+      )
+    ModifierType(modifier) ->
+      modifier_types.validate_default_value_recursive(
+        modifier,
+        value,
+        validate_string_literal,
+      )
     CollectionType(_) -> Error(Nil)
-    ModifierType(_) -> Error(Nil)
     TypeAliasRef(_) -> Error(Nil)
-  }
-}
-
-// Validates a default value is valid for a refinement type.
-fn validate_refinement_default(
-  refinement: refinement_types.RefinementTypes(AcceptedTypes),
-  value: String,
-) -> Result(Nil, Nil) {
-  case refinement {
-    refinement_types.OneOf(_inner, allowed_values) ->
-      case set.contains(allowed_values, value) {
-        True -> Ok(Nil)
-        False -> Error(Nil)
-      }
-    refinement_types.InclusiveRange(inner, low, high) ->
-      case inner {
-        PrimitiveType(primitive) -> {
-          use _ <- result.try(primitive_types.validate_default_value(
-            primitive,
-            value,
-          ))
-          case primitive {
-            primitive_types.NumericType(numeric) ->
-              numeric_types.validate_in_range(numeric, value, low, high)
-              |> result.replace_error(Nil)
-            _ -> Error(Nil)
-          }
-        }
-        _ -> Error(Nil)
-      }
   }
 }
 
@@ -366,8 +289,12 @@ fn validate_string_literal_or_defaulted(
   case typ {
     PrimitiveType(primitive) ->
       primitive_types.validate_default_value(primitive, value)
-    ModifierType(modifier_types.Defaulted(inner, _)) ->
-      validate_string_literal_or_defaulted(inner, value)
+    ModifierType(modifier) ->
+      modifier_types.validate_default_value_recursive(
+        modifier,
+        value,
+        validate_string_literal_or_defaulted,
+      )
     _ -> Error(Nil)
   }
 }
@@ -406,45 +333,9 @@ pub fn try_each_inner(
   case typ {
     PrimitiveType(_) -> f(typ)
     TypeAliasRef(_) -> f(typ)
-    CollectionType(collection) -> try_each_collection_inner(collection, f)
-    ModifierType(modifier) -> try_each_modifier_inner(modifier, f)
-    RefinementType(refinement) -> try_each_refinement_inner(refinement, f)
-  }
-}
-
-/// Applies a fallible check to each inner type in a collection type.
-fn try_each_collection_inner(
-  collection: CollectionTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> Result(Nil, e),
-) -> Result(Nil, e) {
-  case collection {
-    collection_types.List(inner) -> f(inner)
-    collection_types.Dict(key, value) -> {
-      use _ <- result.try(f(key))
-      f(value)
-    }
-  }
-}
-
-/// Applies a fallible check to each inner type in a modifier type.
-fn try_each_modifier_inner(
-  modifier: ModifierTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> Result(Nil, e),
-) -> Result(Nil, e) {
-  case modifier {
-    Optional(inner) -> f(inner)
-    Defaulted(inner, _) -> f(inner)
-  }
-}
-
-/// Applies a fallible check to each inner type in a refinement type.
-fn try_each_refinement_inner(
-  refinement: RefinementTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> Result(Nil, e),
-) -> Result(Nil, e) {
-  case refinement {
-    refinement_types.OneOf(inner, _) -> f(inner)
-    refinement_types.InclusiveRange(inner, _, _) -> f(inner)
+    CollectionType(collection) -> collection_types.try_each_inner(collection, f)
+    ModifierType(modifier) -> modifier_types.try_each_inner(modifier, f)
+    RefinementType(refinement) -> refinement_types.try_each_inner(refinement, f)
   }
 }
 
@@ -461,45 +352,19 @@ pub fn map_inner(
     PrimitiveType(_) -> f(typ)
     TypeAliasRef(_) -> f(typ)
     CollectionType(collection) ->
-      CollectionType(map_collection_inner(collection, f))
-    ModifierType(modifier) -> ModifierType(map_modifier_inner(modifier, f))
+      CollectionType(collection_types.map_inner(collection, f))
+    ModifierType(modifier) ->
+      ModifierType(modifier_types.map_inner(modifier, f))
     RefinementType(refinement) ->
-      RefinementType(map_refinement_inner(refinement, f))
+      RefinementType(refinement_types.map_inner(refinement, f))
   }
 }
 
-/// Transforms each inner type in a collection type.
-fn map_collection_inner(
-  collection: CollectionTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> AcceptedTypes,
-) -> CollectionTypes(AcceptedTypes) {
-  case collection {
-    collection_types.List(inner) -> collection_types.List(f(inner))
-    collection_types.Dict(key, value) -> collection_types.Dict(f(key), f(value))
-  }
-}
-
-/// Transforms each inner type in a modifier type.
-fn map_modifier_inner(
-  modifier: ModifierTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> AcceptedTypes,
-) -> ModifierTypes(AcceptedTypes) {
-  case modifier {
-    Optional(inner) -> Optional(f(inner))
-    Defaulted(inner, default) -> Defaulted(f(inner), default)
-  }
-}
-
-/// Transforms each inner type in a refinement type.
-fn map_refinement_inner(
-  refinement: RefinementTypes(AcceptedTypes),
-  f: fn(AcceptedTypes) -> AcceptedTypes,
-) -> RefinementTypes(AcceptedTypes) {
-  case refinement {
-    refinement_types.OneOf(inner, values) ->
-      refinement_types.OneOf(f(inner), values)
-    refinement_types.InclusiveRange(inner, min, max) ->
-      refinement_types.InclusiveRange(f(inner), min, max)
+/// Parses a type alias reference (must start with _ and have more characters).
+fn parse_type_alias_ref(raw: String) -> Result(AcceptedTypes, Nil) {
+  case string.starts_with(raw, "_") && string.length(raw) > 1 {
+    True -> Ok(TypeAliasRef(raw))
+    False -> Error(Nil)
   }
 }
 

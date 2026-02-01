@@ -100,6 +100,33 @@ fn parse_dict_type(
   }
 }
 
+/// Applies a fallible check to each inner type in a collection type.
+@internal
+pub fn try_each_inner(
+  collection: CollectionTypes(accepted),
+  f: fn(accepted) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case collection {
+    List(inner) -> f(inner)
+    Dict(key, value) -> {
+      use _ <- result.try(f(key))
+      f(value)
+    }
+  }
+}
+
+/// Transforms each inner type in a collection type using a mapping function.
+@internal
+pub fn map_inner(
+  collection: CollectionTypes(accepted),
+  f: fn(accepted) -> accepted,
+) -> CollectionTypes(accepted) {
+  case collection {
+    List(inner) -> List(f(inner))
+    Dict(key, value) -> Dict(f(key), f(value))
+  }
+}
+
 /// Decoder for collection types - collections cannot be decoded to a single string.
 @internal
 pub fn decode_collection_to_string(
