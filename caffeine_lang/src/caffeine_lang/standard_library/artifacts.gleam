@@ -3,16 +3,12 @@
 /// hardcoded string. That's way more offensive. We will work towards a better state, just know that even
 /// in its existing offensive state right now (02/01/2026), it's much better than it was before.
 /// - Rob
-import caffeine_lang/common/accepted_types.{
-  CollectionType, ModifierType, PrimitiveType, RefinementType,
+import caffeine_lang/common/types.{
+  CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer,
+  List as ListType, ModifierType, NumericType, OneOf, Optional, PrimitiveType,
+  RefinementType, SemanticType, String as StringType, URL,
 }
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/numeric_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
-import caffeine_lang/common/semantic_types
-import caffeine_lang/parser/artifacts.{
+import caffeine_lang/linker/artifacts.{
   type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
 }
 import gleam/dict
@@ -31,8 +27,8 @@ fn slo_artifact() -> Artifact {
       #(
         "threshold",
         ParamInfo(
-          type_: RefinementType(refinement_types.InclusiveRange(
-            PrimitiveType(primitive_types.NumericType(numeric_types.Float)),
+          type_: RefinementType(InclusiveRange(
+            PrimitiveType(NumericType(Float)),
             "0.0",
             "100.0",
           )),
@@ -42,8 +38,8 @@ fn slo_artifact() -> Artifact {
       #(
         "window_in_days",
         ParamInfo(
-          type_: ModifierType(modifier_types.Defaulted(
-            PrimitiveType(primitive_types.NumericType(numeric_types.Integer)),
+          type_: ModifierType(Defaulted(
+            PrimitiveType(NumericType(Integer)),
             "30",
           )),
           description: "Rolling window for measurement",
@@ -52,9 +48,9 @@ fn slo_artifact() -> Artifact {
       #(
         "indicators",
         ParamInfo(
-          type_: CollectionType(collection_types.Dict(
-            PrimitiveType(primitive_types.String),
-            PrimitiveType(primitive_types.String),
+          type_: CollectionType(Dict(
+            PrimitiveType(StringType),
+            PrimitiveType(StringType),
           )),
           description: "Named SLI measurement expressions",
         ),
@@ -62,15 +58,15 @@ fn slo_artifact() -> Artifact {
       #(
         "evaluation",
         ParamInfo(
-          type_: PrimitiveType(primitive_types.String),
+          type_: PrimitiveType(StringType),
           description: "How to evaluate indicators as an SLI",
         ),
       ),
       #(
         "vendor",
         ParamInfo(
-          type_: RefinementType(refinement_types.OneOf(
-            PrimitiveType(primitive_types.String),
+          type_: RefinementType(OneOf(
+            PrimitiveType(StringType),
             set.from_list(["datadog", "honeycomb"]),
           )),
           description: "Observability platform",
@@ -80,10 +76,10 @@ fn slo_artifact() -> Artifact {
         "tags",
         ParamInfo(
           type_: ModifierType(
-            modifier_types.Optional(
-              CollectionType(collection_types.Dict(
-                PrimitiveType(primitive_types.String),
-                PrimitiveType(primitive_types.String),
+            Optional(
+              CollectionType(Dict(
+                PrimitiveType(StringType),
+                PrimitiveType(StringType),
               )),
             ),
           ),
@@ -93,11 +89,7 @@ fn slo_artifact() -> Artifact {
       #(
         "runbook",
         ParamInfo(
-          type_: ModifierType(
-            modifier_types.Optional(
-              PrimitiveType(primitive_types.SemanticType(semantic_types.URL)),
-            ),
-          ),
+          type_: ModifierType(Optional(PrimitiveType(SemanticType(URL)))),
           description: "An optional runbook URL surfaced via the SLO description",
         ),
       ),
@@ -113,14 +105,12 @@ fn dependency_relations_artifact() -> Artifact {
       #(
         "relations",
         ParamInfo(
-          type_: CollectionType(collection_types.Dict(
-            RefinementType(refinement_types.OneOf(
-              PrimitiveType(primitive_types.String),
+          type_: CollectionType(Dict(
+            RefinementType(OneOf(
+              PrimitiveType(StringType),
               set.from_list(["soft", "hard"]),
             )),
-            CollectionType(
-              collection_types.List(PrimitiveType(primitive_types.String)),
-            ),
+            CollectionType(ListType(PrimitiveType(StringType))),
           )),
           description: "Map of dependency type to list of service names",
         ),

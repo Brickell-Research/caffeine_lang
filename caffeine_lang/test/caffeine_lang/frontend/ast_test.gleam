@@ -1,5 +1,4 @@
-import caffeine_lang/common/accepted_types
-import caffeine_lang/common/primitive_types
+import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
 import test_helpers
 
@@ -23,30 +22,18 @@ pub fn build_type_alias_pairs_test() {
     #([], []),
     #(
       [
-        ast.TypeAlias(
-          "_env",
-          accepted_types.PrimitiveType(primitive_types.String),
-          [],
-        ),
+        ast.TypeAlias("_env", types.PrimitiveType(types.String), []),
       ],
-      [#("_env", accepted_types.PrimitiveType(primitive_types.String))],
+      [#("_env", types.PrimitiveType(types.String))],
     ),
     #(
       [
-        ast.TypeAlias(
-          "_env",
-          accepted_types.PrimitiveType(primitive_types.String),
-          [],
-        ),
-        ast.TypeAlias(
-          "_count",
-          accepted_types.PrimitiveType(primitive_types.Boolean),
-          [],
-        ),
+        ast.TypeAlias("_env", types.PrimitiveType(types.String), []),
+        ast.TypeAlias("_count", types.PrimitiveType(types.Boolean), []),
       ],
       [
-        #("_env", accepted_types.PrimitiveType(primitive_types.String)),
-        #("_count", accepted_types.PrimitiveType(primitive_types.Boolean)),
+        #("_env", types.PrimitiveType(types.String)),
+        #("_count", types.PrimitiveType(types.Boolean)),
       ],
     ),
   ]

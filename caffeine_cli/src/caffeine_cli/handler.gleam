@@ -1,18 +1,15 @@
 import caffeine_cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_cli/file_discovery
 import caffeine_cli/format_file_discovery
-import caffeine_lang/common/collection_types
 import caffeine_lang/common/constants
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
 import caffeine_lang/common/source_file.{SourceFile}
 import caffeine_lang/common/type_info
+import caffeine_lang/common/types
 import caffeine_lang/core/compilation_configuration
 import caffeine_lang/core/compiler
 import caffeine_lang/core/logger.{type LogLevel}
 import caffeine_lang/frontend/formatter
-import caffeine_lang/parser/artifacts
+import caffeine_lang/linker/artifacts
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lsp
 import gleam/io
@@ -356,29 +353,11 @@ fn types_catalog(log_level: LogLevel) -> ExitStatusCodes {
   log(log_level, string.repeat("=", 21))
   log(log_level, "")
 
-  [
-    type_info.pretty_print_category(
-      "PrimitiveTypes",
-      "Base value types for simple data",
-      primitive_types.all_type_metas(),
-    ),
-    type_info.pretty_print_category(
-      "CollectionTypes",
-      "Container types for grouping values",
-      collection_types.all_type_metas(),
-    ),
-    type_info.pretty_print_category(
-      "ModifierTypes",
-      "Wrappers that change how values are handled",
-      modifier_types.all_type_metas(),
-    ),
-    type_info.pretty_print_category(
-      "RefinementTypes",
-      "Constraints that restrict allowed values",
-      refinement_types.all_type_metas(),
-    ),
-  ]
-  |> string.join("\n\n")
+  type_info.pretty_print_category(
+    "Types",
+    "All supported types in the Caffeine type system",
+    types.all_type_metas(),
+  )
   |> log(log_level, _)
 
   log(log_level, "")

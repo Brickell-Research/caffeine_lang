@@ -1,5 +1,5 @@
-import caffeine_lang/common/accepted_types
 import caffeine_lang/common/type_info.{type TypeMeta}
+import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
@@ -111,7 +111,7 @@ fn extends_completions(content: String) -> List(json.Json) {
 
 fn type_completions(content: String) -> List(json.Json) {
   let type_items =
-    accepted_types.all_type_metas()
+    types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
       completion_item(m.name, kind_class, m.description)
     })
@@ -120,8 +120,7 @@ fn type_completions(content: String) -> List(json.Json) {
   let alias_items = case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) ->
       list.map(file.type_aliases, fn(ta) {
-        let detail =
-          "Type alias → " <> accepted_types.accepted_type_to_string(ta.type_)
+        let detail = "Type alias → " <> types.accepted_type_to_string(ta.type_)
         completion_item(ta.name, kind_variable, detail)
       })
     _ -> []
@@ -137,7 +136,7 @@ fn field_completions(fields: List(#(String, String))) -> List(json.Json) {
 fn general_completions(content: String) -> List(json.Json) {
   let kw_items = keyword_items()
   let type_items =
-    accepted_types.all_type_metas()
+    types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
       completion_item(m.name, kind_class, m.description)
     })
@@ -153,7 +152,7 @@ fn general_completions(content: String) -> List(json.Json) {
       let alias_items =
         list.map(file.type_aliases, fn(ta) {
           let detail =
-            "Type alias → " <> accepted_types.accepted_type_to_string(ta.type_)
+            "Type alias → " <> types.accepted_type_to_string(ta.type_)
           completion_item(ta.name, kind_variable, detail)
         })
       list.flatten([ext_items, alias_items])

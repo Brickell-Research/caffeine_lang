@@ -3,12 +3,12 @@
 /// to transform .caffeine source into Blueprint and Expectation types.
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/source_file.{type SourceFile}
-import caffeine_lang/frontend/generator
+import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
 import caffeine_lang/frontend/validator
-import caffeine_lang/parser/blueprints.{type Blueprint}
-import caffeine_lang/parser/expectations.{type Expectation}
+import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/expectations.{type Expectation}
 import gleam/result
 
 /// Compiles a blueprints .caffeine source to a list of blueprints.
@@ -28,7 +28,7 @@ pub fn compile_blueprints(
       validator_error_to_compilation_error(err, source.path)
     }),
   )
-  Ok(generator.generate_blueprints(validated))
+  Ok(lowering.lower_blueprints(validated))
 }
 
 /// Compiles an expects .caffeine source to a list of expectations.
@@ -48,7 +48,7 @@ pub fn compile_expects(
       validator_error_to_compilation_error(err, source.path)
     }),
   )
-  Ok(generator.generate_expectations(validated))
+  Ok(lowering.lower_expectations(validated))
 }
 
 fn parser_error_to_compilation_error(

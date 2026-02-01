@@ -1,9 +1,9 @@
 /// Validation for Caffeine frontend AST.
 /// Handles extendable-related validation that must occur before JSON generation.
-import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
+import caffeine_lang/common/types.{
+  type AcceptedTypes, CollectionType, Dict, OneOf, PrimitiveType, RefinementType,
+  String as StringType, TypeAliasRef,
+}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type TypeAlias,
@@ -435,8 +435,8 @@ fn validate_type_alias_not_circular(
   visited: List(String),
 ) -> Result(Nil, ValidatorError) {
   case typ {
-    accepted_types.PrimitiveType(_) -> Ok(Nil)
-    accepted_types.TypeAliasRef(name) -> {
+    PrimitiveType(_) -> Ok(Nil)
+    TypeAliasRef(name) -> {
       use <- bool.guard(
         when: list.contains(visited, name),
         return: Error(CircularTypeAlias(name: original_name, cycle: visited)),
@@ -455,7 +455,7 @@ fn validate_type_alias_not_circular(
     }
     // For compound types, decompose and recurse via try_each_inner
     _ ->
-      accepted_types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner(typ, fn(inner) {
         validate_type_alias_not_circular(
           original_name,
           inner,
@@ -524,8 +524,8 @@ fn validate_type_refs(
   type_alias_map: List(#(String, AcceptedTypes)),
 ) -> Result(Nil, ValidatorError) {
   case typ {
-    accepted_types.PrimitiveType(_) -> Ok(Nil)
-    accepted_types.TypeAliasRef(name) -> {
+    PrimitiveType(_) -> Ok(Nil)
+    TypeAliasRef(name) -> {
       use <- bool.guard(
         when: set.contains(type_alias_names, name),
         return: Ok(Nil),
@@ -533,13 +533,13 @@ fn validate_type_refs(
       Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
     }
     // For Dict, validate key type resolves to String-based before recursing
-    accepted_types.CollectionType(collection_types.Dict(key, _)) -> {
+    CollectionType(Dict(key, _)) -> {
       use _ <- result.try(validate_dict_key_type(
         key,
         context_name,
         type_alias_map,
       ))
-      accepted_types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner(typ, fn(inner) {
         validate_type_refs(
           inner,
           context_name,
@@ -550,7 +550,7 @@ fn validate_type_refs(
     }
     // For all other compound types, recurse via try_each_inner
     _ ->
-      accepted_types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner(typ, fn(inner) {
         validate_type_refs(
           inner,
           context_name,
@@ -569,9 +569,9 @@ fn validate_dict_key_type(
 ) -> Result(Nil, ValidatorError) {
   case key_type {
     // String primitive is always valid
-    accepted_types.PrimitiveType(primitive_types.String) -> Ok(Nil)
+    PrimitiveType(StringType) -> Ok(Nil)
     // TypeAliasRef must resolve to String-based type
-    accepted_types.TypeAliasRef(alias_name) -> {
+    TypeAliasRef(alias_name) -> {
       case lookup_type_alias(alias_name, type_alias_map) {
         Ok(resolved) -> {
           use <- bool.guard(
@@ -580,7 +580,7 @@ fn validate_dict_key_type(
           )
           Error(InvalidDictKeyTypeAlias(
             alias_name: alias_name,
-            resolved_to: accepted_types.accepted_type_to_string(resolved),
+            resolved_to: types.accepted_type_to_string(resolved),
             referenced_by: context_name,
           ))
         }
@@ -589,15 +589,12 @@ fn validate_dict_key_type(
       }
     }
     // Refinement of String is valid
-    accepted_types.RefinementType(refinement_types.OneOf(
-      accepted_types.PrimitiveType(primitive_types.String),
-      _,
-    )) -> Ok(Nil)
+    RefinementType(OneOf(PrimitiveType(StringType), _)) -> Ok(Nil)
     // Other types are not valid Dict keys
     _ ->
       Error(InvalidDictKeyTypeAlias(
         alias_name: "inline",
-        resolved_to: accepted_types.accepted_type_to_string(key_type),
+        resolved_to: types.accepted_type_to_string(key_type),
         referenced_by: context_name,
       ))
   }
@@ -606,11 +603,8 @@ fn validate_dict_key_type(
 /// Checks if a type is String-based (String primitive or String refinement).
 fn is_string_based_type(typ: AcceptedTypes) -> Bool {
   case typ {
-    accepted_types.PrimitiveType(primitive_types.String) -> True
-    accepted_types.RefinementType(refinement_types.OneOf(
-      accepted_types.PrimitiveType(primitive_types.String),
-      _,
-    )) -> True
+    PrimitiveType(StringType) -> True
+    RefinementType(OneOf(PrimitiveType(StringType), _)) -> True
     _ -> False
   }
 }

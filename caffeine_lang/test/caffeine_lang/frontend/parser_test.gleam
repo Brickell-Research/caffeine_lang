@@ -1,9 +1,4 @@
-import caffeine_lang/common/accepted_types
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/numeric_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
+import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
@@ -37,85 +32,70 @@ fn read_file(path: String) -> String {
 }
 
 // Type helpers
-fn string_type() -> accepted_types.AcceptedTypes {
-  accepted_types.PrimitiveType(primitive_types.String)
+fn string_type() -> types.AcceptedTypes {
+  types.PrimitiveType(types.String)
 }
 
-fn float_type() -> accepted_types.AcceptedTypes {
-  accepted_types.PrimitiveType(primitive_types.NumericType(numeric_types.Float))
+fn float_type() -> types.AcceptedTypes {
+  types.PrimitiveType(types.NumericType(types.Float))
 }
 
-fn boolean_type() -> accepted_types.AcceptedTypes {
-  accepted_types.PrimitiveType(primitive_types.Boolean)
+fn boolean_type() -> types.AcceptedTypes {
+  types.PrimitiveType(types.Boolean)
 }
 
-fn list_type(
-  inner: primitive_types.PrimitiveTypes,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.CollectionType(
-    collection_types.List(accepted_types.PrimitiveType(inner)),
-  )
+fn list_type(inner: types.PrimitiveTypes) -> types.AcceptedTypes {
+  types.CollectionType(types.List(types.PrimitiveType(inner)))
 }
 
 fn dict_type(
-  key: primitive_types.PrimitiveTypes,
-  value: primitive_types.PrimitiveTypes,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.CollectionType(collection_types.Dict(
-    accepted_types.PrimitiveType(key),
-    accepted_types.PrimitiveType(value),
+  key: types.PrimitiveTypes,
+  value: types.PrimitiveTypes,
+) -> types.AcceptedTypes {
+  types.CollectionType(types.Dict(
+    types.PrimitiveType(key),
+    types.PrimitiveType(value),
   ))
 }
 
-fn nested_list_type(
-  inner: accepted_types.AcceptedTypes,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.CollectionType(collection_types.List(inner))
+fn nested_list_type(inner: types.AcceptedTypes) -> types.AcceptedTypes {
+  types.CollectionType(types.List(inner))
 }
 
 fn nested_dict_type(
-  key: primitive_types.PrimitiveTypes,
-  value: accepted_types.AcceptedTypes,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.CollectionType(collection_types.Dict(
-    accepted_types.PrimitiveType(key),
-    value,
-  ))
+  key: types.PrimitiveTypes,
+  value: types.AcceptedTypes,
+) -> types.AcceptedTypes {
+  types.CollectionType(types.Dict(types.PrimitiveType(key), value))
 }
 
-fn optional_type(
-  inner: accepted_types.AcceptedTypes,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.ModifierType(modifier_types.Optional(inner))
+fn optional_type(inner: types.AcceptedTypes) -> types.AcceptedTypes {
+  types.ModifierType(types.Optional(inner))
 }
 
 fn defaulted_type(
-  inner: accepted_types.AcceptedTypes,
+  inner: types.AcceptedTypes,
   default: String,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.ModifierType(modifier_types.Defaulted(inner, default))
+) -> types.AcceptedTypes {
+  types.ModifierType(types.Defaulted(inner, default))
 }
 
 fn oneof_type(
-  base: primitive_types.PrimitiveTypes,
+  base: types.PrimitiveTypes,
   values: List(String),
-) -> accepted_types.AcceptedTypes {
-  accepted_types.RefinementType(refinement_types.OneOf(
-    accepted_types.PrimitiveType(base),
+) -> types.AcceptedTypes {
+  types.RefinementType(types.OneOf(
+    types.PrimitiveType(base),
     set.from_list(values),
   ))
 }
 
 fn range_type(
-  base: primitive_types.PrimitiveTypes,
+  base: types.PrimitiveTypes,
   min: String,
   max: String,
-) -> accepted_types.AcceptedTypes {
-  accepted_types.RefinementType(refinement_types.InclusiveRange(
-    accepted_types.PrimitiveType(base),
-    min,
-    max,
-  ))
+) -> types.AcceptedTypes {
+  types.RefinementType(types.InclusiveRange(types.PrimitiveType(base), min, max))
 }
 
 // ==== parse_blueprints_file ====
@@ -487,14 +467,14 @@ pub fn parse_blueprints_file_test() {
                   requires: ast.Struct(trailing_comments: [], fields: [
                     ast.Field(
                       "tags",
-                      ast.TypeValue(list_type(primitive_types.String)),
+                      ast.TypeValue(list_type(types.String)),
                       leading_comments: [],
                     ),
                     ast.Field(
                       "counts",
                       ast.TypeValue(dict_type(
-                        primitive_types.String,
-                        primitive_types.NumericType(numeric_types.Integer),
+                        types.String,
+                        types.NumericType(types.Integer),
                       )),
                       leading_comments: [],
                     ),
@@ -511,7 +491,7 @@ pub fn parse_blueprints_file_test() {
                     ast.Field(
                       "status",
                       ast.TypeValue(
-                        oneof_type(primitive_types.String, [
+                        oneof_type(types.String, [
                           "active",
                           "inactive",
                         ]),
@@ -521,7 +501,7 @@ pub fn parse_blueprints_file_test() {
                     ast.Field(
                       "threshold",
                       ast.TypeValue(range_type(
-                        primitive_types.NumericType(numeric_types.Float),
+                        types.NumericType(types.Float),
                         "0.0",
                         "100.0",
                       )),
@@ -565,9 +545,7 @@ pub fn parse_blueprints_file_test() {
                       "nested_list",
                       ast.TypeValue(
                         nested_list_type(
-                          nested_list_type(accepted_types.PrimitiveType(
-                            primitive_types.String,
-                          )),
+                          nested_list_type(types.PrimitiveType(types.String)),
                         ),
                       ),
                       leading_comments: [],
@@ -575,12 +553,10 @@ pub fn parse_blueprints_file_test() {
                     ast.Field(
                       "nested_dict",
                       ast.TypeValue(nested_dict_type(
-                        primitive_types.String,
+                        types.String,
                         nested_dict_type(
-                          primitive_types.String,
-                          accepted_types.PrimitiveType(
-                            primitive_types.NumericType(numeric_types.Integer),
-                          ),
+                          types.String,
+                          types.PrimitiveType(types.NumericType(types.Integer)),
                         ),
                       )),
                       leading_comments: [],
@@ -588,11 +564,9 @@ pub fn parse_blueprints_file_test() {
                     ast.Field(
                       "dict_of_list",
                       ast.TypeValue(nested_dict_type(
-                        primitive_types.String,
+                        types.String,
                         nested_list_type(
-                          accepted_types.PrimitiveType(
-                            primitive_types.NumericType(numeric_types.Integer),
-                          ),
+                          types.PrimitiveType(types.NumericType(types.Integer)),
                         ),
                       )),
                       leading_comments: [],
@@ -601,11 +575,9 @@ pub fn parse_blueprints_file_test() {
                       "list_of_dict",
                       ast.TypeValue(
                         nested_list_type(
-                          accepted_types.CollectionType(collection_types.Dict(
-                            accepted_types.PrimitiveType(primitive_types.String),
-                            accepted_types.PrimitiveType(
-                              primitive_types.Boolean,
-                            ),
+                          types.CollectionType(types.Dict(
+                            types.PrimitiveType(types.String),
+                            types.PrimitiveType(types.Boolean),
                           )),
                         ),
                       ),
@@ -636,8 +608,8 @@ pub fn parse_blueprints_file_test() {
             ast.TypeAlias(
               leading_comments: [],
               name: "_env",
-              type_: accepted_types.RefinementType(refinement_types.OneOf(
-                accepted_types.PrimitiveType(primitive_types.String),
+              type_: types.RefinementType(types.OneOf(
+                types.PrimitiveType(types.String),
                 set.from_list(["production", "staging", "development"]),
               )),
             ),
@@ -655,7 +627,7 @@ pub fn parse_blueprints_file_test() {
                   requires: ast.Struct(trailing_comments: [], fields: [
                     ast.Field(
                       "env",
-                      ast.TypeValue(accepted_types.TypeAliasRef("_env")),
+                      ast.TypeValue(types.TypeAliasRef("_env")),
                       leading_comments: [],
                     ),
                   ]),

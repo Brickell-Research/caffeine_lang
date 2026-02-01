@@ -1,7 +1,5 @@
-import caffeine_lang/common/accepted_types
 import caffeine_lang/common/helpers
-import caffeine_lang/common/numeric_types
-import caffeine_lang/common/primitive_types
+import caffeine_lang/common/types
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -41,14 +39,12 @@ pub fn extract_value_test() {
   let values = [
     helpers.ValueTuple(
       "name",
-      accepted_types.PrimitiveType(primitive_types.String),
+      types.PrimitiveType(types.String),
       dynamic.string("hello"),
     ),
     helpers.ValueTuple(
       "count",
-      accepted_types.PrimitiveType(primitive_types.NumericType(
-        numeric_types.Integer,
-      )),
+      types.PrimitiveType(types.NumericType(types.Integer)),
       dynamic.int(42),
     ),
   ]
@@ -94,9 +90,7 @@ pub fn extract_threshold_test() {
   let with_threshold = [
     helpers.ValueTuple(
       "threshold",
-      accepted_types.PrimitiveType(primitive_types.NumericType(
-        numeric_types.Float,
-      )),
+      types.PrimitiveType(types.NumericType(types.Float)),
       dynamic.float(95.0),
     ),
   ]
@@ -122,9 +116,7 @@ pub fn extract_window_in_days_test() {
   let with_window = [
     helpers.ValueTuple(
       "window_in_days",
-      accepted_types.PrimitiveType(primitive_types.NumericType(
-        numeric_types.Integer,
-      )),
+      types.PrimitiveType(types.NumericType(types.Integer)),
       dynamic.int(7),
     ),
   ]

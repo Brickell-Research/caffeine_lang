@@ -1,12 +1,12 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
-import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/numeric_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
-import caffeine_lang/common/semantic_types
+import caffeine_lang/common/types.{
+  type AcceptedTypes, type CollectionTypes, type ModifierTypes,
+  type PrimitiveTypes, type RefinementTypes, Boolean, CollectionType, Defaulted,
+  Dict, Float, InclusiveRange, Integer, List as ListType, ModifierType,
+  NumericType, OneOf, Optional, PrimitiveType, RefinementType, SemanticType,
+  String as StringType, TypeAliasRef, URL,
+}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
@@ -288,46 +288,42 @@ fn format_field(f: Field, indent: Int, context: FieldContext) -> String {
 
 fn format_type(t: AcceptedTypes) -> String {
   case t {
-    accepted_types.PrimitiveType(p) -> format_primitive_type(p)
-    accepted_types.CollectionType(c) -> format_collection_type(c)
-    accepted_types.ModifierType(m) -> format_modifier_type(m)
-    accepted_types.RefinementType(r) -> format_refinement_type(r)
-    accepted_types.TypeAliasRef(name) -> name
+    PrimitiveType(p) -> format_primitive_type(p)
+    CollectionType(c) -> format_collection_type(c)
+    ModifierType(m) -> format_modifier_type(m)
+    RefinementType(r) -> format_refinement_type(r)
+    TypeAliasRef(name) -> name
   }
 }
 
-fn format_primitive_type(p: primitive_types.PrimitiveTypes) -> String {
+fn format_primitive_type(p: PrimitiveTypes) -> String {
   case p {
-    primitive_types.Boolean -> "Boolean"
-    primitive_types.String -> "String"
-    primitive_types.NumericType(n) ->
+    Boolean -> "Boolean"
+    StringType -> "String"
+    NumericType(n) ->
       case n {
-        numeric_types.Integer -> "Integer"
-        numeric_types.Float -> "Float"
+        Integer -> "Integer"
+        Float -> "Float"
       }
-    primitive_types.SemanticType(s) ->
+    SemanticType(s) ->
       case s {
-        semantic_types.URL -> "URL"
+        URL -> "URL"
       }
   }
 }
 
-fn format_collection_type(
-  c: collection_types.CollectionTypes(AcceptedTypes),
-) -> String {
+fn format_collection_type(c: CollectionTypes(AcceptedTypes)) -> String {
   case c {
-    collection_types.List(inner) -> "List(" <> format_type(inner) <> ")"
-    collection_types.Dict(key, value) ->
+    ListType(inner) -> "List(" <> format_type(inner) <> ")"
+    Dict(key, value) ->
       "Dict(" <> format_type(key) <> ", " <> format_type(value) <> ")"
   }
 }
 
-fn format_modifier_type(
-  m: modifier_types.ModifierTypes(AcceptedTypes),
-) -> String {
+fn format_modifier_type(m: ModifierTypes(AcceptedTypes)) -> String {
   case m {
-    modifier_types.Optional(inner) -> "Optional(" <> format_type(inner) <> ")"
-    modifier_types.Defaulted(inner, default_val) ->
+    Optional(inner) -> "Optional(" <> format_type(inner) <> ")"
+    Defaulted(inner, default_val) ->
       "Defaulted("
       <> format_type(inner)
       <> ", "
@@ -340,7 +336,7 @@ fn quote_if_string_type(inner: AcceptedTypes, val: String) -> String {
   let quote = case inner {
     // Type aliases can't be resolved at format time, so check whether the
     // value itself looks like a non-numeric, non-boolean literal.
-    accepted_types.TypeAliasRef(_) -> value_needs_quoting(val)
+    TypeAliasRef(_) -> value_needs_quoting(val)
     _ -> needs_string_quoting(inner)
   }
   use <- bool.guard(quote, "\"" <> val <> "\"")
@@ -349,12 +345,10 @@ fn quote_if_string_type(inner: AcceptedTypes, val: String) -> String {
 
 fn needs_string_quoting(t: AcceptedTypes) -> Bool {
   case t {
-    accepted_types.PrimitiveType(primitive_types.String) -> True
-    accepted_types.PrimitiveType(primitive_types.SemanticType(_)) -> True
-    accepted_types.RefinementType(refinement_types.OneOf(inner, _)) ->
-      needs_string_quoting(inner)
-    accepted_types.RefinementType(refinement_types.InclusiveRange(inner, _, _)) ->
-      needs_string_quoting(inner)
+    PrimitiveType(StringType) -> True
+    PrimitiveType(SemanticType(_)) -> True
+    RefinementType(OneOf(inner, _)) -> needs_string_quoting(inner)
+    RefinementType(InclusiveRange(inner, _, _)) -> needs_string_quoting(inner)
     _ -> False
   }
 }
@@ -375,11 +369,9 @@ fn value_needs_quoting(val: String) -> Bool {
   }
 }
 
-fn format_refinement_type(
-  r: refinement_types.RefinementTypes(AcceptedTypes),
-) -> String {
+fn format_refinement_type(r: RefinementTypes(AcceptedTypes)) -> String {
   case r {
-    refinement_types.OneOf(inner, values) -> {
+    OneOf(inner, values) -> {
       let quote = needs_string_quoting(inner)
       let sorted_vals =
         values
@@ -392,7 +384,7 @@ fn format_refinement_type(
         |> string.join(", ")
       format_type(inner) <> " { x | x in { " <> sorted_vals <> " } }"
     }
-    refinement_types.InclusiveRange(inner, low, high) ->
+    InclusiveRange(inner, low, high) ->
       format_type(inner) <> " { x | x in ( " <> low <> ".." <> high <> " ) }"
   }
 }

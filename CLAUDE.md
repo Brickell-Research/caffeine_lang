@@ -38,17 +38,17 @@ cd caffeine_cli && gleam test && gleam test --target javascript
   -> Tokenizer (frontend/tokenizer.gleam)
   -> Parser (frontend/parser.gleam) -> AST (frontend/ast.gleam)
   -> Validator (frontend/validator.gleam)
-  -> JSON Generator (frontend/generator.gleam)
-  -> Linker (parser/linker.gleam) -> IntermediateRepresentation
-  -> Semantic Analyzer (middle_end/semantic_analyzer.gleam)
-  -> Datadog Generator (generator/datadog.gleam) -> Terraform HCL
+  -> Lowering (frontend/lowering.gleam)
+  -> Linker (linker/linker.gleam) -> IntermediateRepresentation
+  -> Semantic Analyzer (analysis/semantic_analyzer.gleam)
+  -> Datadog Generator (codegen/datadog.gleam) -> Terraform HCL
 ```
 
 Two file types: `BlueprintsFile` (templates with Requires/Provides) and `ExpectsFile` (fully configured instances).
 
 ## Type System
 
-`AcceptedTypes` is the central dispatcher in `common/accepted_types.gleam`:
+`AcceptedTypes` is defined in `common/types.gleam`, which consolidates all type categories into a single module:
 
 - **Primitives**: Boolean, String, Integer, Float, URL
 - **Collections**: List(T), Dict(K, V)
@@ -56,7 +56,7 @@ Two file types: `BlueprintsFile` (templates with Requires/Provides) and `Expects
 - **Refinements**: OneOf(T, set), InclusiveRange(T, low, high)
 - **TypeAliasRef**: Named type references resolved at compile-time
 
-Each type category lives in its own module under `common/`. The dispatcher pattern passes recursive functions as parameters to avoid circular dependencies.
+All type operations (parsing, validation, string conversion, resolution) live in `common/types.gleam`. Sub-type functions are private; the module exposes dispatch functions that route to the correct sub-type handler.
 
 ## Coding Style
 

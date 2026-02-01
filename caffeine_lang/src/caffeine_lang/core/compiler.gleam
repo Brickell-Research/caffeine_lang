@@ -1,20 +1,18 @@
+import caffeine_lang/analysis/dependency_validator
+import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
+import caffeine_lang/analysis/vendor
+import caffeine_lang/codegen/datadog
+import caffeine_lang/codegen/dependency_graph
+import caffeine_lang/codegen/honeycomb
 import caffeine_lang/common/errors
 import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/core/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/core/logger
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/generator/datadog
-import caffeine_lang/generator/dependency_graph
-import caffeine_lang/generator/honeycomb
-import caffeine_lang/middle_end/dependency_validator
-import caffeine_lang/middle_end/semantic_analyzer.{
-  type IntermediateRepresentation,
-}
-import caffeine_lang/middle_end/vendor
-import caffeine_lang/parser/blueprints
-import caffeine_lang/parser/expectations
-import caffeine_lang/parser/ir_builder
-import caffeine_lang/parser/linker
+import caffeine_lang/linker/blueprints
+import caffeine_lang/linker/expectations
+import caffeine_lang/linker/ir_builder
+import caffeine_lang/linker/linker
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
 import gleam/int

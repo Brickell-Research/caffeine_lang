@@ -1,5 +1,5 @@
-import caffeine_lang/common/accepted_types
 import caffeine_lang/common/type_info.{type TypeMeta}
+import caffeine_lang/common/types
 import caffeine_lang/frontend/ast
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
@@ -40,11 +40,7 @@ pub fn get_hover(
 /// Look up hover documentation for a token name.
 /// Checks built-in types, keywords, then user-defined symbols.
 fn lookup_hover(word: String, content: String) -> Option(String) {
-  case
-    list.find(accepted_types.all_type_metas(), fn(m: TypeMeta) {
-      m.name == word
-    })
-  {
+  case list.find(types.all_type_metas(), fn(m: TypeMeta) { m.name == word }) {
     Ok(meta) -> option.Some(format_type_meta(meta))
     Error(_) ->
       case lookup_keyword(word) {
@@ -123,7 +119,7 @@ fn lookup_type_alias(
 ) -> Option(String) {
   case list.find(aliases, fn(ta) { ta.name == word }) {
     Ok(ta) -> {
-      let resolved = accepted_types.accepted_type_to_string(ta.type_)
+      let resolved = types.accepted_type_to_string(ta.type_)
       option.Some(
         "**"
         <> ta.name
@@ -138,7 +134,7 @@ fn lookup_type_alias(
 
 fn format_value(value: ast.Value) -> String {
   case value {
-    ast.TypeValue(t) -> accepted_types.accepted_type_to_string(t)
+    ast.TypeValue(t) -> types.accepted_type_to_string(t)
     ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
 }

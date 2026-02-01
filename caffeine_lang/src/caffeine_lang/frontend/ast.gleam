@@ -1,5 +1,5 @@
 /// AST for Caffeine blueprint and expectation files.
-import caffeine_lang/common/accepted_types.{type AcceptedTypes}
+import caffeine_lang/common/types.{type AcceptedTypes}
 import gleam/list
 import gleam/string
 

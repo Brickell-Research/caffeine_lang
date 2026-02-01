@@ -1,11 +1,8 @@
 /// Shared test helpers for constructing IntermediateRepresentation values.
-import caffeine_lang/common/accepted_types
-import caffeine_lang/common/collection_types
+import caffeine_lang/analysis/semantic_analyzer
+import caffeine_lang/analysis/vendor
 import caffeine_lang/common/helpers
-import caffeine_lang/common/numeric_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/middle_end/semantic_analyzer
-import caffeine_lang/middle_end/vendor
+import caffeine_lang/common/types
 import gleam/dict
 import gleam/dynamic
 import gleam/list
@@ -26,14 +23,12 @@ pub fn make_slo_ir(
     values: [
       helpers.ValueTuple(
         "vendor",
-        accepted_types.PrimitiveType(primitive_types.String),
+        types.PrimitiveType(types.String),
         dynamic.string("datadog"),
       ),
       helpers.ValueTuple(
         "threshold",
-        accepted_types.PrimitiveType(primitive_types.NumericType(
-          numeric_types.Float,
-        )),
+        types.PrimitiveType(types.NumericType(types.Float)),
         dynamic.float(threshold),
       ),
     ],
@@ -58,14 +53,12 @@ pub fn make_ir_with_deps(
     values: [
       helpers.ValueTuple(
         "vendor",
-        accepted_types.PrimitiveType(primitive_types.String),
+        types.PrimitiveType(types.String),
         dynamic.string("datadog"),
       ),
       helpers.ValueTuple(
         "threshold",
-        accepted_types.PrimitiveType(primitive_types.NumericType(
-          numeric_types.Float,
-        )),
+        types.PrimitiveType(types.NumericType(types.Float)),
         dynamic.float(threshold),
       ),
       make_relations_value(hard_deps, soft_deps),
@@ -135,13 +128,9 @@ fn make_relations_value(
 
   helpers.ValueTuple(
     "relations",
-    accepted_types.CollectionType(collection_types.Dict(
-      accepted_types.PrimitiveType(primitive_types.String),
-      accepted_types.CollectionType(
-        collection_types.List(accepted_types.PrimitiveType(
-          primitive_types.String,
-        )),
-      ),
+    types.CollectionType(types.Dict(
+      types.PrimitiveType(types.String),
+      types.CollectionType(types.List(types.PrimitiveType(types.String))),
     )),
     relations_value,
   )

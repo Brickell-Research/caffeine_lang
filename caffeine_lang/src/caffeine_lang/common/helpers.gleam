@@ -1,5 +1,5 @@
-import caffeine_lang/common/accepted_types
 import caffeine_lang/common/constants
+import caffeine_lang/common/types
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
@@ -10,7 +10,7 @@ import gleam/string
 
 /// A tuple of a label, type, and value used for template resolution.
 pub type ValueTuple {
-  ValueTuple(label: String, typ: accepted_types.AcceptedTypes, value: Dynamic)
+  ValueTuple(label: String, typ: types.AcceptedTypes, value: Dynamic)
 }
 
 /// Maps each referrer to its corresponding reference by matching names.
