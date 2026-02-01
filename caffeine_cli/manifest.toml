@@ -3,23 +3,24 @@
 
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
-  { name = "caffeine_lang", version = "3.0.26", build_tools = ["gleam"], requirements = ["gleam_community_ansi", "gleam_json", "gleam_stdlib", "terra_madre"], source = "local", path = "../caffeine_lang" },
+  { name = "caffeine_lang", version = "4.0.0", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib", "terra_madre"], source = "local", path = "../caffeine_lang" },
   { name = "caffeine_lsp", version = "0.1.0", build_tools = ["gleam"], requirements = ["caffeine_lang", "gleam_json", "gleam_stdlib"], source = "local", path = "../caffeine_lsp" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
-  { name = "gleam_community_ansi", version = "1.4.3", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_regexp", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "8A62AE9CC6EA65BEA630D95016D6C07E4F9973565FA3D0DE68DC4200D8E0DD27" },
-  { name = "gleam_community_colour", version = "2.0.2", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib"], otp_app = "gleam_community_colour", source = "hex", outer_checksum = "E34DD2C896AC3792151EDA939DA435FF3B69922F33415ED3C4406C932FBE9634" },
+  { name = "gleam_community_ansi", version = "1.4.4", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_regexp", "gleam_stdlib"], otp_app = "gleam_community_ansi", source = "hex", outer_checksum = "1B3AEA6074AB34D5F0674744F36DDC7290303A03295507E2DEC61EDD6F5777FE" },
+  { name = "gleam_community_colour", version = "2.0.4", build_tools = ["gleam"], requirements = ["gleam_json", "gleam_stdlib"], otp_app = "gleam_community_colour", source = "hex", outer_checksum = "6DB4665555D7D2B27F0EA32EF47E8BEBC4303821765F9C73D483F38EE24894F0" },
   { name = "gleam_json", version = "3.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_json", source = "hex", outer_checksum = "44FDAA8847BE8FC48CA7A1C089706BD54BADCC4C45B237A992EDDF9F2CDB2836" },
   { name = "gleam_regexp", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_regexp", source = "hex", outer_checksum = "9C215C6CA84A5B35BB934A9B61A9A306EC743153BE2B0425A0D032E477B062A9" },
   { name = "gleam_stdlib", version = "0.68.1", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "F7FAEBD8EF260664E86A46C8DBA23508D1D11BB3BCC6EE1B89B3BC3E5C83FF1E" },
   { name = "gleeunit", version = "1.9.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "DA9553CE58B67924B3C631F96FE3370C49EB6D6DC6B384EC4862CC4AAA718F3C" },
   { name = "simplifile", version = "2.3.2", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "E049B4DACD4D206D87843BCF4C775A50AE0F50A52031A2FFB40C9ED07D6EC70A" },
-  { name = "terra_madre", version = "0.0.4", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "terra_madre", source = "hex", outer_checksum = "8566803B474D2F7059A3285779DC2B7085F21027B0BDA71FABDFC127D087D9F9" },
+  { name = "terra_madre", version = "0.0.6", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "terra_madre", source = "hex", outer_checksum = "48648BC2CB0750A724D741E7573D8D5A474DFB457D177DBFDB7A3462334DE2B0" },
 ]
 
 [requirements]
 argv = { version = ">= 1.0.2 and < 2.0.0" }
 caffeine_lang = { path = "../caffeine_lang" }
 caffeine_lsp = { path = "../caffeine_lsp" }
+gleam_community_ansi = { version = ">= 1.4.0 and < 2.0.0" }
 gleam_stdlib = { version = ">= 0.63.0 and < 1.0.2" }
 gleeunit = { version = ">= 1.0.2" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }

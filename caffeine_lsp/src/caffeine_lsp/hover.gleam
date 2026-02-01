@@ -1,6 +1,5 @@
 import caffeine_lang/frontend/ast
-import caffeine_lang/type_info.{type TypeMeta}
-import caffeine_lang/types
+import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
 import caffeine_lsp/position_utils

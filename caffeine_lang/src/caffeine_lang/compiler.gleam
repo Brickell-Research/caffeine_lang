@@ -4,81 +4,39 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/honeycomb
-import caffeine_lang/compilation_configuration.{type CompilationConfig}
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
-import caffeine_lang/logger
 import caffeine_lang/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
-import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import gleam/string
-import gleam_community/ansi
 import terra_madre/render
 import terra_madre/terraform
 
-/// Output of the compilation process containing Terraform and optional dependency graph.
+/// Output of the compilation process containing Terraform, optional dependency graph, and warnings.
 pub type CompilationOutput {
-  CompilationOutput(terraform: String, dependency_graph: Option(String))
+  CompilationOutput(
+    terraform: String,
+    dependency_graph: Option(String),
+    warnings: List(String),
+  )
 }
 
 /// Compiles a blueprint and expectation sources into Terraform configuration.
-/// All file reading happens before this function is called.
+/// Pure function — all file reading happens before this function is called.
 pub fn compile(
   blueprint: SourceFile,
   expectations: List(SourceFile),
-  config: CompilationConfig,
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  print_header(config)
-
-  // Step 1: Parse and Link.
-  print_step1_start(config, blueprint.path, expectations)
-  use irs <- result.try(case run_parse_and_link(blueprint, expectations) {
-    Error(err) -> {
-      print_step1_error(config)
-      Error(err)
-    }
-    Ok(irs) -> {
-      print_step1_success(config, list.length(irs))
-      Ok(irs)
-    }
-  })
-
-  // Step 2: Semantic Analysis.
-  print_step2_start(config, irs)
-  use resolved_irs <- result.try(case run_semantic_analysis(irs) {
-    Error(err) -> {
-      print_step2_error(config)
-      Error(err)
-    }
-    Ok(resolved_irs) -> {
-      print_step2_success(config, list.length(resolved_irs))
-      Ok(resolved_irs)
-    }
-  })
-
-  // Step 3: Code Generation.
-  print_step3_start(config, resolved_irs)
-  use output <- result.try(case run_code_generation(resolved_irs) {
-    Error(err) -> {
-      print_step3_error(config)
-      Error(err)
-    }
-    Ok(output) -> {
-      print_step3_success(config)
-      Ok(output)
-    }
-  })
-
-  print_footer(config)
-  Ok(output)
+  use irs <- result.try(run_parse_and_link(blueprint, expectations))
+  use resolved_irs <- result.try(run_semantic_analysis(irs))
+  run_code_generation(resolved_irs)
 }
 
 /// Compiles from source strings directly (no file I/O).
@@ -88,164 +46,16 @@ pub fn compile_from_strings(
   expectations_source: String,
   expectations_path: String,
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  // Step 1: Parse (no file I/O).
   use irs <- result.try(parse_from_strings(
     blueprints_source,
     expectations_source,
     expectations_path,
   ))
-
-  // Step 2: Semantic analysis.
   use resolved_irs <- result.try(run_semantic_analysis(irs))
-
-  // Step 3: Code generation.
   run_code_generation(resolved_irs)
 }
 
-// ==== Print helpers ====
-
-fn print_header(config: CompilationConfig) {
-  logger.log(config.log_level, "")
-  logger.log(
-    config.log_level,
-    ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")),
-  )
-  logger.log(config.log_level, "")
-}
-
-fn print_step1_start(
-  config: CompilationConfig,
-  blueprint_path: String,
-  expectations: List(SourceFile),
-) {
-  logger.log(
-    config.log_level,
-    ansi.bold(ansi.underline("[1/3] Parsing and linking")),
-  )
-  logger.log(config.log_level, "  Blueprint file: " <> ansi.dim(blueprint_path))
-  logger.log(
-    config.log_level,
-    "  Expectation files: "
-      <> ansi.dim(int.to_string(list.length(expectations))),
-  )
-}
-
-fn print_step1_success(config: CompilationConfig, count: Int) {
-  logger.log(
-    config.log_level,
-    "  " <> ansi.green("✓ Parsed " <> int.to_string(count) <> " expectations"),
-  )
-}
-
-fn print_step1_error(config: CompilationConfig) {
-  logger.log(config.log_level, "  " <> ansi.red("✗ Failed to parse and link"))
-}
-
-fn print_step2_start(
-  config: CompilationConfig,
-  irs: List(IntermediateRepresentation),
-) {
-  logger.log(config.log_level, "")
-  logger.log(
-    config.log_level,
-    ansi.bold(ansi.underline("[2/3] Performing semantic analysis")),
-  )
-  logger.log(
-    config.log_level,
-    "  Resolving "
-      <> ansi.yellow(int.to_string(list.length(irs)))
-      <> " intermediate representations:",
-  )
-  irs
-  |> list.each(fn(ir) {
-    logger.log(
-      config.log_level,
-      "    "
-        <> ansi.dim("•")
-        <> " "
-        <> ir.unique_identifier
-        <> " "
-        <> ansi.dim(
-        "(artifacts: " <> string.join(ir.artifact_refs, ", ") <> ")",
-      ),
-    )
-  })
-}
-
-fn print_step2_success(config: CompilationConfig, count: Int) {
-  logger.log(
-    config.log_level,
-    "  "
-      <> ansi.green(
-      "✓ Resolved vendors and queries for "
-      <> int.to_string(count)
-      <> " expectations",
-    ),
-  )
-}
-
-fn print_step2_error(config: CompilationConfig) {
-  logger.log(config.log_level, "  " <> ansi.red("✗ Semantic analysis failed"))
-}
-
-fn print_step3_start(
-  config: CompilationConfig,
-  irs: List(IntermediateRepresentation),
-) {
-  logger.log(config.log_level, "")
-  logger.log(
-    config.log_level,
-    ansi.bold(ansi.underline("[3/3] Generating Terraform artifacts")),
-  )
-  logger.log(
-    config.log_level,
-    "  Generating resources for "
-      <> ansi.yellow(int.to_string(list.length(irs)))
-      <> " expectations:",
-  )
-  irs
-  |> list.each(fn(ir) {
-    logger.log(
-      config.log_level,
-      "    "
-        <> ansi.dim("•")
-        <> " "
-        <> ir.metadata.friendly_label
-        <> " "
-        <> ansi.dim(
-        "(org: "
-        <> ir.metadata.org_name
-        <> ", team: "
-        <> ir.metadata.team_name
-        <> ", service: "
-        <> ir.metadata.service_name
-        <> ")",
-      ),
-    )
-  })
-}
-
-fn print_step3_success(config: CompilationConfig) {
-  logger.log(
-    config.log_level,
-    "  " <> ansi.green("✓ Generated Terraform configuration"),
-  )
-}
-
-fn print_step3_error(config: CompilationConfig) {
-  logger.log(config.log_level, "  " <> ansi.red("✗ Code generation failed"))
-}
-
-fn print_footer(config: CompilationConfig) {
-  logger.log(config.log_level, "")
-  logger.log(
-    config.log_level,
-    ansi.bold(ansi.green("=== COMPILATION COMPLETE ===")),
-  )
-  logger.log(config.log_level, "")
-}
-
-// ==== Shared compilation steps ====
+// ==== Pipeline stages ====
 
 fn run_parse_and_link(
   blueprint: SourceFile,
@@ -257,18 +67,15 @@ fn run_parse_and_link(
 fn run_semantic_analysis(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
-  // First validate dependency relations (if any)
   use validated_irs <- result.try(
     dependency_validator.validate_dependency_relations(irs),
   )
-  // Then resolve vendors and queries
   semantic_analyzer.resolve_intermediate_representations(validated_irs)
 }
 
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  // Group IRs by vendor, generate resources per vendor, merge into one config.
   let #(datadog_irs, honeycomb_irs) = group_by_vendor(resolved_irs)
 
   let has_datadog = !list.is_empty(datadog_irs)
@@ -278,9 +85,9 @@ fn run_code_generation(
   let has_datadog = has_datadog || !has_honeycomb
 
   // Generate resources per vendor.
-  use datadog_resources <- result.try(case has_datadog {
+  use #(datadog_resources, datadog_warnings) <- result.try(case has_datadog {
     True -> datadog.generate_resources(datadog_irs)
-    False -> Ok([])
+    False -> Ok(#([], []))
   })
 
   use honeycomb_resources <- result.try(case has_honeycomb {
@@ -346,7 +153,7 @@ fn run_code_generation(
 
   let terraform_output = render.render_config(config)
 
-  // Dependency graph is only useful when relations exist, skip generation otherwise.
+  // Dependency graph is only useful when relations exist.
   let has_deps =
     resolved_irs
     |> list.any(fn(ir) {
@@ -358,7 +165,11 @@ fn run_code_generation(
     False -> option.None
   }
 
-  Ok(CompilationOutput(terraform: terraform_output, dependency_graph: graph))
+  Ok(CompilationOutput(
+    terraform: terraform_output,
+    dependency_graph: graph,
+    warnings: datadog_warnings,
+  ))
 }
 
 /// Group IRs by vendor into (datadog, honeycomb) lists.
@@ -381,7 +192,6 @@ fn parse_from_strings(
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
 
-  // Run the DSL frontend pipeline to produce typed values
   use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
       path: "browser/blueprints.caffeine",
@@ -396,7 +206,6 @@ fn parse_from_strings(
     )),
   )
 
-  // Validate
   use validated_blueprints <- result.try(blueprints.validate_blueprints(
     raw_blueprints,
     artifacts,

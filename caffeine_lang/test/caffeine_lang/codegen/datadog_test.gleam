@@ -825,7 +825,7 @@ pub fn generate_terraform_test() {
           vendor: option.Some(vendor.Datadog),
         ),
       ],
-      "slo_with_overshadowing_tags",
+      "slo_with_overshadowing_tags_WITH_WARNINGS",
     ),
     // SLO with runbook URL
     #(
@@ -892,8 +892,25 @@ pub fn generate_terraform_test() {
   ]
   |> list.each(fn(pair) {
     let #(input, corpus_file) = pair
-    let expected = read_corpus(corpus_file)
-    datadog.generate_terraform(input) |> should.equal(Ok(expected))
+    case string.ends_with(corpus_file, "_WITH_WARNINGS") {
+      True -> {
+        let actual_corpus =
+          string.drop_end(corpus_file, string.length("_WITH_WARNINGS"))
+        let expected = read_corpus(actual_corpus)
+        let result = datadog.generate_terraform(input)
+        case result {
+          Ok(#(tf, warnings)) -> {
+            tf |> should.equal(expected)
+            { !list.is_empty(warnings) } |> should.be_true()
+          }
+          Error(_) -> should.fail()
+        }
+      }
+      False -> {
+        let expected = read_corpus(corpus_file)
+        datadog.generate_terraform(input) |> should.equal(Ok(#(expected, [])))
+      }
+    }
   })
 }
 

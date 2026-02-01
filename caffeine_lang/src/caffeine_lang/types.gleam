@@ -1,5 +1,4 @@
 import caffeine_lang/parsing_utils
-import caffeine_lang/type_info.{type TypeMeta, TypeMeta}
 import gleam/bool
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
@@ -91,6 +90,11 @@ pub type RefinementTypes(accepted) {
   /// Furthermore, we initially will only support an inclusive
   /// range, as noted in the type name here.
   InclusiveRange(accepted, String, String)
+}
+
+/// Type metadata for display purposes.
+pub type TypeMeta {
+  TypeMeta(name: String, description: String, syntax: String, example: String)
 }
 
 // ---------------------------------------------------------------------------

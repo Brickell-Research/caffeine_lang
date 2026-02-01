@@ -8,7 +8,6 @@ import caffeine_lang/errors.{
   GeneratorSloQueryResolutionError,
 }
 import caffeine_lang/helpers
-import caffeine_lang/logger
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/dynamic/decode
@@ -26,13 +25,16 @@ import terra_madre/terraform
 /// Includes provider configuration and variables.
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
-) -> Result(String, CompilationError) {
-  use resources <- result.try(generate_resources(irs))
-  Ok(generator_utils.render_terraform_config(
-    resources: resources,
-    settings: terraform_settings(),
-    providers: [provider()],
-    variables: variables(),
+) -> Result(#(String, List(String)), CompilationError) {
+  use #(resources, warnings) <- result.try(generate_resources(irs))
+  Ok(#(
+    generator_utils.render_terraform_config(
+      resources: resources,
+      settings: terraform_settings(),
+      providers: [provider()],
+      variables: variables(),
+    ),
+    warnings,
   ))
 }
 
@@ -40,8 +42,13 @@ pub fn generate_terraform(
 @internal
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
-) -> Result(List(terraform.Resource), CompilationError) {
-  irs |> list.try_map(ir_to_terraform_resource)
+) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
+  irs
+  |> list.try_fold(#([], []), fn(acc, ir) {
+    let #(resources, warnings) = acc
+    use #(resource, ir_warnings) <- result.try(ir_to_terraform_resource(ir))
+    Ok(#(list.append(resources, [resource]), list.append(warnings, ir_warnings)))
+  })
 }
 
 /// Terraform settings block with required Datadog provider.
@@ -104,7 +111,7 @@ pub fn variables() -> List(terraform.Variable) {
 @internal
 pub fn ir_to_terraform_resource(
   ir: IntermediateRepresentation,
-) -> Result(terraform.Resource, CompilationError) {
+) -> Result(#(terraform.Resource, List(String)), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR.
@@ -164,24 +171,27 @@ pub fn ir_to_terraform_resource(
 
   let overlapping_keys = set.intersection(system_tag_keys, user_tag_keys)
 
-  // Warn about overshadowing and filter out overshadowed system tags.
-  let final_system_tag_pairs = case set.size(overlapping_keys) > 0 {
+  // Collect warnings about overshadowing and filter out overshadowed system tags.
+  let #(final_system_tag_pairs, warnings) = case
+    set.size(overlapping_keys) > 0
+  {
     True -> {
-      overlapping_keys
-      |> set.to_list
-      |> list.sort(string.compare)
-      |> list.each(fn(key) {
-        logger.warn(
+      let warn_msgs =
+        overlapping_keys
+        |> set.to_list
+        |> list.sort(string.compare)
+        |> list.map(fn(key) {
           ir_to_identifier(ir)
           <> " - user tag '"
           <> key
-          <> "' overshadows system tag",
-        )
-      })
-      system_tag_pairs
-      |> list.filter(fn(pair) { !set.contains(overlapping_keys, pair.0) })
+          <> "' overshadows system tag"
+        })
+      let filtered =
+        system_tag_pairs
+        |> list.filter(fn(pair) { !set.contains(overlapping_keys, pair.0) })
+      #(filtered, warn_msgs)
     }
-    False -> system_tag_pairs
+    False -> #(system_tag_pairs, [])
   }
 
   let tags =
@@ -222,13 +232,16 @@ pub fn ir_to_terraform_resource(
     option.None -> base_attributes
   }
 
-  Ok(terraform.Resource(
-    type_: "datadog_service_level_objective",
-    name: resource_name,
-    attributes: dict.from_list(attributes),
-    blocks: list.append(slo_blocks, [thresholds_block]),
-    meta: hcl.empty_meta(),
-    lifecycle: option.None,
+  Ok(#(
+    terraform.Resource(
+      type_: "datadog_service_level_objective",
+      name: resource_name,
+      attributes: dict.from_list(attributes),
+      blocks: list.append(slo_blocks, [thresholds_block]),
+      meta: hcl.empty_meta(),
+      lifecycle: option.None,
+    ),
+    warnings,
   ))
 }
 

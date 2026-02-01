@@ -1,7 +1,5 @@
-import caffeine_lang/compilation_configuration
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
-import caffeine_lang/logger
 import caffeine_lang/source_file.{type SourceFile, SourceFile}
 import gleam/list
 import gleam/result
@@ -51,8 +49,6 @@ fn read_expectations_dir(dir: String) -> List(SourceFile) {
 // * ✅ happy path - multiple (3 SLOs across 2 teams)
 // * ✅ happy path - type alias (E2E test with type alias in Requires)
 pub fn compile_test() {
-  let config =
-    compilation_configuration.CompilationConfig(log_level: logger.Minimal)
   [
     // happy path - none
     #(
@@ -92,7 +88,6 @@ pub fn compile_test() {
     compiler.compile(
       read_source_file(input_blueprints_path),
       read_expectations_dir(input_expectations_dir),
-      config,
     )
     |> result.map(fn(output) { output.terraform })
   })
