@@ -1,11 +1,10 @@
 import caffeine_lang/common/errors.{type CompilationError}
 import caffeine_lang/common/helpers
 import caffeine_lang/middle_end/semantic_analyzer.{
-  type IntermediateRepresentation,
+  type IntermediateRepresentation, ir_to_identifier,
 }
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic/decode
 import gleam/float
 import gleam/list
 import gleam/order
@@ -53,20 +52,10 @@ pub fn build_expectation_index(
 ) -> Dict(String, IntermediateRepresentation) {
   irs
   |> list.map(fn(ir) {
-    let path = ir_to_path(ir)
+    let path = ir_to_identifier(ir)
     #(path, ir)
   })
   |> dict.from_list
-}
-
-fn ir_to_path(ir: IntermediateRepresentation) -> String {
-  ir.metadata.org_name
-  <> "."
-  <> ir.metadata.team_name
-  <> "."
-  <> ir.metadata.service_name
-  <> "."
-  <> ir.metadata.friendly_label
 }
 
 fn validate_ir_dependencies(
@@ -79,10 +68,10 @@ fn validate_ir_dependencies(
     return: Ok(Nil),
   )
 
-  let self_path = ir_to_path(ir)
+  let self_path = ir_to_identifier(ir)
 
   // Extract the relations value from the IR
-  let relations = extract_relations(ir)
+  let relations = helpers.extract_relations(ir.values)
 
   // Check for duplicates within each relation type (hard and soft independently)
   use _ <- result.try(check_for_duplicates_per_relation(relations, self_path))
@@ -95,19 +84,6 @@ fn validate_ir_dependencies(
   |> list.try_each(fn(target) {
     validate_dependency_target(target, self_path, expectation_index)
   })
-}
-
-fn extract_relations(
-  ir: IntermediateRepresentation,
-) -> Dict(String, List(String)) {
-  ir.values
-  |> list.filter(fn(vt) { vt.label == "relations" })
-  |> list.first
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decode.dict(decode.string, decode.list(decode.string)))
-    |> result.replace_error(Nil)
-  })
-  |> result.unwrap(dict.new())
 }
 
 fn get_all_dependency_targets(
@@ -221,8 +197,8 @@ fn build_adjacency_list(
     list.contains(ir.artifact_refs, "DependencyRelations")
   })
   |> list.map(fn(ir) {
-    let path = ir_to_path(ir)
-    let relations = extract_relations(ir)
+    let path = ir_to_identifier(ir)
+    let relations = helpers.extract_relations(ir.values)
     let targets = get_all_dependency_targets(relations)
     #(path, targets)
   })
@@ -313,16 +289,16 @@ fn explore_neighbors(
         )),
       )
 
-      // If already fully visited, skip
+      // Skip already fully visited nodes, otherwise recurse
+      use <- bool.guard(
+        when: set.contains(visited, neighbor),
+        return: explore_neighbors(rest, adjacency, visited, in_progress, path),
+      )
       use #(visited, in_progress) <- result.try(
-        case set.contains(visited, neighbor) {
-          True -> Ok(#(visited, in_progress))
-          False ->
-            explore_node(neighbor, adjacency, visited, in_progress, [
-              neighbor,
-              ..path
-            ])
-        },
+        explore_node(neighbor, adjacency, visited, in_progress, [
+          neighbor,
+          ..path
+        ]),
       )
 
       explore_neighbors(rest, adjacency, visited, in_progress, path)
@@ -344,9 +320,9 @@ fn validate_hard_dependency_thresholds(
     && list.contains(ir.artifact_refs, "SLO")
   })
   |> list.try_each(fn(ir) {
-    let self_path = ir_to_path(ir)
-    let source_threshold = extract_threshold(ir)
-    let relations = extract_relations(ir)
+    let self_path = ir_to_identifier(ir)
+    let source_threshold = helpers.extract_threshold(ir.values)
+    let relations = helpers.extract_relations(ir.values)
     let hard_targets = dict.get(relations, "hard") |> result.unwrap([])
 
     hard_targets
@@ -359,11 +335,6 @@ fn validate_hard_dependency_thresholds(
       )
     })
   })
-}
-
-fn extract_threshold(ir: IntermediateRepresentation) -> Float {
-  helpers.extract_value(ir.values, "threshold", decode.float)
-  |> result.unwrap(99.9)
 }
 
 fn validate_single_hard_threshold(
@@ -381,8 +352,9 @@ fn validate_single_hard_threshold(
         return: Ok(Nil),
       )
 
-      let target_threshold = extract_threshold(target_ir)
+      let target_threshold = helpers.extract_threshold(target_ir.values)
 
+      // Use float.compare for proper floating point comparison
       case float.compare(source_threshold, target_threshold) {
         order.Gt ->
           Error(errors.SemanticAnalysisDependencyValidationError(

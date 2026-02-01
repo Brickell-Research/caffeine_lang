@@ -1,4 +1,5 @@
 import caffeine_lang/common/accepted_types
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
@@ -61,6 +62,9 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
   }
 }
 
+/// Default SLO threshold percentage used when no explicit threshold is provided.
+pub const default_threshold_percentage = 99.9
+
 /// Extract a value from a list of ValueTuple by label using the provided decoder.
 pub fn extract_value(
   values: List(ValueTuple),
@@ -72,4 +76,23 @@ pub fn extract_value(
   |> result.try(fn(vt) {
     decode.run(vt.value, decoder) |> result.replace_error(Nil)
   })
+}
+
+/// Extract the threshold from a list of values, falling back to the default.
+pub fn extract_threshold(values: List(ValueTuple)) -> Float {
+  extract_value(values, "threshold", decode.float)
+  |> result.unwrap(default_threshold_percentage)
+}
+
+/// Extract dependency relations as a Dict of relation type to target list.
+pub fn extract_relations(
+  values: List(ValueTuple),
+) -> dict.Dict(String, List(String)) {
+  values
+  |> list.find(fn(vt) { vt.label == "relations" })
+  |> result.try(fn(vt) {
+    decode.run(vt.value, decode.dict(decode.string, decode.list(decode.string)))
+    |> result.replace_error(Nil)
+  })
+  |> result.unwrap(dict.new())
 }

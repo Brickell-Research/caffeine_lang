@@ -399,11 +399,13 @@ fn log(log_level: LogLevel, message: String) {
   }
 }
 
+/// Extracts the directory portion of a file path.
 fn directory_of(path: String) -> String {
   case string.split(path, "/") |> list.reverse {
     [_, ..rest] ->
       case list.reverse(rest) {
         [] -> "."
+        [""] -> "/"
         parts -> string.join(parts, "/")
       }
     [] -> "."

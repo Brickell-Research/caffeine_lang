@@ -348,7 +348,7 @@ fn run_code_generation(
 
   let terraform_output = render.render_config(config)
 
-  // Generate dependency graph if any IRs have DependencyRelations
+  // Dependency graph is only useful when relations exist, skip generation otherwise.
   let has_deps =
     resolved_irs
     |> list.any(fn(ir) {
