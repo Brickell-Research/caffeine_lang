@@ -5,20 +5,21 @@ import test_helpers
 
 // ==== generate ====
 // * ✅ empty IR list -> graph header only
-// * ✅ IRs with no DependencyRelations -> nodes only, no edges
+// * ✅ IRs with no DependencyRelations -> nodes in subgraphs, no edges
+// * ✅ nodes grouped by service into subgraphs
+// * ✅ node labels are just the expectation name
 // * ✅ single IR with hard+soft deps -> correct arrows
-// * ✅ node labels include threshold
 // * ✅ multiple IRs with cross-deps
 pub fn generate_test() {
   // Empty IR list -> graph header only
   [
-    #([], "graph LR"),
+    #([], "graph TD"),
   ]
   |> test_helpers.array_based_test_executor_1(fn(irs) {
     dependency_graph.generate(irs)
   })
 
-  // IRs with no DependencyRelations -> nodes only, no edges
+  // IRs with no DependencyRelations -> nodes in subgraphs, no edges
   let no_deps_output =
     dependency_graph.generate([
       ir_test_helpers.make_slo_ir(
@@ -38,9 +39,18 @@ pub fn generate_test() {
     ])
 
   [
-    #(no_deps_output, "graph LR", True),
+    #(no_deps_output, "graph TD", True),
     #(no_deps_output, "acme_platform_auth_login_slo", True),
     #(no_deps_output, "acme_infra_db_query_slo", True),
+    // Subgraph labels (grouped by service name)
+    #(no_deps_output, "subgraph", True),
+    #(no_deps_output, "\"auth\"", True),
+    #(no_deps_output, "\"db\"", True),
+    #(no_deps_output, "end", True),
+    // Node labels are just the name
+    #(no_deps_output, "\"login_slo\"", True),
+    #(no_deps_output, "\"query_slo\"", True),
+    // No edges
     #(no_deps_output, "-->", False),
     #(no_deps_output, "-.->", False),
   ]
@@ -92,17 +102,7 @@ pub fn generate_test() {
     string.contains(output, substr)
   })
 
-  // Node labels include threshold
-  [
-    #(with_deps_output, "threshold: 99.9", True),
-    #(with_deps_output, "threshold: 99.99", True),
-    #(with_deps_output, "threshold: 99.5", True),
-  ]
-  |> test_helpers.array_based_test_executor_2(fn(output, substr) {
-    string.contains(output, substr)
-  })
-
-  // Multiple IRs with cross-deps
+  // Multiple IRs with cross-deps grouped into subgraphs by service
   let cross_deps_output =
     dependency_graph.generate([
       ir_test_helpers.make_ir_with_deps(
