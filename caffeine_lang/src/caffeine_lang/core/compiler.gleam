@@ -15,12 +15,15 @@ import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import caffeine_lang/parser/ir_builder
 import caffeine_lang/parser/linker
+import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
 import gleam_community/ansi
+import terra_madre/render
+import terra_madre/terraform
 
 /// Compiles a blueprint and expectation sources into Terraform configuration.
 /// All file reading happens before this function is called.
@@ -263,18 +266,96 @@ fn run_semantic_analysis(
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(String, errors.CompilationError) {
-  // Determine vendor from the first IR's resolved vendor field.
-  // All IRs in a compilation share the same vendor (enforced by blueprint).
-  case resolved_irs {
-    [first, ..] ->
-      case first.vendor {
-        option.Some(vendor.Honeycomb) ->
-          honeycomb.generate_terraform(resolved_irs)
-        _ -> datadog.generate_terraform(resolved_irs)
-      }
-    // Default to Datadog for empty IR lists (generates provider boilerplate).
-    [] -> datadog.generate_terraform(resolved_irs)
-  }
+  // Group IRs by vendor, generate resources per vendor, merge into one config.
+  let #(datadog_irs, honeycomb_irs) = group_by_vendor(resolved_irs)
+
+  let has_datadog = !list.is_empty(datadog_irs)
+  let has_honeycomb = !list.is_empty(honeycomb_irs)
+
+  // If no IRs at all, default to Datadog boilerplate (backwards compat).
+  let has_datadog = has_datadog || !has_honeycomb
+
+  // Generate resources per vendor.
+  use datadog_resources <- result.try(case has_datadog {
+    True -> datadog.generate_resources(datadog_irs)
+    False -> Ok([])
+  })
+
+  use honeycomb_resources <- result.try(case has_honeycomb {
+    True -> honeycomb.generate_resources(honeycomb_irs)
+    False -> Ok([])
+  })
+
+  // Merge terraform settings (required_providers from each vendor).
+  let required_providers =
+    []
+    |> list.append(case has_datadog {
+      True -> dict.to_list(datadog.terraform_settings().required_providers)
+      False -> []
+    })
+    |> list.append(case has_honeycomb {
+      True -> dict.to_list(honeycomb.terraform_settings().required_providers)
+      False -> []
+    })
+    |> dict.from_list
+
+  let terraform_settings =
+    terraform.TerraformSettings(
+      required_version: option.None,
+      required_providers: required_providers,
+      backend: option.None,
+      cloud: option.None,
+    )
+
+  // Collect providers and variables for used vendors only.
+  let providers =
+    []
+    |> list.append(case has_datadog {
+      True -> [datadog.provider()]
+      False -> []
+    })
+    |> list.append(case has_honeycomb {
+      True -> [honeycomb.provider()]
+      False -> []
+    })
+
+  let variables =
+    []
+    |> list.append(case has_datadog {
+      True -> datadog.variables()
+      False -> []
+    })
+    |> list.append(case has_honeycomb {
+      True -> honeycomb.variables()
+      False -> []
+    })
+
+  let config =
+    terraform.Config(
+      terraform: option.Some(terraform_settings),
+      providers: providers,
+      resources: list.append(datadog_resources, honeycomb_resources),
+      data_sources: [],
+      variables: variables,
+      outputs: [],
+      locals: [],
+      modules: [],
+    )
+
+  Ok(render.render_config(config))
+}
+
+/// Group IRs by vendor into (datadog, honeycomb) lists.
+fn group_by_vendor(
+  irs: List(IntermediateRepresentation),
+) -> #(List(IntermediateRepresentation), List(IntermediateRepresentation)) {
+  let datadog_irs =
+    irs
+    |> list.filter(fn(ir) { ir.vendor == option.Some(vendor.Datadog) })
+  let honeycomb_irs =
+    irs
+    |> list.filter(fn(ir) { ir.vendor == option.Some(vendor.Honeycomb) })
+  #(datadog_irs, honeycomb_irs)
 }
 
 fn parse_from_strings(

@@ -22,12 +22,12 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use resources <- result.try(irs |> list.try_map(ir_to_terraform_resources))
+  use resources <- result.try(generate_resources(irs))
   let config =
     terraform.Config(
       terraform: option.Some(terraform_settings()),
       providers: [provider()],
-      resources: list.flatten(resources),
+      resources: resources,
       data_sources: [],
       variables: variables(),
       outputs: [],
@@ -35,6 +35,15 @@ pub fn generate_terraform(
       modules: [],
     )
   Ok(render.render_config(config))
+}
+
+/// Generate only the Terraform resources for Honeycomb IRs (no config/provider).
+@internal
+pub fn generate_resources(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(terraform.Resource), CompilationError) {
+  use resource_lists <- result.try(irs |> list.try_map(ir_to_terraform_resources))
+  Ok(list.flatten(resource_lists))
 }
 
 /// Terraform settings block with required Honeycomb provider.

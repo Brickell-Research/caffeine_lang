@@ -27,7 +27,7 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use resources <- result.try(irs |> list.try_map(ir_to_terraform_resource))
+  use resources <- result.try(generate_resources(irs))
   let config =
     terraform.Config(
       terraform: option.Some(terraform_settings()),
@@ -40,6 +40,14 @@ pub fn generate_terraform(
       modules: [],
     )
   Ok(render.render_config(config))
+}
+
+/// Generate only the Terraform resources for Datadog IRs (no config/provider).
+@internal
+pub fn generate_resources(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(terraform.Resource), CompilationError) {
+  irs |> list.try_map(ir_to_terraform_resource)
 }
 
 /// Terraform settings block with required Datadog provider.
