@@ -6,6 +6,7 @@ import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/result
+import gleam/string
 
 /// An Expectation is a concrete implementation of an Artifact + Blueprint.
 pub type Expectation {
@@ -23,8 +24,10 @@ pub fn validate_expectations(
   blueprints: List(Blueprint),
   from source_path: String,
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
-  // Map expectations to blueprints since we'll reuse that numerous times
-  // and we've already validated all blueprint_refs.
+  // Validate that all blueprint_refs exist before mapping.
+  use _ <- result.try(validate_blueprint_refs(expectations, blueprints))
+
+  // Map expectations to blueprints since we've validated all blueprint_refs.
   let expectations_blueprint_collection =
     helpers.map_reference_to_referrer_over_collection(
       references: blueprints,
@@ -65,6 +68,26 @@ pub fn validate_expectations(
   ))
 
   Ok(expectations_blueprint_collection)
+}
+
+/// Validates that every expectation's blueprint_ref matches an existing blueprint.
+fn validate_blueprint_refs(
+  expectations: List(Expectation),
+  blueprints: List(Blueprint),
+) -> Result(Nil, CompilationError) {
+  let blueprint_names = list.map(blueprints, fn(b) { b.name })
+  let missing =
+    expectations
+    |> list.filter(fn(e) { !list.contains(blueprint_names, e.blueprint_ref) })
+    |> list.map(fn(e) { e.blueprint_ref })
+
+  case missing {
+    [] -> Ok(Nil)
+    _ ->
+      Error(errors.LinkerParseError(
+        msg: "Unknown blueprint reference(s): " <> string.join(missing, ", "),
+      ))
+  }
 }
 
 fn check_input_overshadowing(

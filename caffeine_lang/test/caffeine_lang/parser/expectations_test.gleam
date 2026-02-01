@@ -4,24 +4,15 @@ import caffeine_lang/common/errors
 import caffeine_lang/common/modifier_types
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types
-import caffeine_lang/parser/blueprints.{type Blueprint}
+import caffeine_lang/parser/blueprints
 import caffeine_lang/parser/expectations
 import gleam/dict
 import gleam/dynamic
-import simplifile
+import gleam/list
 import test_helpers
 
 // ==== Helpers ====
-fn path(file_name: String) {
-  "test/caffeine_lang/corpus/parser/expectations/" <> file_name <> ".json"
-}
-
-fn parse_from_file(file_path: String, blueprints: List(Blueprint)) {
-  let assert Ok(json) = simplifile.read(file_path)
-  expectations.parse_from_json_string(json, blueprints, from: file_path)
-}
-
-fn blueprints() -> List(Blueprint) {
+fn blueprints() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate",
@@ -39,7 +30,7 @@ fn blueprints() -> List(Blueprint) {
   ]
 }
 
-fn blueprints_with_inputs() -> List(Blueprint) {
+fn blueprints_with_inputs() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaults",
@@ -60,7 +51,7 @@ fn blueprints_with_inputs() -> List(Blueprint) {
   ]
 }
 
-fn blueprints_with_defaulted() -> List(Blueprint) {
+fn blueprints_with_defaulted() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaulted",
@@ -85,41 +76,36 @@ fn blueprints_with_defaulted() -> List(Blueprint) {
   ]
 }
 
-// ==== parse_from_json_string ====
+const source_path = "org/team/service.caffeine"
+
+// ==== validate_expectations ====
 // * ✅ happy path - empty expectations list
-// * ✅ happy path - single expectation
+// * ✅ happy path - single expectation paired with blueprint
 // * ✅ happy path - multiple expectations
-// * ✅ happy path - expectation with defaulted param in blueprint
-// * ✅ missing - expectations field
-// * ✅ missing - name field
-// * ✅ missing - blueprint_ref field
-// * ✅ missing - inputs field
-// * ✅ wrong type - expectations is not a list
-// * ✅ wrong type - name is not a string
-// * ✅ wrong type - blueprint_ref is not a string
-// * ✅ wrong type - inputs is not a map
-// * ✅ wrong type - input value has wrong type
+// * ✅ happy path - expectation with defaulted param (input omitted is fine)
 // * ✅ duplicates - duplicate expectation names within file
-// * ✅ empty name - empty string name is rejected
 // * ✅ invalid blueprint ref - blueprint_ref references non-existent blueprint
 // * ✅ overshadowing - expectation inputs cannot overshadow blueprint inputs
 // * ✅ input validation - missing required input
 // * ✅ input validation - extra input field not in params
-// * ✅ file error - file not found
-// * ✅ json format - invalid JSON syntax
-// * ✅ json format - empty file
-// * ✅ json format - null value
-pub fn parse_from_json_string_test() {
-  // Happy paths
-  [#(path("happy_path_none"), Ok([]))]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    parse_from_file(file_path, blueprints())
+// * ✅ input validation - wrong type input value
+pub fn validate_expectations_test() {
+  // Happy path - empty list
+  [#([], Ok([]))]
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
-  // single expectation - verify it parses and pairs with blueprint
+  // Happy path - single expectation paired with blueprint
   [
     #(
-      path("happy_path_single"),
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
+        ),
+      ],
       Ok([
         #(
           expectations.Expectation(
@@ -144,259 +130,194 @@ pub fn parse_from_json_string_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    parse_from_file(file_path, blueprints())
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
-  // multiple expectations
+  // Happy path - expectation with defaulted param, input omitted is fine
   [
     #(
-      path("happy_path_multiple"),
-      Ok([
-        #(
-          expectations.Expectation(
-            name: "my_expectation",
-            blueprint_ref: "success_rate",
-            inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
-          ),
-          blueprints.Blueprint(
-            name: "success_rate",
-            artifact_refs: ["SLO"],
-            params: dict.from_list([
-              #(
-                "percentile",
-                accepted_types.PrimitiveType(primitive_types.NumericType(
-                  numeric_types.Float,
-                )),
-              ),
-            ]),
-            inputs: dict.from_list([]),
-          ),
+      [
+        expectations.Expectation(
+          name: "my_expectation_with_defaulted",
+          blueprint_ref: "success_rate_with_defaulted",
+          inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
         ),
-        #(
-          expectations.Expectation(
-            name: "another_expectation",
-            blueprint_ref: "success_rate",
-            inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
-          ),
-          blueprints.Blueprint(
-            name: "success_rate",
-            artifact_refs: ["SLO"],
-            params: dict.from_list([
-              #(
-                "percentile",
-                accepted_types.PrimitiveType(primitive_types.NumericType(
-                  numeric_types.Float,
-                )),
-              ),
-            ]),
-            inputs: dict.from_list([]),
-          ),
+      ],
+      True,
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    case
+      expectations.validate_expectations(
+        exps,
+        blueprints_with_defaulted(),
+        from: source_path,
+      )
+    {
+      Ok(_) -> True
+      Error(_) -> False
+    }
+  })
+
+  // Happy path - multiple expectations
+  [
+    #(
+      [
+        expectations.Expectation(
+          name: "first_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
         ),
-      ]),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    parse_from_file(file_path, blueprints())
-  })
-
-  // expectation with defaulted param - input not provided is fine
-  [
-    #(
-      path("happy_path_defaulted_param"),
-      Ok([
-        #(
-          expectations.Expectation(
-            name: "my_expectation_with_defaulted",
-            blueprint_ref: "success_rate_with_defaulted",
-            inputs: dict.from_list([#("threshold", dynamic.float(99.9))]),
-          ),
-          blueprints.Blueprint(
-            name: "success_rate_with_defaulted",
-            artifact_refs: ["SLO"],
-            params: dict.from_list([
-              #(
-                "threshold",
-                accepted_types.PrimitiveType(primitive_types.NumericType(
-                  numeric_types.Float,
-                )),
-              ),
-              #(
-                "default_env",
-                accepted_types.ModifierType(modifier_types.Defaulted(
-                  accepted_types.PrimitiveType(primitive_types.String),
-                  "production",
-                )),
-              ),
-            ]),
-            inputs: dict.from_list([]),
-          ),
+        expectations.Expectation(
+          name: "second_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
         ),
-      ]),
+      ],
+      True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
-    parse_from_file(file_path, blueprints_with_defaulted())
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    case
+      expectations.validate_expectations(exps, blueprints(), from: source_path)
+    {
+      Ok(result) -> list.length(result) == 2
+      Error(_) -> False
+    }
   })
 
-  // Missing fields
+  // Duplicate names
   [
     #(
-      "missing_expectations",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations)",
-      )),
-    ),
-    #(
-      "missing_name",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.name)",
-      )),
-    ),
-    #(
-      "missing_blueprint_ref",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.blueprint_ref)",
-      )),
-    ),
-    #(
-      "missing_inputs",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Field) received (Nothing) for (expectations.0.inputs)",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
-  })
-
-  // Wrong types
-  [
-    #(
-      "wrong_type_expectations",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (List) received (String) for (expectations)",
-      )),
-    ),
-    #(
-      "wrong_type_name",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (String) received (Int) for (expectations.0.name)",
-      )),
-    ),
-    #(
-      "wrong_type_blueprint_ref",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference (one of: success_rate)) received (List) for (expectations.0.blueprint_ref)",
-      )),
-    ),
-    #(
-      "wrong_type_inputs_not_a_map",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Dict) received (String) for (expectations.0.inputs)",
-      )),
-    ),
-    #(
-      "wrong_type_input_value",
-      Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expectation 'parser.expectations.wrong_type_input_value.my_expectation' - expected (Float) received (String) value (\"not a float\") for (percentile)",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
-  })
-
-  // Duplicates
-  [
-    #(
-      "duplicate_name",
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
+        ),
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([#("percentile", dynamic.float(95.0))]),
+        ),
+      ],
       Error(errors.ParserDuplicateError(
         msg: "Duplicate expectation names: my_expectation",
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
-  // Empty name
+  // Invalid blueprint ref - references non-existent blueprint
   [
     #(
-      "empty_name",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NonEmptyString (got empty string)) received (String) for (expectations.0.name)",
-      )),
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "nonexistent_blueprint",
+          inputs: dict.from_list([#("percentile", dynamic.float(99.9))]),
+        ),
+      ],
+      False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
-  })
-
-  // Invalid blueprint reference
-  [
-    #(
-      "semantic_blueprint_ref",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (NamedReference (one of: success_rate)) received (String) for (expectations.0.blueprint_ref)",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
-  })
-
-  // Overshadowing
-  [
-    #(
-      "overshadowing_blueprint_input",
-      Error(errors.ParserDuplicateError(
-        msg: "expectation 'parser.expectations.overshadowing_blueprint_input.my_expectation' - overshadowing inputs from blueprint: vendor",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints_with_inputs())
-  })
-
-  // Input validation
-  [
-    #(
-      "input_missing_required",
-      Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expectation 'parser.expectations.input_missing_required.my_expectation' - Missing keys in input: percentile",
-      )),
-    ),
-    #(
-      "input_extra_field",
-      Error(errors.ParserJsonParserError(
-        msg: "Input validation errors: expectation 'parser.expectations.input_extra_field.my_expectation' - Extra keys in input: extra",
-      )),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
-  })
-
-  // JSON format errors - different error messages on Erlang vs JavaScript targets
-  [#("json_invalid_syntax", True), #("json_empty_file", True)]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    case parse_from_file(path(file_name), blueprints()) {
-      Error(errors.ParserJsonParserError(msg: _)) -> True
-      _ -> False
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    case
+      expectations.validate_expectations(exps, blueprints(), from: source_path)
+    {
+      Ok(_) -> True
+      Error(_) -> False
     }
   })
 
-  // null value has consistent error message
+  // Overshadowing blueprint inputs
   [
     #(
-      "json_null",
-      Error(errors.ParserJsonParserError(
-        msg: "Incorrect types: expected (Dict) received (Nil) for (Unknown)",
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate_with_defaults",
+          inputs: dict.from_list([
+            #("vendor", dynamic.string("honeycomb")),
+            #("threshold", dynamic.float(99.9)),
+          ]),
+        ),
+      ],
+      Error(errors.ParserDuplicateError(
+        msg: "expectation 'org.team.service.my_expectation' - overshadowing inputs from blueprint: vendor",
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_name) {
-    parse_from_file(path(file_name), blueprints())
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(
+      exps,
+      blueprints_with_inputs(),
+      from: source_path,
+    )
+  })
+
+  // Missing required input
+  [
+    #(
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.new(),
+        ),
+      ],
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: expectation 'org.team.service.my_expectation' - Missing keys in input: percentile",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
+  })
+
+  // Extra input field
+  [
+    #(
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([
+            #("percentile", dynamic.float(99.9)),
+            #("extra", dynamic.string("bad")),
+          ]),
+        ),
+      ],
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: expectation 'org.team.service.my_expectation' - Extra keys in input: extra",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
+  })
+
+  // Wrong type input value
+  [
+    #(
+      [
+        expectations.Expectation(
+          name: "my_expectation",
+          blueprint_ref: "success_rate",
+          inputs: dict.from_list([
+            #("percentile", dynamic.string("not a float")),
+          ]),
+        ),
+      ],
+      Error(errors.ParserJsonParserError(
+        msg: "Input validation errors: expectation 'org.team.service.my_expectation' - expected (Float) received (String) value (\"not a float\") for (percentile)",
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(exps) {
+    expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 }

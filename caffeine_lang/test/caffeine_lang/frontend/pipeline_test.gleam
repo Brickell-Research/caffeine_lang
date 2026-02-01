@@ -1,6 +1,7 @@
 import caffeine_lang/common/source_file.{type SourceFile, SourceFile}
 import caffeine_lang/frontend/pipeline
-import gleam/string
+import gleam/dict
+import gleam/list
 import gleeunit/should
 import simplifile
 
@@ -12,30 +13,30 @@ fn read_source_file(path: String) -> SourceFile {
 }
 
 // ==== compile_blueprints ====
-// * ✅ simple blueprints source compiles to valid JSON
+// * ✅ simple blueprints source compiles to typed blueprints
 pub fn compile_blueprints_test() {
   let source = read_source_file(corpus_dir <> "/simple_blueprints.caffeine")
-  let assert Ok(json) = pipeline.compile_blueprints(source)
+  let assert Ok(blueprints) = pipeline.compile_blueprints(source)
 
-  // Verify JSON contains expected content
-  json |> string.contains("\"blueprints\"") |> should.be_true
-  json |> string.contains("\"api_availability\"") |> should.be_true
-  json |> string.contains("\"artifact_refs\"") |> should.be_true
-  json |> string.contains("\"params\"") |> should.be_true
-  json |> string.contains("\"inputs\"") |> should.be_true
+  list.length(blueprints) |> should.equal(1)
+  let assert Ok(bp) = list.first(blueprints)
+  bp.name |> should.equal("api_availability")
+  bp.artifact_refs |> should.equal(["SLO"])
+  { dict.size(bp.params) > 0 } |> should.be_true
+  { dict.size(bp.inputs) > 0 } |> should.be_true
 }
 
 // ==== compile_expects ====
-// * ✅ simple expects source compiles to valid JSON
+// * ✅ simple expects source compiles to typed expectations
 pub fn compile_expects_test() {
   let source = read_source_file(corpus_dir <> "/simple_expects.caffeine")
-  let assert Ok(json) = pipeline.compile_expects(source)
+  let assert Ok(expectations) = pipeline.compile_expects(source)
 
-  // Verify JSON contains expected content
-  json |> string.contains("\"expectations\"") |> should.be_true
-  json |> string.contains("\"checkout_availability\"") |> should.be_true
-  json |> string.contains("\"blueprint_ref\"") |> should.be_true
-  json |> string.contains("\"inputs\"") |> should.be_true
+  list.length(expectations) |> should.equal(1)
+  let assert Ok(exp) = list.first(expectations)
+  exp.name |> should.equal("checkout_availability")
+  exp.blueprint_ref |> should.equal("api_availability")
+  { dict.size(exp.inputs) > 0 } |> should.be_true
 }
 
 // ==== compile_blueprints error cases ====

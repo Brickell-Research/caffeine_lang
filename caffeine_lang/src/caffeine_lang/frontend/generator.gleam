@@ -221,25 +221,23 @@ fn struct_to_inputs(s: Struct) -> Dict(String, dynamic.Dynamic) {
 @internal
 pub fn literal_to_dynamic(lit: Literal) -> dynamic.Dynamic {
   case lit {
-    ast.LiteralString(s) -> dynamic.from(transform_template_vars(s))
-    ast.LiteralInteger(i) -> dynamic.from(i)
-    ast.LiteralFloat(f) -> dynamic.from(f)
-    ast.LiteralTrue -> dynamic.from(True)
-    ast.LiteralFalse -> dynamic.from(False)
+    ast.LiteralString(s) -> dynamic.string(transform_template_vars(s))
+    ast.LiteralInteger(i) -> dynamic.int(i)
+    ast.LiteralFloat(f) -> dynamic.float(f)
+    ast.LiteralTrue -> dynamic.bool(True)
+    ast.LiteralFalse -> dynamic.bool(False)
     ast.LiteralList(elements) ->
-      dynamic.from(list.map(elements, literal_to_dynamic))
+      dynamic.list(list.map(elements, literal_to_dynamic))
     ast.LiteralStruct(fields) ->
-      dynamic.from(
-        fields
-        |> list.filter_map(fn(field) {
-          case field.value {
-            ast.LiteralValue(inner) ->
-              Ok(#(field.name, literal_to_dynamic(inner)))
-            ast.TypeValue(_) -> Error(Nil)
-          }
-        })
-        |> dict.from_list,
-      )
+      fields
+      |> list.filter_map(fn(field) {
+        case field.value {
+          ast.LiteralValue(inner) ->
+            Ok(#(dynamic.string(field.name), literal_to_dynamic(inner)))
+          ast.TypeValue(_) -> Error(Nil)
+        }
+      })
+      |> dynamic.properties
   }
 }
 
