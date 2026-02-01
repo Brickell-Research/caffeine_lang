@@ -63,7 +63,7 @@ fn expects_file_symbols(file: ExpectsFile, content: String) -> List(json.Json) {
 
 fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
   let #(line, col) = position_utils.find_name_position(content, ta.name)
-  let detail = types.accepted_type_to_string(ta.type_)
+  let detail = types.parsed_type_to_string(ta.type_)
   symbol_json(
     ta.name,
     detail,
@@ -147,7 +147,7 @@ fn expect_item_symbol(item: ExpectItem, content: String) -> json.Json {
 fn field_symbol(field: Field, content: String) -> json.Json {
   let #(line, col) = position_utils.find_name_position(content, field.name)
   let detail = case field.value {
-    ast.TypeValue(t) -> types.accepted_type_to_string(t)
+    ast.TypeValue(t) -> types.parsed_type_to_string(t)
     ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
   symbol_json(

@@ -32,60 +32,57 @@ fn read_file(path: String) -> String {
 }
 
 // Type helpers
-fn string_type() -> types.AcceptedTypes {
-  types.PrimitiveType(types.String)
+fn string_type() -> types.ParsedType {
+  types.ParsedPrimitive(types.String)
 }
 
-fn float_type() -> types.AcceptedTypes {
-  types.PrimitiveType(types.NumericType(types.Float))
+fn float_type() -> types.ParsedType {
+  types.ParsedPrimitive(types.NumericType(types.Float))
 }
 
-fn boolean_type() -> types.AcceptedTypes {
-  types.PrimitiveType(types.Boolean)
+fn boolean_type() -> types.ParsedType {
+  types.ParsedPrimitive(types.Boolean)
 }
 
-fn list_type(inner: types.PrimitiveTypes) -> types.AcceptedTypes {
-  types.CollectionType(types.List(types.PrimitiveType(inner)))
+fn list_type(inner: types.PrimitiveTypes) -> types.ParsedType {
+  types.ParsedCollection(types.List(types.ParsedPrimitive(inner)))
 }
 
 fn dict_type(
   key: types.PrimitiveTypes,
   value: types.PrimitiveTypes,
-) -> types.AcceptedTypes {
-  types.CollectionType(types.Dict(
-    types.PrimitiveType(key),
-    types.PrimitiveType(value),
+) -> types.ParsedType {
+  types.ParsedCollection(types.Dict(
+    types.ParsedPrimitive(key),
+    types.ParsedPrimitive(value),
   ))
 }
 
-fn nested_list_type(inner: types.AcceptedTypes) -> types.AcceptedTypes {
-  types.CollectionType(types.List(inner))
+fn nested_list_type(inner: types.ParsedType) -> types.ParsedType {
+  types.ParsedCollection(types.List(inner))
 }
 
 fn nested_dict_type(
   key: types.PrimitiveTypes,
-  value: types.AcceptedTypes,
-) -> types.AcceptedTypes {
-  types.CollectionType(types.Dict(types.PrimitiveType(key), value))
+  value: types.ParsedType,
+) -> types.ParsedType {
+  types.ParsedCollection(types.Dict(types.ParsedPrimitive(key), value))
 }
 
-fn optional_type(inner: types.AcceptedTypes) -> types.AcceptedTypes {
-  types.ModifierType(types.Optional(inner))
+fn optional_type(inner: types.ParsedType) -> types.ParsedType {
+  types.ParsedModifier(types.Optional(inner))
 }
 
-fn defaulted_type(
-  inner: types.AcceptedTypes,
-  default: String,
-) -> types.AcceptedTypes {
-  types.ModifierType(types.Defaulted(inner, default))
+fn defaulted_type(inner: types.ParsedType, default: String) -> types.ParsedType {
+  types.ParsedModifier(types.Defaulted(inner, default))
 }
 
 fn oneof_type(
   base: types.PrimitiveTypes,
   values: List(String),
-) -> types.AcceptedTypes {
-  types.RefinementType(types.OneOf(
-    types.PrimitiveType(base),
+) -> types.ParsedType {
+  types.ParsedRefinement(types.OneOf(
+    types.ParsedPrimitive(base),
     set.from_list(values),
   ))
 }
@@ -94,8 +91,12 @@ fn range_type(
   base: types.PrimitiveTypes,
   min: String,
   max: String,
-) -> types.AcceptedTypes {
-  types.RefinementType(types.InclusiveRange(types.PrimitiveType(base), min, max))
+) -> types.ParsedType {
+  types.ParsedRefinement(types.InclusiveRange(
+    types.ParsedPrimitive(base),
+    min,
+    max,
+  ))
 }
 
 // ==== parse_blueprints_file ====
@@ -545,7 +546,7 @@ pub fn parse_blueprints_file_test() {
                       "nested_list",
                       ast.TypeValue(
                         nested_list_type(
-                          nested_list_type(types.PrimitiveType(types.String)),
+                          nested_list_type(types.ParsedPrimitive(types.String)),
                         ),
                       ),
                       leading_comments: [],
@@ -556,7 +557,7 @@ pub fn parse_blueprints_file_test() {
                         types.String,
                         nested_dict_type(
                           types.String,
-                          types.PrimitiveType(types.NumericType(types.Integer)),
+                          types.ParsedPrimitive(types.NumericType(types.Integer)),
                         ),
                       )),
                       leading_comments: [],
@@ -566,7 +567,7 @@ pub fn parse_blueprints_file_test() {
                       ast.TypeValue(nested_dict_type(
                         types.String,
                         nested_list_type(
-                          types.PrimitiveType(types.NumericType(types.Integer)),
+                          types.ParsedPrimitive(types.NumericType(types.Integer)),
                         ),
                       )),
                       leading_comments: [],
@@ -575,9 +576,9 @@ pub fn parse_blueprints_file_test() {
                       "list_of_dict",
                       ast.TypeValue(
                         nested_list_type(
-                          types.CollectionType(types.Dict(
-                            types.PrimitiveType(types.String),
-                            types.PrimitiveType(types.Boolean),
+                          types.ParsedCollection(types.Dict(
+                            types.ParsedPrimitive(types.String),
+                            types.ParsedPrimitive(types.Boolean),
                           )),
                         ),
                       ),
@@ -608,8 +609,8 @@ pub fn parse_blueprints_file_test() {
             ast.TypeAlias(
               leading_comments: [],
               name: "_env",
-              type_: types.RefinementType(types.OneOf(
-                types.PrimitiveType(types.String),
+              type_: types.ParsedRefinement(types.OneOf(
+                types.ParsedPrimitive(types.String),
                 set.from_list(["production", "staging", "development"]),
               )),
             ),
@@ -627,7 +628,7 @@ pub fn parse_blueprints_file_test() {
                   requires: ast.Struct(trailing_comments: [], fields: [
                     ast.Field(
                       "env",
-                      ast.TypeValue(types.TypeAliasRef("_env")),
+                      ast.TypeValue(types.ParsedTypeAliasRef("_env")),
                       leading_comments: [],
                     ),
                   ]),

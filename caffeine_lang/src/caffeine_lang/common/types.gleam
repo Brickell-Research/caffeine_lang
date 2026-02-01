@@ -24,9 +24,18 @@ pub type AcceptedTypes {
   CollectionType(CollectionTypes(AcceptedTypes))
   ModifierType(ModifierTypes(AcceptedTypes))
   RefinementType(RefinementTypes(AcceptedTypes))
-  /// A reference to a type alias (e.g., _env). Must be resolved before validation.
-  /// This is a compile-time construct that gets inlined during code generation.
-  TypeAliasRef(String)
+}
+
+/// ParsedType is the frontend counterpart of AcceptedTypes that allows type alias
+/// references. It exists only in the parser → validator → formatter → lowering pipeline.
+/// After lowering resolves all aliases, downstream code works with pure AcceptedTypes.
+pub type ParsedType {
+  ParsedPrimitive(PrimitiveTypes)
+  ParsedCollection(CollectionTypes(ParsedType))
+  ParsedModifier(ModifierTypes(ParsedType))
+  ParsedRefinement(RefinementTypes(ParsedType))
+  /// A reference to a type alias (e.g., _env). Resolved during lowering.
+  ParsedTypeAliasRef(String)
 }
 
 /// PrimitiveTypes are the most _atomic_ of types. I.E. the simple ones
@@ -259,10 +268,6 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
     ModifierType(modifier_type) -> modifier_type_to_string(modifier_type)
     RefinementType(refinement_type) ->
       refinement_type_to_string(refinement_type)
-    TypeAliasRef(name) ->
-      // Type alias refs should be resolved before serialization.
-      // If we hit this, the alias wasn't resolved - return the name for debugging.
-      name
   }
 }
 
@@ -350,6 +355,128 @@ pub fn refinement_type_to_string(
 }
 
 // ---------------------------------------------------------------------------
+// ParsedType operations
+// ---------------------------------------------------------------------------
+
+/// Converts a ParsedType to its string representation.
+@internal
+pub fn parsed_type_to_string(parsed_type: ParsedType) -> String {
+  case parsed_type {
+    ParsedPrimitive(primitive_type) -> primitive_type_to_string(primitive_type)
+    ParsedCollection(collection_type) ->
+      parsed_collection_type_to_string(collection_type)
+    ParsedModifier(modifier_type) ->
+      parsed_modifier_type_to_string(modifier_type)
+    ParsedRefinement(refinement_type) ->
+      parsed_refinement_type_to_string(refinement_type)
+    ParsedTypeAliasRef(name) -> name
+  }
+}
+
+fn parsed_collection_type_to_string(
+  collection_type: CollectionTypes(ParsedType),
+) -> String {
+  case collection_type {
+    Dict(key_type, value_type) ->
+      "Dict("
+      <> parsed_type_to_string(key_type)
+      <> ", "
+      <> parsed_type_to_string(value_type)
+      <> ")"
+    List(inner_type) -> "List(" <> parsed_type_to_string(inner_type) <> ")"
+  }
+}
+
+fn parsed_modifier_type_to_string(
+  modifier_type: ModifierTypes(ParsedType),
+) -> String {
+  case modifier_type {
+    Optional(inner_type) ->
+      "Optional(" <> parsed_type_to_string(inner_type) <> ")"
+    Defaulted(inner_type, default_val) ->
+      "Defaulted("
+      <> parsed_type_to_string(inner_type)
+      <> ", "
+      <> default_val
+      <> ")"
+  }
+}
+
+fn parsed_refinement_type_to_string(
+  refinement: RefinementTypes(ParsedType),
+) -> String {
+  case refinement {
+    OneOf(typ, set_vals) ->
+      parsed_type_to_string(typ)
+      <> " { x | x in { "
+      <> set_vals
+      |> set.to_list
+      |> list.sort(string.compare)
+      |> string.join(", ")
+      <> " } }"
+    InclusiveRange(typ, low, high) ->
+      parsed_type_to_string(typ)
+      <> " { x | x in ( "
+      <> low
+      <> ".."
+      <> high
+      <> " ) }"
+  }
+}
+
+/// Applies a fallible check to each inner type in a parsed compound type.
+@internal
+pub fn try_each_inner_parsed(
+  typ: ParsedType,
+  f: fn(ParsedType) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case typ {
+    ParsedPrimitive(_) -> f(typ)
+    ParsedTypeAliasRef(_) -> f(typ)
+    ParsedCollection(collection) -> collection_try_each_inner(collection, f)
+    ParsedModifier(modifier) -> modifier_try_each_inner(modifier, f)
+    ParsedRefinement(refinement) -> refinement_try_each_inner(refinement, f)
+  }
+}
+
+/// Transforms each inner type in a parsed compound type using a mapping function.
+@internal
+pub fn map_inner_parsed(
+  typ: ParsedType,
+  f: fn(ParsedType) -> ParsedType,
+) -> ParsedType {
+  case typ {
+    ParsedPrimitive(_) -> f(typ)
+    ParsedTypeAliasRef(_) -> f(typ)
+    ParsedCollection(collection) ->
+      ParsedCollection(collection_map_inner(collection, f))
+    ParsedModifier(modifier) -> ParsedModifier(modifier_map_inner(modifier, f))
+    ParsedRefinement(refinement) ->
+      ParsedRefinement(refinement_map_inner(refinement, f))
+  }
+}
+
+/// Checks if a parsed type is optional or has a default value.
+@internal
+pub fn parsed_is_optional_or_defaulted(typ: ParsedType) -> Bool {
+  case typ {
+    ParsedModifier(Optional(_)) -> True
+    ParsedModifier(Defaulted(_, _)) -> True
+    ParsedRefinement(OneOf(inner, _)) -> parsed_is_optional_or_defaulted(inner)
+    _ -> False
+  }
+}
+
+/// Parses a type alias reference string into a ParsedType.
+@internal
+pub fn parse_parsed_type_alias_ref(raw: String) -> Result(ParsedType, Nil) {
+  case string.starts_with(raw, "_") && string.length(raw) > 1 {
+    True -> Ok(ParsedTypeAliasRef(raw))
+    False -> Error(Nil)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Parsing
 // ---------------------------------------------------------------------------
 
@@ -378,7 +505,6 @@ pub fn parse_accepted_type(raw: String) -> Result(AcceptedTypes, Nil) {
     )
     |> result.map(RefinementType)
   })
-  |> result.lazy_or(fn() { parse_type_alias_ref(raw) })
 }
 
 /// Parses a string into a PrimitiveTypes.
@@ -688,15 +814,7 @@ fn validate_bounds_order(
   }
 }
 
-/// Parses a type alias reference (must start with _ and have more characters).
-fn parse_type_alias_ref(raw: String) -> Result(AcceptedTypes, Nil) {
-  case string.starts_with(raw, "_") && string.length(raw) > 1 {
-    True -> Ok(TypeAliasRef(raw))
-    False -> Error(Nil)
-  }
-}
-
-/// Parser for primitives, collections (recursively nested), refinements, or type alias refs.
+/// Parser for primitives, collections (recursively nested), and refinements.
 /// Used as the inner parser for both collection and modifier type parsing.
 fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
   parse_primitive_type(raw)
@@ -713,7 +831,6 @@ fn parse_primitive_or_collection(raw: String) -> Result(AcceptedTypes, Nil) {
     )
     |> result.map(RefinementType)
   })
-  |> result.lazy_or(fn() { parse_type_alias_ref(raw) })
 }
 
 /// Parser for primitives or Defaulted modifiers - used for refinement type inner types.
@@ -756,7 +873,6 @@ fn validate_string_literal(
         validate_string_literal,
       )
     CollectionType(_) -> Error(Nil)
-    TypeAliasRef(_) -> Error(Nil)
   }
 }
 
@@ -794,9 +910,6 @@ pub fn validate_value(
     CollectionType(collection) -> validate_collection_value(collection, value)
     ModifierType(modifier) -> validate_modifier_value(modifier, value)
     RefinementType(refinement) -> validate_refinement_value(refinement, value)
-    TypeAliasRef(name) ->
-      // Type alias refs must be resolved before validation
-      Error([decode.DecodeError("Unresolved type alias: " <> name, "Type", [])])
   }
 }
 
@@ -1098,9 +1211,6 @@ pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
     CollectionType(collection) -> decode_collection_to_string(collection)
     ModifierType(modifier) -> decode_modifier_to_string(modifier)
     RefinementType(refinement) -> decode_refinement_to_string(refinement)
-    TypeAliasRef(name) ->
-      // Type alias refs must be resolved before decoding
-      decode.failure("Unresolved type alias: " <> name, "Type")
   }
 }
 
@@ -1204,9 +1314,6 @@ pub fn resolve_to_string(
       resolve_modifier_to_string(modifier, value, resolve_string, resolve_list)
     RefinementType(refinement) ->
       resolve_refinement_to_string(refinement, value, resolve_string)
-    TypeAliasRef(name) ->
-      // Type alias refs must be resolved before resolution
-      Error("Unresolved type alias: " <> name)
   }
 }
 
@@ -1299,7 +1406,7 @@ fn resolve_refinement_to_string(
 // ---------------------------------------------------------------------------
 
 /// Applies a fallible check to each inner type in a compound type.
-/// For leaf types (PrimitiveType, TypeAliasRef), calls the function directly.
+/// For leaf types (PrimitiveType), calls the function directly.
 /// For compound types (Collection, Modifier, Refinement), extracts inner types and applies the function.
 @internal
 pub fn try_each_inner(
@@ -1308,7 +1415,6 @@ pub fn try_each_inner(
 ) -> Result(Nil, e) {
   case typ {
     PrimitiveType(_) -> f(typ)
-    TypeAliasRef(_) -> f(typ)
     CollectionType(collection) -> collection_try_each_inner(collection, f)
     ModifierType(modifier) -> modifier_try_each_inner(modifier, f)
     RefinementType(refinement) -> refinement_try_each_inner(refinement, f)
@@ -1323,7 +1429,6 @@ pub fn map_inner(
 ) -> AcceptedTypes {
   case typ {
     PrimitiveType(_) -> f(typ)
-    TypeAliasRef(_) -> f(typ)
     CollectionType(collection) ->
       CollectionType(collection_map_inner(collection, f))
     ModifierType(modifier) -> ModifierType(modifier_map_inner(modifier, f))
@@ -1351,16 +1456,10 @@ pub fn is_optional_or_defaulted(typ: AcceptedTypes) -> Bool {
 /// numeric (Integer or Float). The caller is responsible for ensuring this.
 /// If a non-numeric type is passed, this returns Integer as a fallback but the
 /// validation will likely fail with a type mismatch error upstream.
-///
-/// TypeAliasRef should never reach this function - they must be resolved before
-/// validation. If one does, it indicates a bug in the resolution pipeline.
 @internal
 pub fn get_numeric_type(typ: AcceptedTypes) -> NumericTypes {
   case typ {
     PrimitiveType(NumericType(numeric)) -> numeric
-    // TypeAliasRef should be resolved before reaching validation
-    // If we get here, there's a bug - but we fall through to avoid crashing
-    TypeAliasRef(_) -> Integer
     // InclusiveRange only allows Integer/Float, so these shouldn't happen
     // Fallback to Integer - upstream validation will catch the mismatch
     PrimitiveType(SemanticType(_)) -> Integer

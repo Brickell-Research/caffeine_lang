@@ -22,18 +22,18 @@ pub fn build_type_alias_pairs_test() {
     #([], []),
     #(
       [
-        ast.TypeAlias("_env", types.PrimitiveType(types.String), []),
+        ast.TypeAlias("_env", types.ParsedPrimitive(types.String), []),
       ],
-      [#("_env", types.PrimitiveType(types.String))],
+      [#("_env", types.ParsedPrimitive(types.String))],
     ),
     #(
       [
-        ast.TypeAlias("_env", types.PrimitiveType(types.String), []),
-        ast.TypeAlias("_count", types.PrimitiveType(types.Boolean), []),
+        ast.TypeAlias("_env", types.ParsedPrimitive(types.String), []),
+        ast.TypeAlias("_count", types.ParsedPrimitive(types.Boolean), []),
       ],
       [
-        #("_env", types.PrimitiveType(types.String)),
-        #("_count", types.PrimitiveType(types.Boolean)),
+        #("_env", types.ParsedPrimitive(types.String)),
+        #("_count", types.ParsedPrimitive(types.Boolean)),
       ],
     ),
   ]

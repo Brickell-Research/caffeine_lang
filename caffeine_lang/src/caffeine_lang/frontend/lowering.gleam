@@ -1,7 +1,10 @@
 /// Frontend lowering for Caffeine AST.
 /// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
 import caffeine_lang/common/types.{
-  type AcceptedTypes, PrimitiveType, TypeAliasRef,
+  type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
+  InclusiveRange, List, ModifierType, OneOf, Optional, ParsedCollection,
+  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
+  PrimitiveType, RefinementType,
 }
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
@@ -52,10 +55,10 @@ fn build_extendable_map(
   |> dict.from_list
 }
 
-/// Builds a map of type alias name to its resolved type for quick lookup.
+/// Builds a map of type alias name to its parsed type for quick lookup.
 fn build_type_alias_map(
   type_aliases: List(TypeAlias),
-) -> Dict(String, AcceptedTypes) {
+) -> Dict(String, ParsedType) {
   ast.build_type_alias_pairs(type_aliases)
   |> dict.from_list
 }
@@ -65,7 +68,7 @@ fn generate_blueprint_item(
   item: BlueprintItem,
   artifacts: List(String),
   extendables: Dict(String, Extendable),
-  type_aliases: Dict(String, AcceptedTypes),
+  type_aliases: Dict(String, ParsedType),
 ) -> Blueprint {
   let #(merged_requires, merged_provides) =
     merge_blueprint_extends(item, extendables)
@@ -171,7 +174,7 @@ fn dedupe_fields(fields: List(Field)) -> List(Field) {
 /// Resolves type alias references before storing.
 fn struct_to_params(
   s: Struct,
-  type_aliases: Dict(String, AcceptedTypes),
+  type_aliases: Dict(String, ParsedType),
 ) -> Dict(String, AcceptedTypes) {
   s.fields
   |> list.filter_map(fn(field) {
@@ -186,21 +189,65 @@ fn struct_to_params(
   |> dict.from_list
 }
 
-/// Resolves all TypeAliasRef instances in a type by looking them up in the alias map.
-/// Recursively resolves nested types using map_inner for structural decomposition.
+/// Resolves all ParsedTypeAliasRef instances, converting ParsedType to AcceptedTypes.
+/// This is the resolution boundary where parsed types become fully resolved types.
 fn resolve_type_aliases(
-  t: AcceptedTypes,
-  aliases: Dict(String, AcceptedTypes),
+  t: ParsedType,
+  aliases: Dict(String, ParsedType),
 ) -> AcceptedTypes {
   case t {
-    PrimitiveType(_) -> t
-    TypeAliasRef(name) ->
+    ParsedPrimitive(p) -> PrimitiveType(p)
+    ParsedTypeAliasRef(name) ->
       case dict.get(aliases, name) {
         Ok(resolved) -> resolve_type_aliases(resolved, aliases)
-        Error(_) -> t
+        // Unreachable after validation, but fall through gracefully
+        Error(_) -> PrimitiveType(types.String)
       }
-    // For compound types, recurse into inner types via map_inner
-    _ -> types.map_inner(t, fn(inner) { resolve_type_aliases(inner, aliases) })
+    ParsedCollection(collection) ->
+      CollectionType(resolve_collection(collection, aliases))
+    ParsedModifier(modifier) ->
+      ModifierType(resolve_modifier(modifier, aliases))
+    ParsedRefinement(refinement) ->
+      RefinementType(resolve_refinement(refinement, aliases))
+  }
+}
+
+/// Resolves inner types of a collection.
+fn resolve_collection(
+  collection: types.CollectionTypes(ParsedType),
+  aliases: Dict(String, ParsedType),
+) -> types.CollectionTypes(AcceptedTypes) {
+  case collection {
+    List(inner) -> List(resolve_type_aliases(inner, aliases))
+    Dict(key, value) ->
+      Dict(
+        resolve_type_aliases(key, aliases),
+        resolve_type_aliases(value, aliases),
+      )
+  }
+}
+
+/// Resolves inner types of a modifier.
+fn resolve_modifier(
+  modifier: types.ModifierTypes(ParsedType),
+  aliases: Dict(String, ParsedType),
+) -> types.ModifierTypes(AcceptedTypes) {
+  case modifier {
+    Optional(inner) -> Optional(resolve_type_aliases(inner, aliases))
+    Defaulted(inner, default) ->
+      Defaulted(resolve_type_aliases(inner, aliases), default)
+  }
+}
+
+/// Resolves inner types of a refinement.
+fn resolve_refinement(
+  refinement: types.RefinementTypes(ParsedType),
+  aliases: Dict(String, ParsedType),
+) -> types.RefinementTypes(AcceptedTypes) {
+  case refinement {
+    OneOf(inner, values) -> OneOf(resolve_type_aliases(inner, aliases), values)
+    InclusiveRange(inner, low, high) ->
+      InclusiveRange(resolve_type_aliases(inner, aliases), low, high)
   }
 }
 

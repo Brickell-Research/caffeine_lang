@@ -1,8 +1,7 @@
 import caffeine_lang/common/types.{
   type AcceptedTypes, type PrimitiveTypes, Boolean, CollectionType, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
-  Optional, PrimitiveType, RefinementType, SemanticType, String, TypeAliasRef,
-  URL,
+  Optional, PrimitiveType, RefinementType, SemanticType, String, URL,
 }
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -1902,7 +1901,6 @@ pub fn get_numeric_type_test() {
     // Fallback cases
     #(PrimitiveType(String), Integer),
     #(PrimitiveType(Boolean), Integer),
-    #(TypeAliasRef("_env"), Integer),
     #(CollectionType(List(PrimitiveType(String))), Integer),
   ]
   |> test_helpers.array_based_test_executor_1(types.get_numeric_type)
@@ -1927,7 +1925,6 @@ pub fn is_optional_or_defaulted_test() {
     ),
     #(PrimitiveType(String), False),
     #(CollectionType(List(PrimitiveType(String))), False),
-    #(TypeAliasRef("_env"), False),
   ]
   |> test_helpers.array_based_test_executor_1(types.is_optional_or_defaulted)
 }
@@ -1953,10 +1950,6 @@ pub fn try_each_inner_test() {
 
   // PrimitiveType calls f with self
   types.try_each_inner(PrimitiveType(String), always_ok)
-  |> should.equal(Ok(Nil))
-
-  // TypeAliasRef calls f with self
-  types.try_each_inner(TypeAliasRef("_env"), always_ok)
   |> should.equal(Ok(Nil))
 
   // CollectionType - List calls f once
@@ -1987,10 +1980,6 @@ pub fn map_inner_test() {
   // PrimitiveType -> f is called on self
   types.map_inner(PrimitiveType(String), identity)
   |> should.equal(PrimitiveType(String))
-
-  // TypeAliasRef -> f is called on self
-  types.map_inner(TypeAliasRef("_env"), identity)
-  |> should.equal(TypeAliasRef("_env"))
 
   // CollectionType List -> inner is transformed
   let to_bool = fn(_) { PrimitiveType(Boolean) }

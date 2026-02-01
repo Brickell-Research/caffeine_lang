@@ -1,11 +1,11 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/common/types.{
-  type AcceptedTypes, type CollectionTypes, type ModifierTypes,
-  type PrimitiveTypes, type RefinementTypes, Boolean, CollectionType, Defaulted,
-  Dict, Float, InclusiveRange, Integer, List as ListType, ModifierType,
-  NumericType, OneOf, Optional, PrimitiveType, RefinementType, SemanticType,
-  String as StringType, TypeAliasRef, URL,
+  type CollectionTypes, type ModifierTypes, type ParsedType, type PrimitiveTypes,
+  type RefinementTypes, Boolean, Defaulted, Dict, Float, InclusiveRange, Integer,
+  List as ListType, NumericType, OneOf, Optional, ParsedCollection,
+  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
+  SemanticType, String as StringType, URL,
 }
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
@@ -286,13 +286,13 @@ fn format_field(f: Field, indent: Int, context: FieldContext) -> String {
   }
 }
 
-fn format_type(t: AcceptedTypes) -> String {
+fn format_type(t: ParsedType) -> String {
   case t {
-    PrimitiveType(p) -> format_primitive_type(p)
-    CollectionType(c) -> format_collection_type(c)
-    ModifierType(m) -> format_modifier_type(m)
-    RefinementType(r) -> format_refinement_type(r)
-    TypeAliasRef(name) -> name
+    ParsedPrimitive(p) -> format_primitive_type(p)
+    ParsedCollection(c) -> format_collection_type(c)
+    ParsedModifier(m) -> format_modifier_type(m)
+    ParsedRefinement(r) -> format_refinement_type(r)
+    ParsedTypeAliasRef(name) -> name
   }
 }
 
@@ -312,7 +312,7 @@ fn format_primitive_type(p: PrimitiveTypes) -> String {
   }
 }
 
-fn format_collection_type(c: CollectionTypes(AcceptedTypes)) -> String {
+fn format_collection_type(c: CollectionTypes(ParsedType)) -> String {
   case c {
     ListType(inner) -> "List(" <> format_type(inner) <> ")"
     Dict(key, value) ->
@@ -320,7 +320,7 @@ fn format_collection_type(c: CollectionTypes(AcceptedTypes)) -> String {
   }
 }
 
-fn format_modifier_type(m: ModifierTypes(AcceptedTypes)) -> String {
+fn format_modifier_type(m: ModifierTypes(ParsedType)) -> String {
   case m {
     Optional(inner) -> "Optional(" <> format_type(inner) <> ")"
     Defaulted(inner, default_val) ->
@@ -332,23 +332,23 @@ fn format_modifier_type(m: ModifierTypes(AcceptedTypes)) -> String {
   }
 }
 
-fn quote_if_string_type(inner: AcceptedTypes, val: String) -> String {
+fn quote_if_string_type(inner: ParsedType, val: String) -> String {
   let quote = case inner {
     // Type aliases can't be resolved at format time, so check whether the
     // value itself looks like a non-numeric, non-boolean literal.
-    TypeAliasRef(_) -> value_needs_quoting(val)
+    ParsedTypeAliasRef(_) -> value_needs_quoting(val)
     _ -> needs_string_quoting(inner)
   }
   use <- bool.guard(quote, "\"" <> val <> "\"")
   val
 }
 
-fn needs_string_quoting(t: AcceptedTypes) -> Bool {
+fn needs_string_quoting(t: ParsedType) -> Bool {
   case t {
-    PrimitiveType(StringType) -> True
-    PrimitiveType(SemanticType(_)) -> True
-    RefinementType(OneOf(inner, _)) -> needs_string_quoting(inner)
-    RefinementType(InclusiveRange(inner, _, _)) -> needs_string_quoting(inner)
+    ParsedPrimitive(StringType) -> True
+    ParsedPrimitive(SemanticType(_)) -> True
+    ParsedRefinement(OneOf(inner, _)) -> needs_string_quoting(inner)
+    ParsedRefinement(InclusiveRange(inner, _, _)) -> needs_string_quoting(inner)
     _ -> False
   }
 }
@@ -369,7 +369,7 @@ fn value_needs_quoting(val: String) -> Bool {
   }
 }
 
-fn format_refinement_type(r: RefinementTypes(AcceptedTypes)) -> String {
+fn format_refinement_type(r: RefinementTypes(ParsedType)) -> String {
   case r {
     OneOf(inner, values) -> {
       let quote = needs_string_quoting(inner)

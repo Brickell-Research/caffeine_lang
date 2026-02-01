@@ -3,7 +3,6 @@ import caffeine_lang/common/helpers
 import caffeine_lang/common/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
   List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RefinementType,
-  TypeAliasRef,
 }
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
@@ -180,6 +179,5 @@ fn resolve_values_for_tag(
         Error(_) -> Ok([default])
       }
     }
-    TypeAliasRef(_) -> Error(Nil)
   }
 }

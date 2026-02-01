@@ -119,7 +119,7 @@ fn lookup_type_alias(
 ) -> Option(String) {
   case list.find(aliases, fn(ta) { ta.name == word }) {
     Ok(ta) -> {
-      let resolved = types.accepted_type_to_string(ta.type_)
+      let resolved = types.parsed_type_to_string(ta.type_)
       option.Some(
         "**"
         <> ta.name
@@ -134,7 +134,7 @@ fn lookup_type_alias(
 
 fn format_value(value: ast.Value) -> String {
   case value {
-    ast.TypeValue(t) -> types.accepted_type_to_string(t)
+    ast.TypeValue(t) -> types.parsed_type_to_string(t)
     ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
 }

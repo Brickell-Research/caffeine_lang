@@ -1,5 +1,5 @@
 /// AST for Caffeine blueprint and expectation files.
-import caffeine_lang/common/types.{type AcceptedTypes}
+import caffeine_lang/common/types.{type ParsedType}
 import gleam/list
 import gleam/string
 
@@ -35,7 +35,7 @@ pub type BlueprintsFile {
 /// A type alias that defines a named, reusable refined type.
 /// Example: _env (Type): String { x | x in { prod, staging, dev } }
 pub type TypeAlias {
-  TypeAlias(name: String, type_: AcceptedTypes, leading_comments: List(Comment))
+  TypeAlias(name: String, type_: ParsedType, leading_comments: List(Comment))
 }
 
 /// An expects file containing extendables and expects blocks.
@@ -139,7 +139,7 @@ pub type Field {
 
 /// A value in a field - either a type (in Requires) or a literal (in Provides).
 pub type Value {
-  TypeValue(type_: AcceptedTypes)
+  TypeValue(type_: ParsedType)
   LiteralValue(literal: Literal)
 }
 
@@ -163,7 +163,7 @@ pub type Literal {
 @internal
 pub fn build_type_alias_pairs(
   type_aliases: List(TypeAlias),
-) -> List(#(String, AcceptedTypes)) {
+) -> List(#(String, ParsedType)) {
   list.map(type_aliases, fn(ta) { #(ta.name, ta.type_) })
 }
 

@@ -54,7 +54,8 @@ Two file types: `BlueprintsFile` (templates with Requires/Provides) and `Expects
 - **Collections**: List(T), Dict(K, V)
 - **Modifiers**: Optional(T), Defaulted(T, default)
 - **Refinements**: OneOf(T, set), InclusiveRange(T, low, high)
-- **TypeAliasRef**: Named type references resolved at compile-time
+
+`ParsedType` is a parallel type union used in the frontend pipeline (parser → validator → formatter → lowering). It mirrors `AcceptedTypes` but includes `ParsedTypeAliasRef(String)` for type alias references. During lowering, all `ParsedType` values are resolved into `AcceptedTypes`, eliminating alias references. Downstream code (linker, semantic analyzer, codegen) works exclusively with `AcceptedTypes`.
 
 All type operations (parsing, validation, string conversion, resolution) live in `common/types.gleam`. Sub-type functions are private; the module exposes dispatch functions that route to the correct sub-type handler.
 

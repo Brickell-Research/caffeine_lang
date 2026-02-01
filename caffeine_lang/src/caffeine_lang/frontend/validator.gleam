@@ -1,8 +1,8 @@
 /// Validation for Caffeine frontend AST.
 /// Handles extendable-related validation that must occur before JSON generation.
 import caffeine_lang/common/types.{
-  type AcceptedTypes, CollectionType, Dict, OneOf, PrimitiveType, RefinementType,
-  String as StringType, TypeAliasRef,
+  type ParsedType, Dict, OneOf, ParsedCollection, ParsedPrimitive,
+  ParsedRefinement, ParsedTypeAliasRef, String as StringType,
 }
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
@@ -369,15 +369,15 @@ fn validate_no_expect_overshadowing(
 /// Builds a map of type alias name to its type for validation.
 fn build_type_alias_map(
   type_aliases: List(TypeAlias),
-) -> List(#(String, AcceptedTypes)) {
+) -> List(#(String, ParsedType)) {
   ast.build_type_alias_pairs(type_aliases)
 }
 
 /// Looks up a type alias by name in the map.
 fn lookup_type_alias(
   name: String,
-  type_alias_map: List(#(String, AcceptedTypes)),
-) -> Result(AcceptedTypes, Nil) {
+  type_alias_map: List(#(String, ParsedType)),
+) -> Result(ParsedType, Nil) {
   case type_alias_map {
     [] -> Error(Nil)
     [#(n, t), ..rest] -> {
@@ -426,17 +426,17 @@ fn validate_no_circular_type_aliases(
 }
 
 /// Checks if a type contains a circular reference.
-/// Uses try_each_inner to handle the structural decomposition of compound types,
-/// with leaf-specific logic for PrimitiveType and TypeAliasRef.
+/// Uses try_each_inner_parsed to handle the structural decomposition of compound types,
+/// with leaf-specific logic for ParsedPrimitive and ParsedTypeAliasRef.
 fn validate_type_alias_not_circular(
   original_name: String,
-  typ: AcceptedTypes,
-  type_alias_map: List(#(String, AcceptedTypes)),
+  typ: ParsedType,
+  type_alias_map: List(#(String, ParsedType)),
   visited: List(String),
 ) -> Result(Nil, ValidatorError) {
   case typ {
-    PrimitiveType(_) -> Ok(Nil)
-    TypeAliasRef(name) -> {
+    ParsedPrimitive(_) -> Ok(Nil)
+    ParsedTypeAliasRef(name) -> {
       use <- bool.guard(
         when: list.contains(visited, name),
         return: Error(CircularTypeAlias(name: original_name, cycle: visited)),
@@ -453,9 +453,9 @@ fn validate_type_alias_not_circular(
         Error(_) -> Ok(Nil)
       }
     }
-    // For compound types, decompose and recurse via try_each_inner
+    // For compound types, decompose and recurse via try_each_inner_parsed
     _ ->
-      types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner_parsed(typ, fn(inner) {
         validate_type_alias_not_circular(
           original_name,
           inner,
@@ -470,7 +470,7 @@ fn validate_type_alias_not_circular(
 fn validate_extendables_type_refs(
   extendables: List(Extendable),
   type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
+  type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {
   list.try_each(extendables, fn(ext) {
     validate_fields_type_refs(
@@ -486,7 +486,7 @@ fn validate_extendables_type_refs(
 fn validate_blueprint_items_type_refs(
   items: List(BlueprintItem),
   type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
+  type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {
   list.try_each(items, fn(item) {
     validate_fields_type_refs(
@@ -503,7 +503,7 @@ fn validate_fields_type_refs(
   fields: List(Field),
   context_name: String,
   type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
+  type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {
   list.try_each(fields, fn(field) {
     case field.value {
@@ -514,18 +514,18 @@ fn validate_fields_type_refs(
   })
 }
 
-/// Validates that all TypeAliasRef in a type are defined.
-/// Uses try_each_inner to handle the structural decomposition of compound types.
+/// Validates that all ParsedTypeAliasRef in a type are defined.
+/// Uses try_each_inner_parsed to handle the structural decomposition of compound types.
 /// Adds special Dict key validation for collection types.
 fn validate_type_refs(
-  typ: AcceptedTypes,
+  typ: ParsedType,
   context_name: String,
   type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
+  type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {
   case typ {
-    PrimitiveType(_) -> Ok(Nil)
-    TypeAliasRef(name) -> {
+    ParsedPrimitive(_) -> Ok(Nil)
+    ParsedTypeAliasRef(name) -> {
       use <- bool.guard(
         when: set.contains(type_alias_names, name),
         return: Ok(Nil),
@@ -533,13 +533,13 @@ fn validate_type_refs(
       Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
     }
     // For Dict, validate key type resolves to String-based before recursing
-    CollectionType(Dict(key, _)) -> {
+    ParsedCollection(Dict(key, _)) -> {
       use _ <- result.try(validate_dict_key_type(
         key,
         context_name,
         type_alias_map,
       ))
-      types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner_parsed(typ, fn(inner) {
         validate_type_refs(
           inner,
           context_name,
@@ -548,9 +548,9 @@ fn validate_type_refs(
         )
       })
     }
-    // For all other compound types, recurse via try_each_inner
+    // For all other compound types, recurse via try_each_inner_parsed
     _ ->
-      types.try_each_inner(typ, fn(inner) {
+      types.try_each_inner_parsed(typ, fn(inner) {
         validate_type_refs(
           inner,
           context_name,
@@ -563,24 +563,24 @@ fn validate_type_refs(
 
 /// Validates that a Dict key type resolves to a String-based type.
 fn validate_dict_key_type(
-  key_type: AcceptedTypes,
+  key_type: ParsedType,
   context_name: String,
-  type_alias_map: List(#(String, AcceptedTypes)),
+  type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {
   case key_type {
     // String primitive is always valid
-    PrimitiveType(StringType) -> Ok(Nil)
-    // TypeAliasRef must resolve to String-based type
-    TypeAliasRef(alias_name) -> {
+    ParsedPrimitive(StringType) -> Ok(Nil)
+    // ParsedTypeAliasRef must resolve to String-based type
+    ParsedTypeAliasRef(alias_name) -> {
       case lookup_type_alias(alias_name, type_alias_map) {
         Ok(resolved) -> {
           use <- bool.guard(
-            when: is_string_based_type(resolved),
+            when: is_string_based_parsed_type(resolved),
             return: Ok(Nil),
           )
           Error(InvalidDictKeyTypeAlias(
             alias_name: alias_name,
-            resolved_to: types.accepted_type_to_string(resolved),
+            resolved_to: types.parsed_type_to_string(resolved),
             referenced_by: context_name,
           ))
         }
@@ -589,22 +589,22 @@ fn validate_dict_key_type(
       }
     }
     // Refinement of String is valid
-    RefinementType(OneOf(PrimitiveType(StringType), _)) -> Ok(Nil)
+    ParsedRefinement(OneOf(ParsedPrimitive(StringType), _)) -> Ok(Nil)
     // Other types are not valid Dict keys
     _ ->
       Error(InvalidDictKeyTypeAlias(
         alias_name: "inline",
-        resolved_to: types.accepted_type_to_string(key_type),
+        resolved_to: types.parsed_type_to_string(key_type),
         referenced_by: context_name,
       ))
   }
 }
 
-/// Checks if a type is String-based (String primitive or String refinement).
-fn is_string_based_type(typ: AcceptedTypes) -> Bool {
+/// Checks if a parsed type is String-based (String primitive or String refinement).
+fn is_string_based_parsed_type(typ: ParsedType) -> Bool {
   case typ {
-    PrimitiveType(StringType) -> True
-    RefinementType(OneOf(PrimitiveType(StringType), _)) -> True
+    ParsedPrimitive(StringType) -> True
+    ParsedRefinement(OneOf(ParsedPrimitive(StringType), _)) -> True
     _ -> False
   }
 }

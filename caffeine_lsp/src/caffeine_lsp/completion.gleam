@@ -120,7 +120,7 @@ fn type_completions(content: String) -> List(json.Json) {
   let alias_items = case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) ->
       list.map(file.type_aliases, fn(ta) {
-        let detail = "Type alias → " <> types.accepted_type_to_string(ta.type_)
+        let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
         completion_item(ta.name, kind_variable, detail)
       })
     _ -> []
@@ -151,8 +151,7 @@ fn general_completions(content: String) -> List(json.Json) {
         })
       let alias_items =
         list.map(file.type_aliases, fn(ta) {
-          let detail =
-            "Type alias → " <> types.accepted_type_to_string(ta.type_)
+          let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
           completion_item(ta.name, kind_variable, detail)
         })
       list.flatten([ext_items, alias_items])

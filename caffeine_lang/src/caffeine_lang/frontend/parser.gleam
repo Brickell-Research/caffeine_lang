@@ -1,8 +1,8 @@
 import caffeine_lang/common/types.{
-  type AcceptedTypes, type PrimitiveTypes, type RefinementTypes, Boolean,
-  CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer, List,
-  ModifierType, NumericType, OneOf, Optional, PrimitiveType, RefinementType,
-  SemanticType, String as StringType, TypeAliasRef, URL,
+  type ParsedType, type PrimitiveTypes, type RefinementTypes, Boolean, Defaulted,
+  Dict, Float, InclusiveRange, Integer, List, NumericType, OneOf, Optional,
+  ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRefinement,
+  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
 }
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
@@ -821,7 +821,7 @@ fn parse_literal_field(
 
 fn parse_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   case peek(state) {
     token.KeywordString -> parse_type_with_refinement(state, StringType)
     token.KeywordInteger ->
@@ -838,7 +838,7 @@ fn parse_type(
       case string.starts_with(name, "_") {
         True -> {
           let state = advance(state)
-          Ok(#(TypeAliasRef(name), state))
+          Ok(#(ParsedTypeAliasRef(name), state))
         }
         False -> Error(parser_error.UnknownType(name, state.line, state.column))
       }
@@ -854,14 +854,14 @@ fn parse_type(
 fn parse_type_with_refinement(
   state: ParserState,
   primitive: PrimitiveTypes,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   let state = advance(state)
   case peek(state) {
     token.SymbolLeftBrace -> {
       use #(refinement, state) <- result.try(parse_refinement(state, primitive))
-      Ok(#(RefinementType(refinement), state))
+      Ok(#(ParsedRefinement(refinement), state))
     }
-    _ -> Ok(#(PrimitiveType(primitive), state))
+    _ -> Ok(#(ParsedPrimitive(primitive), state))
   }
 }
 
@@ -869,27 +869,27 @@ fn parse_type_with_refinement(
 /// Does not allow modifiers (Optional/Defaulted) or refinements directly.
 fn parse_collection_inner_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   case peek(state) {
     token.KeywordString -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(StringType), state))
+      Ok(#(ParsedPrimitive(StringType), state))
     }
     token.KeywordInteger -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(NumericType(Integer)), state))
+      Ok(#(ParsedPrimitive(NumericType(Integer)), state))
     }
     token.KeywordFloat -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(NumericType(Float)), state))
+      Ok(#(ParsedPrimitive(NumericType(Float)), state))
     }
     token.KeywordBoolean -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(Boolean), state))
+      Ok(#(ParsedPrimitive(Boolean), state))
     }
     token.KeywordURL -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(SemanticType(URL)), state))
+      Ok(#(ParsedPrimitive(SemanticType(URL)), state))
     }
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
@@ -898,7 +898,7 @@ fn parse_collection_inner_type(
       case string.starts_with(name, "_") {
         True -> {
           let state = advance(state)
-          Ok(#(TypeAliasRef(name), state))
+          Ok(#(ParsedTypeAliasRef(name), state))
         }
         False -> Error(parser_error.UnknownType(name, state.line, state.column))
       }
@@ -913,17 +913,17 @@ fn parse_collection_inner_type(
 
 fn parse_list_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
   use #(element, state) <- result.try(parse_collection_inner_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(CollectionType(List(element)), state))
+  Ok(#(ParsedCollection(List(element)), state))
 }
 
 fn parse_dict_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
   // Dict keys must be String primitive or type alias ref (for JSON compatibility)
@@ -932,25 +932,25 @@ fn parse_dict_type(
   // Dict values can be primitives, nested collections, or type alias refs
   use #(value, state) <- result.try(parse_collection_inner_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(CollectionType(Dict(key, value)), state))
+  Ok(#(ParsedCollection(Dict(key, value)), state))
 }
 
 /// Parses types valid as Dict keys: String primitive or type alias ref.
 /// Only String is allowed as a primitive key (JSON keys must be strings).
 fn parse_dict_key_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   case peek(state) {
     token.KeywordString -> {
       let state = advance(state)
-      Ok(#(PrimitiveType(StringType), state))
+      Ok(#(ParsedPrimitive(StringType), state))
     }
     // Type alias reference (must start with _, e.g., _env) - must resolve to a String-based type
     token.Identifier(name) ->
       case string.starts_with(name, "_") {
         True -> {
           let state = advance(state)
-          Ok(#(TypeAliasRef(name), state))
+          Ok(#(ParsedTypeAliasRef(name), state))
         }
         False -> Error(parser_error.UnknownType(name, state.line, state.column))
       }
@@ -965,24 +965,24 @@ fn parse_dict_key_type(
 
 fn parse_optional_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
   use #(inner, state) <- result.try(parse_type(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  Ok(#(ModifierType(Optional(inner)), state))
+  Ok(#(ParsedModifier(Optional(inner)), state))
 }
 
 fn parse_defaulted_type(
   state: ParserState,
-) -> Result(#(AcceptedTypes, ParserState), ParserError) {
+) -> Result(#(ParsedType, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
   use #(inner, state) <- result.try(parse_type(state))
   use state <- result.try(expect(state, token.SymbolComma, ","))
   use #(default, state) <- result.try(parse_literal(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-  let defaulted = ModifierType(Defaulted(inner, literal_to_string(default)))
+  let defaulted = ParsedModifier(Defaulted(inner, literal_to_string(default)))
   // Check for optional refinement: Defaulted(String, "x") { x | x in { ... } }
   case peek(state) {
     token.SymbolLeftBrace -> {
@@ -990,7 +990,7 @@ fn parse_defaulted_type(
         state,
         defaulted,
       ))
-      Ok(#(RefinementType(refinement), state))
+      Ok(#(ParsedRefinement(refinement), state))
     }
     _ -> Ok(#(defaulted, state))
   }
@@ -999,8 +999,8 @@ fn parse_defaulted_type(
 /// Parse refinement on a Defaulted type: { x | x in { ... } } or { x | x in ( ... ) }
 fn parse_defaulted_refinement(
   state: ParserState,
-  defaulted: AcceptedTypes,
-) -> Result(#(RefinementTypes(AcceptedTypes), ParserState), ParserError) {
+  defaulted: ParsedType,
+) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   use state <- result.try(expect_x(state))
   use state <- result.try(expect(state, token.SymbolPipe, "|"))
@@ -1016,9 +1016,9 @@ fn parse_defaulted_refinement(
 
 fn parse_defaulted_refinement_body(
   state: ParserState,
-  defaulted: AcceptedTypes,
-) -> Result(#(RefinementTypes(AcceptedTypes), ParserState), ParserError) {
-  let primitive = extract_primitive_from_accepted(defaulted)
+  defaulted: ParsedType,
+) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
+  let primitive = extract_primitive_from_parsed(defaulted)
   case peek(state) {
     // OneOf: { value1, value2, ... }
     token.SymbolLeftBrace -> {
@@ -1069,7 +1069,7 @@ fn parse_defaulted_refinement_body(
 fn parse_refinement(
   state: ParserState,
   primitive: PrimitiveTypes,
-) -> Result(#(RefinementTypes(AcceptedTypes), ParserState), ParserError) {
+) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   use state <- result.try(expect_x(state))
   use state <- result.try(expect(state, token.SymbolPipe, "|"))
@@ -1095,7 +1095,7 @@ fn expect_x(state: ParserState) -> Result(ParserState, ParserError) {
 fn parse_refinement_body(
   state: ParserState,
   primitive: PrimitiveTypes,
-) -> Result(#(RefinementTypes(AcceptedTypes), ParserState), ParserError) {
+) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
   case peek(state) {
     // OneOf: { value1, value2, ... }
     token.SymbolLeftBrace -> {
@@ -1104,7 +1104,10 @@ fn parse_refinement_body(
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
       use _ <- result.try(validate_oneof_literals(values, primitive, state))
       let string_values = list.map(values, literal_to_string)
-      Ok(#(OneOf(PrimitiveType(primitive), set.from_list(string_values)), state))
+      Ok(#(
+        OneOf(ParsedPrimitive(primitive), set.from_list(string_values)),
+        state,
+      ))
     }
     // Range: ( min..max )
     token.SymbolLeftParen -> {
@@ -1116,7 +1119,7 @@ fn parse_refinement_body(
       use _ <- result.try(validate_oneof_literals([min, max], primitive, state))
       Ok(#(
         InclusiveRange(
-          PrimitiveType(primitive),
+          ParsedPrimitive(primitive),
           literal_to_string(min),
           literal_to_string(max),
         ),
@@ -1261,13 +1264,11 @@ fn literal_matches_primitive(
   }
 }
 
-/// Extracts the primitive type from an AcceptedTypes, unwrapping Defaulted modifiers.
-fn extract_primitive_from_accepted(
-  typ: AcceptedTypes,
-) -> Result(PrimitiveTypes, Nil) {
+/// Extracts the primitive type from a ParsedType, unwrapping Defaulted modifiers.
+fn extract_primitive_from_parsed(typ: ParsedType) -> Result(PrimitiveTypes, Nil) {
   case typ {
-    PrimitiveType(primitive) -> Ok(primitive)
-    ModifierType(Defaulted(inner, _)) -> extract_primitive_from_accepted(inner)
+    ParsedPrimitive(primitive) -> Ok(primitive)
+    ParsedModifier(Defaulted(inner, _)) -> extract_primitive_from_parsed(inner)
     _ -> Error(Nil)
   }
 }
