@@ -1,8 +1,10 @@
 import caffeine_lang/common/accepted_types
+import caffeine_lang/common/constants
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -95,4 +97,69 @@ pub fn extract_relations(
     |> result.replace_error(Nil)
   })
   |> result.unwrap(dict.new())
+}
+
+/// Default SLO window in days used when no explicit window is provided.
+pub const default_window_in_days = 30
+
+/// Extract the window_in_days from a list of values, falling back to the default.
+pub fn extract_window_in_days(values: List(ValueTuple)) -> Int {
+  extract_value(values, "window_in_days", decode.int)
+  |> result.unwrap(default_window_in_days)
+}
+
+/// Extract indicators from a list of values as a Dict mapping indicator names to expressions.
+pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String) {
+  extract_value(values, "indicators", decode.dict(decode.string, decode.string))
+  |> result.unwrap(dict.new())
+}
+
+/// Extract user-provided tags as a sorted list of key-value pairs.
+pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
+  extract_value(
+    values,
+    "tags",
+    decode.optional(decode.dict(decode.string, decode.string)),
+  )
+  |> result.unwrap(option.None)
+  |> option.unwrap(dict.new())
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+}
+
+/// Build system tag key-value pairs from IR metadata fields and artifact refs.
+/// Returns a sorted, deterministic list of tag pairs shared across all generators.
+pub fn build_system_tag_pairs(
+  org_name org_name: String,
+  team_name team_name: String,
+  service_name service_name: String,
+  blueprint_name blueprint_name: String,
+  friendly_label friendly_label: String,
+  artifact_refs artifact_refs: List(String),
+  misc misc: dict.Dict(String, List(String)),
+) -> List(#(String, String)) {
+  [
+    #("managed_by", "caffeine"),
+    #("caffeine_version", constants.version),
+    #("org", org_name),
+    #("team", team_name),
+    #("service", service_name),
+    #("blueprint", blueprint_name),
+    #("expectation", friendly_label),
+  ]
+  |> list.append(
+    artifact_refs
+    |> list.map(fn(ref) { #("artifact", ref) }),
+  )
+  |> list.append(
+    misc
+    |> dict.keys
+    |> list.sort(string.compare)
+    |> list.flat_map(fn(key) {
+      let assert Ok(values) = misc |> dict.get(key)
+      values
+      |> list.sort(string.compare)
+      |> list.map(fn(value) { #(key, value) })
+    }),
+  )
 }

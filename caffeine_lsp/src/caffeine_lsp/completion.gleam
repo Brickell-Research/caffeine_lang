@@ -1,8 +1,4 @@
 import caffeine_lang/common/accepted_types
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/primitive_types
-import caffeine_lang/common/refinement_types
 import caffeine_lang/common/type_info.{type TypeMeta}
 import caffeine_lang/frontend/ast
 import caffeine_lsp/file_utils
@@ -100,18 +96,12 @@ fn extends_completions(content: String) -> List(json.Json) {
   let file_items = case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) ->
       list.map(file.extendables, fn(e) {
-        let detail = case e.kind {
-          ast.ExtendableRequires -> "Requires extendable"
-          ast.ExtendableProvides -> "Provides extendable"
-        }
+        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
         completion_item(e.name, kind_variable, detail)
       })
     Ok(file_utils.Expects(file)) ->
       list.map(file.extendables, fn(e) {
-        let detail = case e.kind {
-          ast.ExtendableRequires -> "Requires extendable"
-          ast.ExtendableProvides -> "Provides extendable"
-        }
+        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
         completion_item(e.name, kind_variable, detail)
       })
     Error(_) -> []
@@ -121,7 +111,7 @@ fn extends_completions(content: String) -> List(json.Json) {
 
 fn type_completions(content: String) -> List(json.Json) {
   let type_items =
-    all_type_metas()
+    accepted_types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
       completion_item(m.name, kind_class, m.description)
     })
@@ -147,7 +137,7 @@ fn field_completions(fields: List(#(String, String))) -> List(json.Json) {
 fn general_completions(content: String) -> List(json.Json) {
   let kw_items = keyword_items()
   let type_items =
-    all_type_metas()
+    accepted_types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
       completion_item(m.name, kind_class, m.description)
     })
@@ -157,10 +147,7 @@ fn general_completions(content: String) -> List(json.Json) {
     Ok(file_utils.Blueprints(file)) -> {
       let ext_items =
         list.map(file.extendables, fn(e) {
-          let detail = case e.kind {
-            ast.ExtendableRequires -> "Requires extendable"
-            ast.ExtendableProvides -> "Provides extendable"
-          }
+          let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
           completion_item(e.name, kind_variable, detail)
         })
       let alias_items =
@@ -173,10 +160,7 @@ fn general_completions(content: String) -> List(json.Json) {
     }
     Ok(file_utils.Expects(file)) ->
       list.map(file.extendables, fn(e) {
-        let detail = case e.kind {
-          ast.ExtendableRequires -> "Requires extendable"
-          ast.ExtendableProvides -> "Provides extendable"
-        }
+        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
         completion_item(e.name, kind_variable, detail)
       })
     Error(_) -> []
@@ -190,15 +174,6 @@ fn general_completions(content: String) -> List(json.Json) {
 fn keyword_items() -> List(json.Json) {
   keyword_info.all_keywords()
   |> list.map(fn(kw) { completion_item(kw.name, kind_keyword, kw.description) })
-}
-
-fn all_type_metas() -> List(TypeMeta) {
-  list.flatten([
-    primitive_types.all_type_metas(),
-    collection_types.all_type_metas(),
-    modifier_types.all_type_metas(),
-    refinement_types.all_type_metas(),
-  ])
 }
 
 fn completion_item(label: String, kind: Int, detail: String) -> json.Json {

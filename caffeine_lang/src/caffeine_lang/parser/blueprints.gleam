@@ -30,10 +30,8 @@ pub fn parse_from_json_string(
   artifacts: List(Artifact),
 ) -> Result(List(Blueprint), CompilationError) {
   use blueprints <- result.try(
-    case blueprints_from_json(json_string, artifacts) {
-      Ok(blueprints) -> Ok(blueprints)
-      Error(err) -> Error(errors.format_json_decode_error(err))
-    },
+    blueprints_from_json(json_string, artifacts)
+    |> errors.map_json_decode_error,
   )
 
   validate_blueprints(blueprints, artifacts)
@@ -85,30 +83,18 @@ pub fn validate_blueprints(
   ))
 
   // Ensure no param name overshadowing by the blueprint against any artifact.
-  let overshadow_params_error =
-    blueprint_merged_params_collection
-    |> list.filter_map(fn(blueprint_params_pair) {
-      let #(blueprint, merged_params) = blueprint_params_pair
-
-      case
-        validations.check_collection_key_overshadowing(
-          in: blueprint.params,
-          against: merged_params,
-          with: "blueprint '"
-            <> blueprint.name
-            <> "' - overshadowing inherited_params from artifact: ",
-        )
-      {
-        Ok(_) -> Error(Nil)
-        Error(msg) -> Ok(msg)
-      }
-    })
-    |> string.join(", ")
-
-  use _ <- result.try(case overshadow_params_error {
-    "" -> Ok(True)
-    _ -> Error(errors.ParserDuplicateError(msg: overshadow_params_error))
-  })
+  use _ <- result.try(
+    validations.validate_no_overshadowing(
+      blueprint_merged_params_collection,
+      get_check_collection: fn(blueprint) { blueprint.params },
+      get_against_collection: fn(merged_params) { merged_params },
+      get_error_label: fn(blueprint) {
+        "blueprint '"
+        <> blueprint.name
+        <> "' - overshadowing inherited_params from artifact: "
+      },
+    ),
+  )
 
   // At this point everything is validated, so we can merge params from all artifacts + blueprint params.
   let merged_param_blueprints =

@@ -4,7 +4,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/option
 import gleam/result
-import gleam/string
 
 /// Modifier types are a special class of types that alter the value semantics of
 /// the attribute they are bound to.
@@ -82,7 +81,7 @@ fn parse_optional_type(
 ) -> Result(ModifierTypes(accepted), Nil) {
   case
     raw
-    |> paren_innerds_trimmed
+    |> parsing_utils.paren_innerds_trimmed
     |> parse_inner
   {
     Ok(inner_type) -> Ok(Optional(inner_type))
@@ -96,7 +95,7 @@ fn parse_defaulted_type(
   validate_default: fn(accepted, String) -> Result(Nil, Nil),
 ) -> Result(ModifierTypes(accepted), Nil) {
   use #(raw_inner_type, raw_default_value) <- result.try(
-    case paren_innerds_split_and_trimmed(raw) {
+    case parsing_utils.paren_innerds_split_and_trimmed(raw) {
       [typ, val] -> Ok(#(typ, val))
       _ -> Error(Nil)
     },
@@ -137,23 +136,16 @@ pub fn validate_value(
   validate_inner: fn(accepted, Dynamic) ->
     Result(Dynamic, List(decode.DecodeError)),
 ) -> Result(Dynamic, List(decode.DecodeError)) {
-  case modifier {
-    Optional(inner_type) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) -> validate_inner(inner_type, inner_val)
-        Ok(option.None) -> Ok(value)
-        Error(err) -> Error(err)
-      }
-    }
-    Defaulted(inner_type, _default_val) -> {
-      // Defaulted works like Optional for validation - value can be present or absent.
-      // If present, validate it matches the inner type.
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) -> validate_inner(inner_type, inner_val)
-        Ok(option.None) -> Ok(value)
-        Error(err) -> Error(err)
-      }
-    }
+  // Both Optional and Defaulted validate identically: if a value is present,
+  // validate it matches the inner type; if absent, accept as-is.
+  let inner_type = case modifier {
+    Optional(t) -> t
+    Defaulted(t, _) -> t
+  }
+  case decode.run(value, decode.optional(decode.dynamic)) {
+    Ok(option.Some(inner_val)) -> validate_inner(inner_type, inner_val)
+    Ok(option.None) -> Ok(value)
+    Error(err) -> Error(err)
   }
 }
 
@@ -182,66 +174,5 @@ pub fn resolve_to_string(
         Error(_) -> Ok(resolve_string(default_val))
       }
     }
-  }
-}
-
-/// Extracts the content inside the outermost pair of parentheses,
-/// properly handling nested parentheses.
-/// Returns Error if there's content after the closing paren (e.g., refinement constraints).
-/// E.g., "(String)" -> Ok("String")
-/// E.g., "(String, foo)" -> Ok("String, foo")
-/// E.g., "(List(String))" -> Ok("List(String)")
-/// E.g., "(String, foo) { x | x in { a } }" -> Error(Nil) -- has refinement suffix
-fn extract_paren_content(raw: String) -> Result(String, Nil) {
-  case string.split_once(raw, "(") {
-    Error(_) -> Error(Nil)
-    Ok(#(_, after_open)) -> {
-      // Find the matching close paren by tracking nesting depth
-      case find_matching_close_paren(after_open, 1, "") {
-        Error(_) -> Error(Nil)
-        Ok(#(content, rest)) -> {
-          // If there's non-whitespace content after the closing paren,
-          // this is likely a refinement type and we should fail
-          case string.trim(rest) {
-            "" -> Ok(string.trim(content))
-            _ -> Error(Nil)
-          }
-        }
-      }
-    }
-  }
-}
-
-/// Finds the matching closing parenthesis, tracking nesting depth.
-/// Returns the content before the matching close and the rest after it.
-fn find_matching_close_paren(
-  s: String,
-  depth: Int,
-  acc: String,
-) -> Result(#(String, String), Nil) {
-  case string.pop_grapheme(s) {
-    Error(_) -> Error(Nil)
-    Ok(#("(", rest)) -> find_matching_close_paren(rest, depth + 1, acc <> "(")
-    Ok(#(")", rest)) -> {
-      case depth {
-        1 -> Ok(#(acc, rest))
-        _ -> find_matching_close_paren(rest, depth - 1, acc <> ")")
-      }
-    }
-    Ok(#(char, rest)) -> find_matching_close_paren(rest, depth, acc <> char)
-  }
-}
-
-fn paren_innerds_trimmed(raw: String) -> String {
-  case extract_paren_content(raw) {
-    Ok(content) -> content
-    Error(_) -> string.trim(raw)
-  }
-}
-
-fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
-  case extract_paren_content(raw) {
-    Ok(content) -> parsing_utils.split_at_top_level_comma(content)
-    Error(_) -> []
   }
 }

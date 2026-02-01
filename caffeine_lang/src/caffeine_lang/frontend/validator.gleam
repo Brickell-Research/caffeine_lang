@@ -2,7 +2,6 @@
 /// Handles extendable-related validation that must occur before JSON generation.
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
 import caffeine_lang/common/primitive_types
 import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast.{
@@ -371,7 +370,7 @@ fn validate_no_expect_overshadowing(
 fn build_type_alias_map(
   type_aliases: List(TypeAlias),
 ) -> List(#(String, AcceptedTypes)) {
-  list.map(type_aliases, fn(ta) { #(ta.name, ta.type_) })
+  ast.build_type_alias_pairs(type_aliases)
 }
 
 /// Looks up a type alias by name in the map.
@@ -427,6 +426,8 @@ fn validate_no_circular_type_aliases(
 }
 
 /// Checks if a type contains a circular reference.
+/// Uses try_each_inner to handle the structural decomposition of compound types,
+/// with leaf-specific logic for PrimitiveType and TypeAliasRef.
 fn validate_type_alias_not_circular(
   original_name: String,
   typ: AcceptedTypes,
@@ -448,110 +449,20 @@ fn validate_type_alias_not_circular(
             type_alias_map,
             [name, ..visited],
           )
-        Error(_) -> Ok(Nil)
         // Undefined ref is caught elsewhere
+        Error(_) -> Ok(Nil)
       }
     }
-    accepted_types.CollectionType(collection) ->
-      validate_collection_not_circular(
-        original_name,
-        collection,
-        type_alias_map,
-        visited,
-      )
-    accepted_types.ModifierType(modifier) ->
-      validate_modifier_not_circular(
-        original_name,
-        modifier,
-        type_alias_map,
-        visited,
-      )
-    accepted_types.RefinementType(refinement) ->
-      validate_refinement_not_circular(
-        original_name,
-        refinement,
-        type_alias_map,
-        visited,
-      )
-  }
-}
-
-fn validate_collection_not_circular(
-  original_name: String,
-  collection: collection_types.CollectionTypes(AcceptedTypes),
-  type_alias_map: List(#(String, AcceptedTypes)),
-  visited: List(String),
-) -> Result(Nil, ValidatorError) {
-  case collection {
-    collection_types.List(inner) ->
-      validate_type_alias_not_circular(
-        original_name,
-        inner,
-        type_alias_map,
-        visited,
-      )
-    collection_types.Dict(key, value) -> {
-      use _ <- result.try(validate_type_alias_not_circular(
-        original_name,
-        key,
-        type_alias_map,
-        visited,
-      ))
-      validate_type_alias_not_circular(
-        original_name,
-        value,
-        type_alias_map,
-        visited,
-      )
-    }
-  }
-}
-
-fn validate_modifier_not_circular(
-  original_name: String,
-  modifier: modifier_types.ModifierTypes(AcceptedTypes),
-  type_alias_map: List(#(String, AcceptedTypes)),
-  visited: List(String),
-) -> Result(Nil, ValidatorError) {
-  case modifier {
-    modifier_types.Optional(inner) ->
-      validate_type_alias_not_circular(
-        original_name,
-        inner,
-        type_alias_map,
-        visited,
-      )
-    modifier_types.Defaulted(inner, _) ->
-      validate_type_alias_not_circular(
-        original_name,
-        inner,
-        type_alias_map,
-        visited,
-      )
-  }
-}
-
-fn validate_refinement_not_circular(
-  original_name: String,
-  refinement: refinement_types.RefinementTypes(AcceptedTypes),
-  type_alias_map: List(#(String, AcceptedTypes)),
-  visited: List(String),
-) -> Result(Nil, ValidatorError) {
-  case refinement {
-    refinement_types.OneOf(inner, _) ->
-      validate_type_alias_not_circular(
-        original_name,
-        inner,
-        type_alias_map,
-        visited,
-      )
-    refinement_types.InclusiveRange(inner, _, _) ->
-      validate_type_alias_not_circular(
-        original_name,
-        inner,
-        type_alias_map,
-        visited,
-      )
+    // For compound types, decompose and recurse via try_each_inner
+    _ ->
+      accepted_types.try_each_inner(typ, fn(inner) {
+        validate_type_alias_not_circular(
+          original_name,
+          inner,
+          type_alias_map,
+          visited,
+        )
+      })
   }
 }
 
@@ -604,6 +515,8 @@ fn validate_fields_type_refs(
 }
 
 /// Validates that all TypeAliasRef in a type are defined.
+/// Uses try_each_inner to handle the structural decomposition of compound types.
+/// Adds special Dict key validation for collection types.
 fn validate_type_refs(
   typ: AcceptedTypes,
   context_name: String,
@@ -619,84 +532,32 @@ fn validate_type_refs(
       )
       Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
     }
-    accepted_types.CollectionType(collection) ->
-      validate_collection_type_refs(
-        collection,
-        context_name,
-        type_alias_names,
-        type_alias_map,
-      )
-    accepted_types.ModifierType(modifier) ->
-      validate_modifier_type_refs(
-        modifier,
-        context_name,
-        type_alias_names,
-        type_alias_map,
-      )
-    accepted_types.RefinementType(refinement) ->
-      validate_refinement_type_refs(
-        refinement,
-        context_name,
-        type_alias_names,
-        type_alias_map,
-      )
-  }
-}
-
-fn validate_collection_type_refs(
-  collection: collection_types.CollectionTypes(AcceptedTypes),
-  context_name: String,
-  type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
-) -> Result(Nil, ValidatorError) {
-  case collection {
-    collection_types.List(inner) ->
-      validate_type_refs(inner, context_name, type_alias_names, type_alias_map)
-    collection_types.Dict(key, value) -> {
-      // Validate key type alias exists
-      use _ <- result.try(validate_type_refs(
-        key,
-        context_name,
-        type_alias_names,
-        type_alias_map,
-      ))
-      // Validate Dict key resolves to String-based type
+    // For Dict, validate key type resolves to String-based before recursing
+    accepted_types.CollectionType(collection_types.Dict(key, _)) -> {
       use _ <- result.try(validate_dict_key_type(
         key,
         context_name,
         type_alias_map,
       ))
-      // Validate value type alias exists
-      validate_type_refs(value, context_name, type_alias_names, type_alias_map)
+      accepted_types.try_each_inner(typ, fn(inner) {
+        validate_type_refs(
+          inner,
+          context_name,
+          type_alias_names,
+          type_alias_map,
+        )
+      })
     }
-  }
-}
-
-fn validate_modifier_type_refs(
-  modifier: modifier_types.ModifierTypes(AcceptedTypes),
-  context_name: String,
-  type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
-) -> Result(Nil, ValidatorError) {
-  case modifier {
-    modifier_types.Optional(inner) ->
-      validate_type_refs(inner, context_name, type_alias_names, type_alias_map)
-    modifier_types.Defaulted(inner, _) ->
-      validate_type_refs(inner, context_name, type_alias_names, type_alias_map)
-  }
-}
-
-fn validate_refinement_type_refs(
-  refinement: refinement_types.RefinementTypes(AcceptedTypes),
-  context_name: String,
-  type_alias_names: set.Set(String),
-  type_alias_map: List(#(String, AcceptedTypes)),
-) -> Result(Nil, ValidatorError) {
-  case refinement {
-    refinement_types.OneOf(inner, _) ->
-      validate_type_refs(inner, context_name, type_alias_names, type_alias_map)
-    refinement_types.InclusiveRange(inner, _, _) ->
-      validate_type_refs(inner, context_name, type_alias_names, type_alias_map)
+    // For all other compound types, recurse via try_each_inner
+    _ ->
+      accepted_types.try_each_inner(typ, fn(inner) {
+        validate_type_refs(
+          inner,
+          context_name,
+          type_alias_names,
+          type_alias_map,
+        )
+      })
   }
 }
 

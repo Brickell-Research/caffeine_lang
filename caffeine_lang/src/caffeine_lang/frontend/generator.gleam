@@ -1,9 +1,6 @@
 /// JSON generator for Caffeine frontend AST.
 /// Converts validated AST to JSON for the compiler pipeline.
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
-import caffeine_lang/common/collection_types
-import caffeine_lang/common/modifier_types
-import caffeine_lang/common/refinement_types
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type Literal, type Struct, type TypeAlias,
@@ -66,8 +63,7 @@ fn build_extendable_map(
 fn build_type_alias_map(
   type_aliases: List(TypeAlias),
 ) -> Dict(String, AcceptedTypes) {
-  type_aliases
-  |> list.map(fn(ta) { #(ta.name, ta.type_) })
+  ast.build_type_alias_pairs(type_aliases)
   |> dict.from_list
 }
 
@@ -211,7 +207,7 @@ fn struct_to_params_json(
 }
 
 /// Resolves all TypeAliasRef instances in a type by looking them up in the alias map.
-/// Recursively resolves nested types (in collections, modifiers, refinements).
+/// Recursively resolves nested types using map_inner for structural decomposition.
 fn resolve_type_aliases(
   t: AcceptedTypes,
   aliases: Dict(String, AcceptedTypes),
@@ -223,64 +219,11 @@ fn resolve_type_aliases(
         Ok(resolved) -> resolve_type_aliases(resolved, aliases)
         Error(_) -> t
       }
-    accepted_types.CollectionType(collection) ->
-      accepted_types.CollectionType(resolve_collection_aliases(
-        collection,
-        aliases,
-      ))
-    accepted_types.ModifierType(modifier) ->
-      accepted_types.ModifierType(resolve_modifier_aliases(modifier, aliases))
-    accepted_types.RefinementType(refinement) ->
-      accepted_types.RefinementType(resolve_refinement_aliases(
-        refinement,
-        aliases,
-      ))
-  }
-}
-
-/// Resolves type aliases in collection types.
-fn resolve_collection_aliases(
-  collection: collection_types.CollectionTypes(AcceptedTypes),
-  aliases: Dict(String, AcceptedTypes),
-) -> collection_types.CollectionTypes(AcceptedTypes) {
-  case collection {
-    collection_types.List(inner) ->
-      collection_types.List(resolve_type_aliases(inner, aliases))
-    collection_types.Dict(key, value) ->
-      collection_types.Dict(
-        resolve_type_aliases(key, aliases),
-        resolve_type_aliases(value, aliases),
-      )
-  }
-}
-
-/// Resolves type aliases in modifier types.
-fn resolve_modifier_aliases(
-  modifier: modifier_types.ModifierTypes(AcceptedTypes),
-  aliases: Dict(String, AcceptedTypes),
-) -> modifier_types.ModifierTypes(AcceptedTypes) {
-  case modifier {
-    modifier_types.Optional(inner) ->
-      modifier_types.Optional(resolve_type_aliases(inner, aliases))
-    modifier_types.Defaulted(inner, default) ->
-      modifier_types.Defaulted(resolve_type_aliases(inner, aliases), default)
-  }
-}
-
-/// Resolves type aliases in refinement types.
-fn resolve_refinement_aliases(
-  refinement: refinement_types.RefinementTypes(AcceptedTypes),
-  aliases: Dict(String, AcceptedTypes),
-) -> refinement_types.RefinementTypes(AcceptedTypes) {
-  case refinement {
-    refinement_types.OneOf(inner, values) ->
-      refinement_types.OneOf(resolve_type_aliases(inner, aliases), values)
-    refinement_types.InclusiveRange(inner, min, max) ->
-      refinement_types.InclusiveRange(
-        resolve_type_aliases(inner, aliases),
-        min,
-        max,
-      )
+    // For compound types, recurse into inner types via map_inner
+    _ ->
+      accepted_types.map_inner(t, fn(inner) {
+        resolve_type_aliases(inner, aliases)
+      })
   }
 }
 

@@ -20,15 +20,8 @@ pub fn make_slo_ir(
   threshold threshold: Float,
 ) -> semantic_analyzer.IntermediateRepresentation {
   semantic_analyzer.IntermediateRepresentation(
-    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-      friendly_label: name,
-      org_name: org,
-      service_name: service,
-      blueprint_name: "test_blueprint",
-      team_name: team,
-      misc: dict.new(),
-    ),
-    unique_identifier: org <> "_" <> service <> "_" <> name,
+    metadata: make_test_metadata(org, team, service, name),
+    unique_identifier: make_unique_id(org, service, name),
     artifact_refs: ["SLO"],
     values: [
       helpers.ValueTuple(
@@ -59,15 +52,8 @@ pub fn make_ir_with_deps(
   threshold threshold: Float,
 ) -> semantic_analyzer.IntermediateRepresentation {
   semantic_analyzer.IntermediateRepresentation(
-    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-      friendly_label: name,
-      org_name: org,
-      service_name: service,
-      blueprint_name: "test_blueprint",
-      team_name: team,
-      misc: dict.new(),
-    ),
-    unique_identifier: org <> "_" <> service <> "_" <> name,
+    metadata: make_test_metadata(org, team, service, name),
+    unique_identifier: make_unique_id(org, service, name),
     artifact_refs: ["SLO", "DependencyRelations"],
     values: [
       helpers.ValueTuple(
@@ -98,21 +84,36 @@ pub fn make_deps_only_ir(
   soft_deps soft_deps: List(String),
 ) -> semantic_analyzer.IntermediateRepresentation {
   semantic_analyzer.IntermediateRepresentation(
-    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
-      friendly_label: name,
-      org_name: org,
-      service_name: service,
-      blueprint_name: "test_blueprint",
-      team_name: team,
-      misc: dict.new(),
-    ),
-    unique_identifier: org <> "_" <> service <> "_" <> name,
+    metadata: make_test_metadata(org, team, service, name),
+    unique_identifier: make_unique_id(org, service, name),
     artifact_refs: ["DependencyRelations"],
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
     vendor: option.None,
   )
+}
+
+/// Constructs test metadata with a fixed blueprint name.
+fn make_test_metadata(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+) -> semantic_analyzer.IntermediateRepresentationMetaData {
+  semantic_analyzer.IntermediateRepresentationMetaData(
+    friendly_label: name,
+    org_name: org,
+    service_name: service,
+    blueprint_name: "test_blueprint",
+    team_name: team,
+    misc: dict.new(),
+  )
+}
+
+/// Builds a unique identifier from org, service, and name.
+fn make_unique_id(org: String, service: String, name: String) -> String {
+  org <> "_" <> service <> "_" <> name
 }
 
 /// Builds the relations ValueTuple from hard and soft dependency lists.

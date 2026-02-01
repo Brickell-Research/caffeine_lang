@@ -79,19 +79,3 @@ pub fn accepted_types_decoder() -> decode.Decoder(AcceptedTypes) {
       )
   }
 }
-
-/// Decoder that converts a dynamic value to its String representation based on type.
-/// Delegates to accepted_types.decode_value_to_string.
-@internal
-pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
-  accepted_types.decode_value_to_string(typ)
-}
-
-/// Decoder that converts a list of dynamic values to List(String).
-/// Delegates to accepted_types.decode_list_values_to_strings.
-@internal
-pub fn decode_list_values_to_strings(
-  inner_type: AcceptedTypes,
-) -> decode.Decoder(List(String)) {
-  accepted_types.decode_list_values_to_strings(inner_type)
-}

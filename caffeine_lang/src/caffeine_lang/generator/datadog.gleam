@@ -5,6 +5,7 @@ import caffeine_lang/common/errors.{
 }
 import caffeine_lang/common/helpers
 import caffeine_lang/core/logger
+import caffeine_lang/generator/generator_utils
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
@@ -19,7 +20,6 @@ import gleam/set
 import gleam/string
 import terra_madre/common
 import terra_madre/hcl
-import terra_madre/render
 import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
@@ -28,18 +28,12 @@ pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
   use resources <- result.try(generate_resources(irs))
-  let config =
-    terraform.Config(
-      terraform: option.Some(terraform_settings()),
-      providers: [provider()],
-      resources: resources,
-      data_sources: [],
-      variables: variables(),
-      outputs: [],
-      locals: [],
-      modules: [],
-    )
-  Ok(render.render_config(config))
+  Ok(generator_utils.render_terraform_config(
+    resources: resources,
+    settings: terraform_settings(),
+    providers: [provider()],
+    variables: variables(),
+  ))
 }
 
 /// Generate only the Terraform resources for Datadog IRs (no config/provider).
@@ -114,19 +108,9 @@ pub fn ir_to_terraform_resource(
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR.
-  let threshold =
-    helpers.extract_value(ir.values, "threshold", decode.float)
-    |> result.unwrap(99.9)
-  let window_in_days =
-    helpers.extract_value(ir.values, "window_in_days", decode.int)
-    |> result.unwrap(30)
-  let indicators =
-    helpers.extract_value(
-      ir.values,
-      "indicators",
-      decode.dict(decode.string, decode.string),
-    )
-    |> result.unwrap(dict.new())
+  let threshold = helpers.extract_threshold(ir.values)
+  let window_in_days = helpers.extract_window_in_days(ir.values)
+  let indicators = helpers.extract_indicators(ir.values)
   let evaluation_expr =
     helpers.extract_value(ir.values, "evaluation", decode.string)
     |> result.unwrap("numerator / denominator")
@@ -155,72 +139,33 @@ pub fn ir_to_terraform_resource(
     False -> []
   }
 
-  // Build user-provided tags.
-  let user_tags = build_user_tags(ir.values)
+  // Build user-provided tags as key-value pairs.
+  let user_tag_pairs = helpers.extract_tags(ir.values)
 
-  // Build system tags (common to both types).
-  let system_tags =
-    [
-      hcl.StringLiteral("managed_by:caffeine"),
-      hcl.StringLiteral("caffeine_version:" <> constants.version),
-      hcl.StringLiteral("org:" <> ir.metadata.org_name),
-      hcl.StringLiteral("team:" <> ir.metadata.team_name),
-      hcl.StringLiteral("service:" <> ir.metadata.service_name),
-      hcl.StringLiteral("blueprint:" <> ir.metadata.blueprint_name),
-      hcl.StringLiteral("expectation:" <> ir.metadata.friendly_label),
-    ]
-    |> list.append(
-      // Generate artifact tags for each referenced artifact
-      ir.artifact_refs
-      |> list.map(fn(ref) { hcl.StringLiteral("artifact:" <> ref) }),
+  // Build system tags from IR metadata.
+  let system_tag_pairs =
+    helpers.build_system_tag_pairs(
+      org_name: ir.metadata.org_name,
+      team_name: ir.metadata.team_name,
+      service_name: ir.metadata.service_name,
+      blueprint_name: ir.metadata.blueprint_name,
+      friendly_label: ir.metadata.friendly_label,
+      artifact_refs: ir.artifact_refs,
+      misc: ir.metadata.misc,
     )
     |> list.append(dependency_tags)
-    |> list.append(
-      // Also add misc tags (sorted for deterministic output across targets).
-      ir.metadata.misc
-      |> dict.keys
-      |> list.sort(string.compare)
-      |> list.flat_map(fn(key) {
-        let assert Ok(values) = ir.metadata.misc |> dict.get(key)
-        values
-        |> list.sort(string.compare)
-        |> list.map(fn(value) { hcl.StringLiteral(key <> ":" <> value) })
-      }),
-    )
 
   // Detect overshadowing: user tags whose key matches a system tag key.
   let system_tag_keys =
-    system_tags
-    |> list.filter_map(fn(expr) {
-      case expr {
-        hcl.StringLiteral(s) ->
-          case string.split_once(s, ":") {
-            Ok(#(key, _)) -> Ok(key)
-            Error(_) -> Error(Nil)
-          }
-        _ -> Error(Nil)
-      }
-    })
-    |> set.from_list
+    system_tag_pairs |> list.map(fn(pair) { pair.0 }) |> set.from_list
 
   let user_tag_keys =
-    user_tags
-    |> list.filter_map(fn(expr) {
-      case expr {
-        hcl.StringLiteral(s) ->
-          case string.split_once(s, ":") {
-            Ok(#(key, _)) -> Ok(key)
-            Error(_) -> Error(Nil)
-          }
-        _ -> Error(Nil)
-      }
-    })
-    |> set.from_list
+    user_tag_pairs |> list.map(fn(pair) { pair.0 }) |> set.from_list
 
   let overlapping_keys = set.intersection(system_tag_keys, user_tag_keys)
 
   // Warn about overshadowing and filter out overshadowed system tags.
-  let final_system_tags = case set.size(overlapping_keys) > 0 {
+  let final_system_tag_pairs = case set.size(overlapping_keys) > 0 {
     True -> {
       overlapping_keys
       |> set.to_list
@@ -233,22 +178,16 @@ pub fn ir_to_terraform_resource(
           <> "' overshadows system tag",
         )
       })
-      system_tags
-      |> list.filter(fn(expr) {
-        case expr {
-          hcl.StringLiteral(s) ->
-            case string.split_once(s, ":") {
-              Ok(#(key, _)) -> !set.contains(overlapping_keys, key)
-              Error(_) -> True
-            }
-          _ -> True
-        }
-      })
+      system_tag_pairs
+      |> list.filter(fn(pair) { !set.contains(overlapping_keys, pair.0) })
     }
-    False -> system_tags
+    False -> system_tag_pairs
   }
 
-  let tags = hcl.ListExpr(list.append(final_system_tags, user_tags))
+  let tags =
+    list.append(final_system_tag_pairs, user_tag_pairs)
+    |> list.map(fn(pair) { hcl.StringLiteral(pair.0 <> ":" <> pair.1) })
+    |> hcl.ListExpr
 
   let identifier = ir_to_identifier(ir)
 
@@ -293,27 +232,19 @@ pub fn ir_to_terraform_resource(
   ))
 }
 
-/// Build dependency relation tags from the "relations" value.
+/// Build dependency relation tag pairs from the "relations" value.
 /// Extracts the relations dict (maps relation type to list of targets) and generates
-/// tags like "soft_dependency:target1,target2", "hard_dependency:target3,target4".
-fn build_dependency_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
-  let relations_dict =
-    helpers.extract_value(
-      values,
-      "relations",
-      decode.dict(decode.string, decode.list(decode.string)),
-    )
-    |> result.unwrap(dict.new())
-
-  relations_dict
+/// pairs like #("soft_dependency", "target1,target2").
+fn build_dependency_tags(
+  values: List(helpers.ValueTuple),
+) -> List(#(String, String)) {
+  helpers.extract_relations(values)
   |> dict.to_list
   |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
   |> list.map(fn(pair) {
     let #(relation_type, targets) = pair
     let sorted_targets = targets |> list.sort(string.compare)
-    hcl.StringLiteral(
-      relation_type <> "_dependency:" <> string.join(sorted_targets, ","),
-    )
+    #(relation_type <> "_dependency", string.join(sorted_targets, ","))
   })
 }
 
@@ -331,25 +262,4 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
         <> ". Accepted values are 7, 30, or 90.",
       ))
   }
-}
-
-/// Build user-provided tags from the "tags" value.
-/// Extracts the optional Dict(String, String) and converts to "key:value" tag strings.
-fn build_user_tags(values: List(helpers.ValueTuple)) -> List(hcl.Expr) {
-  let tags_dict =
-    helpers.extract_value(
-      values,
-      "tags",
-      decode.optional(decode.dict(decode.string, decode.string)),
-    )
-    |> result.unwrap(option.None)
-    |> option.unwrap(dict.new())
-
-  tags_dict
-  |> dict.to_list
-  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
-  |> list.map(fn(pair) {
-    let #(key, value) = pair
-    hcl.StringLiteral(key <> ":" <> value)
-  })
 }

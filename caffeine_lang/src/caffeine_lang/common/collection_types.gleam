@@ -6,7 +6,6 @@ import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/result
-import gleam/string
 
 /// Represents collection types that can contain accepted type values.
 pub type CollectionTypes(accepted) {
@@ -79,7 +78,7 @@ fn parse_list_type(
 ) -> Result(CollectionTypes(accepted), Nil) {
   case
     inner_raw
-    |> paren_innerds_trimmed
+    |> parsing_utils.paren_innerds_trimmed
     |> parse_inner
   {
     Ok(inner_type) -> Ok(List(inner_type))
@@ -93,7 +92,7 @@ fn parse_dict_type(
 ) -> Result(CollectionTypes(accepted), Nil) {
   case
     inner_raw
-    |> paren_innerds_split_and_trimmed
+    |> parsing_utils.paren_innerds_split_and_trimmed
     |> list.map(parse_inner)
   {
     [Ok(key_type), Ok(value_type)] -> Ok(Dict(key_type, value_type))
@@ -201,19 +200,4 @@ pub fn resolve_to_string(
       Ok(resolve_list(vals))
     }
   }
-}
-
-fn paren_innerds_trimmed(raw: String) -> String {
-  raw
-  |> string.drop_start(1)
-  |> string.drop_end(1)
-  |> string.trim
-}
-
-/// Splits a parenthesized type string at the top-level comma only.
-/// Handles nested parentheses correctly.
-/// Example: "(String, Dict(String, Integer))" -> ["String", "Dict(String, Integer)"]
-fn paren_innerds_split_and_trimmed(raw: String) -> List(String) {
-  let inner = paren_innerds_trimmed(raw)
-  parsing_utils.split_at_top_level_comma(inner)
 }

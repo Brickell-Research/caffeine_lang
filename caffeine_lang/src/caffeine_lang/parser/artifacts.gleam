@@ -54,10 +54,10 @@ pub fn parse_standard_library() -> Result(List(Artifact), CompilationError) {
 pub fn parse_from_json_string(
   content: String,
 ) -> Result(List(Artifact), CompilationError) {
-  use artifacts <- result.try(case decode_artifacts_json(content) {
-    Ok(artifacts) -> Ok(artifacts)
-    Error(err) -> Error(errors.format_json_decode_error(err))
-  })
+  use artifacts <- result.try(
+    decode_artifacts_json(content)
+    |> errors.map_json_decode_error,
+  )
 
   use _ <- result.try(validations.validate_relevant_uniqueness(
     artifacts,

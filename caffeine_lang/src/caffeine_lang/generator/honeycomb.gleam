@@ -1,8 +1,8 @@
-import caffeine_lang/common/constants
 import caffeine_lang/common/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
 import caffeine_lang/common/helpers
+import caffeine_lang/generator/generator_utils
 import caffeine_lang/middle_end/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
@@ -12,10 +12,8 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
-import gleam/string
 import terra_madre/common
 import terra_madre/hcl
-import terra_madre/render
 import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Honeycomb IntermediateRepresentations.
@@ -23,18 +21,12 @@ pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
   use resources <- result.try(generate_resources(irs))
-  let config =
-    terraform.Config(
-      terraform: option.Some(terraform_settings()),
-      providers: [provider()],
-      resources: resources,
-      data_sources: [],
-      variables: variables(),
-      outputs: [],
-      locals: [],
-      modules: [],
-    )
-  Ok(render.render_config(config))
+  Ok(generator_utils.render_terraform_config(
+    resources: resources,
+    settings: terraform_settings(),
+    providers: [provider()],
+    variables: variables(),
+  ))
 }
 
 /// Generate only the Terraform resources for Honeycomb IRs (no config/provider).
@@ -115,19 +107,9 @@ pub fn ir_to_terraform_resources(
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract values from IR.
-  let threshold =
-    helpers.extract_value(ir.values, "threshold", decode.float)
-    |> result.unwrap(99.9)
-  let window_in_days =
-    helpers.extract_value(ir.values, "window_in_days", decode.int)
-    |> result.unwrap(30)
-  let indicators =
-    helpers.extract_value(
-      ir.values,
-      "indicators",
-      decode.dict(decode.string, decode.string),
-    )
-    |> result.unwrap(dict.new())
+  let threshold = helpers.extract_threshold(ir.values)
+  let window_in_days = helpers.extract_window_in_days(ir.values)
+  let indicators = helpers.extract_indicators(ir.values)
 
   // For Honeycomb, we expect a single indicator with a boolean SLI expression.
   // Get the first indicator value as the SLI expression.
@@ -214,47 +196,56 @@ fn build_description(ir: IntermediateRepresentation) -> String {
 /// Build tags as a map expression for Honeycomb.
 /// Honeycomb uses a map of string to string for tags.
 fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
-  let system_tags = [
-    #("managed_by", "caffeine"),
-    #("caffeine_version", constants.version),
-    #("org", ir.metadata.org_name),
-    #("team", ir.metadata.team_name),
-    #("service", ir.metadata.service_name),
-    #("blueprint", ir.metadata.blueprint_name),
-    #("expectation", ir.metadata.friendly_label),
-  ]
-
-  // Add misc metadata tags.
-  let misc_tags =
-    ir.metadata.misc
-    |> dict.to_list
-    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
-    |> list.map(fn(pair) {
-      let #(key, values) = pair
-      let sorted_values = values |> list.sort(string.compare)
-      #(key, string.join(sorted_values, ","))
-    })
+  // Build system tags from shared helper. For Honeycomb, misc tags with multiple
+  // values are joined with commas since the tag format is a flat map.
+  let system_tag_pairs =
+    helpers.build_system_tag_pairs(
+      org_name: ir.metadata.org_name,
+      team_name: ir.metadata.team_name,
+      service_name: ir.metadata.service_name,
+      blueprint_name: ir.metadata.blueprint_name,
+      friendly_label: ir.metadata.friendly_label,
+      artifact_refs: [],
+      misc: ir.metadata.misc,
+    )
+    |> collapse_multi_value_tags
 
   // Build user-provided tags.
-  let user_tags =
-    helpers.extract_value(
-      ir.values,
-      "tags",
-      decode.optional(decode.dict(decode.string, decode.string)),
-    )
-    |> result.unwrap(option.None)
-    |> option.unwrap(dict.new())
-    |> dict.to_list
-    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  let user_tag_pairs = helpers.extract_tags(ir.values)
 
   let all_tags =
-    list.flatten([system_tags, misc_tags, user_tags])
-    |> list.map(fn(pair) {
-      let #(key, value) = pair
-      #(hcl.IdentKey(key), hcl.StringLiteral(value))
-    })
+    list.append(system_tag_pairs, user_tag_pairs)
+    |> list.map(fn(pair) { #(hcl.IdentKey(pair.0), hcl.StringLiteral(pair.1)) })
 
   hcl.MapExpr(all_tags)
+}
+
+/// Collapse tag pairs that share the same key by joining values with commas.
+/// The shared helper produces one pair per misc value, but Honeycomb needs a
+/// single key-value entry per tag key. Preserves insertion order of first occurrence.
+fn collapse_multi_value_tags(
+  pairs: List(#(String, String)),
+) -> List(#(String, String)) {
+  let #(order, merged) =
+    pairs
+    |> list.fold(#([], dict.new()), fn(acc, pair) {
+      let #(keys, seen) = acc
+      let #(key, value) = pair
+      case dict.get(seen, key) {
+        Ok(existing) -> #(
+          keys,
+          dict.insert(seen, key, existing <> "," <> value),
+        )
+        Error(_) -> #([key, ..keys], dict.insert(seen, key, value))
+      }
+    })
+
+  order
+  |> list.reverse
+  |> list.map(fn(key) {
+    let assert Ok(value) = dict.get(merged, key)
+    #(key, value)
+  })
 }
 
 /// Convert window_in_days to Honeycomb time_period (in days).

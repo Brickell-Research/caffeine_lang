@@ -1,3 +1,4 @@
+import gleam/list
 import gleam/string
 
 /// Find the 0-indexed line and column of the first whole-word occurrence
@@ -5,6 +6,108 @@ import gleam/string
 pub fn find_name_position(content: String, name: String) -> #(Int, Int) {
   let lines = string.split(content, "\n")
   find_in_lines(lines, name, 0)
+}
+
+/// Extract the word under the cursor at the given 0-indexed line and character.
+@internal
+pub fn extract_word_at(content: String, line: Int, character: Int) -> String {
+  case line >= 0 {
+    False -> ""
+    True -> {
+      let lines = string.split(content, "\n")
+      case list.drop(lines, line) {
+        [line_text, ..] -> word_at_column(line_text, character)
+        [] -> ""
+      }
+    }
+  }
+}
+
+fn word_at_column(line: String, col: Int) -> String {
+  let graphemes = string.to_graphemes(line)
+  let len = list.length(graphemes)
+  // Clamp col to valid range
+  let col = case col < 0 {
+    True -> 0
+    False ->
+      case col >= len {
+        True -> len - 1
+        False -> col
+      }
+  }
+  case len == 0 {
+    True -> ""
+    False -> {
+      // Check if cursor is on a word character
+      case list.drop(graphemes, col) {
+        [g, ..] ->
+          case is_word_char(g) {
+            False -> ""
+            True -> {
+              // Walk left from col to find word start
+              let start = find_word_start(graphemes, col)
+              // Walk right from col to find word end
+              let end = find_word_end(graphemes, col, len)
+              graphemes
+              |> list.drop(start)
+              |> list.take(end - start)
+              |> string.join("")
+            }
+          }
+        [] -> ""
+      }
+    }
+  }
+}
+
+/// Walk left from col to find the start of the word.
+fn find_word_start(graphemes: List(String), col: Int) -> Int {
+  find_word_start_loop(graphemes, col, 0, 0)
+}
+
+fn find_word_start_loop(
+  graphemes: List(String),
+  col: Int,
+  idx: Int,
+  last_non_word: Int,
+) -> Int {
+  case graphemes {
+    [] -> last_non_word
+    [g, ..rest] -> {
+      case idx > col {
+        True -> last_non_word
+        False -> {
+          let new_last = case is_word_char(g) {
+            True -> last_non_word
+            False -> idx + 1
+          }
+          find_word_start_loop(rest, col, idx + 1, new_last)
+        }
+      }
+    }
+  }
+}
+
+/// Walk right from col to find the end of the word (exclusive).
+fn find_word_end(graphemes: List(String), col: Int, len: Int) -> Int {
+  find_word_end_loop(graphemes, col, 0, len)
+}
+
+fn find_word_end_loop(
+  graphemes: List(String),
+  col: Int,
+  idx: Int,
+  len: Int,
+) -> Int {
+  case graphemes {
+    [] -> len
+    [g, ..rest] -> {
+      case idx > col && !is_word_char(g) {
+        True -> idx
+        False -> find_word_end_loop(rest, col, idx + 1, len)
+      }
+    }
+  }
 }
 
 fn find_in_lines(

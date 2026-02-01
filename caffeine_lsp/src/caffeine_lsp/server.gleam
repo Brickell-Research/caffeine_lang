@@ -5,6 +5,7 @@ import caffeine_lsp/definition
 import caffeine_lsp/diagnostics
 import caffeine_lsp/document_symbols
 import caffeine_lsp/hover
+import caffeine_lsp/lsp_utils
 import caffeine_lsp/semantic_tokens
 import gleam/bit_array
 import gleam/dict.{type Dict}
@@ -439,25 +440,7 @@ fn handle_formatting(
         let line_count = list.length(string.split(text, "\n"))
         let edit =
           json.object([
-            #(
-              "range",
-              json.object([
-                #(
-                  "start",
-                  json.object([
-                    #("line", json.int(0)),
-                    #("character", json.int(0)),
-                  ]),
-                ),
-                #(
-                  "end",
-                  json.object([
-                    #("line", json.int(line_count)),
-                    #("character", json.int(0)),
-                  ]),
-                ),
-              ]),
-            ),
+            #("range", lsp_utils.range_json(0, 0, line_count, 0)),
             #("newText", json.string(formatted)),
           ])
         json.preprocessed_array([edit])
@@ -576,22 +559,12 @@ fn handle_definition(
                   #("uri", json.string(uri)),
                   #(
                     "range",
-                    json.object([
-                      #(
-                        "start",
-                        json.object([
-                          #("line", json.int(def_line)),
-                          #("character", json.int(def_col)),
-                        ]),
-                      ),
-                      #(
-                        "end",
-                        json.object([
-                          #("line", json.int(def_line)),
-                          #("character", json.int(def_col + name_len)),
-                        ]),
-                      ),
-                    ]),
+                    lsp_utils.range_json(
+                      def_line,
+                      def_col,
+                      def_line,
+                      def_col + name_len,
+                    ),
                   ),
                 ]),
               )
@@ -629,25 +602,7 @@ fn publish_diagnostics(uri: String, text: String) -> Nil {
 
 fn diagnostic_to_json(d: diagnostics.Diagnostic) -> json.Json {
   json.object([
-    #(
-      "range",
-      json.object([
-        #(
-          "start",
-          json.object([
-            #("line", json.int(d.line)),
-            #("character", json.int(d.column)),
-          ]),
-        ),
-        #(
-          "end",
-          json.object([
-            #("line", json.int(d.line)),
-            #("character", json.int(d.end_column)),
-          ]),
-        ),
-      ]),
-    ),
+    #("range", lsp_utils.range_json(d.line, d.column, d.line, d.end_column)),
     #("severity", json.int(d.severity)),
     #("source", json.string("caffeine")),
     #("message", json.string(d.message)),

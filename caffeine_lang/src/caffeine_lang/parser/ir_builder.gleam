@@ -28,19 +28,12 @@ pub fn build_all(
   |> list.flatten
 }
 
-/// Extract a meaningful prefix from the source path.
-/// e.g., "examples/org/platform_team/authentication.caffeine" -> #("org", "platform_team", "authentication")
-@internal
-pub fn extract_path_prefix(path: String) -> #(String, String, String) {
-  helpers.extract_path_prefix(path)
-}
-
 /// Build intermediate representations from validated expectations for a single file.
 fn build(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
   file_path: String,
 ) -> List(IntermediateRepresentation) {
-  let #(org, team, service) = extract_path_prefix(file_path)
+  let #(org, team, service) = helpers.extract_path_prefix(file_path)
 
   expectations_blueprint_collection
   |> list.map(fn(expectation_and_blueprint_pair) {

@@ -5,8 +5,10 @@ import caffeine_lang/common/modifier_types.{
 import caffeine_lang/common/numeric_types
 import caffeine_lang/common/primitive_types.{type PrimitiveTypes}
 import caffeine_lang/common/refinement_types.{type RefinementTypes, OneOf}
+import caffeine_lang/common/type_info.{type TypeMeta}
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
@@ -379,6 +381,125 @@ pub fn is_optional_or_defaulted(typ: AcceptedTypes) -> Bool {
     ModifierType(Defaulted(_, _)) -> True
     RefinementType(OneOf(inner, _)) -> is_optional_or_defaulted(inner)
     _ -> False
+  }
+}
+
+/// Returns all type metadata across all type categories.
+@internal
+pub fn all_type_metas() -> List(TypeMeta) {
+  list.flatten([
+    primitive_types.all_type_metas(),
+    collection_types.all_type_metas(),
+    modifier_types.all_type_metas(),
+    refinement_types.all_type_metas(),
+  ])
+}
+
+/// Applies a fallible check to each inner type in a compound type.
+/// For leaf types (PrimitiveType, TypeAliasRef), calls the function directly.
+/// For compound types (Collection, Modifier, Refinement), extracts inner types and applies the function.
+@internal
+pub fn try_each_inner(
+  typ: AcceptedTypes,
+  f: fn(AcceptedTypes) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case typ {
+    PrimitiveType(_) -> f(typ)
+    TypeAliasRef(_) -> f(typ)
+    CollectionType(collection) -> try_each_collection_inner(collection, f)
+    ModifierType(modifier) -> try_each_modifier_inner(modifier, f)
+    RefinementType(refinement) -> try_each_refinement_inner(refinement, f)
+  }
+}
+
+/// Applies a fallible check to each inner type in a collection type.
+fn try_each_collection_inner(
+  collection: CollectionTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case collection {
+    collection_types.List(inner) -> f(inner)
+    collection_types.Dict(key, value) -> {
+      use _ <- result.try(f(key))
+      f(value)
+    }
+  }
+}
+
+/// Applies a fallible check to each inner type in a modifier type.
+fn try_each_modifier_inner(
+  modifier: ModifierTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case modifier {
+    Optional(inner) -> f(inner)
+    Defaulted(inner, _) -> f(inner)
+  }
+}
+
+/// Applies a fallible check to each inner type in a refinement type.
+fn try_each_refinement_inner(
+  refinement: RefinementTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> Result(Nil, e),
+) -> Result(Nil, e) {
+  case refinement {
+    refinement_types.OneOf(inner, _) -> f(inner)
+    refinement_types.InclusiveRange(inner, _, _) -> f(inner)
+  }
+}
+
+/// Transforms each inner type in a compound type using a mapping function.
+/// For leaf types (PrimitiveType, TypeAliasRef), calls the function directly.
+/// For compound types (Collection, Modifier, Refinement), extracts inner types,
+/// applies the function, and reconstructs the compound type.
+@internal
+pub fn map_inner(
+  typ: AcceptedTypes,
+  f: fn(AcceptedTypes) -> AcceptedTypes,
+) -> AcceptedTypes {
+  case typ {
+    PrimitiveType(_) -> f(typ)
+    TypeAliasRef(_) -> f(typ)
+    CollectionType(collection) ->
+      CollectionType(map_collection_inner(collection, f))
+    ModifierType(modifier) -> ModifierType(map_modifier_inner(modifier, f))
+    RefinementType(refinement) ->
+      RefinementType(map_refinement_inner(refinement, f))
+  }
+}
+
+/// Transforms each inner type in a collection type.
+fn map_collection_inner(
+  collection: CollectionTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> AcceptedTypes,
+) -> CollectionTypes(AcceptedTypes) {
+  case collection {
+    collection_types.List(inner) -> collection_types.List(f(inner))
+    collection_types.Dict(key, value) -> collection_types.Dict(f(key), f(value))
+  }
+}
+
+/// Transforms each inner type in a modifier type.
+fn map_modifier_inner(
+  modifier: ModifierTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> AcceptedTypes,
+) -> ModifierTypes(AcceptedTypes) {
+  case modifier {
+    Optional(inner) -> Optional(f(inner))
+    Defaulted(inner, default) -> Defaulted(f(inner), default)
+  }
+}
+
+/// Transforms each inner type in a refinement type.
+fn map_refinement_inner(
+  refinement: RefinementTypes(AcceptedTypes),
+  f: fn(AcceptedTypes) -> AcceptedTypes,
+) -> RefinementTypes(AcceptedTypes) {
+  case refinement {
+    refinement_types.OneOf(inner, values) ->
+      refinement_types.OneOf(f(inner), values)
+    refinement_types.InclusiveRange(inner, min, max) ->
+      refinement_types.InclusiveRange(f(inner), min, max)
   }
 }
 

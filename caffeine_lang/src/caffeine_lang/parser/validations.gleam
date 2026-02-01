@@ -168,6 +168,38 @@ pub fn validate_inputs_for_collection(
   }
 }
 
+/// Validates that no items in a collection have overshadowing keys.
+/// Applies `check_collection_key_overshadowing` to each pair and aggregates errors.
+@internal
+pub fn validate_no_overshadowing(
+  items: List(#(a, b)),
+  get_check_collection get_check_collection: fn(a) -> Dict(String, c),
+  get_against_collection get_against_collection: fn(b) -> Dict(String, d),
+  get_error_label get_error_label: fn(a) -> String,
+) -> Result(Bool, CompilationError) {
+  let overshadow_errors =
+    items
+    |> list.filter_map(fn(pair) {
+      let #(item, against) = pair
+      case
+        check_collection_key_overshadowing(
+          in: get_check_collection(item),
+          against: get_against_collection(against),
+          with: get_error_label(item),
+        )
+      {
+        Ok(_) -> Error(Nil)
+        Error(msg) -> Ok(msg)
+      }
+    })
+    |> string.join(", ")
+
+  case overshadow_errors {
+    "" -> Ok(True)
+    _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
+  }
+}
+
 /// Checks if any keys in the referrer collection overlap with the reference collection.
 /// Returns an error with the overlapping keys if overshadowing is detected.
 @internal

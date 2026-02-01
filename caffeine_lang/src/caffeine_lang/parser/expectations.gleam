@@ -9,7 +9,6 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
-import gleam/string
 
 /// An Expectation is a concrete implementation of an Artifact + Blueprint.
 pub type Expectation {
@@ -29,10 +28,8 @@ pub fn parse_from_json_string(
 ) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
   // Parse the JSON string.
   use expectations <- result.try(
-    case expectations_from_json(json_string, blueprints) {
-      Ok(expectations) -> Ok(expectations)
-      Error(err) -> Error(errors.format_json_decode_error(err))
-    },
+    expectations_from_json(json_string, blueprints)
+    |> errors.map_json_decode_error,
   )
 
   validate_expectations(expectations, blueprints, source_path)
@@ -123,28 +120,15 @@ fn check_input_overshadowing(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
   path_prefix: String,
 ) -> Result(Bool, CompilationError) {
-  let overshadow_errors =
-    expectations_blueprint_collection
-    |> list.filter_map(fn(pair) {
-      let #(expectation, blueprint) = pair
-      case
-        validations.check_collection_key_overshadowing(
-          in: expectation.inputs,
-          against: blueprint.inputs,
-          with: "expectation '"
-            <> path_prefix
-            <> expectation.name
-            <> "' - overshadowing inputs from blueprint: ",
-        )
-      {
-        Ok(_) -> Error(Nil)
-        Error(msg) -> Ok(msg)
-      }
-    })
-    |> string.join(", ")
-
-  case overshadow_errors {
-    "" -> Ok(True)
-    _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
-  }
+  validations.validate_no_overshadowing(
+    expectations_blueprint_collection,
+    get_check_collection: fn(expectation) { expectation.inputs },
+    get_against_collection: fn(blueprint) { blueprint.inputs },
+    get_error_label: fn(expectation) {
+      "expectation '"
+      <> path_prefix
+      <> expectation.name
+      <> "' - overshadowing inputs from blueprint: "
+    },
+  )
 }

@@ -1,3 +1,4 @@
+import caffeine_lsp/lsp_utils
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
@@ -77,7 +78,7 @@ fn remove_quotes_action(
 ) -> json.Json {
   let name_len = string.length(name)
   let edit_range =
-    range_json(
+    lsp_utils.range_json(
       diag.line,
       diag.character,
       diag.line,
@@ -94,7 +95,12 @@ fn remove_quotes_action(
       #("source", json.string("caffeine")),
       #(
         "range",
-        range_json(diag.line, diag.character, diag.end_line, diag.end_character),
+        lsp_utils.range_json(
+          diag.line,
+          diag.character,
+          diag.end_line,
+          diag.end_character,
+        ),
       ),
     ])
   json.object([
@@ -111,30 +117,6 @@ fn remove_quotes_action(
             #(uri, json.preprocessed_array([text_edit])),
           ]),
         ),
-      ]),
-    ),
-  ])
-}
-
-fn range_json(
-  start_line: Int,
-  start_char: Int,
-  end_line: Int,
-  end_char: Int,
-) -> json.Json {
-  json.object([
-    #(
-      "start",
-      json.object([
-        #("line", json.int(start_line)),
-        #("character", json.int(start_char)),
-      ]),
-    ),
-    #(
-      "end",
-      json.object([
-        #("line", json.int(end_line)),
-        #("character", json.int(end_char)),
       ]),
     ),
   ])

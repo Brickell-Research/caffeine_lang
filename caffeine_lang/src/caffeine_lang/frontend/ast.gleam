@@ -1,5 +1,7 @@
 /// AST for Caffeine blueprint and expectation files.
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
+import gleam/list
+import gleam/string
 
 // =============================================================================
 // COMMENTS
@@ -63,6 +65,15 @@ pub type Extendable {
 pub type ExtendableKind {
   ExtendableRequires
   ExtendableProvides
+}
+
+/// Converts an extendable kind to its display string.
+@internal
+pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
+  case kind {
+    ExtendableRequires -> "Requires"
+    ExtendableProvides -> "Provides"
+  }
 }
 
 // =============================================================================
@@ -145,4 +156,27 @@ pub type Literal {
   LiteralFalse
   LiteralList(elements: List(Literal))
   LiteralStruct(fields: List(Field))
+}
+
+/// Builds a list of name-type pairs from type aliases for lookup purposes.
+/// Used by both the validator and generator to resolve type alias references.
+@internal
+pub fn build_type_alias_pairs(
+  type_aliases: List(TypeAlias),
+) -> List(#(String, AcceptedTypes)) {
+  list.map(type_aliases, fn(ta) { #(ta.name, ta.type_) })
+}
+
+/// Converts a literal to a short display string.
+@internal
+pub fn literal_to_string(lit: Literal) -> String {
+  case lit {
+    LiteralString(s) -> "\"" <> s <> "\""
+    LiteralInteger(n) -> string.inspect(n)
+    LiteralFloat(f) -> string.inspect(f)
+    LiteralTrue -> "true"
+    LiteralFalse -> "false"
+    LiteralList(_) -> "[...]"
+    LiteralStruct(_) -> "{...}"
+  }
 }

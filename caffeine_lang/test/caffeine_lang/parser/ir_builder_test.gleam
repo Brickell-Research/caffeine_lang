@@ -32,7 +32,7 @@ pub fn extract_path_prefix_test() {
     #("org/team", #("unknown", "unknown", "unknown")),
     #("single", #("unknown", "unknown", "unknown")),
   ]
-  |> test_helpers.array_based_test_executor_1(ir_builder.extract_path_prefix)
+  |> test_helpers.array_based_test_executor_1(helpers.extract_path_prefix)
 }
 
 // ==== build_all ====

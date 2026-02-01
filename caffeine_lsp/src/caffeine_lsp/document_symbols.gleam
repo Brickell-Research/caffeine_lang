@@ -4,6 +4,7 @@ import caffeine_lang/frontend/ast.{
   type Extendable, type Field, type TypeAlias,
 }
 import caffeine_lsp/file_utils
+import caffeine_lsp/lsp_utils
 import caffeine_lsp/position_utils
 import gleam/json
 import gleam/list
@@ -76,10 +77,7 @@ fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
 
 fn extendable_symbol(ext: Extendable, content: String) -> json.Json {
   let #(line, col) = position_utils.find_name_position(content, ext.name)
-  let detail = case ext.kind {
-    ast.ExtendableRequires -> "Requires"
-    ast.ExtendableProvides -> "Provides"
-  }
+  let detail = ast.extendable_kind_to_string(ext.kind)
   symbol_json(
     ext.name,
     detail,
@@ -150,7 +148,7 @@ fn field_symbol(field: Field, content: String) -> json.Json {
   let #(line, col) = position_utils.find_name_position(content, field.name)
   let detail = case field.value {
     ast.TypeValue(t) -> accepted_types.accepted_type_to_string(t)
-    ast.LiteralValue(lit) -> literal_to_string(lit)
+    ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
   symbol_json(
     field.name,
@@ -161,18 +159,6 @@ fn field_symbol(field: Field, content: String) -> json.Json {
     string.length(field.name),
     [],
   )
-}
-
-fn literal_to_string(lit: ast.Literal) -> String {
-  case lit {
-    ast.LiteralString(s) -> "\"" <> s <> "\""
-    ast.LiteralInteger(n) -> string.inspect(n)
-    ast.LiteralFloat(f) -> string.inspect(f)
-    ast.LiteralTrue -> "true"
-    ast.LiteralFalse -> "false"
-    ast.LiteralList(_) -> "[...]"
-    ast.LiteralStruct(_) -> "{...}"
-  }
 }
 
 // --- JSON builder ---
@@ -186,23 +172,7 @@ fn symbol_json(
   name_len: Int,
   children: List(json.Json),
 ) -> json.Json {
-  let range =
-    json.object([
-      #(
-        "start",
-        json.object([
-          #("line", json.int(line)),
-          #("character", json.int(col)),
-        ]),
-      ),
-      #(
-        "end",
-        json.object([
-          #("line", json.int(line)),
-          #("character", json.int(col + name_len)),
-        ]),
-      ),
-    ])
+  let range = lsp_utils.range_json(line, col, line, col + name_len)
   json.object([
     #("name", json.string(name)),
     #("detail", json.string(detail)),
