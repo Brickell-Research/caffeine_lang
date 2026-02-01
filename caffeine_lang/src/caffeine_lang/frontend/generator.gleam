@@ -1,53 +1,44 @@
-/// JSON generator for Caffeine frontend AST.
-/// Converts validated AST to JSON for the compiler pipeline.
+/// Frontend generator for Caffeine AST.
+/// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
 import caffeine_lang/common/accepted_types.{type AcceptedTypes}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type Literal, type Struct, type TypeAlias,
 }
+import caffeine_lang/parser/blueprints.{type Blueprint, Blueprint}
+import caffeine_lang/parser/expectations.{type Expectation, Expectation}
 import gleam/dict.{type Dict}
-import gleam/json.{type Json}
+import gleam/dynamic
 import gleam/list
 import gleam/string
 
-/// Generates JSON for a blueprints file.
+/// Generates blueprints from a validated blueprints AST.
 @internal
-pub fn generate_blueprints_json(file: BlueprintsFile) -> Json {
+pub fn generate_blueprints(file: BlueprintsFile) -> List(Blueprint) {
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
-  let blueprints =
-    file.blocks
-    |> list.flat_map(fn(block) {
-      block.items
-      |> list.map(fn(item) {
-        generate_blueprint_item_json(
-          item,
-          block.artifacts,
-          extendables,
-          type_aliases,
-        )
-      })
+  file.blocks
+  |> list.flat_map(fn(block) {
+    block.items
+    |> list.map(fn(item) {
+      generate_blueprint_item(item, block.artifacts, extendables, type_aliases)
     })
-
-  json.object([#("blueprints", json.array(blueprints, fn(x) { x }))])
+  })
 }
 
-/// Generates JSON for an expects file.
+/// Generates expectations from a validated expects AST.
 @internal
-pub fn generate_expects_json(file: ExpectsFile) -> Json {
+pub fn generate_expectations(file: ExpectsFile) -> List(Expectation) {
   let extendables = build_extendable_map(file.extendables)
 
-  let expectations =
-    file.blocks
-    |> list.flat_map(fn(block) {
-      block.items
-      |> list.map(fn(item) {
-        generate_expect_item_json(item, block.blueprint, extendables)
-      })
+  file.blocks
+  |> list.flat_map(fn(block) {
+    block.items
+    |> list.map(fn(item) {
+      generate_expect_item(item, block.blueprint, extendables)
     })
-
-  json.object([#("expectations", json.array(expectations, fn(x) { x }))])
+  })
 }
 
 /// Builds a map of extendable name to extendable for quick lookup.
@@ -67,48 +58,37 @@ fn build_type_alias_map(
   |> dict.from_list
 }
 
-/// Generates JSON for a single blueprint item.
-fn generate_blueprint_item_json(
+/// Generates a single blueprint from an AST item.
+fn generate_blueprint_item(
   item: BlueprintItem,
   artifacts: List(String),
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, AcceptedTypes),
-) -> Json {
-  // Merge extended fields into requires/provides
+) -> Blueprint {
   let #(merged_requires, merged_provides) =
     merge_blueprint_extends(item, extendables)
 
-  // Convert requires (types) to params, resolving type aliases
-  let params = struct_to_params_json(merged_requires, type_aliases)
+  let params = struct_to_params(merged_requires, type_aliases)
+  let inputs = struct_to_inputs(merged_provides)
 
-  // Convert provides (literals) to inputs
-  let inputs = struct_to_inputs_json(merged_provides)
-
-  json.object([
-    #("name", json.string(item.name)),
-    #("artifact_refs", json.array(artifacts, json.string)),
-    #("params", params),
-    #("inputs", inputs),
-  ])
+  Blueprint(
+    name: item.name,
+    artifact_refs: artifacts,
+    params: params,
+    inputs: inputs,
+  )
 }
 
-/// Generates JSON for a single expect item.
-fn generate_expect_item_json(
+/// Generates a single expectation from an AST item.
+fn generate_expect_item(
   item: ExpectItem,
   blueprint: String,
   extendables: Dict(String, Extendable),
-) -> Json {
-  // Merge extended fields into provides
+) -> Expectation {
   let merged_provides = merge_expect_extends(item, extendables)
+  let inputs = struct_to_inputs(merged_provides)
 
-  // Convert provides (literals) to inputs
-  let inputs = struct_to_inputs_json(merged_provides)
-
-  json.object([
-    #("name", json.string(item.name)),
-    #("blueprint_ref", json.string(blueprint)),
-    #("inputs", inputs),
-  ])
+  Expectation(name: item.name, blueprint_ref: blueprint, inputs: inputs)
 }
 
 /// Merges extended fields into a blueprint item's requires and provides.
@@ -174,7 +154,7 @@ fn merge_expect_extends(
 }
 
 /// Removes duplicate field names, keeping the last occurrence (allows overrides).
-/// Returns fields sorted by name for consistent JSON output.
+/// Returns fields sorted by name for consistent output.
 fn dedupe_fields(fields: List(Field)) -> List(Field) {
   fields
   |> list.fold(dict.new(), fn(acc, field) {
@@ -185,25 +165,23 @@ fn dedupe_fields(fields: List(Field)) -> List(Field) {
   |> list.map(fn(pair) { pair.1 })
 }
 
-/// Converts a struct with type values to a JSON params object.
-/// Resolves type alias references before converting to strings.
-fn struct_to_params_json(
+/// Converts a struct's type-valued fields to a params dict.
+/// Resolves type alias references before storing.
+fn struct_to_params(
   s: Struct,
   type_aliases: Dict(String, AcceptedTypes),
-) -> Json {
+) -> Dict(String, AcceptedTypes) {
   s.fields
-  |> list.sort(fn(a, b) { string.compare(a.name, b.name) })
-  |> list.map(fn(field) {
-    let type_string = case field.value {
+  |> list.filter_map(fn(field) {
+    case field.value {
       ast.TypeValue(t) -> {
         let resolved = resolve_type_aliases(t, type_aliases)
-        accepted_types.accepted_type_to_string(resolved)
+        Ok(#(field.name, resolved))
       }
-      ast.LiteralValue(_) -> ""
+      ast.LiteralValue(_) -> Error(Nil)
     }
-    #(field.name, json.string(type_string))
   })
-  |> json.object
+  |> dict.from_list
 }
 
 /// Resolves all TypeAliasRef instances in a type by looking them up in the alias map.
@@ -227,46 +205,42 @@ fn resolve_type_aliases(
   }
 }
 
-/// Converts a struct with literal values to a JSON inputs object.
-fn struct_to_inputs_json(s: Struct) -> Json {
+/// Converts a struct's literal-valued fields to an inputs dict.
+fn struct_to_inputs(s: Struct) -> Dict(String, dynamic.Dynamic) {
   s.fields
-  |> list.sort(fn(a, b) { string.compare(a.name, b.name) })
-  |> list.map(fn(field) {
-    let json_value = case field.value {
-      ast.LiteralValue(lit) -> literal_to_json(lit)
-      ast.TypeValue(_) -> json.null()
+  |> list.filter_map(fn(field) {
+    case field.value {
+      ast.LiteralValue(lit) -> Ok(#(field.name, literal_to_dynamic(lit)))
+      ast.TypeValue(_) -> Error(Nil)
     }
-    #(field.name, json_value)
   })
-  |> json.object
+  |> dict.from_list
 }
 
-/// Converts a literal to a JSON value.
-fn literal_to_json(lit: Literal) -> Json {
+/// Converts a literal AST value to a Dynamic value.
+@internal
+pub fn literal_to_dynamic(lit: Literal) -> dynamic.Dynamic {
   case lit {
-    ast.LiteralString(s) -> json.string(transform_template_vars(s))
-    ast.LiteralInteger(i) -> json.int(i)
-    ast.LiteralFloat(f) -> json.float(f)
-    ast.LiteralTrue -> json.bool(True)
-    ast.LiteralFalse -> json.bool(False)
+    ast.LiteralString(s) -> dynamic.from(transform_template_vars(s))
+    ast.LiteralInteger(i) -> dynamic.from(i)
+    ast.LiteralFloat(f) -> dynamic.from(f)
+    ast.LiteralTrue -> dynamic.from(True)
+    ast.LiteralFalse -> dynamic.from(False)
     ast.LiteralList(elements) ->
-      json.array(elements, fn(e) { literal_to_json(e) })
-    ast.LiteralStruct(fields) -> literal_struct_to_json(fields)
+      dynamic.from(list.map(elements, literal_to_dynamic))
+    ast.LiteralStruct(fields) ->
+      dynamic.from(
+        fields
+        |> list.filter_map(fn(field) {
+          case field.value {
+            ast.LiteralValue(inner) ->
+              Ok(#(field.name, literal_to_dynamic(inner)))
+            ast.TypeValue(_) -> Error(Nil)
+          }
+        })
+        |> dict.from_list,
+      )
   }
-}
-
-/// Converts a literal struct's fields to a JSON object.
-fn literal_struct_to_json(fields: List(Field)) -> Json {
-  fields
-  |> list.sort(fn(a, b) { string.compare(a.name, b.name) })
-  |> list.map(fn(field) {
-    let json_value = case field.value {
-      ast.LiteralValue(lit) -> literal_to_json(lit)
-      ast.TypeValue(_) -> json.null()
-    }
-    #(field.name, json_value)
-  })
-  |> json.object
 }
 
 /// Transforms template variables from $var->attr$ to $$var->attr$$ format.
