@@ -10,7 +10,7 @@ echo "Press Ctrl+C to stop"
 (cd caffeine_cli && gleam test "$@")
 
 # Watch for changes in all packages
-fswatch -o caffeine_lang/src/ caffeine_lang/test/ caffeine_cli/src/ caffeine_cli/test/ caffeine_lsp/src/ caffeine_lsp/test/ | while read num ; do
+fswatch -o -l 2 --exclude '\.git' --exclude 'build/' caffeine_lang/src/ caffeine_lang/test/ caffeine_cli/src/ caffeine_cli/test/ caffeine_lsp/src/ caffeine_lsp/test/ | while read num ; do
   clear
   echo "Changes detected, running tests..."
   echo "=================================="
