@@ -1,5 +1,3 @@
-import caffeine_lang/constants
-
 /// Supported monitoring and observability platform vendors.
 pub type Vendor {
   Datadog
@@ -17,14 +15,5 @@ pub fn resolve_vendor(vendor: String) -> Vendor {
     // This case should never be reached due to refinement type validation,
     // but we need exhaustive pattern matching.
     _ -> Datadog
-  }
-}
-
-/// Converts a Vendor type to its string representation.
-@internal
-pub fn vendor_to_string(vendor: Vendor) -> String {
-  case vendor {
-    Datadog -> constants.vendor_datadog
-    Honeycomb -> constants.vendor_honeycomb
   }
 }
