@@ -15,10 +15,10 @@ pub const standard_library = "
       \"description\": \"A Service Level Objective that monitors a metric query against a threshold over a rolling window.\",
       \"params\": {
         \"threshold\": { \"type_\": \"Float { x | x in ( 0.0..100.0 ) }\", \"description\": \"Target percentage (e.g., 99.9)\" },
-        \"window_in_days\": { \"type_\": \"Defaulted(Integer, 30) { x | x in { 7, 30, 90 } }\", \"description\": \"Rolling window for measurement\" },
-        \"queries\": { \"type_\": \"Dict(String, String)\", \"description\": \"Named queries for the SLI calculation\" },
-        \"value\": { \"type_\": \"String\", \"description\": \"CQL expression combining queries\" },
-        \"vendor\": { \"type_\": \"String { x | x in { datadog } }\", \"description\": \"Observability platform\" },
+        \"window_in_days\": { \"type_\": \"Defaulted(Integer, 30)\", \"description\": \"Rolling window for measurement\" },
+        \"indicators\": { \"type_\": \"Dict(String, String)\", \"description\": \"Named SLI measurement expressions\" },
+        \"evaluation\": { \"type_\": \"String\", \"description\": \"How to evaluate indicators as an SLI\" },
+        \"vendor\": { \"type_\": \"String { x | x in { datadog, honeycomb } }\", \"description\": \"Observability platform\" },
         \"tags\": { \"type_\": \"Optional(Dict(String, String))\", \"description\": \"An optional set of tags to append to the SLO artifact\" },
         \"runbook\": { \"type_\": \"Optional(URL)\", \"description\": \"An optional runbook URL surfaced via the SLO description\" }
       }

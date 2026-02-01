@@ -3,6 +3,7 @@ import caffeine_lang/common/constants
 /// Supported monitoring and observability platform vendors.
 pub type Vendor {
   Datadog
+  Honeycomb
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
@@ -12,6 +13,7 @@ pub type Vendor {
 pub fn resolve_vendor(vendor: String) -> Vendor {
   case vendor {
     "datadog" -> Datadog
+    "honeycomb" -> Honeycomb
     // This case should never be reached due to refinement type validation,
     // but we need exhaustive pattern matching.
     _ -> Datadog
@@ -23,5 +25,6 @@ pub fn resolve_vendor(vendor: String) -> Vendor {
 pub fn vendor_to_string(vendor: Vendor) -> String {
   case vendor {
     Datadog -> constants.vendor_datadog
+    Honeycomb -> constants.vendor_honeycomb
   }
 }
