@@ -6,6 +6,7 @@ import caffeine_lsp/document_symbols
 import caffeine_lsp/file_utils
 import caffeine_lsp/hover
 import caffeine_lsp/keyword_info
+import caffeine_lsp/lsp_types
 import caffeine_lsp/position_utils
 import caffeine_lsp/semantic_tokens
 import gleam/list
@@ -391,6 +392,33 @@ pub fn document_symbols_expects_test() {
 // ==========================================================================
 // Semantic tokens tests
 // ==========================================================================
+
+// ==== semantic_token_type_to_int ====
+// * ensures indices match the token_types legend in semantic_tokens.gleam
+pub fn semantic_token_type_indices_match_legend_test() {
+  let all_types = [
+    lsp_types.SttKeyword, lsp_types.SttType, lsp_types.SttString,
+    lsp_types.SttNumber, lsp_types.SttVariable, lsp_types.SttComment,
+    lsp_types.SttOperator, lsp_types.SttProperty, lsp_types.SttFunction,
+    lsp_types.SttModifier, lsp_types.SttEnumMember,
+  ]
+  // Verify the legend has the expected length
+  list.length(semantic_tokens.token_types)
+  |> should.equal(list.length(all_types))
+  // Verify each type's string matches its position in the legend
+  semantic_tokens.token_types
+  |> list.index_map(fn(name, i) { #(name, i) })
+  |> list.each(fn(pair) {
+    let name = pair.0
+    let index = pair.1
+    let assert Ok(stt) =
+      list.find(all_types, fn(t) {
+        lsp_types.semantic_token_type_to_string(t) == name
+      })
+    lsp_types.semantic_token_type_to_int(stt)
+    |> should.equal(index)
+  })
+}
 
 pub fn semantic_tokens_empty_test() {
   semantic_tokens.get_semantic_tokens("")
