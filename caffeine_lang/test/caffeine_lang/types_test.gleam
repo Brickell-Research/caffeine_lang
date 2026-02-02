@@ -1944,6 +1944,23 @@ pub fn all_type_metas_test() {
   list.contains(names, "OneOf") |> should.be_true()
 }
 
+// ==== completable_type_metas ====
+// * ✅ includes primitives, collections, and modifiers
+// * ✅ excludes refinement types (OneOf, InclusiveRange)
+pub fn completable_type_metas_test() {
+  let metas = types.completable_type_metas()
+  let names = list.map(metas, fn(m) { m.name })
+
+  // Includes completable types
+  list.contains(names, "Boolean") |> should.be_true()
+  list.contains(names, "List") |> should.be_true()
+  list.contains(names, "Optional") |> should.be_true()
+
+  // Excludes refinement types — they are not standalone types
+  list.contains(names, "OneOf") |> should.be_false()
+  list.contains(names, "InclusiveRange") |> should.be_false()
+}
+
 // ==== try_each_inner ====
 pub fn try_each_inner_test() {
   let always_ok = fn(_) { Ok(Nil) }

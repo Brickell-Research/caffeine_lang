@@ -102,13 +102,23 @@ pub type TypeMeta {
 // ---------------------------------------------------------------------------
 
 /// Returns all type metadata across all type categories.
+/// Includes refinement types (OneOf, InclusiveRange) which are not standalone
+/// types but are useful for documentation (hover, CLI `types` command).
 @internal
 pub fn all_type_metas() -> List(TypeMeta) {
+  list.flatten([completable_type_metas(), refinement_all_type_metas()])
+}
+
+/// Returns type metadata for types that can be used directly in type position.
+/// Excludes refinement types (OneOf, InclusiveRange) since those are syntactic
+/// modifiers applied to other types (e.g. `String { x | x in { a, b } }`),
+/// not standalone type names a user would type.
+@internal
+pub fn completable_type_metas() -> List(TypeMeta) {
   list.flatten([
     primitive_all_type_metas(),
     collection_all_type_metas(),
     modifier_all_type_metas(),
-    refinement_all_type_metas(),
   ])
 }
 

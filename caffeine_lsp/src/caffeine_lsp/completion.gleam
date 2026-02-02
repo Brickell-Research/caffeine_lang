@@ -140,7 +140,9 @@ fn keyword_items() -> List(CompletionItem) {
 }
 
 fn type_meta_items() -> List(CompletionItem) {
-  types.all_type_metas()
+  // Use completable_type_metas to exclude refinement types (OneOf,
+  // InclusiveRange) which are not standalone types a user would complete.
+  types.completable_type_metas()
   |> list.map(fn(m: TypeMeta) {
     CompletionItem(m.name, kind_class, m.description)
   })
