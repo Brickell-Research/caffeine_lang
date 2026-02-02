@@ -1,8 +1,6 @@
 import argv
-import caffeine_cli/exit_status_codes.{
-  type ExitStatusCodes, exit_status_code_to_int,
-}
 import caffeine_cli/handler
+import gleam/io
 import glint
 
 // Needed for both erlang and js targets.
@@ -12,7 +10,7 @@ fn halt(code: Int) -> Nil
 
 /// Builds the glint CLI application with all subcommands.
 @internal
-pub fn build_app() -> glint.Glint(ExitStatusCodes) {
+pub fn build_app() -> glint.Glint(Result(Nil, String)) {
   glint.new()
   |> glint.without_exit()
   |> glint.pretty_help(glint.default_pretty_help())
@@ -28,19 +26,22 @@ pub fn build_app() -> glint.Glint(ExitStatusCodes) {
 /// Entry point for the Caffeine language CLI application.
 pub fn main() {
   build_app()
-  |> glint.run_and_handle(argv.load().arguments, fn(status) {
-    case status {
-      exit_status_codes.Success -> Nil
-      _ -> halt(exit_status_code_to_int(status))
+  |> glint.run_and_handle(argv.load().arguments, fn(result) {
+    case result {
+      Ok(Nil) -> Nil
+      Error(msg) -> {
+        io.println(msg)
+        halt(1)
+      }
     }
   })
 }
 
 /// Entry point for Erlang escript compatibility and testing.
-pub fn run(args: List(String)) -> ExitStatusCodes {
+pub fn run(args: List(String)) -> Result(Nil, String) {
   case glint.execute(build_app(), args) {
-    Ok(glint.Out(status)) -> status
-    Ok(glint.Help(_)) -> exit_status_codes.Success
-    Error(_) -> exit_status_codes.Failure
+    Ok(glint.Out(result)) -> result
+    Ok(glint.Help(_)) -> Ok(Nil)
+    Error(err) -> Error(err)
   }
 }

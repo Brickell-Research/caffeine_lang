@@ -1,6 +1,5 @@
 import caffeine_cli/compile_presenter.{type LogLevel}
 import caffeine_cli/display
-import caffeine_cli/exit_status_codes.{type ExitStatusCodes}
 import caffeine_cli/file_discovery
 import caffeine_cli/format_file_discovery
 import caffeine_lang/constants
@@ -42,7 +41,7 @@ fn log_level_from_quiet(quiet: Bool) -> LogLevel {
 
 /// Builds the compile subcommand.
 @internal
-pub fn compile_command() -> glint.Command(ExitStatusCodes) {
+pub fn compile_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "Compile .caffeine blueprints and expectations to output",
   )
@@ -66,7 +65,7 @@ pub fn compile_command() -> glint.Command(ExitStatusCodes) {
 
 /// Builds the format subcommand.
 @internal
-pub fn format_command_builder() -> glint.Command(ExitStatusCodes) {
+pub fn format_command_builder() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help("Format .caffeine files")
   use quiet <- glint.flag(quiet_flag())
   use check <- glint.flag(check_flag())
@@ -82,7 +81,7 @@ pub fn format_command_builder() -> glint.Command(ExitStatusCodes) {
 
 /// Builds the artifacts subcommand.
 @internal
-pub fn artifacts_command() -> glint.Command(ExitStatusCodes) {
+pub fn artifacts_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "List available artifacts from the standard library",
   )
@@ -95,7 +94,7 @@ pub fn artifacts_command() -> glint.Command(ExitStatusCodes) {
 
 /// Builds the types subcommand.
 @internal
-pub fn types_command() -> glint.Command(ExitStatusCodes) {
+pub fn types_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "Show the type system reference with all supported types",
   )
@@ -108,167 +107,156 @@ pub fn types_command() -> glint.Command(ExitStatusCodes) {
 
 /// Builds the lsp subcommand.
 @internal
-pub fn lsp_command() -> glint.Command(ExitStatusCodes) {
+pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help("Start the Language Server Protocol server")
   use _, _, _ <- glint.command()
 
-  compile_presenter.log(
-    compile_presenter.Verbose,
+  Error(
     "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
   )
-  exit_status_codes.Failure
 }
 
-/// Builds the root command for --version support.
+/// Builds the root command for version display.
 @internal
-pub fn root_command() -> glint.Command(ExitStatusCodes) {
+pub fn root_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "A compiler for generating reliability artifacts from service expectation definitions.\n\nVersion: "
     <> constants.version,
   )
   use _, _, _ <- glint.command()
 
-  exit_status_codes.Success
+  Ok(Nil)
 }
 
-// --- Business logic (unchanged) ---
+// --- Business logic ---
 
 fn compile(
   blueprint_file: String,
   expectations_dir: String,
   output_path: Option(String),
   log_level: LogLevel,
-) -> ExitStatusCodes {
-  {
-    // Discover expectation files
-    use expectation_paths <- result.try(
-      file_discovery.get_caffeine_files(expectations_dir)
-      |> result.map_error(fn(err) { "File discovery error: " <> err.msg }),
-    )
+) -> Result(Nil, String) {
+  // Discover expectation files
+  use expectation_paths <- result.try(
+    file_discovery.get_caffeine_files(expectations_dir)
+    |> result.map_error(fn(err) { "File discovery error: " <> err.msg }),
+  )
 
-    // Read blueprint source
-    use blueprint_content <- result.try(
-      simplifile.read(blueprint_file)
+  // Read blueprint source
+  use blueprint_content <- result.try(
+    simplifile.read(blueprint_file)
+    |> result.map_error(fn(err) {
+      "Error reading blueprint file: "
+      <> simplifile.describe_error(err)
+      <> " ("
+      <> blueprint_file
+      <> ")"
+    }),
+  )
+  let blueprint = SourceFile(path: blueprint_file, content: blueprint_content)
+
+  // Read all expectation sources
+  use expectations <- result.try(
+    expectation_paths
+    |> list.map(fn(path) {
+      simplifile.read(path)
+      |> result.map(fn(content) { SourceFile(path: path, content: content) })
       |> result.map_error(fn(err) {
-        "Error reading blueprint file: "
+        "Error reading expectation file: "
         <> simplifile.describe_error(err)
         <> " ("
-        <> blueprint_file
+        <> path
         <> ")"
-      }),
-    )
-    let blueprint = SourceFile(path: blueprint_file, content: blueprint_content)
-
-    // Read all expectation sources
-    use expectations <- result.try(
-      expectation_paths
-      |> list.map(fn(path) {
-        simplifile.read(path)
-        |> result.map(fn(content) { SourceFile(path: path, content: content) })
-        |> result.map_error(fn(err) {
-          "Error reading expectation file: "
-          <> simplifile.describe_error(err)
-          <> " ("
-          <> path
-          <> ")"
-        })
       })
-      |> result.all(),
-    )
+    })
+    |> result.all(),
+  )
 
-    // Compile with presentation output
-    use output <- result.try(
-      compile_presenter.compile_with_output(blueprint, expectations, log_level)
-      |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
-    )
+  // Compile with presentation output
+  use output <- result.try(
+    compile_presenter.compile_with_output(blueprint, expectations, log_level)
+    |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
+  )
 
-    case output_path {
-      option.None -> {
-        compile_presenter.log(log_level, output.terraform)
-        case output.dependency_graph {
-          option.Some(graph) -> {
-            compile_presenter.log(log_level, "")
-            compile_presenter.log(
-              log_level,
-              "--- Dependency Graph (Mermaid) ---",
-            )
-            compile_presenter.log(log_level, graph)
-          }
-          option.None -> Nil
+  case output_path {
+    option.None -> {
+      compile_presenter.log(log_level, output.terraform)
+      case output.dependency_graph {
+        option.Some(graph) -> {
+          compile_presenter.log(log_level, "")
+          compile_presenter.log(log_level, "--- Dependency Graph (Mermaid) ---")
+          compile_presenter.log(log_level, graph)
         }
-        Ok(Nil)
+        option.None -> Nil
       }
-      option.Some(path) -> {
-        let #(output_file, output_dir) = case simplifile.is_directory(path) {
-          Ok(True) -> #(path <> "/main.tf", path)
-          _ -> #(path, directory_of(path))
-        }
-        use _ <- result.try(
-          simplifile.write(output_file, output.terraform)
-          |> result.map_error(fn(err) {
-            "Error writing output file: " <> string.inspect(err)
-          }),
-        )
-        compile_presenter.log(
-          log_level,
-          "Successfully compiled to " <> output_file,
-        )
-
-        // Write dependency graph if present
-        case output.dependency_graph {
-          option.Some(graph) -> {
-            let graph_file = output_dir <> "/dependency_graph.mmd"
-            case simplifile.write(graph_file, graph) {
-              Ok(_) ->
-                compile_presenter.log(
-                  log_level,
-                  "Dependency graph written to " <> graph_file,
-                )
-              Error(err) ->
-                compile_presenter.log(
-                  log_level,
-                  "Warning: could not write dependency graph: "
-                    <> string.inspect(err),
-                )
-            }
-          }
-          option.None -> Nil
-        }
-        Ok(Nil)
+      Ok(Nil)
+    }
+    option.Some(path) -> {
+      let #(output_file, output_dir) = case simplifile.is_directory(path) {
+        Ok(True) -> #(path <> "/main.tf", path)
+        _ -> #(path, directory_of(path))
       }
+      use _ <- result.try(
+        simplifile.write(output_file, output.terraform)
+        |> result.map_error(fn(err) {
+          "Error writing output file: " <> string.inspect(err)
+        }),
+      )
+      compile_presenter.log(
+        log_level,
+        "Successfully compiled to " <> output_file,
+      )
+
+      // Write dependency graph if present
+      case output.dependency_graph {
+        option.Some(graph) -> {
+          let graph_file = output_dir <> "/dependency_graph.mmd"
+          case simplifile.write(graph_file, graph) {
+            Ok(_) ->
+              compile_presenter.log(
+                log_level,
+                "Dependency graph written to " <> graph_file,
+              )
+            Error(err) ->
+              compile_presenter.log(
+                log_level,
+                "Warning: could not write dependency graph: "
+                  <> string.inspect(err),
+              )
+          }
+        }
+        option.None -> Nil
+      }
+      Ok(Nil)
     }
   }
-  |> result_to_exit_status(log_level)
 }
 
 fn format_command(
   path: String,
   check_only: Bool,
   log_level: LogLevel,
-) -> ExitStatusCodes {
-  {
-    use file_paths <- result.try(
-      format_file_discovery.discover(path)
-      |> result.map_error(fn(err) { "Format error: " <> err }),
-    )
+) -> Result(Nil, String) {
+  use file_paths <- result.try(
+    format_file_discovery.discover(path)
+    |> result.map_error(fn(err) { "Format error: " <> err }),
+  )
 
-    use has_unformatted <- result.try(
-      list.try_fold(file_paths, False, fn(acc, file_path) {
-        use changed <- result.try(format_single_file(
-          file_path,
-          check_only,
-          log_level,
-        ))
-        Ok(acc || changed)
-      }),
-    )
+  use has_unformatted <- result.try(
+    list.try_fold(file_paths, False, fn(acc, file_path) {
+      use changed <- result.try(format_single_file(
+        file_path,
+        check_only,
+        log_level,
+      ))
+      Ok(acc || changed)
+    }),
+  )
 
-    case check_only && has_unformatted {
-      True -> Error("Some files are not formatted")
-      False -> Ok(Nil)
-    }
+  case check_only && has_unformatted {
+    True -> Error("Some files are not formatted")
+    False -> Ok(Nil)
   }
-  |> result_to_exit_status(log_level)
 }
 
 fn format_single_file(
@@ -320,7 +308,7 @@ fn write_file(path: String, content: String) -> Result(Nil, String) {
   })
 }
 
-fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
+fn artifacts_catalog(log_level: LogLevel) -> Result(Nil, String) {
   compile_presenter.log(log_level, "Artifact Catalog")
   compile_presenter.log(log_level, string.repeat("=", 16))
   compile_presenter.log(log_level, "")
@@ -331,10 +319,10 @@ fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
   |> compile_presenter.log(log_level, _)
 
   compile_presenter.log(log_level, "")
-  exit_status_codes.Success
+  Ok(Nil)
 }
 
-fn types_catalog(log_level: LogLevel) -> ExitStatusCodes {
+fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
   compile_presenter.log(log_level, "Type System Reference")
   compile_presenter.log(log_level, string.repeat("=", 21))
   compile_presenter.log(log_level, "")
@@ -347,7 +335,7 @@ fn types_catalog(log_level: LogLevel) -> ExitStatusCodes {
   |> compile_presenter.log(log_level, _)
 
   compile_presenter.log(log_level, "")
-  exit_status_codes.Success
+  Ok(Nil)
 }
 
 /// Extracts the directory portion of a file path.
@@ -360,18 +348,5 @@ fn directory_of(path: String) -> String {
         parts -> string.join(parts, "/")
       }
     [] -> "."
-  }
-}
-
-fn result_to_exit_status(
-  res: Result(Nil, String),
-  log_level: LogLevel,
-) -> ExitStatusCodes {
-  case res {
-    Ok(_) -> exit_status_codes.Success
-    Error(msg) -> {
-      compile_presenter.log(log_level, msg)
-      exit_status_codes.Failure
-    }
   }
 }
