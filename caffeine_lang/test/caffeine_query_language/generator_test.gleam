@@ -368,3 +368,60 @@ pub fn resolve_slo_query_test() {
   ]
   |> test_helpers.array_based_test_executor_2(generator.resolve_slo_query)
 }
+
+// ==== resolve_slo_to_expression ====
+// * ✅ single word identity substitutes indicator value
+// * ✅ division substitutes and renders as division
+// * ✅ addition substitutes and renders as addition
+// * ✅ multi-indicator composition substitutes all words
+// * ❌ undefined indicator returns error
+// * ❌ partially undefined indicators returns error listing missing
+// * ❌ time_slice returns error
+pub fn resolve_slo_to_expression_test() {
+  // single word identity substitutes indicator value
+  generator.resolve_slo_to_expression(
+    "sli",
+    dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
+  )
+  |> should.equal(Ok("LT($\"status_code\", 500)"))
+
+  // division substitutes and renders as division
+  generator.resolve_slo_to_expression(
+    "good / total",
+    dict.from_list([#("good", "query1"), #("total", "query2")]),
+  )
+  |> should.equal(Ok("query1 / query2"))
+
+  // addition substitutes and renders as addition
+  generator.resolve_slo_to_expression(
+    "a + b",
+    dict.from_list([#("a", "val1"), #("b", "val2")]),
+  )
+  |> should.equal(Ok("val1 + val2"))
+
+  // multi-indicator composition substitutes all words
+  generator.resolve_slo_to_expression(
+    "(latency + errors) / total",
+    dict.from_list([
+      #("latency", "lat_query"),
+      #("errors", "err_query"),
+      #("total", "total_query"),
+    ]),
+  )
+  |> should.equal(Ok("(lat_query + err_query) / total_query"))
+
+  // undefined indicator returns error
+  generator.resolve_slo_to_expression("sli", dict.new())
+  |> should.equal(Error("evaluation references undefined indicators: sli"))
+
+  // partially undefined indicators returns error listing missing
+  generator.resolve_slo_to_expression(
+    "(a + b) / c",
+    dict.from_list([#("a", "val1")]),
+  )
+  |> should.equal(Error("evaluation references undefined indicators: b, c"))
+
+  // time_slice returns error
+  generator.resolve_slo_to_expression("time_slice(Q > 1 per 1s)", dict.new())
+  |> should.be_error
+}

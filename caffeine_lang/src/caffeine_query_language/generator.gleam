@@ -362,6 +362,59 @@ pub fn resolve_slo_query_typed(
   }
 }
 
+/// Parse a value expression, resolve it, substitute indicator names,
+/// and return the resulting expression as a plain string.
+/// Handles identity expressions (single words, compositions) and good-over-total divisions.
+/// Rejects time_slice expressions (not valid for expression-based resolution).
+@internal
+pub fn resolve_slo_to_expression(
+  value_expr: String,
+  substitutions: dict.Dict(String, String),
+) -> Result(String, String) {
+  use exp_container <- result.try(
+    parser.parse_expr(value_expr)
+    |> result.map_error(fn(err) { "Parse error: " <> err }),
+  )
+  let exp = case resolver.resolve_primitives(exp_container) {
+    Ok(resolver.GoodOverTotal(num, den)) ->
+      Ok(parser.OperatorExpr(num, den, parser.Div))
+    Ok(resolver.TimeSlice(..)) ->
+      Error(
+        "time_slice expressions are not supported for expression resolution",
+      )
+    // Not a division or time_slice — treat as direct expression (identity/composition).
+    Error(_) -> Ok(exp_container.exp)
+  }
+  use exp <- result.try(exp)
+  use <- validate_words_exist(exp, substitutions)
+  Ok(substitute_words(exp, substitutions) |> exp_to_string)
+}
+
+/// Validate that all words in an expression exist in the substitutions dict.
+/// Returns an error listing any missing indicator names.
+fn validate_words_exist(
+  exp: Exp,
+  substitutions: dict.Dict(String, String),
+  next: fn() -> Result(String, String),
+) -> Result(String, String) {
+  let missing =
+    extract_words(exp)
+    |> list.filter(fn(word) {
+      case dict.get(substitutions, word) {
+        Ok(_) -> False
+        Error(_) -> True
+      }
+    })
+  case missing {
+    [] -> next()
+    _ ->
+      Error(
+        "evaluation references undefined indicators: "
+        <> string.join(missing, ", "),
+      )
+  }
+}
+
 /// Parse a value expression, resolve to GoodOverTotal primitive, substitute words,
 /// and return the numerator and denominator as strings.
 /// Panics if parsing or resolution fails.

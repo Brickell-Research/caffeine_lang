@@ -35,6 +35,7 @@ fn make_honeycomb_ir(
   blueprint: String,
   threshold: Float,
   window_in_days: Int,
+  evaluation: String,
   indicators: List(#(String, String)),
 ) -> semantic_analyzer.IntermediateRepresentation {
   semantic_analyzer.IntermediateRepresentation(
@@ -63,6 +64,11 @@ fn make_honeycomb_ir(
         "window_in_days",
         types.PrimitiveType(types.NumericType(types.Integer)),
         dynamic.int(window_in_days),
+      ),
+      helpers.ValueTuple(
+        "evaluation",
+        types.PrimitiveType(types.String),
+        dynamic.string(evaluation),
       ),
       helpers.ValueTuple(
         "indicators",
@@ -158,6 +164,7 @@ pub fn generate_terraform_test() {
           "trace_availability",
           99.5,
           14,
+          "sli",
           [#("sli", "LT($\"status_code\", 500)")],
         ),
       ],
@@ -199,8 +206,9 @@ pub fn window_to_time_period_test() {
 }
 
 // ==== ir_to_terraform_resources ====
-// * ❌ empty indicators dict returns error
-pub fn ir_to_terraform_resources_empty_indicators_test() {
+// * ❌ evaluation references undefined indicator returns error
+// * ❌ missing evaluation returns error
+pub fn ir_to_terraform_resources_undefined_indicator_test() {
   let ir =
     make_honeycomb_ir(
       "Empty SLO",
@@ -211,12 +219,68 @@ pub fn ir_to_terraform_resources_empty_indicators_test() {
       "test_blueprint",
       99.0,
       30,
+      "sli",
       [],
     )
 
   case honeycomb.ir_to_terraform_resources(ir) {
     Error(errors.GeneratorHoneycombTerraformResolutionError(msg:)) ->
-      string.contains(msg, "no indicators defined")
+      string.contains(msg, "undefined indicators")
+      |> should.be_true
+    _ -> should.fail()
+  }
+}
+
+pub fn ir_to_terraform_resources_missing_evaluation_test() {
+  // Build an IR without an evaluation value to test the error path.
+  let ir =
+    semantic_analyzer.IntermediateRepresentation(
+      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        friendly_label: "No Eval SLO",
+        org_name: "acme",
+        service_name: "payments",
+        blueprint_name: "test_blueprint",
+        team_name: "platform",
+        misc: dict.new(),
+      ),
+      unique_identifier: "acme_payments_no_eval",
+      artifact_refs: ["SLO"],
+      values: [
+        helpers.ValueTuple(
+          "vendor",
+          types.PrimitiveType(types.String),
+          dynamic.string(constants.vendor_honeycomb),
+        ),
+        helpers.ValueTuple(
+          "threshold",
+          types.PrimitiveType(types.NumericType(types.Float)),
+          dynamic.float(99.0),
+        ),
+        helpers.ValueTuple(
+          "window_in_days",
+          types.PrimitiveType(types.NumericType(types.Integer)),
+          dynamic.int(30),
+        ),
+        helpers.ValueTuple(
+          "indicators",
+          types.CollectionType(types.Dict(
+            types.PrimitiveType(types.String),
+            types.PrimitiveType(types.String),
+          )),
+          dynamic.properties([
+            #(
+              dynamic.string("sli"),
+              dynamic.string("LT($\"status_code\", 500)"),
+            ),
+          ]),
+        ),
+      ],
+      vendor: option.Some(vendor.Honeycomb),
+    )
+
+  case honeycomb.ir_to_terraform_resources(ir) {
+    Error(errors.GeneratorHoneycombTerraformResolutionError(msg:)) ->
+      string.contains(msg, "missing evaluation")
       |> should.be_true
     _ -> should.fail()
   }

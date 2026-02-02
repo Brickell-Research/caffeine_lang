@@ -7,6 +7,7 @@ import caffeine_lang/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
 import caffeine_lang/helpers
+import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/int
@@ -112,17 +113,23 @@ pub fn ir_to_terraform_resources(
   let window_in_days = helpers.extract_window_in_days(ir.values)
   let indicators = helpers.extract_indicators(ir.values)
 
-  // For Honeycomb, we expect a single indicator with a boolean SLI expression.
-  // Get the first indicator value as the SLI expression.
-  use sli_expression <- result.try(
-    indicators
-    |> dict.values
-    |> list.first
+  // Extract the evaluation expression, then resolve it through the CQL pipeline
+  // by substituting indicator names into the evaluation formula.
+  use evaluation_expr <- result.try(
+    helpers.extract_value(ir.values, "evaluation", decode.string)
     |> result.replace_error(GeneratorHoneycombTerraformResolutionError(
       msg: "expectation '"
       <> identifier
-      <> "' - no indicators defined for Honeycomb SLO",
+      <> "' - missing evaluation for Honeycomb SLO",
     )),
+  )
+  use sli_expression <- result.try(
+    cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
+    |> result.map_error(fn(err) {
+      GeneratorHoneycombTerraformResolutionError(
+        msg: "expectation '" <> identifier <> "' - " <> err,
+      )
+    }),
   )
 
   use time_period <- result.try(
