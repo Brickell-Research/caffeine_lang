@@ -1,6 +1,8 @@
 import argv
 import caffeine_cli/handler
+import gleam/bool
 import gleam/io
+import gleam/list
 import glint
 
 // Needed for both erlang and js targets.
@@ -25,8 +27,14 @@ pub fn build_app() -> glint.Glint(Result(Nil, String)) {
 
 /// Entry point for the Caffeine language CLI application.
 pub fn main() {
+  let args = argv.load().arguments
+  use <- bool.guard(list.is_empty(args), {
+    build_app()
+    |> glint.run_and_handle(["--help"], fn(_) { Nil })
+  })
+
   build_app()
-  |> glint.run_and_handle(argv.load().arguments, fn(result) {
+  |> glint.run_and_handle(args, fn(result) {
     case result {
       Ok(Nil) -> Nil
       Error(msg) -> {
