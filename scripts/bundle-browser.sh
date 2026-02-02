@@ -10,8 +10,9 @@ OUTPUT_DIR="${1:-$PROJECT_DIR/dist}"
 
 echo "Building Caffeine for browser..."
 
-# Ensure JavaScript build is up to date (build caffeine_lang for the pure compiler API)
+# Ensure JavaScript build is up to date (clean first to remove stale artifacts from removed deps)
 cd "$PROJECT_DIR/caffeine_lang"
+gleam clean
 gleam build --target=javascript
 
 # Create output directory
