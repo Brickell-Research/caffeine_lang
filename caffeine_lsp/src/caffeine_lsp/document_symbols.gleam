@@ -4,9 +4,7 @@ import caffeine_lang/frontend/ast.{
 }
 import caffeine_lang/types
 import caffeine_lsp/file_utils
-import caffeine_lsp/lsp_utils
 import caffeine_lsp/position_utils
-import gleam/json
 import gleam/list
 import gleam/string
 
@@ -21,8 +19,21 @@ const symbol_kind_variable = 13
 
 const symbol_kind_type_parameter = 26
 
-/// Analyze source text and return DocumentSymbol JSON objects for the outline.
-pub fn get_symbols(content: String) -> List(json.Json) {
+/// A document symbol for the editor outline.
+pub type DocumentSymbol {
+  DocumentSymbol(
+    name: String,
+    detail: String,
+    kind: Int,
+    line: Int,
+    col: Int,
+    name_len: Int,
+    children: List(DocumentSymbol),
+  )
+}
+
+/// Analyze source text and return document symbols for the outline.
+pub fn get_symbols(content: String) -> List(DocumentSymbol) {
   case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) -> blueprints_file_symbols(file, content)
     Ok(file_utils.Expects(file)) -> expects_file_symbols(file, content)
@@ -33,7 +44,7 @@ pub fn get_symbols(content: String) -> List(json.Json) {
 fn blueprints_file_symbols(
   file: BlueprintsFile,
   content: String,
-) -> List(json.Json) {
+) -> List(DocumentSymbol) {
   let alias_syms =
     list.map(file.type_aliases, fn(ta) { type_alias_symbol(ta, content) })
   let ext_syms =
@@ -48,7 +59,10 @@ fn blueprints_file_symbols(
   list.flatten([alias_syms, ext_syms, block_syms])
 }
 
-fn expects_file_symbols(file: ExpectsFile, content: String) -> List(json.Json) {
+fn expects_file_symbols(
+  file: ExpectsFile,
+  content: String,
+) -> List(DocumentSymbol) {
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, content) })
   let block_syms =
@@ -61,10 +75,10 @@ fn expects_file_symbols(file: ExpectsFile, content: String) -> List(json.Json) {
   list.flatten([ext_syms, block_syms])
 }
 
-fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
+fn type_alias_symbol(ta: TypeAlias, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, ta.name)
   let detail = types.parsed_type_to_string(ta.type_)
-  symbol_json(
+  DocumentSymbol(
     ta.name,
     detail,
     symbol_kind_type_parameter,
@@ -75,10 +89,10 @@ fn type_alias_symbol(ta: TypeAlias, content: String) -> json.Json {
   )
 }
 
-fn extendable_symbol(ext: Extendable, content: String) -> json.Json {
+fn extendable_symbol(ext: Extendable, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, ext.name)
   let detail = ast.extendable_kind_to_string(ext.kind)
-  symbol_json(
+  DocumentSymbol(
     ext.name,
     detail,
     symbol_kind_variable,
@@ -92,15 +106,15 @@ fn extendable_symbol(ext: Extendable, content: String) -> json.Json {
 fn block_symbol(
   name: String,
   content: String,
-  children: List(json.Json),
-) -> json.Json {
+  children: List(DocumentSymbol),
+) -> DocumentSymbol {
   // For blocks, search for a keyword that starts the block
   let search = case string.starts_with(name, "Blueprints") {
     True -> "Blueprints"
     False -> "Expectations"
   }
   let #(line, col) = position_utils.find_name_position(content, search)
-  symbol_json(
+  DocumentSymbol(
     name,
     "",
     symbol_kind_module,
@@ -111,14 +125,14 @@ fn block_symbol(
   )
 }
 
-fn blueprint_item_symbol(item: BlueprintItem, content: String) -> json.Json {
+fn blueprint_item_symbol(item: BlueprintItem, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, item.name)
   let req_fields =
     list.map(item.requires.fields, fn(f) { field_symbol(f, content) })
   let prov_fields =
     list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
   let children = list.flatten([req_fields, prov_fields])
-  symbol_json(
+  DocumentSymbol(
     item.name,
     "",
     symbol_kind_class,
@@ -129,11 +143,11 @@ fn blueprint_item_symbol(item: BlueprintItem, content: String) -> json.Json {
   )
 }
 
-fn expect_item_symbol(item: ExpectItem, content: String) -> json.Json {
+fn expect_item_symbol(item: ExpectItem, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, item.name)
   let children =
     list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
-  symbol_json(
+  DocumentSymbol(
     item.name,
     "",
     symbol_kind_class,
@@ -144,13 +158,13 @@ fn expect_item_symbol(item: ExpectItem, content: String) -> json.Json {
   )
 }
 
-fn field_symbol(field: Field, content: String) -> json.Json {
+fn field_symbol(field: Field, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, field.name)
   let detail = case field.value {
     ast.TypeValue(t) -> types.parsed_type_to_string(t)
     ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
-  symbol_json(
+  DocumentSymbol(
     field.name,
     detail,
     symbol_kind_property,
@@ -159,26 +173,4 @@ fn field_symbol(field: Field, content: String) -> json.Json {
     string.length(field.name),
     [],
   )
-}
-
-// --- JSON builder ---
-
-fn symbol_json(
-  name: String,
-  detail: String,
-  kind: Int,
-  line: Int,
-  col: Int,
-  name_len: Int,
-  children: List(json.Json),
-) -> json.Json {
-  let range = lsp_utils.range_json(line, col, line, col + name_len)
-  json.object([
-    #("name", json.string(name)),
-    #("detail", json.string(detail)),
-    #("kind", json.int(kind)),
-    #("range", range),
-    #("selectionRange", range),
-    #("children", json.preprocessed_array(children)),
-  ])
 }

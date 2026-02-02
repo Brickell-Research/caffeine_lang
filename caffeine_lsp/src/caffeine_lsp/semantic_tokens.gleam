@@ -2,7 +2,6 @@ import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer
 import gleam/float
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/string
 
@@ -14,17 +13,16 @@ pub const token_types = [
 ]
 
 /// Returns the semantic tokens data array for the given source content.
-pub fn get_semantic_tokens(content: String) -> List(json.Json) {
+pub fn get_semantic_tokens(content: String) -> List(Int) {
   case tokenizer.tokenize(content) {
     Ok(tokens) -> encode_tokens(tokens)
     Error(_) -> []
   }
 }
 
-fn encode_tokens(tokens: List(PositionedToken)) -> List(json.Json) {
+fn encode_tokens(tokens: List(PositionedToken)) -> List(Int) {
   encode_loop(tokens, 0, 0, [])
   |> list.reverse
-  |> list.map(json.int)
 }
 
 fn encode_loop(

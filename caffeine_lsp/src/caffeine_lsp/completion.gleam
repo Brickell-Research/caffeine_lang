@@ -2,7 +2,6 @@ import caffeine_lang/frontend/ast
 import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
-import gleam/json
 import gleam/list
 import gleam/option
 import gleam/string
@@ -16,13 +15,18 @@ const kind_variable = 6
 
 const kind_field = 5
 
-/// Returns a list of completion item JSON objects, context-aware based on
+/// A completion item returned to the editor.
+pub type CompletionItem {
+  CompletionItem(label: String, kind: Int, detail: String)
+}
+
+/// Returns a list of completion items, context-aware based on
 /// the cursor position in the document.
 pub fn get_completions(
   content: String,
   line: Int,
   character: Int,
-) -> List(json.Json) {
+) -> List(CompletionItem) {
   let context = get_context(content, line, character)
   case context {
     ExtendsContext -> extends_completions(content)
@@ -90,29 +94,29 @@ fn get_field_context(
 
 // --- Completion generators ---
 
-fn extends_completions(content: String) -> List(json.Json) {
+fn extends_completions(content: String) -> List(CompletionItem) {
   // Suggest extendable names from the current file
   let file_items = case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) ->
       list.map(file.extendables, fn(e) {
         let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        completion_item(e.name, kind_variable, detail)
+        CompletionItem(e.name, kind_variable, detail)
       })
     Ok(file_utils.Expects(file)) ->
       list.map(file.extendables, fn(e) {
         let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        completion_item(e.name, kind_variable, detail)
+        CompletionItem(e.name, kind_variable, detail)
       })
     Error(_) -> []
   }
   file_items
 }
 
-fn type_completions(content: String) -> List(json.Json) {
+fn type_completions(content: String) -> List(CompletionItem) {
   let type_items =
     types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
-      completion_item(m.name, kind_class, m.description)
+      CompletionItem(m.name, kind_class, m.description)
     })
 
   // Also add type aliases from the file
@@ -120,7 +124,7 @@ fn type_completions(content: String) -> List(json.Json) {
     Ok(file_utils.Blueprints(file)) ->
       list.map(file.type_aliases, fn(ta) {
         let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
-        completion_item(ta.name, kind_variable, detail)
+        CompletionItem(ta.name, kind_variable, detail)
       })
     _ -> []
   }
@@ -128,16 +132,16 @@ fn type_completions(content: String) -> List(json.Json) {
   list.flatten([type_items, alias_items])
 }
 
-fn field_completions(fields: List(#(String, String))) -> List(json.Json) {
-  list.map(fields, fn(f) { completion_item(f.0, kind_field, f.1) })
+fn field_completions(fields: List(#(String, String))) -> List(CompletionItem) {
+  list.map(fields, fn(f) { CompletionItem(f.0, kind_field, f.1) })
 }
 
-fn general_completions(content: String) -> List(json.Json) {
+fn general_completions(content: String) -> List(CompletionItem) {
   let kw_items = keyword_items()
   let type_items =
     types.all_type_metas()
     |> list.map(fn(m: TypeMeta) {
-      completion_item(m.name, kind_class, m.description)
+      CompletionItem(m.name, kind_class, m.description)
     })
 
   // Add extendable and type alias names from file
@@ -146,19 +150,19 @@ fn general_completions(content: String) -> List(json.Json) {
       let ext_items =
         list.map(file.extendables, fn(e) {
           let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-          completion_item(e.name, kind_variable, detail)
+          CompletionItem(e.name, kind_variable, detail)
         })
       let alias_items =
         list.map(file.type_aliases, fn(ta) {
           let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
-          completion_item(ta.name, kind_variable, detail)
+          CompletionItem(ta.name, kind_variable, detail)
         })
       list.flatten([ext_items, alias_items])
     }
     Ok(file_utils.Expects(file)) ->
       list.map(file.extendables, fn(e) {
         let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        completion_item(e.name, kind_variable, detail)
+        CompletionItem(e.name, kind_variable, detail)
       })
     Error(_) -> []
   }
@@ -168,15 +172,7 @@ fn general_completions(content: String) -> List(json.Json) {
 
 // --- Helpers ---
 
-fn keyword_items() -> List(json.Json) {
+fn keyword_items() -> List(CompletionItem) {
   keyword_info.all_keywords()
-  |> list.map(fn(kw) { completion_item(kw.name, kind_keyword, kw.description) })
-}
-
-fn completion_item(label: String, kind: Int, detail: String) -> json.Json {
-  json.object([
-    #("label", json.string(label)),
-    #("kind", json.int(kind)),
-    #("detail", json.string(detail)),
-  ])
+  |> list.map(fn(kw) { CompletionItem(kw.name, kind_keyword, kw.description) })
 }

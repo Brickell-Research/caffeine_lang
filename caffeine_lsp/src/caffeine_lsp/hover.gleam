@@ -3,36 +3,16 @@ import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
 import caffeine_lsp/position_utils
-import gleam/json
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 
-/// Returns hover JSON for the word at the given position, or None.
-pub fn get_hover(
-  content: String,
-  line: Int,
-  character: Int,
-) -> Option(json.Json) {
+/// Returns hover markdown text for the word at the given position, or None.
+pub fn get_hover(content: String, line: Int, character: Int) -> Option(String) {
   let word = position_utils.extract_word_at(content, line, character)
   case word {
     "" -> option.None
-    w ->
-      case lookup_hover(w, content) {
-        option.Some(markdown) ->
-          option.Some(
-            json.object([
-              #(
-                "contents",
-                json.object([
-                  #("kind", json.string("markdown")),
-                  #("value", json.string(markdown)),
-                ]),
-              ),
-            ]),
-          )
-        option.None -> option.None
-      }
+    w -> lookup_hover(w, content)
   }
 }
 

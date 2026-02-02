@@ -1,6 +1,14 @@
 // Entry point for Deno compilation
-// Imports the Gleam-compiled JavaScript and runs the main function
+// Intercepts "lsp" arg to launch TypeScript LSP server,
+// otherwise runs the Gleam-compiled CLI.
 
-import { main } from "./caffeine_cli/build/dev/javascript/caffeine_cli/caffeine_cli.mjs";
+const args = typeof Deno !== "undefined" ? Deno.args : [];
 
-main();
+if (args.includes("lsp")) {
+  await import("./lsp_server.ts");
+} else {
+  const { main } = await import(
+    "./caffeine_cli/build/dev/javascript/caffeine_cli/caffeine_cli.mjs"
+  );
+  main();
+}

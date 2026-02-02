@@ -2,7 +2,11 @@
   "version": "5",
   "specifiers": {
     "npm:esbuild@*": "0.27.1",
-    "npm:js-yaml@^4.1.0": "4.1.1"
+    "npm:js-yaml@^4.1.0": "4.1.1",
+    "npm:vscode-languageserver-textdocument@*": "1.0.12",
+    "npm:vscode-languageserver-textdocument@^1.0.11": "1.0.12",
+    "npm:vscode-languageserver@*": "9.0.1",
+    "npm:vscode-languageserver@^9.0.1": "9.0.1"
   },
   "npm": {
     "@esbuild/aix-ppc64@0.27.1": {
@@ -177,9 +181,36 @@
         "argparse"
       ],
       "bin": true
+    },
+    "vscode-jsonrpc@8.2.0": {
+      "integrity": "sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA=="
+    },
+    "vscode-languageserver-protocol@3.17.5": {
+      "integrity": "sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==",
+      "dependencies": [
+        "vscode-jsonrpc",
+        "vscode-languageserver-types"
+      ]
+    },
+    "vscode-languageserver-textdocument@1.0.12": {
+      "integrity": "sha512-cxWNPesCnQCcMPeenjKKsOCKQZ/L6Tv19DTRIGuLWe32lyzWhihGVJ/rcckZXJxfdKCFvRLS3fpBIsV/ZGX4zA=="
+    },
+    "vscode-languageserver-types@3.17.5": {
+      "integrity": "sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg=="
+    },
+    "vscode-languageserver@9.0.1": {
+      "integrity": "sha512-woByF3PDpkHFUreUa7Hos7+pUWdeWMXRd26+ZX2A8cFx6v/JPTtd4/uN0/jB6XQHYaOlHbio03NTHCqrgG5n7g==",
+      "dependencies": [
+        "vscode-languageserver-protocol"
+      ],
+      "bin": true
     }
   },
   "workspace": {
+    "dependencies": [
+      "npm:vscode-languageserver-textdocument@^1.0.11",
+      "npm:vscode-languageserver@^9.0.1"
+    ],
     "packageJson": {
       "dependencies": [
         "npm:js-yaml@^4.1.0"

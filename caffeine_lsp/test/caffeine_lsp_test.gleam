@@ -8,8 +8,6 @@ import caffeine_lsp/hover
 import caffeine_lsp/keyword_info
 import caffeine_lsp/position_utils
 import caffeine_lsp/semantic_tokens
-import gleam/dynamic
-import gleam/json
 import gleam/list
 import gleam/option
 import gleam/string
@@ -260,9 +258,8 @@ pub fn hover_builtin_type_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 2, 20) {
-    option.Some(json_val) -> {
-      let s = json.to_string(json_val)
-      { string.contains(s, "String") } |> should.be_true()
+    option.Some(markdown) -> {
+      { string.contains(markdown, "String") } |> should.be_true()
     }
     option.None -> should.fail()
   }
@@ -272,9 +269,8 @@ pub fn hover_keyword_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 0, 3) {
-    option.Some(json_val) -> {
-      let s = json.to_string(json_val)
-      { string.contains(s, "Blueprints") } |> should.be_true()
+    option.Some(markdown) -> {
+      { string.contains(markdown, "Blueprints") } |> should.be_true()
     }
     option.None -> should.fail()
   }
@@ -291,10 +287,9 @@ pub fn hover_extendable_test() {
   let source =
     "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case hover.get_hover(source, 0, 2) {
-    option.Some(json_val) -> {
-      let s = json.to_string(json_val)
-      { string.contains(s, "_defaults") } |> should.be_true()
-      { string.contains(s, "Provides") } |> should.be_true()
+    option.Some(markdown) -> {
+      { string.contains(markdown, "_defaults") } |> should.be_true()
+      { string.contains(markdown, "Provides") } |> should.be_true()
     }
     option.None -> should.fail()
   }
@@ -305,10 +300,9 @@ pub fn hover_type_alias_test() {
     "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in the definition
   case hover.get_hover(source, 0, 1) {
-    option.Some(json_val) -> {
-      let s = json.to_string(json_val)
-      { string.contains(s, "_env") } |> should.be_true()
-      { string.contains(s, "Type alias") } |> should.be_true()
+    option.Some(markdown) -> {
+      { string.contains(markdown, "_env") } |> should.be_true()
+      { string.contains(markdown, "Type alias") } |> should.be_true()
     }
     option.None -> should.fail()
   }
@@ -325,9 +319,7 @@ pub fn completion_returns_items_test() {
 
 pub fn completion_includes_keywords_test() {
   let items = completion.get_completions("", 0, 0)
-  let labels = list.map(items, fn(item) { json.to_string(item) })
-  let has_blueprints =
-    list.any(labels, fn(s) { string.contains(s, "Blueprints") })
+  let has_blueprints = list.any(items, fn(item) { item.label == "Blueprints" })
   has_blueprints |> should.be_true()
 }
 
@@ -336,8 +328,7 @@ pub fn completion_extends_context_test() {
     "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
   let items = completion.get_completions(source, 3, 22)
-  let labels = list.map(items, fn(item) { json.to_string(item) })
-  let has_defaults = list.any(labels, fn(s) { string.contains(s, "_defaults") })
+  let has_defaults = list.any(items, fn(item) { item.label == "_defaults" })
   has_defaults |> should.be_true()
 }
 
@@ -345,9 +336,8 @@ pub fn completion_type_context_test() {
   let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
   // After the colon
   let items = completion.get_completions(source, 2, 21)
-  let labels = list.map(items, fn(item) { json.to_string(item) })
   // Should include type names but not keywords like "Blueprints"
-  let has_string = list.any(labels, fn(s) { string.contains(s, "String") })
+  let has_string = list.any(items, fn(item) { item.label == "String" })
   has_string |> should.be_true()
 }
 
@@ -355,8 +345,7 @@ pub fn completion_includes_extendables_test() {
   let source =
     "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let items = completion.get_completions(source, 4, 0)
-  let labels = list.map(items, fn(item) { json.to_string(item) })
-  let has_base = list.any(labels, fn(s) { string.contains(s, "_base") })
+  let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
 }
 
@@ -380,8 +369,7 @@ pub fn document_symbols_with_extendable_test() {
   let source =
     "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
-  let names = list.map(symbols, fn(s) { json.to_string(s) })
-  let has_defaults = list.any(names, fn(s) { string.contains(s, "_defaults") })
+  let has_defaults = list.any(symbols, fn(s) { s.name == "_defaults" })
   has_defaults |> should.be_true()
 }
 
@@ -389,8 +377,7 @@ pub fn document_symbols_type_alias_test() {
   let source =
     "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
-  let names = list.map(symbols, fn(s) { json.to_string(s) })
-  let has_env = list.any(names, fn(s) { string.contains(s, "_env") })
+  let has_env = list.any(symbols, fn(s) { s.name == "_env" })
   has_env |> should.be_true()
 }
 
@@ -434,15 +421,15 @@ pub fn semantic_tokens_field_order_test() {
   case tokens {
     [dl, dc, len, tt, mods, ..] -> {
       // deltaLine = 0 (first line)
-      dl |> should.equal(json.int(0))
+      dl |> should.equal(0)
       // deltaCol = 0 (first column)
-      dc |> should.equal(json.int(0))
+      dc |> should.equal(0)
       // length = 10 ("Blueprints")
-      len |> should.equal(json.int(10))
+      len |> should.equal(10)
       // tokenType = 0 (keyword)
-      tt |> should.equal(json.int(0))
+      tt |> should.equal(0)
       // modifiers = 0
-      mods |> should.equal(json.int(0))
+      mods |> should.equal(0)
     }
     _ -> should.fail()
   }
@@ -505,100 +492,41 @@ pub fn definition_empty_space_test() {
 // ==========================================================================
 
 pub fn code_actions_quoted_field_name_test() {
-  // Build a dynamic value matching the expected codeAction params structure
-  let diag =
-    dynamic.properties([
-      #(
-        dynamic.string("range"),
-        dynamic.properties([
-          #(
-            dynamic.string("start"),
-            dynamic.properties([
-              #(dynamic.string("line"), dynamic.int(2)),
-              #(dynamic.string("character"), dynamic.int(4)),
-            ]),
-          ),
-          #(
-            dynamic.string("end"),
-            dynamic.properties([
-              #(dynamic.string("line"), dynamic.int(2)),
-              #(dynamic.string("character"), dynamic.int(9)),
-            ]),
-          ),
-        ]),
-      ),
-      #(
-        dynamic.string("message"),
-        dynamic.string(
-          "Field names should not be quoted. Use 'env' instead of '\"env\"'",
-        ),
-      ),
-    ])
+  let diags = [
+    code_actions.ActionDiagnostic(
+      line: 2,
+      character: 4,
+      end_line: 2,
+      end_character: 9,
+      message: "Field names should not be quoted. Use 'env' instead of '\"env\"'",
+    ),
+  ]
 
-  let params =
-    dynamic.properties([
-      #(
-        dynamic.string("params"),
-        dynamic.properties([
-          #(
-            dynamic.string("context"),
-            dynamic.properties([
-              #(dynamic.string("diagnostics"), dynamic.list([diag])),
-            ]),
-          ),
-        ]),
-      ),
-    ])
-
-  let actions = code_actions.get_code_actions(params, "file:///test.caffeine")
+  let actions = code_actions.get_code_actions(diags, "file:///test.caffeine")
   { actions != [] } |> should.be_true()
 
-  let action_str = json.to_string(json.preprocessed_array(actions))
-  { string.contains(action_str, "Remove quotes from field name") }
-  |> should.be_true()
+  case actions {
+    [action, ..] -> {
+      action.title |> should.equal("Remove quotes from field name")
+      action.kind |> should.equal("quickfix")
+      action.is_preferred |> should.be_true()
+    }
+    [] -> should.fail()
+  }
 }
 
 pub fn code_actions_no_matching_diagnostic_test() {
-  let diag =
-    dynamic.properties([
-      #(
-        dynamic.string("range"),
-        dynamic.properties([
-          #(
-            dynamic.string("start"),
-            dynamic.properties([
-              #(dynamic.string("line"), dynamic.int(0)),
-              #(dynamic.string("character"), dynamic.int(0)),
-            ]),
-          ),
-          #(
-            dynamic.string("end"),
-            dynamic.properties([
-              #(dynamic.string("line"), dynamic.int(0)),
-              #(dynamic.string("character"), dynamic.int(5)),
-            ]),
-          ),
-        ]),
-      ),
-      #(dynamic.string("message"), dynamic.string("Some other error")),
-    ])
+  let diags = [
+    code_actions.ActionDiagnostic(
+      line: 0,
+      character: 0,
+      end_line: 0,
+      end_character: 5,
+      message: "Some other error",
+    ),
+  ]
 
-  let params =
-    dynamic.properties([
-      #(
-        dynamic.string("params"),
-        dynamic.properties([
-          #(
-            dynamic.string("context"),
-            dynamic.properties([
-              #(dynamic.string("diagnostics"), dynamic.list([diag])),
-            ]),
-          ),
-        ]),
-      ),
-    ])
-
-  let actions = code_actions.get_code_actions(params, "file:///test.caffeine")
+  let actions = code_actions.get_code_actions(diags, "file:///test.caffeine")
   actions |> should.equal([])
 }
 

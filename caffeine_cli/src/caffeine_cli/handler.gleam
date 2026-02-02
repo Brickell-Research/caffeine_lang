@@ -8,7 +8,6 @@ import caffeine_lang/frontend/formatter
 import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
-import caffeine_lsp
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
@@ -84,8 +83,11 @@ pub fn handle_args(args: List(String)) -> ExitStatusCodes {
       format_command(path, False, compile_presenter.Minimal)
     ["format", path] -> format_command(path, False, compile_presenter.Verbose)
     ["lsp"] -> {
-      caffeine_lsp.start()
-      exit_status_codes.Success
+      compile_presenter.log(
+        compile_presenter.Verbose,
+        "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
+      )
+      exit_status_codes.Failure
     }
     ["--quiet"] -> {
       print_usage(compile_presenter.Minimal)
