@@ -1,5 +1,7 @@
 import caffeine_lang/analysis/dependency_validator
-import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
+import caffeine_lang/analysis/semantic_analyzer.{
+  type IntermediateRepresentation, ResolvedVendor,
+}
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
@@ -74,77 +76,88 @@ fn run_semantic_analysis(
   semantic_analyzer.resolve_intermediate_representations(validated_irs)
 }
 
+/// Vendor-specific code generation operations.
+type VendorOps {
+  VendorOps(
+    generate_resources: fn(List(IntermediateRepresentation)) ->
+      Result(#(List(terraform.Resource), List(String)), errors.CompilationError),
+    terraform_settings: terraform.TerraformSettings,
+    provider: terraform.Provider,
+    variables: List(terraform.Variable),
+  )
+}
+
+fn datadog_ops() -> VendorOps {
+  VendorOps(
+    generate_resources: datadog.generate_resources,
+    terraform_settings: datadog.terraform_settings(),
+    provider: datadog.provider(),
+    variables: datadog.variables(),
+  )
+}
+
+fn honeycomb_ops() -> VendorOps {
+  VendorOps(
+    generate_resources: fn(irs) {
+      honeycomb.generate_resources(irs)
+      |> result.map(fn(r) { #(r, []) })
+    },
+    terraform_settings: honeycomb.terraform_settings(),
+    provider: honeycomb.provider(),
+    variables: honeycomb.variables(),
+  )
+}
+
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(CompilationOutput, errors.CompilationError) {
   let #(datadog_irs, honeycomb_irs) = group_by_vendor(resolved_irs)
 
-  let has_datadog = !list.is_empty(datadog_irs)
-  let has_honeycomb = !list.is_empty(honeycomb_irs)
+  // Build vendor groups, defaulting to Datadog boilerplate if no IRs at all.
+  let vendor_groups = [
+    #(datadog_ops(), datadog_irs),
+    #(honeycomb_ops(), honeycomb_irs),
+  ]
+  let active_groups = list.filter(vendor_groups, fn(g) { !list.is_empty(g.1) })
+  let active_groups = case list.is_empty(active_groups) {
+    True -> [#(datadog_ops(), [])]
+    False -> active_groups
+  }
 
-  // If no IRs at all, default to Datadog boilerplate (backwards compat).
-  let has_datadog = has_datadog || !has_honeycomb
-
-  // Generate resources per vendor.
-  use #(datadog_resources, datadog_warnings) <- result.try(case has_datadog {
-    True -> datadog.generate_resources(datadog_irs)
-    False -> Ok(#([], []))
-  })
-
-  use honeycomb_resources <- result.try(case has_honeycomb {
-    True -> honeycomb.generate_resources(honeycomb_irs)
-    False -> Ok([])
-  })
-
-  // Merge terraform settings (required_providers from each vendor).
-  let required_providers =
-    []
-    |> list.append(case has_datadog {
-      True -> dict.to_list(datadog.terraform_settings().required_providers)
-      False -> []
-    })
-    |> list.append(case has_honeycomb {
-      True -> dict.to_list(honeycomb.terraform_settings().required_providers)
-      False -> []
-    })
-    |> dict.from_list
+  // Generate resources and accumulate config from all active vendors.
+  use #(all_resources, all_warnings, required_providers, providers, variables) <- result.try(
+    list.try_fold(active_groups, #([], [], [], [], []), fn(acc, group) {
+      let #(ops, irs) = group
+      let #(resources, warnings, req_provs, provs, vars) = acc
+      use #(vendor_resources, vendor_warnings) <- result.try(
+        ops.generate_resources(irs),
+      )
+      Ok(#(
+        list.append(resources, vendor_resources),
+        list.append(warnings, vendor_warnings),
+        list.append(
+          req_provs,
+          dict.to_list(ops.terraform_settings.required_providers),
+        ),
+        list.append(provs, [ops.provider]),
+        list.append(vars, ops.variables),
+      ))
+    }),
+  )
 
   let terraform_settings =
     terraform.TerraformSettings(
       required_version: option.None,
-      required_providers: required_providers,
+      required_providers: dict.from_list(required_providers),
       backend: option.None,
       cloud: option.None,
     )
-
-  // Collect providers and variables for used vendors only.
-  let providers =
-    []
-    |> list.append(case has_datadog {
-      True -> [datadog.provider()]
-      False -> []
-    })
-    |> list.append(case has_honeycomb {
-      True -> [honeycomb.provider()]
-      False -> []
-    })
-
-  let variables =
-    []
-    |> list.append(case has_datadog {
-      True -> datadog.variables()
-      False -> []
-    })
-    |> list.append(case has_honeycomb {
-      True -> honeycomb.variables()
-      False -> []
-    })
 
   let config =
     terraform.Config(
       terraform: option.Some(terraform_settings),
       providers: providers,
-      resources: list.append(datadog_resources, honeycomb_resources),
+      resources: all_resources,
       data_sources: [],
       variables: variables,
       outputs: [],
@@ -169,7 +182,7 @@ fn run_code_generation(
   Ok(CompilationOutput(
     terraform: terraform_output,
     dependency_graph: graph,
-    warnings: datadog_warnings,
+    warnings: all_warnings,
   ))
 }
 
@@ -179,10 +192,10 @@ fn group_by_vendor(
 ) -> #(List(IntermediateRepresentation), List(IntermediateRepresentation)) {
   let datadog_irs =
     irs
-    |> list.filter(fn(ir) { ir.vendor == option.Some(vendor.Datadog) })
+    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Datadog) })
   let honeycomb_irs =
     irs
-    |> list.filter(fn(ir) { ir.vendor == option.Some(vendor.Honeycomb) })
+    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Honeycomb) })
   #(datadog_irs, honeycomb_irs)
 }
 

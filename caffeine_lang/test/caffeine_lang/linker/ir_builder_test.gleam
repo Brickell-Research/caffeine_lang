@@ -9,6 +9,7 @@ import caffeine_lang/value.{type Value}
 import gleam/dict
 import gleam/list
 import gleam/option
+import gleam/result
 import gleam/set
 import gleam/string
 import gleeunit/should
@@ -460,6 +461,25 @@ fn make_ir(
     unique_identifier: org <> "_" <> service <> "_" <> name,
     artifact_refs: [SLO],
     values: values,
-    vendor: option.None,
+    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      vendor_string: helpers.extract_value(
+        values,
+        "vendor",
+        value.extract_string,
+      )
+        |> result.unwrap(""),
+      threshold: helpers.extract_threshold(values),
+      indicators: helpers.extract_indicators(values),
+      window_in_days: helpers.extract_window_in_days(values),
+      evaluation: helpers.extract_value(
+        values,
+        "evaluation",
+        value.extract_string,
+      )
+        |> option.from_result,
+      tags: helpers.extract_tags(values),
+      runbook: option.None,
+    )),
+    vendor: semantic_analyzer.NoVendor,
   )
 }

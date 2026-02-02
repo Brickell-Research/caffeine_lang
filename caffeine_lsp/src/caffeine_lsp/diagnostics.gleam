@@ -2,9 +2,25 @@ import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
 import caffeine_lsp/file_utils
+import caffeine_lsp/lsp_types.{DsError, DsWarning}
 import caffeine_lsp/position_utils
 import gleam/bool
+import gleam/option.{type Option}
 import gleam/string
+
+/// Structured diagnostic codes for machine-readable identification.
+pub type DiagnosticCode {
+  QuotedFieldName
+  NoDiagnosticCode
+}
+
+/// Converts a DiagnosticCode to its wire-format string, if applicable.
+pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
+  case code {
+    QuotedFieldName -> option.Some("quoted-field-name")
+    NoDiagnosticCode -> option.None
+  }
+}
 
 /// A diagnostic to send to the editor.
 pub type Diagnostic {
@@ -14,13 +30,9 @@ pub type Diagnostic {
     end_column: Int,
     severity: Int,
     message: String,
+    code: DiagnosticCode,
   )
 }
-
-/// LSP severity constants.
-const severity_error = 1
-
-const severity_warning = 2
 
 /// Analyze source text and return diagnostics.
 /// Tries to parse as blueprints first, then as expects.
@@ -62,6 +74,7 @@ fn name_diagnostic(
     end_column: col + string.length(name),
     severity: severity,
     message: message,
+    code: NoDiagnosticCode,
   )
 }
 
@@ -74,14 +87,14 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Duplicate extendable '" <> name <> "'",
       )
     validator.UndefinedExtendable(name, referenced_by) ->
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Undefined extendable '"
           <> name
           <> "' referenced by '"
@@ -92,7 +105,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_warning,
+        lsp_types.diagnostic_severity_to_int(DsWarning),
         "Duplicate extends reference '"
           <> name
           <> "' in '"
@@ -103,14 +116,14 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Extendable '" <> name <> "' must be " <> expected <> ", got " <> got,
       )
     validator.UndefinedTypeAlias(name, referenced_by) ->
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Undefined type alias '"
           <> name
           <> "' referenced by '"
@@ -121,7 +134,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Duplicate type alias '" <> name <> "'",
       )
     validator.CircularTypeAlias(name, cycle) -> {
@@ -129,7 +142,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Circular type alias '" <> name <> "': " <> cycle_str,
       )
     }
@@ -137,7 +150,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         alias_name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Dict key type '"
           <> alias_name
           <> "' resolves to '"
@@ -150,7 +163,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         field_name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Field '"
           <> field_name
           <> "' in '"
@@ -163,7 +176,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        severity_error,
+        lsp_types.diagnostic_severity_to_int(DsError),
         "Name '" <> name <> "' is used as both an extendable and a type alias",
       )
   }
@@ -179,8 +192,9 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(got),
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Unexpected token: expected " <> expected <> ", got " <> got,
+        code: NoDiagnosticCode,
       )
     }
     parser_error.UnexpectedEOF(expected, line, column) -> {
@@ -189,8 +203,9 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Unexpected end of file: expected " <> expected,
+        code: NoDiagnosticCode,
       )
     }
     parser_error.UnknownType(name, line, column) -> {
@@ -199,8 +214,9 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name),
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Unknown type '" <> name <> "'",
+        code: NoDiagnosticCode,
       )
     }
     parser_error.InvalidRefinement(message, line, column) -> {
@@ -209,8 +225,9 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Invalid refinement: " <> message,
+        code: NoDiagnosticCode,
       )
     }
     parser_error.QuotedFieldName(name, line, column) -> {
@@ -219,10 +236,11 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name) + 2,
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Field names should not be quoted. Use '"
           <> name
           <> "' instead",
+        code: QuotedFieldName,
       )
     }
     parser_error.InvalidTypeAliasName(name, message, line, column) -> {
@@ -231,8 +249,9 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name),
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Invalid type alias name '" <> name <> "': " <> message,
+        code: NoDiagnosticCode,
       )
     }
   }
@@ -246,8 +265,9 @@ fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Unterminated string",
+        code: NoDiagnosticCode,
       )
     }
     tokenizer_error.InvalidCharacter(line, column, char) -> {
@@ -256,8 +276,9 @@ fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(char),
-        severity: severity_error,
+        severity: lsp_types.diagnostic_severity_to_int(DsError),
         message: "Invalid character '" <> char <> "'",
+        code: NoDiagnosticCode,
       )
     }
   }

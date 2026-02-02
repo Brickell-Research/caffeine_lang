@@ -247,7 +247,7 @@ pub fn resolve_template(
   value_tuple: ValueTuple,
 ) -> Result(String, CompilationError) {
   use _ <- result.try(case template.input_name == value_tuple.label {
-    True -> Ok(True)
+    True -> Ok(Nil)
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "Mismatch between template input name ("

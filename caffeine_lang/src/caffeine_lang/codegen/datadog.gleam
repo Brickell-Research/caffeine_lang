@@ -9,7 +9,6 @@ import caffeine_lang/errors.{
 }
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts
-import caffeine_lang/value
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/int
@@ -115,22 +114,21 @@ pub fn ir_to_terraform_resource(
 ) -> Result(#(terraform.Resource, List(String)), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract values from IR.
-  let threshold = helpers.extract_threshold(ir.values)
-  let window_in_days = helpers.extract_window_in_days(ir.values)
-  let indicators = helpers.extract_indicators(ir.values)
+  // Extract structured SLO fields from IR.
+  use slo <- result.try(
+    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    |> option.to_result(GeneratorDatadogTerraformResolutionError(
+      msg: "expectation '"
+      <> ir_to_identifier(ir)
+      <> "' - missing SLO artifact data",
+    )),
+  )
+  let threshold = slo.threshold
+  let window_in_days = slo.window_in_days
+  let indicators = slo.indicators
   let evaluation_expr =
-    helpers.extract_value(ir.values, "evaluation", value.extract_string)
-    |> result.unwrap("numerator / denominator")
-  let runbook =
-    helpers.extract_value(ir.values, "runbook", fn(v) {
-      case v {
-        value.NilValue -> Ok(option.None)
-        value.StringValue(s) -> Ok(option.Some(s))
-        _ -> Error(Nil)
-      }
-    })
-    |> result.unwrap(option.None)
+    slo.evaluation |> option.unwrap("numerator / denominator")
+  let runbook = slo.runbook
 
   // Parse the evaluation expression using CQL and get HCL blocks.
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
@@ -147,14 +145,14 @@ pub fn ir_to_terraform_resource(
 
   // Build dependency relation tags if artifact refs include DependencyRelations.
   let dependency_tags = case
-    ir.artifact_refs |> list.contains(artifacts.DependencyRelations)
+    semantic_analyzer.get_dependency_fields(ir.artifact_data)
   {
-    True -> build_dependency_tags(ir.values)
-    False -> []
+    option.Some(dep) -> build_dependency_tags(dep.relations)
+    option.None -> []
   }
 
   // Build user-provided tags as key-value pairs.
-  let user_tag_pairs = helpers.extract_tags(ir.values)
+  let user_tag_pairs = slo.tags
 
   // Build system tags from IR metadata.
   let system_tag_pairs =
@@ -252,19 +250,26 @@ pub fn ir_to_terraform_resource(
   ))
 }
 
-/// Build dependency relation tag pairs from the "relations" value.
-/// Extracts the relations dict (maps relation type to list of targets) and generates
-/// pairs like #("soft_dependency", "target1,target2").
+/// Build dependency relation tag pairs from the relations dict.
+/// Generates pairs like #("soft_dependency", "target1,target2").
 fn build_dependency_tags(
-  values: List(helpers.ValueTuple),
+  relations: dict.Dict(artifacts.DependencyRelationType, List(String)),
 ) -> List(#(String, String)) {
-  helpers.extract_relations(values)
+  relations
   |> dict.to_list
-  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.sort(fn(a, b) {
+    string.compare(
+      artifacts.relation_type_to_string(a.0),
+      artifacts.relation_type_to_string(b.0),
+    )
+  })
   |> list.map(fn(pair) {
     let #(relation_type, targets) = pair
     let sorted_targets = targets |> list.sort(string.compare)
-    #(relation_type <> "_dependency", string.join(sorted_targets, ","))
+    #(
+      artifacts.relation_type_to_string(relation_type) <> "_dependency",
+      string.join(sorted_targets, ","),
+    )
   })
 }
 

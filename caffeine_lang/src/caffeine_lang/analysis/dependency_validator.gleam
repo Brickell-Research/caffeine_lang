@@ -2,12 +2,12 @@ import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
+import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO}
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/float
 import gleam/list
+import gleam/option
 import gleam/order
 import gleam/result
 import gleam/set.{type Set}
@@ -71,8 +71,14 @@ fn validate_ir_dependencies(
 
   let self_path = ir_to_identifier(ir)
 
-  // Extract the relations value from the IR
-  let relations = helpers.extract_relations(ir.values)
+  // Extract the relations from structured artifact data.
+  use dep <- result.try(
+    semantic_analyzer.get_dependency_fields(ir.artifact_data)
+    |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
+      msg: self_path <> " - missing dependency artifact data",
+    )),
+  )
+  let relations = dep.relations
 
   // Check for duplicates within each relation type (hard and soft independently)
   use _ <- result.try(check_for_duplicates_per_relation(relations, self_path))
@@ -88,7 +94,7 @@ fn validate_ir_dependencies(
 }
 
 fn get_all_dependency_targets(
-  relations: Dict(String, List(String)),
+  relations: Dict(artifacts.DependencyRelationType, List(String)),
 ) -> List(String) {
   relations
   |> dict.values
@@ -96,7 +102,7 @@ fn get_all_dependency_targets(
 }
 
 fn check_for_duplicates_per_relation(
-  relations: Dict(String, List(String)),
+  relations: Dict(artifacts.DependencyRelationType, List(String)),
   self_path: String,
 ) -> Result(Nil, CompilationError) {
   relations
@@ -195,11 +201,15 @@ fn build_adjacency_list(
 ) -> Dict(String, List(String)) {
   irs
   |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
-  |> list.map(fn(ir) {
-    let path = ir_to_identifier(ir)
-    let relations = helpers.extract_relations(ir.values)
-    let targets = get_all_dependency_targets(relations)
-    #(path, targets)
+  |> list.filter_map(fn(ir) {
+    case semantic_analyzer.get_dependency_fields(ir.artifact_data) {
+      option.Some(dep) -> {
+        let path = ir_to_identifier(ir)
+        let targets = get_all_dependency_targets(dep.relations)
+        Ok(#(path, targets))
+      }
+      option.None -> Error(Nil)
+    }
   })
   |> dict.from_list
 }
@@ -320,9 +330,16 @@ fn validate_hard_dependency_thresholds(
   })
   |> list.try_each(fn(ir) {
     let self_path = ir_to_identifier(ir)
-    let source_threshold = helpers.extract_threshold(ir.values)
-    let relations = helpers.extract_relations(ir.values)
-    let hard_targets = dict.get(relations, "hard") |> result.unwrap([])
+    use #(slo, dep) <- result.try(case ir.artifact_data {
+      semantic_analyzer.SloWithDependency(slo:, dependency:) ->
+        Ok(#(slo, dependency))
+      _ ->
+        Error(errors.SemanticAnalysisDependencyValidationError(
+          msg: self_path <> " - missing SLO or dependency artifact data",
+        ))
+    })
+    let source_threshold = slo.threshold
+    let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
 
     hard_targets
     |> list.try_each(fn(target) {
@@ -351,7 +368,13 @@ fn validate_single_hard_threshold(
         return: Ok(Nil),
       )
 
-      let target_threshold = helpers.extract_threshold(target_ir.values)
+      use target_slo <- result.try(
+        semantic_analyzer.get_slo_fields(target_ir.artifact_data)
+        |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
+          msg: target_path <> " - missing SLO artifact data",
+        )),
+      )
+      let target_threshold = target_slo.threshold
 
       // Use float.compare for proper floating point comparison
       case float.compare(source_threshold, target_threshold) {

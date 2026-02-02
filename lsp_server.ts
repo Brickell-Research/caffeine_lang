@@ -12,7 +12,7 @@ import {
 import { TextDocument } from "npm:vscode-languageserver-textdocument";
 
 // Gleam-compiled intelligence modules
-import { get_diagnostics } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_diagnostics, diagnostic_code_to_string, QuotedFieldName, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 import { get_completions } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 import {
@@ -94,12 +94,16 @@ documents.onDidChangeContent((change) => {
     const diags = gleamArray(get_diagnostics(text) as GleamList);
     connection.sendDiagnostics({
       uri,
-      diagnostics: diags.map((d) => ({
-        range: range(d.line, d.column, d.line, d.end_column),
-        severity: d.severity as DiagnosticSeverity,
-        source: "caffeine",
-        message: d.message,
-      })),
+      diagnostics: diags.map((d) => {
+        const codeStr = diagnostic_code_to_string(d.code);
+        const base = {
+          range: range(d.line, d.column, d.line, d.end_column),
+          severity: d.severity as DiagnosticSeverity,
+          source: "caffeine",
+          message: d.message,
+        };
+        return codeStr instanceof Some ? { ...base, code: codeStr[0] } : base;
+      }),
     });
   } catch {
     connection.sendDiagnostics({ uri, diagnostics: [] });
@@ -248,6 +252,7 @@ connection.onCodeAction((params) => {
             d.range.end.line,
             d.range.end.character,
             d.message,
+            d.code === "quoted-field-name" ? new QuotedFieldName() : new NoDiagnosticCode(),
           ),
       ),
     );

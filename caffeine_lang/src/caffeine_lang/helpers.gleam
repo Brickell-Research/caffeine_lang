@@ -1,5 +1,7 @@
 import caffeine_lang/constants
-import caffeine_lang/linker/artifacts.{type ArtifactType}
+import caffeine_lang/linker/artifacts.{
+  type ArtifactType, type DependencyRelationType,
+}
 import caffeine_lang/types
 import caffeine_lang/value.{type Value}
 import gleam/dict
@@ -22,14 +24,12 @@ pub fn map_reference_to_referrer_over_collection(
   referrer_reference referrer_reference: fn(b) -> String,
 ) {
   referrers
-  |> list.map(fn(referrer) {
-    // Already performed this check so can assert it.
-    let assert Ok(reference) =
-      references
-      |> list.find(fn(reference) {
-        { reference |> reference_name } == { referrer |> referrer_reference }
-      })
-    #(referrer, reference)
+  |> list.filter_map(fn(referrer) {
+    references
+    |> list.find(fn(reference) {
+      { reference |> reference_name } == { referrer |> referrer_reference }
+    })
+    |> result.map(fn(reference) { #(referrer, reference) })
   })
 }
 
@@ -83,9 +83,10 @@ pub fn extract_threshold(values: List(ValueTuple)) -> Float {
 }
 
 /// Extract dependency relations as a Dict of relation type to target list.
+/// String keys are parsed into DependencyRelationType; unknown keys are skipped.
 pub fn extract_relations(
   values: List(ValueTuple),
-) -> dict.Dict(String, List(String)) {
+) -> dict.Dict(DependencyRelationType, List(String)) {
   values
   |> list.find(fn(vt) { vt.label == "relations" })
   |> result.try(fn(vt) {
@@ -103,7 +104,16 @@ pub fn extract_relations(
             _ -> Error(Nil)
           }
         })
-        |> result.map(dict.from_list)
+        |> result.map(fn(pairs) {
+          pairs
+          |> list.filter_map(fn(pair) {
+            case artifacts.parse_relation_type(pair.0) {
+              Ok(rt) -> Ok(#(rt, pair.1))
+              Error(Nil) -> Error(Nil)
+            }
+          })
+          |> dict.from_list
+        })
       _ -> Error(Nil)
     }
   })
@@ -171,10 +181,10 @@ pub fn build_system_tag_pairs(
   )
   |> list.append(
     misc
-    |> dict.keys
-    |> list.sort(string.compare)
-    |> list.flat_map(fn(key) {
-      let assert Ok(values) = misc |> dict.get(key)
+    |> dict.to_list
+    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+    |> list.flat_map(fn(pair) {
+      let #(key, values) = pair
       values
       |> list.sort(string.compare)
       |> list.map(fn(value) { #(key, value) })

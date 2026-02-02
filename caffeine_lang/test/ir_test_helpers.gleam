@@ -2,7 +2,7 @@
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
+import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -17,23 +17,28 @@ pub fn make_slo_ir(
   name: String,
   threshold threshold: Float,
 ) -> semantic_analyzer.IntermediateRepresentation {
+  let values = [
+    helpers.ValueTuple(
+      "vendor",
+      types.PrimitiveType(types.String),
+      value.StringValue("datadog"),
+    ),
+    helpers.ValueTuple(
+      "threshold",
+      types.PrimitiveType(types.NumericType(types.Float)),
+      value.FloatValue(threshold),
+    ),
+  ]
   semantic_analyzer.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
     artifact_refs: [SLO],
-    values: [
-      helpers.ValueTuple(
-        "vendor",
-        types.PrimitiveType(types.String),
-        value.StringValue("datadog"),
-      ),
-      helpers.ValueTuple(
-        "threshold",
-        types.PrimitiveType(types.NumericType(types.Float)),
-        value.FloatValue(threshold),
-      ),
-    ],
-    vendor: option.Some(vendor.Datadog),
+    values: values,
+    artifact_data: semantic_analyzer.SloOnly(make_test_slo_fields(
+      threshold,
+      dict.new(),
+    )),
+    vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
   )
 }
 
@@ -47,24 +52,29 @@ pub fn make_ir_with_deps(
   soft_deps soft_deps: List(String),
   threshold threshold: Float,
 ) -> semantic_analyzer.IntermediateRepresentation {
+  let values = [
+    helpers.ValueTuple(
+      "vendor",
+      types.PrimitiveType(types.String),
+      value.StringValue("datadog"),
+    ),
+    helpers.ValueTuple(
+      "threshold",
+      types.PrimitiveType(types.NumericType(types.Float)),
+      value.FloatValue(threshold),
+    ),
+    make_relations_value(hard_deps, soft_deps),
+  ]
   semantic_analyzer.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
     artifact_refs: [SLO, DependencyRelations],
-    values: [
-      helpers.ValueTuple(
-        "vendor",
-        types.PrimitiveType(types.String),
-        value.StringValue("datadog"),
-      ),
-      helpers.ValueTuple(
-        "threshold",
-        types.PrimitiveType(types.NumericType(types.Float)),
-        value.FloatValue(threshold),
-      ),
-      make_relations_value(hard_deps, soft_deps),
-    ],
-    vendor: option.Some(vendor.Datadog),
+    values: values,
+    artifact_data: semantic_analyzer.SloWithDependency(
+      slo: make_test_slo_fields(threshold, dict.new()),
+      dependency: make_test_dependency_fields(hard_deps, soft_deps),
+    ),
+    vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
   )
 }
 
@@ -84,7 +94,11 @@ pub fn make_deps_only_ir(
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
-    vendor: option.None,
+    artifact_data: semantic_analyzer.DependencyOnly(make_test_dependency_fields(
+      hard_deps,
+      soft_deps,
+    )),
+    vendor: semantic_analyzer.NoVendor,
   )
 }
 
@@ -130,5 +144,32 @@ fn make_relations_value(
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
     )),
     relations_value,
+  )
+}
+
+/// Builds default SloFields for tests.
+fn make_test_slo_fields(
+  threshold: Float,
+  indicators: dict.Dict(String, String),
+) -> semantic_analyzer.SloFields {
+  semantic_analyzer.SloFields(
+    vendor_string: "datadog",
+    threshold: threshold,
+    indicators: indicators,
+    window_in_days: 30,
+    evaluation: option.None,
+    tags: [],
+    runbook: option.None,
+  )
+}
+
+/// Builds DependencyFields for tests.
+fn make_test_dependency_fields(
+  hard_deps: List(String),
+  soft_deps: List(String),
+) -> semantic_analyzer.DependencyFields {
+  semantic_analyzer.DependencyFields(
+    relations: dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
+    tags: [],
   )
 }

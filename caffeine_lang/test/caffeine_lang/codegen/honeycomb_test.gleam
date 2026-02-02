@@ -84,7 +84,16 @@ fn make_honeycomb_ir(
         ),
       ),
     ],
-    vendor: option.Some(vendor.Honeycomb),
+    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      vendor_string: constants.vendor_honeycomb,
+      threshold: threshold,
+      indicators: indicators |> dict.from_list,
+      window_in_days: window_in_days,
+      evaluation: option.Some(evaluation),
+      tags: [],
+      runbook: option.None,
+    )),
+    vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
   )
 }
 
@@ -274,7 +283,16 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
           ),
         ),
       ],
-      vendor: option.Some(vendor.Honeycomb),
+      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        vendor_string: constants.vendor_honeycomb,
+        threshold: 99.0,
+        indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
     )
 
   case honeycomb.ir_to_terraform_resources(ir) {

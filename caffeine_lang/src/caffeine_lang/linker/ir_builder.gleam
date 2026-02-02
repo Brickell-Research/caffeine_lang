@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types.{
@@ -44,6 +45,8 @@ fn build(
     let value_tuples = build_value_tuples(merged_inputs, blueprint.params)
     let misc_metadata = extract_misc_metadata(value_tuples)
     let unique_name = org <> "_" <> service <> "_" <> expectation.name
+    let artifact_data =
+      build_artifact_data(blueprint.artifact_refs, value_tuples)
 
     semantic_analyzer.IntermediateRepresentation(
       metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -57,7 +60,8 @@ fn build(
       unique_identifier: unique_name,
       artifact_refs: blueprint.artifact_refs,
       values: value_tuples,
-      vendor: option.None,
+      artifact_data: artifact_data,
+      vendor: semantic_analyzer.NoVendor,
     )
   })
 }
@@ -79,12 +83,13 @@ fn build_provided_value_tuples(
   params: dict.Dict(String, AcceptedTypes),
 ) -> List(helpers.ValueTuple) {
   merged_inputs
-  |> dict.keys
-  |> list.map(fn(label) {
-    // Safe assertions since we've already validated everything.
-    let assert Ok(val) = merged_inputs |> dict.get(label)
-    let assert Ok(typ) = params |> dict.get(label)
-    helpers.ValueTuple(label:, typ:, value: val)
+  |> dict.to_list
+  |> list.filter_map(fn(pair) {
+    let #(label, val) = pair
+    case dict.get(params, label) {
+      Ok(typ) -> Ok(helpers.ValueTuple(label:, typ:, value: val))
+      Error(Nil) -> Error(Nil)
+    }
   })
 }
 
@@ -179,4 +184,70 @@ fn resolve_values_for_tag(
       }
     }
   }
+}
+
+/// Build structured artifact data from artifact refs and value tuples.
+fn build_artifact_data(
+  artifact_refs: List(artifacts.ArtifactType),
+  value_tuples: List(helpers.ValueTuple),
+) -> semantic_analyzer.ArtifactData {
+  let has_slo = list.contains(artifact_refs, SLO)
+  let has_deps = list.contains(artifact_refs, DependencyRelations)
+  case has_slo, has_deps {
+    True, True ->
+      semantic_analyzer.SloWithDependency(
+        slo: build_slo_fields(value_tuples),
+        dependency: build_dependency_fields(value_tuples),
+      )
+    True, False -> semantic_analyzer.SloOnly(build_slo_fields(value_tuples))
+    False, True ->
+      semantic_analyzer.DependencyOnly(build_dependency_fields(value_tuples))
+    // Fallback: treat as SLO-only (shouldn't happen with valid artifacts).
+    False, False -> semantic_analyzer.SloOnly(build_slo_fields(value_tuples))
+  }
+}
+
+/// Extract SLO-specific fields from value tuples.
+fn build_slo_fields(
+  value_tuples: List(helpers.ValueTuple),
+) -> semantic_analyzer.SloFields {
+  let vendor_string =
+    helpers.extract_value(value_tuples, "vendor", value.extract_string)
+    |> result.unwrap("")
+  let threshold = helpers.extract_threshold(value_tuples)
+  let indicators = helpers.extract_indicators(value_tuples)
+  let window_in_days = helpers.extract_window_in_days(value_tuples)
+  let evaluation =
+    helpers.extract_value(value_tuples, "evaluation", value.extract_string)
+    |> option.from_result
+  let tags = helpers.extract_tags(value_tuples)
+  let runbook =
+    helpers.extract_value(value_tuples, "runbook", fn(v) {
+      case v {
+        value.NilValue -> Ok(option.None)
+        value.StringValue(s) -> Ok(option.Some(s))
+        _ -> Error(Nil)
+      }
+    })
+    |> result.unwrap(option.None)
+
+  semantic_analyzer.SloFields(
+    vendor_string: vendor_string,
+    threshold: threshold,
+    indicators: indicators,
+    window_in_days: window_in_days,
+    evaluation: evaluation,
+    tags: tags,
+    runbook: runbook,
+  )
+}
+
+/// Extract dependency-specific fields from value tuples.
+fn build_dependency_fields(
+  value_tuples: List(helpers.ValueTuple),
+) -> semantic_analyzer.DependencyFields {
+  semantic_analyzer.DependencyFields(
+    relations: helpers.extract_relations(value_tuples),
+    tags: helpers.extract_tags(value_tuples),
+  )
 }

@@ -499,6 +499,7 @@ pub fn code_actions_quoted_field_name_test() {
       end_line: 2,
       end_character: 9,
       message: "Field names should not be quoted. Use 'env' instead of '\"env\"'",
+      code: diagnostics.QuotedFieldName,
     ),
   ]
 
@@ -523,6 +524,7 @@ pub fn code_actions_no_matching_diagnostic_test() {
       end_line: 0,
       end_character: 5,
       message: "Some other error",
+      code: diagnostics.NoDiagnosticCode,
     ),
   ]
 

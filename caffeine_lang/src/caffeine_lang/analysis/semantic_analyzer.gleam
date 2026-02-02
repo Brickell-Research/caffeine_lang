@@ -2,7 +2,9 @@ import caffeine_lang/analysis/templatizer
 import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers.{type ValueTuple}
-import caffeine_lang/linker/artifacts.{type ArtifactType, SLO}
+import caffeine_lang/linker/artifacts.{
+  type ArtifactType, type DependencyRelationType, SLO,
+}
 import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
@@ -13,6 +15,40 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 
+/// Represents whether a vendor has been resolved for an IR.
+pub type VendorState {
+  NoVendor
+  ResolvedVendor(Vendor)
+}
+
+/// Structured SLO artifact fields extracted from raw values.
+pub type SloFields {
+  SloFields(
+    vendor_string: String,
+    threshold: Float,
+    indicators: dict.Dict(String, String),
+    window_in_days: Int,
+    evaluation: Option(String),
+    tags: List(#(String, String)),
+    runbook: Option(String),
+  )
+}
+
+/// Structured dependency artifact fields extracted from raw values.
+pub type DependencyFields {
+  DependencyFields(
+    relations: dict.Dict(DependencyRelationType, List(String)),
+    tags: List(#(String, String)),
+  )
+}
+
+/// Discriminated union of artifact-specific data.
+pub type ArtifactData {
+  SloOnly(SloFields)
+  DependencyOnly(DependencyFields)
+  SloWithDependency(slo: SloFields, dependency: DependencyFields)
+}
+
 /// Internal representation of a parsed expectation with metadata and values.
 pub type IntermediateRepresentation {
   IntermediateRepresentation(
@@ -20,8 +56,8 @@ pub type IntermediateRepresentation {
     unique_identifier: String,
     artifact_refs: List(ArtifactType),
     values: List(ValueTuple),
-    // TODO: make this cleaner. An option is weird.
-    vendor: Option(Vendor),
+    artifact_data: ArtifactData,
+    vendor: VendorState,
   )
 }
 
@@ -65,12 +101,26 @@ pub fn resolve_vendor(
         msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor input",
       ))
     Ok(vendor_value_tuple) -> {
-      // Safe to assert since already type checked in parser phase.
-      let assert Ok(vendor_string) =
+      use vendor_string <- result.try(
         value.extract_string(vendor_value_tuple.value)
-      let vendor_value = vendor.resolve_vendor(vendor_string)
+        |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
+          msg: "expectation '"
+          <> ir_to_identifier(ir)
+          <> "' - vendor value is not a string",
+        )),
+      )
+      use vendor_value <- result.try(
+        vendor.resolve_vendor(vendor_string)
+        |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
+          msg: "expectation '"
+          <> ir_to_identifier(ir)
+          <> "' - unknown vendor '"
+          <> vendor_string
+          <> "'",
+        )),
+      )
 
-      Ok(IntermediateRepresentation(..ir, vendor: option.Some(vendor_value)))
+      Ok(IntermediateRepresentation(..ir, vendor: ResolvedVendor(vendor_value)))
     }
   }
 }
@@ -81,7 +131,7 @@ pub fn resolve_indicators(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, CompilationError) {
   case ir.vendor {
-    option.Some(vendor.Datadog) -> {
+    ResolvedVendor(vendor.Datadog) -> {
       use indicators_value_tuple <- result.try(
         ir.values
         |> list.find(fn(vt) { vt.label == "indicators" })
@@ -188,9 +238,33 @@ pub fn resolve_indicators(
           }
         })
 
-      Ok(IntermediateRepresentation(..ir, values: new_values))
+      // Also update the structured artifact_data with resolved values.
+      let resolved_indicators_dict = resolved_indicators |> dict.from_list
+      let resolved_eval = case resolved_evaluation_tuple {
+        option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
+        option.None ->
+          get_slo_fields(ir.artifact_data)
+          |> option.map(fn(slo) { slo.evaluation })
+          |> option.unwrap(option.None)
+      }
+      let new_artifact_data =
+        update_slo_fields(ir.artifact_data, fn(slo) {
+          SloFields(
+            ..slo,
+            indicators: resolved_indicators_dict,
+            evaluation: resolved_eval,
+          )
+        })
+
+      Ok(
+        IntermediateRepresentation(
+          ..ir,
+          values: new_values,
+          artifact_data: new_artifact_data,
+        ),
+      )
     }
-    option.Some(vendor.Honeycomb) -> {
+    ResolvedVendor(vendor.Honeycomb) -> {
       // Honeycomb does not use template resolution — indicators are passed through as-is.
       Ok(ir)
     }
@@ -211,4 +285,37 @@ pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
   <> ir.metadata.service_name
   <> "."
   <> ir.metadata.friendly_label
+}
+
+/// Extract SloFields from ArtifactData, if present.
+@internal
+pub fn get_slo_fields(data: ArtifactData) -> Option(SloFields) {
+  case data {
+    SloOnly(slo) -> option.Some(slo)
+    SloWithDependency(slo:, ..) -> option.Some(slo)
+    DependencyOnly(_) -> option.None
+  }
+}
+
+/// Extract DependencyFields from ArtifactData, if present.
+@internal
+pub fn get_dependency_fields(data: ArtifactData) -> Option(DependencyFields) {
+  case data {
+    DependencyOnly(dep) -> option.Some(dep)
+    SloWithDependency(dependency: dep, ..) -> option.Some(dep)
+    SloOnly(_) -> option.None
+  }
+}
+
+/// Update SloFields within ArtifactData using a transformation function.
+fn update_slo_fields(
+  data: ArtifactData,
+  updater: fn(SloFields) -> SloFields,
+) -> ArtifactData {
+  case data {
+    SloOnly(slo) -> SloOnly(updater(slo))
+    SloWithDependency(slo:, dependency:) ->
+      SloWithDependency(slo: updater(slo), dependency:)
+    DependencyOnly(_) -> data
+  }
 }

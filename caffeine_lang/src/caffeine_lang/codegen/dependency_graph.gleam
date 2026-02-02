@@ -1,10 +1,10 @@
 import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
-import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts
+import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, Soft}
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -55,28 +55,29 @@ fn build_node(ir: IntermediateRepresentation) -> String {
 /// Generates Mermaid edge declarations for hard and soft dependencies.
 fn build_edges(irs: List(IntermediateRepresentation)) -> List(String) {
   irs
-  |> list.filter(fn(ir) {
-    list.contains(ir.artifact_refs, artifacts.DependencyRelations)
-  })
+  |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))
-    let relations = helpers.extract_relations(ir.values)
+    case semantic_analyzer.get_dependency_fields(ir.artifact_data) {
+      option.None -> []
+      option.Some(dep) -> {
+        let hard_edges =
+          dict.get(dep.relations, Hard)
+          |> result.unwrap([])
+          |> list.map(fn(target) {
+            "    " <> source_id <> " -->|hard| " <> sanitize_id(target)
+          })
 
-    let hard_edges =
-      dict.get(relations, "hard")
-      |> result.unwrap([])
-      |> list.map(fn(target) {
-        "    " <> source_id <> " -->|hard| " <> sanitize_id(target)
-      })
+        let soft_edges =
+          dict.get(dep.relations, Soft)
+          |> result.unwrap([])
+          |> list.map(fn(target) {
+            "    " <> source_id <> " -.->|soft| " <> sanitize_id(target)
+          })
 
-    let soft_edges =
-      dict.get(relations, "soft")
-      |> result.unwrap([])
-      |> list.map(fn(target) {
-        "    " <> source_id <> " -.->|soft| " <> sanitize_id(target)
-      })
-
-    list.append(hard_edges, soft_edges)
+        list.append(hard_edges, soft_edges)
+      }
+    }
   })
 }
 

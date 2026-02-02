@@ -7,15 +7,12 @@ pub type Vendor {
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
-/// The vendor string is already validated by the refinement type at parse time,
-/// so this function can safely assume the input is valid.
+/// Returns Error(Nil) for unrecognized vendor strings.
 @internal
-pub fn resolve_vendor(vendor: String) -> Vendor {
+pub fn resolve_vendor(vendor: String) -> Result(Vendor, Nil) {
   case vendor {
-    v if v == constants.vendor_datadog -> Datadog
-    v if v == constants.vendor_honeycomb -> Honeycomb
-    // This case should never be reached due to refinement type validation,
-    // but we need exhaustive pattern matching.
-    _ -> Datadog
+    v if v == constants.vendor_datadog -> Ok(Datadog)
+    v if v == constants.vendor_honeycomb -> Ok(Honeycomb)
+    _ -> Error(Nil)
   }
 }

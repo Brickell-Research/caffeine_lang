@@ -55,7 +55,16 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          vendor: option.None,
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.new(),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.NoVendor,
         ),
         semantic_analyzer.IntermediateRepresentation(
           metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -95,7 +104,16 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          vendor: option.None,
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.new(),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.NoVendor,
         ),
       ],
       Ok([
@@ -134,7 +152,18 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          vendor: option.Some(vendor.Datadog),
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.from_list([
+              #("query_a", "avg:memory{env:staging}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
         ),
         semantic_analyzer.IntermediateRepresentation(
           metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -174,7 +203,18 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          vendor: option.Some(vendor.Datadog),
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.from_list([
+              #("query_b", "sum:requests{region:us-east}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
         ),
       ]),
     ),
@@ -208,7 +248,16 @@ pub fn resolve_vendor_test() {
             value.StringValue(constants.vendor_datadog),
           ),
         ],
-        vendor: option.None,
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.NoVendor,
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -228,7 +277,16 @@ pub fn resolve_vendor_test() {
             value.StringValue(constants.vendor_datadog),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       )),
     ),
   ]
@@ -293,7 +351,16 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -344,7 +411,19 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.from_list([
+            #("denominator", "avg:system.cpu{env:production}"),
+            #("numerator", "avg:system.cpu{env:production AND !status:True}"),
+          ]),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       )),
     ),
     // happy path - defaulted param with nil uses default value
@@ -400,7 +479,16 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -453,7 +541,18 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > 2500000000 per 5m)"),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.from_list([
+            #("query", "p75:rum.lcp.duration{env:production}"),
+          ]),
+          window_in_days: 30,
+          evaluation: option.Some("time_slice(query > 2500000000 per 5m)"),
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       )),
     ),
     // happy path - refinement type with defaulted inner using nil gets default value
@@ -504,7 +603,16 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -550,7 +658,18 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.from_list([
+            #("query", "p75:rum.lcp.duration{env:production}"),
+          ]),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       )),
     ),
     // happy path - lcp_p75_latency style: multiple params, mix of defaulted and refinement types
@@ -620,7 +739,16 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -682,7 +810,21 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Datadog),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.from_list([
+            #(
+              "query",
+              "p75:rum.lcp.duration{application.name:member_portal, env:production, view.url_path_group:/members/messages}",
+            ),
+          ]),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
       )),
     ),
   ]
@@ -714,7 +856,16 @@ pub fn resolve_vendor_honeycomb_test() {
             value.StringValue(constants.vendor_honeycomb),
           ),
         ],
-        vendor: option.None,
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.NoVendor,
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -734,7 +885,16 @@ pub fn resolve_vendor_honeycomb_test() {
             value.StringValue(constants.vendor_honeycomb),
           ),
         ],
-        vendor: option.Some(vendor.Honeycomb),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
       )),
     ),
   ]
@@ -776,7 +936,16 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Honeycomb),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
       ),
       Ok(semantic_analyzer.IntermediateRepresentation(
         metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -808,7 +977,16 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        vendor: option.Some(vendor.Honeycomb),
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          vendor_string: "",
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
       )),
     ),
   ]
@@ -856,7 +1034,16 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      vendor: option.None,
+      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        vendor_string: "",
+        threshold: 0.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: semantic_analyzer.NoVendor,
     )
 
   let honeycomb_ir =
@@ -890,7 +1077,16 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      vendor: option.None,
+      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        vendor_string: "",
+        threshold: 0.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: semantic_analyzer.NoVendor,
     )
 
   [
@@ -932,7 +1128,18 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          vendor: option.Some(vendor.Datadog),
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.from_list([
+              #("query_a", "avg:memory{env:staging}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
         ),
         semantic_analyzer.IntermediateRepresentation(
           metadata: semantic_analyzer.IntermediateRepresentationMetaData(
@@ -964,7 +1171,16 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          vendor: option.Some(vendor.Honeycomb),
+          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+            vendor_string: "",
+            threshold: 0.0,
+            indicators: dict.new(),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
         ),
       ]),
     ),

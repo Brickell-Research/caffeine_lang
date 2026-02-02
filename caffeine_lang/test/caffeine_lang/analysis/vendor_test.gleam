@@ -3,10 +3,13 @@ import caffeine_lang/constants
 import test_helpers
 
 // ==== Vendor Resolution ====
-// Note: Invalid vendors are now caught at parse time via refinement types,
-// so we only test the valid case here.
-// * ✅ vendor resolves
+// * ✅ known vendors resolve to Ok
+// * ✅ unknown vendor returns Error
 pub fn resolve_vendor_test() {
-  [#(constants.vendor_datadog, vendor.Datadog)]
+  [
+    #(constants.vendor_datadog, Ok(vendor.Datadog)),
+    #(constants.vendor_honeycomb, Ok(vendor.Honeycomb)),
+    #("unknown_vendor", Error(Nil)),
+  ]
   |> test_helpers.array_based_test_executor_1(vendor.resolve_vendor)
 }

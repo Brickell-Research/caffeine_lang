@@ -7,7 +7,6 @@ import caffeine_lang/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
 import caffeine_lang/helpers
-import caffeine_lang/value
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/int
@@ -108,16 +107,22 @@ pub fn ir_to_terraform_resources(
   let identifier = ir_to_identifier(ir)
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract values from IR.
-  let threshold = helpers.extract_threshold(ir.values)
-  let window_in_days = helpers.extract_window_in_days(ir.values)
-  let indicators = helpers.extract_indicators(ir.values)
+  // Extract structured SLO fields from IR.
+  use slo <- result.try(
+    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    |> option.to_result(GeneratorHoneycombTerraformResolutionError(
+      msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
+    )),
+  )
+  let threshold = slo.threshold
+  let window_in_days = slo.window_in_days
+  let indicators = slo.indicators
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline
   // by substituting indicator names into the evaluation formula.
   use evaluation_expr <- result.try(
-    helpers.extract_value(ir.values, "evaluation", value.extract_string)
-    |> result.replace_error(GeneratorHoneycombTerraformResolutionError(
+    slo.evaluation
+    |> option.to_result(GeneratorHoneycombTerraformResolutionError(
       msg: "expectation '"
       <> identifier
       <> "' - missing evaluation for Honeycomb SLO",
@@ -184,15 +189,10 @@ pub fn ir_to_terraform_resources(
 
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook =
-    helpers.extract_value(ir.values, "runbook", fn(v) {
-      case v {
-        value.NilValue -> Ok(option.None)
-        value.StringValue(s) -> Ok(option.Some(s))
-        _ -> Error(Nil)
-      }
-    })
-    |> result.unwrap(option.None)
+  let runbook = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+    option.Some(slo) -> slo.runbook
+    option.None -> option.None
+  }
 
   case runbook {
     option.Some(url) -> "[Runbook](" <> url <> ")"
@@ -224,8 +224,11 @@ fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
     )
     |> collapse_multi_value_tags
 
-  // Build user-provided tags.
-  let user_tag_pairs = helpers.extract_tags(ir.values)
+  // Build user-provided tags from structured artifact data.
+  let user_tag_pairs = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+    option.Some(slo) -> slo.tags
+    option.None -> []
+  }
 
   let all_tags =
     list.append(system_tag_pairs, user_tag_pairs)
@@ -256,9 +259,9 @@ fn collapse_multi_value_tags(
 
   order
   |> list.reverse
-  |> list.map(fn(key) {
-    let assert Ok(value) = dict.get(merged, key)
-    #(key, value)
+  |> list.filter_map(fn(key) {
+    dict.get(merged, key)
+    |> result.map(fn(value) { #(key, value) })
   })
 }
 

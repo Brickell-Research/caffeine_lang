@@ -1,3 +1,4 @@
+import caffeine_lsp/diagnostics.{type DiagnosticCode, NoDiagnosticCode}
 import gleam/list
 import gleam/string
 
@@ -9,6 +10,7 @@ pub type ActionDiagnostic {
     end_line: Int,
     end_character: Int,
     message: String,
+    code: DiagnosticCode,
   )
 }
 
@@ -47,14 +49,14 @@ fn diagnostic_to_action(
   diag: ActionDiagnostic,
   uri: String,
 ) -> Result(CodeAction, Nil) {
-  case string.starts_with(diag.message, "Field names should not be quoted") {
-    True -> {
+  case diag.code {
+    diagnostics.QuotedFieldName -> {
       case extract_between(diag.message, "Use '", "' instead") {
         Ok(name) -> Ok(remove_quotes_action(diag, uri, name))
         Error(_) -> Error(Nil)
       }
     }
-    False -> Error(Nil)
+    NoDiagnosticCode -> Error(Nil)
   }
 }
 

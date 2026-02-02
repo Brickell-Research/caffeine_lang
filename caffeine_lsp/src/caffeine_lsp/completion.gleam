@@ -2,18 +2,10 @@ import caffeine_lang/frontend/ast
 import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
+import caffeine_lsp/lsp_types.{CikClass, CikField, CikKeyword, CikVariable}
 import gleam/list
 import gleam/option
 import gleam/string
-
-// LSP CompletionItemKind constants
-const kind_keyword = 14
-
-const kind_class = 7
-
-const kind_variable = 6
-
-const kind_field = 5
 
 /// A completion item returned to the editor.
 pub type CompletionItem {
@@ -111,7 +103,9 @@ fn type_completions(content: String) -> List(CompletionItem) {
 }
 
 fn field_completions(fields: List(#(String, String))) -> List(CompletionItem) {
-  list.map(fields, fn(f) { CompletionItem(f.0, kind_field, f.1) })
+  list.map(fields, fn(f) {
+    CompletionItem(f.0, lsp_types.completion_item_kind_to_int(CikField), f.1)
+  })
 }
 
 fn general_completions(content: String) -> List(CompletionItem) {
@@ -136,7 +130,13 @@ fn general_completions(content: String) -> List(CompletionItem) {
 
 fn keyword_items() -> List(CompletionItem) {
   keyword_info.all_keywords()
-  |> list.map(fn(kw) { CompletionItem(kw.name, kind_keyword, kw.description) })
+  |> list.map(fn(kw) {
+    CompletionItem(
+      kw.name,
+      lsp_types.completion_item_kind_to_int(CikKeyword),
+      kw.description,
+    )
+  })
 }
 
 fn type_meta_items() -> List(CompletionItem) {
@@ -144,7 +144,11 @@ fn type_meta_items() -> List(CompletionItem) {
   // InclusiveRange) which are not standalone types a user would complete.
   types.completable_type_metas()
   |> list.map(fn(m: TypeMeta) {
-    CompletionItem(m.name, kind_class, m.description)
+    CompletionItem(
+      m.name,
+      lsp_types.completion_item_kind_to_int(CikClass),
+      m.description,
+    )
   })
 }
 
@@ -162,13 +166,21 @@ fn extendable_items_from_list(
 ) -> List(CompletionItem) {
   list.map(extendables, fn(e) {
     let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-    CompletionItem(e.name, kind_variable, detail)
+    CompletionItem(
+      e.name,
+      lsp_types.completion_item_kind_to_int(CikVariable),
+      detail,
+    )
   })
 }
 
 fn type_alias_items(aliases: List(ast.TypeAlias)) -> List(CompletionItem) {
   list.map(aliases, fn(ta) {
     let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
-    CompletionItem(ta.name, kind_variable, detail)
+    CompletionItem(
+      ta.name,
+      lsp_types.completion_item_kind_to_int(CikVariable),
+      detail,
+    )
   })
 }

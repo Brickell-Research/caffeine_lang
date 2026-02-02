@@ -4,20 +4,12 @@ import caffeine_lang/frontend/ast.{
 }
 import caffeine_lang/types
 import caffeine_lsp/file_utils
+import caffeine_lsp/lsp_types.{
+  SkClass, SkModule, SkProperty, SkTypeParameter, SkVariable,
+}
 import caffeine_lsp/position_utils
 import gleam/list
 import gleam/string
-
-// LSP SymbolKind constants
-const symbol_kind_module = 2
-
-const symbol_kind_class = 5
-
-const symbol_kind_property = 7
-
-const symbol_kind_variable = 13
-
-const symbol_kind_type_parameter = 26
 
 /// A document symbol for the editor outline.
 pub type DocumentSymbol {
@@ -81,7 +73,7 @@ fn type_alias_symbol(ta: TypeAlias, content: String) -> DocumentSymbol {
   DocumentSymbol(
     ta.name,
     detail,
-    symbol_kind_type_parameter,
+    lsp_types.symbol_kind_to_int(SkTypeParameter),
     line,
     col,
     string.length(ta.name),
@@ -95,7 +87,7 @@ fn extendable_symbol(ext: Extendable, content: String) -> DocumentSymbol {
   DocumentSymbol(
     ext.name,
     detail,
-    symbol_kind_variable,
+    lsp_types.symbol_kind_to_int(SkVariable),
     line,
     col,
     string.length(ext.name),
@@ -117,7 +109,7 @@ fn block_symbol(
   DocumentSymbol(
     name,
     "",
-    symbol_kind_module,
+    lsp_types.symbol_kind_to_int(SkModule),
     line,
     col,
     string.length(name),
@@ -135,7 +127,7 @@ fn blueprint_item_symbol(item: BlueprintItem, content: String) -> DocumentSymbol
   DocumentSymbol(
     item.name,
     "",
-    symbol_kind_class,
+    lsp_types.symbol_kind_to_int(SkClass),
     line,
     col,
     string.length(item.name),
@@ -150,7 +142,7 @@ fn expect_item_symbol(item: ExpectItem, content: String) -> DocumentSymbol {
   DocumentSymbol(
     item.name,
     "",
-    symbol_kind_class,
+    lsp_types.symbol_kind_to_int(SkClass),
     line,
     col,
     string.length(item.name),
@@ -164,7 +156,7 @@ fn field_symbol(field: Field, content: String) -> DocumentSymbol {
   DocumentSymbol(
     field.name,
     detail,
-    symbol_kind_property,
+    lsp_types.symbol_kind_to_int(SkProperty),
     line,
     col,
     string.length(field.name),
