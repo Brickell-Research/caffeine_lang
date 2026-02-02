@@ -1,6 +1,5 @@
 /// Typed enums for LSP protocol constants, replacing raw integer magic numbers.
 /// See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/
-
 /// LSP CompletionItemKind values.
 /// See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionItemKind
 pub type CompletionItemKind {
