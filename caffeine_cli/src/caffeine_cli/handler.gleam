@@ -12,102 +12,126 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
+import glint
 import simplifile
 
-/// Handles CLI arguments and dispatches to appropriate commands.
-@internal
-pub fn handle_args(args: List(String)) -> ExitStatusCodes {
-  case args {
-    ["compile", "--quiet", blueprint_file, expectations_dir, output_file] ->
-      compile(
-        blueprint_file,
-        expectations_dir,
-        option.Some(output_file),
-        compile_presenter.Minimal,
-      )
-    ["compile", "--quiet", blueprint_file, expectations_dir] ->
-      compile(
-        blueprint_file,
-        expectations_dir,
-        option.None,
-        compile_presenter.Minimal,
-      )
-    ["compile", blueprint_file, expectations_dir, output_file] ->
-      compile(
-        blueprint_file,
-        expectations_dir,
-        option.Some(output_file),
-        compile_presenter.Verbose,
-      )
-    ["compile", blueprint_file, expectations_dir] ->
-      compile(
-        blueprint_file,
-        expectations_dir,
-        option.None,
-        compile_presenter.Verbose,
-      )
-    ["--help"] | ["-h"] -> {
-      print_usage(compile_presenter.Verbose)
-      exit_status_codes.Success
-    }
-    ["--version"] | ["-V"] -> {
-      print_version(compile_presenter.Verbose)
-      exit_status_codes.Success
-    }
-    ["artifacts"] -> artifacts_catalog(compile_presenter.Verbose)
-    ["artifacts", "--quiet"] | ["--quiet", "artifacts"] ->
-      artifacts_catalog(compile_presenter.Minimal)
-    ["types"] -> types_catalog(compile_presenter.Verbose)
-    ["types", "--quiet"] | ["--quiet", "types"] ->
-      types_catalog(compile_presenter.Minimal)
-    ["--quiet", "--help"]
-    | ["--quiet", "-h"]
-    | ["--help", "--quiet"]
-    | ["-h", "--quiet"] -> {
-      print_usage(compile_presenter.Minimal)
-      exit_status_codes.Success
-    }
-    ["--quiet", "--version"]
-    | ["--quiet", "-V"]
-    | ["--version", "--quiet"]
-    | ["-V", "--quiet"] -> {
-      print_version(compile_presenter.Minimal)
-      exit_status_codes.Success
-    }
-    ["format", "--check", "--quiet", path]
-    | ["format", "--quiet", "--check", path] ->
-      format_command(path, True, compile_presenter.Minimal)
-    ["format", "--check", path] ->
-      format_command(path, True, compile_presenter.Verbose)
-    ["format", "--quiet", path] ->
-      format_command(path, False, compile_presenter.Minimal)
-    ["format", path] -> format_command(path, False, compile_presenter.Verbose)
-    ["lsp"] -> {
-      compile_presenter.log(
-        compile_presenter.Verbose,
-        "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
-      )
-      exit_status_codes.Failure
-    }
-    ["--quiet"] -> {
-      print_usage(compile_presenter.Minimal)
-      exit_status_codes.Success
-    }
-    [] -> {
-      print_usage(compile_presenter.Verbose)
-      exit_status_codes.Success
-    }
-    _ -> {
-      compile_presenter.log(
-        compile_presenter.Verbose,
-        "Error: Invalid arguments",
-      )
-      compile_presenter.log(compile_presenter.Verbose, "")
-      print_usage(compile_presenter.Verbose)
-      exit_status_codes.Failure
-    }
+// --- Flag definitions ---
+
+fn quiet_flag() -> glint.Flag(Bool) {
+  glint.bool_flag("quiet")
+  |> glint.flag_default(False)
+  |> glint.flag_help("Suppress compilation progress output")
+}
+
+fn check_flag() -> glint.Flag(Bool) {
+  glint.bool_flag("check")
+  |> glint.flag_default(False)
+  |> glint.flag_help("Check formatting without modifying files")
+}
+
+// --- Log level helper ---
+
+fn log_level_from_quiet(quiet: Bool) -> LogLevel {
+  case quiet {
+    True -> compile_presenter.Minimal
+    False -> compile_presenter.Verbose
   }
 }
+
+// --- Command builders ---
+
+/// Builds the compile subcommand.
+@internal
+pub fn compile_command() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help(
+    "Compile .caffeine blueprints and expectations to output",
+  )
+  use quiet <- glint.flag(quiet_flag())
+  use blueprint_file <- glint.named_arg("blueprint_file")
+  use expectations_dir <- glint.named_arg("expectations_dir")
+  use <- glint.unnamed_args(glint.MinArgs(0))
+  use named, unnamed_args, flags <- glint.command()
+
+  let assert Ok(is_quiet) = quiet(flags)
+  let log_level = log_level_from_quiet(is_quiet)
+  let bp = blueprint_file(named)
+  let exp_dir = expectations_dir(named)
+  let output_path = case unnamed_args {
+    [path, ..] -> option.Some(path)
+    [] -> option.None
+  }
+
+  compile(bp, exp_dir, output_path, log_level)
+}
+
+/// Builds the format subcommand.
+@internal
+pub fn format_command_builder() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help("Format .caffeine files")
+  use quiet <- glint.flag(quiet_flag())
+  use check <- glint.flag(check_flag())
+  use path <- glint.named_arg("path")
+  use named, _, flags <- glint.command()
+
+  let assert Ok(is_quiet) = quiet(flags)
+  let assert Ok(check_only) = check(flags)
+  let log_level = log_level_from_quiet(is_quiet)
+
+  format_command(path(named), check_only, log_level)
+}
+
+/// Builds the artifacts subcommand.
+@internal
+pub fn artifacts_command() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help(
+    "List available artifacts from the standard library",
+  )
+  use quiet <- glint.flag(quiet_flag())
+  use _, _, flags <- glint.command()
+
+  let assert Ok(is_quiet) = quiet(flags)
+  artifacts_catalog(log_level_from_quiet(is_quiet))
+}
+
+/// Builds the types subcommand.
+@internal
+pub fn types_command() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help(
+    "Show the type system reference with all supported types",
+  )
+  use quiet <- glint.flag(quiet_flag())
+  use _, _, flags <- glint.command()
+
+  let assert Ok(is_quiet) = quiet(flags)
+  types_catalog(log_level_from_quiet(is_quiet))
+}
+
+/// Builds the lsp subcommand.
+@internal
+pub fn lsp_command() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help("Start the Language Server Protocol server")
+  use _, _, _ <- glint.command()
+
+  compile_presenter.log(
+    compile_presenter.Verbose,
+    "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
+  )
+  exit_status_codes.Failure
+}
+
+/// Builds the root command for --version support.
+@internal
+pub fn root_command() -> glint.Command(ExitStatusCodes) {
+  use <- glint.command_help(
+    "A compiler for generating reliability artifacts from service expectation definitions.\n\nVersion: "
+    <> constants.version,
+  )
+  use _, _, _ <- glint.command()
+
+  exit_status_codes.Success
+}
+
+// --- Business logic (unchanged) ---
 
 fn compile(
   blueprint_file: String,
@@ -294,81 +318,6 @@ fn write_file(path: String, content: String) -> Result(Nil, String) {
     <> path
     <> ")"
   })
-}
-
-fn print_usage(log_level: LogLevel) {
-  compile_presenter.log(log_level, "caffeine " <> constants.version)
-  compile_presenter.log(
-    log_level,
-    "A compiler for generating reliability artifacts from service expectation definitions.",
-  )
-  compile_presenter.log(log_level, "")
-  compile_presenter.log(log_level, "USAGE:")
-  compile_presenter.log(
-    log_level,
-    "    caffeine compile [--quiet] <blueprint.caffeine> <expectations_directory> [output_file]",
-  )
-  compile_presenter.log(log_level, "    caffeine artifacts [--quiet]")
-  compile_presenter.log(log_level, "    caffeine types [--quiet]")
-  compile_presenter.log(
-    log_level,
-    "    caffeine format [--quiet] [--check] <path>",
-  )
-  compile_presenter.log(log_level, "    caffeine lsp")
-  compile_presenter.log(log_level, "")
-  compile_presenter.log(log_level, "COMMANDS:")
-  compile_presenter.log(
-    log_level,
-    "    compile          Compile .caffeine blueprints and expectations to output",
-  )
-  compile_presenter.log(
-    log_level,
-    "    artifacts        List available artifacts from the standard library",
-  )
-  compile_presenter.log(
-    log_level,
-    "    types            Show the type system reference with all supported types",
-  )
-  compile_presenter.log(
-    log_level,
-    "    format           Format .caffeine files",
-  )
-  compile_presenter.log(
-    log_level,
-    "    lsp              Start the Language Server Protocol server",
-  )
-  compile_presenter.log(log_level, "")
-  compile_presenter.log(log_level, "ARGUMENTS:")
-  compile_presenter.log(
-    log_level,
-    "    <blueprint.caffeine>       Path to the blueprints .caffeine file",
-  )
-  compile_presenter.log(
-    log_level,
-    "    <expectations_directory>   Directory containing expectations .caffeine files",
-  )
-  compile_presenter.log(
-    log_level,
-    "    [output_file]              Output file path or directory (prints to stdout if omitted)",
-  )
-  compile_presenter.log(log_level, "")
-  compile_presenter.log(log_level, "OPTIONS:")
-  compile_presenter.log(
-    log_level,
-    "    --quiet          Suppress compilation progress output",
-  )
-  compile_presenter.log(
-    log_level,
-    "    -h, --help       Print help information",
-  )
-  compile_presenter.log(
-    log_level,
-    "    -V, --version    Print version information",
-  )
-}
-
-fn print_version(log_level: LogLevel) {
-  compile_presenter.log(log_level, "caffeine " <> constants.version)
 }
 
 fn artifacts_catalog(log_level: LogLevel) -> ExitStatusCodes {
