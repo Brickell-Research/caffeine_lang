@@ -109,17 +109,11 @@ fn do_parse_and_resolve_query_template(
 
           use template <- result.try(parse_template_variable(inside))
           use value_tuple <- result.try(
-            case
-              value_tuples
-              |> list.filter(fn(vt) { vt.label == template.input_name })
-              |> list.first
-            {
-              Error(_) ->
-                Error(errors.SemanticAnalysisTemplateParseError(
-                  msg: "Missing input for template: " <> template.input_name,
-                ))
-              Ok(value_tuple) -> Ok(value_tuple)
-            },
+            value_tuples
+            |> list.find(fn(vt) { vt.label == template.input_name })
+            |> result.replace_error(errors.SemanticAnalysisTemplateParseError(
+              msg: "Missing input for template: " <> template.input_name,
+            )),
           )
           use resolved_template <- result.try(resolve_template(
             template,

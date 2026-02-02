@@ -3,6 +3,7 @@
 /// hardcoded string. That's way more offensive. We will work towards a better state, just know that even
 /// in its existing offensive state right now (02/01/2026), it's much better than it was before.
 /// - Rob
+import caffeine_lang/constants
 import caffeine_lang/linker/artifacts.{
   type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
 }
@@ -67,7 +68,7 @@ fn slo_artifact() -> Artifact {
         ParamInfo(
           type_: RefinementType(OneOf(
             PrimitiveType(StringType),
-            set.from_list(["datadog", "honeycomb"]),
+            set.from_list([constants.vendor_datadog, constants.vendor_honeycomb]),
           )),
           description: "Observability platform",
         ),

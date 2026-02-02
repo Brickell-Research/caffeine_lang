@@ -59,11 +59,7 @@ pub fn resolve_intermediate_representations(
 pub fn resolve_vendor(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, CompilationError) {
-  case
-    ir.values
-    |> list.filter(fn(value) { value.label == "vendor" })
-    |> list.first
-  {
+  case ir.values |> list.find(fn(value) { value.label == "vendor" }) {
     Error(_) ->
       Error(errors.SemanticAnalysisVendorResolutionError(
         msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor input",
@@ -88,8 +84,7 @@ pub fn resolve_indicators(
     option.Some(vendor.Datadog) -> {
       use indicators_value_tuple <- result.try(
         ir.values
-        |> list.filter(fn(vt) { vt.label == "indicators" })
-        |> list.first
+        |> list.find(fn(vt) { vt.label == "indicators" })
         |> result.replace_error(errors.SemanticAnalysisTemplateResolutionError(
           msg: "expectation '"
           <> ir_to_identifier(ir)
@@ -153,8 +148,7 @@ pub fn resolve_indicators(
       // Also resolve templates in the "evaluation" field if present.
       let evaluation_tuple_result =
         ir.values
-        |> list.filter(fn(vt) { vt.label == "evaluation" })
-        |> list.first
+        |> list.find(fn(vt) { vt.label == "evaluation" })
 
       use resolved_evaluation_tuple <- result.try(case evaluation_tuple_result {
         Error(_) -> Ok(option.None)

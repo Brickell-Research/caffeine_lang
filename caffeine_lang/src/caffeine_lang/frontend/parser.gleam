@@ -628,126 +628,60 @@ fn parse_extends_list_loop(
 }
 
 // =============================================================================
-// TYPE STRUCT (for Requires)
+// STRUCT PARSING (shared by Requires and Provides)
 // =============================================================================
 
+/// Type alias for a field value parser function.
+type FieldValueParser(a) =
+  fn(ParserState) -> Result(#(a, ParserState), ParserError)
+
+/// Parses a struct with typed fields (for Requires blocks).
 fn parse_type_struct(
   state: ParserState,
 ) -> Result(#(Struct, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
-  let #(pending, state) = consume_comments(state)
-  use #(fields, trailing_comments, state) <- result.try(parse_type_fields(
-    state,
-    pending,
-  ))
-  use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-  Ok(#(ast.Struct(fields:, trailing_comments:), state))
+  parse_struct(state, fn(s) {
+    use #(type_, s) <- result.try(parse_type(s))
+    Ok(#(ast.TypeValue(type_), s))
+  })
 }
 
-fn parse_type_fields(
-  state: ParserState,
-  pending: List(Comment),
-) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolRightBrace -> Ok(#([], pending, state))
-    token.Identifier(_) -> {
-      use #(field, state) <- result.try(parse_type_field(state, pending))
-      let #(next_pending, state) = consume_comments(state)
-      parse_type_fields_loop(state, [field], next_pending)
-    }
-    // Helpful error for JSON-style quoted field names
-    token.LiteralString(name) ->
-      Error(parser_error.QuotedFieldName(name, state.line, state.column))
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "field name or }",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-fn parse_type_fields_loop(
-  state: ParserState,
-  acc: List(Field),
-  pending: List(Comment),
-) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolComma -> {
-      let state = advance(state)
-      let #(next_pending, state) = consume_comments(state)
-      // Allow trailing comma
-      case peek(state) {
-        token.SymbolRightBrace -> Ok(#(list.reverse(acc), next_pending, state))
-        _ -> {
-          use #(field, state) <- result.try(parse_type_field(
-            state,
-            next_pending,
-          ))
-          let #(next_pending, state) = consume_comments(state)
-          parse_type_fields_loop(state, [field, ..acc], next_pending)
-        }
-      }
-    }
-    _ -> Ok(#(list.reverse(acc), pending, state))
-  }
-}
-
-fn parse_type_field(
-  state: ParserState,
-  leading_comments: List(Comment),
-) -> Result(#(Field, ParserState), ParserError) {
-  case peek(state) {
-    token.Identifier(name) -> {
-      let state = advance(state)
-      use state <- result.try(expect(state, token.SymbolColon, ":"))
-      use #(type_, state) <- result.try(parse_type(state))
-      Ok(#(
-        ast.Field(name:, value: ast.TypeValue(type_), leading_comments:),
-        state,
-      ))
-    }
-    // Helpful error for JSON-style quoted field names
-    token.LiteralString(name) ->
-      Error(parser_error.QuotedFieldName(name, state.line, state.column))
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "field name",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-// =============================================================================
-// LITERAL STRUCT (for Provides)
-// =============================================================================
-
+/// Parses a struct with literal fields (for Provides blocks).
 fn parse_literal_struct(
   state: ParserState,
 ) -> Result(#(Struct, ParserState), ParserError) {
+  parse_struct(state, fn(s) {
+    use #(literal, s) <- result.try(parse_literal(s))
+    Ok(#(ast.LiteralValue(literal), s))
+  })
+}
+
+/// Generic struct parser parameterized by field value parser.
+fn parse_struct(
+  state: ParserState,
+  parse_value: FieldValueParser(ast.Value),
+) -> Result(#(Struct, ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   let #(pending, state) = consume_comments(state)
-  use #(fields, trailing_comments, state) <- result.try(parse_literal_fields(
+  use #(fields, trailing_comments, state) <- result.try(parse_fields(
     state,
     pending,
+    parse_value,
   ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(ast.Struct(fields:, trailing_comments:), state))
 }
 
-fn parse_literal_fields(
+fn parse_fields(
   state: ParserState,
   pending: List(Comment),
+  parse_value: FieldValueParser(ast.Value),
 ) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolRightBrace -> Ok(#([], pending, state))
     token.Identifier(_) -> {
-      use #(field, state) <- result.try(parse_literal_field(state, pending))
+      use #(field, state) <- result.try(parse_field(state, pending, parse_value))
       let #(next_pending, state) = consume_comments(state)
-      parse_literal_fields_loop(state, [field], next_pending)
+      parse_fields_loop(state, [field], next_pending, parse_value)
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -762,10 +696,11 @@ fn parse_literal_fields(
   }
 }
 
-fn parse_literal_fields_loop(
+fn parse_fields_loop(
   state: ParserState,
   acc: List(Field),
   pending: List(Comment),
+  parse_value: FieldValueParser(ast.Value),
 ) -> Result(#(List(Field), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolComma -> {
@@ -775,12 +710,13 @@ fn parse_literal_fields_loop(
       case peek(state) {
         token.SymbolRightBrace -> Ok(#(list.reverse(acc), next_pending, state))
         _ -> {
-          use #(field, state) <- result.try(parse_literal_field(
+          use #(field, state) <- result.try(parse_field(
             state,
             next_pending,
+            parse_value,
           ))
           let #(next_pending, state) = consume_comments(state)
-          parse_literal_fields_loop(state, [field, ..acc], next_pending)
+          parse_fields_loop(state, [field, ..acc], next_pending, parse_value)
         }
       }
     }
@@ -788,19 +724,17 @@ fn parse_literal_fields_loop(
   }
 }
 
-fn parse_literal_field(
+fn parse_field(
   state: ParserState,
   leading_comments: List(Comment),
+  parse_value: FieldValueParser(ast.Value),
 ) -> Result(#(Field, ParserState), ParserError) {
   case peek(state) {
     token.Identifier(name) -> {
       let state = advance(state)
       use state <- result.try(expect(state, token.SymbolColon, ":"))
-      use #(literal, state) <- result.try(parse_literal(state))
-      Ok(#(
-        ast.Field(name:, value: ast.LiteralValue(literal), leading_comments:),
-        state,
-      ))
+      use #(value, state) <- result.try(parse_value(state))
+      Ok(#(ast.Field(name:, value:, leading_comments:), state))
     }
     // Helpful error for JSON-style quoted field names
     token.LiteralString(name) ->
@@ -1199,11 +1133,16 @@ fn parse_literal_list_loop(
 fn parse_literal_struct_value(
   state: ParserState,
 ) -> Result(#(Literal, ParserState), ParserError) {
+  let parse_value = fn(s) {
+    use #(literal, s) <- result.try(parse_literal(s))
+    Ok(#(ast.LiteralValue(literal), s))
+  }
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   let #(pending, state) = consume_comments(state)
-  use #(fields, _trailing_comments, state) <- result.try(parse_literal_fields(
+  use #(fields, _trailing_comments, state) <- result.try(parse_fields(
     state,
     pending,
+    parse_value,
   ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(ast.LiteralStruct(fields), state))

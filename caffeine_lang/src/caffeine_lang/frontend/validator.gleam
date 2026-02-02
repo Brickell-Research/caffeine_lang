@@ -51,7 +51,11 @@ pub fn validate_blueprints_file(
     |> list.flat_map(fn(block) { block.items })
 
   // Validate type aliases first
-  use _ <- result.try(validate_no_duplicate_type_aliases(type_aliases))
+  use _ <- result.try(validate_no_duplicates(
+    type_aliases,
+    fn(ta) { ta.name },
+    DuplicateTypeAlias,
+  ))
   use _ <- result.try(validate_no_circular_type_aliases(type_aliases))
 
   // Build set of defined type alias names for reference validation
@@ -77,7 +81,11 @@ pub fn validate_blueprints_file(
     type_alias_map,
   ))
 
-  use _ <- result.try(validate_no_duplicate_extendables(extendables))
+  use _ <- result.try(validate_no_duplicates(
+    extendables,
+    fn(e) { e.name },
+    DuplicateExtendable,
+  ))
   use _ <- result.try(validate_no_extendable_type_alias_collision(
     extendables,
     type_aliases,
@@ -99,32 +107,46 @@ pub fn validate_expects_file(
     file.blocks
     |> list.flat_map(fn(block) { block.items })
 
-  use _ <- result.try(validate_no_duplicate_extendables(extendables))
+  use _ <- result.try(validate_no_duplicates(
+    extendables,
+    fn(e) { e.name },
+    DuplicateExtendable,
+  ))
   use _ <- result.try(validate_extendables_are_provides(extendables))
   use _ <- result.try(validate_expect_items_extends(items, extendables))
 
   Ok(file)
 }
 
-/// Validates that no two extendables have the same name.
-fn validate_no_duplicate_extendables(
-  extendables: List(Extendable),
+/// Validates that no two items in a list share the same name.
+fn validate_no_duplicates(
+  items: List(a),
+  get_name: fn(a) -> String,
+  make_error: fn(String) -> ValidatorError,
 ) -> Result(Nil, ValidatorError) {
-  validate_no_duplicate_extendables_loop(extendables, set.new())
+  validate_no_duplicates_loop(items, get_name, make_error, set.new())
 }
 
-fn validate_no_duplicate_extendables_loop(
-  extendables: List(Extendable),
+fn validate_no_duplicates_loop(
+  items: List(a),
+  get_name: fn(a) -> String,
+  make_error: fn(String) -> ValidatorError,
   seen: set.Set(String),
 ) -> Result(Nil, ValidatorError) {
-  case extendables {
+  case items {
     [] -> Ok(Nil)
     [first, ..rest] -> {
+      let name = get_name(first)
       use <- bool.guard(
-        when: set.contains(seen, first.name),
-        return: Error(DuplicateExtendable(name: first.name)),
+        when: set.contains(seen, name),
+        return: Error(make_error(name)),
       )
-      validate_no_duplicate_extendables_loop(rest, set.insert(seen, first.name))
+      validate_no_duplicates_loop(
+        rest,
+        get_name,
+        make_error,
+        set.insert(seen, name),
+      )
     }
   }
 }
@@ -188,7 +210,16 @@ fn validate_blueprint_items_extends(
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
     // Check that item's requires/provides don't overshadow extended fields
-    validate_no_blueprint_overshadowing(item, extendable_map)
+    let requires_fields =
+      item.requires.fields |> list.map(fn(f) { f.name }) |> set.from_list
+    let provides_fields =
+      item.provides.fields |> list.map(fn(f) { f.name }) |> set.from_list
+    validate_no_overshadowing(
+      item.name,
+      item.extends,
+      [requires_fields, provides_fields],
+      extendable_map,
+    )
   })
 }
 
@@ -212,7 +243,14 @@ fn validate_expect_items_extends(
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
     // Check that item's provides don't overshadow extended fields
-    validate_no_expect_overshadowing(item, extendable_map)
+    let provides_fields =
+      item.provides.fields |> list.map(fn(f) { f.name }) |> set.from_list
+    validate_no_overshadowing(
+      item.name,
+      item.extends,
+      [provides_fields],
+      extendable_map,
+    )
   })
 }
 
@@ -281,83 +319,28 @@ fn build_extendable_field_map(
   |> dict.from_list
 }
 
-/// Validates that a blueprint item doesn't overshadow fields from its extended extendables.
-fn validate_no_blueprint_overshadowing(
-  item: BlueprintItem,
+/// Validates that an item's field sets don't overshadow fields from its extended extendables.
+fn validate_no_overshadowing(
+  item_name: String,
+  extends: List(String),
+  field_sets: List(set.Set(String)),
   extendable_map: dict.Dict(String, set.Set(String)),
 ) -> Result(Nil, ValidatorError) {
-  // Get all field names from item's requires and provides
-  let item_requires_fields =
-    item.requires.fields
-    |> list.map(fn(f) { f.name })
-    |> set.from_list
-  let item_provides_fields =
-    item.provides.fields
-    |> list.map(fn(f) { f.name })
-    |> set.from_list
-
-  // Check each extended extendable for overshadowing
-  list.try_each(item.extends, fn(ext_name) {
+  list.try_each(extends, fn(ext_name) {
     case dict.get(extendable_map, ext_name) {
       Error(_) -> Ok(Nil)
-      Ok(ext_fields) -> {
-        // Check requires overshadowing
-        let requires_overlap =
-          set.intersection(item_requires_fields, ext_fields)
-        use _ <- result.try(case set.to_list(requires_overlap) {
-          [] -> Ok(Nil)
-          [field, ..] ->
-            Error(ExtendableOvershadowing(
-              field_name: field,
-              item_name: item.name,
-              extendable_name: ext_name,
-            ))
+      Ok(ext_fields) ->
+        list.try_each(field_sets, fn(item_fields) {
+          case set.intersection(item_fields, ext_fields) |> set.to_list {
+            [] -> Ok(Nil)
+            [field, ..] ->
+              Error(ExtendableOvershadowing(
+                field_name: field,
+                item_name: item_name,
+                extendable_name: ext_name,
+              ))
+          }
         })
-        // Check provides overshadowing
-        let provides_overlap =
-          set.intersection(item_provides_fields, ext_fields)
-        case set.to_list(provides_overlap) {
-          [] -> Ok(Nil)
-          [field, ..] ->
-            Error(ExtendableOvershadowing(
-              field_name: field,
-              item_name: item.name,
-              extendable_name: ext_name,
-            ))
-        }
-      }
-    }
-  })
-}
-
-/// Validates that an expect item doesn't overshadow fields from its extended extendables.
-fn validate_no_expect_overshadowing(
-  item: ExpectItem,
-  extendable_map: dict.Dict(String, set.Set(String)),
-) -> Result(Nil, ValidatorError) {
-  // Get all field names from item's provides
-  let item_provides_fields =
-    item.provides.fields
-    |> list.map(fn(f) { f.name })
-    |> set.from_list
-
-  // Check each extended extendable for overshadowing
-  list.try_each(item.extends, fn(ext_name) {
-    case dict.get(extendable_map, ext_name) {
-      Error(_) -> Ok(Nil)
-      Ok(ext_fields) -> {
-        let provides_overlap =
-          set.intersection(item_provides_fields, ext_fields)
-        case set.to_list(provides_overlap) {
-          [] -> Ok(Nil)
-          [field, ..] ->
-            Error(ExtendableOvershadowing(
-              field_name: field,
-              item_name: item.name,
-              extendable_name: ext_name,
-            ))
-        }
-      }
     }
   })
 }
@@ -371,46 +354,6 @@ fn build_type_alias_map(
   type_aliases: List(TypeAlias),
 ) -> List(#(String, ParsedType)) {
   ast.build_type_alias_pairs(type_aliases)
-}
-
-/// Looks up a type alias by name in the map.
-fn lookup_type_alias(
-  name: String,
-  type_alias_map: List(#(String, ParsedType)),
-) -> Result(ParsedType, Nil) {
-  case type_alias_map {
-    [] -> Error(Nil)
-    [#(n, t), ..rest] -> {
-      use <- bool.guard(when: n == name, return: Ok(t))
-      lookup_type_alias(name, rest)
-    }
-  }
-}
-
-/// Validates that no two type aliases have the same name.
-fn validate_no_duplicate_type_aliases(
-  type_aliases: List(TypeAlias),
-) -> Result(Nil, ValidatorError) {
-  validate_no_duplicate_type_aliases_loop(type_aliases, set.new())
-}
-
-fn validate_no_duplicate_type_aliases_loop(
-  type_aliases: List(TypeAlias),
-  seen: set.Set(String),
-) -> Result(Nil, ValidatorError) {
-  case type_aliases {
-    [] -> Ok(Nil)
-    [first, ..rest] -> {
-      use <- bool.guard(
-        when: set.contains(seen, first.name),
-        return: Error(DuplicateTypeAlias(name: first.name)),
-      )
-      validate_no_duplicate_type_aliases_loop(
-        rest,
-        set.insert(seen, first.name),
-      )
-    }
-  }
 }
 
 /// Validates that no type alias has circular references.
@@ -441,7 +384,7 @@ fn validate_type_alias_not_circular(
         when: list.contains(visited, name),
         return: Error(CircularTypeAlias(name: original_name, cycle: visited)),
       )
-      case lookup_type_alias(name, type_alias_map) {
+      case list.key_find(type_alias_map, name) {
         Ok(resolved) ->
           validate_type_alias_not_circular(
             original_name,
@@ -572,7 +515,7 @@ fn validate_dict_key_type(
     ParsedPrimitive(StringType) -> Ok(Nil)
     // ParsedTypeAliasRef must resolve to String-based type
     ParsedTypeAliasRef(alias_name) -> {
-      case lookup_type_alias(alias_name, type_alias_map) {
+      case list.key_find(type_alias_map, alias_name) {
         Ok(resolved) -> {
           use <- bool.guard(
             when: is_string_based_parsed_type(resolved),

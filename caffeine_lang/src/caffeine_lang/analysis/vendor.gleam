@@ -1,3 +1,5 @@
+import caffeine_lang/constants
+
 /// Supported monitoring and observability platform vendors.
 pub type Vendor {
   Datadog
@@ -10,8 +12,8 @@ pub type Vendor {
 @internal
 pub fn resolve_vendor(vendor: String) -> Vendor {
   case vendor {
-    "datadog" -> Datadog
-    "honeycomb" -> Honeycomb
+    v if v == constants.vendor_datadog -> Datadog
+    v if v == constants.vendor_honeycomb -> Honeycomb
     // This case should never be reached due to refinement type validation,
     // but we need exhaustive pattern matching.
     _ -> Datadog

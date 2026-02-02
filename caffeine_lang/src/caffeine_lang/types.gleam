@@ -306,15 +306,7 @@ pub fn semantic_type_to_string(typ: SemanticStringTypes) -> String {
 pub fn collection_type_to_string(
   collection_type: CollectionTypes(AcceptedTypes),
 ) -> String {
-  case collection_type {
-    Dict(key_type, value_type) ->
-      "Dict("
-      <> accepted_type_to_string(key_type)
-      <> ", "
-      <> accepted_type_to_string(value_type)
-      <> ")"
-    List(inner_type) -> "List(" <> accepted_type_to_string(inner_type) <> ")"
-  }
+  collection_to_string(collection_type, accepted_type_to_string)
 }
 
 /// Converts a ModifierTypes to its string representation.
@@ -322,16 +314,7 @@ pub fn collection_type_to_string(
 pub fn modifier_type_to_string(
   modifier_type: ModifierTypes(AcceptedTypes),
 ) -> String {
-  case modifier_type {
-    Optional(inner_type) ->
-      "Optional(" <> accepted_type_to_string(inner_type) <> ")"
-    Defaulted(inner_type, default_val) ->
-      "Defaulted("
-      <> accepted_type_to_string(inner_type)
-      <> ", "
-      <> default_val
-      <> ")"
-  }
+  modifier_to_string(modifier_type, accepted_type_to_string)
 }
 
 /// Converts a RefinementTypes to its string representation.
@@ -339,9 +322,41 @@ pub fn modifier_type_to_string(
 pub fn refinement_type_to_string(
   refinement: RefinementTypes(AcceptedTypes),
 ) -> String {
+  refinement_to_string(refinement, accepted_type_to_string)
+}
+
+/// Generic collection-to-string using a recursive formatter.
+fn collection_to_string(
+  collection_type: CollectionTypes(a),
+  to_string: fn(a) -> String,
+) -> String {
+  case collection_type {
+    Dict(key_type, value_type) ->
+      "Dict(" <> to_string(key_type) <> ", " <> to_string(value_type) <> ")"
+    List(inner_type) -> "List(" <> to_string(inner_type) <> ")"
+  }
+}
+
+/// Generic modifier-to-string using a recursive formatter.
+fn modifier_to_string(
+  modifier_type: ModifierTypes(a),
+  to_string: fn(a) -> String,
+) -> String {
+  case modifier_type {
+    Optional(inner_type) -> "Optional(" <> to_string(inner_type) <> ")"
+    Defaulted(inner_type, default_val) ->
+      "Defaulted(" <> to_string(inner_type) <> ", " <> default_val <> ")"
+  }
+}
+
+/// Generic refinement-to-string using a recursive formatter.
+fn refinement_to_string(
+  refinement: RefinementTypes(a),
+  to_string: fn(a) -> String,
+) -> String {
   case refinement {
     OneOf(typ, set_vals) ->
-      accepted_type_to_string(typ)
+      to_string(typ)
       <> " { x | x in { "
       <> set_vals
       |> set.to_list
@@ -349,12 +364,7 @@ pub fn refinement_type_to_string(
       |> string.join(", ")
       <> " } }"
     InclusiveRange(typ, low, high) ->
-      accepted_type_to_string(typ)
-      <> " { x | x in ( "
-      <> low
-      <> ".."
-      <> high
-      <> " ) }"
+      to_string(typ) <> " { x | x in ( " <> low <> ".." <> high <> " ) }"
   }
 }
 
@@ -368,63 +378,12 @@ pub fn parsed_type_to_string(parsed_type: ParsedType) -> String {
   case parsed_type {
     ParsedPrimitive(primitive_type) -> primitive_type_to_string(primitive_type)
     ParsedCollection(collection_type) ->
-      parsed_collection_type_to_string(collection_type)
+      collection_to_string(collection_type, parsed_type_to_string)
     ParsedModifier(modifier_type) ->
-      parsed_modifier_type_to_string(modifier_type)
+      modifier_to_string(modifier_type, parsed_type_to_string)
     ParsedRefinement(refinement_type) ->
-      parsed_refinement_type_to_string(refinement_type)
+      refinement_to_string(refinement_type, parsed_type_to_string)
     ParsedTypeAliasRef(name) -> name
-  }
-}
-
-fn parsed_collection_type_to_string(
-  collection_type: CollectionTypes(ParsedType),
-) -> String {
-  case collection_type {
-    Dict(key_type, value_type) ->
-      "Dict("
-      <> parsed_type_to_string(key_type)
-      <> ", "
-      <> parsed_type_to_string(value_type)
-      <> ")"
-    List(inner_type) -> "List(" <> parsed_type_to_string(inner_type) <> ")"
-  }
-}
-
-fn parsed_modifier_type_to_string(
-  modifier_type: ModifierTypes(ParsedType),
-) -> String {
-  case modifier_type {
-    Optional(inner_type) ->
-      "Optional(" <> parsed_type_to_string(inner_type) <> ")"
-    Defaulted(inner_type, default_val) ->
-      "Defaulted("
-      <> parsed_type_to_string(inner_type)
-      <> ", "
-      <> default_val
-      <> ")"
-  }
-}
-
-fn parsed_refinement_type_to_string(
-  refinement: RefinementTypes(ParsedType),
-) -> String {
-  case refinement {
-    OneOf(typ, set_vals) ->
-      parsed_type_to_string(typ)
-      <> " { x | x in { "
-      <> set_vals
-      |> set.to_list
-      |> list.sort(string.compare)
-      |> string.join(", ")
-      <> " } }"
-    InclusiveRange(typ, low, high) ->
-      parsed_type_to_string(typ)
-      <> " { x | x in ( "
-      <> low
-      <> ".."
-      <> high
-      <> " ) }"
   }
 }
 
@@ -440,43 +399,6 @@ pub fn try_each_inner_parsed(
     ParsedCollection(collection) -> collection_try_each_inner(collection, f)
     ParsedModifier(modifier) -> modifier_try_each_inner(modifier, f)
     ParsedRefinement(refinement) -> refinement_try_each_inner(refinement, f)
-  }
-}
-
-/// Transforms each inner type in a parsed compound type using a mapping function.
-@internal
-pub fn map_inner_parsed(
-  typ: ParsedType,
-  f: fn(ParsedType) -> ParsedType,
-) -> ParsedType {
-  case typ {
-    ParsedPrimitive(_) -> f(typ)
-    ParsedTypeAliasRef(_) -> f(typ)
-    ParsedCollection(collection) ->
-      ParsedCollection(collection_map_inner(collection, f))
-    ParsedModifier(modifier) -> ParsedModifier(modifier_map_inner(modifier, f))
-    ParsedRefinement(refinement) ->
-      ParsedRefinement(refinement_map_inner(refinement, f))
-  }
-}
-
-/// Checks if a parsed type is optional or has a default value.
-@internal
-pub fn parsed_is_optional_or_defaulted(typ: ParsedType) -> Bool {
-  case typ {
-    ParsedModifier(Optional(_)) -> True
-    ParsedModifier(Defaulted(_, _)) -> True
-    ParsedRefinement(OneOf(inner, _)) -> parsed_is_optional_or_defaulted(inner)
-    _ -> False
-  }
-}
-
-/// Parses a type alias reference string into a ParsedType.
-@internal
-pub fn parse_parsed_type_alias_ref(raw: String) -> Result(ParsedType, Nil) {
-  case string.starts_with(raw, "_") && string.length(raw) > 1 {
-    True -> Ok(ParsedTypeAliasRef(raw))
-    False -> Error(Nil)
   }
 }
 

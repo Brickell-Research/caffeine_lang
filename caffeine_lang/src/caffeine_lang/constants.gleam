@@ -6,3 +6,6 @@ pub const vendor_datadog = "datadog"
 
 /// The identifier for the Honeycomb vendor target.
 pub const vendor_honeycomb = "honeycomb"
+
+/// The Terraform provider name for Honeycomb.
+pub const provider_honeycombio = "honeycombio"

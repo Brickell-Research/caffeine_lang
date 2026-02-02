@@ -96,6 +96,21 @@ fn generate_expect_item(
   Expectation(name: item.name, blueprint_ref: blueprint, inputs: inputs)
 }
 
+/// Collects fields from extended extendables matching a given kind.
+fn collect_extended_fields(
+  extends: List(String),
+  extendables: Dict(String, Extendable),
+  kind: ast.ExtendableKind,
+) -> List(Field) {
+  extends
+  |> list.flat_map(fn(name) {
+    case dict.get(extendables, name) {
+      Ok(ext) if ext.kind == kind -> ext.body.fields
+      _ -> []
+    }
+  })
+}
+
 /// Merges extended fields into a blueprint item's requires and provides.
 /// Order: extended extendables left-to-right, then item's own fields (can override).
 fn merge_blueprint_extends(
@@ -103,32 +118,12 @@ fn merge_blueprint_extends(
   extendables: Dict(String, Extendable),
 ) -> #(Struct, Struct) {
   let requires_fields =
-    item.extends
-    |> list.flat_map(fn(name) {
-      case dict.get(extendables, name) {
-        Ok(ext) ->
-          case ext.kind {
-            ast.ExtendableRequires -> ext.body.fields
-            ast.ExtendableProvides -> []
-          }
-        Error(_) -> []
-      }
-    })
+    collect_extended_fields(item.extends, extendables, ast.ExtendableRequires)
     |> list.append(item.requires.fields)
     |> dedupe_fields
 
   let provides_fields =
-    item.extends
-    |> list.flat_map(fn(name) {
-      case dict.get(extendables, name) {
-        Ok(ext) ->
-          case ext.kind {
-            ast.ExtendableProvides -> ext.body.fields
-            ast.ExtendableRequires -> []
-          }
-        Error(_) -> []
-      }
-    })
+    collect_extended_fields(item.extends, extendables, ast.ExtendableProvides)
     |> list.append(item.provides.fields)
     |> dedupe_fields
 
@@ -145,13 +140,7 @@ fn merge_expect_extends(
   extendables: Dict(String, Extendable),
 ) -> Struct {
   let provides_fields =
-    item.extends
-    |> list.flat_map(fn(name) {
-      case dict.get(extendables, name) {
-        Ok(ext) -> ext.body.fields
-        Error(_) -> []
-      }
-    })
+    collect_extended_fields(item.extends, extendables, ast.ExtendableProvides)
     |> list.append(item.provides.fields)
     |> dedupe_fields
 

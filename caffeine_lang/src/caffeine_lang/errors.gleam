@@ -13,12 +13,10 @@ pub type CompilationError {
   FrontendParseError(msg: String)
   FrontendValidationError(msg: String)
   // Parser Phase (part of initial parse & link step)
-  ParserFileReadError(msg: String)
   ParserJsonParserError(msg: String)
   ParserDuplicateError(msg: String)
   // Linker Phase (part of initial parse & link step)
   LinkerParseError(msg: String)
-  LinkerSemanticError(msg: String)
   // Semantic Analysis Phase
   SemanticAnalysisVendorResolutionError(msg: String)
   SemanticAnalysisTemplateParseError(msg: String)
@@ -31,7 +29,6 @@ pub type CompilationError {
   // Caffeine Query Language (CQL)
   CQLResolverError(msg: String)
   CQLParserError(msg: String)
-  CQLGeneratorError(msg: String)
 }
 
 /// Prefixes a CompilationError's message with an identifier string.
@@ -45,11 +42,9 @@ pub fn prefix_error(
   case error {
     FrontendParseError(msg:) -> FrontendParseError(msg: prefix <> msg)
     FrontendValidationError(msg:) -> FrontendValidationError(msg: prefix <> msg)
-    ParserFileReadError(msg:) -> ParserFileReadError(msg: prefix <> msg)
     ParserJsonParserError(msg:) -> ParserJsonParserError(msg: prefix <> msg)
     ParserDuplicateError(msg:) -> ParserDuplicateError(msg: prefix <> msg)
     LinkerParseError(msg:) -> LinkerParseError(msg: prefix <> msg)
-    LinkerSemanticError(msg:) -> LinkerSemanticError(msg: prefix <> msg)
     SemanticAnalysisVendorResolutionError(msg:) ->
       SemanticAnalysisVendorResolutionError(msg: prefix <> msg)
     SemanticAnalysisTemplateParseError(msg:) ->
@@ -66,7 +61,6 @@ pub fn prefix_error(
       GeneratorHoneycombTerraformResolutionError(msg: prefix <> msg)
     CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
     CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
-    CQLGeneratorError(msg:) -> CQLGeneratorError(msg: prefix <> msg)
   }
 }
 

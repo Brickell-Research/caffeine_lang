@@ -27,10 +27,9 @@ pub fn map_reference_to_referrer_over_collection(
     // Already performed this check so can assert it.
     let assert Ok(reference) =
       references
-      |> list.filter(fn(reference) {
+      |> list.find(fn(reference) {
         { reference |> reference_name } == { referrer |> referrer_reference }
       })
-      |> list.first
     #(referrer, reference)
   })
 }

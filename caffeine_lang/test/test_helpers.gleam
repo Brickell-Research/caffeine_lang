@@ -37,15 +37,3 @@ pub fn array_based_test_executor_3(
     test_executor(i1, i2, i3) |> should.equal(expected)
   })
 }
-
-/// Test executor for functions with 4 inputs
-pub fn array_based_test_executor_4(
-  input_expect_pairs: List(#(input1, input2, input3, input4, output_type)),
-  test_executor: fn(input1, input2, input3, input4) -> output_type,
-) {
-  input_expect_pairs
-  |> list.each(fn(tuple) {
-    let #(i1, i2, i3, i4, expected) = tuple
-    test_executor(i1, i2, i3, i4) |> should.equal(expected)
-  })
-}

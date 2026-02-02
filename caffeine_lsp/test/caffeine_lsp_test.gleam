@@ -583,19 +583,13 @@ pub fn extract_word_at_out_of_bounds_test() {
 pub fn file_utils_parse_blueprints_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  case file_utils.parse(source) {
-    Ok(file_utils.Blueprints(_)) -> should.be_true(True)
-    _ -> should.fail()
-  }
+  let assert Ok(file_utils.Blueprints(_)) = file_utils.parse(source)
 }
 
 pub fn file_utils_parse_expectations_test() {
   let source =
     "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  case file_utils.parse(source) {
-    Ok(file_utils.Expects(_)) -> should.be_true(True)
-    _ -> should.fail()
-  }
+  let assert Ok(file_utils.Expects(_)) = file_utils.parse(source)
 }
 
 pub fn file_utils_parse_invalid_test() {

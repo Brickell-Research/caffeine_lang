@@ -2,6 +2,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_lang/codegen/generator_utils
+import caffeine_lang/constants
 import caffeine_lang/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
@@ -47,7 +48,7 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
     required_version: option.None,
     required_providers: dict.from_list([
       #(
-        "honeycombio",
+        constants.provider_honeycombio,
         terraform.ProviderRequirement(
           "honeycombio/honeycombio",
           option.Some("~> 0.31"),
@@ -63,7 +64,7 @@ pub fn terraform_settings() -> terraform.TerraformSettings {
 @internal
 pub fn provider() -> terraform.Provider {
   terraform.Provider(
-    name: "honeycombio",
+    name: constants.provider_honeycombio,
     alias: option.None,
     attributes: dict.from_list([
       #("api_key", hcl.ref("var.honeycomb_api_key")),
