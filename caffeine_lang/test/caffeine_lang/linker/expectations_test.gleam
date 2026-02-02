@@ -1,5 +1,6 @@
 import caffeine_lang/constants
 import caffeine_lang/errors
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/types
@@ -13,7 +14,7 @@ fn blueprints() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       params: dict.from_list([
         #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
       ]),
@@ -26,7 +27,7 @@ fn blueprints_with_inputs() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaults",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       params: dict.from_list([
         #("vendor", types.PrimitiveType(types.String)),
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -42,7 +43,7 @@ fn blueprints_with_defaulted() -> List(blueprints.Blueprint) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaulted",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       params: dict.from_list([
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         #(
@@ -97,7 +98,7 @@ pub fn validate_expectations_test() {
           ),
           blueprints.Blueprint(
             name: "success_rate",
-            artifact_refs: ["SLO"],
+            artifact_refs: [SLO],
             params: dict.from_list([
               #(
                 "percentile",

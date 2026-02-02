@@ -4,6 +4,7 @@ import caffeine_lang/codegen/datadog
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -105,7 +106,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -157,7 +158,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -214,7 +215,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -260,7 +261,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/api/availability_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -312,7 +313,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/composite_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -370,7 +371,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/time_slice_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -413,7 +414,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -492,7 +493,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -564,7 +565,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -637,7 +638,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -701,7 +702,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -770,7 +771,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -838,7 +839,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",

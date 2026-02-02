@@ -3,6 +3,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
 }
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/float
@@ -64,7 +65,7 @@ fn validate_ir_dependencies(
 ) -> Result(Nil, CompilationError) {
   // Skip IRs that don't have DependencyRelations
   use <- bool.guard(
-    when: !list.contains(ir.artifact_refs, "DependencyRelations"),
+    when: !list.contains(ir.artifact_refs, DependencyRelations),
     return: Ok(Nil),
   )
 
@@ -193,9 +194,7 @@ fn build_adjacency_list(
   irs: List(IntermediateRepresentation),
 ) -> Dict(String, List(String)) {
   irs
-  |> list.filter(fn(ir) {
-    list.contains(ir.artifact_refs, "DependencyRelations")
-  })
+  |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.map(fn(ir) {
     let path = ir_to_identifier(ir)
     let relations = helpers.extract_relations(ir.values)
@@ -316,8 +315,8 @@ fn validate_hard_dependency_thresholds(
 ) -> Result(Nil, CompilationError) {
   irs
   |> list.filter(fn(ir) {
-    list.contains(ir.artifact_refs, "DependencyRelations")
-    && list.contains(ir.artifact_refs, "SLO")
+    list.contains(ir.artifact_refs, DependencyRelations)
+    && list.contains(ir.artifact_refs, SLO)
   })
   |> list.try_each(fn(ir) {
     let self_path = ir_to_identifier(ir)
@@ -348,7 +347,7 @@ fn validate_single_hard_threshold(
     Ok(target_ir) -> {
       // Only validate if target also has SLO artifact
       use <- bool.guard(
-        when: !list.contains(target_ir.artifact_refs, "SLO"),
+        when: !list.contains(target_ir.artifact_refs, SLO),
         return: Ok(Nil),
       )
 

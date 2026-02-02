@@ -6,12 +6,12 @@ import gleam/dict
 import ir_test_helpers
 import test_helpers
 
-/// Wraps validate_dependency_relations to map Ok(irs) to Ok(True) for test assertions.
+/// Wraps validate_dependency_relations to map Ok(irs) to Ok(Nil) for test assertions.
 fn validate_ok(
   irs: List(IntermediateRepresentation),
-) -> Result(Bool, errors.CompilationError) {
+) -> Result(Nil, errors.CompilationError) {
   case dependency_validator.validate_dependency_relations(irs) {
-    Ok(_) -> Ok(True)
+    Ok(_) -> Ok(Nil)
     Error(err) -> Error(err)
   }
 }
@@ -48,7 +48,7 @@ pub fn validate_dependency_relations_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -74,7 +74,7 @@ pub fn validate_dependency_relations_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -107,7 +107,7 @@ pub fn validate_dependency_relations_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -258,7 +258,7 @@ pub fn validate_dependency_relations_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -331,7 +331,7 @@ pub fn detect_cycles_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -375,7 +375,7 @@ pub fn detect_cycles_test() {
           threshold: default_threshold,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -515,7 +515,7 @@ pub fn validate_hard_dependency_thresholds_test() {
           threshold: 99.99,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -541,7 +541,7 @@ pub fn validate_hard_dependency_thresholds_test() {
           threshold: 99.9,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -597,7 +597,7 @@ pub fn validate_hard_dependency_thresholds_test() {
           threshold: 99.9,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -622,7 +622,7 @@ pub fn validate_hard_dependency_thresholds_test() {
           threshold: 99.9,
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)
@@ -649,7 +649,7 @@ pub fn validate_hard_dependency_thresholds_test() {
           soft_deps: [],
         ),
       ],
-      Ok(True),
+      Ok(Nil),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(validate_ok)

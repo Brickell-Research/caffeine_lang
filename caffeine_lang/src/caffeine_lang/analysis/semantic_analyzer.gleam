@@ -2,6 +2,7 @@ import caffeine_lang/analysis/templatizer
 import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers.{type ValueTuple}
+import caffeine_lang/linker/artifacts.{type ArtifactType, SLO}
 import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
@@ -17,7 +18,7 @@ pub type IntermediateRepresentation {
   IntermediateRepresentation(
     metadata: IntermediateRepresentationMetaData,
     unique_identifier: String,
-    artifact_refs: List(String),
+    artifact_refs: List(ArtifactType),
     values: List(ValueTuple),
     // TODO: make this cleaner. An option is weird.
     vendor: Option(Vendor),
@@ -45,7 +46,7 @@ pub fn resolve_intermediate_representations(
   irs
   |> list.try_map(fn(ir) {
     use <- bool.guard(
-      when: !list.contains(ir.artifact_refs, "SLO"),
+      when: !list.contains(ir.artifact_refs, SLO),
       return: Ok(ir),
     )
     use ir_with_vendor <- result.try(resolve_vendor(ir))

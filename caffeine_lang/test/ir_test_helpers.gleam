@@ -2,6 +2,7 @@
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -19,7 +20,7 @@ pub fn make_slo_ir(
   semantic_analyzer.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: ["SLO"],
+    artifact_refs: [SLO],
     values: [
       helpers.ValueTuple(
         "vendor",
@@ -49,7 +50,7 @@ pub fn make_ir_with_deps(
   semantic_analyzer.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: ["SLO", "DependencyRelations"],
+    artifact_refs: [SLO, DependencyRelations],
     values: [
       helpers.ValueTuple(
         "vendor",
@@ -79,7 +80,7 @@ pub fn make_deps_only_ir(
   semantic_analyzer.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: ["DependencyRelations"],
+    artifact_refs: [DependencyRelations],
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],

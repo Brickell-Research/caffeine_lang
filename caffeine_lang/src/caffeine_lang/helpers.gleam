@@ -1,4 +1,5 @@
 import caffeine_lang/constants
+import caffeine_lang/linker/artifacts.{type ArtifactType}
 import caffeine_lang/types
 import caffeine_lang/value.{type Value}
 import gleam/dict
@@ -150,7 +151,7 @@ pub fn build_system_tag_pairs(
   service_name service_name: String,
   blueprint_name blueprint_name: String,
   friendly_label friendly_label: String,
-  artifact_refs artifact_refs: List(String),
+  artifact_refs artifact_refs: List(ArtifactType),
   misc misc: dict.Dict(String, List(String)),
 ) -> List(#(String, String)) {
   [
@@ -164,7 +165,9 @@ pub fn build_system_tag_pairs(
   ]
   |> list.append(
     artifact_refs
-    |> list.map(fn(ref) { #("artifact", ref) }),
+    |> list.map(fn(ref) {
+      #("artifact", artifacts.artifact_type_to_string(ref))
+    }),
   )
   |> list.append(
     misc

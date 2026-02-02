@@ -34,7 +34,7 @@ pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
   inputs inputs: Dict(String, Value),
   missing_inputs_ok missing_inputs_ok: Bool,
-) -> Result(Bool, String) {
+) -> Result(Nil, String) {
   // Filter out optional and defaulted params - they're not required
   let required_params =
     params
@@ -55,8 +55,8 @@ pub fn inputs_validator(
   // missing keys only rejected when missing_inputs_ok is False
   use _ <- result.try(
     case missing_required_keys, keys_only_in_inputs, missing_inputs_ok {
-      [], [], _ -> Ok(True)
-      _, [], True -> Ok(True)
+      [], [], _ -> Ok(Nil)
+      _, [], True -> Ok(Nil)
       _, [], False ->
         Error(
           "Missing keys in input: "
@@ -101,7 +101,7 @@ pub fn inputs_validator(
     |> string.join(", ")
 
   case type_validation_errors {
-    "" -> Ok(True)
+    "" -> Ok(Nil)
     _ -> Error(type_validation_errors)
   }
 }
@@ -113,7 +113,7 @@ pub fn validate_relevant_uniqueness(
   items: List(a),
   by fetch_property: fn(a) -> String,
   label thing_label: String,
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   let dupe_names =
     items
     |> list.group(fn(thing) { fetch_property(thing) })
@@ -121,7 +121,7 @@ pub fn validate_relevant_uniqueness(
     |> dict.keys
 
   case dupe_names {
-    [] -> Ok(True)
+    [] -> Ok(Nil)
     _ ->
       Error(errors.ParserDuplicateError(
         "Duplicate "
@@ -141,7 +141,7 @@ pub fn validate_inputs_for_collection(
   get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
   with get_identifier: fn(a) -> String,
   missing_inputs_ok missing_inputs_ok: Bool,
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   let validation_errors =
     input_param_collections
     |> list.filter_map(fn(collection) {
@@ -160,7 +160,7 @@ pub fn validate_inputs_for_collection(
     |> string.join(", ")
 
   case validation_errors {
-    "" -> Ok(True)
+    "" -> Ok(Nil)
     _ ->
       Error(errors.ParserJsonParserError(
         "Input validation errors: " <> validation_errors,
@@ -176,7 +176,7 @@ pub fn validate_no_overshadowing(
   get_check_collection get_check_collection: fn(a) -> Dict(String, c),
   get_against_collection get_against_collection: fn(b) -> Dict(String, d),
   get_error_label get_error_label: fn(a) -> String,
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   let overshadow_errors =
     items
     |> list.filter_map(fn(pair) {
@@ -195,7 +195,7 @@ pub fn validate_no_overshadowing(
     |> string.join(", ")
 
   case overshadow_errors {
-    "" -> Ok(True)
+    "" -> Ok(Nil)
     _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
   }
 }
@@ -207,7 +207,7 @@ pub fn check_collection_key_overshadowing(
   in reference_collection: Dict(String, a),
   against referrer_collection: Dict(String, b),
   with error_msg: String,
-) -> Result(Bool, String) {
+) -> Result(Nil, String) {
   let reference_names = reference_collection |> dict.keys |> set.from_list
   let referrer_names = referrer_collection |> dict.keys |> set.from_list
   let overshadowing_params = {
@@ -215,7 +215,7 @@ pub fn check_collection_key_overshadowing(
   }
 
   case overshadowing_params {
-    [] -> Ok(True)
+    [] -> Ok(Nil)
     _ -> Error(error_msg <> overshadowing_params |> string.join(", "))
   }
 }

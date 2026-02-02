@@ -1,5 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{type Artifact}
+import caffeine_lang/linker/artifacts.{type Artifact, type ArtifactType}
 import caffeine_lang/linker/validations
 import caffeine_lang/types.{type AcceptedTypes}
 import caffeine_lang/value.{type Value}
@@ -14,7 +14,7 @@ import gleam/string
 pub type Blueprint {
   Blueprint(
     name: String,
-    artifact_refs: List(String),
+    artifact_refs: List(ArtifactType),
     params: dict.Dict(String, AcceptedTypes),
     inputs: dict.Dict(String, Value),
   )
@@ -103,7 +103,7 @@ fn map_blueprints_to_artifacts(
 ) -> List(#(Blueprint, List(Artifact))) {
   let artifact_map =
     artifacts
-    |> list.map(fn(a) { #(artifacts.artifact_type_to_string(a.type_), a) })
+    |> list.map(fn(a) { #(a.type_, a) })
     |> dict.from_list
 
   blueprints
@@ -129,7 +129,7 @@ fn merge_artifact_params(
 /// Validate that no blueprint has duplicate artifact refs.
 fn validate_no_duplicate_artifact_refs(
   blueprints: List(Blueprint),
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   let duplicates =
     blueprints
     |> list.filter_map(fn(blueprint) {
@@ -145,6 +145,7 @@ fn validate_no_duplicate_artifact_refs(
         |> list.group(fn(r) { r })
         |> dict.filter(fn(_, v) { list.length(v) > 1 })
         |> dict.keys
+        |> list.map(artifacts.artifact_type_to_string)
         |> string.join(", ")
       Ok(
         "blueprint '"
@@ -155,7 +156,7 @@ fn validate_no_duplicate_artifact_refs(
     })
 
   case duplicates {
-    [] -> Ok(True)
+    [] -> Ok(Nil)
     [first, ..] -> Error(errors.ParserDuplicateError(msg: first))
   }
 }
@@ -163,7 +164,7 @@ fn validate_no_duplicate_artifact_refs(
 /// Validate that artifacts referenced by a blueprint don't have conflicting param types.
 fn validate_no_conflicting_params(
   blueprint_artifacts_collection: List(#(Blueprint, List(Artifact))),
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   let conflicts =
     blueprint_artifacts_collection
     |> list.filter_map(fn(pair) {
@@ -181,7 +182,7 @@ fn validate_no_conflicting_params(
     })
 
   case conflicts {
-    [] -> Ok(True)
+    [] -> Ok(Nil)
     [first, ..] -> Error(errors.ParserDuplicateError(msg: first))
   }
 }

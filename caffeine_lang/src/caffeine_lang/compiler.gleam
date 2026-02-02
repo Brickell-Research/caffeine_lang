@@ -6,6 +6,7 @@ import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/honeycomb
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
+import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
@@ -157,7 +158,7 @@ fn run_code_generation(
   let has_deps =
     resolved_irs
     |> list.any(fn(ir) {
-      list.contains(ir.artifact_refs, "DependencyRelations")
+      list.contains(ir.artifact_refs, artifacts.DependencyRelations)
     })
 
   let graph = case has_deps {

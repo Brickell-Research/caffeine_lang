@@ -5,6 +5,7 @@ import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -29,7 +30,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -66,7 +67,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -108,7 +109,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -145,7 +146,7 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -199,7 +200,7 @@ pub fn resolve_vendor_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -219,7 +220,7 @@ pub fn resolve_vendor_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -253,7 +254,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -304,7 +305,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -358,7 +359,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -411,7 +412,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -467,7 +468,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -515,7 +516,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -567,7 +568,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -631,7 +632,7 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -705,7 +706,7 @@ pub fn resolve_vendor_honeycomb_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -725,7 +726,7 @@ pub fn resolve_vendor_honeycomb_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -755,7 +756,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -787,7 +788,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
-        artifact_refs: ["SLO"],
+        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -830,7 +831,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         misc: dict.new(),
       ),
       unique_identifier: "dd_slo",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -869,7 +870,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         misc: dict.new(),
       ),
       unique_identifier: "hc_slo",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -906,7 +907,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             misc: dict.new(),
           ),
           unique_identifier: "dd_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -943,7 +944,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             misc: dict.new(),
           ),
           unique_identifier: "hc_slo",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",

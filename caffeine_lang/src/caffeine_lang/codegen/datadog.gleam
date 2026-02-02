@@ -8,6 +8,7 @@ import caffeine_lang/errors.{
   GeneratorSloQueryResolutionError,
 }
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts
 import caffeine_lang/value
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
@@ -146,7 +147,7 @@ pub fn ir_to_terraform_resource(
 
   // Build dependency relation tags if artifact refs include DependencyRelations.
   let dependency_tags = case
-    ir.artifact_refs |> list.contains("DependencyRelations")
+    ir.artifact_refs |> list.contains(artifacts.DependencyRelations)
   {
     True -> build_dependency_tags(ir.values)
     False -> []

@@ -2,6 +2,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
   type IntermediateRepresentation, ir_to_identifier,
 }
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts
 import gleam/dict
 import gleam/list
 import gleam/result
@@ -55,7 +56,7 @@ fn build_node(ir: IntermediateRepresentation) -> String {
 fn build_edges(irs: List(IntermediateRepresentation)) -> List(String) {
   irs
   |> list.filter(fn(ir) {
-    list.contains(ir.artifact_refs, "DependencyRelations")
+    list.contains(ir.artifact_refs, artifacts.DependencyRelations)
   })
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))

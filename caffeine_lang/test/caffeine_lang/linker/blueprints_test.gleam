@@ -1,5 +1,7 @@
 import caffeine_lang/errors
-import caffeine_lang/linker/artifacts.{type Artifact, ParamInfo}
+import caffeine_lang/linker/artifacts.{
+  type Artifact, DependencyRelations, ParamInfo, SLO,
+}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/types
 import caffeine_lang/value
@@ -99,7 +101,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
@@ -109,7 +111,7 @@ pub fn validate_blueprints_test() {
       Ok([
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -130,7 +132,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "minimal",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -151,7 +153,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "minimal_params",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
         ),
@@ -172,13 +174,13 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "first",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
         blueprints.Blueprint(
           name: "second",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -199,7 +201,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "tracked_slo",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -220,13 +222,13 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -246,7 +248,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.from_list([
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
@@ -260,27 +262,6 @@ pub fn validate_blueprints_test() {
   ]
   |> test_helpers.array_based_test_executor_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
-  })
-
-  // Unknown artifact in list (silently ignored - artifacts not found produce empty param merge)
-  [
-    #(
-      [
-        blueprints.Blueprint(
-          name: "unknown_artifact",
-          artifact_refs: ["NonExistent"],
-          params: dict.new(),
-          inputs: dict.new(),
-        ),
-      ],
-      True,
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, artifacts()) {
-      Ok(_) -> True
-      Error(_) -> False
-    }
   })
 
   // Empty artifact_refs list
@@ -310,7 +291,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "conflicting",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -357,7 +338,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([
             #("value", value.StringValue("foobar")),
@@ -380,7 +361,7 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO"],
+          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([#("value", value.IntValue(123))]),
         ),
@@ -405,7 +386,7 @@ pub fn validate_blueprints_artifact_refs_test() {
       [
         blueprints.Blueprint(
           name: "tracked_slo",
-          artifact_refs: ["SLO", "DependencyRelations"],
+          artifact_refs: [SLO, DependencyRelations],
           params: dict.new(),
           inputs: dict.from_list([
             #("value", value.StringValue("foobar")),
@@ -429,7 +410,7 @@ pub fn validate_blueprints_artifact_refs_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: ["SLO", "SLO"],
+          artifact_refs: [SLO, SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),

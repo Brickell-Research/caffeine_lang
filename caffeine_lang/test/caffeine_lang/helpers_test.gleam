@@ -1,4 +1,5 @@
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -154,7 +155,7 @@ pub fn build_system_tag_pairs_test() {
       service_name: "my_service",
       blueprint_name: "my_bp",
       friendly_label: "my_label",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       misc: dict.from_list([#("env", ["prod", "dev"])]),
     )
 

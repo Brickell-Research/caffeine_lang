@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
@@ -113,7 +114,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: ["TestArtifact"],
+        artifact_refs: [SLO],
         params: dict.from_list([
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -156,7 +157,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: ["TestArtifact"],
+        artifact_refs: [SLO],
         params: dict.from_list([
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -201,7 +202,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: ["TestArtifact"],
+        artifact_refs: [SLO],
         params: dict.from_list([
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -252,7 +253,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: ["TestArtifact"],
+        artifact_refs: [SLO],
         params: dict.from_list([
           #("from_blueprint", types.PrimitiveType(types.String)),
           #(
@@ -295,7 +296,7 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: ["TestArtifact"],
+        artifact_refs: [SLO],
         params: dict.from_list([
           #("env", types.PrimitiveType(types.String)),
           #("region", types.PrimitiveType(types.String)),
@@ -332,7 +333,7 @@ pub fn build_all_list_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: ["TestArtifact"],
+      artifact_refs: [SLO],
       params: dict.from_list([
         #(
           "job_name",
@@ -374,7 +375,7 @@ pub fn build_all_optional_none_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: ["TestArtifact"],
+      artifact_refs: [SLO],
       params: dict.from_list([
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         #(
@@ -410,7 +411,7 @@ fn make_blueprint(
 ) -> blueprints.Blueprint {
   blueprints.Blueprint(
     name: name,
-    artifact_refs: ["TestArtifact"],
+    artifact_refs: [SLO],
     params: params
       |> list.map(fn(p) {
         let #(label, typ) = p
@@ -457,7 +458,7 @@ fn make_ir(
       misc: misc,
     ),
     unique_identifier: org <> "_" <> service <> "_" <> name,
-    artifact_refs: ["TestArtifact"],
+    artifact_refs: [SLO],
     values: values,
     vendor: option.None,
   )

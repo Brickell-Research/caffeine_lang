@@ -562,7 +562,7 @@ pub fn inputs_validator_test() {
   [
     // ==== missing_inputs_ok: False ====
     // no inputs
-    #(dict.new(), dict.new(), False, Ok(True)),
+    #(dict.new(), dict.new(), False, Ok(Nil)),
     // some inputs
     #(
       dict.from_list([
@@ -574,7 +574,7 @@ pub fn inputs_validator_test() {
         #("count", value.IntValue(42)),
       ]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // optional param omitted - should pass
     #(
@@ -586,7 +586,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // optional param provided - should pass
     #(
@@ -598,7 +598,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("maybe_name", value.StringValue("foo"))]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // mix of required and optional, optional omitted - should pass
     #(
@@ -615,7 +615,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("name", value.StringValue("foo"))]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // defaulted param omitted - should pass
     #(
@@ -630,7 +630,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // defaulted param provided - should pass
     #(
@@ -645,7 +645,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("count", value.IntValue(42))]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // mix of required and defaulted, defaulted omitted - should pass
     #(
@@ -661,7 +661,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("name", value.StringValue("foo"))]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // refinement with defaulted inner omitted - should pass (lcp_p75_latency style)
     #(
@@ -680,7 +680,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("view_path", value.StringValue("/members/messages"))]),
       False,
-      Ok(True),
+      Ok(Nil),
     ),
     // missing inputs for params (single)
     #(
@@ -770,7 +770,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([]),
       True,
-      Ok(True),
+      Ok(Nil),
     ),
     // partial inputs - now OK
     #(
@@ -781,7 +781,7 @@ pub fn inputs_validator_test() {
       ]),
       dict.from_list([#("name", value.StringValue("foo"))]),
       True,
-      Ok(True),
+      Ok(Nil),
     ),
     // all inputs provided - still OK
     #(
@@ -794,7 +794,7 @@ pub fn inputs_validator_test() {
         #("count", value.IntValue(42)),
       ]),
       True,
-      Ok(True),
+      Ok(Nil),
     ),
     // extra inputs still rejected
     #(
@@ -873,8 +873,8 @@ pub fn validate_relevant_uniqueness_test() {
 
   // happy paths
   [
-    #([], Ok(True)),
-    #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(True)),
+    #([], Ok(Nil)),
+    #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
     validations.validate_relevant_uniqueness(
@@ -947,7 +947,7 @@ pub fn validate_inputs_for_collection_test() {
       with: fn(_) { "test" },
       missing_inputs_ok: False,
     )
-    |> should.equal(Ok(True))
+    |> should.equal(Ok(Nil))
   })
 
   // happy path with missing_inputs_ok: True - partial inputs allowed
@@ -967,7 +967,7 @@ pub fn validate_inputs_for_collection_test() {
     with: fn(_) { "test" },
     missing_inputs_ok: True,
   )
-  |> should.equal(Ok(True))
+  |> should.equal(Ok(Nil))
 
   // sad path - type error (both modes)
   let collection_type_error = [
@@ -1030,7 +1030,7 @@ pub fn check_collection_key_overshadowing_test() {
       against: referrer,
       with: error_prefix,
     )
-    |> should.equal(Ok(True))
+    |> should.equal(Ok(Nil))
   })
 
   // sad paths

@@ -4,6 +4,7 @@ import caffeine_lang/codegen/honeycomb
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -48,7 +49,7 @@ fn make_honeycomb_ir(
       misc: dict.new(),
     ),
     unique_identifier: unique_identifier,
-    artifact_refs: ["SLO"],
+    artifact_refs: [SLO],
     values: [
       helpers.ValueTuple(
         "vendor",
@@ -243,7 +244,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         misc: dict.new(),
       ),
       unique_identifier: "acme_payments_no_eval",
-      artifact_refs: ["SLO"],
+      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",

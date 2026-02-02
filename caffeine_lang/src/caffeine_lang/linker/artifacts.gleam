@@ -39,3 +39,13 @@ pub fn artifact_type_to_string(type_: ArtifactType) -> String {
     DependencyRelations -> "DependencyRelations"
   }
 }
+
+/// Parses a string into an ArtifactType, returning Error(Nil) for unknown types.
+@internal
+pub fn parse_artifact_type(raw: String) -> Result(ArtifactType, Nil) {
+  case raw {
+    "SLO" -> Ok(SLO)
+    "DependencyRelations" -> Ok(DependencyRelations)
+    _ -> Error(Nil)
+  }
+}

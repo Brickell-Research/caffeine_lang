@@ -93,7 +93,7 @@ fn validate_blueprint_refs(
 fn check_input_overshadowing(
   expectations_blueprint_collection: List(#(Expectation, Blueprint)),
   path_prefix: String,
-) -> Result(Bool, CompilationError) {
+) -> Result(Nil, CompilationError) {
   validations.validate_no_overshadowing(
     expectations_blueprint_collection,
     get_check_collection: fn(expectation) { expectation.inputs },

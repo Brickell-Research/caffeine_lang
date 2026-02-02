@@ -861,11 +861,7 @@ fn validate_primitive_value(
     Boolean, value.BoolValue(_) -> Ok(val)
     Boolean, _ ->
       Error([
-        ValidationError(
-          expected: "Bool",
-          found: value.classify(val),
-          path: [],
-        ),
+        ValidationError(expected: "Bool", found: value.classify(val), path: []),
       ])
     String, value.StringValue(_) -> Ok(val)
     String, _ ->
@@ -892,20 +888,12 @@ pub fn validate_numeric_value(
     Integer, value.IntValue(_) -> Ok(val)
     Integer, _ ->
       Error([
-        ValidationError(
-          expected: "Int",
-          found: value.classify(val),
-          path: [],
-        ),
+        ValidationError(expected: "Int", found: value.classify(val), path: []),
       ])
     Float, value.FloatValue(_) -> Ok(val)
     Float, _ ->
       Error([
-        ValidationError(
-          expected: "Float",
-          found: value.classify(val),
-          path: [],
-        ),
+        ValidationError(expected: "Float", found: value.classify(val), path: []),
       ])
   }
 }
@@ -969,9 +957,7 @@ fn validate_collection_value(
             // Validate value
             validate_value(value_type, v)
             |> result.map_error(fn(errs) {
-              list.map(errs, fn(e) {
-                ValidationError(..e, path: [k, ..e.path])
-              })
+              list.map(errs, fn(e) { ValidationError(..e, path: [k, ..e.path]) })
             })
           })
           |> result.map(fn(_) { val })

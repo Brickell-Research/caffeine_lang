@@ -102,7 +102,9 @@ pub fn validate_numeric_value_test() {
     #(#(Float, float_val), Ok(float_val)),
     #(
       #(Float, string_val),
-      Error([types.ValidationError(expected: "Float", found: "String", path: [])]),
+      Error([
+        types.ValidationError(expected: "Float", found: "String", path: []),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -145,7 +147,11 @@ pub fn validate_in_range_test() {
     #(
       #(Integer, "-20", "-10", "10"),
       Error([
-        types.ValidationError(expected: "-10 <= x <= 10", found: "-20", path: []),
+        types.ValidationError(
+          expected: "-10 <= x <= 10",
+          found: "-20",
+          path: [],
+        ),
       ]),
     ),
     #(
@@ -169,11 +175,15 @@ pub fn validate_in_range_test() {
   [
     #(
       #(Integer, "hello", "0", "100"),
-      Error([types.ValidationError(expected: "Integer", found: "hello", path: [])]),
+      Error([
+        types.ValidationError(expected: "Integer", found: "hello", path: []),
+      ]),
     ),
     #(
       #(Integer, "3.14", "0", "100"),
-      Error([types.ValidationError(expected: "Integer", found: "3.14", path: [])]),
+      Error([
+        types.ValidationError(expected: "Integer", found: "3.14", path: []),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -196,13 +206,21 @@ pub fn validate_in_range_test() {
     #(
       #(Float, "-0.1", "0.0", "1.0"),
       Error([
-        types.ValidationError(expected: "0.0 <= x <= 1.0", found: "-0.1", path: []),
+        types.ValidationError(
+          expected: "0.0 <= x <= 1.0",
+          found: "-0.1",
+          path: [],
+        ),
       ]),
     ),
     #(
       #(Float, "1.1", "0.0", "1.0"),
       Error([
-        types.ValidationError(expected: "0.0 <= x <= 1.0", found: "1.1", path: []),
+        types.ValidationError(
+          expected: "0.0 <= x <= 1.0",
+          found: "1.1",
+          path: [],
+        ),
       ]),
     ),
   ]

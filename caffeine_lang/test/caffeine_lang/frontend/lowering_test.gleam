@@ -1,6 +1,7 @@
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types
@@ -25,7 +26,8 @@ fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint) {
   let content = lowering_path(file_name <> ".caffeine") |> read_file
   let assert Ok(file) = parser.parse_blueprints_file(content)
   let assert Ok(validated) = validator.validate_blueprints_file(file)
-  lowering.lower_blueprints(validated)
+  let assert Ok(blueprints) = lowering.lower_blueprints(validated)
+  blueprints
 }
 
 fn parse_and_lower_expects(file_name: String) -> List(Expectation) {
@@ -49,7 +51,7 @@ pub fn lower_blueprints_simple_test() {
 
   let assert Ok(bp) = list.first(blueprints)
   bp.name |> should.equal("api_availability")
-  bp.artifact_refs |> should.equal(["SLO"])
+  bp.artifact_refs |> should.equal([SLO])
   dict.size(bp.params) |> should.equal(2)
 
   let assert Ok(env_type) = dict.get(bp.params, "env")
@@ -72,7 +74,7 @@ pub fn lower_blueprints_multi_artifact_test() {
 
   let assert Ok(bp) = list.first(blueprints)
   bp.name |> should.equal("tracked_slo")
-  bp.artifact_refs |> should.equal(["SLO", "DependencyRelation"])
+  bp.artifact_refs |> should.equal([SLO, DependencyRelations])
   // Should have params from both requires and artifacts
   { dict.size(bp.params) > 0 } |> should.be_true
 }
@@ -82,7 +84,7 @@ pub fn lower_blueprints_with_extends_test() {
   let assert Ok(bp) = list.first(blueprints)
 
   bp.name |> should.equal("api")
-  bp.artifact_refs |> should.equal(["SLO"])
+  bp.artifact_refs |> should.equal([SLO])
 
   // Should have merged requires from _common extendable + own requires
   let assert Ok(_) = dict.get(bp.params, "env")

@@ -28,7 +28,7 @@ pub fn compile_blueprints(
       validator_error_to_compilation_error(err, source.path)
     }),
   )
-  Ok(lowering.lower_blueprints(validated))
+  lowering.lower_blueprints(validated)
 }
 
 /// Compiles an expects .caffeine source to a list of expectations.
