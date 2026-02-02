@@ -85,7 +85,6 @@ fn make_honeycomb_ir(
       ),
     ],
     artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-      vendor_string: constants.vendor_honeycomb,
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -284,7 +283,6 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         ),
       ],
       artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-        vendor_string: constants.vendor_honeycomb,
         threshold: 99.0,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 30,

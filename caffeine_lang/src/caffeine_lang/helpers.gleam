@@ -66,6 +66,7 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
 pub const default_threshold_percentage = 99.9
 
 /// Extract a value from a list of ValueTuple by label using the provided extractor.
+@internal
 pub fn extract_value(
   values: List(ValueTuple),
   label: String,
@@ -77,6 +78,7 @@ pub fn extract_value(
 }
 
 /// Extract the threshold from a list of values, falling back to the default.
+@internal
 pub fn extract_threshold(values: List(ValueTuple)) -> Float {
   extract_value(values, "threshold", value.extract_float)
   |> result.unwrap(default_threshold_percentage)
@@ -84,6 +86,7 @@ pub fn extract_threshold(values: List(ValueTuple)) -> Float {
 
 /// Extract dependency relations as a Dict of relation type to target list.
 /// String keys are parsed into DependencyRelationType; unknown keys are skipped.
+@internal
 pub fn extract_relations(
   values: List(ValueTuple),
 ) -> dict.Dict(DependencyRelationType, List(String)) {
@@ -124,12 +127,14 @@ pub fn extract_relations(
 pub const default_window_in_days = 30
 
 /// Extract the window_in_days from a list of values, falling back to the default.
+@internal
 pub fn extract_window_in_days(values: List(ValueTuple)) -> Int {
   extract_value(values, "window_in_days", value.extract_int)
   |> result.unwrap(default_window_in_days)
 }
 
 /// Extract indicators from a list of values as a Dict mapping indicator names to expressions.
+@internal
 pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String) {
   values
   |> list.find(fn(vt) { vt.label == "indicators" })
@@ -138,6 +143,7 @@ pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String)
 }
 
 /// Extract user-provided tags as a sorted list of key-value pairs.
+@internal
 pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
   values
   |> list.find(fn(vt) { vt.label == "tags" })

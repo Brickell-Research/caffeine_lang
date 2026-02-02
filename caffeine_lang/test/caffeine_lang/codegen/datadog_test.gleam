@@ -141,7 +141,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -210,7 +209,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{env:production,status:2xx}"),
@@ -274,7 +272,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -332,7 +329,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.5,
             indicators: dict.from_list([
               #("numerator", "sum:api.requests{!status:5xx}"),
@@ -402,7 +398,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("good", "sum:http.requests{status:2xx}"),
@@ -458,7 +453,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.new(),
             window_in_days: 30,
@@ -549,7 +543,6 @@ pub fn generate_terraform_test() {
           ],
           artifact_data: semantic_analyzer.SloWithDependency(
             slo: semantic_analyzer.SloFields(
-              vendor_string: constants.vendor_datadog,
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -642,7 +635,6 @@ pub fn generate_terraform_test() {
           ],
           artifact_data: semantic_analyzer.SloWithDependency(
             slo: semantic_analyzer.SloFields(
-              vendor_string: constants.vendor_datadog,
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -735,7 +727,6 @@ pub fn generate_terraform_test() {
           ],
           artifact_data: semantic_analyzer.SloWithDependency(
             slo: semantic_analyzer.SloFields(
-              vendor_string: constants.vendor_datadog,
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -819,7 +810,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -900,7 +890,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -980,7 +969,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -1053,7 +1041,6 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
-            vendor_string: constants.vendor_datadog,
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),

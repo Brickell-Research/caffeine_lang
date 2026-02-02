@@ -21,6 +21,9 @@ import terra_madre/common
 import terra_madre/hcl
 import terra_madre/terraform
 
+/// Default evaluation expression used when no explicit evaluation is provided.
+const default_evaluation = "numerator / denominator"
+
 /// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
 /// Includes provider configuration and variables.
 pub fn generate_terraform(
@@ -126,8 +129,7 @@ pub fn ir_to_terraform_resource(
   let threshold = slo.threshold
   let window_in_days = slo.window_in_days
   let indicators = slo.indicators
-  let evaluation_expr =
-    slo.evaluation |> option.unwrap("numerator / denominator")
+  let evaluation_expr = slo.evaluation |> option.unwrap(default_evaluation)
   let runbook = slo.runbook
 
   // Parse the evaluation expression using CQL and get HCL blocks.

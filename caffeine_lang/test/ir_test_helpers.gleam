@@ -153,7 +153,6 @@ fn make_test_slo_fields(
   indicators: dict.Dict(String, String),
 ) -> semantic_analyzer.SloFields {
   semantic_analyzer.SloFields(
-    vendor_string: "datadog",
     threshold: threshold,
     indicators: indicators,
     window_in_days: 30,

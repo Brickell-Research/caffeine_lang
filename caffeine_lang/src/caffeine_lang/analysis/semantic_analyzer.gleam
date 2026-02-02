@@ -24,7 +24,6 @@ pub type VendorState {
 /// Structured SLO artifact fields extracted from raw values.
 pub type SloFields {
   SloFields(
-    vendor_string: String,
     threshold: Float,
     indicators: dict.Dict(String, String),
     window_in_days: Int,

@@ -211,9 +211,6 @@ fn build_artifact_data(
 fn build_slo_fields(
   value_tuples: List(helpers.ValueTuple),
 ) -> semantic_analyzer.SloFields {
-  let vendor_string =
-    helpers.extract_value(value_tuples, "vendor", value.extract_string)
-    |> result.unwrap("")
   let threshold = helpers.extract_threshold(value_tuples)
   let indicators = helpers.extract_indicators(value_tuples)
   let window_in_days = helpers.extract_window_in_days(value_tuples)
@@ -232,7 +229,6 @@ fn build_slo_fields(
     |> result.unwrap(option.None)
 
   semantic_analyzer.SloFields(
-    vendor_string: vendor_string,
     threshold: threshold,
     indicators: indicators,
     window_in_days: window_in_days,
