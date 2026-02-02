@@ -5,8 +5,8 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import gleam/option
 import gleam/string
@@ -53,22 +53,22 @@ fn make_honeycomb_ir(
       helpers.ValueTuple(
         "vendor",
         types.PrimitiveType(types.String),
-        dynamic.string(constants.vendor_honeycomb),
+        value.StringValue(constants.vendor_honeycomb),
       ),
       helpers.ValueTuple(
         "threshold",
         types.PrimitiveType(types.NumericType(types.Float)),
-        dynamic.float(threshold),
+        value.FloatValue(threshold),
       ),
       helpers.ValueTuple(
         "window_in_days",
         types.PrimitiveType(types.NumericType(types.Integer)),
-        dynamic.int(window_in_days),
+        value.IntValue(window_in_days),
       ),
       helpers.ValueTuple(
         "evaluation",
         types.PrimitiveType(types.String),
-        dynamic.string(evaluation),
+        value.StringValue(evaluation),
       ),
       helpers.ValueTuple(
         "indicators",
@@ -76,11 +76,10 @@ fn make_honeycomb_ir(
           types.PrimitiveType(types.String),
           types.PrimitiveType(types.String),
         )),
-        dynamic.properties(
+        value.DictValue(
           indicators
-          |> list.map(fn(pair) {
-            #(dynamic.string(pair.0), dynamic.string(pair.1))
-          }),
+          |> list.map(fn(pair) { #(pair.0, value.StringValue(pair.1)) })
+          |> dict.from_list,
         ),
       ),
     ],
@@ -249,17 +248,17 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         helpers.ValueTuple(
           "vendor",
           types.PrimitiveType(types.String),
-          dynamic.string(constants.vendor_honeycomb),
+          value.StringValue(constants.vendor_honeycomb),
         ),
         helpers.ValueTuple(
           "threshold",
           types.PrimitiveType(types.NumericType(types.Float)),
-          dynamic.float(99.0),
+          value.FloatValue(99.0),
         ),
         helpers.ValueTuple(
           "window_in_days",
           types.PrimitiveType(types.NumericType(types.Integer)),
-          dynamic.int(30),
+          value.IntValue(30),
         ),
         helpers.ValueTuple(
           "indicators",
@@ -267,12 +266,11 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
             types.PrimitiveType(types.String),
             types.PrimitiveType(types.String),
           )),
-          dynamic.properties([
-            #(
-              dynamic.string("sli"),
-              dynamic.string("LT($\"status_code\", 500)"),
-            ),
-          ]),
+          value.DictValue(
+            dict.from_list([
+              #("sli", value.StringValue("LT($\"status_code\", 500)")),
+            ]),
+          ),
         ),
       ],
       vendor: option.Some(vendor.Honeycomb),

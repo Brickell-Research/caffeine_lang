@@ -12,8 +12,8 @@ import caffeine_lang/types.{
   ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
   PrimitiveType, RefinementType,
 }
+import caffeine_lang/value
 import gleam/dict.{type Dict}
-import gleam/dynamic
 import gleam/list
 import gleam/string
 
@@ -241,38 +241,38 @@ fn resolve_refinement(
 }
 
 /// Converts a struct's literal-valued fields to an inputs dict.
-fn struct_to_inputs(s: Struct) -> Dict(String, dynamic.Dynamic) {
+fn struct_to_inputs(s: Struct) -> Dict(String, value.Value) {
   s.fields
   |> list.filter_map(fn(field) {
     case field.value {
-      ast.LiteralValue(lit) -> Ok(#(field.name, literal_to_dynamic(lit)))
+      ast.LiteralValue(lit) -> Ok(#(field.name, literal_to_value(lit)))
       ast.TypeValue(_) -> Error(Nil)
     }
   })
   |> dict.from_list
 }
 
-/// Converts a literal AST value to a Dynamic value.
+/// Converts a literal AST value to a typed Value.
 @internal
-pub fn literal_to_dynamic(lit: Literal) -> dynamic.Dynamic {
+pub fn literal_to_value(lit: Literal) -> value.Value {
   case lit {
-    ast.LiteralString(s) -> dynamic.string(transform_template_vars(s))
-    ast.LiteralInteger(i) -> dynamic.int(i)
-    ast.LiteralFloat(f) -> dynamic.float(f)
-    ast.LiteralTrue -> dynamic.bool(True)
-    ast.LiteralFalse -> dynamic.bool(False)
+    ast.LiteralString(s) -> value.StringValue(transform_template_vars(s))
+    ast.LiteralInteger(i) -> value.IntValue(i)
+    ast.LiteralFloat(f) -> value.FloatValue(f)
+    ast.LiteralTrue -> value.BoolValue(True)
+    ast.LiteralFalse -> value.BoolValue(False)
     ast.LiteralList(elements) ->
-      dynamic.list(list.map(elements, literal_to_dynamic))
+      value.ListValue(list.map(elements, literal_to_value))
     ast.LiteralStruct(fields) ->
       fields
       |> list.filter_map(fn(field) {
         case field.value {
-          ast.LiteralValue(inner) ->
-            Ok(#(dynamic.string(field.name), literal_to_dynamic(inner)))
+          ast.LiteralValue(inner) -> Ok(#(field.name, literal_to_value(inner)))
           ast.TypeValue(_) -> Error(Nil)
         }
       })
-      |> dynamic.properties
+      |> dict.from_list
+      |> value.DictValue
   }
 }
 

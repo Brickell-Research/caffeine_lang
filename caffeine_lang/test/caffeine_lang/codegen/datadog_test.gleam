@@ -5,8 +5,8 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import gleam/option
 import gleam/string
@@ -110,17 +110,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -128,16 +128,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -163,17 +162,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -181,16 +180,20 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{env:production,status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{env:production}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue(
+                      "sum:http.requests{env:production,status:2xx}",
+                    ),
+                  ),
+                  #(
+                    "denominator",
+                    value.StringValue("sum:http.requests{env:production}"),
+                  ),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -216,17 +219,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -234,16 +237,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -263,17 +265,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.5),
+              value.FloatValue(99.5),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(7),
+              value.IntValue(7),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -281,16 +283,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:api.requests{!status:5xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:api.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:api.requests{!status:5xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:api.requests{*}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -316,22 +317,22 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "evaluation",
               types.PrimitiveType(types.String),
-              dynamic.string("(good + partial) / total"),
+              value.StringValue("(good + partial) / total"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -339,20 +340,16 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("good"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("partial"),
-                  dynamic.string("sum:http.requests{status:3xx}"),
-                ),
-                #(
-                  dynamic.string("total"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("good", value.StringValue("sum:http.requests{status:2xx}")),
+                  #(
+                    "partial",
+                    value.StringValue("sum:http.requests{status:3xx}"),
+                  ),
+                  #("total", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -378,22 +375,22 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "evaluation",
               types.PrimitiveType(types.String),
-              dynamic.string(
+              value.StringValue(
                 "time_slice(avg:system.cpu.user{env:production} > 99.5 per 300s)",
               ),
             ),
@@ -421,17 +418,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -439,16 +436,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "relations",
@@ -458,22 +454,24 @@ pub fn generate_terraform_test() {
                   types.List(types.PrimitiveType(types.String)),
                 ),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("soft"),
-                  dynamic.list([
-                    dynamic.string("cache_slo"),
-                    dynamic.string("logging_slo"),
-                  ]),
-                ),
-                #(
-                  dynamic.string("hard"),
-                  dynamic.list([
-                    dynamic.string("db_slo"),
-                    dynamic.string("storage_slo"),
-                  ]),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "soft",
+                    value.ListValue([
+                      value.StringValue("cache_slo"),
+                      value.StringValue("logging_slo"),
+                    ]),
+                  ),
+                  #(
+                    "hard",
+                    value.ListValue([
+                      value.StringValue("db_slo"),
+                      value.StringValue("storage_slo"),
+                    ]),
+                  ),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -499,17 +497,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -517,16 +515,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "relations",
@@ -536,15 +533,17 @@ pub fn generate_terraform_test() {
                   types.List(types.PrimitiveType(types.String)),
                 ),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("hard"),
-                  dynamic.list([
-                    dynamic.string("db_slo"),
-                    dynamic.string("storage_slo"),
-                  ]),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "hard",
+                    value.ListValue([
+                      value.StringValue("db_slo"),
+                      value.StringValue("storage_slo"),
+                    ]),
+                  ),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -570,17 +569,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -588,16 +587,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "relations",
@@ -607,19 +605,18 @@ pub fn generate_terraform_test() {
                   types.List(types.PrimitiveType(types.String)),
                 ),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("soft"),
-                  dynamic.list([
-                    dynamic.string("cache_slo"),
-                    dynamic.string("logging_slo"),
-                  ]),
-                ),
-                #(
-                  dynamic.string("hard"),
-                  dynamic.list([dynamic.string("db_slo")]),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "soft",
+                    value.ListValue([
+                      value.StringValue("cache_slo"),
+                      value.StringValue("logging_slo"),
+                    ]),
+                  ),
+                  #("hard", value.ListValue([value.StringValue("db_slo")])),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -645,17 +642,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -663,16 +660,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "tags",
@@ -684,7 +680,7 @@ pub fn generate_terraform_test() {
                   )),
                 ),
               ),
-              dynamic.properties([]),
+              value.DictValue(dict.from_list([])),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -710,17 +706,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -728,16 +724,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "tags",
@@ -749,10 +744,12 @@ pub fn generate_terraform_test() {
                   )),
                 ),
               ),
-              dynamic.properties([
-                #(dynamic.string("env"), dynamic.string("prod")),
-                #(dynamic.string("tier"), dynamic.string("1")),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("env", value.StringValue("prod")),
+                  #("tier", value.StringValue("1")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -778,17 +775,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -796,16 +793,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "tags",
@@ -817,9 +813,11 @@ pub fn generate_terraform_test() {
                   )),
                 ),
               ),
-              dynamic.properties([
-                #(dynamic.string("team"), dynamic.string("override_team")),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("team", value.StringValue("override_team")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -845,17 +843,17 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              dynamic.float(99.9),
+              value.FloatValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
               types.PrimitiveType(types.NumericType(types.Integer)),
-              dynamic.int(30),
+              value.IntValue(30),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -863,16 +861,15 @@ pub fn generate_terraform_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("numerator"),
-                  dynamic.string("sum:http.requests{status:2xx}"),
-                ),
-                #(
-                  dynamic.string("denominator"),
-                  dynamic.string("sum:http.requests{*}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
             ),
             helpers.ValueTuple(
               "runbook",
@@ -881,7 +878,7 @@ pub fn generate_terraform_test() {
                   types.PrimitiveType(types.SemanticType(types.URL)),
                 ),
               ),
-              dynamic.string("https://wiki.example.com/runbook/auth-latency"),
+              value.StringValue("https://wiki.example.com/runbook/auth-latency"),
             ),
           ],
           vendor: option.Some(vendor.Datadog),

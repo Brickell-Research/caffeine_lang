@@ -4,8 +4,8 @@ import caffeine_lang/frontend/validator
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic/decode
 import gleam/list
 import gleam/set
 import gleeunit/should
@@ -62,7 +62,7 @@ pub fn lower_blueprints_simple_test() {
   // Check inputs
   dict.size(bp.inputs) |> should.equal(2)
   let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
-  let assert Ok(vendor_str) = decode.run(vendor_val, decode.string)
+  let assert Ok(vendor_str) = value.extract_string(vendor_val)
   vendor_str |> should.equal("datadog")
 }
 
@@ -90,7 +90,7 @@ pub fn lower_blueprints_with_extends_test() {
 
   // Should have merged provides from _base extendable + own provides
   let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
-  let assert Ok(vendor_str) = decode.run(vendor_val, decode.string)
+  let assert Ok(vendor_str) = value.extract_string(vendor_val)
   vendor_str |> should.equal("datadog")
 }
 
@@ -178,14 +178,13 @@ pub fn lower_blueprints_template_vars_test() {
 
   // Template vars should be transformed: $env->env$ -> $$env->env$$
   let assert Ok(value_val) = dict.get(bp.inputs, "value")
-  let assert Ok(value_str) = decode.run(value_val, decode.string)
+  let assert Ok(value_str) = value.extract_string(value_val)
   value_str |> should.equal("numerator / denominator")
 
   let assert Ok(queries_val) = dict.get(bp.inputs, "queries")
-  let assert Ok(queries_dict) =
-    decode.run(queries_val, decode.dict(decode.string, decode.dynamic))
+  let assert Ok(queries_dict) = value.extract_dict(queries_val)
   let assert Ok(num_val) = dict.get(queries_dict, "numerator")
-  let assert Ok(num_str) = decode.run(num_val, decode.string)
+  let assert Ok(num_str) = value.extract_string(num_val)
   num_str
   |> should.equal("sum:http.requests{$$env->env$$, $$status->status:not$$}")
 }
@@ -246,11 +245,11 @@ pub fn lower_expectations_simple_test() {
   dict.size(exp.inputs) |> should.equal(2)
 
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
-  let assert Ok(env_str) = decode.run(env_val, decode.string)
+  let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = decode.run(threshold_val, decode.float)
+  let assert Ok(threshold_float) = value.extract_float(threshold_val)
   threshold_float |> should.equal(99.95)
 }
 
@@ -263,15 +262,15 @@ pub fn lower_expectations_with_extends_test() {
 
   // Should have merged fields from _defaults extendable + own provides
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
-  let assert Ok(env_str) = decode.run(env_val, decode.string)
+  let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = decode.run(threshold_val, decode.float)
+  let assert Ok(threshold_float) = value.extract_float(threshold_val)
   threshold_float |> should.equal(99.95)
 
   let assert Ok(window_val) = dict.get(exp.inputs, "window_in_days")
-  let assert Ok(window_int) = decode.run(window_val, decode.int)
+  let assert Ok(window_int) = value.extract_int(window_val)
   window_int |> should.equal(30)
 }
 
@@ -281,21 +280,21 @@ pub fn lower_expectations_multiple_extends_test() {
 
   // From _defaults: env: "production"
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
-  let assert Ok(env_str) = decode.run(env_val, decode.string)
+  let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
   // From _strict: threshold: 99.99, window_in_days: 7
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = decode.run(threshold_val, decode.float)
+  let assert Ok(threshold_float) = value.extract_float(threshold_val)
   threshold_float |> should.equal(99.99)
 
   // From item's own provides: status: true
   let assert Ok(status_val) = dict.get(exp.inputs, "status")
-  let assert Ok(status_bool) = decode.run(status_val, decode.bool)
+  let assert Ok(status_bool) = value.extract_bool(status_val)
   status_bool |> should.be_true
 }
 
-// ==== literal_to_dynamic ====
+// ==== literal_to_value ====
 // * ✅ string
 // * ✅ integer
 // * ✅ float

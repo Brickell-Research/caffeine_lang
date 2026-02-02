@@ -2,8 +2,8 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/validations
+import caffeine_lang/value.{type Value}
 import gleam/dict
-import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/result
 import gleam/string
@@ -13,7 +13,7 @@ pub type Expectation {
   Expectation(
     name: String,
     blueprint_ref: String,
-    inputs: dict.Dict(String, Dynamic),
+    inputs: dict.Dict(String, Value),
   )
 }
 

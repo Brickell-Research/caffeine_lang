@@ -2,7 +2,8 @@ import caffeine_lang/analysis/templatizer
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/types
-import gleam/dynamic
+import caffeine_lang/value
+import gleam/dict
 import gleam/set
 import test_helpers
 
@@ -116,17 +117,17 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "bar",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("pizza"),
+          value: value.StringValue("pizza"),
         ),
         helpers.ValueTuple(
           "faz",
           typ: types.CollectionType(
             types.List(types.PrimitiveType(types.NumericType(types.Integer))),
           ),
-          value: dynamic.list([
-            dynamic.int(10),
-            dynamic.int(11),
-            dynamic.int(12),
+          value: value.ListValue([
+            value.IntValue(10),
+            value.IntValue(11),
+            value.IntValue(12),
           ]),
         ),
       ],
@@ -139,7 +140,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "threshold",
           typ: types.PrimitiveType(types.NumericType(types.Integer)),
-          value: dynamic.int(2_500_000),
+          value: value.IntValue(2_500_000),
         ),
       ],
       Ok("time_slice(query < 2500000 per 10s)"),
@@ -151,7 +152,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "threshold",
           typ: types.PrimitiveType(types.NumericType(types.Float)),
-          value: dynamic.float(99.5),
+          value: value.FloatValue(99.5),
         ),
       ],
       Ok("time_slice(query > 99.5 per 5m)"),
@@ -163,7 +164,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "status",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("active"),
+          value: value.StringValue("active"),
         ),
       ],
       Ok("some_metric{status:active}"),
@@ -175,12 +176,12 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "threshold",
           typ: types.PrimitiveType(types.NumericType(types.Integer)),
-          value: dynamic.int(80),
+          value: value.IntValue(80),
         ),
       ],
       Ok("time_slice(avg:system.cpu{env:production} > 80 per 300s)"),
@@ -198,7 +199,7 @@ pub fn parse_and_resolve_query_template_test() {
             )),
             set.from_list(["production", "staging"]),
           )),
-          value: dynamic.string("staging"),
+          value: value.StringValue("staging"),
         ),
       ],
       Ok("metric{env:staging}"),
@@ -216,7 +217,7 @@ pub fn parse_and_resolve_query_template_test() {
             )),
             set.from_list(["production", "staging"]),
           )),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -228,14 +229,14 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "region",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -249,12 +250,12 @@ pub fn parse_and_resolve_query_template_test() {
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
       ],
       Ok("metric{env:production}"),
@@ -266,19 +267,19 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "region",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "team",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("platform"),
+          value: value.StringValue("platform"),
         ),
       ],
       Ok("metric{env:production, team:platform}"),
@@ -292,14 +293,14 @@ pub fn parse_and_resolve_query_template_test() {
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "region",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{}"),
@@ -311,7 +312,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "tag",
@@ -322,7 +323,7 @@ pub fn parse_and_resolve_query_template_test() {
               ),
             ),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -334,14 +335,14 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "region",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -355,12 +356,12 @@ pub fn parse_and_resolve_query_template_test() {
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
       ],
       Ok("metric{env:production}"),
@@ -374,21 +375,21 @@ pub fn parse_and_resolve_query_template_test() {
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "b",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "c",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{}"),
@@ -400,14 +401,14 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "region",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -419,7 +420,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "environment",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("production"),
+          value: value.StringValue("production"),
         ),
         helpers.ValueTuple(
           "excluded",
@@ -430,7 +431,7 @@ pub fn parse_and_resolve_query_template_test() {
               ),
             ),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("metric{env:production}"),
@@ -444,24 +445,24 @@ pub fn parse_and_resolve_query_template_test() {
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "b",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("val_b"),
+          value: value.StringValue("val_b"),
         ),
         helpers.ValueTuple(
           "c",
           typ: types.ModifierType(
             types.Optional(types.PrimitiveType(types.String)),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
         helpers.ValueTuple(
           "d",
           typ: types.PrimitiveType(types.String),
-          value: dynamic.string("val_d"),
+          value: value.StringValue("val_d"),
         ),
       ],
       Ok("metric{b:val_b AND d:val_d}"),
@@ -477,7 +478,7 @@ pub fn parse_and_resolve_query_template_test() {
               types.PrimitiveType(types.NumericType(types.Integer)),
             ),
           ),
-          value: dynamic.nil(),
+          value: value.NilValue,
         ),
       ],
       Ok("time_slice(query <  per 10s)"),
@@ -588,7 +589,7 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "bar",
         typ: types.PrimitiveType(types.Boolean),
-        value: dynamic.bool(True),
+        value: value.BoolValue(True),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
         "Mismatch between template input name (foo) and input value label (bar).",
@@ -603,7 +604,7 @@ pub fn resolve_template_test() {
           types.PrimitiveType(types.String),
           types.PrimitiveType(types.Boolean),
         )),
-        value: dynamic.array([]),
+        value: value.DictValue(dict.from_list([])),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
         "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
@@ -615,7 +616,7 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "foo",
         typ: types.PrimitiveType(types.String),
-        value: dynamic.string("bar"),
+        value: value.StringValue("bar"),
       ),
       Ok("foo:bar"),
     ),
@@ -625,7 +626,10 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "env",
         typ: types.CollectionType(types.List(types.PrimitiveType(types.String))),
-        value: dynamic.list([dynamic.string("dev"), dynamic.string("test")]),
+        value: value.ListValue([
+          value.StringValue("dev"),
+          value.StringValue("test"),
+        ]),
       ),
       Ok("env NOT IN (dev, test)"),
     ),
@@ -635,7 +639,7 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "count",
         typ: types.PrimitiveType(types.NumericType(types.Integer)),
-        value: dynamic.int(42),
+        value: value.IntValue(42),
       ),
       Ok("42"),
     ),

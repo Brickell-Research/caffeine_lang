@@ -1,8 +1,5 @@
-import gleam/bool
-import gleam/dynamic
-import gleam/dynamic/decode
-import gleam/float
-import gleam/int
+import caffeine_lang/types.{type ValidationError}
+import caffeine_lang/value.{type Value}
 import gleam/list
 import gleam/option
 import gleam/string
@@ -72,35 +69,15 @@ fn normalize_type_name(name: String) -> String {
   }
 }
 
-/// Converts a Dynamic value to a short preview string for error messages.
-fn dynamic_to_preview_string(value: dynamic.Dynamic) -> String {
-  case decode.run(value, decode.string) {
-    Ok(s) -> "\"" <> s <> "\""
-    _ ->
-      case decode.run(value, decode.int) {
-        Ok(i) -> int.to_string(i)
-        _ ->
-          case decode.run(value, decode.float) {
-            Ok(f) -> float.to_string(f)
-            _ ->
-              case decode.run(value, decode.bool) {
-                Ok(b) -> bool.to_string(b)
-                _ -> dynamic.classify(value)
-              }
-          }
-      }
-  }
-}
-
-/// Formats a list of decode errors into a human-readable string.
+/// Formats a list of validation errors into a human-readable string.
 @internal
-pub fn format_decode_error_message(
-  errors: List(decode.DecodeError),
+pub fn format_validation_error_message(
+  errors: List(ValidationError),
   type_key_identifier: option.Option(String),
-  value: option.Option(dynamic.Dynamic),
+  val: option.Option(Value),
 ) -> String {
-  let value_part = case value {
-    option.Some(v) -> " value (" <> dynamic_to_preview_string(v) <> ")"
+  let value_part = case val {
+    option.Some(v) -> " value (" <> value.to_preview_string(v) <> ")"
     option.None -> ""
   }
 

@@ -3,8 +3,8 @@ import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import gleam/option
 
@@ -24,12 +24,12 @@ pub fn make_slo_ir(
       helpers.ValueTuple(
         "vendor",
         types.PrimitiveType(types.String),
-        dynamic.string("datadog"),
+        value.StringValue("datadog"),
       ),
       helpers.ValueTuple(
         "threshold",
         types.PrimitiveType(types.NumericType(types.Float)),
-        dynamic.float(threshold),
+        value.FloatValue(threshold),
       ),
     ],
     vendor: option.Some(vendor.Datadog),
@@ -54,12 +54,12 @@ pub fn make_ir_with_deps(
       helpers.ValueTuple(
         "vendor",
         types.PrimitiveType(types.String),
-        dynamic.string("datadog"),
+        value.StringValue("datadog"),
       ),
       helpers.ValueTuple(
         "threshold",
         types.PrimitiveType(types.NumericType(types.Float)),
-        dynamic.float(threshold),
+        value.FloatValue(threshold),
       ),
       make_relations_value(hard_deps, soft_deps),
     ],
@@ -115,16 +115,12 @@ fn make_relations_value(
   soft_deps: List(String),
 ) -> helpers.ValueTuple {
   let relations_value =
-    dynamic.properties([
-      #(
-        dynamic.string("hard"),
-        dynamic.list(hard_deps |> list.map(dynamic.string)),
-      ),
-      #(
-        dynamic.string("soft"),
-        dynamic.list(soft_deps |> list.map(dynamic.string)),
-      ),
-    ])
+    value.DictValue(
+      dict.from_list([
+        #("hard", value.ListValue(hard_deps |> list.map(value.StringValue))),
+        #("soft", value.ListValue(soft_deps |> list.map(value.StringValue))),
+      ]),
+    )
 
   helpers.ValueTuple(
     "relations",

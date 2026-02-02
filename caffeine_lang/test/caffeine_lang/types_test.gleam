@@ -3,8 +3,8 @@ import caffeine_lang/types.{
   Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
   Optional, PrimitiveType, RefinementType, SemanticType, String, URL,
 }
-import gleam/dynamic
-import gleam/dynamic/decode
+import caffeine_lang/value
+import gleam/dict
 import gleam/list
 import gleam/result
 import gleam/set
@@ -43,30 +43,6 @@ pub fn numeric_type_to_string_test() {
   |> test_helpers.array_based_test_executor_1(types.numeric_type_to_string)
 }
 
-// ==== decode_numeric_to_string ====
-// * ✅ Float -> string representation
-// * ✅ Integer -> string representation
-pub fn decode_numeric_to_string_test() {
-  // Integer decoder
-  [
-    #(dynamic.int(42), Ok("42")),
-    #(dynamic.int(-10), Ok("-10")),
-    #(dynamic.int(0), Ok("0")),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_numeric_to_string(Integer))
-  })
-
-  // Float decoder
-  [
-    #(dynamic.float(3.14), Ok("3.14")),
-    #(dynamic.float(-1.5), Ok("-1.5")),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_numeric_to_string(Float))
-  })
-}
-
 // ==== validate_numeric_default_value ====
 // ==== Happy Path ====
 // * ✅ Integer with valid int string
@@ -94,26 +70,26 @@ pub fn validate_numeric_default_value_test() {
 
 // ==== validate_numeric_value ====
 // ==== Happy Path ====
-// * ✅ Integer with valid int dynamic
-// * ✅ Float with valid float dynamic
+// * ✅ Integer with valid int value
+// * ✅ Float with valid float value
 // ==== Sad Path ====
-// * ✅ Integer with non-integer dynamic
-// * ✅ Float with non-float dynamic (String only - Int/Float distinction is platform-specific)
+// * ✅ Integer with non-integer value
+// * ✅ Float with non-float value (String only - Int/Float distinction is platform-specific)
 pub fn validate_numeric_value_test() {
-  let int_val = dynamic.int(42)
-  let float_val = dynamic.float(3.14)
-  let string_val = dynamic.string("hello")
+  let int_val = value.IntValue(42)
+  let float_val = value.FloatValue(3.14)
+  let string_val = value.StringValue("hello")
 
   // Integer validation
   [
     #(#(Integer, int_val), Ok(int_val)),
     #(
       #(Integer, string_val),
-      Error([decode.DecodeError(expected: "Int", found: "String", path: [])]),
+      Error([types.ValidationError(expected: "Int", found: "String", path: [])]),
     ),
     #(
       #(Integer, float_val),
-      Error([decode.DecodeError(expected: "Int", found: "Float", path: [])]),
+      Error([types.ValidationError(expected: "Int", found: "Float", path: [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -126,7 +102,7 @@ pub fn validate_numeric_value_test() {
     #(#(Float, float_val), Ok(float_val)),
     #(
       #(Float, string_val),
-      Error([decode.DecodeError(expected: "Float", found: "String", path: [])]),
+      Error([types.ValidationError(expected: "Float", found: "String", path: [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -163,25 +139,25 @@ pub fn validate_in_range_test() {
     #(
       #(Integer, "-1", "0", "100"),
       Error([
-        decode.DecodeError(expected: "0 <= x <= 100", found: "-1", path: []),
+        types.ValidationError(expected: "0 <= x <= 100", found: "-1", path: []),
       ]),
     ),
     #(
       #(Integer, "-20", "-10", "10"),
       Error([
-        decode.DecodeError(expected: "-10 <= x <= 10", found: "-20", path: []),
+        types.ValidationError(expected: "-10 <= x <= 10", found: "-20", path: []),
       ]),
     ),
     #(
       #(Integer, "101", "0", "100"),
       Error([
-        decode.DecodeError(expected: "0 <= x <= 100", found: "101", path: []),
+        types.ValidationError(expected: "0 <= x <= 100", found: "101", path: []),
       ]),
     ),
     #(
       #(Integer, "15", "-10", "10"),
       Error([
-        decode.DecodeError(expected: "-10 <= x <= 10", found: "15", path: []),
+        types.ValidationError(expected: "-10 <= x <= 10", found: "15", path: []),
       ]),
     ),
   ]
@@ -193,11 +169,11 @@ pub fn validate_in_range_test() {
   [
     #(
       #(Integer, "hello", "0", "100"),
-      Error([decode.DecodeError(expected: "Integer", found: "hello", path: [])]),
+      Error([types.ValidationError(expected: "Integer", found: "hello", path: [])]),
     ),
     #(
       #(Integer, "3.14", "0", "100"),
-      Error([decode.DecodeError(expected: "Integer", found: "3.14", path: [])]),
+      Error([types.ValidationError(expected: "Integer", found: "3.14", path: [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -220,13 +196,13 @@ pub fn validate_in_range_test() {
     #(
       #(Float, "-0.1", "0.0", "1.0"),
       Error([
-        decode.DecodeError(expected: "0.0 <= x <= 1.0", found: "-0.1", path: []),
+        types.ValidationError(expected: "0.0 <= x <= 1.0", found: "-0.1", path: []),
       ]),
     ),
     #(
       #(Float, "1.1", "0.0", "1.0"),
       Error([
-        decode.DecodeError(expected: "0.0 <= x <= 1.0", found: "1.1", path: []),
+        types.ValidationError(expected: "0.0 <= x <= 1.0", found: "1.1", path: []),
       ]),
     ),
   ]
@@ -238,7 +214,7 @@ pub fn validate_in_range_test() {
   [
     #(
       #(Float, "hello", "0.0", "1.0"),
-      Error([decode.DecodeError(expected: "Float", found: "hello", path: [])]),
+      Error([types.ValidationError(expected: "Float", found: "hello", path: [])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -268,18 +244,6 @@ pub fn semantic_type_to_string_test() {
   |> test_helpers.array_based_test_executor_1(types.semantic_type_to_string)
 }
 
-// ==== decode_semantic_to_string ====
-// * ✅ String dynamic -> Ok(string)
-pub fn decode_semantic_to_string_test() {
-  [
-    #(dynamic.string("https://example.com"), Ok("https://example.com")),
-    #(dynamic.string("http://example.com"), Ok("http://example.com")),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_semantic_to_string(URL))
-  })
-}
-
 // ==== validate_semantic_default_value ====
 // ==== Happy Path ====
 // * ✅ Valid https URL
@@ -306,14 +270,14 @@ pub fn validate_semantic_default_value_test() {
 
 // ==== validate_semantic_value ====
 // ==== Happy Path ====
-// * ✅ String dynamic with valid URL
+// * ✅ String value with valid URL
 // ==== Sad Path ====
-// * ✅ String dynamic with invalid URL
-// * ✅ Non-string dynamic
+// * ✅ String value with invalid URL
+// * ✅ Non-string value
 pub fn validate_semantic_value_test() {
-  let valid_url = dynamic.string("https://example.com")
-  let invalid_url = dynamic.string("not-a-url")
-  let int_val = dynamic.int(42)
+  let valid_url = value.StringValue("https://example.com")
+  let invalid_url = value.StringValue("not-a-url")
+  let int_val = value.IntValue(42)
 
   // Valid URL
   [#(#(PrimitiveType(SemanticType(URL)), valid_url), Ok(valid_url))]
@@ -326,9 +290,9 @@ pub fn validate_semantic_value_test() {
     #(
       #(PrimitiveType(SemanticType(URL)), invalid_url),
       Error([
-        decode.DecodeError(
+        types.ValidationError(
           expected: "URL (starting with http:// or https://)",
-          found: "String",
+          found: "not-a-url",
           path: [],
         ),
       ]),
@@ -343,7 +307,7 @@ pub fn validate_semantic_value_test() {
     #(
       #(PrimitiveType(SemanticType(URL)), int_val),
       Error([
-        decode.DecodeError(expected: "String", found: "Int", path: []),
+        types.ValidationError(expected: "String", found: "Int", path: []),
       ]),
     ),
   ]
@@ -388,30 +352,6 @@ pub fn primitive_type_to_string_test() {
   |> test_helpers.array_based_test_executor_1(types.primitive_type_to_string)
 }
 
-// ==== decode_primitive_to_string ====
-// * ✅ Boolean -> "True"/"False"
-// * ✅ String -> same string
-// * ✅ delegates to numeric_types for NumericType
-pub fn decode_primitive_to_string_test() {
-  // Boolean
-  [#(dynamic.bool(True), Ok("True"))]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_primitive_to_string(Boolean))
-  })
-
-  // String
-  [#(dynamic.string("hello"), Ok("hello"))]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_primitive_to_string(String))
-  })
-
-  // Integration: delegates to numeric_types
-  [#(dynamic.int(42), Ok("42"))]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(input, types.decode_primitive_to_string(NumericType(Integer)))
-  })
-}
-
 // ==== validate_primitive_default_value ====
 // * ✅ Boolean with True/False
 // * ✅ Boolean with invalid value
@@ -440,13 +380,13 @@ pub fn validate_primitive_default_value_test() {
 // * ✅ delegates to numeric_types for NumericType
 pub fn validate_primitive_value_test() {
   [
-    #(#(PrimitiveType(Boolean), dynamic.bool(True)), True),
-    #(#(PrimitiveType(Boolean), dynamic.string("not bool")), False),
-    #(#(PrimitiveType(String), dynamic.string("hello")), True),
-    #(#(PrimitiveType(String), dynamic.int(42)), False),
+    #(#(PrimitiveType(Boolean), value.BoolValue(True)), True),
+    #(#(PrimitiveType(Boolean), value.StringValue("not bool")), False),
+    #(#(PrimitiveType(String), value.StringValue("hello")), True),
+    #(#(PrimitiveType(String), value.IntValue(42)), False),
     // Integration: delegates to numeric_types
-    #(#(PrimitiveType(NumericType(Integer)), dynamic.int(42)), True),
-    #(#(PrimitiveType(NumericType(Float)), dynamic.float(3.14)), True),
+    #(#(PrimitiveType(NumericType(Integer)), value.IntValue(42)), True),
+    #(#(PrimitiveType(NumericType(Float)), value.FloatValue(3.14)), True),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -465,11 +405,11 @@ pub fn resolve_primitive_to_string_test() {
   let resolver = fn(s) { "resolved:" <> s }
 
   [
-    #(#(Boolean, dynamic.bool(True)), "resolved:True"),
-    #(#(String, dynamic.string("hello")), "resolved:hello"),
+    #(#(Boolean, value.BoolValue(True)), "resolved:True"),
+    #(#(String, value.StringValue("hello")), "resolved:hello"),
     // Integration: delegates to numeric_types
-    #(#(NumericType(Integer), dynamic.int(42)), "resolved:42"),
-    #(#(NumericType(Float), dynamic.float(3.14)), "resolved:3.14"),
+    #(#(NumericType(Integer), value.IntValue(42)), "resolved:42"),
+    #(#(NumericType(Float), value.FloatValue(3.14)), "resolved:3.14"),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -610,7 +550,7 @@ pub fn validate_collection_value_test() {
     #(
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
-        dynamic.list([dynamic.int(1), dynamic.int(2)]),
+        value.ListValue([value.IntValue(1), value.IntValue(2)]),
       ),
       True,
     ),
@@ -618,7 +558,7 @@ pub fn validate_collection_value_test() {
     #(
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
-        dynamic.string("not a list"),
+        value.StringValue("not a list"),
       ),
       False,
     ),
@@ -629,7 +569,7 @@ pub fn validate_collection_value_test() {
           PrimitiveType(String),
           PrimitiveType(NumericType(Integer)),
         )),
-        dynamic.properties([#(dynamic.string("a"), dynamic.int(1))]),
+        value.DictValue(dict.from_list([#("a", value.IntValue(1))])),
       ),
       True,
     ),
@@ -640,7 +580,7 @@ pub fn validate_collection_value_test() {
           PrimitiveType(String),
           PrimitiveType(NumericType(Integer)),
         )),
-        dynamic.string("not a dict"),
+        value.StringValue("not a dict"),
       ),
       False,
     ),
@@ -666,7 +606,7 @@ pub fn resolve_collection_to_string_test() {
     #(
       #(
         CollectionType(List(PrimitiveType(String))),
-        dynamic.list([dynamic.string("a"), dynamic.string("b")]),
+        value.ListValue([value.StringValue("a"), value.StringValue("b")]),
       ),
       Ok("list:[a,b]"),
     ),
@@ -674,7 +614,7 @@ pub fn resolve_collection_to_string_test() {
     #(
       #(
         CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
-        dynamic.list([]),
+        value.ListValue([]),
       ),
       Error(
         "Unsupported templatized variable type: Dict(String, String). Dict support is pending, open an issue if this is a desired use case.",
@@ -869,37 +809,6 @@ pub fn modifier_type_to_string_test() {
   })
 }
 
-// ==== decode_modifier_to_string ====
-// ==== Optional ====
-// * ✅ Optional with value present -> value
-// * ✅ Optional with value absent -> empty string
-// ==== Defaulted ====
-// * ✅ Defaulted with value present -> value
-// * ✅ Defaulted with value absent -> default value
-pub fn decode_modifier_to_string_test() {
-  // Optional with value present
-  [#(dynamic.string("hello"), Ok("hello"))]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(
-      input,
-      types.decode_value_to_string(
-        ModifierType(Optional(PrimitiveType(String))),
-      ),
-    )
-  })
-
-  // Defaulted with value present
-  [#(dynamic.string("custom"), Ok("custom"))]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    decode.run(
-      input,
-      types.decode_value_to_string(
-        ModifierType(Defaulted(PrimitiveType(String), "default")),
-      ),
-    )
-  })
-}
-
 // ==== validate_modifier_value ====
 // ==== Optional ====
 // * ✅ Optional with value present validates inner type
@@ -911,16 +820,19 @@ pub fn validate_modifier_value_test() {
   [
     // Optional with value present
     #(
-      #(ModifierType(Optional(PrimitiveType(String))), dynamic.string("hello")),
+      #(
+        ModifierType(Optional(PrimitiveType(String))),
+        value.StringValue("hello"),
+      ),
       True,
     ),
     // Optional with None
-    #(#(ModifierType(Optional(PrimitiveType(String))), dynamic.nil()), True),
+    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), True),
     // Defaulted with value present
     #(
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
-        dynamic.string("custom"),
+        value.StringValue("custom"),
       ),
       True,
     ),
@@ -928,7 +840,7 @@ pub fn validate_modifier_value_test() {
     #(
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
-        dynamic.nil(),
+        value.NilValue,
       ),
       True,
     ),
@@ -956,16 +868,19 @@ pub fn resolve_modifier_to_string_test() {
   [
     // Optional with value present
     #(
-      #(ModifierType(Optional(PrimitiveType(String))), dynamic.string("hello")),
+      #(
+        ModifierType(Optional(PrimitiveType(String))),
+        value.StringValue("hello"),
+      ),
       Ok("resolved:hello"),
     ),
     // Optional with None returns empty string
-    #(#(ModifierType(Optional(PrimitiveType(String))), dynamic.nil()), Ok("")),
+    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), Ok("")),
     // Defaulted with value present
     #(
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
-        dynamic.string("custom"),
+        value.StringValue("custom"),
       ),
       Ok("resolved:custom"),
     ),
@@ -973,7 +888,7 @@ pub fn resolve_modifier_to_string_test() {
     #(
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
-        dynamic.nil(),
+        value.NilValue,
       ),
       Ok("resolved:default"),
     ),
@@ -1359,7 +1274,7 @@ pub fn validate_refinement_value_test() {
           PrimitiveType(NumericType(Integer)),
           set.from_list(["10", "20", "30"]),
         )),
-        dynamic.int(10),
+        value.IntValue(10),
       ),
       True,
     ),
@@ -1370,7 +1285,7 @@ pub fn validate_refinement_value_test() {
           PrimitiveType(NumericType(Integer)),
           set.from_list(["10", "20", "30"]),
         )),
-        dynamic.int(99),
+        value.IntValue(99),
       ),
       False,
     ),
@@ -1381,7 +1296,7 @@ pub fn validate_refinement_value_test() {
           PrimitiveType(String),
           set.from_list(["pizza", "pasta", "salad"]),
         )),
-        dynamic.string("pizza"),
+        value.StringValue("pizza"),
       ),
       True,
     ),
@@ -1392,7 +1307,7 @@ pub fn validate_refinement_value_test() {
           PrimitiveType(String),
           set.from_list(["pizza", "pasta", "salad"]),
         )),
-        dynamic.string("burger"),
+        value.StringValue("burger"),
       ),
       False,
     ),
@@ -1404,7 +1319,7 @@ pub fn validate_refinement_value_test() {
           "0",
           "100",
         )),
-        dynamic.int(50),
+        value.IntValue(50),
       ),
       True,
     ),
@@ -1416,7 +1331,7 @@ pub fn validate_refinement_value_test() {
           "0",
           "100",
         )),
-        dynamic.int(-1),
+        value.IntValue(-1),
       ),
       False,
     ),
@@ -1428,7 +1343,7 @@ pub fn validate_refinement_value_test() {
           "0.0",
           "100.0",
         )),
-        dynamic.float(50.5),
+        value.FloatValue(50.5),
       ),
       True,
     ),
@@ -1440,7 +1355,7 @@ pub fn validate_refinement_value_test() {
           "0.0",
           "100.0",
         )),
-        dynamic.float(100.1),
+        value.FloatValue(100.1),
       ),
       False,
     ),
@@ -1467,7 +1382,7 @@ pub fn resolve_refinement_to_string_test() {
           PrimitiveType(NumericType(Integer)),
           set.from_list(["10", "20", "30"]),
         )),
-        dynamic.int(10),
+        value.IntValue(10),
       ),
       Ok("10"),
     ),
@@ -1478,7 +1393,7 @@ pub fn resolve_refinement_to_string_test() {
           PrimitiveType(String),
           set.from_list(["pasta", "pizza", "salad"]),
         )),
-        dynamic.string("pizza"),
+        value.StringValue("pizza"),
       ),
       Ok("pizza"),
     ),
@@ -1489,9 +1404,9 @@ pub fn resolve_refinement_to_string_test() {
           PrimitiveType(NumericType(Integer)),
           set.from_list(["10", "20", "30"]),
         )),
-        dynamic.string("not an integer"),
+        value.StringValue("not an integer"),
       ),
-      Error("Unable to decode OneOf refinement type value."),
+      Error("Unable to resolve OneOf refinement type value."),
     ),
     // InclusiveRange(Integer) happy path
     #(
@@ -1501,7 +1416,7 @@ pub fn resolve_refinement_to_string_test() {
           "0",
           "100",
         )),
-        dynamic.int(50),
+        value.IntValue(50),
       ),
       Ok("50"),
     ),
@@ -1513,9 +1428,9 @@ pub fn resolve_refinement_to_string_test() {
           "0",
           "100",
         )),
-        dynamic.string("not an integer"),
+        value.StringValue("not an integer"),
       ),
-      Error("Unable to decode InclusiveRange refinement type value."),
+      Error("Unable to resolve InclusiveRange refinement type value."),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
@@ -1634,18 +1549,6 @@ pub fn validate_refinement_default_value_test() {
   |> should.equal(Error(Nil))
 }
 
-// ==== decode_refinement_to_string ====
-// * ✅ always returns failure decoder
-pub fn decode_refinement_to_string_test() {
-  let string_type = PrimitiveType(String)
-  let decoder =
-    types.decode_value_to_string(
-      RefinementType(OneOf(string_type, set.from_list(["a"]))),
-    )
-  decode.run(dynamic.string("a"), decoder)
-  |> should.be_error()
-}
-
 // ===========================================================================
 // AcceptedTypes (integration) tests
 // ===========================================================================
@@ -1741,17 +1644,17 @@ pub fn parse_accepted_type_test() {
 pub fn validate_value_test() {
   [
     // Primitive dispatch
-    #(#(PrimitiveType(String), dynamic.string("hello")), True),
+    #(#(PrimitiveType(String), value.StringValue("hello")), True),
     // Collection dispatch
     #(
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
-        dynamic.list([dynamic.int(1), dynamic.int(2)]),
+        value.ListValue([value.IntValue(1), value.IntValue(2)]),
       ),
       True,
     ),
     // Modifier dispatch
-    #(#(ModifierType(Optional(PrimitiveType(String))), dynamic.nil()), True),
+    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), True),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -1760,36 +1663,6 @@ pub fn validate_value_test() {
       Error(_) -> False
     }
   })
-}
-
-// ==== decode_value_to_string (integration) ====
-pub fn decode_value_to_string_test() {
-  [
-    // Primitive dispatch
-    #(#(PrimitiveType(String), dynamic.string("hello")), Ok("hello")),
-    // Modifier dispatch (Optional with value)
-    #(
-      #(
-        ModifierType(Optional(PrimitiveType(String))),
-        dynamic.string("present"),
-      ),
-      Ok("present"),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
-    let #(typ, value) = input
-    decode.run(value, types.decode_value_to_string(typ))
-    |> result_to_ok_string
-  })
-}
-
-fn result_to_ok_string(
-  result: Result(String, List(decode.DecodeError)),
-) -> Result(String, Nil) {
-  case result {
-    Ok(s) -> Ok(s)
-    Error(_) -> Error(Nil)
-  }
 }
 
 fn result_to_ok_string_from_string_error(
@@ -1808,12 +1681,15 @@ pub fn resolve_to_string_test() {
 
   [
     // Primitive dispatch
-    #(#(PrimitiveType(String), dynamic.string("hello")), Ok("resolved:hello")),
+    #(
+      #(PrimitiveType(String), value.StringValue("hello")),
+      Ok("resolved:hello"),
+    ),
     // Collection dispatch
     #(
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
-        dynamic.list([dynamic.int(1), dynamic.int(2)]),
+        value.ListValue([value.IntValue(1), value.IntValue(2)]),
       ),
       Ok("list:[1,2]"),
     ),
@@ -1821,7 +1697,7 @@ pub fn resolve_to_string_test() {
     #(
       #(
         ModifierType(Optional(PrimitiveType(String))),
-        dynamic.string("present"),
+        value.StringValue("present"),
       ),
       Ok("resolved:present"),
     ),
@@ -1829,7 +1705,7 @@ pub fn resolve_to_string_test() {
     #(
       #(
         ModifierType(Defaulted(PrimitiveType(NumericType(Integer)), "99")),
-        dynamic.nil(),
+        value.NilValue,
       ),
       Ok("resolved:99"),
     ),
@@ -1840,7 +1716,7 @@ pub fn resolve_to_string_test() {
           ModifierType(Defaulted(PrimitiveType(String), "production")),
           set.from_list(["production", "staging"]),
         )),
-        dynamic.string("staging"),
+        value.StringValue("staging"),
       ),
       Ok("resolved:staging"),
     ),
@@ -1851,7 +1727,7 @@ pub fn resolve_to_string_test() {
           ModifierType(Defaulted(PrimitiveType(String), "production")),
           set.from_list(["production", "staging"]),
         )),
-        dynamic.nil(),
+        value.NilValue,
       ),
       Ok("resolved:production"),
     ),
@@ -1861,33 +1737,6 @@ pub fn resolve_to_string_test() {
     types.resolve_to_string(typ, value, string_resolver, list_resolver)
     |> result_to_ok_string_from_string_error
   })
-}
-
-// ==== decode_list_values_to_strings ====
-// * ✅ decodes list of strings
-// * ✅ decodes list of integers to strings
-// * ✅ fails on non-list input
-pub fn decode_list_values_to_strings_test() {
-  // List of strings
-  decode.run(
-    dynamic.list([dynamic.string("a"), dynamic.string("b")]),
-    types.decode_list_values_to_strings(PrimitiveType(String)),
-  )
-  |> should.equal(Ok(["a", "b"]))
-
-  // List of integers decoded to strings
-  decode.run(
-    dynamic.list([dynamic.int(1), dynamic.int(2)]),
-    types.decode_list_values_to_strings(PrimitiveType(NumericType(Integer))),
-  )
-  |> should.equal(Ok(["1", "2"]))
-
-  // Non-list input fails
-  decode.run(
-    dynamic.string("not a list"),
-    types.decode_list_values_to_strings(PrimitiveType(String)),
-  )
-  |> should.be_error()
 }
 
 // ==== get_numeric_type ====

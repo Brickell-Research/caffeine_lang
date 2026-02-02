@@ -5,10 +5,9 @@ import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
+import caffeine_lang/value
 import gleam/bool
 import gleam/dict
-import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
@@ -67,7 +66,7 @@ pub fn resolve_vendor(
     Ok(vendor_value_tuple) -> {
       // Safe to assert since already type checked in parser phase.
       let assert Ok(vendor_string) =
-        decode.run(vendor_value_tuple.value, decode.string)
+        value.extract_string(vendor_value_tuple.value)
       let vendor_value = vendor.resolve_vendor(vendor_string)
 
       Ok(IntermediateRepresentation(..ir, vendor: option.Some(vendor_value)))
@@ -93,10 +92,7 @@ pub fn resolve_indicators(
       )
 
       use indicators_dict <- result.try(
-        decode.run(
-          indicators_value_tuple.value,
-          decode.dict(decode.string, decode.string),
-        )
+        value.extract_string_dict(indicators_value_tuple.value)
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
@@ -125,14 +121,12 @@ pub fn resolve_indicators(
         }),
       )
 
-      // Build the new indicators dict as a dynamic value.
-      let resolved_indicators_dynamic =
+      // Build the new indicators dict as a Value.
+      let resolved_indicators_value =
         resolved_indicators
-        |> list.map(fn(pair) {
-          let #(key, value) = pair
-          #(dynamic.string(key), dynamic.string(value))
-        })
-        |> dynamic.properties
+        |> list.map(fn(pair) { #(pair.0, value.StringValue(pair.1)) })
+        |> dict.from_list
+        |> value.DictValue
 
       // Create the new indicators ValueTuple.
       let new_indicators_value_tuple =
@@ -142,7 +136,7 @@ pub fn resolve_indicators(
             PrimitiveType(StringType),
             PrimitiveType(StringType),
           )),
-          resolved_indicators_dynamic,
+          resolved_indicators_value,
         )
 
       // Also resolve templates in the "evaluation" field if present.
@@ -154,7 +148,7 @@ pub fn resolve_indicators(
         Error(_) -> Ok(option.None)
         Ok(evaluation_tuple) -> {
           use evaluation_string <- result.try(
-            decode.run(evaluation_tuple.value, decode.string)
+            value.extract_string(evaluation_tuple.value)
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
                 msg: "expectation '"
@@ -172,7 +166,7 @@ pub fn resolve_indicators(
             option.Some(helpers.ValueTuple(
               "evaluation",
               PrimitiveType(StringType),
-              dynamic.string(resolved_evaluation),
+              value.StringValue(resolved_evaluation),
             ))
           })
         }

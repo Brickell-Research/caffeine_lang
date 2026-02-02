@@ -1,8 +1,8 @@
 import caffeine_lang/errors
 import caffeine_lang/linker/validations
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import gleam/set
 import gleam/string
@@ -49,24 +49,27 @@ import test_helpers
 // * (n/a, ✅) Multi-entry collection with one bad value
 // * (n/a, ✅) List with first element wrong
 pub fn validate_value_type_test() {
-  let some_string = dynamic.string("a")
-  let other_string = dynamic.string("b")
-  let some_int = dynamic.int(10)
-  let some_float = dynamic.float(11.7)
-  let some_bool = dynamic.bool(True)
+  let some_string = value.StringValue("a")
+  let other_string = value.StringValue("b")
+  let some_int = value.IntValue(10)
+  let some_float = value.FloatValue(11.7)
+  let some_bool = value.BoolValue(True)
 
   // happy paths
-  let dict_string_string = dynamic.properties([#(some_string, other_string)])
-  let dict_string_int = dynamic.properties([#(some_string, dynamic.int(1))])
+  let dict_string_string =
+    value.DictValue(dict.from_list([#("a", other_string)]))
+  let dict_string_int =
+    value.DictValue(dict.from_list([#("a", value.IntValue(1))]))
   let dict_string_float =
-    dynamic.properties([#(some_string, dynamic.float(1.5))])
-  let dict_string_bool = dynamic.properties([#(some_string, some_bool)])
-  let list_string = dynamic.list([some_string, other_string])
-  let list_int = dynamic.list([dynamic.int(1), dynamic.int(2)])
-  let list_bool = dynamic.list([some_bool, some_bool])
-  let list_float = dynamic.list([dynamic.float(1.1), dynamic.float(2.2)])
-  let empty_list = dynamic.list([])
-  let empty_dict = dynamic.properties([])
+    value.DictValue(dict.from_list([#("a", value.FloatValue(1.5))]))
+  let dict_string_bool = value.DictValue(dict.from_list([#("a", some_bool)]))
+  let list_string = value.ListValue([some_string, other_string])
+  let list_int = value.ListValue([value.IntValue(1), value.IntValue(2)])
+  let list_bool = value.ListValue([some_bool, some_bool])
+  let list_float =
+    value.ListValue([value.FloatValue(1.1), value.FloatValue(2.2)])
+  let empty_list = value.ListValue([])
+  let empty_dict = value.DictValue(dict.from_list([]))
 
   [
     // Basic types
@@ -237,16 +240,16 @@ pub fn validate_value_type_test() {
     ),
     // Nested types
     #(
-      dynamic.list([list_string, list_string]),
+      value.ListValue([list_string, list_string]),
       types.CollectionType(
         types.List(
           types.CollectionType(types.List(types.PrimitiveType(types.String))),
         ),
       ),
-      Ok(dynamic.list([list_string, list_string])),
+      Ok(value.ListValue([list_string, list_string])),
     ),
     #(
-      dynamic.properties([#(some_string, dict_string_int)]),
+      value.DictValue(dict.from_list([#("a", dict_string_int)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.CollectionType(types.Dict(
@@ -254,10 +257,10 @@ pub fn validate_value_type_test() {
           types.PrimitiveType(types.NumericType(types.Integer)),
         )),
       )),
-      Ok(dynamic.properties([#(some_string, dict_string_int)])),
+      Ok(value.DictValue(dict.from_list([#("a", dict_string_int)]))),
     ),
     #(
-      dynamic.list([dict_string_string]),
+      value.ListValue([dict_string_string]),
       types.CollectionType(
         types.List(
           types.CollectionType(types.Dict(
@@ -266,7 +269,7 @@ pub fn validate_value_type_test() {
           )),
         ),
       ),
-      Ok(dynamic.list([dict_string_string])),
+      Ok(value.ListValue([dict_string_string])),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
@@ -308,7 +311,7 @@ pub fn validate_value_type_test() {
     ),
     // Dict types
     #(
-      dynamic.properties([#(some_string, some_bool)]),
+      value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.PrimitiveType(types.String),
@@ -318,7 +321,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
-      dynamic.properties([#(some_string, some_bool)]),
+      value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.PrimitiveType(types.NumericType(types.Integer)),
@@ -326,7 +329,7 @@ pub fn validate_value_type_test() {
       json_error("expected (Int) received (Bool) value (Dict) for (some_key.a)"),
     ),
     #(
-      dynamic.properties([#(some_string, some_bool)]),
+      value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.PrimitiveType(types.NumericType(types.Float)),
@@ -336,7 +339,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
-      dynamic.properties([#(some_string, some_string)]),
+      value.DictValue(dict.from_list([#("a", some_string)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.PrimitiveType(types.Boolean),
@@ -347,28 +350,28 @@ pub fn validate_value_type_test() {
     ),
     // List types
     #(
-      dynamic.list([some_string, some_bool]),
+      value.ListValue([some_string, some_bool]),
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       json_error(
         "expected (String) received (Bool) value (List) for (some_key.1)",
       ),
     ),
     #(
-      dynamic.list([dynamic.int(1), some_bool]),
+      value.ListValue([value.IntValue(1), some_bool]),
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Integer))),
       ),
       json_error("expected (Int) received (Bool) value (List) for (some_key.1)"),
     ),
     #(
-      dynamic.list([some_bool, some_string]),
+      value.ListValue([some_bool, some_string]),
       types.CollectionType(types.List(types.PrimitiveType(types.Boolean))),
       json_error(
         "expected (Bool) received (String) value (List) for (some_key.1)",
       ),
     ),
     #(
-      dynamic.list([dynamic.float(1.1), some_bool]),
+      value.ListValue([value.FloatValue(1.1), some_bool]),
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Float))),
       ),
@@ -396,10 +399,12 @@ pub fn validate_value_type_test() {
     ),
     // Multi-entry collection with one bad value
     #(
-      dynamic.properties([
-        #(some_string, other_string),
-        #(dynamic.string("key2"), some_bool),
-      ]),
+      value.DictValue(
+        dict.from_list([
+          #("a", other_string),
+          #("key2", some_bool),
+        ]),
+      ),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.PrimitiveType(types.String),
@@ -410,7 +415,7 @@ pub fn validate_value_type_test() {
     ),
     // List with first element wrong
     #(
-      dynamic.list([some_bool, some_string]),
+      value.ListValue([some_bool, some_string]),
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       json_error(
         "expected (String) received (Bool) value (List) for (some_key.0)",
@@ -435,7 +440,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional List with wrong inner type
     #(
-      dynamic.list([some_bool]),
+      value.ListValue([some_bool]),
       types.ModifierType(
         types.Optional(
           types.CollectionType(types.List(types.PrimitiveType(types.String))),
@@ -447,7 +452,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional Dict with wrong value type
     #(
-      dynamic.properties([#(some_string, some_bool)]),
+      value.DictValue(dict.from_list([#("a", some_bool)])),
       types.ModifierType(
         types.Optional(
           types.CollectionType(types.Dict(
@@ -483,7 +488,7 @@ pub fn validate_value_type_test() {
     ),
     // Nested types with wrong inner type
     #(
-      dynamic.list([dynamic.list([some_bool])]),
+      value.ListValue([value.ListValue([some_bool])]),
       types.CollectionType(
         types.List(
           types.CollectionType(types.List(types.PrimitiveType(types.String))),
@@ -494,9 +499,11 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
-      dynamic.properties([
-        #(some_string, dynamic.properties([#(some_string, some_bool)])),
-      ]),
+      value.DictValue(
+        dict.from_list([
+          #("a", value.DictValue(dict.from_list([#("a", some_bool)]))),
+        ]),
+      ),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
         types.CollectionType(types.Dict(
@@ -509,7 +516,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
-      dynamic.list([dynamic.properties([#(some_string, some_bool)])]),
+      value.ListValue([value.DictValue(dict.from_list([#("a", some_bool)]))]),
       types.CollectionType(
         types.List(
           types.CollectionType(types.Dict(
@@ -563,8 +570,8 @@ pub fn inputs_validator_test() {
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),
       dict.from_list([
-        #("name", dynamic.string("foo")),
-        #("count", dynamic.int(42)),
+        #("name", value.StringValue("foo")),
+        #("count", value.IntValue(42)),
       ]),
       False,
       Ok(True),
@@ -589,7 +596,7 @@ pub fn inputs_validator_test() {
           types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
         ),
       ]),
-      dict.from_list([#("maybe_name", dynamic.string("foo"))]),
+      dict.from_list([#("maybe_name", value.StringValue("foo"))]),
       False,
       Ok(True),
     ),
@@ -606,7 +613,7 @@ pub fn inputs_validator_test() {
           ),
         ),
       ]),
-      dict.from_list([#("name", dynamic.string("foo"))]),
+      dict.from_list([#("name", value.StringValue("foo"))]),
       False,
       Ok(True),
     ),
@@ -636,7 +643,7 @@ pub fn inputs_validator_test() {
           )),
         ),
       ]),
-      dict.from_list([#("count", dynamic.int(42))]),
+      dict.from_list([#("count", value.IntValue(42))]),
       False,
       Ok(True),
     ),
@@ -652,7 +659,7 @@ pub fn inputs_validator_test() {
           )),
         ),
       ]),
-      dict.from_list([#("name", dynamic.string("foo"))]),
+      dict.from_list([#("name", value.StringValue("foo"))]),
       False,
       Ok(True),
     ),
@@ -671,7 +678,7 @@ pub fn inputs_validator_test() {
           )),
         ),
       ]),
-      dict.from_list([#("view_path", dynamic.string("/members/messages"))]),
+      dict.from_list([#("view_path", value.StringValue("/members/messages"))]),
       False,
       Ok(True),
     ),
@@ -681,7 +688,7 @@ pub fn inputs_validator_test() {
         #("name", types.PrimitiveType(types.String)),
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),
-      dict.from_list([#("name", dynamic.string("foo"))]),
+      dict.from_list([#("name", value.StringValue("foo"))]),
       False,
       Error("Missing keys in input: count"),
     ),
@@ -691,8 +698,8 @@ pub fn inputs_validator_test() {
         #("name", types.PrimitiveType(types.String)),
       ]),
       dict.from_list([
-        #("name", dynamic.string("foo")),
-        #("extra", dynamic.int(42)),
+        #("name", value.StringValue("foo")),
+        #("extra", value.IntValue(42)),
       ]),
       False,
       Error("Extra keys in input: extra"),
@@ -704,8 +711,8 @@ pub fn inputs_validator_test() {
         #("required", types.PrimitiveType(types.Boolean)),
       ]),
       dict.from_list([
-        #("name", dynamic.string("foo")),
-        #("extra", dynamic.int(42)),
+        #("name", value.StringValue("foo")),
+        #("extra", value.IntValue(42)),
       ]),
       False,
       Error("Extra keys in input: extra and missing keys in input: required"),
@@ -715,7 +722,7 @@ pub fn inputs_validator_test() {
       dict.from_list([
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),
-      dict.from_list([#("count", dynamic.string("not an int"))]),
+      dict.from_list([#("count", value.StringValue("not an int"))]),
       False,
       Error(
         "expected (Int) received (String) value (\"not an int\") for (count)",
@@ -772,7 +779,7 @@ pub fn inputs_validator_test() {
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
         #("flag", types.PrimitiveType(types.Boolean)),
       ]),
-      dict.from_list([#("name", dynamic.string("foo"))]),
+      dict.from_list([#("name", value.StringValue("foo"))]),
       True,
       Ok(True),
     ),
@@ -783,8 +790,8 @@ pub fn inputs_validator_test() {
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),
       dict.from_list([
-        #("name", dynamic.string("foo")),
-        #("count", dynamic.int(42)),
+        #("name", value.StringValue("foo")),
+        #("count", value.IntValue(42)),
       ]),
       True,
       Ok(True),
@@ -795,8 +802,8 @@ pub fn inputs_validator_test() {
         #("name", types.PrimitiveType(types.String)),
       ]),
       dict.from_list([
-        #("name", dynamic.string("foo")),
-        #("extra", dynamic.int(42)),
+        #("name", value.StringValue("foo")),
+        #("extra", value.IntValue(42)),
       ]),
       True,
       Error("Extra keys in input: extra"),
@@ -806,7 +813,7 @@ pub fn inputs_validator_test() {
       dict.from_list([
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),
-      dict.from_list([#("count", dynamic.string("not an int"))]),
+      dict.from_list([#("count", value.StringValue("not an int"))]),
       True,
       Error(
         "expected (Int) received (String) value (\"not an int\") for (count)",
@@ -828,7 +835,7 @@ pub fn inputs_validator_test() {
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
         #("flag", types.PrimitiveType(types.Boolean)),
       ]),
-      dict.from_list([#("name", dynamic.string("foo"))]),
+      dict.from_list([#("name", value.StringValue("foo"))]),
       False,
       "Missing keys in input:",
     ),
@@ -839,8 +846,8 @@ pub fn inputs_validator_test() {
         #("flag", types.PrimitiveType(types.Boolean)),
       ]),
       dict.from_list([
-        #("count", dynamic.string("not an int")),
-        #("flag", dynamic.string("not a bool")),
+        #("count", value.StringValue("not an int")),
+        #("flag", value.StringValue("not a bool")),
       ]),
       False,
       "expected (Int) received (String)",
@@ -925,7 +932,7 @@ pub fn validate_inputs_for_collection_test() {
     [],
     [
       #(
-        dict.from_list([#("name", dynamic.string("foo"))]),
+        dict.from_list([#("name", value.StringValue("foo"))]),
         dict.from_list([
           #("name", types.PrimitiveType(types.String)),
         ]),
@@ -965,7 +972,7 @@ pub fn validate_inputs_for_collection_test() {
   // sad path - type error (both modes)
   let collection_type_error = [
     #(
-      dict.from_list([#("count", dynamic.string("not an int"))]),
+      dict.from_list([#("count", value.StringValue("not an int"))]),
       dict.from_list([
         #("count", types.PrimitiveType(types.NumericType(types.Integer))),
       ]),

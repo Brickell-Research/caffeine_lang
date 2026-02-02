@@ -1,8 +1,7 @@
 import caffeine_lang/helpers
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/list
 import gleeunit/should
 import test_helpers
@@ -34,35 +33,35 @@ pub fn map_reference_to_referrer_over_collection_test() {
 // ==== extract_value ====
 // * ✅ extracts value by label
 // * ✅ returns Error for missing label
-// * ✅ returns Error for decode failure
+// * ✅ returns Error for extractor failure
 pub fn extract_value_test() {
   let values = [
     helpers.ValueTuple(
       "name",
       types.PrimitiveType(types.String),
-      dynamic.string("hello"),
+      value.StringValue("hello"),
     ),
     helpers.ValueTuple(
       "count",
       types.PrimitiveType(types.NumericType(types.Integer)),
-      dynamic.int(42),
+      value.IntValue(42),
     ),
   ]
 
   // extracts value by label
-  helpers.extract_value(values, "name", decode.string)
+  helpers.extract_value(values, "name", value.extract_string)
   |> should.equal(Ok("hello"))
 
-  // extracts value with different decoder
-  helpers.extract_value(values, "count", decode.int)
+  // extracts value with different extractor
+  helpers.extract_value(values, "count", value.extract_int)
   |> should.equal(Ok(42))
 
   // returns Error for missing label
-  helpers.extract_value(values, "missing", decode.string)
+  helpers.extract_value(values, "missing", value.extract_string)
   |> should.equal(Error(Nil))
 
-  // returns Error for decode failure (wrong decoder for type)
-  helpers.extract_value(values, "count", decode.string)
+  // returns Error for extractor failure (wrong extractor for type)
+  helpers.extract_value(values, "count", value.extract_string)
   |> should.equal(Error(Nil))
 }
 
@@ -91,7 +90,7 @@ pub fn extract_threshold_test() {
     helpers.ValueTuple(
       "threshold",
       types.PrimitiveType(types.NumericType(types.Float)),
-      dynamic.float(95.0),
+      value.FloatValue(95.0),
     ),
   ]
   helpers.extract_threshold(with_threshold)
@@ -117,7 +116,7 @@ pub fn extract_window_in_days_test() {
     helpers.ValueTuple(
       "window_in_days",
       types.PrimitiveType(types.NumericType(types.Integer)),
-      dynamic.int(7),
+      value.IntValue(7),
     ),
   ]
   helpers.extract_window_in_days(with_window)

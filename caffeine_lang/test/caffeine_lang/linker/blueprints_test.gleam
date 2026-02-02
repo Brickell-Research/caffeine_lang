@@ -2,8 +2,8 @@ import caffeine_lang/errors
 import caffeine_lang/linker/artifacts.{type Artifact, ParamInfo}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import test_helpers
 
@@ -103,7 +103,7 @@ pub fn validate_blueprints_test() {
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
-          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+          inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
         ),
       ],
       Ok([
@@ -115,7 +115,7 @@ pub fn validate_blueprints_test() {
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
             #("value", types.PrimitiveType(types.String)),
           ]),
-          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+          inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
         ),
       ]),
     ),
@@ -153,7 +153,7 @@ pub fn validate_blueprints_test() {
           name: "minimal_params",
           artifact_refs: ["SLO"],
           params: dict.new(),
-          inputs: dict.from_list([#("value", dynamic.string("foobar"))]),
+          inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
         ),
       ],
       True,
@@ -360,8 +360,8 @@ pub fn validate_blueprints_test() {
           artifact_refs: ["SLO"],
           params: dict.new(),
           inputs: dict.from_list([
-            #("value", dynamic.string("foobar")),
-            #("extra", dynamic.string("bad")),
+            #("value", value.StringValue("foobar")),
+            #("extra", value.StringValue("bad")),
           ]),
         ),
       ],
@@ -382,7 +382,7 @@ pub fn validate_blueprints_test() {
           name: "success_rate",
           artifact_refs: ["SLO"],
           params: dict.new(),
-          inputs: dict.from_list([#("value", dynamic.int(123))]),
+          inputs: dict.from_list([#("value", value.IntValue(123))]),
         ),
       ],
       Error(errors.ParserJsonParserError(
@@ -408,8 +408,8 @@ pub fn validate_blueprints_artifact_refs_test() {
           artifact_refs: ["SLO", "DependencyRelations"],
           params: dict.new(),
           inputs: dict.from_list([
-            #("value", dynamic.string("foobar")),
-            #("isHard", dynamic.bool(True)),
+            #("value", value.StringValue("foobar")),
+            #("isHard", value.BoolValue(True)),
           ]),
         ),
       ],

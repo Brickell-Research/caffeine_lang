@@ -7,9 +7,9 @@ import caffeine_lang/errors.{
   type CompilationError, GeneratorHoneycombTerraformResolutionError,
 }
 import caffeine_lang/helpers
+import caffeine_lang/value
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
-import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option
@@ -116,7 +116,7 @@ pub fn ir_to_terraform_resources(
   // Extract the evaluation expression, then resolve it through the CQL pipeline
   // by substituting indicator names into the evaluation formula.
   use evaluation_expr <- result.try(
-    helpers.extract_value(ir.values, "evaluation", decode.string)
+    helpers.extract_value(ir.values, "evaluation", value.extract_string)
     |> result.replace_error(GeneratorHoneycombTerraformResolutionError(
       msg: "expectation '"
       <> identifier
@@ -185,7 +185,13 @@ pub fn ir_to_terraform_resources(
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
   let runbook =
-    helpers.extract_value(ir.values, "runbook", decode.optional(decode.string))
+    helpers.extract_value(ir.values, "runbook", fn(v) {
+      case v {
+        value.NilValue -> Ok(option.None)
+        value.StringValue(s) -> Ok(option.Some(s))
+        _ -> Error(Nil)
+      }
+    })
     |> result.unwrap(option.None)
 
   case runbook {

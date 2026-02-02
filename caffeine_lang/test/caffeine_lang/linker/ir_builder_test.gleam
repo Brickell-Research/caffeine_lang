@@ -4,8 +4,8 @@ import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/types
+import caffeine_lang/value.{type Value}
 import gleam/dict
-import gleam/dynamic
 import gleam/list
 import gleam/option
 import gleam/set
@@ -49,7 +49,7 @@ pub fn build_all_test() {
     let blueprint =
       make_blueprint("test_blueprint", [#("threshold", FloatType)])
     let expectation =
-      make_expectation("my_test", [#("threshold", dynamic.float(99.9))])
+      make_expectation("my_test", [#("threshold", value.FloatValue(99.9))])
 
     ir_builder.build_all([
       #([#(expectation, blueprint)], "org/team/service.json"),
@@ -65,7 +65,7 @@ pub fn build_all_test() {
           helpers.ValueTuple(
             label: "threshold",
             typ: types.PrimitiveType(types.NumericType(types.Float)),
-            value: dynamic.float(99.9),
+            value: value.FloatValue(99.9),
           ),
         ],
         misc: dict.new(),
@@ -76,8 +76,8 @@ pub fn build_all_test() {
   // multiple expectations from single file
   {
     let blueprint = make_blueprint("test_blueprint", [#("value", FloatType)])
-    let exp1 = make_expectation("first", [#("value", dynamic.float(1.0))])
-    let exp2 = make_expectation("second", [#("value", dynamic.float(2.0))])
+    let exp1 = make_expectation("first", [#("value", value.FloatValue(1.0))])
+    let exp2 = make_expectation("second", [#("value", value.FloatValue(2.0))])
 
     let result =
       ir_builder.build_all([
@@ -93,8 +93,8 @@ pub fn build_all_test() {
   // multiple files flattened into single list
   {
     let blueprint = make_blueprint("test_blueprint", [#("id", FloatType)])
-    let exp1 = make_expectation("from_file1", [#("id", dynamic.float(1.0))])
-    let exp2 = make_expectation("from_file2", [#("id", dynamic.float(2.0))])
+    let exp1 = make_expectation("from_file1", [#("id", value.FloatValue(1.0))])
+    let exp2 = make_expectation("from_file2", [#("id", value.FloatValue(2.0))])
 
     let result =
       ir_builder.build_all([
@@ -126,7 +126,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([]),
       )
     let expectation =
-      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+      make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert [ir] =
       ir_builder.build_all([
@@ -141,12 +141,12 @@ pub fn build_all_test() {
         typ: types.ModifierType(
           types.Optional(types.PrimitiveType(types.String)),
         ),
-        value: dynamic.nil(),
+        value: value.NilValue,
       ),
       helpers.ValueTuple(
         label: "required",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
-        value: dynamic.float(1.0),
+        value: value.FloatValue(1.0),
       ),
     ])
   }
@@ -170,7 +170,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([]),
       )
     let expectation =
-      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+      make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert [ir] =
       ir_builder.build_all([
@@ -186,12 +186,12 @@ pub fn build_all_test() {
           types.PrimitiveType(types.String),
           "default_value",
         )),
-        value: dynamic.nil(),
+        value: value.NilValue,
       ),
       helpers.ValueTuple(
         label: "required",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
-        value: dynamic.float(1.0),
+        value: value.FloatValue(1.0),
       ),
     ])
   }
@@ -218,7 +218,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([]),
       )
     let expectation =
-      make_expectation("my_test", [#("required", dynamic.float(1.0))])
+      make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert [ir] =
       ir_builder.build_all([
@@ -237,12 +237,12 @@ pub fn build_all_test() {
           )),
           set.from_list(["production", "staging"]),
         )),
-        value: dynamic.nil(),
+        value: value.NilValue,
       ),
       helpers.ValueTuple(
         label: "required",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
-        value: dynamic.float(1.0),
+        value: value.FloatValue(1.0),
       ),
     ])
   }
@@ -261,11 +261,13 @@ pub fn build_all_test() {
           ),
         ]),
         inputs: dict.from_list([
-          #("from_blueprint", dynamic.string("blueprint_value")),
+          #("from_blueprint", value.StringValue("blueprint_value")),
         ]),
       )
     let expectation =
-      make_expectation("my_test", [#("from_expectation", dynamic.float(42.0))])
+      make_expectation("my_test", [
+        #("from_expectation", value.FloatValue(42.0)),
+      ])
 
     let assert [ir] =
       ir_builder.build_all([
@@ -278,12 +280,12 @@ pub fn build_all_test() {
       helpers.ValueTuple(
         label: "from_blueprint",
         typ: types.PrimitiveType(types.String),
-        value: dynamic.string("blueprint_value"),
+        value: value.StringValue("blueprint_value"),
       ),
       helpers.ValueTuple(
         label: "from_expectation",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
-        value: dynamic.float(42.0),
+        value: value.FloatValue(42.0),
       ),
     ])
   }
@@ -306,9 +308,9 @@ pub fn build_all_test() {
         name: "my_test",
         blueprint_ref: "test_blueprint",
         inputs: dict.from_list([
-          #("env", dynamic.string("production")),
-          #("region", dynamic.string("us-east-1")),
-          #("threshold", dynamic.float(99.9)),
+          #("env", value.StringValue("production")),
+          #("region", value.StringValue("us-east-1")),
+          #("threshold", value.FloatValue(99.9)),
         ]),
       )
 
@@ -347,12 +349,12 @@ pub fn build_all_list_misc_test() {
       inputs: dict.from_list([
         #(
           "job_name",
-          dynamic.list([
-            dynamic.string("deploy-prod"),
-            dynamic.string("deploy-demo"),
+          value.ListValue([
+            value.StringValue("deploy-prod"),
+            value.StringValue("deploy-demo"),
           ]),
         ),
-        #("threshold", dynamic.float(99.9)),
+        #("threshold", value.FloatValue(99.9)),
       ]),
     )
 
@@ -383,7 +385,7 @@ pub fn build_all_optional_none_misc_test() {
       inputs: dict.from_list([]),
     )
   let expectation =
-    make_expectation("my_test", [#("threshold", dynamic.float(1.0))])
+    make_expectation("my_test", [#("threshold", value.FloatValue(1.0))])
 
   let assert [ir] =
     ir_builder.build_all([
@@ -427,7 +429,7 @@ fn make_blueprint(
 
 fn make_expectation(
   name: String,
-  inputs: List(#(String, dynamic.Dynamic)),
+  inputs: List(#(String, Value)),
 ) -> expectations.Expectation {
   expectations.Expectation(
     name: name,

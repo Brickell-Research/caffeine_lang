@@ -8,9 +8,9 @@ import caffeine_lang/errors.{
   GeneratorSloQueryResolutionError,
 }
 import caffeine_lang/helpers
+import caffeine_lang/value
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
-import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option
@@ -119,10 +119,16 @@ pub fn ir_to_terraform_resource(
   let window_in_days = helpers.extract_window_in_days(ir.values)
   let indicators = helpers.extract_indicators(ir.values)
   let evaluation_expr =
-    helpers.extract_value(ir.values, "evaluation", decode.string)
+    helpers.extract_value(ir.values, "evaluation", value.extract_string)
     |> result.unwrap("numerator / denominator")
   let runbook =
-    helpers.extract_value(ir.values, "runbook", decode.optional(decode.string))
+    helpers.extract_value(ir.values, "runbook", fn(v) {
+      case v {
+        value.NilValue -> Ok(option.None)
+        value.StringValue(s) -> Ok(option.Some(s))
+        _ -> Error(Nil)
+      }
+    })
     |> result.unwrap(option.None)
 
   // Parse the evaluation expression using CQL and get HCL blocks.

@@ -1,16 +1,14 @@
 import caffeine_lang/constants
 import caffeine_lang/types
+import caffeine_lang/value.{type Value}
 import gleam/dict
-import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/list
-import gleam/option
 import gleam/result
 import gleam/string
 
 /// A tuple of a label, type, and value used for template resolution.
 pub type ValueTuple {
-  ValueTuple(label: String, typ: types.AcceptedTypes, value: Dynamic)
+  ValueTuple(label: String, typ: types.AcceptedTypes, value: Value)
 }
 
 /// Maps each referrer to its corresponding reference by matching names.
@@ -66,22 +64,20 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
 /// Default SLO threshold percentage used when no explicit threshold is provided.
 pub const default_threshold_percentage = 99.9
 
-/// Extract a value from a list of ValueTuple by label using the provided decoder.
+/// Extract a value from a list of ValueTuple by label using the provided extractor.
 pub fn extract_value(
   values: List(ValueTuple),
   label: String,
-  decoder: decode.Decoder(a),
+  extractor: fn(Value) -> Result(a, Nil),
 ) -> Result(a, Nil) {
   values
   |> list.find(fn(vt) { vt.label == label })
-  |> result.try(fn(vt) {
-    decode.run(vt.value, decoder) |> result.replace_error(Nil)
-  })
+  |> result.try(fn(vt) { extractor(vt.value) })
 }
 
 /// Extract the threshold from a list of values, falling back to the default.
 pub fn extract_threshold(values: List(ValueTuple)) -> Float {
-  extract_value(values, "threshold", decode.float)
+  extract_value(values, "threshold", value.extract_float)
   |> result.unwrap(default_threshold_percentage)
 }
 
@@ -92,8 +88,23 @@ pub fn extract_relations(
   values
   |> list.find(fn(vt) { vt.label == "relations" })
   |> result.try(fn(vt) {
-    decode.run(vt.value, decode.dict(decode.string, decode.list(decode.string)))
-    |> result.replace_error(Nil)
+    case vt.value {
+      value.DictValue(d) ->
+        d
+        |> dict.to_list
+        |> list.try_map(fn(pair) {
+          case pair.1 {
+            value.ListValue(items) -> {
+              items
+              |> list.try_map(value.extract_string)
+              |> result.map(fn(strings) { #(pair.0, strings) })
+            }
+            _ -> Error(Nil)
+          }
+        })
+        |> result.map(dict.from_list)
+      _ -> Error(Nil)
+    }
   })
   |> result.unwrap(dict.new())
 }
@@ -103,25 +114,30 @@ pub const default_window_in_days = 30
 
 /// Extract the window_in_days from a list of values, falling back to the default.
 pub fn extract_window_in_days(values: List(ValueTuple)) -> Int {
-  extract_value(values, "window_in_days", decode.int)
+  extract_value(values, "window_in_days", value.extract_int)
   |> result.unwrap(default_window_in_days)
 }
 
 /// Extract indicators from a list of values as a Dict mapping indicator names to expressions.
 pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String) {
-  extract_value(values, "indicators", decode.dict(decode.string, decode.string))
+  values
+  |> list.find(fn(vt) { vt.label == "indicators" })
+  |> result.try(fn(vt) { value.extract_string_dict(vt.value) })
   |> result.unwrap(dict.new())
 }
 
 /// Extract user-provided tags as a sorted list of key-value pairs.
 pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
-  extract_value(
-    values,
-    "tags",
-    decode.optional(decode.dict(decode.string, decode.string)),
-  )
-  |> result.unwrap(option.None)
-  |> option.unwrap(dict.new())
+  values
+  |> list.find(fn(vt) { vt.label == "tags" })
+  |> result.try(fn(vt) {
+    case vt.value {
+      value.NilValue -> Ok(dict.new())
+      value.DictValue(_) -> value.extract_string_dict(vt.value)
+      _ -> Error(Nil)
+    }
+  })
+  |> result.unwrap(dict.new())
   |> dict.to_list
   |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
 }

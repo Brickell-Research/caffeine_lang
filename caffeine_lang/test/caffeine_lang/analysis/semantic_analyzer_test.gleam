@@ -6,8 +6,8 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
 import caffeine_lang/types
+import caffeine_lang/value
 import gleam/dict
-import gleam/dynamic
 import gleam/option
 import gleam/set
 import test_helpers
@@ -34,12 +34,12 @@ pub fn resolve_intermediate_representations_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "env",
               types.PrimitiveType(types.String),
-              dynamic.string("staging"),
+              value.StringValue("staging"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -47,12 +47,11 @@ pub fn resolve_intermediate_representations_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("query_a"),
-                  dynamic.string("avg:memory{$$env->env$$}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("query_a", value.StringValue("avg:memory{$$env->env$$}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.None,
@@ -72,12 +71,12 @@ pub fn resolve_intermediate_representations_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "region",
               types.PrimitiveType(types.String),
-              dynamic.string("us-east"),
+              value.StringValue("us-east"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -85,12 +84,14 @@ pub fn resolve_intermediate_representations_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("query_b"),
-                  dynamic.string("sum:requests{$$region->region$$}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "query_b",
+                    value.StringValue("sum:requests{$$region->region$$}"),
+                  ),
+                ]),
+              ),
             ),
           ],
           vendor: option.None,
@@ -112,12 +113,12 @@ pub fn resolve_intermediate_representations_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "env",
               types.PrimitiveType(types.String),
-              dynamic.string("staging"),
+              value.StringValue("staging"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -125,12 +126,11 @@ pub fn resolve_intermediate_representations_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("query_a"),
-                  dynamic.string("avg:memory{env:staging}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("query_a", value.StringValue("avg:memory{env:staging}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -150,12 +150,12 @@ pub fn resolve_intermediate_representations_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "region",
               types.PrimitiveType(types.String),
-              dynamic.string("us-east"),
+              value.StringValue("us-east"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -163,12 +163,14 @@ pub fn resolve_intermediate_representations_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("query_b"),
-                  dynamic.string("sum:requests{region:us-east}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "query_b",
+                    value.StringValue("sum:requests{region:us-east}"),
+                  ),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -202,7 +204,7 @@ pub fn resolve_vendor_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
         ],
         vendor: option.None,
@@ -222,7 +224,7 @@ pub fn resolve_vendor_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -256,17 +258,17 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
             types.PrimitiveType(types.String),
-            dynamic.string("production"),
+            value.StringValue("production"),
           ),
           helpers.ValueTuple(
             "status",
             types.PrimitiveType(types.Boolean),
-            dynamic.bool(True),
+            value.BoolValue(True),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -274,18 +276,20 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("denominator"),
-                dynamic.string("avg:system.cpu{$$env->env$$}"),
-              ),
-              #(
-                dynamic.string("numerator"),
-                dynamic.string(
-                  "avg:system.cpu{$$env->env$$ AND $$status->status:not$$}",
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "denominator",
+                  value.StringValue("avg:system.cpu{$$env->env$$}"),
                 ),
-              ),
-            ]),
+                #(
+                  "numerator",
+                  value.StringValue(
+                    "avg:system.cpu{$$env->env$$ AND $$status->status:not$$}",
+                  ),
+                ),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -305,17 +309,17 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
             types.PrimitiveType(types.String),
-            dynamic.string("production"),
+            value.StringValue("production"),
           ),
           helpers.ValueTuple(
             "status",
             types.PrimitiveType(types.Boolean),
-            dynamic.bool(True),
+            value.BoolValue(True),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -323,18 +327,20 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("denominator"),
-                dynamic.string("avg:system.cpu{env:production}"),
-              ),
-              #(
-                dynamic.string("numerator"),
-                dynamic.string(
-                  "avg:system.cpu{env:production AND !status:True}",
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "denominator",
+                  value.StringValue("avg:system.cpu{env:production}"),
                 ),
-              ),
-            ]),
+                #(
+                  "numerator",
+                  value.StringValue(
+                    "avg:system.cpu{env:production AND !status:True}",
+                  ),
+                ),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -357,12 +363,12 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
             types.PrimitiveType(types.String),
-            dynamic.string("production"),
+            value.StringValue("production"),
           ),
           helpers.ValueTuple(
             "threshold_in_ms",
@@ -370,7 +376,7 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.NumericType(types.Integer)),
               "2500000000",
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "indicators",
@@ -378,17 +384,19 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                dynamic.string("p75:rum.lcp.duration{$$env->env$$}"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  value.StringValue("p75:rum.lcp.duration{$$env->env$$}"),
+                ),
+              ]),
+            ),
           ),
           helpers.ValueTuple(
             "evaluation",
             types.PrimitiveType(types.String),
-            dynamic.string("time_slice(query > $$threshold_in_ms$$ per 5m)"),
+            value.StringValue("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -408,12 +416,12 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "env",
             types.PrimitiveType(types.String),
-            dynamic.string("production"),
+            value.StringValue("production"),
           ),
           helpers.ValueTuple(
             "threshold_in_ms",
@@ -421,7 +429,7 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.NumericType(types.Integer)),
               "2500000000",
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "indicators",
@@ -429,17 +437,19 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                dynamic.string("p75:rum.lcp.duration{env:production}"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  value.StringValue("p75:rum.lcp.duration{env:production}"),
+                ),
+              ]),
+            ),
           ),
           helpers.ValueTuple(
             "evaluation",
             types.PrimitiveType(types.String),
-            dynamic.string("time_slice(query > 2500000000 per 5m)"),
+            value.StringValue("time_slice(query > 2500000000 per 5m)"),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -462,7 +472,7 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "environment",
@@ -473,7 +483,7 @@ pub fn resolve_indicators_test() {
               )),
               set.from_list(["production", "staging"]),
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "indicators",
@@ -481,12 +491,16 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                dynamic.string("p75:rum.lcp.duration{$$env->environment$$}"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  value.StringValue(
+                    "p75:rum.lcp.duration{$$env->environment$$}",
+                  ),
+                ),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -506,7 +520,7 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "environment",
@@ -517,7 +531,7 @@ pub fn resolve_indicators_test() {
               )),
               set.from_list(["production", "staging"]),
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "indicators",
@@ -525,12 +539,14 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                dynamic.string("p75:rum.lcp.duration{env:production}"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  value.StringValue("p75:rum.lcp.duration{env:production}"),
+                ),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -556,7 +572,7 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           // environment: Defaulted(String, production) { x | x in { production } } - NOT provided
           helpers.ValueTuple(
@@ -568,7 +584,7 @@ pub fn resolve_indicators_test() {
               )),
               set.from_list(["production"]),
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           // application_name: Defaulted(String, member_portal) - NOT provided
           helpers.ValueTuple(
@@ -577,13 +593,13 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               "member_portal",
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           // view_path: String - PROVIDED
           helpers.ValueTuple(
             "view_path",
             types.PrimitiveType(types.String),
-            dynamic.string("/members/messages"),
+            value.StringValue("/members/messages"),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -591,14 +607,16 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                dynamic.string(
-                  "p75:rum.lcp.duration{$$application.name->application_name$$, $$env->environment$$, $$view.url_path_group->view_path$$}",
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  value.StringValue(
+                    "p75:rum.lcp.duration{$$application.name->application_name$$, $$env->environment$$, $$view.url_path_group->view_path$$}",
+                  ),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -618,7 +636,7 @@ pub fn resolve_indicators_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_datadog),
+            value.StringValue(constants.vendor_datadog),
           ),
           helpers.ValueTuple(
             "environment",
@@ -629,7 +647,7 @@ pub fn resolve_indicators_test() {
               )),
               set.from_list(["production"]),
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "application_name",
@@ -637,12 +655,12 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               "member_portal",
             )),
-            dynamic.nil(),
+            value.NilValue,
           ),
           helpers.ValueTuple(
             "view_path",
             types.PrimitiveType(types.String),
-            dynamic.string("/members/messages"),
+            value.StringValue("/members/messages"),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -650,15 +668,17 @@ pub fn resolve_indicators_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("query"),
-                // All defaults resolved: application.name:member_portal, env:production, view.url_path_group:/members/messages
-                dynamic.string(
-                  "p75:rum.lcp.duration{application.name:member_portal, env:production, view.url_path_group:/members/messages}",
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "query",
+                  // All defaults resolved: application.name:member_portal, env:production, view.url_path_group:/members/messages
+                  value.StringValue(
+                    "p75:rum.lcp.duration{application.name:member_portal, env:production, view.url_path_group:/members/messages}",
+                  ),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Datadog),
@@ -690,7 +710,7 @@ pub fn resolve_vendor_honeycomb_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_honeycomb),
+            value.StringValue(constants.vendor_honeycomb),
           ),
         ],
         vendor: option.None,
@@ -710,7 +730,7 @@ pub fn resolve_vendor_honeycomb_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_honeycomb),
+            value.StringValue(constants.vendor_honeycomb),
           ),
         ],
         vendor: option.Some(vendor.Honeycomb),
@@ -740,7 +760,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_honeycomb),
+            value.StringValue(constants.vendor_honeycomb),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -748,12 +768,11 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("sli"),
-                dynamic.string("LT($\"status_code\", 500)"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #("sli", value.StringValue("LT($\"status_code\", 500)")),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Honeycomb),
@@ -773,7 +792,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           helpers.ValueTuple(
             "vendor",
             types.PrimitiveType(types.String),
-            dynamic.string(constants.vendor_honeycomb),
+            value.StringValue(constants.vendor_honeycomb),
           ),
           helpers.ValueTuple(
             "indicators",
@@ -781,12 +800,11 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
               types.PrimitiveType(types.String),
               types.PrimitiveType(types.String),
             )),
-            dynamic.properties([
-              #(
-                dynamic.string("sli"),
-                dynamic.string("LT($\"status_code\", 500)"),
-              ),
-            ]),
+            value.DictValue(
+              dict.from_list([
+                #("sli", value.StringValue("LT($\"status_code\", 500)")),
+              ]),
+            ),
           ),
         ],
         vendor: option.Some(vendor.Honeycomb),
@@ -817,12 +835,12 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         helpers.ValueTuple(
           "vendor",
           types.PrimitiveType(types.String),
-          dynamic.string(constants.vendor_datadog),
+          value.StringValue(constants.vendor_datadog),
         ),
         helpers.ValueTuple(
           "env",
           types.PrimitiveType(types.String),
-          dynamic.string("staging"),
+          value.StringValue("staging"),
         ),
         helpers.ValueTuple(
           "indicators",
@@ -830,12 +848,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             types.PrimitiveType(types.String),
             types.PrimitiveType(types.String),
           )),
-          dynamic.properties([
-            #(
-              dynamic.string("query_a"),
-              dynamic.string("avg:memory{$$env->env$$}"),
-            ),
-          ]),
+          value.DictValue(
+            dict.from_list([
+              #("query_a", value.StringValue("avg:memory{$$env->env$$}")),
+            ]),
+          ),
         ),
       ],
       vendor: option.None,
@@ -857,7 +874,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         helpers.ValueTuple(
           "vendor",
           types.PrimitiveType(types.String),
-          dynamic.string(constants.vendor_honeycomb),
+          value.StringValue(constants.vendor_honeycomb),
         ),
         helpers.ValueTuple(
           "indicators",
@@ -865,12 +882,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             types.PrimitiveType(types.String),
             types.PrimitiveType(types.String),
           )),
-          dynamic.properties([
-            #(
-              dynamic.string("sli"),
-              dynamic.string("LT($\"status_code\", 500)"),
-            ),
-          ]),
+          value.DictValue(
+            dict.from_list([
+              #("sli", value.StringValue("LT($\"status_code\", 500)")),
+            ]),
+          ),
         ),
       ],
       vendor: option.None,
@@ -895,12 +911,12 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_datadog),
+              value.StringValue(constants.vendor_datadog),
             ),
             helpers.ValueTuple(
               "env",
               types.PrimitiveType(types.String),
-              dynamic.string("staging"),
+              value.StringValue("staging"),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -908,12 +924,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("query_a"),
-                  dynamic.string("avg:memory{env:staging}"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("query_a", value.StringValue("avg:memory{env:staging}")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Datadog),
@@ -933,7 +948,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             helpers.ValueTuple(
               "vendor",
               types.PrimitiveType(types.String),
-              dynamic.string(constants.vendor_honeycomb),
+              value.StringValue(constants.vendor_honeycomb),
             ),
             helpers.ValueTuple(
               "indicators",
@@ -941,12 +956,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
                 types.PrimitiveType(types.String),
                 types.PrimitiveType(types.String),
               )),
-              dynamic.properties([
-                #(
-                  dynamic.string("sli"),
-                  dynamic.string("LT($\"status_code\", 500)"),
-                ),
-              ]),
+              value.DictValue(
+                dict.from_list([
+                  #("sli", value.StringValue("LT($\"status_code\", 500)")),
+                ]),
+              ),
             ),
           ],
           vendor: option.Some(vendor.Honeycomb),

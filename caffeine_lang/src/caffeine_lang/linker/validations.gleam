@@ -1,27 +1,27 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/types.{type AcceptedTypes}
+import caffeine_lang/value.{type Value}
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/list
 import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
 
-/// Validates that a dynamic value matches the expected AcceptedType.
+/// Validates that a Value matches the expected AcceptedType.
 /// Returns the original value if valid, or a CompilationError describing the type mismatch.
 @internal
 pub fn validate_value_type(
-  value: Dynamic,
+  val: Value,
   expected_type: AcceptedTypes,
   type_key_identifier: String,
-) -> Result(Dynamic, CompilationError) {
-  types.validate_value(expected_type, value)
+) -> Result(Value, CompilationError) {
+  types.validate_value(expected_type, val)
   |> result.map_error(fn(err) {
-    errors.ParserJsonParserError(errors.format_decode_error_message(
+    errors.ParserJsonParserError(errors.format_validation_error_message(
       err,
       option.Some(type_key_identifier),
-      option.Some(value),
+      option.Some(val),
     ))
   })
 }
@@ -32,7 +32,7 @@ pub fn validate_value_type(
 @internal
 pub fn inputs_validator(
   params params: Dict(String, AcceptedTypes),
-  inputs inputs: Dict(String, Dynamic),
+  inputs inputs: Dict(String, Value),
   missing_inputs_ok missing_inputs_ok: Bool,
 ) -> Result(Bool, String) {
   // Filter out optional and defaulted params - they're not required
@@ -137,7 +137,7 @@ pub fn validate_relevant_uniqueness(
 @internal
 pub fn validate_inputs_for_collection(
   input_param_collections input_param_collections: List(#(a, b)),
-  get_inputs get_inputs: fn(a) -> Dict(String, Dynamic),
+  get_inputs get_inputs: fn(a) -> Dict(String, Value),
   get_params get_params: fn(b) -> Dict(String, AcceptedTypes),
   with get_identifier: fn(a) -> String,
   missing_inputs_ok missing_inputs_ok: Bool,

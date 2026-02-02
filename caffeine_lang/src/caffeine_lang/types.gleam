@@ -1,12 +1,10 @@
 import caffeine_lang/parsing_utils
+import caffeine_lang/value.{type Value}
 import gleam/bool
 import gleam/dict
-import gleam/dynamic.{type Dynamic}
-import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -90,6 +88,12 @@ pub type RefinementTypes(accepted) {
   /// Furthermore, we initially will only support an inclusive
   /// range, as noted in the type name here.
   InclusiveRange(accepted, String, String)
+}
+
+/// Validation error with expected type, found value, and path context.
+/// Replaces decode.DecodeError to eliminate the gleam/dynamic/decode dependency.
+pub type ValidationError {
+  ValidationError(expected: String, found: String, path: List(String))
 }
 
 /// Type metadata for display purposes.
@@ -834,74 +838,108 @@ fn validate_string_literal_or_defaulted(
 // Validation
 // ---------------------------------------------------------------------------
 
-/// Validates a dynamic value matches the expected AcceptedType.
+/// Validates a typed Value matches the expected AcceptedType.
 /// Returns the original value if valid, or an error with decode errors.
 @internal
 pub fn validate_value(
   accepted_type: AcceptedTypes,
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
   case accepted_type {
-    PrimitiveType(primitive) -> validate_primitive_value(primitive, value)
-    CollectionType(collection) -> validate_collection_value(collection, value)
-    ModifierType(modifier) -> validate_modifier_value(modifier, value)
-    RefinementType(refinement) -> validate_refinement_value(refinement, value)
+    PrimitiveType(primitive) -> validate_primitive_value(primitive, val)
+    CollectionType(collection) -> validate_collection_value(collection, val)
+    ModifierType(modifier) -> validate_modifier_value(modifier, val)
+    RefinementType(refinement) -> validate_refinement_value(refinement, val)
   }
 }
 
 fn validate_primitive_value(
   primitive: PrimitiveTypes,
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
-  case primitive {
-    Boolean -> {
-      let decoder = decode.bool |> decode.map(fn(_) { value })
-      decode.run(value, decoder)
-    }
-    String -> {
-      let decoder = decode.string |> decode.map(fn(_) { value })
-      decode.run(value, decoder)
-    }
-    NumericType(numeric_type) -> validate_numeric_value(numeric_type, value)
-    SemanticType(semantic_type) -> validate_semantic_value(semantic_type, value)
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
+  case primitive, val {
+    Boolean, value.BoolValue(_) -> Ok(val)
+    Boolean, _ ->
+      Error([
+        ValidationError(
+          expected: "Bool",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
+    String, value.StringValue(_) -> Ok(val)
+    String, _ ->
+      Error([
+        ValidationError(
+          expected: "String",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
+    NumericType(numeric_type), _ -> validate_numeric_value(numeric_type, val)
+    SemanticType(semantic_type), _ ->
+      validate_semantic_value(semantic_type, val)
   }
 }
 
-/// Validates a dynamic value matches the numeric type.
+/// Validates a Value matches the numeric type.
 @internal
 pub fn validate_numeric_value(
   numeric: NumericTypes,
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
-  let decoder = case numeric {
-    Integer -> decode.int |> decode.map(fn(_) { value })
-    Float -> decode.float |> decode.map(fn(_) { value })
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
+  case numeric, val {
+    Integer, value.IntValue(_) -> Ok(val)
+    Integer, _ ->
+      Error([
+        ValidationError(
+          expected: "Int",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
+    Float, value.FloatValue(_) -> Ok(val)
+    Float, _ ->
+      Error([
+        ValidationError(
+          expected: "Float",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
   }
-  decode.run(value, decoder)
 }
 
 fn validate_semantic_value(
   typ: SemanticStringTypes,
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
-  let decoder = {
-    use str <- decode.then(decode.string)
-    case typ {
-      URL ->
-        case validate_url(str) {
-          Ok(Nil) -> decode.success(value)
-          Error(Nil) ->
-            decode.failure(value, "URL (starting with http:// or https://)")
-        }
-    }
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
+  case typ, val {
+    URL, value.StringValue(str) ->
+      case validate_url(str) {
+        Ok(Nil) -> Ok(val)
+        Error(Nil) ->
+          Error([
+            ValidationError(
+              expected: "URL (starting with http:// or https://)",
+              found: str,
+              path: [],
+            ),
+          ])
+      }
+    URL, _ ->
+      Error([
+        ValidationError(
+          expected: "String",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
   }
-  decode.run(value, decoder)
 }
 
-fn validate_url(val: String) -> Result(Nil, Nil) {
-  case
-    string.starts_with(val, "http://") || string.starts_with(val, "https://")
-  {
+fn validate_url(s: String) -> Result(Nil, Nil) {
+  case string.starts_with(s, "http://") || string.starts_with(s, "https://") {
     True -> Ok(Nil)
     False -> Error(Nil)
   }
@@ -909,22 +947,22 @@ fn validate_url(val: String) -> Result(Nil, Nil) {
 
 fn validate_collection_value(
   collection: CollectionTypes(AcceptedTypes),
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
   case collection {
     Dict(key_type, value_type) -> {
-      case decode.run(value, decode.dict(decode.string, decode.dynamic)) {
-        Ok(dict_val) -> {
+      case val {
+        value.DictValue(dict_val) -> {
           dict_val
           |> dict.to_list
           |> list.try_map(fn(pair) {
             let #(k, v) = pair
-            // Validate key - convert string key to dynamic for validation
+            // Validate key
             use _ <- result.try(
-              validate_value(key_type, dynamic.string(k))
+              validate_value(key_type, value.StringValue(k))
               |> result.map_error(fn(errs) {
                 list.map(errs, fn(e) {
-                  decode.DecodeError(..e, path: [k, ..e.path])
+                  ValidationError(..e, path: [k, ..e.path])
                 })
               }),
             )
@@ -932,18 +970,25 @@ fn validate_collection_value(
             validate_value(value_type, v)
             |> result.map_error(fn(errs) {
               list.map(errs, fn(e) {
-                decode.DecodeError(..e, path: [k, ..e.path])
+                ValidationError(..e, path: [k, ..e.path])
               })
             })
           })
-          |> result.map(fn(_) { value })
+          |> result.map(fn(_) { val })
         }
-        Error(err) -> Error(err)
+        _ ->
+          Error([
+            ValidationError(
+              expected: "Dict",
+              found: value.classify(val),
+              path: [],
+            ),
+          ])
       }
     }
     List(inner_type) -> {
-      case decode.run(value, decode.list(decode.dynamic)) {
-        Ok(list_val) -> {
+      case val {
+        value.ListValue(list_val) -> {
           list_val
           |> list.index_map(fn(v, i) { #(v, i) })
           |> list.try_map(fn(pair) {
@@ -951,13 +996,20 @@ fn validate_collection_value(
             validate_value(inner_type, v)
             |> result.map_error(fn(errs) {
               list.map(errs, fn(e) {
-                decode.DecodeError(..e, path: [int.to_string(i), ..e.path])
+                ValidationError(..e, path: [int.to_string(i), ..e.path])
               })
             })
           })
-          |> result.map(fn(_) { value })
+          |> result.map(fn(_) { val })
         }
-        Error(err) -> Error(err)
+        _ ->
+          Error([
+            ValidationError(
+              expected: "List",
+              found: value.classify(val),
+              path: [],
+            ),
+          ])
       }
     }
   }
@@ -965,34 +1017,33 @@ fn validate_collection_value(
 
 fn validate_modifier_value(
   modifier: ModifierTypes(AcceptedTypes),
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
   // Both Optional and Defaulted validate identically: if a value is present,
   // validate it matches the inner type; if absent, accept as-is.
   let inner_type = case modifier {
     Optional(t) -> t
     Defaulted(t, _) -> t
   }
-  case decode.run(value, decode.optional(decode.dynamic)) {
-    Ok(option.Some(inner_val)) -> validate_value(inner_type, inner_val)
-    Ok(option.None) -> Ok(value)
-    Error(err) -> Error(err)
+  case val {
+    value.NilValue -> Ok(val)
+    _ -> validate_value(inner_type, val)
   }
 }
 
 fn validate_refinement_value(
   refinement: RefinementTypes(AcceptedTypes),
-  value: Dynamic,
-) -> Result(Dynamic, List(decode.DecodeError)) {
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
   case refinement {
     OneOf(inner_type, allowed_values) -> {
-      case decode.run(value, decode_value_to_string(inner_type)) {
+      case value_to_type_string(inner_type, val) {
         Ok(str_val) -> {
           case set.contains(allowed_values, str_val) {
-            True -> Ok(value)
+            True -> Ok(val)
             False ->
               Error([
-                decode.DecodeError(
+                ValidationError(
                   expected: "one of: "
                     <> allowed_values
                   |> set.to_list
@@ -1009,16 +1060,46 @@ fn validate_refinement_value(
     }
 
     InclusiveRange(inner_type, low, high) -> {
-      use as_str <- result.try(decode.run(
-        value,
-        decode_value_to_string(inner_type),
-      ))
+      use as_str <- result.try(value_to_type_string(inner_type, val))
       let numeric = get_numeric_type(inner_type)
       case validate_in_range(numeric, as_str, low, high) {
-        Ok(_) -> Ok(value)
+        Ok(_) -> Ok(val)
         Error(errs) -> Error(errs)
       }
     }
+  }
+}
+
+/// Converts a Value to its string representation based on the expected type.
+/// Used internally for refinement validation and resolution.
+fn value_to_type_string(
+  typ: AcceptedTypes,
+  val: Value,
+) -> Result(String, List(ValidationError)) {
+  case typ, val {
+    PrimitiveType(Boolean), value.BoolValue(b) -> Ok(bool.to_string(b))
+    PrimitiveType(String), value.StringValue(s) -> Ok(s)
+    PrimitiveType(NumericType(Integer)), value.IntValue(i) ->
+      Ok(int.to_string(i))
+    PrimitiveType(NumericType(Float)), value.FloatValue(f) ->
+      Ok(float.to_string(f))
+    PrimitiveType(SemanticType(_)), value.StringValue(s) -> Ok(s)
+    ModifierType(Optional(inner)), value.NilValue -> {
+      // Absent optional resolves to empty string
+      let _ = inner
+      Ok("")
+    }
+    ModifierType(Defaulted(_, default_val)), value.NilValue -> Ok(default_val)
+    ModifierType(Optional(inner)), _ -> value_to_type_string(inner, val)
+    ModifierType(Defaulted(inner, _)), _ -> value_to_type_string(inner, val)
+    _, _ ->
+      Error([
+        ValidationError(
+          expected: accepted_type_to_string(typ),
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
   }
 }
 
@@ -1108,7 +1189,7 @@ pub fn validate_in_range(
   value_str: String,
   low_str: String,
   high_str: String,
-) -> Result(Nil, List(decode.DecodeError)) {
+) -> Result(Nil, List(ValidationError)) {
   let type_name = numeric_type_to_string(numeric)
   case
     parse_numeric_string(numeric, value_str),
@@ -1120,7 +1201,7 @@ pub fn validate_in_range(
         True, True -> Ok(Nil)
         _, _ ->
           Error([
-            decode.DecodeError(
+            ValidationError(
               expected: low_str <> " <= x <= " <> high_str,
               found: value_str,
               path: [],
@@ -1130,126 +1211,32 @@ pub fn validate_in_range(
     }
     _, _, _ ->
       Error([
-        decode.DecodeError(expected: type_name, found: value_str, path: []),
+        ValidationError(expected: type_name, found: value_str, path: []),
       ])
   }
-}
-
-// ---------------------------------------------------------------------------
-// Decoding
-// ---------------------------------------------------------------------------
-
-/// Decoder that converts a dynamic value to its String representation based on type.
-@internal
-pub fn decode_value_to_string(typ: AcceptedTypes) -> decode.Decoder(String) {
-  case typ {
-    PrimitiveType(primitive) -> decode_primitive_to_string(primitive)
-    CollectionType(collection) -> decode_collection_to_string(collection)
-    ModifierType(modifier) -> decode_modifier_to_string(modifier)
-    RefinementType(refinement) -> decode_refinement_to_string(refinement)
-  }
-}
-
-/// Decoder that converts a list of dynamic values to List(String).
-@internal
-pub fn decode_list_values_to_strings(
-  inner_type: AcceptedTypes,
-) -> decode.Decoder(List(String)) {
-  decode.list(decode_value_to_string(inner_type))
-}
-
-/// Decoder that converts a dynamic primitive value to its String representation.
-@internal
-pub fn decode_primitive_to_string(
-  primitive: PrimitiveTypes,
-) -> decode.Decoder(String) {
-  case primitive {
-    Boolean -> {
-      use val <- decode.then(decode.bool)
-      decode.success(bool.to_string(val))
-    }
-    String -> decode.string
-    NumericType(numeric_type) -> decode_numeric_to_string(numeric_type)
-    SemanticType(semantic_type) -> decode_semantic_to_string(semantic_type)
-  }
-}
-
-/// Decoder that converts a dynamic numeric value to its String representation.
-@internal
-pub fn decode_numeric_to_string(numeric: NumericTypes) -> decode.Decoder(String) {
-  case numeric {
-    Float -> {
-      use val <- decode.then(decode.float)
-      decode.success(float.to_string(val))
-    }
-    Integer -> {
-      use val <- decode.then(decode.int)
-      decode.success(int.to_string(val))
-    }
-  }
-}
-
-/// Decoder that converts a dynamic semantic string value to its String representation.
-@internal
-pub fn decode_semantic_to_string(
-  _typ: SemanticStringTypes,
-) -> decode.Decoder(String) {
-  decode.string
-}
-
-fn decode_collection_to_string(
-  _collection: CollectionTypes(AcceptedTypes),
-) -> decode.Decoder(String) {
-  // Collections can't be converted to a single string value.
-  decode.failure("", "Collection")
-}
-
-fn decode_modifier_to_string(
-  modifier: ModifierTypes(AcceptedTypes),
-) -> decode.Decoder(String) {
-  case modifier {
-    Optional(inner_type) -> {
-      use maybe_val <- decode.then(
-        decode.optional(decode_value_to_string(inner_type)),
-      )
-      decode.success(option.unwrap(maybe_val, ""))
-    }
-    Defaulted(inner_type, default_val) -> {
-      use maybe_val <- decode.then(
-        decode.optional(decode_value_to_string(inner_type)),
-      )
-      decode.success(option.unwrap(maybe_val, default_val))
-    }
-  }
-}
-
-fn decode_refinement_to_string(
-  _refinement: RefinementTypes(AcceptedTypes),
-) -> decode.Decoder(String) {
-  decode.failure("", "RefinementType")
 }
 
 // ---------------------------------------------------------------------------
 // Resolution
 // ---------------------------------------------------------------------------
 
-/// Resolves a value to a string using the provided resolver functions.
+/// Resolves a Value to a string using the provided resolver functions.
 @internal
 pub fn resolve_to_string(
   typ: AcceptedTypes,
-  value: Dynamic,
+  val: Value,
   resolve_string: fn(String) -> String,
   resolve_list: fn(List(String)) -> String,
 ) -> Result(String, String) {
   case typ {
     PrimitiveType(primitive) ->
-      Ok(resolve_primitive_to_string(primitive, value, resolve_string))
+      Ok(resolve_primitive_to_string(primitive, val, resolve_string))
     CollectionType(collection) ->
-      resolve_collection_to_string(collection, value, resolve_list)
+      resolve_collection_to_string(collection, val, resolve_list)
     ModifierType(modifier) ->
-      resolve_modifier_to_string(modifier, value, resolve_string, resolve_list)
+      resolve_modifier_to_string(modifier, val, resolve_string, resolve_list)
     RefinementType(refinement) ->
-      resolve_refinement_to_string(refinement, value, resolve_string)
+      resolve_refinement_to_string(refinement, val, resolve_string)
   }
 }
 
@@ -1257,16 +1244,23 @@ pub fn resolve_to_string(
 @internal
 pub fn resolve_primitive_to_string(
   primitive: PrimitiveTypes,
-  value: Dynamic,
+  val: Value,
   resolve_string: fn(String) -> String,
 ) -> String {
-  let assert Ok(val) = decode.run(value, decode_primitive_to_string(primitive))
-  resolve_string(val)
+  let str = case primitive, val {
+    Boolean, value.BoolValue(b) -> bool.to_string(b)
+    String, value.StringValue(s) -> s
+    NumericType(Integer), value.IntValue(i) -> int.to_string(i)
+    NumericType(Float), value.FloatValue(f) -> float.to_string(f)
+    SemanticType(_), value.StringValue(s) -> s
+    _, _ -> value.to_string(val)
+  }
+  resolve_string(str)
 }
 
 fn resolve_collection_to_string(
   collection: CollectionTypes(AcceptedTypes),
-  value: Dynamic,
+  val: Value,
   resolve_list: fn(List(String)) -> String,
 ) -> Result(String, String) {
   case collection {
@@ -1277,39 +1271,45 @@ fn resolve_collection_to_string(
         <> ". Dict support is pending, open an issue if this is a desired use case.",
       )
     List(inner_type) -> {
-      use vals <- result.try(
-        decode.run(value, decode.list(decode_value_to_string(inner_type)))
-        |> result.map_error(fn(_) {
-          "Failed to decode list values for type: "
-          <> collection_type_to_string(collection)
-        }),
-      )
-      Ok(resolve_list(vals))
+      case val {
+        value.ListValue(items) -> {
+          let vals =
+            items
+            |> list.map(fn(item) {
+              case value_to_type_string(inner_type, item) {
+                Ok(s) -> s
+                Error(_) -> value.to_string(item)
+              }
+            })
+          Ok(resolve_list(vals))
+        }
+        _ ->
+          Error(
+            "Failed to resolve list values for type: "
+            <> collection_type_to_string(collection),
+          )
+      }
     }
   }
 }
 
 fn resolve_modifier_to_string(
   modifier: ModifierTypes(AcceptedTypes),
-  value: Dynamic,
+  val: Value,
   resolve_string: fn(String) -> String,
   resolve_list: fn(List(String)) -> String,
 ) -> Result(String, String) {
   case modifier {
     Optional(inner_type) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) ->
-          resolve_to_string(inner_type, inner_val, resolve_string, resolve_list)
-        Ok(option.None) -> Ok("")
-        Error(_) -> Ok("")
+      case val {
+        value.NilValue -> Ok("")
+        _ -> resolve_to_string(inner_type, val, resolve_string, resolve_list)
       }
     }
     Defaulted(inner_type, default_val) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) ->
-          resolve_to_string(inner_type, inner_val, resolve_string, resolve_list)
-        Ok(option.None) -> Ok(resolve_string(default_val))
-        Error(_) -> Ok(resolve_string(default_val))
+      case val {
+        value.NilValue -> Ok(resolve_string(default_val))
+        _ -> resolve_to_string(inner_type, val, resolve_string, resolve_list)
       }
     }
   }
@@ -1317,21 +1317,21 @@ fn resolve_modifier_to_string(
 
 fn resolve_refinement_to_string(
   refinement: RefinementTypes(AcceptedTypes),
-  value: Dynamic,
+  val: Value,
   resolve_string: fn(String) -> String,
 ) -> Result(String, String) {
   case refinement {
     OneOf(inner_type, _allowed_values) -> {
-      case decode.run(value, decode_value_to_string(inner_type)) {
-        Ok(val) -> Ok(resolve_string(val))
-        Error(_) -> Error("Unable to decode OneOf refinement type value.")
+      case value_to_type_string(inner_type, val) {
+        Ok(s) -> Ok(resolve_string(s))
+        Error(_) -> Error("Unable to resolve OneOf refinement type value.")
       }
     }
     InclusiveRange(inner_type, _low, _high) -> {
-      case decode.run(value, decode_value_to_string(inner_type)) {
-        Ok(val) -> Ok(resolve_string(val))
+      case value_to_type_string(inner_type, val) {
+        Ok(s) -> Ok(resolve_string(s))
         Error(_) ->
-          Error("Unable to decode InclusiveRange refinement type value.")
+          Error("Unable to resolve InclusiveRange refinement type value.")
       }
     }
   }

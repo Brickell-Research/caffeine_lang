@@ -6,12 +6,12 @@ import caffeine_lang/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
   List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RefinementType,
 }
+import caffeine_lang/value
 import gleam/bool
 import gleam/dict
-import gleam/dynamic
-import gleam/dynamic/decode
 import gleam/list
 import gleam/option
+import gleam/result
 
 /// Build intermediate representations from validated expectations across multiple files.
 @internal
@@ -65,7 +65,7 @@ fn build(
 /// Build value tuples from merged inputs and params.
 /// Includes both provided inputs and unprovided Optional/Defaulted params.
 fn build_value_tuples(
-  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  merged_inputs: dict.Dict(String, value.Value),
   params: dict.Dict(String, AcceptedTypes),
 ) -> List(helpers.ValueTuple) {
   let provided = build_provided_value_tuples(merged_inputs, params)
@@ -75,23 +75,23 @@ fn build_value_tuples(
 
 /// Build value tuples from provided inputs.
 fn build_provided_value_tuples(
-  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  merged_inputs: dict.Dict(String, value.Value),
   params: dict.Dict(String, AcceptedTypes),
 ) -> List(helpers.ValueTuple) {
   merged_inputs
   |> dict.keys
   |> list.map(fn(label) {
     // Safe assertions since we've already validated everything.
-    let assert Ok(value) = merged_inputs |> dict.get(label)
+    let assert Ok(val) = merged_inputs |> dict.get(label)
     let assert Ok(typ) = params |> dict.get(label)
-    helpers.ValueTuple(label:, typ:, value:)
+    helpers.ValueTuple(label:, typ:, value: val)
   })
 }
 
 /// Build value tuples for Optional/Defaulted params that weren't provided.
 /// These need to be in value_tuples so the templatizer can resolve them.
 fn build_unprovided_optional_value_tuples(
-  merged_inputs: dict.Dict(String, dynamic.Dynamic),
+  merged_inputs: dict.Dict(String, value.Value),
   params: dict.Dict(String, AcceptedTypes),
 ) -> List(helpers.ValueTuple) {
   params
@@ -103,7 +103,7 @@ fn build_unprovided_optional_value_tuples(
       return: Error(Nil),
     )
     case types.is_optional_or_defaulted(typ) {
-      True -> Ok(helpers.ValueTuple(label:, typ:, value: dynamic.nil()))
+      True -> Ok(helpers.ValueTuple(label:, typ:, value: value.NilValue))
       False -> Error(Nil)
     }
   })
@@ -143,40 +143,39 @@ fn extract_misc_metadata(
 /// Defaulted(None) produces the default value.
 fn resolve_values_for_tag(
   typ: AcceptedTypes,
-  value: dynamic.Dynamic,
+  val: value.Value,
 ) -> Result(List(String), Nil) {
   case typ {
-    PrimitiveType(_) -> {
-      case decode.run(value, types.decode_value_to_string(typ)) {
-        Ok(s) -> Ok([s])
-        Error(_) -> Error(Nil)
-      }
-    }
+    PrimitiveType(_) -> Ok([value.to_string(val)])
     RefinementType(refinement) -> {
       case refinement {
-        OneOf(inner, _) -> resolve_values_for_tag(inner, value)
-        InclusiveRange(inner, _, _) -> resolve_values_for_tag(inner, value)
+        OneOf(inner, _) -> resolve_values_for_tag(inner, val)
+        InclusiveRange(inner, _, _) -> resolve_values_for_tag(inner, val)
       }
     }
     CollectionType(ListType(inner)) -> {
-      case decode.run(value, types.decode_list_values_to_strings(inner)) {
-        Ok(strings) -> Ok(strings)
-        Error(_) -> Error(Nil)
+      case val {
+        value.ListValue(items) ->
+          items
+          |> list.try_map(fn(item) {
+            resolve_values_for_tag(inner, item)
+            |> result.map(fn(strings) { strings })
+          })
+          |> result.map(list.flatten)
+        _ -> Error(Nil)
       }
     }
     CollectionType(Dict(_, _)) -> Error(Nil)
     ModifierType(Optional(inner)) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) -> resolve_values_for_tag(inner, inner_val)
-        Ok(option.None) -> Ok([])
-        Error(_) -> Ok([])
+      case val {
+        value.NilValue -> Ok([])
+        _ -> resolve_values_for_tag(inner, val)
       }
     }
     ModifierType(Defaulted(inner, default)) -> {
-      case decode.run(value, decode.optional(decode.dynamic)) {
-        Ok(option.Some(inner_val)) -> resolve_values_for_tag(inner, inner_val)
-        Ok(option.None) -> Ok([default])
-        Error(_) -> Ok([default])
+      case val {
+        value.NilValue -> Ok([default])
+        _ -> resolve_values_for_tag(inner, val)
       }
     }
   }
