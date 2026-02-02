@@ -85,10 +85,11 @@ Key points:
 
 `CompilationError` in `errors.gleam` has phase-specific variants:
 - `FrontendParseError`, `FrontendValidationError` (tokenizer/parser/validator)
-- `ParserFileReadError`, `ParserJsonParserError`, `ParserDuplicateError`
-- `LinkerParseError`, `LinkerSemanticError`
-- `SemanticAnalysis*Error` (vendor, template, dependency)
-- `Generator*Error` (SLO query, Terraform)
+- `ParserJsonParserError`, `ParserDuplicateError`
+- `LinkerParseError`
+- `SemanticAnalysisVendorResolutionError`, `SemanticAnalysisTemplateParseError`, `SemanticAnalysisTemplateResolutionError`, `SemanticAnalysisDependencyValidationError`
+- `GeneratorSloQueryResolutionError`, `GeneratorDatadogTerraformResolutionError`, `GeneratorHoneycombTerraformResolutionError`
+- `CQLResolverError`, `CQLParserError`
 
 Errors are prefixed with file paths and identifiers as they bubble up via `errors.prefix_error`.
 
