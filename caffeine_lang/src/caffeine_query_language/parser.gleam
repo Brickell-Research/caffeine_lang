@@ -1,85 +1,26 @@
 import caffeine_lang/errors.{type CompilationError}
+import caffeine_query_language/ast.{
+  type Comparator, type Exp, type Operator, type TimeSliceExp, Add, Div,
+  GreaterThan, GreaterThanOrEqualTo, LessThan, LessThanOrEqualTo, Mul,
+  OperatorExpr, Primary, PrimaryExp, PrimaryWord, Sub, TimeSliceExp,
+  TimeSliceExpr, Word,
+}
 import gleam/bool
 import gleam/float
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 
-// ===== Types =====
-
-/// A complete query containing a single expression.
-pub type Query {
-  Query(exp: Exp)
-}
-
-/// Container for a parsed expression, used as the top-level parse result.
-pub type ExpContainer {
-  ExpContainer(exp: Exp)
-}
-
-/// Arithmetic operators supported in CQL expressions.
-pub type Operator {
-  Add
-  Sub
-  Mul
-  Div
-}
-
-/// Comparators for time slice expressions.
-pub type Comparator {
-  LessThan
-  LessThanOrEqualTo
-  GreaterThan
-  GreaterThanOrEqualTo
-}
-
-/// Time slice specification containing query, comparator, threshold, and interval.
-pub type TimeSliceExp {
-  TimeSliceExp(
-    query: String,
-    comparator: Comparator,
-    threshold: Float,
-    interval_seconds: Float,
-  )
-}
-
-/// An expression in the CQL AST, either an operator expression or a primary.
-pub type Exp {
-  TimeSliceExpr(spec: TimeSliceExp)
-  OperatorExpr(numerator: Exp, denominator: Exp, operator: Operator)
-  Primary(primary: Primary)
-}
-
-/// A primary expression, either a word (identifier) or a parenthesized expression.
-pub type Primary {
-  PrimaryWord(word: Word)
-  PrimaryExp(exp: Exp)
-}
-
-/// A word (identifier) in the expression.
-pub type Word {
-  Word(value: String)
-}
-
-//==========================================
-
-/// Parses a CQL expression string into an ExpContainer.
+/// Parses a CQL expression string into an Exp AST node.
 /// Returns an error if the input cannot be parsed.
 @internal
-pub fn parse_expr(input: String) -> Result(ExpContainer, String) {
-  use exp <- result.try(do_parse_expr(input))
-  Ok(ExpContainer(exp))
-}
-
-/// Parses a CQL expression string into an Exp AST node.
-/// Handles parenthesized expressions and operator precedence.
-fn do_parse_expr(input: String) -> Result(Exp, String) {
+pub fn parse_expr(input: String) -> Result(Exp, String) {
   let trimmed = string.trim(input)
 
   case is_fully_parenthesized(trimmed) {
     True -> {
       let inner = string.slice(trimmed, 1, string.length(trimmed) - 2)
-      use inner_exp <- result.try(do_parse_expr(inner))
+      use inner_exp <- result.try(parse_expr(inner))
       Ok(Primary(PrimaryExp(inner_exp)))
     }
     False -> {
@@ -101,11 +42,9 @@ fn try_operators(
 ) -> Result(Exp, String) {
   case operators {
     [] -> {
-      // No operators found, check if this is a keyword expression
       case try_parse_keyword_expr(input) {
         Ok(exp) -> Ok(exp)
         Error(err) -> {
-          // If it looks like a time_slice but has invalid syntax, propagate error
           use <- bool.guard(
             when: string.starts_with(input, "time_slice(")
               && string.ends_with(input, ")"),
@@ -119,8 +58,8 @@ fn try_operators(
     [#(op_str, op), ..rest] -> {
       case find_operator(input, op_str) {
         Ok(#(left, right)) -> {
-          use left_exp <- result.try(do_parse_expr(left))
-          use right_exp <- result.try(do_parse_expr(right))
+          use left_exp <- result.try(parse_expr(left))
+          use right_exp <- result.try(parse_expr(right))
           Ok(OperatorExpr(left_exp, right_exp, op))
         }
         Error(_) -> try_operators(input, rest)
@@ -132,14 +71,12 @@ fn try_operators(
 /// Attempts to parse a keyword expression like "time_slice(...)".
 /// Returns Error if the input is not a keyword expression.
 fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
-  // Check for time_slice keyword
   use <- bool.guard(
     when: !{
       string.starts_with(input, "time_slice(") && string.ends_with(input, ")")
     },
     return: Error("Not a keyword expression"),
   )
-  // Extract the inner content (everything between "time_slice(" and ")")
   let prefix_len = string.length("time_slice(")
   let inner_len = string.length(input) - prefix_len - 1
   let inner = string.slice(input, prefix_len, inner_len)
@@ -153,25 +90,17 @@ fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
 fn parse_time_slice_spec(input: String) -> Result(TimeSliceExp, String) {
   let trimmed = string.trim(input)
 
-  // Check for empty input
   case trimmed {
     "" -> Error("Empty time_slice expression")
     _ -> {
-      // Find the comparator and split on it
       use #(query, comparator, rest) <- result.try(find_comparator(trimmed))
 
-      // Validate query is not empty
       let query_trimmed = string.trim(query)
       case query_trimmed {
         "" -> Error("Missing query in time_slice expression")
         _ -> {
-          // Find "per" keyword and split threshold from interval
           use #(threshold_str, interval_str) <- result.try(split_on_per(rest))
-
-          // Parse threshold as float
           use threshold <- result.try(parse_threshold(threshold_str))
-
-          // Parse interval (e.g., "10s", "5m", "1h", "1.5h")
           use interval_seconds <- result.try(parse_interval(interval_str))
 
           Ok(TimeSliceExp(
@@ -190,7 +119,6 @@ fn parse_time_slice_spec(input: String) -> Result(TimeSliceExp, String) {
 fn find_comparator(
   input: String,
 ) -> Result(#(String, Comparator, String), String) {
-  // Try comparators in order (longer ones first to avoid partial matches)
   let comparators = [
     #(">=", GreaterThanOrEqualTo),
     #("<=", LessThanOrEqualTo),
@@ -249,7 +177,6 @@ fn split_on_per(input: String) -> Result(#(String, String), String) {
     option.Some(pos) -> {
       let threshold_str = string.trim(string.slice(input, 0, pos))
       let rest_start = pos + 3
-      // "per" is 3 chars
       let rest_len = string.length(input) - rest_start
       let interval_str = string.trim(string.slice(input, rest_start, rest_len))
       Ok(#(threshold_str, interval_str))
@@ -294,7 +221,6 @@ fn parse_interval(input: String) -> Result(Float, String) {
   case trimmed {
     "" -> Error("Missing interval in time_slice expression")
     _ -> {
-      // Get the unit (last character)
       let len = string.length(trimmed)
       let unit = string.slice(trimmed, len - 1, 1)
       let number_part = string.slice(trimmed, 0, len - 1)
@@ -366,7 +292,6 @@ pub fn find_rightmost_operator_at_level(
       case rightmost_pos {
         -1 -> Error(errors.CQLParserError(msg: "Operator not found"))
         pos -> {
-          // Split at the rightmost operator position
           let left = string.trim(string.slice(input, 0, pos))
           let right_start = pos + operator_length
           let right_length = string.length(input) - right_start

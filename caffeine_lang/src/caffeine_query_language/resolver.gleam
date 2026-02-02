@@ -1,7 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_query_language/parser.{
-  type Exp, type ExpContainer, Div, ExpContainer, OperatorExpr, TimeSliceExpr,
-}
+import caffeine_query_language/ast.{type Comparator, type Exp}
 import gleam/bool
 import gleam/float
 
@@ -20,37 +18,14 @@ pub type Primitives {
   )
 }
 
-/// Set of valid comparison operators.
-/// FUTURE: possible we may want a good ol' '==' 🤷‍♂️. Not yet atleast and YAGNI.
-pub type Comparator {
-  // <
-  LessThan
-  // <=
-  LessThanOrEqualTo
-  // >
-  GreaterThan
-  // >=
-  GreaterThanOrEqualTo
-}
-
-/// Converst a comparator to a string
+/// Converts a comparator to its quoted string representation.
 @internal
 pub fn comparator_to_string(comparator: Comparator) {
   case comparator {
-    LessThan -> "\"<\""
-    LessThanOrEqualTo -> "\"<=\""
-    GreaterThan -> "\">\""
-    GreaterThanOrEqualTo -> "\">=\""
-  }
-}
-
-/// Converts a parser Comparator to a resolver Comparator.
-fn convert_comparator(comp: parser.Comparator) -> Comparator {
-  case comp {
-    parser.LessThan -> LessThan
-    parser.LessThanOrEqualTo -> LessThanOrEqualTo
-    parser.GreaterThan -> GreaterThan
-    parser.GreaterThanOrEqualTo -> GreaterThanOrEqualTo
+    ast.LessThan -> "\"<\""
+    ast.LessThanOrEqualTo -> "\"<=\""
+    ast.GreaterThan -> "\">\""
+    ast.GreaterThanOrEqualTo -> "\">=\""
   }
 }
 
@@ -58,44 +33,39 @@ fn convert_comparator(comp: parser.Comparator) -> Comparator {
 /// Supports GoodOverTotal (division at the top level) and TimeSlice.
 /// Returns an error if the expression doesn't match a known primitive pattern.
 @internal
-pub fn resolve_primitives(
-  exp_container: ExpContainer,
-) -> Result(Primitives, CompilationError) {
-  case exp_container {
-    ExpContainer(exp) ->
-      case exp {
-        OperatorExpr(left, right, Div) -> {
-          // Check that neither operand contains a time_slice expression
-          use <- bool.guard(
-            when: contains_time_slice(left) || contains_time_slice(right),
-            return: Error(errors.CQLResolverError(
-              msg: "time_slice cannot be used as an operand. It must be the entire expression.",
-            )),
-          )
-          Ok(GoodOverTotal(left, right))
-        }
-        TimeSliceExpr(spec) ->
-          Ok(TimeSlice(
-            comparator: convert_comparator(spec.comparator),
-            interval_in_seconds: float.truncate(spec.interval_seconds),
-            threshold: spec.threshold,
-            query: spec.query,
-          ))
-        _ ->
-          Error(errors.CQLResolverError(
-            msg: "Invalid expression. Expected a top level division operator or time_slice.",
-          ))
-      }
+pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
+  case exp {
+    ast.OperatorExpr(left, right, ast.Div) -> {
+      // Check that neither operand contains a time_slice expression
+      use <- bool.guard(
+        when: contains_time_slice(left) || contains_time_slice(right),
+        return: Error(errors.CQLResolverError(
+          msg: "time_slice cannot be used as an operand. It must be the entire expression.",
+        )),
+      )
+      Ok(GoodOverTotal(left, right))
+    }
+    ast.TimeSliceExpr(spec) ->
+      Ok(TimeSlice(
+        comparator: spec.comparator,
+        interval_in_seconds: float.truncate(spec.interval_seconds),
+        threshold: spec.threshold,
+        query: spec.query,
+      ))
+    _ ->
+      Error(errors.CQLResolverError(
+        msg: "Invalid expression. Expected a top level division operator or time_slice.",
+      ))
   }
 }
 
 /// Checks if an expression contains a time_slice expression anywhere.
 fn contains_time_slice(exp: Exp) -> Bool {
   case exp {
-    TimeSliceExpr(_) -> True
-    OperatorExpr(left, right, _) ->
+    ast.TimeSliceExpr(_) -> True
+    ast.OperatorExpr(left, right, _) ->
       contains_time_slice(left) || contains_time_slice(right)
-    parser.Primary(parser.PrimaryExp(inner)) -> contains_time_slice(inner)
-    parser.Primary(parser.PrimaryWord(_)) -> False
+    ast.Primary(ast.PrimaryExp(inner)) -> contains_time_slice(inner)
+    ast.Primary(ast.PrimaryWord(_)) -> False
   }
 }

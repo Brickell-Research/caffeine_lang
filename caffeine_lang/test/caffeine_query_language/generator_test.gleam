@@ -1,5 +1,7 @@
+import caffeine_query_language/ast
 import caffeine_query_language/generator
 import caffeine_query_language/parser
+import caffeine_query_language/printer
 import gleam/dict
 import gleam/list
 import gleeunit/should
@@ -148,75 +150,75 @@ pub fn exp_to_string_test() {
   [
     // path with slashes (no spaces) - metric{path:/v1/users}
     #(
-      parser.OperatorExpr(
-        parser.Primary(parser.PrimaryWord(parser.Word("metric{path:"))),
-        parser.OperatorExpr(
-          parser.Primary(parser.PrimaryWord(parser.Word("v1"))),
-          parser.Primary(parser.PrimaryWord(parser.Word("users}"))),
-          parser.Div,
+      ast.OperatorExpr(
+        ast.Primary(ast.PrimaryWord(ast.Word("metric{path:"))),
+        ast.OperatorExpr(
+          ast.Primary(ast.PrimaryWord(ast.Word("v1"))),
+          ast.Primary(ast.PrimaryWord(ast.Word("users}"))),
+          ast.Div,
         ),
-        parser.Div,
+        ast.Div,
       ),
       "metric{path:/v1/users}",
     ),
     // path with multiple segments - path:/v1/users/passwords/reset
     #(
-      parser.OperatorExpr(
-        parser.Primary(parser.PrimaryWord(parser.Word("path:"))),
-        parser.OperatorExpr(
-          parser.OperatorExpr(
-            parser.OperatorExpr(
-              parser.Primary(parser.PrimaryWord(parser.Word("v1"))),
-              parser.Primary(parser.PrimaryWord(parser.Word("users"))),
-              parser.Div,
+      ast.OperatorExpr(
+        ast.Primary(ast.PrimaryWord(ast.Word("path:"))),
+        ast.OperatorExpr(
+          ast.OperatorExpr(
+            ast.OperatorExpr(
+              ast.Primary(ast.PrimaryWord(ast.Word("v1"))),
+              ast.Primary(ast.PrimaryWord(ast.Word("users"))),
+              ast.Div,
             ),
-            parser.Primary(parser.PrimaryWord(parser.Word("passwords"))),
-            parser.Div,
+            ast.Primary(ast.PrimaryWord(ast.Word("passwords"))),
+            ast.Div,
           ),
-          parser.Primary(parser.PrimaryWord(parser.Word("reset"))),
-          parser.Div,
+          ast.Primary(ast.PrimaryWord(ast.Word("reset"))),
+          ast.Div,
         ),
-        parser.Div,
+        ast.Div,
       ),
       "path:/v1/users/passwords/reset",
     ),
     // path with wildcards - path:/v1/users/forgot*
     #(
-      parser.OperatorExpr(
-        parser.Primary(parser.PrimaryWord(parser.Word("path:"))),
-        parser.OperatorExpr(
-          parser.OperatorExpr(
-            parser.Primary(parser.PrimaryWord(parser.Word("v1"))),
-            parser.Primary(parser.PrimaryWord(parser.Word("users"))),
-            parser.Div,
+      ast.OperatorExpr(
+        ast.Primary(ast.PrimaryWord(ast.Word("path:"))),
+        ast.OperatorExpr(
+          ast.OperatorExpr(
+            ast.Primary(ast.PrimaryWord(ast.Word("v1"))),
+            ast.Primary(ast.PrimaryWord(ast.Word("users"))),
+            ast.Div,
           ),
-          parser.Primary(parser.PrimaryWord(parser.Word("forgot*"))),
-          parser.Div,
+          ast.Primary(ast.PrimaryWord(ast.Word("forgot*"))),
+          ast.Div,
         ),
-        parser.Div,
+        ast.Div,
       ),
       "path:/v1/users/forgot*",
     ),
     // normal division (with spaces)
     #(
-      parser.OperatorExpr(
-        parser.Primary(parser.PrimaryWord(parser.Word("metric_a"))),
-        parser.Primary(parser.PrimaryWord(parser.Word("metric_b"))),
-        parser.Div,
+      ast.OperatorExpr(
+        ast.Primary(ast.PrimaryWord(ast.Word("metric_a"))),
+        ast.Primary(ast.PrimaryWord(ast.Word("metric_b"))),
+        ast.Div,
       ),
       "metric_a / metric_b",
     ),
     // division with query braces (with spaces)
     #(
-      parser.OperatorExpr(
-        parser.Primary(parser.PrimaryWord(parser.Word("metric{a:b}"))),
-        parser.Primary(parser.PrimaryWord(parser.Word("metric{c:d}"))),
-        parser.Div,
+      ast.OperatorExpr(
+        ast.Primary(ast.PrimaryWord(ast.Word("metric{a:b}"))),
+        ast.Primary(ast.PrimaryWord(ast.Word("metric{c:d}"))),
+        ast.Div,
       ),
       "metric{a:b} / metric{c:d}",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(generator.exp_to_string)
+  |> test_helpers.array_based_test_executor_1(printer.exp_to_string)
 
   // parsed expressions
   [
@@ -244,26 +246,24 @@ pub fn exp_to_string_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
-    let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
-    generator.exp_to_string(exp)
+    let assert Ok(exp) = parser.parse_expr(input)
+    printer.exp_to_string(exp)
   })
 }
 
-// ==== operator_to_datadog_query ====
+// ==== operator_to_string ====
 // * ✅ Addition
 // * ✅ Subtraction
 // * ✅ Multiplication
 // * ✅ Division
-pub fn operator_to_datadog_query_test() {
+pub fn operator_to_string_test() {
   [
-    #(parser.Add, "+"),
-    #(parser.Sub, "-"),
-    #(parser.Mul, "*"),
-    #(parser.Div, "/"),
+    #(ast.Add, "+"),
+    #(ast.Sub, "-"),
+    #(ast.Mul, "*"),
+    #(ast.Div, "/"),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    generator.operator_to_datadog_query,
-  )
+  |> test_helpers.array_based_test_executor_1(printer.operator_to_string)
 }
 
 // ==== substitute_words ====
@@ -306,9 +306,9 @@ pub fn substitute_words_test() {
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(input, substitutions) {
-    let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
+    let assert Ok(exp) = parser.parse_expr(input)
     generator.substitute_words(exp, substitutions)
-    |> generator.exp_to_string
+    |> printer.exp_to_string
   })
 }
 
@@ -330,43 +330,12 @@ pub fn extract_words_test() {
   ]
   |> list.each(fn(pair) {
     let #(input, expected) = pair
-    let assert Ok(parser.ExpContainer(exp)) = parser.parse_expr(input)
+    let assert Ok(exp) = parser.parse_expr(input)
     let words = generator.extract_words(exp)
     // Check all expected words are present (order may vary)
     expected |> list.each(fn(w) { words |> list.contains(w) |> should.be_true })
     words |> list.length |> should.equal(list.length(expected))
   })
-}
-
-// ==== resolve_slo_query ====
-// * ✅ simple numerator/denominator
-// * ✅ complex expression with addition
-pub fn resolve_slo_query_test() {
-  [
-    // simple numerator/denominator
-    #(
-      "numerator / denominator",
-      dict.from_list([
-        #("numerator", "sum:http.requests{status:2xx}"),
-        #("denominator", "sum:http.requests{*}"),
-      ]),
-      #("sum:http.requests{status:2xx}", "sum:http.requests{*}"),
-    ),
-    // complex expression with addition
-    #(
-      "(good + partial) / total",
-      dict.from_list([
-        #("good", "sum:http.requests{status:2xx}"),
-        #("partial", "sum:http.requests{status:3xx}"),
-        #("total", "sum:http.requests{*}"),
-      ]),
-      #(
-        "(sum:http.requests{status:2xx} + sum:http.requests{status:3xx})",
-        "sum:http.requests{*}",
-      ),
-    ),
-  ]
-  |> test_helpers.array_based_test_executor_2(generator.resolve_slo_query)
 }
 
 // ==== resolve_slo_to_expression ====

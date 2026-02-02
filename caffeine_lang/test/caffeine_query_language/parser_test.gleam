@@ -1,21 +1,22 @@
 import caffeine_lang/errors
+import caffeine_query_language/ast.{
+  Add, Div, GreaterThan, GreaterThanOrEqualTo, LessThan, LessThanOrEqualTo, Mul,
+  OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp, TimeSliceExpr, Word,
+}
 import caffeine_query_language/parser.{
-  Add, Div, ExpContainer, GreaterThan, GreaterThanOrEqualTo, LessThan,
-  LessThanOrEqualTo, Mul, OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp,
-  TimeSliceExpr, Word, find_rightmost_operator_at_level, is_balanced_parens,
-  is_last_char, parse_expr,
+  find_rightmost_operator_at_level, is_balanced_parens, is_last_char, parse_expr,
 }
 import caffeine_query_language/test_helpers as cql_test_helpers
 import gleeunit/should
 import test_helpers
 
-const exp_op_cont = cql_test_helpers.exp_op_cont
+const exp_op = cql_test_helpers.exp_op
 
 const parens = cql_test_helpers.parens
 
 const prim_word = cql_test_helpers.prim_word
 
-const simple_exp_op_cont = cql_test_helpers.simple_exp_op_cont
+const simple_exp_op = cql_test_helpers.simple_exp_op
 
 const simple_op_cont = cql_test_helpers.simple_op_cont
 
@@ -81,59 +82,55 @@ pub fn parse_expr_test() {
 
   [
     // simple parenthesized word
-    #("(A)", Ok(ExpContainer(parens(prim_word("A"))))),
+    #("(A)", Ok(parens(prim_word("A")))),
     // double parenthesized word
-    #("((A))", Ok(ExpContainer(parens(parens(prim_word("A")))))),
+    #("((A))", Ok(parens(parens(prim_word("A"))))),
     // simple addition
-    #("A + B", Ok(simple_exp_op_cont("A", "B", Add))),
+    #("A + B", Ok(simple_exp_op("A", "B", Add))),
     // simple subtraction
-    #("A - B", Ok(simple_exp_op_cont("A", "B", Sub))),
+    #("A - B", Ok(simple_exp_op("A", "B", Sub))),
     // simple multiplication
-    #("A * B", Ok(simple_exp_op_cont("A", "B", Mul))),
+    #("A * B", Ok(simple_exp_op("A", "B", Mul))),
     // simple division
-    #("A / B", Ok(simple_exp_op_cont("A", "B", Div))),
+    #("A / B", Ok(simple_exp_op("A", "B", Div))),
     // order of precedence with parentheses
     #(
       "(A + B) / C",
-      Ok(exp_op_cont(parens(simple_op_cont("A", "B", Add)), prim_word("C"), Div)),
+      Ok(exp_op(parens(simple_op_cont("A", "B", Add)), prim_word("C"), Div)),
     ),
     // complex nested parentheses
     #(
       "((A + B) * C) / (D - (E + F))",
-      Ok(exp_op_cont(lhs_complex, rhs_complex, Div)),
+      Ok(exp_op(lhs_complex, rhs_complex, Div)),
     ),
     // mixed operators precedence
     #(
       "A * B + C / D - E",
-      Ok(
-        ExpContainer(OperatorExpr(
-          simple_op_cont("A", "B", Mul),
-          OperatorExpr(simple_op_cont("C", "D", Div), prim_word("E"), Sub),
-          Add,
-        )),
-      ),
+      Ok(OperatorExpr(
+        simple_op_cont("A", "B", Mul),
+        OperatorExpr(simple_op_cont("C", "D", Div), prim_word("E"), Sub),
+        Add,
+      )),
     ),
     // deeply nested expression
     #(
       "(A + (B * (C - D)))",
       Ok(
-        ExpContainer(
+        parens(OperatorExpr(
+          prim_word("A"),
           parens(OperatorExpr(
-            prim_word("A"),
-            parens(OperatorExpr(
-              prim_word("B"),
-              parens(simple_op_cont("C", "D", Sub)),
-              Mul,
-            )),
-            Add,
+            prim_word("B"),
+            parens(simple_op_cont("C", "D", Sub)),
+            Mul,
           )),
-        ),
+          Add,
+        )),
       ),
     ),
     // complex division expression
     #(
       "(X + Y * Z) / (A - B + C)",
-      Ok(exp_op_cont(
+      Ok(exp_op(
         parens(OperatorExpr(prim_word("X"), simple_op_cont("Y", "Z", Mul), Add)),
         parens(OperatorExpr(simple_op_cont("A", "B", Sub), prim_word("C"), Add)),
         Div,
@@ -143,14 +140,12 @@ pub fn parse_expr_test() {
     #(
       "time_slice(Query > 1000000 per 10s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 1_000_000.0,
-            interval_seconds: 10.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 1_000_000.0,
+          interval_seconds: 10.0,
+        )),
       ),
     ),
   ]
@@ -236,140 +231,120 @@ pub fn time_slice_valid_parsing_test() {
     #(
       "time_slice(Query > 1000000 per 10s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 1_000_000.0,
-            interval_seconds: 10.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 1_000_000.0,
+          interval_seconds: 10.0,
+        )),
       ),
     ),
     // time_slice(Query < 500 per 30s) - with <
     #(
       "time_slice(Query < 500 per 30s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: LessThan,
-            threshold: 500.0,
-            interval_seconds: 30.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: LessThan,
+          threshold: 500.0,
+          interval_seconds: 30.0,
+        )),
       ),
     ),
     // time_slice(Query >= 100 per 60s) - with >=
     #(
       "time_slice(Query >= 100 per 60s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThanOrEqualTo,
-            threshold: 100.0,
-            interval_seconds: 60.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThanOrEqualTo,
+          threshold: 100.0,
+          interval_seconds: 60.0,
+        )),
       ),
     ),
     // time_slice(Query <= 999 per 5s) - with <=
     #(
       "time_slice(Query <= 999 per 5s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: LessThanOrEqualTo,
-            threshold: 999.0,
-            interval_seconds: 5.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: LessThanOrEqualTo,
+          threshold: 999.0,
+          interval_seconds: 5.0,
+        )),
       ),
     ),
     // time_slice(avg:system.cpu > 80 per 300s) - realistic metric query
     #(
       "time_slice(avg:system.cpu > 80 per 300s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "avg:system.cpu",
-            comparator: GreaterThan,
-            threshold: 80.0,
-            interval_seconds: 300.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "avg:system.cpu",
+          comparator: GreaterThan,
+          threshold: 80.0,
+          interval_seconds: 300.0,
+        )),
       ),
     ),
     // time_slice( Query > 100 per 10s ) - whitespace handling
     #(
       "time_slice( Query > 100 per 10s )",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 100.0,
-            interval_seconds: 10.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 10.0,
+        )),
       ),
     ),
     // time_slice(Query > 99.5 per 10s) - decimal threshold
     #(
       "time_slice(Query > 99.5 per 10s)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 99.5,
-            interval_seconds: 10.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 99.5,
+          interval_seconds: 10.0,
+        )),
       ),
     ),
     // time_slice(Query > 100 per 10m) - minutes interval
     #(
       "time_slice(Query > 100 per 10m)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 100.0,
-            interval_seconds: 600.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 600.0,
+        )),
       ),
     ),
     // time_slice(Query > 100 per 1h) - hours interval
     #(
       "time_slice(Query > 100 per 1h)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 100.0,
-            interval_seconds: 3600.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 3600.0,
+        )),
       ),
     ),
     // time_slice(Query > 100 per 1.5h) - decimal interval
     #(
       "time_slice(Query > 100 per 1.5h)",
       Ok(
-        ExpContainer(
-          TimeSliceExpr(TimeSliceExp(
-            query: "Query",
-            comparator: GreaterThan,
-            threshold: 100.0,
-            interval_seconds: 5400.0,
-          )),
-        ),
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 5400.0,
+        )),
       ),
     ),
   ]
@@ -435,29 +410,17 @@ pub fn time_slice_parses_as_word_test() {
     // TIME_SLICE(Query > 100 per 10s) - wrong case
     #(
       "TIME_SLICE(Query > 100 per 10s)",
-      Ok(
-        ExpContainer(
-          Primary(PrimaryWord(Word("TIME_SLICE(Query > 100 per 10s)"))),
-        ),
-      ),
+      Ok(Primary(PrimaryWord(Word("TIME_SLICE(Query > 100 per 10s)")))),
     ),
     // timeslice(Query > 100 per 10s) - no underscore
     #(
       "timeslice(Query > 100 per 10s)",
-      Ok(
-        ExpContainer(
-          Primary(PrimaryWord(Word("timeslice(Query > 100 per 10s)"))),
-        ),
-      ),
+      Ok(Primary(PrimaryWord(Word("timeslice(Query > 100 per 10s)")))),
     ),
     // time_slice Query > 100 per 10s - no parens (parses as word)
     #(
       "time_slice Query > 100 per 10s",
-      Ok(
-        ExpContainer(
-          Primary(PrimaryWord(Word("time_slice Query > 100 per 10s"))),
-        ),
-      ),
+      Ok(Primary(PrimaryWord(Word("time_slice Query > 100 per 10s")))),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(parse_expr)

@@ -1,5 +1,5 @@
 import caffeine_lang/errors
-import caffeine_query_language/parser
+import caffeine_query_language/ast
 import caffeine_query_language/resolver
 import caffeine_query_language/test_helpers as cql_test_helpers
 import test_helpers
@@ -31,20 +31,20 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
 pub fn resolve_primitives_test() {
   let lhs_complex =
-    parens(parser.OperatorExpr(
-      parens(simple_op_cont("A", "G", parser.Sub)),
+    parens(ast.OperatorExpr(
+      parens(simple_op_cont("A", "G", ast.Sub)),
       prim_word("B"),
-      parser.Add,
+      ast.Add,
     ))
   let rhs_complex =
-    parens(parser.OperatorExpr(
+    parens(ast.OperatorExpr(
       prim_word("C"),
-      parser.OperatorExpr(
-        parens(simple_op_cont("D", "E", parser.Add)),
+      ast.OperatorExpr(
+        parens(simple_op_cont("D", "E", ast.Add)),
         prim_word("F"),
-        parser.Mul,
+        ast.Mul,
       ),
-      parser.Add,
+      ast.Add,
     ))
 
   [
@@ -54,7 +54,7 @@ pub fn resolve_primitives_test() {
     #(
       "(A + B) / C",
       Ok(resolver.GoodOverTotal(
-        parens(simple_op_cont("A", "B", parser.Add)),
+        parens(simple_op_cont("A", "B", ast.Add)),
         prim_word("C"),
       )),
     ),
@@ -96,7 +96,7 @@ pub fn resolve_time_slice_valid_test() {
     #(
       "time_slice(Query > 1000000 per 10s)",
       Ok(resolver.TimeSlice(
-        comparator: resolver.GreaterThan,
+        comparator: ast.GreaterThan,
         interval_in_seconds: 10,
         threshold: 1_000_000.0,
         query: "Query",
@@ -106,7 +106,7 @@ pub fn resolve_time_slice_valid_test() {
     #(
       "time_slice(Query >= 100 per 60s)",
       Ok(resolver.TimeSlice(
-        comparator: resolver.GreaterThanOrEqualTo,
+        comparator: ast.GreaterThanOrEqualTo,
         interval_in_seconds: 60,
         threshold: 100.0,
         query: "Query",
@@ -116,7 +116,7 @@ pub fn resolve_time_slice_valid_test() {
     #(
       "time_slice(Query < 99.5 per 5m)",
       Ok(resolver.TimeSlice(
-        comparator: resolver.LessThan,
+        comparator: ast.LessThan,
         interval_in_seconds: 300,
         threshold: 99.5,
         query: "Query",
