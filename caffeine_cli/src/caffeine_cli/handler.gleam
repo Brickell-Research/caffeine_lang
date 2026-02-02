@@ -1,12 +1,12 @@
 import caffeine_cli/compile_presenter.{type LogLevel}
 import caffeine_cli/display
 import caffeine_cli/file_discovery
-import caffeine_cli/format_file_discovery
 import caffeine_lang/constants
 import caffeine_lang/frontend/formatter
 import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
+import filepath
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
@@ -193,8 +193,8 @@ fn compile(
     }
     option.Some(path) -> {
       let #(output_file, output_dir) = case simplifile.is_directory(path) {
-        Ok(True) -> #(path <> "/main.tf", path)
-        _ -> #(path, directory_of(path))
+        Ok(True) -> #(filepath.join(path, "main.tf"), path)
+        _ -> #(path, filepath.directory_name(path))
       }
       use _ <- result.try(
         simplifile.write(output_file, output.terraform)
@@ -210,7 +210,7 @@ fn compile(
       // Write dependency graph if present
       case output.dependency_graph {
         option.Some(graph) -> {
-          let graph_file = output_dir <> "/dependency_graph.mmd"
+          let graph_file = filepath.join(output_dir, "dependency_graph.mmd")
           case simplifile.write(graph_file, graph) {
             Ok(_) ->
               compile_presenter.log(
@@ -238,7 +238,7 @@ fn format_command(
   log_level: LogLevel,
 ) -> Result(Nil, String) {
   use file_paths <- result.try(
-    format_file_discovery.discover(path)
+    file_discovery.discover(path)
     |> result.map_error(fn(err) { "Format error: " <> err }),
   )
 
@@ -336,17 +336,4 @@ fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
 
   compile_presenter.log(log_level, "")
   Ok(Nil)
-}
-
-/// Extracts the directory portion of a file path.
-fn directory_of(path: String) -> String {
-  case string.split(path, "/") |> list.reverse {
-    [_, ..rest] ->
-      case list.reverse(rest) {
-        [] -> "."
-        [""] -> "/"
-        parts -> string.join(parts, "/")
-      }
-    [] -> "."
-  }
 }

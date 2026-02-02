@@ -1,27 +1,45 @@
 import caffeine_lang/errors.{type CompilationError}
+import filepath
+import gleam/bool
 import gleam/list
 import gleam/result
 import gleam/string
 import simplifile
 
 /// Returns a list of all .caffeine files in the given directory.
+/// Uses a fixed two-level depth (org/team/file.caffeine).
 @internal
 pub fn get_caffeine_files(
   base_directory: String,
 ) -> Result(List(String), CompilationError) {
   use top_level_items <- result.try(read_directory_or_error(base_directory))
 
-  let file_paths =
-    top_level_items
-    |> list.try_fold([], fn(accumulated_files, item_name) {
-      process_top_level_item(base_directory, item_name, accumulated_files)
-    })
+  top_level_items
+  |> list.try_fold([], fn(accumulated_files, item_name) {
+    process_top_level_item(base_directory, item_name, accumulated_files)
+  })
+}
 
-  case file_paths {
-    Error(err) -> Error(err)
-    Ok(files) -> Ok(files)
+/// Discover .caffeine files from a path.
+/// If path is a .caffeine file, return it as a single-element list.
+/// If path is a directory, recursively find all .caffeine files.
+/// Otherwise, return an error.
+@internal
+pub fn discover(path: String) -> Result(List(String), String) {
+  use <- bool.guard(
+    string.ends_with(path, ".caffeine"),
+    case simplifile.is_file(path) {
+      Ok(True) -> Ok([path])
+      _ -> Error("File not found: " <> path)
+    },
+  )
+  case simplifile.is_directory(path) {
+    Ok(True) -> discover_in_directory(path)
+    _ -> Error("Path is not a .caffeine file or directory: " <> path)
   }
 }
+
+// --- Fixed-depth helpers (compile) ---
 
 fn read_directory_or_error(
   directory_path: String,
@@ -40,7 +58,7 @@ fn process_top_level_item(
   item_name: String,
   accumulated_files: List(String),
 ) -> Result(List(String), CompilationError) {
-  let item_path = base_directory <> "/" <> item_name
+  let item_path = filepath.join(base_directory, item_name)
 
   case simplifile.is_directory(item_path) {
     Ok(True) ->
@@ -61,7 +79,7 @@ fn collect_caffeine_files_from_subdirectory(
   // Go one level deeper - iterate over nested directories and collect .caffeine files
   items_in_subdirectory
   |> list.try_fold(accumulated_files, fn(acc, item_name) {
-    let nested_path = subdirectory_path <> "/" <> item_name
+    let nested_path = filepath.join(subdirectory_path, item_name)
     case simplifile.is_directory(nested_path) {
       Ok(True) -> {
         use files_in_nested <- result.try(read_directory_or_error(nested_path))
@@ -80,5 +98,38 @@ fn extract_caffeine_files_with_full_paths(
 ) -> List(String) {
   files
   |> list.filter(fn(file) { string.ends_with(file, ".caffeine") })
-  |> list.map(fn(file) { directory_path <> "/" <> file })
+  |> list.map(fn(file) { filepath.join(directory_path, file) })
+}
+
+// --- Recursive helpers (format) ---
+
+fn discover_in_directory(dir: String) -> Result(List(String), String) {
+  use entries <- result.try(
+    simplifile.read_directory(dir)
+    |> result.map_error(fn(err) {
+      "Error reading directory: "
+      <> simplifile.describe_error(err)
+      <> " ("
+      <> dir
+      <> ")"
+    }),
+  )
+
+  entries
+  |> list.try_fold([], fn(acc, entry) {
+    let full_path = filepath.join(dir, entry)
+    case simplifile.is_directory(full_path) {
+      Ok(True) -> {
+        use nested <- result.try(discover_in_directory(full_path))
+        Ok(list.append(acc, nested))
+      }
+      _ -> {
+        use <- bool.guard(
+          string.ends_with(entry, ".caffeine"),
+          Ok(list.append(acc, [full_path])),
+        )
+        Ok(acc)
+      }
+    }
+  })
 }

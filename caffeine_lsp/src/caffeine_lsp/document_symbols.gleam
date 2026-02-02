@@ -160,10 +160,7 @@ fn expect_item_symbol(item: ExpectItem, content: String) -> DocumentSymbol {
 
 fn field_symbol(field: Field, content: String) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position(content, field.name)
-  let detail = case field.value {
-    ast.TypeValue(t) -> types.parsed_type_to_string(t)
-    ast.LiteralValue(lit) -> ast.literal_to_string(lit)
-  }
+  let detail = ast.value_to_string(field.value)
   DocumentSymbol(
     field.name,
     detail,

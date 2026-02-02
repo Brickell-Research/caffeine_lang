@@ -34,17 +34,18 @@ fn find_in_blueprints(
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
-  // Check type aliases
-  case list.find(file.type_aliases, fn(ta) { ta.name == name }) {
+  // Check type aliases, extendables, then blueprint items
+  let all_names =
+    list.flatten([
+      list.map(file.type_aliases, fn(ta) { ta.name }),
+      list.map(file.extendables, fn(e) { e.name }),
+      list.flat_map(file.blocks, fn(b) {
+        list.map(b.items, fn(item) { item.name })
+      }),
+    ])
+  case list.find(all_names, fn(n) { n == name }) {
     Ok(_) -> find_name_location(content, name)
-    Error(_) ->
-      // Check extendables
-      case list.find(file.extendables, fn(e) { e.name == name }) {
-        Ok(_) -> find_name_location(content, name)
-        Error(_) ->
-          // Check blueprint item names
-          find_in_blueprint_items(file.blocks, content, name)
-      }
+    Error(_) -> option.None
   }
 }
 
@@ -53,34 +54,15 @@ fn find_in_expects(
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
-  // Check extendables
-  case list.find(file.extendables, fn(e) { e.name == name }) {
-    Ok(_) -> find_name_location(content, name)
-    Error(_) ->
-      // Check expect item names
-      find_in_expect_items(file.blocks, content, name)
-  }
-}
-
-fn find_in_blueprint_items(
-  blocks: List(ast.BlueprintsBlock),
-  content: String,
-  name: String,
-) -> Option(#(Int, Int, Int)) {
-  let items = list.flat_map(blocks, fn(b) { b.items })
-  case list.find(items, fn(item) { item.name == name }) {
-    Ok(_) -> find_name_location(content, name)
-    Error(_) -> option.None
-  }
-}
-
-fn find_in_expect_items(
-  blocks: List(ast.ExpectsBlock),
-  content: String,
-  name: String,
-) -> Option(#(Int, Int, Int)) {
-  let items = list.flat_map(blocks, fn(b) { b.items })
-  case list.find(items, fn(item) { item.name == name }) {
+  // Check extendables, then expect items
+  let all_names =
+    list.flatten([
+      list.map(file.extendables, fn(e) { e.name }),
+      list.flat_map(file.blocks, fn(b) {
+        list.map(b.items, fn(item) { item.name })
+      }),
+    ])
+  case list.find(all_names, fn(n) { n == name }) {
     Ok(_) -> find_name_location(content, name)
     Error(_) -> option.None
   }

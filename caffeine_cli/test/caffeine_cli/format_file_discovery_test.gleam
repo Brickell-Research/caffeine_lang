@@ -1,4 +1,4 @@
-import caffeine_cli/format_file_discovery
+import caffeine_cli/file_discovery
 import gleam/list
 import gleam/string
 import gleeunit/should
@@ -16,7 +16,7 @@ pub fn discover_single_file_test() {
   let _ = simplifile.create_directory_all(dir)
   let _ = simplifile.write(file, "Blueprints for \"SLO\"\n")
 
-  let result = format_file_discovery.discover(file)
+  let result = file_discovery.discover(file)
   result |> should.be_ok()
   let assert Ok(files) = result
   files |> should.equal([file])
@@ -33,7 +33,7 @@ pub fn discover_directory_test() {
   let _ = simplifile.write(dir <> "/b.caffeine", "")
   let _ = simplifile.write(dir <> "/c.txt", "")
 
-  let result = format_file_discovery.discover(dir)
+  let result = file_discovery.discover(dir)
   result |> should.be_ok()
   let assert Ok(files) = result
   // Should find only .caffeine files
@@ -50,11 +50,11 @@ pub fn discover_directory_test() {
 }
 
 pub fn discover_non_caffeine_file_error_test() {
-  format_file_discovery.discover("test/caffeine_cli/nonexistent.txt")
+  file_discovery.discover("test/caffeine_cli/nonexistent.txt")
   |> should.be_error()
 }
 
 pub fn discover_missing_path_error_test() {
-  format_file_discovery.discover("test/caffeine_cli/does_not_exist.caffeine")
+  file_discovery.discover("test/caffeine_cli/does_not_exist.caffeine")
   |> should.be_error()
 }

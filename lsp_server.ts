@@ -31,6 +31,27 @@ import { Some } from "./caffeine_lsp/build/dev/javascript/gleam_stdlib/gleam/opt
 // deno-lint-ignore no-explicit-any
 type GleamList = { toArray(): any[] };
 
+// --- Helpers ---
+
+/** Convert a GleamList to a plain JS array. */
+// deno-lint-ignore no-explicit-any
+function gleamArray(gl: GleamList): any[] {
+  return gl.toArray();
+}
+
+/** Build an LSP Range from line/col positions. */
+function range(
+  startLine: number,
+  startChar: number,
+  endLine: number,
+  endChar: number,
+) {
+  return {
+    start: { line: startLine, character: startChar },
+    end: { line: endLine, character: endChar },
+  };
+}
+
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
@@ -50,7 +71,7 @@ connection.onInitialize(() => {
       },
       semanticTokensProvider: {
         legend: {
-          tokenTypes: (token_types as GleamList).toArray(),
+          tokenTypes: gleamArray(token_types as GleamList),
           tokenModifiers: [],
         },
         full: true,
@@ -70,14 +91,11 @@ documents.onDidChangeContent((change) => {
   const uri = change.document.uri;
 
   try {
-    const diags = (get_diagnostics(text) as GleamList).toArray();
+    const diags = gleamArray(get_diagnostics(text) as GleamList);
     connection.sendDiagnostics({
       uri,
       diagnostics: diags.map((d) => ({
-        range: {
-          start: { line: d.line, character: d.column },
-          end: { line: d.line, character: d.end_column },
-        },
+        range: range(d.line, d.column, d.line, d.end_column),
         severity: d.severity as DiagnosticSeverity,
         source: "caffeine",
         message: d.message,
@@ -116,9 +134,9 @@ connection.onCompletion((params) => {
   const text = doc ? doc.getText() : "";
 
   try {
-    const items = (
-      get_completions(text, params.position.line, params.position.character) as GleamList
-    ).toArray();
+    const items = gleamArray(
+      get_completions(text, params.position.line, params.position.character) as GleamList,
+    );
     return items.map((item) => ({
       label: item.label,
       kind: item.kind,
@@ -142,10 +160,7 @@ connection.onDocumentFormatting((params) => {
       const lineCount = text.split("\n").length;
       return [
         {
-          range: {
-            start: { line: 0, character: 0 },
-            end: { line: lineCount, character: 0 },
-          },
+          range: range(0, 0, lineCount, 0),
           newText: result[0],
         },
       ];
@@ -158,17 +173,14 @@ connection.onDocumentFormatting((params) => {
 
 // deno-lint-ignore no-explicit-any
 function gleamSymbolToLsp(sym: any): any {
-  const range = {
-    start: { line: sym.line, character: sym.col },
-    end: { line: sym.line, character: sym.col + sym.name_len },
-  };
+  const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
   return {
     name: sym.name,
     detail: sym.detail,
     kind: sym.kind,
-    range,
-    selectionRange: range,
-    children: (sym.children as GleamList).toArray().map(gleamSymbolToLsp),
+    range: r,
+    selectionRange: r,
+    children: gleamArray(sym.children as GleamList).map(gleamSymbolToLsp),
   };
 }
 
@@ -177,7 +189,7 @@ connection.onDocumentSymbol((params) => {
   if (!doc) return [];
 
   try {
-    const symbols = (get_symbols(doc.getText()) as GleamList).toArray();
+    const symbols = gleamArray(get_symbols(doc.getText()) as GleamList);
     return symbols.map(gleamSymbolToLsp);
   } catch {
     return [];
@@ -200,10 +212,7 @@ connection.onDefinition((params) => {
       const [defLine, defCol, nameLen] = [result[0][0], result[0][1], result[0][2]];
       return {
         uri: params.textDocument.uri,
-        range: {
-          start: { line: defLine, character: defCol },
-          end: { line: defLine, character: defCol + nameLen },
-        },
+        range: range(defLine, defCol, defLine, defCol + nameLen),
       };
     }
   } catch { /* ignore */ }
@@ -217,7 +226,7 @@ connection.languages.semanticTokens.on((params) => {
   if (!doc) return { data: [] };
 
   try {
-    const data = (get_semantic_tokens(doc.getText()) as GleamList).toArray();
+    const data = gleamArray(get_semantic_tokens(doc.getText()) as GleamList);
     return { data };
   } catch {
     return { data: [] };
@@ -243,7 +252,7 @@ connection.onCodeAction((params) => {
       ),
     );
 
-    const actions = (get_code_actions(gleamDiags, uri) as GleamList).toArray();
+    const actions = gleamArray(get_code_actions(gleamDiags, uri) as GleamList);
     return actions.map((action) => {
       const diag = action.diagnostic;
       return {
@@ -254,19 +263,13 @@ connection.onCodeAction((params) => {
           {
             message: diag.message,
             source: "caffeine",
-            range: {
-              start: { line: diag.line, character: diag.character },
-              end: { line: diag.end_line, character: diag.end_character },
-            },
+            range: range(diag.line, diag.character, diag.end_line, diag.end_character),
           },
         ],
         edit: {
           changes: {
-            [action.uri]: (action.edits as GleamList).toArray().map((e) => ({
-              range: {
-                start: { line: e.start_line, character: e.start_character },
-                end: { line: e.end_line, character: e.end_character },
-              },
+            [action.uri]: gleamArray(action.edits as GleamList).map((e) => ({
+              range: range(e.start_line, e.start_character, e.end_line, e.end_character),
               newText: e.new_text,
             })),
           },

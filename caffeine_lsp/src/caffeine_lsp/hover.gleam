@@ -73,7 +73,7 @@ fn lookup_extendable(
       let kind = ast.extendable_kind_to_string(ext.kind)
       let fields =
         list.map(ext.body.fields, fn(f) {
-          "  - `" <> f.name <> "`: " <> format_value(f.value)
+          "  - `" <> f.name <> "`: " <> ast.value_to_string(f.value)
         })
         |> string.join("\n")
       let md =
@@ -108,12 +108,5 @@ fn lookup_type_alias(
       )
     }
     Error(_) -> option.None
-  }
-}
-
-fn format_value(value: ast.Value) -> String {
-  case value {
-    ast.TypeValue(t) -> types.parsed_type_to_string(t)
-    ast.LiteralValue(lit) -> ast.literal_to_string(lit)
   }
 }

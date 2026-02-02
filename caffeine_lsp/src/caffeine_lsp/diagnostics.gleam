@@ -48,107 +48,97 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
   }
 }
 
+/// Build a diagnostic at the position of a name in the source.
+fn name_diagnostic(
+  content: String,
+  name: String,
+  severity: Int,
+  message: String,
+) -> Diagnostic {
+  let #(line, col) = position_utils.find_name_position(content, name)
+  Diagnostic(
+    line: line,
+    column: col,
+    end_column: col + string.length(name),
+    severity: severity,
+    message: message,
+  )
+}
+
 fn validator_error_to_diagnostic(
   content: String,
   err: ValidatorError,
 ) -> Diagnostic {
   case err {
-    validator.DuplicateExtendable(name) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Duplicate extendable '" <> name <> "'",
+    validator.DuplicateExtendable(name) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Duplicate extendable '" <> name <> "'",
       )
-    }
-    validator.UndefinedExtendable(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Undefined extendable '"
+    validator.UndefinedExtendable(name, referenced_by) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Undefined extendable '"
           <> name
           <> "' referenced by '"
           <> referenced_by
           <> "'",
       )
-    }
-    validator.DuplicateExtendsReference(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_warning,
-        message: "Duplicate extends reference '"
+    validator.DuplicateExtendsReference(name, referenced_by) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_warning,
+        "Duplicate extends reference '"
           <> name
           <> "' in '"
           <> referenced_by
           <> "'",
       )
-    }
-    validator.InvalidExtendableKind(name, expected, got) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Extendable '"
-          <> name
-          <> "' must be "
-          <> expected
-          <> ", got "
-          <> got,
+    validator.InvalidExtendableKind(name, expected, got) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Extendable '" <> name <> "' must be " <> expected <> ", got " <> got,
       )
-    }
-    validator.UndefinedTypeAlias(name, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Undefined type alias '"
+    validator.UndefinedTypeAlias(name, referenced_by) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Undefined type alias '"
           <> name
           <> "' referenced by '"
           <> referenced_by
           <> "'",
       )
-    }
-    validator.DuplicateTypeAlias(name) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Duplicate type alias '" <> name <> "'",
+    validator.DuplicateTypeAlias(name) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Duplicate type alias '" <> name <> "'",
       )
-    }
     validator.CircularTypeAlias(name, cycle) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
       let cycle_str = string.join(cycle, " -> ")
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Circular type alias '" <> name <> "': " <> cycle_str,
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Circular type alias '" <> name <> "': " <> cycle_str,
       )
     }
-    validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) -> {
-      let #(line, col) = position_utils.find_name_position(content, alias_name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(alias_name),
-        severity: severity_error,
-        message: "Dict key type '"
+    validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) ->
+      name_diagnostic(
+        content,
+        alias_name,
+        severity_error,
+        "Dict key type '"
           <> alias_name
           <> "' resolves to '"
           <> resolved_to
@@ -156,15 +146,12 @@ fn validator_error_to_diagnostic(
           <> referenced_by
           <> "'",
       )
-    }
-    validator.ExtendableOvershadowing(field_name, item_name, extendable_name) -> {
-      let #(line, col) = position_utils.find_name_position(content, field_name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(field_name),
-        severity: severity_error,
-        message: "Field '"
+    validator.ExtendableOvershadowing(field_name, item_name, extendable_name) ->
+      name_diagnostic(
+        content,
+        field_name,
+        severity_error,
+        "Field '"
           <> field_name
           <> "' in '"
           <> item_name
@@ -172,19 +159,13 @@ fn validator_error_to_diagnostic(
           <> extendable_name
           <> "'",
       )
-    }
-    validator.ExtendableTypeAliasNameCollision(name) -> {
-      let #(line, col) = position_utils.find_name_position(content, name)
-      Diagnostic(
-        line: line,
-        column: col,
-        end_column: col + string.length(name),
-        severity: severity_error,
-        message: "Name '"
-          <> name
-          <> "' is used as both an extendable and a type alias",
+    validator.ExtendableTypeAliasNameCollision(name) ->
+      name_diagnostic(
+        content,
+        name,
+        severity_error,
+        "Name '" <> name <> "' is used as both an extendable and a type alias",
       )
-    }
   }
 }
 

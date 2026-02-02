@@ -167,6 +167,15 @@ pub fn build_type_alias_pairs(
   list.map(type_aliases, fn(ta) { #(ta.name, ta.type_) })
 }
 
+/// Converts a value to a display string.
+@internal
+pub fn value_to_string(value: Value) -> String {
+  case value {
+    TypeValue(t) -> types.parsed_type_to_string(t)
+    LiteralValue(lit) -> literal_to_string(lit)
+  }
+}
+
 /// Converts a literal to a short display string.
 @internal
 pub fn literal_to_string(lit: Literal) -> String {

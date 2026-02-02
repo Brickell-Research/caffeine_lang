@@ -95,37 +95,15 @@ fn get_field_context(
 // --- Completion generators ---
 
 fn extends_completions(content: String) -> List(CompletionItem) {
-  // Suggest extendable names from the current file
-  let file_items = case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) ->
-      list.map(file.extendables, fn(e) {
-        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        CompletionItem(e.name, kind_variable, detail)
-      })
-    Ok(file_utils.Expects(file)) ->
-      list.map(file.extendables, fn(e) {
-        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        CompletionItem(e.name, kind_variable, detail)
-      })
-    Error(_) -> []
-  }
-  file_items
+  extendable_items(content)
 }
 
 fn type_completions(content: String) -> List(CompletionItem) {
-  let type_items =
-    types.all_type_metas()
-    |> list.map(fn(m: TypeMeta) {
-      CompletionItem(m.name, kind_class, m.description)
-    })
+  let type_items = type_meta_items()
 
   // Also add type aliases from the file
   let alias_items = case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) ->
-      list.map(file.type_aliases, fn(ta) {
-        let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
-        CompletionItem(ta.name, kind_variable, detail)
-      })
+    Ok(file_utils.Blueprints(file)) -> type_alias_items(file.type_aliases)
     _ -> []
   }
 
@@ -138,41 +116,57 @@ fn field_completions(fields: List(#(String, String))) -> List(CompletionItem) {
 
 fn general_completions(content: String) -> List(CompletionItem) {
   let kw_items = keyword_items()
-  let type_items =
-    types.all_type_metas()
-    |> list.map(fn(m: TypeMeta) {
-      CompletionItem(m.name, kind_class, m.description)
-    })
+  let t_items = type_meta_items()
 
   // Add extendable and type alias names from file
   let file_items = case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> {
-      let ext_items =
-        list.map(file.extendables, fn(e) {
-          let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-          CompletionItem(e.name, kind_variable, detail)
-        })
-      let alias_items =
-        list.map(file.type_aliases, fn(ta) {
-          let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
-          CompletionItem(ta.name, kind_variable, detail)
-        })
-      list.flatten([ext_items, alias_items])
-    }
-    Ok(file_utils.Expects(file)) ->
-      list.map(file.extendables, fn(e) {
-        let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
-        CompletionItem(e.name, kind_variable, detail)
-      })
+    Ok(file_utils.Blueprints(file)) ->
+      list.flatten([
+        extendable_items_from_list(file.extendables),
+        type_alias_items(file.type_aliases),
+      ])
+    Ok(file_utils.Expects(file)) -> extendable_items_from_list(file.extendables)
     Error(_) -> []
   }
 
-  list.flatten([kw_items, type_items, file_items])
+  list.flatten([kw_items, t_items, file_items])
 }
 
-// --- Helpers ---
+// --- Shared item builders ---
 
 fn keyword_items() -> List(CompletionItem) {
   keyword_info.all_keywords()
   |> list.map(fn(kw) { CompletionItem(kw.name, kind_keyword, kw.description) })
+}
+
+fn type_meta_items() -> List(CompletionItem) {
+  types.all_type_metas()
+  |> list.map(fn(m: TypeMeta) {
+    CompletionItem(m.name, kind_class, m.description)
+  })
+}
+
+fn extendable_items(content: String) -> List(CompletionItem) {
+  case file_utils.parse(content) {
+    Ok(file_utils.Blueprints(file)) ->
+      extendable_items_from_list(file.extendables)
+    Ok(file_utils.Expects(file)) -> extendable_items_from_list(file.extendables)
+    Error(_) -> []
+  }
+}
+
+fn extendable_items_from_list(
+  extendables: List(ast.Extendable),
+) -> List(CompletionItem) {
+  list.map(extendables, fn(e) {
+    let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
+    CompletionItem(e.name, kind_variable, detail)
+  })
+}
+
+fn type_alias_items(aliases: List(ast.TypeAlias)) -> List(CompletionItem) {
+  list.map(aliases, fn(ta) {
+    let detail = "Type alias → " <> types.parsed_type_to_string(ta.type_)
+    CompletionItem(ta.name, kind_variable, detail)
+  })
 }
