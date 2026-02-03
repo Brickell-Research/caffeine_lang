@@ -8,7 +8,7 @@ import {
   ProposedFeatures,
   TextDocumentSyncKind,
   DiagnosticSeverity,
-} from "npm:vscode-languageserver/node";
+} from "npm:vscode-languageserver/node.js";
 import { TextDocument } from "npm:vscode-languageserver-textdocument";
 
 // Gleam-compiled intelligence modules

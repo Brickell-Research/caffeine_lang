@@ -4,7 +4,7 @@
     "allowJs": true
   },
   "imports": {
-    "vscode-languageserver/node": "npm:vscode-languageserver@^9.0.1",
+    "vscode-languageserver/node.js": "npm:vscode-languageserver@^9.0.1",
     "vscode-languageserver-textdocument": "npm:vscode-languageserver-textdocument@^1.0.11"
   }
 }
