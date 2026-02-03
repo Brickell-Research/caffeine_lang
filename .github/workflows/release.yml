@@ -43,14 +43,17 @@ jobs:
         path: |
           ~/.cache/gleam
           caffeine_lang/build
+          caffeine_lsp/build
           caffeine_cli/build
-        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
+        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-release-
           ${{ runner.os }}-gleam-
 
     - name: Build Gleam to JavaScript
-      run: cd caffeine_cli && gleam build --target javascript
+      run: |
+        cd caffeine_lsp && gleam build --target javascript
+        cd ../caffeine_cli && gleam build --target javascript
 
     - name: Extract version from gleam.toml
       id: version
