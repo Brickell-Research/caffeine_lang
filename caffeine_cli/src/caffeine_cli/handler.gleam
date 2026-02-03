@@ -131,7 +131,8 @@ pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
 pub fn root_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "A compiler for generating reliability artifacts from service expectation definitions.\n\nVersion: "
-    <> constants.version,
+    <> constants.version
+    <> "\nBy Brickell Research (https://brickell.sh)",
   )
   use _, _, _ <- glint.command()
 
