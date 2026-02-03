@@ -1,0 +1,21 @@
+## Success Rate SLOs
+Expectations for "api_availability"
+  # Checkout service SLO
+  * "checkout":
+    Provides { threshold: 99.95 }
+
+  # Payment service SLO
+  * "payment":
+    Provides { threshold: 99.99 }
+
+##  === Latency SLOs ===
+Expectations for "api_latency"
+  # Checkout latency
+  * "checkout_p99":
+    Provides { threshold_ms: 500 }
+
+# Throughput section
+## Throughput SLOs
+Expectations for "api_throughput"
+  * "checkout_rps":
+    Provides { threshold_rps: 1000 }

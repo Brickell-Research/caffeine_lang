@@ -345,8 +345,12 @@ fn parse_blueprints_blocks_loop(
 ) -> Result(#(List(BlueprintsBlock), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.KeywordBlueprints -> {
-      use #(block, state) <- result.try(parse_blueprints_block(state, pending))
-      let #(next_pending, state) = consume_comments(state)
+      use #(block, trailing, state) <- result.try(parse_blueprints_block(
+        state,
+        pending,
+      ))
+      let #(more_comments, state) = consume_comments(state)
+      let next_pending = list.append(trailing, more_comments)
       parse_blueprints_blocks_loop(state, [block, ..acc], next_pending)
     }
     token.EOF -> Ok(#(list.reverse(acc), pending, state))
@@ -363,12 +367,16 @@ fn parse_blueprints_blocks_loop(
 fn parse_blueprints_block(
   state: ParserState,
   leading_comments: List(Comment),
-) -> Result(#(BlueprintsBlock, ParserState), ParserError) {
+) -> Result(#(BlueprintsBlock, List(Comment), ParserState), ParserError) {
   use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(artifacts, state) <- result.try(parse_artifacts(state))
-  use #(items, state) <- result.try(parse_blueprint_items(state))
-  Ok(#(ast.BlueprintsBlock(artifacts:, items:, leading_comments:), state))
+  use #(items, trailing, state) <- result.try(parse_blueprint_items(state))
+  Ok(#(
+    ast.BlueprintsBlock(artifacts:, items:, leading_comments:),
+    trailing,
+    state,
+  ))
 }
 
 fn parse_artifacts(
@@ -416,7 +424,7 @@ fn parse_artifacts_loop(
 
 fn parse_blueprint_items(
   state: ParserState,
-) -> Result(#(List(BlueprintItem), ParserState), ParserError) {
+) -> Result(#(List(BlueprintItem), List(Comment), ParserState), ParserError) {
   let #(pending, state) = consume_comments(state)
   parse_blueprint_items_loop(state, [], pending)
 }
@@ -425,14 +433,14 @@ fn parse_blueprint_items_loop(
   state: ParserState,
   acc: List(BlueprintItem),
   pending: List(Comment),
-) -> Result(#(List(BlueprintItem), ParserState), ParserError) {
+) -> Result(#(List(BlueprintItem), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolStar -> {
       use #(item, state) <- result.try(parse_blueprint_item(state, pending))
       let #(next_pending, state) = consume_comments(state)
       parse_blueprint_items_loop(state, [item, ..acc], next_pending)
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 
@@ -473,8 +481,12 @@ fn parse_expects_blocks_loop(
 ) -> Result(#(List(ExpectsBlock), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.KeywordExpectations -> {
-      use #(block, state) <- result.try(parse_expects_block(state, pending))
-      let #(next_pending, state) = consume_comments(state)
+      use #(block, trailing, state) <- result.try(parse_expects_block(
+        state,
+        pending,
+      ))
+      let #(more_comments, state) = consume_comments(state)
+      let next_pending = list.append(trailing, more_comments)
       parse_expects_blocks_loop(state, [block, ..acc], next_pending)
     }
     token.EOF -> Ok(#(list.reverse(acc), pending, state))
@@ -491,7 +503,7 @@ fn parse_expects_blocks_loop(
 fn parse_expects_block(
   state: ParserState,
   leading_comments: List(Comment),
-) -> Result(#(ExpectsBlock, ParserState), ParserError) {
+) -> Result(#(ExpectsBlock, List(Comment), ParserState), ParserError) {
   use state <- result.try(expect(
     state,
     token.KeywordExpectations,
@@ -499,13 +511,13 @@ fn parse_expects_block(
   ))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
   use #(blueprint, state) <- result.try(parse_string_literal(state))
-  use #(items, state) <- result.try(parse_expect_items(state))
-  Ok(#(ast.ExpectsBlock(blueprint:, items:, leading_comments:), state))
+  use #(items, trailing, state) <- result.try(parse_expect_items(state))
+  Ok(#(ast.ExpectsBlock(blueprint:, items:, leading_comments:), trailing, state))
 }
 
 fn parse_expect_items(
   state: ParserState,
-) -> Result(#(List(ExpectItem), ParserState), ParserError) {
+) -> Result(#(List(ExpectItem), List(Comment), ParserState), ParserError) {
   let #(pending, state) = consume_comments(state)
   parse_expect_items_loop(state, [], pending)
 }
@@ -514,14 +526,14 @@ fn parse_expect_items_loop(
   state: ParserState,
   acc: List(ExpectItem),
   pending: List(Comment),
-) -> Result(#(List(ExpectItem), ParserState), ParserError) {
+) -> Result(#(List(ExpectItem), List(Comment), ParserState), ParserError) {
   case peek(state) {
     token.SymbolStar -> {
       use #(item, state) <- result.try(parse_expect_item(state, pending))
       let #(next_pending, state) = consume_comments(state)
       parse_expect_items_loop(state, [item, ..acc], next_pending)
     }
-    _ -> Ok(#(list.reverse(acc), state))
+    _ -> Ok(#(list.reverse(acc), pending, state))
   }
 }
 

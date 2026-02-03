@@ -20,6 +20,8 @@ fn read_file(path: String) -> String {
 // * ✅ already-formatted expects is unchanged
 // * ✅ type alias formatted correctly
 // * ✅ complex types formatted correctly
+// * ✅ comments between expects blocks preserved
+// * ✅ comments between blueprint blocks preserved
 pub fn format_test() {
   [
     #("unformatted_blueprint", "formatted_blueprint"),
@@ -30,6 +32,8 @@ pub fn format_test() {
     #("complex_types", "complex_types"),
     #("comments_blueprint", "comments_blueprint"),
     #("comments_expects", "comments_expects"),
+    #("comments_between_expects_blocks", "comments_between_expects_blocks"),
+    #("comments_between_blueprint_blocks", "comments_between_blueprint_blocks"),
   ]
   |> list.each(fn(pair) {
     let #(input_name, expected_name) = pair
@@ -49,6 +53,8 @@ pub fn format_idempotent_test() {
     "unformatted_expects",
     "comments_blueprint",
     "comments_expects",
+    "comments_between_expects_blocks",
+    "comments_between_blueprint_blocks",
   ]
   |> list.each(fn(file_name) {
     let input = read_file(corpus_path(file_name))
