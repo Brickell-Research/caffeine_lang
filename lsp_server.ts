@@ -2,6 +2,7 @@
 // Uses vscode-languageserver-node for protocol handling, delegates all
 // language logic to the compiled Gleam modules.
 
+import process from "node:process";
 import {
   createConnection,
   TextDocuments,
@@ -10,6 +11,12 @@ import {
   DiagnosticSeverity,
 } from "npm:vscode-languageserver/node.js";
 import { TextDocument } from "npm:vscode-languageserver-textdocument";
+
+// Ensure --stdio is in process.argv so vscode-languageserver detects stdio transport.
+// Deno's compiled binary may not pass this flag through to process.argv.
+if (!process.argv.includes("--stdio")) {
+  process.argv.push("--stdio");
+}
 
 // Gleam-compiled intelligence modules
 import { get_diagnostics, diagnostic_code_to_string, QuotedFieldName, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
