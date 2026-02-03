@@ -1,7 +1,6 @@
 import argv
 import caffeine_cli/handler
 import gleam/io
-import gleam/list
 import glint
 
 // Needed for both erlang and js targets.
@@ -27,11 +26,12 @@ pub fn build_app() -> glint.Glint(Result(Nil, String)) {
 /// Entry point for the Caffeine language CLI application.
 pub fn main() {
   let args = argv.load().arguments
-  case list.is_empty(args) {
-    True ->
+  case args {
+    ["--version"] | ["-v"] -> io.println(handler.version_string())
+    [] ->
       build_app()
       |> glint.run_and_handle(["--help"], fn(_) { Nil })
-    False ->
+    _ ->
       build_app()
       |> glint.run_and_handle(args, fn(result) {
         case result {
@@ -47,9 +47,16 @@ pub fn main() {
 
 /// Entry point for Erlang escript compatibility and testing.
 pub fn run(args: List(String)) -> Result(Nil, String) {
-  case glint.execute(build_app(), args) {
-    Ok(glint.Out(result)) -> result
-    Ok(glint.Help(_)) -> Ok(Nil)
-    Error(err) -> Error(err)
+  case args {
+    ["--version"] | ["-v"] -> {
+      io.println(handler.version_string())
+      Ok(Nil)
+    }
+    _ ->
+      case glint.execute(build_app(), args) {
+        Ok(glint.Out(result)) -> result
+        Ok(glint.Help(_)) -> Ok(Nil)
+        Error(err) -> Error(err)
+      }
   }
 }

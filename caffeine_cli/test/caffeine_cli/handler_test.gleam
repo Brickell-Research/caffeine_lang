@@ -6,6 +6,7 @@ import gleeunit/should
 // * ✅ compile with nonexistent blueprint file returns Error
 // * ✅ compile with nonexistent expectations dir returns Error
 // * ✅ --help returns Ok (glint handles help)
+// * ✅ --version returns Ok
 // * ✅ no arguments returns Ok (glint shows help)
 // * ✅ --target terraform returns Ok
 // * ✅ --target opentofu returns Ok
@@ -33,6 +34,9 @@ pub fn cli_exit_code_test() {
   |> should.be_error()
 
   caffeine_cli.run(["--help"])
+  |> should.be_ok()
+
+  caffeine_cli.run(["--version"])
   |> should.be_ok()
 
   caffeine_cli.run([])

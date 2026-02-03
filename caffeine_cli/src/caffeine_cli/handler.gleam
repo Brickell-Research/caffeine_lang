@@ -36,6 +36,13 @@ fn target_flag() -> glint.Flag(String) {
   |> glint.flag_constraint(constraint.one_of(["terraform", "opentofu"]))
 }
 
+// --- Version ---
+
+/// Returns the version string for `--version` output.
+pub fn version_string() -> String {
+  "caffeine " <> constants.version <> " (Brickell Research)"
+}
+
 // --- Log level helper ---
 
 fn log_level_from_quiet(quiet: Bool) -> LogLevel {
@@ -131,8 +138,7 @@ pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
 pub fn root_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
     "A compiler for generating reliability artifacts from service expectation definitions.\n\nVersion: "
-    <> constants.version
-    <> "\nBy Brickell Research (https://brickell.sh)",
+    <> constants.version,
   )
   use _, _, _ <- glint.command()
 
