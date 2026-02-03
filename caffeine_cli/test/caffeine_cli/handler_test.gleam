@@ -7,6 +7,9 @@ import gleeunit/should
 // * ✅ compile with nonexistent expectations dir returns Error
 // * ✅ --help returns Ok (glint handles help)
 // * ✅ no arguments returns Ok (glint shows help)
+// * ✅ --target terraform returns Ok
+// * ✅ --target opentofu returns Ok
+// * ✅ --target invalid returns Error
 pub fn cli_exit_code_test() {
   caffeine_cli.run([
     "compile",
@@ -34,4 +37,31 @@ pub fn cli_exit_code_test() {
 
   caffeine_cli.run([])
   |> should.be_ok()
+
+  caffeine_cli.run([
+    "compile",
+    "--quiet",
+    "--target=terraform",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
+  ])
+  |> should.be_ok()
+
+  caffeine_cli.run([
+    "compile",
+    "--quiet",
+    "--target=opentofu",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
+  ])
+  |> should.be_ok()
+
+  caffeine_cli.run([
+    "compile",
+    "--quiet",
+    "--target=invalid",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
+  ])
+  |> should.be_error()
 }

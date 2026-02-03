@@ -12,6 +12,7 @@ import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import glint
+import glint/constraint
 import simplifile
 
 // --- Flag definitions ---
@@ -26,6 +27,13 @@ fn check_flag() -> glint.Flag(Bool) {
   glint.bool_flag("check")
   |> glint.flag_default(False)
   |> glint.flag_help("Check formatting without modifying files")
+}
+
+fn target_flag() -> glint.Flag(String) {
+  glint.string_flag("target")
+  |> glint.flag_default("terraform")
+  |> glint.flag_help("Code generation target: terraform or opentofu")
+  |> glint.flag_constraint(constraint.one_of(["terraform", "opentofu"]))
 }
 
 // --- Log level helper ---
@@ -46,12 +54,14 @@ pub fn compile_command() -> glint.Command(Result(Nil, String)) {
     "Compile .caffeine blueprints and expectations to output",
   )
   use quiet <- glint.flag(quiet_flag())
+  use target <- glint.flag(target_flag())
   use blueprint_file <- glint.named_arg("blueprint_file")
   use expectations_dir <- glint.named_arg("expectations_dir")
   use <- glint.unnamed_args(glint.MinArgs(0))
   use named, unnamed_args, flags <- glint.command()
 
   let assert Ok(is_quiet) = quiet(flags)
+  let assert Ok(target) = target(flags)
   let log_level = log_level_from_quiet(is_quiet)
   let bp = blueprint_file(named)
   let exp_dir = expectations_dir(named)
@@ -60,7 +70,7 @@ pub fn compile_command() -> glint.Command(Result(Nil, String)) {
     [] -> option.None
   }
 
-  compile(bp, exp_dir, output_path, log_level)
+  compile(bp, exp_dir, output_path, target, log_level)
 }
 
 /// Builds the format subcommand.
@@ -134,6 +144,7 @@ fn compile(
   blueprint_file: String,
   expectations_dir: String,
   output_path: Option(String),
+  target: String,
   log_level: LogLevel,
 ) -> Result(Nil, String) {
   // Discover expectation files
@@ -174,7 +185,12 @@ fn compile(
 
   // Compile with presentation output
   use output <- result.try(
-    compile_presenter.compile_with_output(blueprint, expectations, log_level)
+    compile_presenter.compile_with_output(
+      blueprint,
+      expectations,
+      target,
+      log_level,
+    )
     |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
   )
 
@@ -204,7 +220,7 @@ fn compile(
       )
       compile_presenter.log(
         log_level,
-        "Successfully compiled to " <> output_file,
+        "Successfully compiled " <> target <> " to " <> output_file,
       )
 
       // Write dependency graph if present

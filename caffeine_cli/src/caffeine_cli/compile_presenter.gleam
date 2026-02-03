@@ -16,10 +16,14 @@ pub type LogLevel {
 pub fn compile_with_output(
   blueprint: SourceFile,
   expectations: List(SourceFile),
+  target: String,
   log_level: LogLevel,
 ) -> Result(CompilationOutput, errors.CompilationError) {
   log(log_level, "")
-  log(log_level, ansi.bold(ansi.cyan("=== CAFFEINE COMPILER ===")))
+  log(
+    log_level,
+    ansi.bold(ansi.cyan("=== CAFFEINE COMPILER (" <> target <> ") ===")),
+  )
   log(log_level, "")
 
   use output <- result.try(case compiler.compile(blueprint, expectations) {
