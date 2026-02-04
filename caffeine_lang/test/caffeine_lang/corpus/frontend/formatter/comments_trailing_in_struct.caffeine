@@ -1,0 +1,7 @@
+Expectations for "slo"
+  * "item":
+    Provides {
+      threshold: 99.9,
+      window: 7
+      # TODO: add more fields later
+    }

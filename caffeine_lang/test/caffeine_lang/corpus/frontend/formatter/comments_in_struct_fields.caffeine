@@ -1,0 +1,10 @@
+Expectations for "slo"
+  * "item":
+    Provides {
+      # The threshold
+      threshold: 99.9,
+      # The window
+      window_in_days: 7,
+      # The service
+      service_name: "my-service"
+    }

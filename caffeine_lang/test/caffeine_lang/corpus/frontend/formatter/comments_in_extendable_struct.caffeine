@@ -1,0 +1,10 @@
+_defaults (Provides): {
+  # The threshold
+  threshold: 99.9,
+  # The window
+  window_in_days: 7
+}
+
+Expectations for "slo"
+  * "item" extends [_defaults]:
+    Provides { service: "api" }

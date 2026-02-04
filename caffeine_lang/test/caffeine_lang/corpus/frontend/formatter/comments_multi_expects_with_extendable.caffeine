@@ -1,0 +1,28 @@
+# Common config
+_common (Provides): { threshold: 99.9, window_in_days: 7 }
+
+## Success Rate SLOs
+Expectations for "success_rate"
+  # Sync Jobs
+  ## Purpose: keep data in sync
+  * "sync_job" extends [_common]:
+    Provides { job_name: "sync" }
+
+  # Event Jobs
+  ## Purpose: send events
+  * "event_job" extends [_common]:
+    Provides { job_name: "event" }
+
+##  === Latency SLOs ===
+Expectations for "latency_10m"
+  # Event Jobs
+  ## Purpose: send events
+  * "event_latency" extends [_common]:
+    Provides { job_name: "event" }
+
+## One Hour Latency
+Expectations for "latency_1h"
+  # Sync Jobs
+  ## Purpose: keep data in sync
+  * "sync_latency" extends [_common]:
+    Provides { job_name: "sync" }

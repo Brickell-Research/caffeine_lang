@@ -1,0 +1,19 @@
+# Type alias section
+_env (Type): String { x | x in { "prod", "staging" } }
+
+# Extendable section
+## Base config
+_base (Provides): { vendor: "datadog" }
+
+## First blueprint section
+Blueprints for "SLO"
+  # API SLO
+  * "api" extends [_base]:
+    Requires { env: _env }
+    Provides { threshold: 99.9 }
+
+## Second blueprint section
+Blueprints for "Latency"
+  * "api_latency" extends [_base]:
+    Requires { env: _env }
+    Provides { threshold_ms: 500 }
