@@ -834,13 +834,16 @@ pub fn parse_expects_file_test() {
                 ast.Field(
                   "config",
                   ast.LiteralValue(
-                    ast.LiteralStruct([
-                      ast.Field(
-                        "key",
-                        ast.LiteralValue(ast.LiteralString("value")),
-                        leading_comments: [],
-                      ),
-                    ]),
+                    ast.LiteralStruct(
+                      [
+                        ast.Field(
+                          "key",
+                          ast.LiteralValue(ast.LiteralString("value")),
+                          leading_comments: [],
+                        ),
+                      ],
+                      [],
+                    ),
                   ),
                   leading_comments: [],
                 ),

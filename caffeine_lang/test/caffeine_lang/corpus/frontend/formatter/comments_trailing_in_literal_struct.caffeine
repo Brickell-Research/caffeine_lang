@@ -1,0 +1,8 @@
+Expectations for "slo"
+  * "item":
+    Provides {
+      config: {
+        key: "value"
+        # trailing comment in literal struct
+      }
+    }

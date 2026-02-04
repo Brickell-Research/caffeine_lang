@@ -25,6 +25,7 @@ fn read_file(path: String) -> String {
 // * ✅ comments within a single expects block
 // * ✅ comments between fields in struct
 // * ✅ trailing comments inside struct
+// * ✅ trailing comments inside literal struct
 // * ✅ comments in extendable struct
 // ==== format (comments between blocks) ====
 // * ✅ comments between expects blocks
@@ -48,6 +49,10 @@ pub fn format_test() {
     #("comments_expects", "comments_expects"),
     #("comments_in_struct_fields", "comments_in_struct_fields"),
     #("comments_trailing_in_struct", "comments_trailing_in_struct"),
+    #(
+      "comments_trailing_in_literal_struct",
+      "comments_trailing_in_literal_struct",
+    ),
     #("comments_in_extendable_struct", "comments_in_extendable_struct"),
     // Comments between blocks
     #("comments_between_expects_blocks", "comments_between_expects_blocks"),
@@ -88,6 +93,7 @@ pub fn format_idempotent_test() {
     "comments_many_consecutive",
     "comments_in_struct_fields",
     "comments_trailing_in_struct",
+    "comments_trailing_in_literal_struct",
     "comments_in_extendable_struct",
     "comments_multi_expects_with_extendable",
     "comments_multi_blueprint_blocks",

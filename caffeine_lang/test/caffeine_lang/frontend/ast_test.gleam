@@ -56,7 +56,7 @@ pub fn literal_to_string_test() {
     #(ast.LiteralTrue, "true"),
     #(ast.LiteralFalse, "false"),
     #(ast.LiteralList([]), "[...]"),
-    #(ast.LiteralStruct([]), "{...}"),
+    #(ast.LiteralStruct([], []), "{...}"),
   ]
   |> test_helpers.array_based_test_executor_1(ast.literal_to_string)
 }

@@ -155,7 +155,7 @@ pub type Literal {
   LiteralTrue
   LiteralFalse
   LiteralList(elements: List(Literal))
-  LiteralStruct(fields: List(Field))
+  LiteralStruct(fields: List(Field), trailing_comments: List(Comment))
 }
 
 /// Builds a list of name-type pairs from type aliases for lookup purposes.
@@ -186,6 +186,6 @@ pub fn literal_to_string(lit: Literal) -> String {
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(_) -> "[...]"
-    LiteralStruct(_) -> "{...}"
+    LiteralStruct(_, _) -> "{...}"
   }
 }

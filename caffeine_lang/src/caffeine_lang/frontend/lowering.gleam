@@ -285,7 +285,7 @@ pub fn literal_to_value(lit: Literal) -> value.Value {
     ast.LiteralFalse -> value.BoolValue(False)
     ast.LiteralList(elements) ->
       value.ListValue(list.map(elements, literal_to_value))
-    ast.LiteralStruct(fields) ->
+    ast.LiteralStruct(fields, _trailing_comments) ->
       fields
       |> list.filter_map(fn(field) {
         case field.value {

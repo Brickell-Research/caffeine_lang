@@ -397,8 +397,12 @@ fn format_literal(l: Literal, indent: Int, context: FieldContext) -> String {
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(elements) -> format_literal_list(elements, indent, context)
-    LiteralStruct(fields) ->
-      format_struct(Struct(fields, trailing_comments: []), indent, context)
+    LiteralStruct(fields, trailing_comments) ->
+      format_struct(
+        Struct(fields, trailing_comments: trailing_comments),
+        indent,
+        context,
+      )
   }
 }
 

@@ -1151,13 +1151,13 @@ fn parse_literal_struct_value(
   }
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   let #(pending, state) = consume_comments(state)
-  use #(fields, _trailing_comments, state) <- result.try(parse_fields(
+  use #(fields, trailing_comments, state) <- result.try(parse_fields(
     state,
     pending,
     parse_value,
   ))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-  Ok(#(ast.LiteralStruct(fields), state))
+  Ok(#(ast.LiteralStruct(fields, trailing_comments), state))
 }
 
 /// Convert a Literal to its string representation for use in refinements/defaults.
@@ -1169,7 +1169,7 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralTrue -> "True"
     ast.LiteralFalse -> "False"
     ast.LiteralList(_) -> "[]"
-    ast.LiteralStruct(_) -> "{}"
+    ast.LiteralStruct(_, _) -> "{}"
   }
 }
 
