@@ -400,7 +400,7 @@ function gleamSelectionRangeToLsp(sr: any): any {
 
 // --- Linked Editing Ranges ---
 
-connection.onLinkedEditingRange((params) => {
+connection.languages.onLinkedEditingRange((params) => {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return null;
 
