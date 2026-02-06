@@ -5,6 +5,7 @@ pub type Vendor {
   Datadog
   Honeycomb
   Dynatrace
+  NewRelic
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
@@ -15,6 +16,7 @@ pub fn resolve_vendor(vendor: String) -> Result(Vendor, Nil) {
     v if v == constants.vendor_datadog -> Ok(Datadog)
     v if v == constants.vendor_honeycomb -> Ok(Honeycomb)
     v if v == constants.vendor_dynatrace -> Ok(Dynatrace)
+    v if v == constants.vendor_newrelic -> Ok(NewRelic)
     _ -> Error(Nil)
   }
 }

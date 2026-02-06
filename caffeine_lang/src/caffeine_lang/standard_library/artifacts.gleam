@@ -72,6 +72,7 @@ fn slo_artifact() -> Artifact {
               constants.vendor_datadog,
               constants.vendor_honeycomb,
               constants.vendor_dynatrace,
+              constants.vendor_newrelic,
             ]),
           )),
           description: "Observability platform",

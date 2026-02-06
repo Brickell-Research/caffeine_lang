@@ -273,6 +273,10 @@ pub fn resolve_indicators(
       // Dynatrace does not use template resolution — indicators are passed through as-is.
       Ok(ir)
     }
+    ResolvedVendor(vendor.NewRelic) -> {
+      // New Relic does not use template resolution — indicators are passed through as-is.
+      Ok(ir)
+    }
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor resolved",

@@ -60,6 +60,8 @@ pub fn error_code_for(error: CompilationError) -> ErrorCode {
       ErrorCode("codegen", 503)
     errors.GeneratorDynatraceTerraformResolutionError(..) ->
       ErrorCode("codegen", 504)
+    errors.GeneratorNewrelicTerraformResolutionError(..) ->
+      ErrorCode("codegen", 505)
     errors.CQLResolverError(..) -> ErrorCode("cql", 601)
     errors.CQLParserError(..) -> ErrorCode("cql", 602)
     errors.CompilationErrors(..) -> ErrorCode("multiple", 0)

@@ -8,6 +8,7 @@ import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/dynatrace
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/honeycomb
+import caffeine_lang/codegen/newrelic
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/artifacts
@@ -124,10 +125,22 @@ fn dynatrace_ops() -> VendorOps {
   )
 }
 
+fn newrelic_ops() -> VendorOps {
+  VendorOps(
+    generate_resources: fn(irs) {
+      newrelic.generate_resources(irs)
+      |> result.map(fn(r) { #(r, []) })
+    },
+    terraform_settings: newrelic.terraform_settings(),
+    provider: newrelic.provider(),
+    variables: newrelic.variables(),
+  )
+}
+
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  let #(datadog_irs, honeycomb_irs, dynatrace_irs) =
+  let #(datadog_irs, honeycomb_irs, dynatrace_irs, newrelic_irs) =
     group_by_vendor(resolved_irs)
 
   // Build vendor groups, defaulting to Datadog boilerplate if no IRs at all.
@@ -135,6 +148,7 @@ fn run_code_generation(
     #(datadog_ops(), datadog_irs),
     #(honeycomb_ops(), honeycomb_irs),
     #(dynatrace_ops(), dynatrace_irs),
+    #(newrelic_ops(), newrelic_irs),
   ]
   let active_groups = list.filter(vendor_groups, fn(g) { !list.is_empty(g.1) })
   let active_groups = case list.is_empty(active_groups) {
@@ -143,7 +157,7 @@ fn run_code_generation(
   }
 
   // Generate resources and accumulate config from all active vendors.
-  // Note: active_groups has at most 3 elements (one per vendor), so the
+  // Note: active_groups has at most 4 elements (one per vendor), so the
   // list.append calls here are bounded and not a performance concern.
   use #(all_resources, all_warnings, required_providers, providers, variables) <- result.try(
     list.try_fold(active_groups, #([], [], [], [], []), fn(acc, group) {
@@ -236,10 +250,11 @@ fn run_code_generation(
   ))
 }
 
-/// Group IRs by vendor into (datadog, honeycomb, dynatrace) lists.
+/// Group IRs by vendor into (datadog, honeycomb, dynatrace, newrelic) lists.
 fn group_by_vendor(
   irs: List(IntermediateRepresentation),
 ) -> #(
+  List(IntermediateRepresentation),
   List(IntermediateRepresentation),
   List(IntermediateRepresentation),
   List(IntermediateRepresentation),
@@ -253,7 +268,10 @@ fn group_by_vendor(
   let dynatrace_irs =
     irs
     |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Dynatrace) })
-  #(datadog_irs, honeycomb_irs, dynatrace_irs)
+  let newrelic_irs =
+    irs
+    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.NewRelic) })
+  #(datadog_irs, honeycomb_irs, dynatrace_irs, newrelic_irs)
 }
 
 fn parse_from_strings(
