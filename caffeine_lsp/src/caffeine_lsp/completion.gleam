@@ -74,14 +74,181 @@ fn is_type_context(before: String) -> Bool {
 /// from extendables that haven't been defined yet.
 fn get_field_context(
   content: String,
+  lines: List(String),
+  line: Int,
+) -> option.Option(List(#(String, String))) {
+  case find_enclosing_item(lines, line) {
+    option.None -> option.None
+    option.Some(item_name) ->
+      case file_utils.parse(content) {
+        Ok(file_utils.Blueprints(file)) ->
+          blueprint_field_context(file, item_name, lines, line)
+        Ok(file_utils.Expects(file)) ->
+          expects_field_context(file, item_name, lines, line)
+        Error(_) -> option.None
+      }
+  }
+}
+
+/// Walk backwards from the cursor line to find the enclosing item name.
+fn find_enclosing_item(
+  lines: List(String),
+  line: Int,
+) -> option.Option(String) {
+  find_enclosing_item_loop(lines, line)
+}
+
+fn find_enclosing_item_loop(
+  lines: List(String),
+  idx: Int,
+) -> option.Option(String) {
+  case idx < 0 {
+    True -> option.None
+    False ->
+      case list.drop(lines, idx) {
+        [line_text, ..] -> {
+          let trimmed = string.trim(line_text)
+          case string.starts_with(trimmed, "* \"") {
+            True -> extract_item_name(trimmed)
+            False -> find_enclosing_item_loop(lines, idx - 1)
+          }
+        }
+        [] -> option.None
+      }
+  }
+}
+
+/// Extract the item name from a line like `* "my_slo" extends [...]:` or `* "my_slo":`.
+fn extract_item_name(trimmed: String) -> option.Option(String) {
+  // Drop `* "` prefix
+  let after = string.drop_start(trimmed, 3)
+  case string.split_once(after, "\"") {
+    Ok(#(name, _)) -> option.Some(name)
+    Error(_) -> option.None
+  }
+}
+
+/// Collect available fields from extended extendables for a blueprint item.
+fn blueprint_field_context(
+  file: ast.BlueprintsFile,
+  item_name: String,
+  lines: List(String),
+  line: Int,
+) -> option.Option(List(#(String, String))) {
+  let item =
+    list.flat_map(file.blocks, fn(b) { b.items })
+    |> list.find(fn(i) { i.name == item_name })
+  case item {
+    Error(_) -> option.None
+    Ok(item) -> {
+      let extended_fields =
+        collect_extended_fields(item.extends, file.extendables)
+      let existing = existing_field_names_for_section(lines, line, item)
+      let available =
+        list.filter(extended_fields, fn(f) {
+          !list.contains(existing, f.0)
+        })
+      case available {
+        [] -> option.None
+        _ -> option.Some(available)
+      }
+    }
+  }
+}
+
+/// Collect available fields from extended extendables for an expects item.
+fn expects_field_context(
+  file: ast.ExpectsFile,
+  item_name: String,
+  lines: List(String),
+  line: Int,
+) -> option.Option(List(#(String, String))) {
+  let item =
+    list.flat_map(file.blocks, fn(b) { b.items })
+    |> list.find(fn(i) { i.name == item_name })
+  case item {
+    Error(_) -> option.None
+    Ok(item) -> {
+      let extended_fields =
+        collect_extended_fields(item.extends, file.extendables)
+      let existing = existing_provides_fields(lines, line, item.provides)
+      let available =
+        list.filter(extended_fields, fn(f) {
+          !list.contains(existing, f.0)
+        })
+      case available {
+        [] -> option.None
+        _ -> option.Some(available)
+      }
+    }
+  }
+}
+
+/// Gather field name/detail pairs from all extended extendables.
+fn collect_extended_fields(
+  extends: List(String),
+  extendables: List(ast.Extendable),
+) -> List(#(String, String)) {
+  list.flat_map(extends, fn(ext_name) {
+    case list.find(extendables, fn(e) { e.name == ext_name }) {
+      Ok(ext) ->
+        list.map(ext.body.fields, fn(f) {
+          #(f.name, ast.value_to_string(f.value))
+        })
+      Error(_) -> []
+    }
+  })
+}
+
+/// Get existing field names based on whether cursor is in Requires or Provides.
+fn existing_field_names_for_section(
+  lines: List(String),
+  line: Int,
+  item: ast.BlueprintItem,
+) -> List(String) {
+  case is_in_requires_section(lines, line) {
+    True -> list.map(item.requires.fields, fn(f) { f.name })
+    False -> list.map(item.provides.fields, fn(f) { f.name })
+  }
+}
+
+/// Check if the cursor line is inside a Requires section by walking backwards.
+fn is_in_requires_section(lines: List(String), line: Int) -> Bool {
+  is_in_requires_loop(lines, line)
+}
+
+fn is_in_requires_loop(lines: List(String), idx: Int) -> Bool {
+  case idx < 0 {
+    True -> False
+    False ->
+      case list.drop(lines, idx) {
+        [line_text, ..] -> {
+          let trimmed = string.trim(line_text)
+          case string.starts_with(trimmed, "Requires") {
+            True -> True
+            False ->
+              case string.starts_with(trimmed, "Provides") {
+                True -> False
+                False ->
+                  case string.starts_with(trimmed, "* \"") {
+                    True -> False
+                    False -> is_in_requires_loop(lines, idx - 1)
+                  }
+              }
+          }
+        }
+        [] -> False
+      }
+  }
+}
+
+/// Get existing provides field names for expects items.
+fn existing_provides_fields(
   _lines: List(String),
   _line: Int,
-) -> option.Option(List(#(String, String))) {
-  // For now, return None — field completion requires deeper context analysis
-  // that would need tracking which block we're in and what extends are used
-  case content {
-    _ -> option.None
-  }
+  provides: ast.Struct,
+) -> List(String) {
+  list.map(provides.fields, fn(f) { f.name })
 }
 
 // --- Completion generators ---

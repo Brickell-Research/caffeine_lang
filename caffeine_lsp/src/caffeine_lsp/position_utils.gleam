@@ -8,6 +8,16 @@ pub fn find_name_position(content: String, name: String) -> #(Int, Int) {
   find_in_lines(lines, name, 0)
 }
 
+/// Find all 0-indexed (line, col) positions of whole-word occurrences of a name.
+pub fn find_all_name_positions(
+  content: String,
+  name: String,
+) -> List(#(Int, Int)) {
+  let lines = string.split(content, "\n")
+  find_all_in_lines(lines, name, 0, [])
+  |> list.reverse
+}
+
 /// Extract the word under the cursor at the given 0-indexed line and character.
 @internal
 pub fn extract_word_at(content: String, line: Int, character: Int) -> String {
@@ -106,6 +116,41 @@ fn find_word_end_loop(
         True -> idx
         False -> find_word_end_loop(rest, col, idx + 1, len)
       }
+    }
+  }
+}
+
+fn find_all_in_lines(
+  lines: List(String),
+  name: String,
+  line_idx: Int,
+  acc: List(#(Int, Int)),
+) -> List(#(Int, Int)) {
+  case lines {
+    [] -> acc
+    [first, ..rest] -> {
+      let matches = find_all_whole_words(first, name, 0, [])
+      let new_acc =
+        list.fold(list.reverse(matches), acc, fn(a, col) {
+          [#(line_idx, col), ..a]
+        })
+      find_all_in_lines(rest, name, line_idx + 1, new_acc)
+    }
+  }
+}
+
+fn find_all_whole_words(
+  line: String,
+  name: String,
+  offset: Int,
+  acc: List(Int),
+) -> List(Int) {
+  case find_whole_word(line, name, offset) {
+    Error(_) -> list.reverse(acc)
+    Ok(col) -> {
+      let skip = col - offset + string.length(name)
+      let remaining = string.drop_start(line, skip)
+      find_all_whole_words(remaining, name, offset + skip, [col, ..acc])
     }
   }
 }

@@ -4,10 +4,14 @@ import caffeine_lsp/definition
 import caffeine_lsp/diagnostics
 import caffeine_lsp/document_symbols
 import caffeine_lsp/file_utils
+import caffeine_lsp/folding_range
+import caffeine_lsp/highlight
 import caffeine_lsp/hover
 import caffeine_lsp/keyword_info
 import caffeine_lsp/lsp_types
 import caffeine_lsp/position_utils
+import caffeine_lsp/references
+import caffeine_lsp/rename
 import caffeine_lsp/semantic_tokens
 import gleam/list
 import gleam/option
@@ -646,4 +650,205 @@ pub fn keyword_info_all_keywords_test() {
 
   // All descriptions should be non-empty
   list.each(keywords, fn(k) { { k.description != "" } |> should.be_true() })
+}
+
+// ==========================================================================
+// find_all_name_positions tests
+// ==========================================================================
+
+// ==== find_all_name_positions ====
+// * multiple occurrences across lines
+// * not found returns empty list
+// * skips partial word matches
+
+pub fn find_all_name_positions_multiple_test() {
+  let content = "_defaults here\nuses _defaults\n_defaults again"
+  let positions = position_utils.find_all_name_positions(content, "_defaults")
+  positions
+  |> should.equal([#(0, 0), #(1, 5), #(2, 0)])
+}
+
+pub fn find_all_name_positions_not_found_test() {
+  let content = "line one\nline two"
+  position_utils.find_all_name_positions(content, "_missing")
+  |> should.equal([])
+}
+
+pub fn find_all_name_positions_skips_partial_test() {
+  let content = "_defaults_extra\n_defaults here"
+  let positions = position_utils.find_all_name_positions(content, "_defaults")
+  // Should only match the whole word on line 1, not the partial on line 0
+  positions
+  |> should.equal([#(1, 0)])
+}
+
+// ==========================================================================
+// Document highlight tests
+// ==========================================================================
+
+// ==== get_highlights ====
+// * extendable name highlights at definition and usages
+// * non-symbol (keyword) returns empty list
+// * empty space returns empty list
+
+pub fn highlight_extendable_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let highlights = highlight.get_highlights(source, 0, 2)
+  // Should find _defaults at definition (line 0) and usage (line 3)
+  { list.length(highlights) >= 2 } |> should.be_true()
+  // First highlight should be at line 0
+  case highlights {
+    [#(0, 0, 9), ..] -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn highlight_keyword_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // "Blueprints" is a keyword, not a defined symbol
+  highlight.get_highlights(source, 0, 3)
+  |> should.equal([])
+}
+
+pub fn highlight_empty_space_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Space between words
+  highlight.get_highlights(source, 0, 10)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// References tests
+// ==========================================================================
+
+// ==== get_references ====
+// * extendable references at definition and usages
+// * type alias references
+// * non-symbol returns empty list
+
+pub fn references_extendable_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let refs = references.get_references(source, 0, 2)
+  { list.length(refs) >= 2 } |> should.be_true()
+}
+
+pub fn references_type_alias_test() {
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+  let refs = references.get_references(source, 0, 1)
+  // Should find _env at definition and usage
+  { list.length(refs) >= 2 } |> should.be_true()
+}
+
+pub fn references_non_symbol_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  references.get_references(source, 0, 3)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Rename tests
+// ==========================================================================
+
+// ==== prepare_rename ====
+// * returns range for valid symbol
+// * returns None for keyword
+// ==== get_rename_edits ====
+// * returns all locations for a symbol
+// * returns empty for keyword
+
+pub fn prepare_rename_valid_symbol_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  case rename.prepare_rename(source, 0, 2) {
+    option.Some(#(0, 0, 9)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn prepare_rename_keyword_returns_none_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  rename.prepare_rename(source, 0, 3)
+  |> should.equal(option.None)
+}
+
+pub fn get_rename_edits_all_locations_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let edits = rename.get_rename_edits(source, 0, 2)
+  { list.length(edits) >= 2 } |> should.be_true()
+}
+
+pub fn get_rename_edits_keyword_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  rename.get_rename_edits(source, 0, 3)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Folding range tests
+// ==========================================================================
+
+// ==== get_folding_ranges ====
+// * blueprints file produces non-empty ranges
+// * expects file produces non-empty ranges
+// * empty source returns empty list
+
+pub fn folding_ranges_blueprints_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let ranges = folding_range.get_folding_ranges(source)
+  { ranges != [] } |> should.be_true()
+}
+
+pub fn folding_ranges_expects_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let ranges = folding_range.get_folding_ranges(source)
+  { ranges != [] } |> should.be_true()
+}
+
+pub fn folding_ranges_empty_test() {
+  folding_range.get_folding_ranges("")
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Field completion tests
+// ==========================================================================
+
+// ==== field completion ====
+// * cursor inside Provides block of item extending _defaults suggests fields
+// * already-defined fields are excluded
+
+pub fn field_completion_suggests_extended_fields_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      status: true\n      \n    }\n"
+  // Line 6 is the empty line inside Provides block
+  let items = completion.get_completions(source, 6, 6)
+  // Should suggest env and threshold from _defaults (minus any already defined)
+  let labels = list.map(items, fn(i) { i.label })
+  // "status" is already defined, but env and threshold come from _defaults
+  // "status" overshadows nothing from _defaults, so env + threshold should appear
+  list.contains(labels, "env") |> should.be_true()
+  list.contains(labels, "threshold") |> should.be_true()
+}
+
+pub fn field_completion_excludes_defined_fields_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      env: \"staging\"\n      \n    }\n"
+  // Line 6 is the empty line inside Provides block
+  let items = completion.get_completions(source, 6, 6)
+  let labels = list.map(items, fn(i) { i.label })
+  // env is already defined in Provides, should not be suggested
+  list.contains(labels, "env") |> should.be_false()
+  // threshold should still be suggested
+  list.contains(labels, "threshold") |> should.be_true()
 }

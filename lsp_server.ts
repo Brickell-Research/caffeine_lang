@@ -30,6 +30,10 @@ import { get_symbols } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/ca
 import { get_definition } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
 import { get_code_actions, ActionDiagnostic } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/code_actions.mjs";
 import { format } from "./caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/frontend/formatter.mjs";
+import { get_highlights } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/highlight.mjs";
+import { get_references } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
+import { prepare_rename, get_rename_edits } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/rename.mjs";
+import { get_folding_ranges } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/folding_range.mjs";
 
 // Gleam runtime types
 import { Ok, toList } from "./caffeine_lsp/build/dev/javascript/prelude.mjs";
@@ -68,6 +72,11 @@ connection.onInitialize(() => {
       textDocumentSync: TextDocumentSyncKind.Full,
       hoverProvider: true,
       definitionProvider: true,
+      declarationProvider: true,
+      documentHighlightProvider: true,
+      referencesProvider: true,
+      renameProvider: { prepareProvider: true },
+      foldingRangeProvider: true,
       documentFormattingProvider: true,
       documentSymbolProvider: true,
       completionProvider: {
@@ -228,6 +237,134 @@ connection.onDefinition((params) => {
     }
   } catch { /* ignore */ }
   return null;
+});
+
+// --- Declaration (delegates to definition) ---
+
+connection.onDeclaration((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const result = get_definition(
+      doc.getText(),
+      params.position.line,
+      params.position.character,
+    );
+    if (result instanceof Some) {
+      const [defLine, defCol, nameLen] = [result[0][0], result[0][1], result[0][2]];
+      return {
+        uri: params.textDocument.uri,
+        range: range(defLine, defCol, defLine, defCol + nameLen),
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
+});
+
+// --- Document Highlight ---
+
+connection.onDocumentHighlight((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  try {
+    const highlights = gleamArray(
+      get_highlights(doc.getText(), params.position.line, params.position.character) as GleamList,
+    );
+    return highlights.map((h) => ({
+      range: range(h[0], h[1], h[0], h[1] + h[2]),
+      kind: 1, // Text
+    }));
+  } catch {
+    return [];
+  }
+});
+
+// --- Find All References ---
+
+connection.onReferences((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  try {
+    const refs = gleamArray(
+      get_references(doc.getText(), params.position.line, params.position.character) as GleamList,
+    );
+    return refs.map((r) => ({
+      uri: params.textDocument.uri,
+      range: range(r[0], r[1], r[0], r[1] + r[2]),
+    }));
+  } catch {
+    return [];
+  }
+});
+
+// --- Rename ---
+
+connection.onPrepareRename((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const result = prepare_rename(
+      doc.getText(),
+      params.position.line,
+      params.position.character,
+    );
+    if (result instanceof Some) {
+      const [rLine, rCol, rLen] = [result[0][0], result[0][1], result[0][2]];
+      return {
+        range: range(rLine, rCol, rLine, rCol + rLen),
+        placeholder: doc.getText().substring(
+          doc.offsetAt({ line: rLine, character: rCol }),
+          doc.offsetAt({ line: rLine, character: rCol + rLen }),
+        ),
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
+});
+
+// deno-lint-ignore no-explicit-any
+connection.onRenameRequest((params: any) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const edits = gleamArray(
+      get_rename_edits(doc.getText(), params.position.line, params.position.character) as GleamList,
+    );
+    if (edits.length === 0) return null;
+    return {
+      changes: {
+        [params.textDocument.uri]: edits.map((e) => ({
+          range: range(e[0], e[1], e[0], e[1] + e[2]),
+          newText: params.newName,
+        })),
+      },
+    };
+  } catch {
+    return null;
+  }
+});
+
+// --- Folding Ranges ---
+
+connection.onFoldingRanges((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  try {
+    const ranges = gleamArray(get_folding_ranges(doc.getText()) as GleamList);
+    return ranges.map((r) => ({
+      startLine: r.start_line,
+      endLine: r.end_line,
+      kind: "region" as const,
+    }));
+  } catch {
+    return [];
+  }
 });
 
 // --- Semantic Tokens ---
