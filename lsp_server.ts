@@ -174,8 +174,7 @@ const blueprintIndex = new Map<string, Set<string>>();
 
 /** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files. */
 function extractBlueprintNames(text: string): string[] {
-  const trimmed = text.trimStart();
-  if (!trimmed.startsWith("Blueprints")) return [];
+  if (!text.includes("Blueprints for")) return [];
   // Match blueprint item names: * "name" — only on non-comment lines
   const names: string[] = [];
   const pattern = /\*\s+"([^"]+)"/;
@@ -200,7 +199,7 @@ function allKnownBlueprints(): string[] {
 
 /** Check whether file content is an expects file. */
 function isExpectsFile(text: string): boolean {
-  return text.trimStart().startsWith("Expectations");
+  return text.includes("Expectations for");
 }
 
 /** Convert a Gleam diagnostic to an LSP diagnostic. */
