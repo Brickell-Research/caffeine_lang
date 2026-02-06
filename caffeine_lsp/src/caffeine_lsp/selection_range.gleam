@@ -35,13 +35,13 @@ pub fn get_selection_range(
     SelectionRange(0, 0, total - 1, last_line_length(lines), NoParent)
 
   // Find enclosing block (Blueprints/Expectations or extendable)
-  let block_range = find_enclosing_block(lines, line, file_range)
+  let block_range = find_enclosing_block(lines, line, total, file_range)
 
   // Find enclosing item (* "name":)
-  let item_range = find_enclosing_item(lines, line, block_range)
+  let item_range = find_enclosing_item(lines, line, total, block_range)
 
   // Find enclosing section (Requires/Provides)
-  let section_range = find_enclosing_section(lines, line, item_range)
+  let section_range = find_enclosing_section(lines, line, total, item_range)
 
   // Innermost: the current line
   let line_len = line_length_at(lines, line)
@@ -53,28 +53,37 @@ pub fn get_selection_range(
 fn find_enclosing_block(
   lines: List(String),
   cursor_line: Int,
+  total: Int,
   parent: SelectionRange,
 ) -> SelectionRange {
-  let result = find_block_start_loop(lines, cursor_line, 0, -1)
-  case result {
+  let start = find_block_start_loop(lines, cursor_line, 0, -1)
+  case start {
     -1 -> parent
-    start -> {
-      let end = find_block_end(lines, start)
-      SelectionRange(start, 0, end, line_length_at(lines, end), HasParent(parent))
+    _ -> {
+      let remaining = list.drop(lines, start + 1)
+      let end = find_block_end_loop(remaining, start + 1, start, total)
+      SelectionRange(
+        start,
+        0,
+        end,
+        line_length_at(lines, end),
+        HasParent(parent),
+      )
     }
   }
 }
 
+/// Walk forward through lines to find the last block-start at or before cursor.
 fn find_block_start_loop(
-  lines: List(String),
+  remaining: List(String),
   cursor_line: Int,
   idx: Int,
   last_block: Int,
 ) -> Int {
   use <- bool.guard(idx > cursor_line, last_block)
-  case list.drop(lines, idx) {
+  case remaining {
     [] -> last_block
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim_start(line)
       let indent = string.length(line) - string.length(trimmed)
       let is_block =
@@ -84,11 +93,10 @@ fn find_block_start_loop(
           || string.starts_with(trimmed, "Expectations ")
           || string.starts_with(trimmed, "_")
         }
-      use <- bool.guard(
-        is_block,
-        find_block_start_loop(lines, cursor_line, idx + 1, idx),
-      )
-      find_block_start_loop(lines, cursor_line, idx + 1, last_block)
+      case is_block {
+        True -> find_block_start_loop(rest, cursor_line, idx + 1, idx)
+        False -> find_block_start_loop(rest, cursor_line, idx + 1, last_block)
+      }
     }
   }
 }
@@ -97,13 +105,16 @@ fn find_block_start_loop(
 fn find_enclosing_item(
   lines: List(String),
   cursor_line: Int,
+  total: Int,
   parent: SelectionRange,
 ) -> SelectionRange {
-  let result = find_item_start_loop(lines, cursor_line)
-  case result {
+  let reversed = list.take(lines, cursor_line + 1) |> list.reverse
+  let start = find_item_start_loop(reversed, cursor_line)
+  case start {
     -1 -> parent
-    start -> {
-      let end = find_item_end(lines, start, list.length(lines))
+    _ -> {
+      let remaining = list.drop(lines, start + 1)
+      let end = find_item_end_loop(remaining, start + 1, start, total)
       SelectionRange(
         start,
         trimmed_start_col(lines, start),
@@ -115,40 +126,37 @@ fn find_enclosing_item(
   }
 }
 
-fn find_item_start_loop(lines: List(String), idx: Int) -> Int {
-  use <- bool.guard(idx < 0, -1)
-  case list.drop(lines, idx) {
+/// Walk backwards (via reversed list) to find the enclosing item start.
+fn find_item_start_loop(reversed: List(String), idx: Int) -> Int {
+  case reversed {
     [] -> -1
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim(line)
       use <- bool.guard(string.starts_with(trimmed, "* \""), idx)
-      find_item_start_loop(lines, idx - 1)
+      find_item_start_loop(rest, idx - 1)
     }
   }
 }
 
-fn find_item_end(lines: List(String), start: Int, total: Int) -> Int {
-  find_item_end_loop(lines, start + 1, start, total)
-}
-
+/// Walk forward to find the end of an item block.
 fn find_item_end_loop(
-  lines: List(String),
+  remaining: List(String),
   idx: Int,
   last_non_blank: Int,
   total: Int,
 ) -> Int {
   use <- bool.guard(idx >= total, last_non_blank)
-  case list.drop(lines, idx) {
+  case remaining {
     [] -> last_non_blank
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim(line)
       case trimmed {
-        "" -> find_item_end_loop(lines, idx + 1, last_non_blank, total)
+        "" -> find_item_end_loop(rest, idx + 1, last_non_blank, total)
         _ -> {
           let indent =
             string.length(line) - string.length(string.trim_start(line))
           use <- bool.guard(indent <= 2, last_non_blank)
-          find_item_end_loop(lines, idx + 1, idx, total)
+          find_item_end_loop(rest, idx + 1, idx, total)
         }
       }
     }
@@ -159,13 +167,16 @@ fn find_item_end_loop(
 fn find_enclosing_section(
   lines: List(String),
   cursor_line: Int,
+  total: Int,
   parent: SelectionRange,
 ) -> SelectionRange {
-  let result = find_section_start_loop(lines, cursor_line)
-  case result {
+  let reversed = list.take(lines, cursor_line + 1) |> list.reverse
+  let start = find_section_start_loop(reversed, cursor_line)
+  case start {
     -1 -> parent
-    start -> {
-      let end = find_section_end(lines, start, list.length(lines))
+    _ -> {
+      let remaining = list.drop(lines, start + 1)
+      let end = find_section_end_loop(remaining, start + 1, start, total)
       SelectionRange(
         start,
         trimmed_start_col(lines, start),
@@ -177,11 +188,11 @@ fn find_enclosing_section(
   }
 }
 
-fn find_section_start_loop(lines: List(String), idx: Int) -> Int {
-  use <- bool.guard(idx < 0, -1)
-  case list.drop(lines, idx) {
+/// Walk backwards (via reversed list) to find the enclosing section start.
+fn find_section_start_loop(reversed: List(String), idx: Int) -> Int {
+  case reversed {
     [] -> -1
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim(line)
       use <- bool.guard(
         string.starts_with(trimmed, "Requires")
@@ -189,62 +200,55 @@ fn find_section_start_loop(lines: List(String), idx: Int) -> Int {
         idx,
       )
       use <- bool.guard(string.starts_with(trimmed, "* \""), -1)
-      find_section_start_loop(lines, idx - 1)
+      find_section_start_loop(rest, idx - 1)
     }
   }
 }
 
-fn find_section_end(lines: List(String), start: Int, total: Int) -> Int {
-  find_section_end_loop(lines, start + 1, start, total)
-}
-
+/// Walk forward to find the end of a section.
 fn find_section_end_loop(
-  lines: List(String),
+  remaining: List(String),
   idx: Int,
   last_non_blank: Int,
   total: Int,
 ) -> Int {
   use <- bool.guard(idx >= total, last_non_blank)
-  case list.drop(lines, idx) {
+  case remaining {
     [] -> last_non_blank
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim(line)
       case trimmed {
-        "" -> find_section_end_loop(lines, idx + 1, last_non_blank, total)
+        "" -> find_section_end_loop(rest, idx + 1, last_non_blank, total)
         _ -> {
           let indent =
             string.length(line) - string.length(string.trim_start(line))
           use <- bool.guard(indent <= 4, last_non_blank)
-          find_section_end_loop(lines, idx + 1, idx, total)
+          find_section_end_loop(rest, idx + 1, idx, total)
         }
       }
     }
   }
 }
 
-fn find_block_end(lines: List(String), start: Int) -> Int {
-  let total = list.length(lines)
-  find_block_end_loop(lines, start + 1, start, total)
-}
-
+/// Walk forward to find the end of a top-level block.
 fn find_block_end_loop(
-  lines: List(String),
+  remaining: List(String),
   idx: Int,
   last_non_blank: Int,
   total: Int,
 ) -> Int {
   use <- bool.guard(idx >= total, last_non_blank)
-  case list.drop(lines, idx) {
+  case remaining {
     [] -> last_non_blank
-    [line, ..] -> {
+    [line, ..rest] -> {
       let trimmed = string.trim(line)
       case trimmed {
-        "" -> find_block_end_loop(lines, idx + 1, last_non_blank, total)
+        "" -> find_block_end_loop(rest, idx + 1, last_non_blank, total)
         _ -> {
           let indent =
             string.length(line) - string.length(string.trim_start(line))
           use <- bool.guard(indent == 0, last_non_blank)
-          find_block_end_loop(lines, idx + 1, idx, total)
+          find_block_end_loop(rest, idx + 1, idx, total)
         }
       }
     }

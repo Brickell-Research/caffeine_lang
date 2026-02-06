@@ -106,28 +106,45 @@ connection.onInitialize(() => {
 
 // --- Diagnostics ---
 
+const diagnosticTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 documents.onDidChangeContent((change) => {
-  const text = change.document.getText();
   const uri = change.document.uri;
 
-  try {
-    const diags = gleamArray(get_diagnostics(text) as GleamList);
-    connection.sendDiagnostics({
-      uri,
-      diagnostics: diags.map((d) => {
-        const codeStr = diagnostic_code_to_string(d.code);
-        const base = {
-          range: range(d.line, d.column, d.line, d.end_column),
-          severity: d.severity as DiagnosticSeverity,
-          source: "caffeine",
-          message: d.message,
-        };
-        return codeStr instanceof Some ? { ...base, code: codeStr[0] } : base;
-      }),
-    });
-  } catch {
-    connection.sendDiagnostics({ uri, diagnostics: [] });
-  }
+  // Debounce diagnostics to avoid running the full pipeline on every keystroke
+  const existing = diagnosticTimers.get(uri);
+  if (existing) clearTimeout(existing);
+
+  diagnosticTimers.set(
+    uri,
+    setTimeout(() => {
+      diagnosticTimers.delete(uri);
+      const doc = documents.get(uri);
+      if (!doc) return;
+      const text = doc.getText();
+
+      try {
+        const diags = gleamArray(get_diagnostics(text) as GleamList);
+        connection.sendDiagnostics({
+          uri,
+          diagnostics: diags.map((d) => {
+            const codeStr = diagnostic_code_to_string(d.code);
+            const base = {
+              range: range(d.line, d.column, d.line, d.end_column),
+              severity: d.severity as DiagnosticSeverity,
+              source: "caffeine",
+              message: d.message,
+            };
+            return codeStr instanceof Some
+              ? { ...base, code: codeStr[0] }
+              : base;
+          }),
+        });
+      } catch {
+        connection.sendDiagnostics({ uri, diagnostics: [] });
+      }
+    }, 300),
+  );
 });
 
 // --- Hover ---

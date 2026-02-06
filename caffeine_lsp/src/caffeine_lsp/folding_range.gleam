@@ -24,13 +24,17 @@ fn scan_ranges(
     [#(idx, line), ..rest] -> {
       let trimmed = string.trim_start(line)
       let indent = string.length(line) - string.length(trimmed)
-      use <- bool.guard(
-        !is_foldable_start(trimmed, indent),
-        scan_ranges(rest, acc),
-      )
-      let end = find_block_end(rest, indent)
-      use <- bool.guard(end <= idx, scan_ranges(rest, acc))
-      scan_ranges(rest, [FoldingRange(idx, end), ..acc])
+      case is_foldable_start(trimmed, indent) {
+        False -> scan_ranges(rest, acc)
+        True -> {
+          let end = find_block_end(rest, indent)
+          case end <= idx {
+            True -> scan_ranges(rest, acc)
+            False ->
+              scan_ranges(rest, [FoldingRange(idx, end), ..acc])
+          }
+        }
+      }
     }
   }
 }

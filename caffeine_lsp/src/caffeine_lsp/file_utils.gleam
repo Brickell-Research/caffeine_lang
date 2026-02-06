@@ -1,7 +1,6 @@
 import caffeine_lang/frontend/ast.{type BlueprintsFile, type ExpectsFile}
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
-import gleam/list
 import gleam/string
 
 /// Result of detecting and parsing a caffeine file.
@@ -10,12 +9,14 @@ pub type ParsedFile {
   Expects(ExpectsFile)
 }
 
-/// Check whether a name is a user-defined symbol in the parsed file.
+/// Check whether a name is likely a user-defined symbol using a fast text scan.
+/// Avoids a full parse by checking for definition patterns in the source text.
 pub fn is_defined_symbol(content: String, name: String) -> Bool {
-  case parse(content) {
-    Ok(Blueprints(file)) -> is_blueprints_symbol(file, name)
-    Ok(Expects(file)) -> is_expects_symbol(file, name)
-    Error(_) -> False
+  case string.starts_with(name, "_") {
+    // Extendables and type aliases start with _ and appear as "_name ("
+    True -> string.contains(content, name <> " (")
+    // Item names appear as * "name"
+    False -> string.contains(content, "* \"" <> name <> "\"")
   }
 }
 
@@ -44,25 +45,3 @@ pub fn parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError))
   }
 }
 
-fn is_blueprints_symbol(file: BlueprintsFile, name: String) -> Bool {
-  let all_names =
-    list.flatten([
-      list.map(file.type_aliases, fn(ta) { ta.name }),
-      list.map(file.extendables, fn(e) { e.name }),
-      list.flat_map(file.blocks, fn(b) {
-        list.map(b.items, fn(item) { item.name })
-      }),
-    ])
-  list.any(all_names, fn(n) { n == name })
-}
-
-fn is_expects_symbol(file: ExpectsFile, name: String) -> Bool {
-  let all_names =
-    list.flatten([
-      list.map(file.extendables, fn(e) { e.name }),
-      list.flat_map(file.blocks, fn(b) {
-        list.map(b.items, fn(item) { item.name })
-      }),
-    ])
-  list.any(all_names, fn(n) { n == name })
-}

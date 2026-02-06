@@ -20,12 +20,14 @@ pub fn get_completions(
   line: Int,
   character: Int,
 ) -> List(CompletionItem) {
-  let context = get_context(content, line, character)
+  // Parse once and reuse across all completion paths.
+  let parsed = file_utils.parse(content)
+  let context = get_context(content, parsed, line, character)
   case context {
-    ExtendsContext(used) -> extends_completions(content, used)
-    TypeContext -> type_completions(content)
+    ExtendsContext(used) -> extends_completions(content, parsed, used)
+    TypeContext -> type_completions(parsed)
     FieldContext(fields) -> field_completions(fields)
-    GeneralContext -> general_completions(content)
+    GeneralContext -> general_completions(parsed)
   }
 }
 
@@ -38,7 +40,12 @@ type CompletionContext {
   GeneralContext
 }
 
-fn get_context(content: String, line: Int, character: Int) -> CompletionContext {
+fn get_context(
+  content: String,
+  parsed: Result(file_utils.ParsedFile, a),
+  line: Int,
+  character: Int,
+) -> CompletionContext {
   let lines = string.split(content, "\n")
   case list.drop(lines, line) {
     [line_text, ..] -> {
@@ -49,7 +56,7 @@ fn get_context(content: String, line: Int, character: Int) -> CompletionContext 
         ExtendsContext(already_used: extract_used_extends(trimmed)),
       )
       use <- bool.guard(is_type_context(trimmed), TypeContext)
-      case get_field_context(content, lines, line) {
+      case get_field_context(parsed, lines, line) {
         option.Some(fields) -> FieldContext(fields)
         option.None -> GeneralContext
       }
@@ -83,14 +90,14 @@ fn extract_used_extends(before: String) -> List(String) {
 /// Detect if we're inside a Requires/Provides block and suggest fields
 /// from extendables that haven't been defined yet.
 fn get_field_context(
-  content: String,
+  parsed: Result(file_utils.ParsedFile, a),
   lines: List(String),
   line: Int,
 ) -> option.Option(List(#(String, String))) {
   case find_enclosing_item(lines, line) {
     option.None -> option.None
     option.Some(item_name) ->
-      case file_utils.parse(content) {
+      case parsed {
         Ok(file_utils.Blueprints(file)) ->
           blueprint_field_context(file, item_name, lines, line)
         Ok(file_utils.Expects(file)) ->
@@ -102,24 +109,23 @@ fn get_field_context(
 
 /// Walk backwards from the cursor line to find the enclosing item name.
 fn find_enclosing_item(lines: List(String), line: Int) -> option.Option(String) {
-  find_enclosing_item_loop(lines, line)
+  // Take lines up to and including the cursor line, then reverse to walk backwards.
+  let prefix = list.take(lines, line + 1) |> list.reverse
+  find_enclosing_item_loop(prefix)
 }
 
 fn find_enclosing_item_loop(
   lines: List(String),
-  idx: Int,
 ) -> option.Option(String) {
-  use <- bool.guard(idx < 0, option.None)
-  case list.drop(lines, idx) {
-    [line_text, ..] -> {
-      let trimmed = string.trim(line_text)
-      use <- bool.guard(
-        string.starts_with(trimmed, "* \""),
-        extract_item_name(trimmed),
-      )
-      find_enclosing_item_loop(lines, idx - 1)
-    }
+  case lines {
     [] -> option.None
+    [line_text, ..rest] -> {
+      let trimmed = string.trim(line_text)
+      case string.starts_with(trimmed, "* \"") {
+        True -> extract_item_name(trimmed)
+        False -> find_enclosing_item_loop(rest)
+      }
+    }
   }
 }
 
@@ -163,8 +169,8 @@ fn blueprint_field_context(
 fn expects_field_context(
   file: ast.ExpectsFile,
   item_name: String,
-  lines: List(String),
-  line: Int,
+  _lines: List(String),
+  _line: Int,
 ) -> option.Option(List(#(String, String))) {
   let item =
     list.flat_map(file.blocks, fn(b) { b.items })
@@ -174,7 +180,7 @@ fn expects_field_context(
     Ok(item) -> {
       let extended_fields =
         collect_extended_fields(item.extends, file.extendables)
-      let existing = existing_provides_fields(lines, line, item.provides)
+      let existing = existing_provides_fields(item.provides)
       let available =
         list.filter(extended_fields, fn(f) { !list.contains(existing, f.0) })
       case available {
@@ -215,29 +221,26 @@ fn existing_field_names_for_section(
 
 /// Check if the cursor line is inside a Requires section by walking backwards.
 fn is_in_requires_section(lines: List(String), line: Int) -> Bool {
-  is_in_requires_loop(lines, line)
+  // Take lines up to and including the cursor line, then reverse to walk backwards.
+  let prefix = list.take(lines, line + 1) |> list.reverse
+  is_in_requires_loop(prefix)
 }
 
-fn is_in_requires_loop(lines: List(String), idx: Int) -> Bool {
-  use <- bool.guard(idx < 0, False)
-  case list.drop(lines, idx) {
-    [line_text, ..] -> {
+fn is_in_requires_loop(lines: List(String)) -> Bool {
+  case lines {
+    [] -> False
+    [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
       use <- bool.guard(string.starts_with(trimmed, "Requires"), True)
       use <- bool.guard(string.starts_with(trimmed, "Provides"), False)
       use <- bool.guard(string.starts_with(trimmed, "* \""), False)
-      is_in_requires_loop(lines, idx - 1)
+      is_in_requires_loop(rest)
     }
-    [] -> False
   }
 }
 
 /// Get existing provides field names for expects items.
-fn existing_provides_fields(
-  _lines: List(String),
-  _line: Int,
-  provides: ast.Struct,
-) -> List(String) {
+fn existing_provides_fields(provides: ast.Struct) -> List(String) {
   list.map(provides.fields, fn(f) { f.name })
 }
 
@@ -245,17 +248,20 @@ fn existing_provides_fields(
 
 fn extends_completions(
   content: String,
+  parsed: Result(file_utils.ParsedFile, a),
   already_used: List(String),
 ) -> List(CompletionItem) {
-  extendable_items(content)
+  extendable_items(content, parsed)
   |> list.filter(fn(item) { !list.contains(already_used, item.label) })
 }
 
-fn type_completions(content: String) -> List(CompletionItem) {
+fn type_completions(
+  parsed: Result(file_utils.ParsedFile, a),
+) -> List(CompletionItem) {
   let type_items = type_meta_items()
 
   // Also add type aliases from the file
-  let alias_items = case file_utils.parse(content) {
+  let alias_items = case parsed {
     Ok(file_utils.Blueprints(file)) -> type_alias_items(file.type_aliases)
     _ -> []
   }
@@ -269,12 +275,14 @@ fn field_completions(fields: List(#(String, String))) -> List(CompletionItem) {
   })
 }
 
-fn general_completions(content: String) -> List(CompletionItem) {
+fn general_completions(
+  parsed: Result(file_utils.ParsedFile, a),
+) -> List(CompletionItem) {
   let kw_items = keyword_items()
   let t_items = type_meta_items()
 
   // Add extendable and type alias names from file
-  let file_items = case file_utils.parse(content) {
+  let file_items = case parsed {
     Ok(file_utils.Blueprints(file)) ->
       list.flatten([
         extendable_items_from_list(file.extendables),
@@ -313,13 +321,50 @@ fn type_meta_items() -> List(CompletionItem) {
   })
 }
 
-fn extendable_items(content: String) -> List(CompletionItem) {
-  case file_utils.parse(content) {
+/// Get extendable completion items. Falls back to text-based extraction
+/// when the file cannot be parsed (e.g. user is mid-edit).
+fn extendable_items(
+  content: String,
+  parsed: Result(file_utils.ParsedFile, a),
+) -> List(CompletionItem) {
+  case parsed {
     Ok(file_utils.Blueprints(file)) ->
       extendable_items_from_list(file.extendables)
     Ok(file_utils.Expects(file)) -> extendable_items_from_list(file.extendables)
-    Error(_) -> []
+    Error(_) -> extract_extendable_names_from_text(content)
   }
+}
+
+/// Extract extendable names from raw text when parsing fails.
+/// Scans for lines matching `_name (Provides|Requires):` at indent 0.
+fn extract_extendable_names_from_text(
+  content: String,
+) -> List(CompletionItem) {
+  string.split(content, "\n")
+  |> list.filter_map(fn(line) {
+    let trimmed = string.trim_start(line)
+    let indent = string.length(line) - string.length(trimmed)
+    case indent == 0 && string.starts_with(trimmed, "_") {
+      False -> Error(Nil)
+      True ->
+        case string.split_once(trimmed, " (") {
+          Error(_) -> Error(Nil)
+          Ok(#(name, rest)) ->
+            case
+              string.starts_with(rest, "Provides)")
+              || string.starts_with(rest, "Requires)")
+            {
+              False -> Error(Nil)
+              True ->
+                Ok(CompletionItem(
+                  name,
+                  lsp_types.completion_item_kind_to_int(CikVariable),
+                  "extendable",
+                ))
+            }
+        }
+    }
+  })
 }
 
 fn extendable_items_from_list(
