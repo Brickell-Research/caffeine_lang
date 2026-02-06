@@ -722,6 +722,20 @@ pub fn find_name_position_not_found_test() {
   |> should.equal(#(0, 0))
 }
 
+pub fn find_name_position_empty_name_test() {
+  let content = "Expectations for \"\"\n  * \"slo\":\n    Provides { x: true }"
+  // Empty name must not hang (JS target: split_once matches empty string at pos 0)
+  position_utils.find_name_position(content, "")
+  |> should.equal(#(0, 0))
+}
+
+pub fn find_all_name_positions_empty_name_test() {
+  let content = "hello world"
+  // Empty name must not hang
+  position_utils.find_all_name_positions(content, "")
+  |> should.equal([])
+}
+
 pub fn extract_word_at_valid_test() {
   let content = "hello world\nfoo bar_baz"
   position_utils.extract_word_at(content, 0, 0)

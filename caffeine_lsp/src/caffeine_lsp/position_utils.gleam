@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/string
 
@@ -185,6 +186,9 @@ fn find_in_lines(
 /// Search for `name` as a whole word within `line`, starting from `offset`.
 /// Returns Ok(column) on match, Error(Nil) if not found.
 fn find_whole_word(line: String, name: String, offset: Int) -> Result(Int, Nil) {
+  // Guard against empty name: on JS target, split_once("...", "") matches at
+  // position 0 with skip=0, causing an infinite loop.
+  use <- bool.guard(when: name == "", return: Error(Nil))
   case string.split_once(line, name) {
     Error(_) -> Error(Nil)
     Ok(#(before, after)) -> {
