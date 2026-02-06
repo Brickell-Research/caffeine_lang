@@ -9,8 +9,7 @@ pub type FoldingRange {
 /// Compute folding ranges from source content using indentation-based scanning.
 pub fn get_folding_ranges(content: String) -> List(FoldingRange) {
   let lines = string.split(content, "\n")
-  let indexed =
-    list.index_map(lines, fn(line, idx) { #(idx, line) })
+  let indexed = list.index_map(lines, fn(line, idx) { #(idx, line) })
   scan_ranges(indexed, [])
   |> list.reverse
 }
@@ -59,10 +58,7 @@ fn is_foldable_start(trimmed: String, indent: Int) -> Bool {
 }
 
 /// Find the last non-blank line before we hit a sibling or parent indent, or EOF.
-fn find_block_end(
-  lines: List(#(Int, String)),
-  parent_indent: Int,
-) -> Int {
+fn find_block_end(lines: List(#(Int, String)), parent_indent: Int) -> Int {
   find_block_end_loop(lines, parent_indent, -1)
 }
 
@@ -78,7 +74,8 @@ fn find_block_end_loop(
       case trimmed {
         "" -> find_block_end_loop(rest, parent_indent, last_non_blank)
         _ -> {
-          let indent = string.length(line) - string.length(string.trim_start(line))
+          let indent =
+            string.length(line) - string.length(string.trim_start(line))
           case indent <= parent_indent {
             // Hit a sibling or parent — stop
             True -> last_non_blank

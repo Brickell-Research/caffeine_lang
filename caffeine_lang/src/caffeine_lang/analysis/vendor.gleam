@@ -4,6 +4,7 @@ import caffeine_lang/constants
 pub type Vendor {
   Datadog
   Honeycomb
+  Dynatrace
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
@@ -13,6 +14,7 @@ pub fn resolve_vendor(vendor: String) -> Result(Vendor, Nil) {
   case vendor {
     v if v == constants.vendor_datadog -> Ok(Datadog)
     v if v == constants.vendor_honeycomb -> Ok(Honeycomb)
+    v if v == constants.vendor_dynatrace -> Ok(Dynatrace)
     _ -> Error(Nil)
   }
 }

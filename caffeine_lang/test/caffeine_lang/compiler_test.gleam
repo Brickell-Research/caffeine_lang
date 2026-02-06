@@ -481,3 +481,134 @@ Expectations for \"hc_blueprint\"
     }
   })
 }
+
+// ==== compile_from_strings (Dynatrace) ====
+// * ✅ happy path - single Dynatrace SLO
+// * ✅ happy path - mixed vendors (Datadog + Dynatrace)
+// * ✅ sad path   - Dynatrace with invalid window (out of 1-90 range)
+pub fn compile_from_strings_dynatrace_test() {
+  [
+    // happy path - single Dynatrace SLO
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"dynatrace_availability\":
+    Requires {}
+    Provides {
+      vendor: \"dynatrace\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"builtin:service.requestCount.server:splitBy()\"
+      }
+    }
+",
+        "Expectations for \"dynatrace_availability\"
+  * \"api_success_rate\":
+    Provides {
+      threshold: 99.5,
+      window_in_days: 30
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "dynatrace_slo_v2",
+          "api_success_rate",
+          "var.dynatrace_env_url",
+          "var.dynatrace_api_token",
+          "evaluation_window = \"-30d\"",
+          "target_success = 99.5",
+          "evaluation_type = \"AGGREGATE\"",
+        ],
+      ),
+      True,
+    ),
+    // happy path - mixed vendors (Datadog + Dynatrace)
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+  * \"dt_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"dynatrace\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"builtin:service.requestCount.server:splitBy()\"
+      }
+    }
+",
+        "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9,
+      window_in_days: 30
+    }
+
+Expectations for \"dt_blueprint\"
+  * \"dt_slo\":
+    Provides {
+      threshold: 99.5,
+      window_in_days: 14
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "datadog_service_level_objective",
+          "dynatrace_slo_v2",
+          "var.datadog_api_key",
+          "var.dynatrace_api_token",
+        ],
+      ),
+      True,
+    ),
+    // sad path - Dynatrace with invalid window (out of 1-90 range)
+    #(
+      #(
+        "Blueprints for \"SLO\"
+  * \"dt_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"dynatrace\",
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"builtin:service.requestCount.server:splitBy()\"
+      }
+    }
+",
+        "Expectations for \"dt_blueprint\"
+  * \"dt_slo\":
+    Provides {
+      threshold: 99.5,
+      window_in_days: 91
+    }
+",
+        "acme/platform/payments.caffeine",
+        [],
+      ),
+      False,
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let result =
+      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+    case expected_substrings {
+      [] ->
+        case result {
+          Ok(_) -> True
+          Error(_) -> False
+        }
+      _ -> contains_all_substrings(result, expected_substrings)
+    }
+  })
+}

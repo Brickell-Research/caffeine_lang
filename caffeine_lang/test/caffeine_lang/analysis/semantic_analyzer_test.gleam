@@ -977,6 +977,174 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
   )
 }
 
+// ==== resolve_vendor ====
+// * ✅ happy path - known vendor, Dynatrace
+pub fn resolve_vendor_dynatrace_test() {
+  [
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "Foo SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "foo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_dynatrace),
+          ),
+        ],
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.NoVendor,
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "Foo SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "foo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_dynatrace),
+          ),
+        ],
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Dynatrace),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(semantic_analyzer.resolve_vendor)
+}
+
+// ==== resolve_indicators ====
+// * ✅ happy path - Dynatrace indicators pass through without template resolution
+pub fn resolve_indicators_dynatrace_passthrough_test() {
+  [
+    #(
+      semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "DT SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "dt_slo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_dynatrace),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            types.CollectionType(types.Dict(
+              types.PrimitiveType(types.String),
+              types.PrimitiveType(types.String),
+            )),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "sli",
+                  value.StringValue(
+                    "builtin:service.requestCount.server:splitBy()",
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Dynatrace),
+      ),
+      Ok(semantic_analyzer.IntermediateRepresentation(
+        metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+          friendly_label: "DT SLO",
+          org_name: "test",
+          service_name: "service",
+          blueprint_name: "test_blueprint",
+          team_name: "test_team",
+          misc: dict.new(),
+        ),
+        unique_identifier: "dt_slo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_dynatrace),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            types.CollectionType(types.Dict(
+              types.PrimitiveType(types.String),
+              types.PrimitiveType(types.String),
+            )),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "sli",
+                  value.StringValue(
+                    "builtin:service.requestCount.server:splitBy()",
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: semantic_analyzer.ResolvedVendor(vendor.Dynatrace),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(
+    semantic_analyzer.resolve_indicators,
+  )
+}
+
 // ==== resolve_intermediate_representations ====
 // * ✅ happy path - mixed vendors (Datadog + Honeycomb) resolves both correctly
 pub fn resolve_intermediate_representations_mixed_vendor_test() {

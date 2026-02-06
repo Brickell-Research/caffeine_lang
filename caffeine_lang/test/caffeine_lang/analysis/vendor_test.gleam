@@ -9,6 +9,7 @@ pub fn resolve_vendor_test() {
   [
     #(constants.vendor_datadog, Ok(vendor.Datadog)),
     #(constants.vendor_honeycomb, Ok(vendor.Honeycomb)),
+    #(constants.vendor_dynatrace, Ok(vendor.Dynatrace)),
     #("unknown_vendor", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(vendor.resolve_vendor)

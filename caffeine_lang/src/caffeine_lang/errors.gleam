@@ -23,6 +23,7 @@ pub type CompilationError {
   GeneratorSloQueryResolutionError(msg: String)
   GeneratorDatadogTerraformResolutionError(msg: String)
   GeneratorHoneycombTerraformResolutionError(msg: String)
+  GeneratorDynatraceTerraformResolutionError(msg: String)
   // Caffeine Query Language (CQL)
   CQLResolverError(msg: String)
   CQLParserError(msg: String)
@@ -56,6 +57,8 @@ pub fn prefix_error(
       GeneratorDatadogTerraformResolutionError(msg: prefix <> msg)
     GeneratorHoneycombTerraformResolutionError(msg:) ->
       GeneratorHoneycombTerraformResolutionError(msg: prefix <> msg)
+    GeneratorDynatraceTerraformResolutionError(msg:) ->
+      GeneratorDynatraceTerraformResolutionError(msg: prefix <> msg)
     CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
     CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
   }

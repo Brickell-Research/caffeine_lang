@@ -5,6 +5,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
+import caffeine_lang/codegen/dynatrace
 import caffeine_lang/codegen/honeycomb
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
@@ -108,15 +109,29 @@ fn honeycomb_ops() -> VendorOps {
   )
 }
 
+fn dynatrace_ops() -> VendorOps {
+  VendorOps(
+    generate_resources: fn(irs) {
+      dynatrace.generate_resources(irs)
+      |> result.map(fn(r) { #(r, []) })
+    },
+    terraform_settings: dynatrace.terraform_settings(),
+    provider: dynatrace.provider(),
+    variables: dynatrace.variables(),
+  )
+}
+
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  let #(datadog_irs, honeycomb_irs) = group_by_vendor(resolved_irs)
+  let #(datadog_irs, honeycomb_irs, dynatrace_irs) =
+    group_by_vendor(resolved_irs)
 
   // Build vendor groups, defaulting to Datadog boilerplate if no IRs at all.
   let vendor_groups = [
     #(datadog_ops(), datadog_irs),
     #(honeycomb_ops(), honeycomb_irs),
+    #(dynatrace_ops(), dynatrace_irs),
   ]
   let active_groups = list.filter(vendor_groups, fn(g) { !list.is_empty(g.1) })
   let active_groups = case list.is_empty(active_groups) {
@@ -186,17 +201,24 @@ fn run_code_generation(
   ))
 }
 
-/// Group IRs by vendor into (datadog, honeycomb) lists.
+/// Group IRs by vendor into (datadog, honeycomb, dynatrace) lists.
 fn group_by_vendor(
   irs: List(IntermediateRepresentation),
-) -> #(List(IntermediateRepresentation), List(IntermediateRepresentation)) {
+) -> #(
+  List(IntermediateRepresentation),
+  List(IntermediateRepresentation),
+  List(IntermediateRepresentation),
+) {
   let datadog_irs =
     irs
     |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Datadog) })
   let honeycomb_irs =
     irs
     |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Honeycomb) })
-  #(datadog_irs, honeycomb_irs)
+  let dynatrace_irs =
+    irs
+    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Dynatrace) })
+  #(datadog_irs, honeycomb_irs, dynatrace_irs)
 }
 
 fn parse_from_strings(

@@ -91,10 +91,7 @@ fn get_field_context(
 }
 
 /// Walk backwards from the cursor line to find the enclosing item name.
-fn find_enclosing_item(
-  lines: List(String),
-  line: Int,
-) -> option.Option(String) {
+fn find_enclosing_item(lines: List(String), line: Int) -> option.Option(String) {
   find_enclosing_item_loop(lines, line)
 }
 
@@ -145,9 +142,7 @@ fn blueprint_field_context(
         collect_extended_fields(item.extends, file.extendables)
       let existing = existing_field_names_for_section(lines, line, item)
       let available =
-        list.filter(extended_fields, fn(f) {
-          !list.contains(existing, f.0)
-        })
+        list.filter(extended_fields, fn(f) { !list.contains(existing, f.0) })
       case available {
         [] -> option.None
         _ -> option.Some(available)
@@ -173,9 +168,7 @@ fn expects_field_context(
         collect_extended_fields(item.extends, file.extendables)
       let existing = existing_provides_fields(lines, line, item.provides)
       let available =
-        list.filter(extended_fields, fn(f) {
-          !list.contains(existing, f.0)
-        })
+        list.filter(extended_fields, fn(f) { !list.contains(existing, f.0) })
       case available {
         [] -> option.None
         _ -> option.Some(available)

@@ -68,7 +68,11 @@ fn slo_artifact() -> Artifact {
         ParamInfo(
           type_: RefinementType(OneOf(
             PrimitiveType(StringType),
-            set.from_list([constants.vendor_datadog, constants.vendor_honeycomb]),
+            set.from_list([
+              constants.vendor_datadog,
+              constants.vendor_honeycomb,
+              constants.vendor_dynatrace,
+            ]),
           )),
           description: "Observability platform",
         ),
