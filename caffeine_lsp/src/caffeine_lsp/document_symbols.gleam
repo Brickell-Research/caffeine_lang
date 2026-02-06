@@ -26,49 +26,50 @@ pub type DocumentSymbol {
 
 /// Analyze source text and return document symbols for the outline.
 pub fn get_symbols(content: String) -> List(DocumentSymbol) {
+  let lines = string.split(content, "\n")
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> blueprints_file_symbols(file, content)
-    Ok(file_utils.Expects(file)) -> expects_file_symbols(file, content)
+    Ok(file_utils.Blueprints(file)) -> blueprints_file_symbols(file, lines)
+    Ok(file_utils.Expects(file)) -> expects_file_symbols(file, lines)
     Error(_) -> []
   }
 }
 
 fn blueprints_file_symbols(
   file: BlueprintsFile,
-  content: String,
+  lines: List(String),
 ) -> List(DocumentSymbol) {
   let alias_syms =
-    list.map(file.type_aliases, fn(ta) { type_alias_symbol(ta, content) })
+    list.map(file.type_aliases, fn(ta) { type_alias_symbol(ta, lines) })
   let ext_syms =
-    list.map(file.extendables, fn(e) { extendable_symbol(e, content) })
+    list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let block_syms =
     list.map(file.blocks, fn(b) {
       let name = "Blueprints for " <> string.join(b.artifacts, ", ")
       let children =
-        list.map(b.items, fn(item) { blueprint_item_symbol(item, content) })
-      block_symbol(name, content, children)
+        list.map(b.items, fn(item) { blueprint_item_symbol(item, lines) })
+      block_symbol(name, lines, children)
     })
   list.flatten([alias_syms, ext_syms, block_syms])
 }
 
 fn expects_file_symbols(
   file: ExpectsFile,
-  content: String,
+  lines: List(String),
 ) -> List(DocumentSymbol) {
   let ext_syms =
-    list.map(file.extendables, fn(e) { extendable_symbol(e, content) })
+    list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let block_syms =
     list.map(file.blocks, fn(b) {
       let name = "Expectations for " <> b.blueprint
       let children =
-        list.map(b.items, fn(item) { expect_item_symbol(item, content) })
-      block_symbol(name, content, children)
+        list.map(b.items, fn(item) { expect_item_symbol(item, lines) })
+      block_symbol(name, lines, children)
     })
   list.flatten([ext_syms, block_syms])
 }
 
-fn type_alias_symbol(ta: TypeAlias, content: String) -> DocumentSymbol {
-  let #(line, col) = position_utils.find_name_position(content, ta.name)
+fn type_alias_symbol(ta: TypeAlias, lines: List(String)) -> DocumentSymbol {
+  let #(line, col) = position_utils.find_name_position_in_lines(lines, ta.name)
   let detail = types.parsed_type_to_string(ta.type_)
   DocumentSymbol(
     ta.name,
@@ -81,8 +82,8 @@ fn type_alias_symbol(ta: TypeAlias, content: String) -> DocumentSymbol {
   )
 }
 
-fn extendable_symbol(ext: Extendable, content: String) -> DocumentSymbol {
-  let #(line, col) = position_utils.find_name_position(content, ext.name)
+fn extendable_symbol(ext: Extendable, lines: List(String)) -> DocumentSymbol {
+  let #(line, col) = position_utils.find_name_position_in_lines(lines, ext.name)
   let detail = ast.extendable_kind_to_string(ext.kind)
   DocumentSymbol(
     ext.name,
@@ -97,7 +98,7 @@ fn extendable_symbol(ext: Extendable, content: String) -> DocumentSymbol {
 
 fn block_symbol(
   name: String,
-  content: String,
+  lines: List(String),
   children: List(DocumentSymbol),
 ) -> DocumentSymbol {
   // For blocks, search for a keyword that starts the block
@@ -105,7 +106,7 @@ fn block_symbol(
     True -> "Blueprints"
     False -> "Expectations"
   }
-  let #(line, col) = position_utils.find_name_position(content, search)
+  let #(line, col) = position_utils.find_name_position_in_lines(lines, search)
   DocumentSymbol(
     name,
     "",
@@ -117,12 +118,16 @@ fn block_symbol(
   )
 }
 
-fn blueprint_item_symbol(item: BlueprintItem, content: String) -> DocumentSymbol {
-  let #(line, col) = position_utils.find_name_position(content, item.name)
+fn blueprint_item_symbol(
+  item: BlueprintItem,
+  lines: List(String),
+) -> DocumentSymbol {
+  let #(line, col) =
+    position_utils.find_name_position_in_lines(lines, item.name)
   let req_fields =
-    list.map(item.requires.fields, fn(f) { field_symbol(f, content) })
+    list.map(item.requires.fields, fn(f) { field_symbol(f, lines) })
   let prov_fields =
-    list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
+    list.map(item.provides.fields, fn(f) { field_symbol(f, lines) })
   let children = list.flatten([req_fields, prov_fields])
   DocumentSymbol(
     item.name,
@@ -135,10 +140,11 @@ fn blueprint_item_symbol(item: BlueprintItem, content: String) -> DocumentSymbol
   )
 }
 
-fn expect_item_symbol(item: ExpectItem, content: String) -> DocumentSymbol {
-  let #(line, col) = position_utils.find_name_position(content, item.name)
+fn expect_item_symbol(item: ExpectItem, lines: List(String)) -> DocumentSymbol {
+  let #(line, col) =
+    position_utils.find_name_position_in_lines(lines, item.name)
   let children =
-    list.map(item.provides.fields, fn(f) { field_symbol(f, content) })
+    list.map(item.provides.fields, fn(f) { field_symbol(f, lines) })
   DocumentSymbol(
     item.name,
     "",
@@ -150,8 +156,9 @@ fn expect_item_symbol(item: ExpectItem, content: String) -> DocumentSymbol {
   )
 }
 
-fn field_symbol(field: Field, content: String) -> DocumentSymbol {
-  let #(line, col) = position_utils.find_name_position(content, field.name)
+fn field_symbol(field: Field, lines: List(String)) -> DocumentSymbol {
+  let #(line, col) =
+    position_utils.find_name_position_in_lines(lines, field.name)
   let detail = ast.value_to_string(field.value)
   DocumentSymbol(
     field.name,

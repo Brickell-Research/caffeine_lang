@@ -14,9 +14,8 @@ pub fn generate(irs: List(IntermediateRepresentation)) -> String {
   let subgraphs = build_subgraphs(irs)
   let edges = build_edges(irs)
 
-  ["graph TD"]
-  |> list.append(subgraphs)
-  |> list.append(edges)
+  [["graph TD"], subgraphs, edges]
+  |> list.flatten
   |> string.join("\n")
 }
 

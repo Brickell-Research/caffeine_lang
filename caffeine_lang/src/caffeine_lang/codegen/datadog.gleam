@@ -50,8 +50,9 @@ pub fn generate_resources(
   |> list.try_fold(#([], []), fn(acc, ir) {
     let #(resources, warnings) = acc
     use #(resource, ir_warnings) <- result.try(ir_to_terraform_resource(ir))
-    Ok(#(list.append(resources, [resource]), list.append(warnings, ir_warnings)))
+    Ok(#([resource, ..resources], list.append(ir_warnings, warnings)))
   })
+  |> result.map(fn(pair) { #(list.reverse(pair.0), list.reverse(pair.1)) })
 }
 
 /// Terraform settings block with required Datadog provider.

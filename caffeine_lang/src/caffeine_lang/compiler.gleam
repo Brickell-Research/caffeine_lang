@@ -143,6 +143,8 @@ fn run_code_generation(
   }
 
   // Generate resources and accumulate config from all active vendors.
+  // Note: active_groups has at most 3 elements (one per vendor), so the
+  // list.append calls here are bounded and not a performance concern.
   use #(all_resources, all_warnings, required_providers, providers, variables) <- result.try(
     list.try_fold(active_groups, #([], [], [], [], []), fn(acc, group) {
       let #(ops, irs) = group
@@ -211,10 +213,7 @@ fn run_code_generation(
     [] -> boilerplate
     sections -> {
       let trimmed_boilerplate = string.drop_end(boilerplate, 1)
-      trimmed_boilerplate
-      <> "\n\n"
-      <> string.join(sections, "\n\n")
-      <> "\n"
+      trimmed_boilerplate <> "\n\n" <> string.join(sections, "\n\n") <> "\n"
     }
   }
 

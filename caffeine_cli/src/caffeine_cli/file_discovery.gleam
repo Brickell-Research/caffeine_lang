@@ -85,11 +85,12 @@ fn collect_caffeine_files_from_subdirectory(
         use files_in_nested <- result.try(read_directory_or_error(nested_path))
         let caffeine_files =
           extract_caffeine_files_with_full_paths(files_in_nested, nested_path)
-        Ok(list.append(acc, caffeine_files))
+        Ok(list.append(caffeine_files, acc))
       }
       _ -> Ok(acc)
     }
   })
+  |> result.map(list.reverse)
 }
 
 fn extract_caffeine_files_with_full_paths(
@@ -121,15 +122,16 @@ fn discover_in_directory(dir: String) -> Result(List(String), String) {
     case simplifile.is_directory(full_path) {
       Ok(True) -> {
         use nested <- result.try(discover_in_directory(full_path))
-        Ok(list.append(acc, nested))
+        Ok(list.append(nested, acc))
       }
       _ -> {
         use <- bool.guard(
           string.ends_with(entry, ".caffeine"),
-          Ok(list.append(acc, [full_path])),
+          Ok([full_path, ..acc]),
         )
         Ok(acc)
       }
     }
   })
+  |> result.map(list.reverse)
 }

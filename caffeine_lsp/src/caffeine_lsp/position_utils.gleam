@@ -8,6 +8,17 @@ pub fn find_name_position(content: String, name: String) -> #(Int, Int) {
   find_in_lines(lines, name, 0)
 }
 
+/// Find the 0-indexed line and column of the first whole-word occurrence
+/// of a name in pre-split source lines. Avoids re-splitting the content
+/// when called multiple times. Returns #(0, 0) if not found.
+@internal
+pub fn find_name_position_in_lines(
+  lines: List(String),
+  name: String,
+) -> #(Int, Int) {
+  find_in_lines(lines, name, 0)
+}
+
 /// Find all 0-indexed (line, col) positions of whole-word occurrences of a name.
 pub fn find_all_name_positions(
   content: String,
