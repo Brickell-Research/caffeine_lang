@@ -50,5 +50,5 @@ fn parse_expectation_sources(
     })
     |> result.map(fn(exps) { #(exps, source.path) })
   })
-  |> result.all()
+  |> errors.from_results()
 }

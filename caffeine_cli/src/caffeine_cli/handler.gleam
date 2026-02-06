@@ -1,8 +1,12 @@
+import caffeine_cli/color
 import caffeine_cli/compile_presenter.{type LogLevel}
 import caffeine_cli/display
+import caffeine_cli/error_presenter
 import caffeine_cli/file_discovery
 import caffeine_lang/constants
+import caffeine_lang/errors
 import caffeine_lang/frontend/formatter
+import caffeine_lang/rich_error
 import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
@@ -178,7 +182,7 @@ fn compile(
   // Discover expectation files
   use expectation_paths <- result.try(
     file_discovery.get_caffeine_files(expectations_dir)
-    |> result.map_error(fn(err) { "File discovery error: " <> err.msg }),
+    |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
 
   // Read blueprint source
@@ -219,7 +223,7 @@ fn compile(
       target,
       log_level,
     )
-    |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
+    |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
 
   case output_path {
@@ -285,7 +289,7 @@ fn validate(
   // Discover expectation files
   use expectation_paths <- result.try(
     file_discovery.get_caffeine_files(expectations_dir)
-    |> result.map_error(fn(err) { "File discovery error: " <> err.msg }),
+    |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
 
   // Read blueprint source
@@ -326,7 +330,7 @@ fn validate(
       target,
       log_level,
     )
-    |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
+    |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
 
   compile_presenter.log(log_level, "Validation passed")
@@ -437,4 +441,11 @@ fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
 
   compile_presenter.log(log_level, "")
   Ok(Nil)
+}
+
+/// Formats a CompilationError using the rich error presenter with color support.
+fn format_compilation_error(err: errors.CompilationError) -> String {
+  let color_mode = color.detect_color_mode()
+  let rich_errors = rich_error.from_compilation_errors(err)
+  error_presenter.render_all(rich_errors, color_mode)
 }

@@ -65,7 +65,7 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_duplicate_extendable"),
-      Error(validator.DuplicateExtendable(name: "_base")),
+      Error([validator.DuplicateExtendable(name: "_base")]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -76,10 +76,13 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_missing_extendable"),
-      Error(validator.UndefinedExtendable(
-        name: "_nonexistent",
-        referenced_by: "api",
-      )),
+      Error([
+        validator.UndefinedExtendable(
+          name: "_nonexistent",
+          referenced_by: "api",
+          candidates: ["_base"],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -90,10 +93,13 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_multiple_items_one_missing"),
-      Error(validator.UndefinedExtendable(
-        name: "_nonexistent",
-        referenced_by: "latency",
-      )),
+      Error([
+        validator.UndefinedExtendable(
+          name: "_nonexistent",
+          referenced_by: "latency",
+          candidates: ["_base"],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -104,10 +110,9 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_duplicate_extends_ref"),
-      Error(validator.DuplicateExtendsReference(
-        name: "_base",
-        referenced_by: "api",
-      )),
+      Error([
+        validator.DuplicateExtendsReference(name: "_base", referenced_by: "api"),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -118,7 +123,7 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_extendable_type_alias_collision"),
-      Error(validator.ExtendableTypeAliasNameCollision(name: "_env")),
+      Error([validator.ExtendableTypeAliasNameCollision(name: "_env")]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -129,7 +134,7 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_duplicate_type_alias"),
-      Error(validator.DuplicateTypeAlias(name: "_env")),
+      Error([validator.DuplicateTypeAlias(name: "_env")]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -140,10 +145,13 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_undefined_type_alias"),
-      Error(validator.UndefinedTypeAlias(
-        name: "_undefined",
-        referenced_by: "test",
-      )),
+      Error([
+        validator.UndefinedTypeAlias(
+          name: "_undefined",
+          referenced_by: "test",
+          candidates: ["_env"],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -154,11 +162,13 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_invalid_dict_key_type_alias"),
-      Error(validator.InvalidDictKeyTypeAlias(
-        alias_name: "_count",
-        resolved_to: "Integer { x | x in ( 1..100 ) }",
-        referenced_by: "test",
-      )),
+      Error([
+        validator.InvalidDictKeyTypeAlias(
+          alias_name: "_count",
+          resolved_to: "Integer { x | x in ( 1..100 ) }",
+          referenced_by: "test",
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -169,7 +179,7 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_circular_record_type_alias"),
-      Error(validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])),
+      Error([validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -180,7 +190,13 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       parse_blueprints("blueprints_undefined_record_type_alias"),
-      Error(validator.UndefinedTypeAlias(name: "_nope", referenced_by: "api")),
+      Error([
+        validator.UndefinedTypeAlias(
+          name: "_nope",
+          referenced_by: "api",
+          candidates: [],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -215,7 +231,7 @@ pub fn validate_expects_file_test() {
   [
     #(
       parse_expects("expects_duplicate_extendable"),
-      Error(validator.DuplicateExtendable(name: "_defaults")),
+      Error([validator.DuplicateExtendable(name: "_defaults")]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -226,10 +242,13 @@ pub fn validate_expects_file_test() {
   [
     #(
       parse_expects("expects_missing_extendable"),
-      Error(validator.UndefinedExtendable(
-        name: "_nonexistent",
-        referenced_by: "checkout",
-      )),
+      Error([
+        validator.UndefinedExtendable(
+          name: "_nonexistent",
+          referenced_by: "checkout",
+          candidates: ["_defaults"],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -240,10 +259,13 @@ pub fn validate_expects_file_test() {
   [
     #(
       parse_expects("expects_multiple_items_one_missing"),
-      Error(validator.UndefinedExtendable(
-        name: "_nonexistent",
-        referenced_by: "payment",
-      )),
+      Error([
+        validator.UndefinedExtendable(
+          name: "_nonexistent",
+          referenced_by: "payment",
+          candidates: ["_defaults"],
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -254,10 +276,12 @@ pub fn validate_expects_file_test() {
   [
     #(
       parse_expects("expects_duplicate_extends_ref"),
-      Error(validator.DuplicateExtendsReference(
-        name: "_defaults",
-        referenced_by: "checkout",
-      )),
+      Error([
+        validator.DuplicateExtendsReference(
+          name: "_defaults",
+          referenced_by: "checkout",
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
@@ -268,11 +292,13 @@ pub fn validate_expects_file_test() {
   [
     #(
       parse_expects("expects_requires_extendable"),
-      Error(validator.InvalidExtendableKind(
-        name: "_common",
-        expected: "Provides",
-        got: "Requires",
-      )),
+      Error([
+        validator.InvalidExtendableKind(
+          name: "_common",
+          expected: "Provides",
+          got: "Requires",
+        ),
+      ]),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {

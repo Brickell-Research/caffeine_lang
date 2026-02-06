@@ -27,6 +27,8 @@ pub type CompilationError {
   // Caffeine Query Language (CQL)
   CQLResolverError(msg: String)
   CQLParserError(msg: String)
+  // Multiple errors accumulated from independent operations.
+  CompilationErrors(errors: List(CompilationError))
 }
 
 /// Prefixes a CompilationError's message with an identifier string.
@@ -61,6 +63,73 @@ pub fn prefix_error(
       GeneratorDynatraceTerraformResolutionError(msg: prefix <> msg)
     CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
     CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
+    CompilationErrors(errors:) ->
+      CompilationErrors(errors: list.map(errors, prefix_error(_, identifier)))
+  }
+}
+
+/// Flattens a CompilationError into a list of individual errors.
+/// Single-error variants become a one-element list; CompilationErrors is unwrapped.
+@internal
+pub fn to_list(error: CompilationError) -> List(CompilationError) {
+  case error {
+    CompilationErrors(errors:) -> list.flat_map(errors, to_list)
+    _ -> [error]
+  }
+}
+
+/// Extracts the message from any CompilationError variant.
+/// For CompilationErrors, joins all messages with newlines.
+@internal
+pub fn to_message(error: CompilationError) -> String {
+  case error {
+    CompilationErrors(errors:) ->
+      errors
+      |> list.flat_map(to_list)
+      |> list.map(to_message)
+      |> string.join("\n")
+    FrontendParseError(msg:) -> msg
+    FrontendValidationError(msg:) -> msg
+    ParserJsonParserError(msg:) -> msg
+    ParserDuplicateError(msg:) -> msg
+    LinkerParseError(msg:) -> msg
+    SemanticAnalysisVendorResolutionError(msg:) -> msg
+    SemanticAnalysisTemplateParseError(msg:) -> msg
+    SemanticAnalysisTemplateResolutionError(msg:) -> msg
+    SemanticAnalysisDependencyValidationError(msg:) -> msg
+    GeneratorSloQueryResolutionError(msg:) -> msg
+    GeneratorDatadogTerraformResolutionError(msg:) -> msg
+    GeneratorHoneycombTerraformResolutionError(msg:) -> msg
+    GeneratorDynatraceTerraformResolutionError(msg:) -> msg
+    CQLResolverError(msg:) -> msg
+    CQLParserError(msg:) -> msg
+  }
+}
+
+/// Collects results from a list of independent operations, accumulating all errors.
+/// Returns Ok with all successes if none failed, or an error containing all failures.
+@internal
+pub fn from_results(
+  results: List(Result(a, CompilationError)),
+) -> Result(List(a), CompilationError) {
+  let #(successes, failures) = partition_results(results, [], [])
+  case failures {
+    [] -> Ok(list.reverse(successes))
+    [single] -> Error(single)
+    multiple -> Error(CompilationErrors(errors: list.reverse(multiple)))
+  }
+}
+
+fn partition_results(
+  results: List(Result(a, CompilationError)),
+  successes: List(a),
+  failures: List(CompilationError),
+) -> #(List(a), List(CompilationError)) {
+  case results {
+    [] -> #(successes, failures)
+    [Ok(val), ..rest] -> partition_results(rest, [val, ..successes], failures)
+    [Error(err), ..rest] ->
+      partition_results(rest, successes, [err, ..failures])
   }
 }
 

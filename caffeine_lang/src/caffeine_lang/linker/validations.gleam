@@ -97,7 +97,7 @@ pub fn inputs_validator(
           }
       }
     })
-    |> list.map(fn(err) { err.msg })
+    |> list.map(errors.to_message)
     |> string.join(", ")
 
   case type_validation_errors {

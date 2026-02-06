@@ -1,3 +1,4 @@
+import caffeine_lang/errors
 import caffeine_query_language/ast.{
   type Exp, OperatorExpr, Primary, PrimaryExp, PrimaryWord, TimeSliceExp, Word,
 }
@@ -159,7 +160,7 @@ pub fn resolve_slo_query_typed(
             }
           }
         }
-        Error(err) -> Error("Resolution error: " <> err.msg)
+        Error(err) -> Error("Resolution error: " <> errors.to_message(err))
       }
   }
 }

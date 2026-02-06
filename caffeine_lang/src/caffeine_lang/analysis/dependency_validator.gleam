@@ -27,20 +27,30 @@ pub fn validate_dependency_relations(
   // Build an index of all valid expectation paths
   let expectation_index = build_expectation_index(irs)
 
-  // Validate each IR that has DependencyRelations
+  // Validate each IR that has DependencyRelations (accumulate all errors)
   use _ <- result.try(
     irs
-    |> list.try_each(fn(ir) { validate_ir_dependencies(ir, expectation_index) }),
+    |> list.map(fn(ir) { validate_ir_dependencies(ir, expectation_index) })
+    |> errors.from_results()
+    |> result.map(fn(_) { Nil }),
   )
 
   // Detect circular dependencies
   use _ <- result.try(detect_cycles(irs))
 
-  // Validate hard dependency thresholds
-  use _ <- result.try(validate_hard_dependency_thresholds(
-    irs,
-    expectation_index,
-  ))
+  // Validate hard dependency thresholds (accumulate all errors)
+  use _ <- result.try(
+    irs
+    |> list.filter(fn(ir) {
+      list.contains(ir.artifact_refs, DependencyRelations)
+      && list.contains(ir.artifact_refs, SLO)
+    })
+    |> list.map(fn(ir) {
+      validate_single_ir_hard_thresholds(ir, expectation_index)
+    })
+    |> errors.from_results()
+    |> result.map(fn(_) { Nil }),
+  )
 
   Ok(irs)
 }
@@ -317,39 +327,32 @@ fn explore_neighbors(
 
 // ==== Hard dependency threshold validation ====
 
-/// Validates that hard dependency thresholds are consistent.
+/// Validates hard dependency thresholds for a single IR.
 /// A source's threshold must not exceed its hard dependency's threshold.
-fn validate_hard_dependency_thresholds(
-  irs: List(IntermediateRepresentation),
+fn validate_single_ir_hard_thresholds(
+  ir: IntermediateRepresentation,
   expectation_index: Dict(String, IntermediateRepresentation),
 ) -> Result(Nil, CompilationError) {
-  irs
-  |> list.filter(fn(ir) {
-    list.contains(ir.artifact_refs, DependencyRelations)
-    && list.contains(ir.artifact_refs, SLO)
+  let self_path = ir_to_identifier(ir)
+  use #(slo, dep) <- result.try(case ir.artifact_data {
+    semantic_analyzer.SloWithDependency(slo:, dependency:) ->
+      Ok(#(slo, dependency))
+    _ ->
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: self_path <> " - missing SLO or dependency artifact data",
+      ))
   })
-  |> list.try_each(fn(ir) {
-    let self_path = ir_to_identifier(ir)
-    use #(slo, dep) <- result.try(case ir.artifact_data {
-      semantic_analyzer.SloWithDependency(slo:, dependency:) ->
-        Ok(#(slo, dependency))
-      _ ->
-        Error(errors.SemanticAnalysisDependencyValidationError(
-          msg: self_path <> " - missing SLO or dependency artifact data",
-        ))
-    })
-    let source_threshold = slo.threshold
-    let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
+  let source_threshold = slo.threshold
+  let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
 
-    hard_targets
-    |> list.try_each(fn(target) {
-      validate_single_hard_threshold(
-        self_path,
-        source_threshold,
-        target,
-        expectation_index,
-      )
-    })
+  hard_targets
+  |> list.try_each(fn(target) {
+    validate_single_hard_threshold(
+      self_path,
+      source_threshold,
+      target,
+      expectation_index,
+    )
   })
 }
 

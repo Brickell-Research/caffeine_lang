@@ -5,6 +5,7 @@ import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{DsError, DsWarning}
 import caffeine_lsp/position_utils
 import gleam/bool
+import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 
@@ -43,12 +44,12 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
     Ok(file_utils.Blueprints(file)) ->
       case validator.validate_blueprints_file(file) {
         Ok(_) -> []
-        Error(err) -> [validator_error_to_diagnostic(content, err)]
+        Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
     Ok(file_utils.Expects(file)) ->
       case validator.validate_expects_file(file) {
         Ok(_) -> []
-        Error(err) -> [validator_error_to_diagnostic(content, err)]
+        Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
     Error(#(blueprint_err, expects_err)) -> {
       use <- bool.guard(
@@ -90,7 +91,7 @@ fn validator_error_to_diagnostic(
         lsp_types.diagnostic_severity_to_int(DsError),
         "Duplicate extendable '" <> name <> "'",
       )
-    validator.UndefinedExtendable(name, referenced_by) ->
+    validator.UndefinedExtendable(name, referenced_by, _candidates) ->
       name_diagnostic(
         content,
         name,
@@ -119,7 +120,7 @@ fn validator_error_to_diagnostic(
         lsp_types.diagnostic_severity_to_int(DsError),
         "Extendable '" <> name <> "' must be " <> expected <> ", got " <> got,
       )
-    validator.UndefinedTypeAlias(name, referenced_by) ->
+    validator.UndefinedTypeAlias(name, referenced_by, _candidates) ->
       name_diagnostic(
         content,
         name,

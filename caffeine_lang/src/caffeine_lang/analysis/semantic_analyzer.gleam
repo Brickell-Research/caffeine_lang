@@ -74,12 +74,13 @@ pub type IntermediateRepresentationMetaData {
 }
 
 /// Resolves vendor and indicators for a list of intermediate representations.
+/// Accumulates errors from all IRs instead of stopping at the first failure.
 @internal
 pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation),
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   irs
-  |> list.try_map(fn(ir) {
+  |> list.map(fn(ir) {
     use <- bool.guard(
       when: !list.contains(ir.artifact_refs, SLO),
       return: Ok(ir),
@@ -87,6 +88,7 @@ pub fn resolve_intermediate_representations(
     use ir_with_vendor <- result.try(resolve_vendor(ir))
     resolve_indicators(ir_with_vendor)
   })
+  |> errors.from_results()
 }
 
 /// Resolves the vendor string to a Vendor type for an intermediate representation.

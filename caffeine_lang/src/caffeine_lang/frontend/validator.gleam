@@ -17,10 +17,18 @@ import gleam/set
 /// Errors that can occur during validation.
 pub type ValidatorError {
   DuplicateExtendable(name: String)
-  UndefinedExtendable(name: String, referenced_by: String)
+  UndefinedExtendable(
+    name: String,
+    referenced_by: String,
+    candidates: List(String),
+  )
   DuplicateExtendsReference(name: String, referenced_by: String)
   InvalidExtendableKind(name: String, expected: String, got: String)
-  UndefinedTypeAlias(name: String, referenced_by: String)
+  UndefinedTypeAlias(
+    name: String,
+    referenced_by: String,
+    candidates: List(String),
+  )
   DuplicateTypeAlias(name: String)
   CircularTypeAlias(name: String, cycle: List(String))
   InvalidDictKeyTypeAlias(
@@ -40,57 +48,62 @@ pub type ValidatorError {
 /// Checks for duplicate extendables, undefined extendable references,
 /// duplicate type aliases, circular type aliases, undefined type alias references,
 /// and that Dict key type aliases resolve to String-based types.
+/// Returns all independent validation errors instead of stopping at the first.
 @internal
 pub fn validate_blueprints_file(
   file: BlueprintsFile,
-) -> Result(BlueprintsFile, ValidatorError) {
+) -> Result(BlueprintsFile, List(ValidatorError)) {
   let type_aliases = file.type_aliases
   let extendables = file.extendables
   let items =
     file.blocks
     |> list.flat_map(fn(block) { block.items })
 
-  // Validate type aliases first
-  use _ <- result.try(validate_no_duplicates(
-    type_aliases,
-    fn(ta) { ta.name },
-    DuplicateTypeAlias,
-  ))
-  use _ <- result.try(validate_no_circular_type_aliases(type_aliases))
+  // Group A: type alias structural checks (sequential — circularity depends on no dupes)
+  let type_alias_errors =
+    validate_no_duplicates(type_aliases, fn(ta) { ta.name }, DuplicateTypeAlias)
+    |> result.try(fn(_) { validate_no_circular_type_aliases(type_aliases) })
+    |> errors_to_list
 
-  // Build set of defined type alias names for reference validation
+  // Group C: extendable structural checks (independent of Group A)
+  let extendable_errors =
+    collect_errors([
+      validate_no_duplicates(extendables, fn(e) { e.name }, DuplicateExtendable),
+      validate_no_extendable_type_alias_collision(extendables, type_aliases),
+    ])
+
+  // If structural checks failed, skip dependent checks and return all errors so far
+  let structural_errors = list.append(type_alias_errors, extendable_errors)
+  use <- guard_errors(structural_errors)
+
+  // Build lookup structures (safe because structural checks passed)
   let type_alias_names =
     type_aliases
     |> list.map(fn(ta) { ta.name })
     |> set.from_list
-
-  // Build map for Dict key validation
   let type_alias_map = build_type_alias_map(type_aliases)
 
-  // Validate type alias references in extendables
-  use _ <- result.try(validate_extendables_type_refs(
-    extendables,
-    type_alias_names,
-    type_alias_map,
-  ))
+  // Group B: type alias reference checks (independent of each other)
+  let type_ref_errors =
+    collect_errors([
+      validate_extendables_type_refs(
+        extendables,
+        type_alias_names,
+        type_alias_map,
+      ),
+      validate_blueprint_items_type_refs(
+        items,
+        type_alias_names,
+        type_alias_map,
+      ),
+    ])
 
-  // Validate type alias references in blueprint items
-  use _ <- result.try(validate_blueprint_items_type_refs(
-    items,
-    type_alias_names,
-    type_alias_map,
-  ))
+  // Group D: extends validation (depends on extendable structural checks passing)
+  let extends_errors =
+    validate_blueprint_items_extends(items, extendables) |> errors_to_list
 
-  use _ <- result.try(validate_no_duplicates(
-    extendables,
-    fn(e) { e.name },
-    DuplicateExtendable,
-  ))
-  use _ <- result.try(validate_no_extendable_type_alias_collision(
-    extendables,
-    type_aliases,
-  ))
-  use _ <- result.try(validate_blueprint_items_extends(items, extendables))
+  let dependent_errors = list.append(type_ref_errors, extends_errors)
+  use <- guard_errors(dependent_errors)
 
   Ok(file)
 }
@@ -98,22 +111,28 @@ pub fn validate_blueprints_file(
 /// Validates an expects file.
 /// Checks for duplicate extendables, undefined extendable references,
 /// and that all extendables are Provides kind.
+/// Returns all independent validation errors instead of stopping at the first.
 @internal
 pub fn validate_expects_file(
   file: ExpectsFile,
-) -> Result(ExpectsFile, ValidatorError) {
+) -> Result(ExpectsFile, List(ValidatorError)) {
   let extendables = file.extendables
   let items =
     file.blocks
     |> list.flat_map(fn(block) { block.items })
 
-  use _ <- result.try(validate_no_duplicates(
-    extendables,
-    fn(e) { e.name },
-    DuplicateExtendable,
-  ))
-  use _ <- result.try(validate_extendables_are_provides(extendables))
-  use _ <- result.try(validate_expect_items_extends(items, extendables))
+  // Structural checks (independent of each other)
+  let structural_errors =
+    collect_errors([
+      validate_no_duplicates(extendables, fn(e) { e.name }, DuplicateExtendable),
+      validate_extendables_are_provides(extendables),
+    ])
+  use <- guard_errors(structural_errors)
+
+  // Depends on structural checks passing
+  let extends_errors =
+    validate_expect_items_extends(items, extendables) |> errors_to_list
+  use <- guard_errors(extends_errors)
 
   Ok(file)
 }
@@ -265,7 +284,11 @@ fn validate_extends_exist(
     [first, ..rest] -> {
       use <- bool.guard(
         when: !set.contains(extendable_names, first),
-        return: Error(UndefinedExtendable(name: first, referenced_by: item_name)),
+        return: Error(UndefinedExtendable(
+          name: first,
+          referenced_by: item_name,
+          candidates: set.to_list(extendable_names),
+        )),
       )
       validate_extends_exist(rest, item_name, extendable_names)
     }
@@ -473,7 +496,11 @@ fn validate_type_refs(
         when: set.contains(type_alias_names, name),
         return: Ok(Nil),
       )
-      Error(UndefinedTypeAlias(name: name, referenced_by: context_name))
+      Error(UndefinedTypeAlias(
+        name: name,
+        referenced_by: context_name,
+        candidates: set.to_list(type_alias_names),
+      ))
     }
     // For Dict, validate key type resolves to String-based before recursing
     ParsedCollection(Dict(key, _)) -> {
@@ -549,5 +576,36 @@ fn is_string_based_parsed_type(typ: ParsedType) -> Bool {
     ParsedPrimitive(StringType) -> True
     ParsedRefinement(OneOf(ParsedPrimitive(StringType), _)) -> True
     _ -> False
+  }
+}
+
+// =============================================================================
+// ERROR ACCUMULATION HELPERS
+// =============================================================================
+
+/// Converts a single-error Result to a list of errors (empty on Ok).
+fn errors_to_list(result: Result(Nil, ValidatorError)) -> List(ValidatorError) {
+  case result {
+    Ok(_) -> []
+    Error(err) -> [err]
+  }
+}
+
+/// Collects errors from a list of independent validation results.
+fn collect_errors(
+  results: List(Result(Nil, ValidatorError)),
+) -> List(ValidatorError) {
+  results |> list.flat_map(errors_to_list)
+}
+
+/// Guards against accumulated errors. If errors is non-empty, returns them;
+/// otherwise continues with the provided callback.
+fn guard_errors(
+  errors: List(ValidatorError),
+  otherwise: fn() -> Result(a, List(ValidatorError)),
+) -> Result(a, List(ValidatorError)) {
+  case errors {
+    [] -> otherwise()
+    _ -> Error(errors)
   }
 }
