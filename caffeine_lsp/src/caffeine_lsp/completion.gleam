@@ -3,6 +3,7 @@ import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
 import caffeine_lsp/lsp_types.{CikClass, CikField, CikKeyword, CikVariable}
+import gleam/bool
 import gleam/list
 import gleam/option
 import gleam/string
@@ -21,7 +22,7 @@ pub fn get_completions(
 ) -> List(CompletionItem) {
   let context = get_context(content, line, character)
   case context {
-    ExtendsContext -> extends_completions(content)
+    ExtendsContext(used) -> extends_completions(content, used)
     TypeContext -> type_completions(content)
     FieldContext(fields) -> field_completions(fields)
     GeneralContext -> general_completions(content)
@@ -31,7 +32,7 @@ pub fn get_completions(
 // --- Context detection ---
 
 type CompletionContext {
-  ExtendsContext
+  ExtendsContext(already_used: List(String))
   TypeContext
   FieldContext(available_fields: List(#(String, String)))
   GeneralContext
@@ -43,17 +44,14 @@ fn get_context(content: String, line: Int, character: Int) -> CompletionContext 
     [line_text, ..] -> {
       let before_cursor = string.slice(line_text, 0, character)
       let trimmed = string.trim(before_cursor)
-      case is_extends_context(trimmed) {
-        True -> ExtendsContext
-        False ->
-          case is_type_context(trimmed) {
-            True -> TypeContext
-            False ->
-              case get_field_context(content, lines, line) {
-                option.Some(fields) -> FieldContext(fields)
-                option.None -> GeneralContext
-              }
-          }
+      use <- bool.guard(
+        is_extends_context(trimmed),
+        ExtendsContext(already_used: extract_used_extends(trimmed)),
+      )
+      use <- bool.guard(is_type_context(trimmed), TypeContext)
+      case get_field_context(content, lines, line) {
+        option.Some(fields) -> FieldContext(fields)
+        option.None -> GeneralContext
       }
     }
     [] -> GeneralContext
@@ -68,6 +66,18 @@ fn is_extends_context(before: String) -> Bool {
 fn is_type_context(before: String) -> Bool {
   // After a colon (field type position) or after a type keyword like "List("
   string.ends_with(string.trim(before), ":") || string.ends_with(before, "(")
+}
+
+/// Extract already-used extendable names from the extends context.
+/// e.g. "extends [_base, _auth, " → ["_base", "_auth"]
+fn extract_used_extends(before: String) -> List(String) {
+  case string.split_once(before, "extends [") {
+    Error(_) -> []
+    Ok(#(_, after_bracket)) ->
+      string.split(after_bracket, ",")
+      |> list.map(string.trim)
+      |> list.filter(fn(s) { string.starts_with(s, "_") })
+  }
 }
 
 /// Detect if we're inside a Requires/Provides block and suggest fields
@@ -99,19 +109,17 @@ fn find_enclosing_item_loop(
   lines: List(String),
   idx: Int,
 ) -> option.Option(String) {
-  case idx < 0 {
-    True -> option.None
-    False ->
-      case list.drop(lines, idx) {
-        [line_text, ..] -> {
-          let trimmed = string.trim(line_text)
-          case string.starts_with(trimmed, "* \"") {
-            True -> extract_item_name(trimmed)
-            False -> find_enclosing_item_loop(lines, idx - 1)
-          }
-        }
-        [] -> option.None
-      }
+  use <- bool.guard(idx < 0, option.None)
+  case list.drop(lines, idx) {
+    [line_text, ..] -> {
+      let trimmed = string.trim(line_text)
+      use <- bool.guard(
+        string.starts_with(trimmed, "* \""),
+        extract_item_name(trimmed),
+      )
+      find_enclosing_item_loop(lines, idx - 1)
+    }
+    [] -> option.None
   }
 }
 
@@ -211,27 +219,16 @@ fn is_in_requires_section(lines: List(String), line: Int) -> Bool {
 }
 
 fn is_in_requires_loop(lines: List(String), idx: Int) -> Bool {
-  case idx < 0 {
-    True -> False
-    False ->
-      case list.drop(lines, idx) {
-        [line_text, ..] -> {
-          let trimmed = string.trim(line_text)
-          case string.starts_with(trimmed, "Requires") {
-            True -> True
-            False ->
-              case string.starts_with(trimmed, "Provides") {
-                True -> False
-                False ->
-                  case string.starts_with(trimmed, "* \"") {
-                    True -> False
-                    False -> is_in_requires_loop(lines, idx - 1)
-                  }
-              }
-          }
-        }
-        [] -> False
-      }
+  use <- bool.guard(idx < 0, False)
+  case list.drop(lines, idx) {
+    [line_text, ..] -> {
+      let trimmed = string.trim(line_text)
+      use <- bool.guard(string.starts_with(trimmed, "Requires"), True)
+      use <- bool.guard(string.starts_with(trimmed, "Provides"), False)
+      use <- bool.guard(string.starts_with(trimmed, "* \""), False)
+      is_in_requires_loop(lines, idx - 1)
+    }
+    [] -> False
   }
 }
 
@@ -246,8 +243,12 @@ fn existing_provides_fields(
 
 // --- Completion generators ---
 
-fn extends_completions(content: String) -> List(CompletionItem) {
+fn extends_completions(
+  content: String,
+  already_used: List(String),
+) -> List(CompletionItem) {
   extendable_items(content)
+  |> list.filter(fn(item) { !list.contains(already_used, item.label) })
 }
 
 fn type_completions(content: String) -> List(CompletionItem) {

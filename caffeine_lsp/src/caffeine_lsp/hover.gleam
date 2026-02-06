@@ -3,6 +3,7 @@ import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
 import caffeine_lsp/position_utils
+import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -50,16 +51,18 @@ fn lookup_keyword(word: String) -> Option(String) {
   }
 }
 
-/// Look up user-defined extendables and type aliases in the current file.
+/// Look up user-defined extendables, type aliases, items, and fields.
 fn lookup_user_defined(word: String, content: String) -> Option(String) {
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> {
-      case lookup_extendable(word, file.extendables) {
-        option.Some(md) -> option.Some(md)
-        option.None -> lookup_type_alias(word, file.type_aliases)
-      }
-    }
-    Ok(file_utils.Expects(file)) -> lookup_extendable(word, file.extendables)
+    Ok(file_utils.Blueprints(file)) ->
+      lookup_extendable(word, file.extendables)
+      |> option.lazy_or(fn() { lookup_type_alias(word, file.type_aliases) })
+      |> option.lazy_or(fn() { lookup_blueprint_item(word, file) })
+      |> option.lazy_or(fn() { lookup_blueprint_field(word, file) })
+    Ok(file_utils.Expects(file)) ->
+      lookup_extendable(word, file.extendables)
+      |> option.lazy_or(fn() { lookup_expect_item(word, file) })
+      |> option.lazy_or(fn() { lookup_expect_field(word, file) })
     Error(_) -> option.None
   }
 }
@@ -106,6 +109,92 @@ fn lookup_type_alias(
         <> resolved
         <> "`",
       )
+    }
+    Error(_) -> option.None
+  }
+}
+
+fn lookup_blueprint_item(
+  word: String,
+  file: ast.BlueprintsFile,
+) -> Option(String) {
+  let items = list.flat_map(file.blocks, fn(b) { b.items })
+  case list.find(items, fn(i) { i.name == word }) {
+    Ok(item) -> {
+      let extends_info = case item.extends {
+        [] -> ""
+        exts -> "\n\nExtends: " <> string.join(exts, ", ")
+      }
+      let req_count = list.length(item.requires.fields)
+      let prov_count = list.length(item.provides.fields)
+      option.Some(
+        "**"
+        <> item.name
+        <> "** — Blueprint item"
+        <> extends_info
+        <> "\n\nRequires: "
+        <> int.to_string(req_count)
+        <> " fields | Provides: "
+        <> int.to_string(prov_count)
+        <> " fields",
+      )
+    }
+    Error(_) -> option.None
+  }
+}
+
+fn lookup_expect_item(word: String, file: ast.ExpectsFile) -> Option(String) {
+  let items = list.flat_map(file.blocks, fn(b) { b.items })
+  case list.find(items, fn(i) { i.name == word }) {
+    Ok(item) -> {
+      let extends_info = case item.extends {
+        [] -> ""
+        exts -> "\n\nExtends: " <> string.join(exts, ", ")
+      }
+      let prov_count = list.length(item.provides.fields)
+      option.Some(
+        "**"
+        <> item.name
+        <> "** — Expectation item"
+        <> extends_info
+        <> "\n\nProvides: "
+        <> int.to_string(prov_count)
+        <> " fields",
+      )
+    }
+    Error(_) -> option.None
+  }
+}
+
+fn lookup_blueprint_field(
+  word: String,
+  file: ast.BlueprintsFile,
+) -> Option(String) {
+  let all_fields =
+    list.flat_map(file.blocks, fn(b) {
+      list.flat_map(b.items, fn(item) {
+        list.flatten([item.requires.fields, item.provides.fields])
+      })
+    })
+  lookup_field_in_list(word, all_fields)
+}
+
+fn lookup_expect_field(word: String, file: ast.ExpectsFile) -> Option(String) {
+  let all_fields =
+    list.flat_map(file.blocks, fn(b) {
+      list.flat_map(b.items, fn(item) { item.provides.fields })
+    })
+  lookup_field_in_list(word, all_fields)
+}
+
+fn lookup_field_in_list(
+  word: String,
+  fields: List(ast.Field),
+) -> Option(String) {
+  case list.find(fields, fn(f) { f.name == word }) {
+    Ok(field) -> {
+      let value_str = ast.value_to_string(field.value)
+      option.Some("**" <> field.name <> "** — Field\n\nValue: `" <> value_str <> "`")
     }
     Error(_) -> option.None
   }

@@ -1,5 +1,6 @@
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
+import gleam/bool
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -14,20 +15,20 @@ pub fn prepare_rename(
   let word = position_utils.extract_word_at(content, line, character)
   case word {
     "" -> option.None
-    name ->
-      case file_utils.is_defined_symbol(content, name) {
-        False -> option.None
-        True -> {
-          let len = string.length(name)
-          let positions = position_utils.find_all_name_positions(content, name)
-          // Find the occurrence that contains the cursor
-          list.find(positions, fn(pos) {
-            pos.0 == line && character >= pos.1 && character < pos.1 + len
-          })
-          |> option.from_result
-          |> option.map(fn(pos) { #(pos.0, pos.1, len) })
-        }
-      }
+    name -> {
+      use <- bool.guard(
+        !file_utils.is_defined_symbol(content, name),
+        option.None,
+      )
+      let len = string.length(name)
+      let positions = position_utils.find_all_name_positions(content, name)
+      // Find the occurrence that contains the cursor
+      list.find(positions, fn(pos) {
+        pos.0 == line && character >= pos.1 && character < pos.1 + len
+      })
+      |> option.from_result
+      |> option.map(fn(pos) { #(pos.0, pos.1, len) })
+    }
   }
 }
 
@@ -41,14 +42,11 @@ pub fn get_rename_edits(
   let word = position_utils.extract_word_at(content, line, character)
   case word {
     "" -> []
-    name ->
-      case file_utils.is_defined_symbol(content, name) {
-        False -> []
-        True -> {
-          let len = string.length(name)
-          position_utils.find_all_name_positions(content, name)
-          |> list.map(fn(pos) { #(pos.0, pos.1, len) })
-        }
-      }
+    name -> {
+      use <- bool.guard(!file_utils.is_defined_symbol(content, name), [])
+      let len = string.length(name)
+      position_utils.find_all_name_positions(content, name)
+      |> list.map(fn(pos) { #(pos.0, pos.1, len) })
+    }
   }
 }

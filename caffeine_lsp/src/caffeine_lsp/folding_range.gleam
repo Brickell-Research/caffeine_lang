@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/string
 
@@ -23,16 +24,13 @@ fn scan_ranges(
     [#(idx, line), ..rest] -> {
       let trimmed = string.trim_start(line)
       let indent = string.length(line) - string.length(trimmed)
-      case is_foldable_start(trimmed, indent) {
-        True -> {
-          let end = find_block_end(rest, indent)
-          case end > idx {
-            True -> scan_ranges(rest, [FoldingRange(idx, end), ..acc])
-            False -> scan_ranges(rest, acc)
-          }
-        }
-        False -> scan_ranges(rest, acc)
-      }
+      use <- bool.guard(
+        !is_foldable_start(trimmed, indent),
+        scan_ranges(rest, acc),
+      )
+      let end = find_block_end(rest, indent)
+      use <- bool.guard(end <= idx, scan_ranges(rest, acc))
+      scan_ranges(rest, [FoldingRange(idx, end), ..acc])
     }
   }
 }
@@ -76,11 +74,8 @@ fn find_block_end_loop(
         _ -> {
           let indent =
             string.length(line) - string.length(string.trim_start(line))
-          case indent <= parent_indent {
-            // Hit a sibling or parent — stop
-            True -> last_non_blank
-            False -> find_block_end_loop(rest, parent_indent, idx)
-          }
+          use <- bool.guard(indent <= parent_indent, last_non_blank)
+          find_block_end_loop(rest, parent_indent, idx)
         }
       }
     }

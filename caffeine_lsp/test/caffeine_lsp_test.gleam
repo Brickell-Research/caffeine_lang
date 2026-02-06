@@ -8,10 +8,12 @@ import caffeine_lsp/folding_range
 import caffeine_lsp/highlight
 import caffeine_lsp/hover
 import caffeine_lsp/keyword_info
+import caffeine_lsp/linked_editing_range
 import caffeine_lsp/lsp_types
 import caffeine_lsp/position_utils
 import caffeine_lsp/references
 import caffeine_lsp/rename
+import caffeine_lsp/selection_range.{type SelectionRange, HasParent, NoParent}
 import caffeine_lsp/semantic_tokens
 import gleam/list
 import gleam/option
@@ -474,6 +476,49 @@ pub fn semantic_tokens_with_comment_test() {
   { tokens != [] } |> should.be_true()
 }
 
+// ==== boolean literals ====
+// * true/false tokenized as keyword (type index 0)
+pub fn semantic_tokens_boolean_as_keyword_test() {
+  // "true" appears as a literal in Provides
+  let source =
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  // Find a token with length 4 (true) and type 0 (keyword)
+  let has_true_keyword = find_token_with_type_and_length(tokens, 0, 4)
+  has_true_keyword |> should.be_true()
+}
+
+// ==== colon as operator ====
+// * colon tokenized as operator (type index 6)
+pub fn semantic_tokens_colon_as_operator_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  let tokens = semantic_tokens.get_semantic_tokens(source)
+  // Find a token with length 1 and type 6 (operator)
+  let has_colon_operator = find_token_with_type_and_length(tokens, 6, 1)
+  has_colon_operator |> should.be_true()
+}
+
+/// Check if the encoded token data contains a token with a given type and length.
+fn find_token_with_type_and_length(
+  tokens: List(Int),
+  token_type: Int,
+  length: Int,
+) -> Bool {
+  find_token_loop(tokens, token_type, length)
+}
+
+fn find_token_loop(tokens: List(Int), token_type: Int, length: Int) -> Bool {
+  case tokens {
+    [_, _, len, tt, _, ..rest] ->
+      case tt == token_type && len == length {
+        True -> True
+        False -> find_token_loop(rest, token_type, length)
+      }
+    _ -> False
+  }
+}
+
 // ==========================================================================
 // Definition tests
 // ==========================================================================
@@ -617,13 +662,19 @@ pub fn extract_word_at_out_of_bounds_test() {
 pub fn file_utils_parse_blueprints_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  let assert Ok(file_utils.Blueprints(_)) = file_utils.parse(source)
+  case file_utils.parse(source) {
+    Ok(file_utils.Blueprints(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
 }
 
 pub fn file_utils_parse_expectations_test() {
   let source =
     "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  let assert Ok(file_utils.Expects(_)) = file_utils.parse(source)
+  case file_utils.parse(source) {
+    Ok(file_utils.Expects(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
 }
 
 pub fn file_utils_parse_invalid_test() {
@@ -851,4 +902,131 @@ pub fn field_completion_excludes_defined_fields_test() {
   list.contains(labels, "env") |> should.be_false()
   // threshold should still be suggested
   list.contains(labels, "threshold") |> should.be_true()
+}
+
+// ==========================================================================
+// Selection range tests
+// ==========================================================================
+
+// ==== get_selection_range ====
+// * returns nested ranges with parents
+// * cursor on field line produces item parent
+// * empty content returns file-level range
+
+pub fn selection_range_nested_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor on the Requires line (line 2)
+  let sr = selection_range.get_selection_range(source, 2, 10)
+  // Should have at least one parent
+  case sr.parent {
+    HasParent(_) -> should.be_true(True)
+    NoParent -> should.fail()
+  }
+}
+
+pub fn selection_range_file_scope_test() {
+  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Provides { value: \"x\" }\n"
+  let sr = selection_range.get_selection_range(source, 0, 0)
+  // Walk up to find the outermost range
+  let outermost = find_outermost(sr)
+  outermost.start_line |> should.equal(0)
+}
+
+fn find_outermost(sr: SelectionRange) -> SelectionRange {
+  case sr.parent {
+    NoParent -> sr
+    HasParent(p) -> find_outermost(p)
+  }
+}
+
+// ==========================================================================
+// Linked editing range tests
+// ==========================================================================
+
+// ==== get_linked_editing_ranges ====
+// * extendable returns all occurrences
+// * non-symbol returns empty list
+
+pub fn linked_editing_range_extendable_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+  let ranges = linked_editing_range.get_linked_editing_ranges(source, 0, 2)
+  { list.length(ranges) >= 2 } |> should.be_true()
+}
+
+pub fn linked_editing_range_non_symbol_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  linked_editing_range.get_linked_editing_ranges(source, 0, 3)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Hover on items and fields tests
+// ==========================================================================
+
+// ==== hover on item names ====
+// * blueprint item shows extends and field counts
+// * expect item shows extends and field count
+
+pub fn hover_blueprint_item_test() {
+  let source =
+    "_base (Requires): { env: String }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base]:\n    Requires { threshold: Float }\n    Provides { value: \"x\" }\n"
+  // Hover on "api" — it's at col ~5 on line 3 (inside quotes so extract_word_at hits it)
+  // Actually, "api" is inside quotes, so we need to place cursor on "api" without quotes
+  // Let's use a simpler test — hover on item name found after parsing
+  case hover.get_hover(source, 3, 7) {
+    option.Some(md) -> {
+      { string.contains(md, "api") } |> should.be_true()
+      { string.contains(md, "Blueprint item") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn hover_expect_item_test() {
+  let source =
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  case hover.get_hover(source, 1, 7) {
+    option.Some(md) -> {
+      { string.contains(md, "checkout") } |> should.be_true()
+      { string.contains(md, "Expectation item") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+// ==== hover on field names ====
+// * field shows its value/type
+
+pub fn hover_field_name_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  case hover.get_hover(source, 2, 16) {
+    option.Some(md) -> {
+      { string.contains(md, "env") } |> should.be_true()
+      { string.contains(md, "Field") } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Extends completion filtering tests
+// ==========================================================================
+
+// ==== extends completion ====
+// * filters already-used extendables
+
+pub fn extends_completion_filters_used_test() {
+  let source =
+    "_base (Provides): { vendor: \"datadog\" }\n_auth (Provides): { token: \"x\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor inside "extends [_base, _auth]" at position after "_base, "
+  // Line 4: "  * "api" extends [_base, _auth]:"
+  // Position 28 is right after the comma+space, before _auth
+  let items = completion.get_completions(source, 4, 28)
+  let labels = list.map(items, fn(i) { i.label })
+  // _base already appears before cursor, should be filtered out
+  list.contains(labels, "_base") |> should.be_false()
 }

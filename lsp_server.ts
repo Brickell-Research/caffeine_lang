@@ -34,6 +34,8 @@ import { get_highlights } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp
 import { get_references } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
 import { prepare_rename, get_rename_edits } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/rename.mjs";
 import { get_folding_ranges } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/folding_range.mjs";
+import { get_selection_range } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/selection_range.mjs";
+import { get_linked_editing_ranges } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/linked_editing_range.mjs";
 
 // Gleam runtime types
 import { Ok, toList } from "./caffeine_lsp/build/dev/javascript/prelude.mjs";
@@ -77,10 +79,12 @@ connection.onInitialize(() => {
       referencesProvider: true,
       renameProvider: { prepareProvider: true },
       foldingRangeProvider: true,
+      selectionRangeProvider: true,
+      linkedEditingRangeProvider: true,
       documentFormattingProvider: true,
       documentSymbolProvider: true,
       completionProvider: {
-        triggerCharacters: [":", "["],
+        triggerCharacters: [":", "[", "{", ","],
       },
       codeActionProvider: {
         codeActionKinds: ["quickfix"],
@@ -364,6 +368,52 @@ connection.onFoldingRanges((params) => {
     }));
   } catch {
     return [];
+  }
+});
+
+// --- Selection Ranges ---
+
+connection.onSelectionRanges((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  try {
+    return params.positions.map((pos) => {
+      const sr = get_selection_range(doc.getText(), pos.line, pos.character);
+      return gleamSelectionRangeToLsp(sr);
+    });
+  } catch {
+    return [];
+  }
+});
+
+// deno-lint-ignore no-explicit-any
+function gleamSelectionRangeToLsp(sr: any): any {
+  const r = range(sr.start_line, sr.start_col, sr.end_line, sr.end_col);
+  // HasParent wraps a SelectionRange at index [0]; NoParent has no such field
+  const hasParent = sr.parent && sr.parent[0] !== undefined;
+  return {
+    range: r,
+    parent: hasParent ? gleamSelectionRangeToLsp(sr.parent[0]) : undefined,
+  };
+}
+
+// --- Linked Editing Ranges ---
+
+connection.onLinkedEditingRange((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const ranges = gleamArray(
+      get_linked_editing_ranges(doc.getText(), params.position.line, params.position.character) as GleamList,
+    );
+    if (ranges.length === 0) return null;
+    return {
+      ranges: ranges.map((r) => range(r[0], r[1], r[0], r[1] + r[2])),
+    };
+  } catch {
+    return null;
   }
 });
 

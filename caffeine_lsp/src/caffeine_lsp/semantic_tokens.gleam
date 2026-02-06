@@ -82,7 +82,7 @@ fn classify_token(
   let property = lsp_types.semantic_token_type_to_int(SttProperty)
   let function = lsp_types.semantic_token_type_to_int(SttFunction)
   let modifier = lsp_types.semantic_token_type_to_int(SttModifier)
-  let enum_member = lsp_types.semantic_token_type_to_int(SttEnumMember)
+  let _enum_member = lsp_types.semantic_token_type_to_int(SttEnumMember)
 
   case tok {
     // Keywords
@@ -108,9 +108,9 @@ fn classify_token(
     token.KeywordOptional -> Ok(#(modifier, 8))
     token.KeywordDefaulted -> Ok(#(modifier, 9))
 
-    // Boolean literals as enumMember
-    token.LiteralTrue -> Ok(#(enum_member, 4))
-    token.LiteralFalse -> Ok(#(enum_member, 5))
+    // Boolean literals
+    token.LiteralTrue -> Ok(#(keyword, 4))
+    token.LiteralFalse -> Ok(#(keyword, 5))
 
     // String literals — +2 for quotes
     token.LiteralString(s) -> Ok(#(str, string.length(s) + 2))
@@ -147,7 +147,10 @@ fn classify_token(
     token.SymbolEquals -> Ok(#(operator, 1))
     token.SymbolPlus -> Ok(#(operator, 1))
 
-    // Skip punctuation (: and * handled by TextMate), whitespace, braces, parens, brackets, comma, EOF
+    // Colon — type annotation operator
+    token.SymbolColon -> Ok(#(operator, 1))
+
+    // Skip remaining punctuation, whitespace, braces, parens, brackets, comma, EOF
     _ -> Error(Nil)
   }
 }
