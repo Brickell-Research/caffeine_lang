@@ -2,6 +2,7 @@ import caffeine_lang/frontend/ast
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
 import caffeine_lang/types
+import gleam/dict
 import gleam/set
 import gleeunit/should
 import simplifile
@@ -109,6 +110,7 @@ fn range_type(
 // * ✅ happy path - multiple extends
 // * ✅ happy path - advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ happy path - nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
+// * ✅ happy path - record type
 pub fn parse_blueprints_file_test() {
   [
     // single block
@@ -629,6 +631,51 @@ pub fn parse_blueprints_file_test() {
                     ast.Field(
                       "env",
                       ast.TypeValue(types.ParsedTypeAliasRef("_env")),
+                      leading_comments: [],
+                    ),
+                  ]),
+                  provides: ast.Struct(trailing_comments: [], fields: [
+                    ast.Field(
+                      "value",
+                      ast.LiteralValue(ast.LiteralString("x")),
+                      leading_comments: [],
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+    // record type
+    #(
+      blueprints_path("happy_path_record_type"),
+      Ok(
+        ast.BlueprintsFile(
+          trailing_comments: [],
+          type_aliases: [],
+          extendables: [],
+          blocks: [
+            ast.BlueprintsBlock(
+              leading_comments: [],
+              artifacts: ["SLO"],
+              items: [
+                ast.BlueprintItem(
+                  leading_comments: [],
+                  name: "api",
+                  extends: [],
+                  requires: ast.Struct(trailing_comments: [], fields: [
+                    ast.Field(
+                      "indicators",
+                      ast.TypeValue(
+                        types.ParsedRecord(
+                          dict.from_list([
+                            #("numerator", string_type()),
+                            #("denominator", string_type()),
+                          ]),
+                        ),
+                      ),
                       leading_comments: [],
                     ),
                   ]),

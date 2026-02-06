@@ -36,6 +36,7 @@ fn read_file(path: String) -> String {
 // * ✅ comments between all section types (type alias, extendable, blueprint)
 // * ✅ real-world sidekiq multi-block expects with comments
 // * ✅ extendable joining collapses blank lines between extendables
+// * ✅ record type blueprint formats correctly
 pub fn format_test() {
   [
     #("unformatted_blueprint", "formatted_blueprint"),
@@ -70,6 +71,8 @@ pub fn format_test() {
     #("comments_sidekiq_real_world", "comments_sidekiq_real_world"),
     // Extendable joining (blank line between extendables is collapsed)
     #("unformatted_extendable_joining", "formatted_extendable_joining"),
+    // Record types
+    #("record_type_blueprint", "record_type_blueprint"),
   ]
   |> list.each(fn(pair) {
     let #(input_name, expected_name) = pair
@@ -100,6 +103,7 @@ pub fn format_idempotent_test() {
     "comments_all_section_types_blueprint",
     "comments_sidekiq_real_world",
     "unformatted_extendable_joining",
+    "record_type_blueprint",
   ]
   |> list.each(fn(file_name) {
     let input = read_file(corpus_path(file_name))

@@ -5,7 +5,8 @@ import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
-  List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RefinementType,
+  List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RecordType,
+  RefinementType,
 }
 import caffeine_lang/value
 import gleam/bool
@@ -171,6 +172,7 @@ fn resolve_values_for_tag(
       }
     }
     CollectionType(Dict(_, _)) -> Error(Nil)
+    RecordType(_) -> Error(Nil)
     ModifierType(Optional(inner)) -> {
       case val {
         value.NilValue -> Ok([])

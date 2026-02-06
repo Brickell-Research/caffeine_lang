@@ -30,8 +30,7 @@ fn scan_ranges(
           let end = find_block_end(rest, indent)
           case end <= idx {
             True -> scan_ranges(rest, acc)
-            False ->
-              scan_ranges(rest, [FoldingRange(idx, end), ..acc])
+            False -> scan_ranges(rest, [FoldingRange(idx, end), ..acc])
           }
         }
       }

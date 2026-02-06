@@ -1,7 +1,7 @@
 import caffeine_lang/types.{
   type AcceptedTypes, type PrimitiveTypes, Boolean, CollectionType, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
-  Optional, PrimitiveType, RefinementType, SemanticType, String, URL,
+  Optional, PrimitiveType, RecordType, RefinementType, SemanticType, String, URL,
 }
 import caffeine_lang/value
 import gleam/dict
@@ -1882,6 +1882,211 @@ pub fn map_inner_test() {
   |> should.equal(
     RefinementType(OneOf(PrimitiveType(Boolean), set.from_list(["a", "b"]))),
   )
+}
+
+// ===========================================================================
+// RecordType tests
+// ===========================================================================
+
+// ==== record_type_to_string ====
+// * ✅ formats fields alphabetically
+// * ✅ handles nested types
+pub fn record_type_to_string_test() {
+  // Simple record
+  RecordType(
+    dict.from_list([
+      #("numerator", PrimitiveType(String)),
+      #("denominator", PrimitiveType(String)),
+    ]),
+  )
+  |> types.accepted_type_to_string
+  |> should.equal("{ denominator: String, numerator: String }")
+
+  // Record with mixed types
+  RecordType(
+    dict.from_list([
+      #("name", PrimitiveType(String)),
+      #("count", PrimitiveType(NumericType(Integer))),
+    ]),
+  )
+  |> types.accepted_type_to_string
+  |> should.equal("{ count: Integer, name: String }")
+}
+
+// ==== validate_record_value ====
+// ==== Happy Path ====
+// * ✅ all fields present and valid
+// * ✅ optional field absent
+// ==== Sad Path ====
+// * ✅ missing required field
+// * ✅ extra field rejected
+// * ✅ wrong type in field
+// * ✅ not a dict value
+pub fn validate_record_value_test() {
+  let schema =
+    RecordType(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("count", PrimitiveType(NumericType(Integer))),
+      ]),
+    )
+
+  // Happy: all fields present
+  let val =
+    value.DictValue(
+      dict.from_list([
+        #("name", value.StringValue("test")),
+        #("count", value.IntValue(42)),
+      ]),
+    )
+  types.validate_value(schema, val) |> should.be_ok
+
+  // Sad: missing required field
+  let missing_val =
+    value.DictValue(dict.from_list([#("name", value.StringValue("test"))]))
+  types.validate_value(schema, missing_val) |> should.be_error
+
+  // Sad: extra field
+  let extra_val =
+    value.DictValue(
+      dict.from_list([
+        #("name", value.StringValue("test")),
+        #("count", value.IntValue(42)),
+        #("extra", value.StringValue("oops")),
+      ]),
+    )
+  types.validate_value(schema, extra_val) |> should.be_error
+
+  // Sad: wrong type
+  let wrong_val =
+    value.DictValue(
+      dict.from_list([
+        #("name", value.StringValue("test")),
+        #("count", value.StringValue("not_an_int")),
+      ]),
+    )
+  types.validate_value(schema, wrong_val) |> should.be_error
+
+  // Sad: not a dict
+  types.validate_value(schema, value.StringValue("nope")) |> should.be_error
+}
+
+// ==== validate_record_value (optional fields) ====
+// * ✅ optional field can be absent
+pub fn validate_record_value_optional_test() {
+  let schema =
+    RecordType(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #("label", ModifierType(Optional(PrimitiveType(String)))),
+      ]),
+    )
+
+  // Only required field present
+  let val =
+    value.DictValue(dict.from_list([#("name", value.StringValue("test"))]))
+  types.validate_value(schema, val) |> should.be_ok
+
+  // Both fields present
+  let full_val =
+    value.DictValue(
+      dict.from_list([
+        #("name", value.StringValue("test")),
+        #("label", value.StringValue("my-label")),
+      ]),
+    )
+  types.validate_value(schema, full_val) |> should.be_ok
+}
+
+// ==== validate_record_value (nested) ====
+// * ✅ nested record validates recursively
+pub fn validate_record_value_nested_test() {
+  let schema =
+    RecordType(
+      dict.from_list([
+        #("name", PrimitiveType(String)),
+        #(
+          "metrics",
+          RecordType(
+            dict.from_list([
+              #("latency", PrimitiveType(NumericType(Integer))),
+              #("errors", PrimitiveType(NumericType(Integer))),
+            ]),
+          ),
+        ),
+      ]),
+    )
+
+  let val =
+    value.DictValue(
+      dict.from_list([
+        #("name", value.StringValue("test")),
+        #(
+          "metrics",
+          value.DictValue(
+            dict.from_list([
+              #("latency", value.IntValue(100)),
+              #("errors", value.IntValue(5)),
+            ]),
+          ),
+        ),
+      ]),
+    )
+  types.validate_value(schema, val) |> should.be_ok
+}
+
+// ==== record try_each_inner ====
+// * ✅ visits all field types
+pub fn record_try_each_inner_test() {
+  let record =
+    RecordType(
+      dict.from_list([
+        #("a", PrimitiveType(String)),
+        #("b", PrimitiveType(NumericType(Integer))),
+      ]),
+    )
+  types.try_each_inner(record, fn(_) { Ok(Nil) }) |> should.be_ok
+}
+
+// ==== record map_inner ====
+// * ✅ transforms all field types
+pub fn record_map_inner_test() {
+  let to_bool = fn(_) { PrimitiveType(Boolean) }
+  types.map_inner(
+    RecordType(
+      dict.from_list([
+        #("a", PrimitiveType(String)),
+        #("b", PrimitiveType(NumericType(Integer))),
+      ]),
+    ),
+    to_bool,
+  )
+  |> should.equal(
+    RecordType(
+      dict.from_list([
+        #("a", PrimitiveType(Boolean)),
+        #("b", PrimitiveType(Boolean)),
+      ]),
+    ),
+  )
+}
+
+// ==== record resolve_to_string ====
+// * ✅ record types cannot be template variables
+pub fn record_resolve_to_string_test() {
+  let record = RecordType(dict.from_list([#("a", PrimitiveType(String))]))
+  types.resolve_to_string(record, value.StringValue("x"), fn(s) { s }, fn(l) {
+    string.join(l, ",")
+  })
+  |> should.be_error
+}
+
+// ==== record is_optional_or_defaulted ====
+// * ✅ record is not optional/defaulted
+pub fn record_is_optional_or_defaulted_test() {
+  RecordType(dict.from_list([#("a", PrimitiveType(String))]))
+  |> types.is_optional_or_defaulted
+  |> should.be_false
 }
 
 // ===========================================================================

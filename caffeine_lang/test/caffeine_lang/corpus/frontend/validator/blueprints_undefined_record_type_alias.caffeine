@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api":
+    Requires { data: { name: _nope } }
+    Provides { value: "x" }

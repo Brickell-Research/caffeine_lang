@@ -44,4 +44,3 @@ pub fn parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError))
       }
   }
 }
-

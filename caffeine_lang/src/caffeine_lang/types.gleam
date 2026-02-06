@@ -21,6 +21,7 @@ pub type AcceptedTypes {
   CollectionType(CollectionTypes(AcceptedTypes))
   ModifierType(ModifierTypes(AcceptedTypes))
   RefinementType(RefinementTypes(AcceptedTypes))
+  RecordType(dict.Dict(String, AcceptedTypes))
 }
 
 /// ParsedType is the frontend counterpart of AcceptedTypes that allows type alias
@@ -33,6 +34,8 @@ pub type ParsedType {
   ParsedRefinement(RefinementTypes(ParsedType))
   /// A reference to a type alias (e.g., _env). Resolved during lowering.
   ParsedTypeAliasRef(String)
+  /// A record type with named, typed fields.
+  ParsedRecord(dict.Dict(String, ParsedType))
 }
 
 /// PrimitiveTypes are the most _atomic_ of types. I.E. the simple ones
@@ -286,6 +289,7 @@ pub fn accepted_type_to_string(accepted_type: AcceptedTypes) -> String {
     ModifierType(modifier_type) -> modifier_type_to_string(modifier_type)
     RefinementType(refinement_type) ->
       refinement_type_to_string(refinement_type)
+    RecordType(fields) -> record_type_to_string(fields)
   }
 }
 
@@ -382,6 +386,26 @@ fn refinement_to_string(
   }
 }
 
+/// Converts a record type to its string representation.
+fn record_type_to_string(fields: dict.Dict(String, AcceptedTypes)) -> String {
+  let field_strs =
+    fields
+    |> dict.to_list
+    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+    |> list.map(fn(pair) { pair.0 <> ": " <> accepted_type_to_string(pair.1) })
+  "{ " <> string.join(field_strs, ", ") <> " }"
+}
+
+/// Converts a parsed record type to its string representation.
+fn parsed_record_to_string(fields: dict.Dict(String, ParsedType)) -> String {
+  let field_strs =
+    fields
+    |> dict.to_list
+    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+    |> list.map(fn(pair) { pair.0 <> ": " <> parsed_type_to_string(pair.1) })
+  "{ " <> string.join(field_strs, ", ") <> " }"
+}
+
 // ---------------------------------------------------------------------------
 // ParsedType operations
 // ---------------------------------------------------------------------------
@@ -398,6 +422,7 @@ pub fn parsed_type_to_string(parsed_type: ParsedType) -> String {
     ParsedRefinement(refinement_type) ->
       refinement_to_string(refinement_type, parsed_type_to_string)
     ParsedTypeAliasRef(name) -> name
+    ParsedRecord(fields) -> parsed_record_to_string(fields)
   }
 }
 
@@ -413,6 +438,7 @@ pub fn try_each_inner_parsed(
     ParsedCollection(collection) -> collection_try_each_inner(collection, f)
     ParsedModifier(modifier) -> modifier_try_each_inner(modifier, f)
     ParsedRefinement(refinement) -> refinement_try_each_inner(refinement, f)
+    ParsedRecord(fields) -> dict.values(fields) |> list.try_each(f)
   }
 }
 
@@ -813,6 +839,7 @@ fn validate_string_literal(
         validate_string_literal,
       )
     CollectionType(_) -> Error(Nil)
+    RecordType(_) -> Error(Nil)
   }
 }
 
@@ -850,6 +877,7 @@ pub fn validate_value(
     CollectionType(collection) -> validate_collection_value(collection, val)
     ModifierType(modifier) -> validate_modifier_value(modifier, val)
     RefinementType(refinement) -> validate_refinement_value(refinement, val)
+    RecordType(fields) -> validate_record_value(fields, val)
   }
 }
 
@@ -998,6 +1026,74 @@ fn validate_collection_value(
           ])
       }
     }
+  }
+}
+
+fn validate_record_value(
+  schema: dict.Dict(String, AcceptedTypes),
+  val: Value,
+) -> Result(Value, List(ValidationError)) {
+  case val {
+    value.DictValue(dict_val) -> {
+      // Reject extra fields not in schema
+      let schema_keys = dict.keys(schema) |> set.from_list
+      let val_keys = dict.keys(dict_val) |> set.from_list
+      let extra_keys = set.difference(val_keys, schema_keys)
+      use <- bool.guard(
+        !set.is_empty(extra_keys),
+        Error([
+          ValidationError(
+            expected: "only fields: "
+              <> schema_keys
+            |> set.to_list
+            |> list.sort(string.compare)
+            |> string.join(", "),
+            found: "unexpected field(s): "
+              <> extra_keys
+            |> set.to_list
+            |> list.sort(string.compare)
+            |> string.join(", "),
+            path: [],
+          ),
+        ]),
+      )
+      // For each schema field: validate it exists and type-check
+      schema
+      |> dict.to_list
+      |> list.try_map(fn(pair) {
+        let #(field_name, field_type) = pair
+        case dict.get(dict_val, field_name) {
+          Ok(field_val) ->
+            validate_value(field_type, field_val)
+            |> result.map_error(fn(errs) {
+              list.map(errs, fn(e) {
+                ValidationError(..e, path: [field_name, ..e.path])
+              })
+            })
+          Error(_) ->
+            case is_optional_or_defaulted(field_type) {
+              True -> Ok(value.NilValue)
+              False ->
+                Error([
+                  ValidationError(
+                    expected: accepted_type_to_string(field_type),
+                    found: "missing field",
+                    path: [field_name],
+                  ),
+                ])
+            }
+        }
+      })
+      |> result.map(fn(_) { val })
+    }
+    _ ->
+      Error([
+        ValidationError(
+          expected: "Record",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
   }
 }
 
@@ -1223,6 +1319,7 @@ pub fn resolve_to_string(
       resolve_modifier_to_string(modifier, val, resolve_string, resolve_list)
     RefinementType(refinement) ->
       resolve_refinement_to_string(refinement, val, resolve_string)
+    RecordType(_) -> Error("Record types cannot be template variables")
   }
 }
 
@@ -1340,6 +1437,7 @@ pub fn try_each_inner(
     CollectionType(collection) -> collection_try_each_inner(collection, f)
     ModifierType(modifier) -> modifier_try_each_inner(modifier, f)
     RefinementType(refinement) -> refinement_try_each_inner(refinement, f)
+    RecordType(fields) -> dict.values(fields) |> list.try_each(f)
   }
 }
 
@@ -1356,6 +1454,7 @@ pub fn map_inner(
     ModifierType(modifier) -> ModifierType(modifier_map_inner(modifier, f))
     RefinementType(refinement) ->
       RefinementType(refinement_map_inner(refinement, f))
+    RecordType(fields) -> RecordType(dict.map_values(fields, fn(_, v) { f(v) }))
   }
 }
 
@@ -1367,6 +1466,7 @@ pub fn is_optional_or_defaulted(typ: AcceptedTypes) -> Bool {
     ModifierType(Optional(_)) -> True
     ModifierType(Defaulted(_, _)) -> True
     RefinementType(OneOf(inner, _)) -> is_optional_or_defaulted(inner)
+    RecordType(_) -> False
     _ -> False
   }
 }
@@ -1390,6 +1490,7 @@ pub fn get_numeric_type(typ: AcceptedTypes) -> NumericTypes {
     CollectionType(_) -> Integer
     ModifierType(_) -> Integer
     RefinementType(_) -> Integer
+    RecordType(_) -> Integer
   }
 }
 

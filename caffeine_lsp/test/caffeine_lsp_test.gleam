@@ -926,7 +926,8 @@ pub fn selection_range_nested_test() {
 }
 
 pub fn selection_range_file_scope_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Provides { value: \"x\" }\n"
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Provides { value: \"x\" }\n"
   let sr = selection_range.get_selection_range(source, 0, 0)
   // Walk up to find the outermost range
   let outermost = find_outermost(sr)

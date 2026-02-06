@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "api":
+    Requires { indicators: { denominator: String, numerator: String } }
+    Provides { value: "x" }

@@ -9,9 +9,10 @@ import caffeine_lang/frontend/tokenizer
 import caffeine_lang/types.{
   type ParsedType, type PrimitiveTypes, type RefinementTypes, Boolean, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, NumericType, OneOf, Optional,
-  ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRefinement,
-  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
+  ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRecord,
+  ParsedRefinement, ParsedTypeAliasRef, SemanticType, String as StringType, URL,
 }
+import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
@@ -779,6 +780,8 @@ fn parse_type(
     token.KeywordDict -> parse_dict_type(state)
     token.KeywordOptional -> parse_optional_type(state)
     token.KeywordDefaulted -> parse_defaulted_type(state)
+    // Record type (e.g., { numerator: String, denominator: String })
+    token.SymbolLeftBrace -> parse_record_type(state)
     // Type alias reference (must start with _, e.g., _env)
     token.Identifier(name) ->
       case string.starts_with(name, "_") {
@@ -811,6 +814,22 @@ fn parse_type_with_refinement(
   }
 }
 
+/// Parses a record type: `{ field: Type, ... }`.
+/// Reuses parse_type_struct to parse the struct, then converts fields to a dict.
+fn parse_record_type(
+  state: ParserState,
+) -> Result(#(ParsedType, ParserState), ParserError) {
+  use #(s, state) <- result.try(parse_type_struct(state))
+  let fields =
+    s.fields
+    |> list.map(fn(field) {
+      let assert ast.TypeValue(t) = field.value
+      #(field.name, t)
+    })
+    |> dict.from_list
+  Ok(#(ParsedRecord(fields), state))
+}
+
 /// Parses types valid inside collections: primitives, nested collections, or type alias refs.
 /// Does not allow modifiers (Optional/Defaulted) or refinements directly.
 fn parse_collection_inner_type(
@@ -839,6 +858,8 @@ fn parse_collection_inner_type(
     }
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
+    // Record type (e.g., { numerator: String, denominator: String })
+    token.SymbolLeftBrace -> parse_record_type(state)
     // Type alias reference (must start with _, e.g., _env)
     token.Identifier(name) ->
       case string.starts_with(name, "_") {

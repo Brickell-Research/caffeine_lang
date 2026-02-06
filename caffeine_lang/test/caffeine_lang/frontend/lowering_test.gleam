@@ -4,7 +4,7 @@ import caffeine_lang/frontend/validator
 import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
-import caffeine_lang/types
+import caffeine_lang/types.{RecordType}
 import caffeine_lang/value
 import gleam/dict
 import gleam/list
@@ -308,4 +308,36 @@ pub fn literal_to_dynamic_test() {
   // Test via the expects_complex_literals corpus which has lists, structs, bools, numbers
   let expectations = parse_and_lower_expects("expects_complex_literals")
   { expectations != [] } |> should.be_true
+}
+
+// ==== lower_blueprints (record types) ====
+// * ✅ type alias resolves to RecordType
+// * ✅ inline record type resolves to RecordType
+pub fn lower_blueprints_record_type_test() {
+  let blueprints = parse_and_lower_blueprints("blueprints_record_type")
+  let assert Ok(bp) = list.first(blueprints)
+
+  // _indicators alias should resolve to RecordType
+  let assert Ok(indicators_type) = dict.get(bp.params, "indicators")
+  indicators_type
+  |> should.equal(
+    RecordType(
+      dict.from_list([
+        #("numerator", types.PrimitiveType(types.String)),
+        #("denominator", types.PrimitiveType(types.String)),
+      ]),
+    ),
+  )
+
+  // Inline record type
+  let assert Ok(config_type) = dict.get(bp.params, "config")
+  config_type
+  |> should.equal(
+    RecordType(
+      dict.from_list([
+        #("env", types.PrimitiveType(types.String)),
+        #("count", types.PrimitiveType(types.NumericType(types.Integer))),
+      ]),
+    ),
+  )
 }

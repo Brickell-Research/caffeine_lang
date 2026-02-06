@@ -114,9 +114,7 @@ fn find_enclosing_item(lines: List(String), line: Int) -> option.Option(String) 
   find_enclosing_item_loop(prefix)
 }
 
-fn find_enclosing_item_loop(
-  lines: List(String),
-) -> option.Option(String) {
+fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
   case lines {
     [] -> option.None
     [line_text, ..rest] -> {
@@ -337,9 +335,7 @@ fn extendable_items(
 
 /// Extract extendable names from raw text when parsing fails.
 /// Scans for lines matching `_name (Provides|Requires):` at indent 0.
-fn extract_extendable_names_from_text(
-  content: String,
-) -> List(CompletionItem) {
+fn extract_extendable_names_from_text(content: String) -> List(CompletionItem) {
   string.split(content, "\n")
   |> list.filter_map(fn(line) {
     let trimmed = string.trim_start(line)

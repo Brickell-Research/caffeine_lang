@@ -14,10 +14,11 @@ import caffeine_lang/types.{
   type CollectionTypes, type ModifierTypes, type ParsedType, type PrimitiveTypes,
   type RefinementTypes, Boolean, Defaulted, Dict, Float, InclusiveRange, Integer,
   List as ListType, NumericType, OneOf, Optional, ParsedCollection,
-  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
-  SemanticType, String as StringType, URL,
+  ParsedModifier, ParsedPrimitive, ParsedRecord, ParsedRefinement,
+  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
 }
 import gleam/bool
+import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
@@ -293,6 +294,7 @@ fn format_type(t: ParsedType) -> String {
     ParsedModifier(m) -> format_modifier_type(m)
     ParsedRefinement(r) -> format_refinement_type(r)
     ParsedTypeAliasRef(name) -> name
+    ParsedRecord(fields) -> format_record_type(fields)
   }
 }
 
@@ -318,6 +320,15 @@ fn format_collection_type(c: CollectionTypes(ParsedType)) -> String {
     Dict(key, value) ->
       "Dict(" <> format_type(key) <> ", " <> format_type(value) <> ")"
   }
+}
+
+fn format_record_type(fields: dict.Dict(String, ParsedType)) -> String {
+  let field_strs =
+    fields
+    |> dict.to_list
+    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+    |> list.map(fn(pair) { pair.0 <> ": " <> format_type(pair.1) })
+  "{ " <> string.join(field_strs, ", ") <> " }"
 }
 
 fn format_modifier_type(m: ModifierTypes(ParsedType)) -> String {
@@ -349,6 +360,7 @@ fn needs_string_quoting(t: ParsedType) -> Bool {
     ParsedPrimitive(SemanticType(_)) -> True
     ParsedRefinement(OneOf(inner, _)) -> needs_string_quoting(inner)
     ParsedRefinement(InclusiveRange(inner, _, _)) -> needs_string_quoting(inner)
+    ParsedRecord(_) -> False
     _ -> False
   }
 }

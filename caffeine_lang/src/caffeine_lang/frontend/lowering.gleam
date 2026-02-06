@@ -11,8 +11,8 @@ import caffeine_lang/linker/expectations.{type Expectation, Expectation}
 import caffeine_lang/types.{
   type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
   InclusiveRange, List, ModifierType, OneOf, Optional, ParsedCollection,
-  ParsedModifier, ParsedPrimitive, ParsedRefinement, ParsedTypeAliasRef,
-  PrimitiveType, RefinementType,
+  ParsedModifier, ParsedPrimitive, ParsedRecord, ParsedRefinement,
+  ParsedTypeAliasRef, PrimitiveType, RecordType, RefinementType,
 }
 import caffeine_lang/value
 import gleam/dict.{type Dict}
@@ -220,6 +220,10 @@ fn resolve_type_aliases(
       ModifierType(resolve_modifier(modifier, aliases))
     ParsedRefinement(refinement) ->
       RefinementType(resolve_refinement(refinement, aliases))
+    ParsedRecord(fields) ->
+      RecordType(
+        dict.map_values(fields, fn(_, v) { resolve_type_aliases(v, aliases) }),
+      )
   }
 }
 

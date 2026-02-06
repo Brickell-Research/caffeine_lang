@@ -31,6 +31,7 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile {
 // * ✅ valid - extendables exist, no duplicates
 // * ✅ valid - no extendables at all
 // * ✅ valid - type aliases with references in Requires
+// * ✅ valid - record type with type alias
 // ==== Error Cases - Extendables ====
 // * ❌ duplicate extendable names
 // * ❌ extends references non-existent extendable
@@ -42,12 +43,16 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile {
 // * ❌ duplicate type alias names
 // * ❌ undefined type alias reference
 // * ❌ invalid Dict key type alias (non-String)
+// ==== Error Cases - Record Type Aliases ====
+// * ❌ circular type alias in record field
+// * ❌ undefined type alias in record field
 pub fn validate_blueprints_file_test() {
   // Happy paths
   [
     #(parse_blueprints("blueprints_valid"), Ok(Nil)),
     #(parse_blueprints("blueprints_no_extendables"), Ok(Nil)),
     #(parse_blueprints("blueprints_valid_type_alias"), Ok(Nil)),
+    #(parse_blueprints("blueprints_valid_record_type"), Ok(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
     case validator.validate_blueprints_file(file) {
@@ -154,6 +159,28 @@ pub fn validate_blueprints_file_test() {
         resolved_to: "Integer { x | x in ( 1..100 ) }",
         referenced_by: "test",
       )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Circular type alias in record field
+  [
+    #(
+      parse_blueprints("blueprints_circular_record_type_alias"),
+      Error(validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Undefined type alias in record field
+  [
+    #(
+      parse_blueprints("blueprints_undefined_record_type_alias"),
+      Error(validator.UndefinedTypeAlias(name: "_nope", referenced_by: "api")),
     ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {

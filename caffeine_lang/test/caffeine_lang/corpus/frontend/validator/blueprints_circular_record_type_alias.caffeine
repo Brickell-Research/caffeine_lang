@@ -1,0 +1,6 @@
+_rec (Type): { a: _rec }
+
+Blueprints for "SLO"
+  * "api":
+    Requires { data: _rec }
+    Provides { value: "x" }

@@ -1,0 +1,6 @@
+_indicators (Type): { numerator: String, denominator: String }
+
+Blueprints for "SLO"
+  * "api":
+    Requires { indicators: _indicators, config: { env: String, count: Integer } }
+    Provides { vendor: "datadog", value: "x" }

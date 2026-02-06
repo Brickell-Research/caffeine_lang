@@ -187,14 +187,13 @@ fn lookup_expect_field(word: String, file: ast.ExpectsFile) -> Option(String) {
   lookup_field_in_list(word, all_fields)
 }
 
-fn lookup_field_in_list(
-  word: String,
-  fields: List(ast.Field),
-) -> Option(String) {
+fn lookup_field_in_list(word: String, fields: List(ast.Field)) -> Option(String) {
   case list.find(fields, fn(f) { f.name == word }) {
     Ok(field) -> {
       let value_str = ast.value_to_string(field.value)
-      option.Some("**" <> field.name <> "** — Field\n\nValue: `" <> value_str <> "`")
+      option.Some(
+        "**" <> field.name <> "** — Field\n\nValue: `" <> value_str <> "`",
+      )
     }
     Error(_) -> option.None
   }
