@@ -117,6 +117,16 @@ connection.onInitialize((params: any) => {
         ? fileURLToPath(rootUri)
         : rootUri;
       scanCaffeineFiles(workspaceRoot);
+      // Build initial blueprint index from all discovered files
+      for (const uri of workspaceFiles) {
+        const text = getFileContent(uri);
+        if (text) {
+          const names = extractBlueprintNames(text);
+          if (names.length > 0) {
+            blueprintIndex.set(uri, new Set(names));
+          }
+        }
+      }
     } catch { /* ignore */ }
   }
 
@@ -166,12 +176,13 @@ const blueprintIndex = new Map<string, Set<string>>();
 function extractBlueprintNames(text: string): string[] {
   const trimmed = text.trimStart();
   if (!trimmed.startsWith("Blueprints")) return [];
-  // Match all blueprint item names: * "name"
+  // Match blueprint item names: * "name" — only on non-comment lines
   const names: string[] = [];
-  const pattern = /\*\s+"([^"]+)"/g;
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    names.push(match[1]);
+  const pattern = /\*\s+"([^"]+)"/;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    const match = pattern.exec(line);
+    if (match) names.push(match[1]);
   }
   return names;
 }
@@ -275,11 +286,13 @@ documents.onDidChangeContent((change) => {
         connection.sendDiagnostics({ uri, diagnostics: [] });
       }
 
-      // If blueprint index changed, re-validate all open expects files
+      // If blueprint index changed, re-validate all open expects files.
+      // This triggers when: (a) names changed in a blueprints file, or
+      // (b) a file that WAS a blueprints file no longer is (names removed).
       const namesChanged = !oldNames
         || oldNames.size !== newNames.length
         || newNames.some((n) => !oldNames.has(n));
-      if (namesChanged && newNames.length > 0 || oldNames && newNames.length === 0) {
+      if ((namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0)) {
         revalidateExpectsFiles();
       }
     }, 300),
@@ -379,33 +392,33 @@ connection.onDocumentSymbol((params) => {
 
 // --- Go to Definition ---
 
-/** Find the location of a blueprint artifact header (Blueprints for "name") in a file. */
-function findBlueprintArtifactLocation(
+/** Find the location of a blueprint item (e.g. * "name") within a blueprint file. */
+function findBlueprintItemLocation(
   text: string,
-  artifactName: string,
+  itemName: string,
 ): { line: number; col: number; nameLen: number } | null {
-  const pattern = `Blueprints for "${artifactName}"`;
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const idx = lines[i].indexOf(pattern);
-    if (idx < 0) continue;
-    // Column of the artifact name (inside the quotes)
-    const nameCol = idx + `Blueprints for "`.length;
-    return { line: i, col: nameCol, nameLen: artifactName.length };
+    // Match blueprint item pattern: * "itemName"
+    if (!/^\s*\*\s+"/.test(lines[i])) continue;
+    const nameIdx = lines[i].indexOf(`"${itemName}"`);
+    if (nameIdx < 0) continue;
+    // Column is inside the quotes (skip the opening quote)
+    return { line: i, col: nameIdx + 1, nameLen: itemName.length };
   }
   return null;
 }
 
-/** Look up a cross-file blueprint definition by artifact name. */
+/** Look up a cross-file blueprint definition by blueprint item name. */
 function findCrossFileBlueprintDef(
-  artifactName: string,
+  blueprintItemName: string,
 ): { uri: string; line: number; col: number; nameLen: number } | null {
-  for (const uri of workspaceFiles) {
+  // Use the blueprint index for a fast lookup by item name
+  for (const [uri, names] of blueprintIndex) {
+    if (!names.has(blueprintItemName)) continue;
     const text = getFileContent(uri);
     if (!text) continue;
-    // Quick check: skip files that don't contain the artifact name
-    if (!text.includes(`Blueprints for "${artifactName}"`)) continue;
-    const loc = findBlueprintArtifactLocation(text, artifactName);
+    const loc = findBlueprintItemLocation(text, blueprintItemName);
     if (loc) return { uri, ...loc };
   }
   return null;
@@ -535,22 +548,25 @@ connection.onReferences((params) => {
     const blueprintName = get_blueprint_name_at(text, line, char) as string;
     if (!blueprintName) return sameFileRefs;
 
-    // Search all other open .caffeine documents for the same name
+    // Search all workspace .caffeine files (not just open ones) for references
     const crossFileRefs: typeof sameFileRefs = [];
-    for (const otherDoc of documents.all()) {
-      if (otherDoc.uri === params.textDocument.uri) continue;
-      if (!otherDoc.uri.endsWith(".caffeine")) continue;
+    const searched = new Set<string>([params.textDocument.uri]);
+    for (const uri of workspaceFiles) {
+      if (searched.has(uri)) continue;
+      searched.add(uri);
+      const otherText = getFileContent(uri);
+      if (!otherText) continue;
       try {
         const otherRefs = gleamArray(
-          find_references_to_name(otherDoc.getText(), blueprintName) as GleamList,
+          find_references_to_name(otherText, blueprintName) as GleamList,
         );
         for (const r of otherRefs) {
           crossFileRefs.push({
-            uri: otherDoc.uri,
+            uri,
             range: range(r[0], r[1], r[0], r[1] + r[2]),
           });
         }
-      } catch { /* skip documents that fail */ }
+      } catch { /* skip files that fail */ }
     }
 
     return [...sameFileRefs, ...crossFileRefs];
@@ -886,14 +902,40 @@ connection.languages.typeHierarchy.onSubtypes((params: any) => {
 // --- Watched Files ---
 
 connection.onDidChangeWatchedFiles((params) => {
+  let blueprintsChanged = false;
   for (const change of params.changes) {
     const uri = change.uri;
     if (!uri.endsWith(".caffeine")) continue;
+
     if (change.type === FileChangeType.Deleted) {
       workspaceFiles.delete(uri);
+      if (blueprintIndex.has(uri)) {
+        blueprintIndex.delete(uri);
+        blueprintsChanged = true;
+      }
     } else {
+      // Created or Changed — update workspace tracking and blueprint index
       workspaceFiles.add(uri);
+      const text = getFileContent(uri);
+      if (text) {
+        const names = extractBlueprintNames(text);
+        const oldNames = blueprintIndex.get(uri);
+        if (names.length > 0) {
+          blueprintIndex.set(uri, new Set(names));
+        } else {
+          blueprintIndex.delete(uri);
+        }
+        // Detect whether the set of blueprint names actually changed
+        const changed = !oldNames
+          || oldNames.size !== names.length
+          || names.some((n) => !oldNames.has(n));
+        if (changed) blueprintsChanged = true;
+      }
     }
+  }
+
+  if (blueprintsChanged) {
+    revalidateExpectsFiles();
   }
 });
 
@@ -901,10 +943,35 @@ connection.onDidChangeWatchedFiles((params) => {
 
 documents.onDidClose((event) => {
   const uri = event.document.uri;
-  const had = blueprintIndex.has(uri);
-  blueprintIndex.delete(uri);
-  // If a blueprints file was closed, re-validate expects files
-  if (had) {
+  // Clear diagnostics for the closed document so stale markers don't linger
+  connection.sendDiagnostics({ uri, diagnostics: [] });
+
+  // Re-read from disk to keep the blueprint index accurate (the file still exists,
+  // we just closed the editor tab).
+  const diskText = (() => {
+    try {
+      return fs.readFileSync(fileURLToPath(uri), "utf-8");
+    } catch {
+      return null;
+    }
+  })();
+
+  const hadBefore = blueprintIndex.has(uri);
+  if (diskText) {
+    const names = extractBlueprintNames(diskText);
+    if (names.length > 0) {
+      blueprintIndex.set(uri, new Set(names));
+    } else {
+      blueprintIndex.delete(uri);
+    }
+  } else {
+    // File was deleted from disk while open — clean up
+    blueprintIndex.delete(uri);
+  }
+
+  const hasAfter = blueprintIndex.has(uri);
+  // If blueprint availability changed, re-validate expects files
+  if (hadBefore || hasAfter) {
     revalidateExpectsFiles();
   }
 });
