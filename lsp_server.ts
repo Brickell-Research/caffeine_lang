@@ -3,12 +3,16 @@
 // language logic to the compiled Gleam modules.
 
 import process from "node:process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   createConnection,
   TextDocuments,
   ProposedFeatures,
   TextDocumentSyncKind,
   DiagnosticSeverity,
+  FileChangeType,
 } from "npm:vscode-languageserver/node.js";
 import { TextDocument } from "npm:vscode-languageserver-textdocument";
 
@@ -19,7 +23,7 @@ if (!process.argv.includes("--stdio")) {
 }
 
 // Gleam-compiled intelligence modules
-import { get_diagnostics, diagnostic_code_to_string, QuotedFieldName, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_diagnostics, get_cross_file_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 import { get_completions } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 import {
@@ -27,15 +31,17 @@ import {
   token_types,
 } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/semantic_tokens.mjs";
 import { get_symbols } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/document_symbols.mjs";
-import { get_definition } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
+import { get_definition, get_blueprint_ref_at_position } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
 import { get_code_actions, ActionDiagnostic } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/code_actions.mjs";
 import { format } from "./caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/frontend/formatter.mjs";
 import { get_highlights } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/highlight.mjs";
-import { get_references } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
+import { get_references, get_blueprint_name_at, find_references_to_name } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
 import { prepare_rename, get_rename_edits } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/rename.mjs";
 import { get_folding_ranges } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/folding_range.mjs";
 import { get_selection_range } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/selection_range.mjs";
 import { get_linked_editing_ranges } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/linked_editing_range.mjs";
+import { get_workspace_symbols } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/workspace_symbols.mjs";
+import { prepare_type_hierarchy, BlueprintKind } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/type_hierarchy.mjs";
 
 // Gleam runtime types
 import { Ok, toList } from "./caffeine_lsp/build/dev/javascript/prelude.mjs";
@@ -68,7 +74,52 @@ function range(
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
-connection.onInitialize(() => {
+// Workspace file tracking for workspace/symbol
+let workspaceRoot: string | null = null;
+const workspaceFiles = new Set<string>();
+
+/** Recursively find all .caffeine files under a directory. */
+function scanCaffeineFiles(dir: string): void {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      scanCaffeineFiles(full);
+    } else if (entry.isFile() && entry.name.endsWith(".caffeine")) {
+      workspaceFiles.add(pathToFileURL(full).toString());
+    }
+  }
+}
+
+/** Read file content: prefer open document, fall back to disk. */
+function getFileContent(uri: string): string | null {
+  const doc = documents.get(uri);
+  if (doc) return doc.getText();
+  try {
+    const filePath = fileURLToPath(uri);
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+connection.onInitialize((params: any) => {
+  const rootUri: string | undefined = params.rootUri ?? params.rootPath;
+  if (rootUri) {
+    try {
+      workspaceRoot = rootUri.startsWith("file://")
+        ? fileURLToPath(rootUri)
+        : rootUri;
+      scanCaffeineFiles(workspaceRoot);
+    } catch { /* ignore */ }
+  }
+
   return {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
@@ -83,8 +134,10 @@ connection.onInitialize(() => {
       linkedEditingRangeProvider: true,
       documentFormattingProvider: true,
       documentSymbolProvider: true,
+      workspaceSymbolProvider: true,
+      typeHierarchyProvider: true,
       completionProvider: {
-        triggerCharacters: [":", "[", "{", ","],
+        triggerCharacters: [":", "[", "{", ",", "\""],
       },
       codeActionProvider: {
         codeActionKinds: ["quickfix"],
@@ -103,6 +156,76 @@ connection.onInitialize(() => {
     },
   };
 });
+
+// --- Workspace Blueprint Index ---
+
+/** Maps file URIs to the set of blueprint item names they define. */
+const blueprintIndex = new Map<string, Set<string>>();
+
+/** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files. */
+function extractBlueprintNames(text: string): string[] {
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith("Blueprints")) return [];
+  // Match all blueprint item names: * "name"
+  const names: string[] = [];
+  const pattern = /\*\s+"([^"]+)"/g;
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    names.push(match[1]);
+  }
+  return names;
+}
+
+/** Collect all known blueprint names across the workspace. */
+function allKnownBlueprints(): string[] {
+  const names: string[] = [];
+  for (const set of blueprintIndex.values()) {
+    for (const name of set) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+/** Check whether file content is an expects file. */
+function isExpectsFile(text: string): boolean {
+  return text.trimStart().startsWith("Expectations");
+}
+
+/** Convert a Gleam diagnostic to an LSP diagnostic. */
+// deno-lint-ignore no-explicit-any
+function gleamDiagToLsp(d: any) {
+  const codeStr = diagnostic_code_to_string(d.code);
+  const base = {
+    range: range(d.line, d.column, d.line, d.end_column),
+    severity: d.severity as DiagnosticSeverity,
+    source: "caffeine",
+    message: d.message,
+  };
+  return codeStr instanceof Some
+    ? { ...base, code: codeStr[0] }
+    : base;
+}
+
+/** Run cross-file diagnostics for all open expects files. */
+function revalidateExpectsFiles() {
+  const knownList = toList(allKnownBlueprints());
+  for (const doc of documents.all()) {
+    const text = doc.getText();
+    if (!isExpectsFile(text)) continue;
+    try {
+      const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+      const crossDiags = gleamArray(get_cross_file_diagnostics(text, knownList) as GleamList);
+      const allDiags = [...singleDiags, ...crossDiags];
+      connection.sendDiagnostics({
+        uri: doc.uri,
+        diagnostics: allDiags.map(gleamDiagToLsp),
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 // --- Diagnostics ---
 
@@ -123,25 +246,41 @@ documents.onDidChangeContent((change) => {
       if (!doc) return;
       const text = doc.getText();
 
+      // Update blueprint index for this file
+      const newNames = extractBlueprintNames(text);
+      const oldNames = blueprintIndex.get(uri);
+      if (newNames.length > 0) {
+        blueprintIndex.set(uri, new Set(newNames));
+      } else {
+        blueprintIndex.delete(uri);
+      }
+
       try {
-        const diags = gleamArray(get_diagnostics(text) as GleamList);
+        const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+
+        // Add cross-file diagnostics for expects files
+        let crossDiags: ReturnType<typeof gleamArray> = [];
+        if (isExpectsFile(text)) {
+          crossDiags = gleamArray(
+            get_cross_file_diagnostics(text, toList(allKnownBlueprints())) as GleamList,
+          );
+        }
+
+        const allDiags = [...singleDiags, ...crossDiags];
         connection.sendDiagnostics({
           uri,
-          diagnostics: diags.map((d) => {
-            const codeStr = diagnostic_code_to_string(d.code);
-            const base = {
-              range: range(d.line, d.column, d.line, d.end_column),
-              severity: d.severity as DiagnosticSeverity,
-              source: "caffeine",
-              message: d.message,
-            };
-            return codeStr instanceof Some
-              ? { ...base, code: codeStr[0] }
-              : base;
-          }),
+          diagnostics: allDiags.map(gleamDiagToLsp),
         });
       } catch {
         connection.sendDiagnostics({ uri, diagnostics: [] });
+      }
+
+      // If blueprint index changed, re-validate all open expects files
+      const namesChanged = !oldNames
+        || oldNames.size !== newNames.length
+        || newNames.some((n) => !oldNames.has(n));
+      if (namesChanged && newNames.length > 0 || oldNames && newNames.length === 0) {
+        revalidateExpectsFiles();
       }
     }, 300),
   );
@@ -175,8 +314,9 @@ connection.onCompletion((params) => {
   const text = doc ? doc.getText() : "";
 
   try {
+    const blueprintNames = toList(allKnownBlueprints());
     const items = gleamArray(
-      get_completions(text, params.position.line, params.position.character) as GleamList,
+      get_completions(text, params.position.line, params.position.character, blueprintNames) as GleamList,
     );
     return items.map((item) => ({
       label: item.label,
@@ -239,13 +379,48 @@ connection.onDocumentSymbol((params) => {
 
 // --- Go to Definition ---
 
+/** Find the location of a blueprint artifact header (Blueprints for "name") in a file. */
+function findBlueprintArtifactLocation(
+  text: string,
+  artifactName: string,
+): { line: number; col: number; nameLen: number } | null {
+  const pattern = `Blueprints for "${artifactName}"`;
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const idx = lines[i].indexOf(pattern);
+    if (idx < 0) continue;
+    // Column of the artifact name (inside the quotes)
+    const nameCol = idx + `Blueprints for "`.length;
+    return { line: i, col: nameCol, nameLen: artifactName.length };
+  }
+  return null;
+}
+
+/** Look up a cross-file blueprint definition by artifact name. */
+function findCrossFileBlueprintDef(
+  artifactName: string,
+): { uri: string; line: number; col: number; nameLen: number } | null {
+  for (const uri of workspaceFiles) {
+    const text = getFileContent(uri);
+    if (!text) continue;
+    // Quick check: skip files that don't contain the artifact name
+    if (!text.includes(`Blueprints for "${artifactName}"`)) continue;
+    const loc = findBlueprintArtifactLocation(text, artifactName);
+    if (loc) return { uri, ...loc };
+  }
+  return null;
+}
+
 connection.onDefinition((params) => {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return null;
 
+  const text = doc.getText();
+
   try {
+    // First: try in-file definition (existing behavior)
     const result = get_definition(
-      doc.getText(),
+      text,
       params.position.line,
       params.position.character,
     );
@@ -255,6 +430,22 @@ connection.onDefinition((params) => {
         uri: params.textDocument.uri,
         range: range(defLine, defCol, defLine, defCol + nameLen),
       };
+    }
+
+    // Second: try cross-file blueprint reference
+    const bpRef = get_blueprint_ref_at_position(
+      text,
+      params.position.line,
+      params.position.character,
+    );
+    if (bpRef instanceof Some) {
+      const target = findCrossFileBlueprintDef(bpRef[0] as string);
+      if (target) {
+        return {
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
+        };
+      }
     }
   } catch { /* ignore */ }
   return null;
@@ -266,9 +457,12 @@ connection.onDeclaration((params) => {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return null;
 
+  const text = doc.getText();
+
   try {
+    // First: try in-file definition
     const result = get_definition(
-      doc.getText(),
+      text,
       params.position.line,
       params.position.character,
     );
@@ -278,6 +472,22 @@ connection.onDeclaration((params) => {
         uri: params.textDocument.uri,
         range: range(defLine, defCol, defLine, defCol + nameLen),
       };
+    }
+
+    // Second: try cross-file blueprint reference
+    const bpRef = get_blueprint_ref_at_position(
+      text,
+      params.position.line,
+      params.position.character,
+    );
+    if (bpRef instanceof Some) {
+      const target = findCrossFileBlueprintDef(bpRef[0] as string);
+      if (target) {
+        return {
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
+        };
+      }
     }
   } catch { /* ignore */ }
   return null;
@@ -309,13 +519,41 @@ connection.onReferences((params) => {
   if (!doc) return [];
 
   try {
-    const refs = gleamArray(
-      get_references(doc.getText(), params.position.line, params.position.character) as GleamList,
-    );
-    return refs.map((r) => ({
+    const text = doc.getText();
+    const line = params.position.line;
+    const char = params.position.character;
+
+    // Same-file references (extendables, type aliases, and blueprint names)
+    const sameFileRefs = gleamArray(
+      get_references(text, line, char) as GleamList,
+    ).map((r) => ({
       uri: params.textDocument.uri,
       range: range(r[0], r[1], r[0], r[1] + r[2]),
     }));
+
+    // Check if cursor is on a blueprint name for cross-file search
+    const blueprintName = get_blueprint_name_at(text, line, char) as string;
+    if (!blueprintName) return sameFileRefs;
+
+    // Search all other open .caffeine documents for the same name
+    const crossFileRefs: typeof sameFileRefs = [];
+    for (const otherDoc of documents.all()) {
+      if (otherDoc.uri === params.textDocument.uri) continue;
+      if (!otherDoc.uri.endsWith(".caffeine")) continue;
+      try {
+        const otherRefs = gleamArray(
+          find_references_to_name(otherDoc.getText(), blueprintName) as GleamList,
+        );
+        for (const r of otherRefs) {
+          crossFileRefs.push({
+            uri: otherDoc.uri,
+            range: range(r[0], r[1], r[0], r[1] + r[2]),
+          });
+        }
+      } catch { /* skip documents that fail */ }
+    }
+
+    return [...sameFileRefs, ...crossFileRefs];
   } catch {
     return [];
   }
@@ -463,7 +701,9 @@ connection.onCodeAction((params) => {
             d.range.end.line,
             d.range.end.character,
             d.message,
-            d.code === "quoted-field-name" ? new QuotedFieldName() : new NoDiagnosticCode(),
+            d.code === "quoted-field-name" ? new QuotedFieldName()
+              : d.code === "blueprint-not-found" ? new BlueprintNotFound()
+              : new NoDiagnosticCode(),
           ),
       ),
     );
@@ -494,6 +734,178 @@ connection.onCodeAction((params) => {
     });
   } catch {
     return [];
+  }
+});
+
+// --- Workspace Symbols ---
+
+// deno-lint-ignore no-explicit-any
+connection.onWorkspaceSymbol((params: any) => {
+  const query = (params.query ?? "").toLowerCase();
+  // deno-lint-ignore no-explicit-any
+  const results: any[] = [];
+
+  for (const uri of workspaceFiles) {
+    const text = getFileContent(uri);
+    if (!text) continue;
+
+    try {
+      const symbols = gleamArray(get_workspace_symbols(text) as GleamList);
+      for (const sym of symbols) {
+        if (query && !(sym.name as string).toLowerCase().includes(query)) continue;
+        const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
+        results.push({
+          name: sym.name,
+          kind: sym.kind,
+          location: { uri, range: r },
+        });
+      }
+    } catch { /* ignore */ }
+  }
+
+  return results;
+});
+
+// --- Type Hierarchy ---
+
+connection.languages.typeHierarchy.onPrepare((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const items = gleamArray(
+      prepare_type_hierarchy(
+        doc.getText(),
+        params.position.line,
+        params.position.character,
+      ) as GleamList,
+    );
+    if (items.length === 0) return null;
+    return items.map((item) => {
+      const r = range(item.line, item.col, item.line, item.col + item.name_len);
+      return {
+        name: item.name,
+        kind: 5, // SymbolKind.Class
+        uri: params.textDocument.uri,
+        range: r,
+        selectionRange: r,
+        data: {
+          kind: item.kind instanceof BlueprintKind ? "blueprint" : "expectation",
+          blueprint: item.blueprint,
+        },
+      };
+    });
+  } catch {
+    return null;
+  }
+});
+
+// deno-lint-ignore no-explicit-any
+connection.languages.typeHierarchy.onSupertypes((params: any) => {
+  const data = params.item?.data;
+  if (!data || data.kind !== "expectation" || !data.blueprint) return [];
+
+  // Search workspace blueprint files for a blueprint item matching the referenced name
+  // deno-lint-ignore no-explicit-any
+  const results: any[] = [];
+  for (const uri of workspaceFiles) {
+    const text = getFileContent(uri);
+    if (!text || !text.trimStart().startsWith("Blueprints")) continue;
+    // Quick check: does file contain the blueprint name?
+    if (!text.includes(`"${data.blueprint}"`)) continue;
+
+    try {
+      // SymbolKind.Class (5) items from workspace symbols are blueprint/expect items
+      const symbols = gleamArray(get_workspace_symbols(text) as GleamList);
+      for (const sym of symbols) {
+        if (sym.name === data.blueprint && sym.kind === 5) {
+          const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
+          results.push({
+            name: sym.name,
+            kind: 5,
+            uri,
+            range: r,
+            selectionRange: r,
+            data: { kind: "blueprint", blueprint: "" },
+          });
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  return results;
+});
+
+// deno-lint-ignore no-explicit-any
+connection.languages.typeHierarchy.onSubtypes((params: any) => {
+  const data = params.item?.data;
+  if (!data || data.kind !== "blueprint") return [];
+
+  const blueprintName = params.item.name;
+  // deno-lint-ignore no-explicit-any
+  const results: any[] = [];
+
+  for (const uri of workspaceFiles) {
+    const text = getFileContent(uri);
+    if (!text || !text.trimStart().startsWith("Expectations")) continue;
+    // Quick check: does file reference this blueprint?
+    if (!text.includes(`"${blueprintName}"`)) continue;
+
+    try {
+      // Use prepare_type_hierarchy on each expect item to get blueprint association.
+      // Walk lines to find expect item names (lines matching * "name":).
+      const lines = text.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/^\s*\*\s+"([^"]+)"/);
+        if (!match) continue;
+        const itemName = match[1];
+        // Use prepare_type_hierarchy to get the item with its blueprint reference
+        const items = gleamArray(
+          prepare_type_hierarchy(text, i, lines[i].indexOf(itemName)) as GleamList,
+        );
+        for (const item of items) {
+          if (item.blueprint === blueprintName) {
+            const r = range(item.line, item.col, item.line, item.col + item.name_len);
+            results.push({
+              name: item.name,
+              kind: 5,
+              uri,
+              range: r,
+              selectionRange: r,
+              data: { kind: "expectation", blueprint: blueprintName },
+            });
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  return results;
+});
+
+// --- Watched Files ---
+
+connection.onDidChangeWatchedFiles((params) => {
+  for (const change of params.changes) {
+    const uri = change.uri;
+    if (!uri.endsWith(".caffeine")) continue;
+    if (change.type === FileChangeType.Deleted) {
+      workspaceFiles.delete(uri);
+    } else {
+      workspaceFiles.add(uri);
+    }
+  }
+});
+
+// --- Document Close ---
+
+documents.onDidClose((event) => {
+  const uri = event.document.uri;
+  const had = blueprintIndex.has(uri);
+  blueprintIndex.delete(uri);
+  // If a blueprints file was closed, re-validate expects files
+  if (had) {
+    revalidateExpectsFiles();
   }
 });
 

@@ -16,10 +16,47 @@ pub fn get_references(
   case word {
     "" -> []
     name -> {
-      use <- bool.guard(!file_utils.is_defined_symbol(content, name), [])
+      let is_symbol = file_utils.is_defined_symbol(content, name)
+      let is_blueprint = is_blueprint_name(content, name)
+      use <- bool.guard(!is_symbol && !is_blueprint, [])
       let len = string.length(name)
       position_utils.find_all_name_positions(content, name)
       |> list.map(fn(pos) { #(pos.0, pos.1, len) })
     }
   }
+}
+
+/// Returns the blueprint name at the cursor position if it represents a
+/// cross-file referable name, or an empty string otherwise.
+@internal
+pub fn get_blueprint_name_at(
+  content: String,
+  line: Int,
+  character: Int,
+) -> String {
+  let word = position_utils.extract_word_at(content, line, character)
+  case word {
+    "" -> ""
+    name -> {
+      use <- bool.guard(!is_blueprint_name(content, name), "")
+      name
+    }
+  }
+}
+
+/// Finds all positions where a name appears as a whole word in content.
+/// Returns #(line, col, length) tuples for cross-file reference searching.
+pub fn find_references_to_name(
+  content: String,
+  name: String,
+) -> List(#(Int, Int, Int)) {
+  let len = string.length(name)
+  position_utils.find_all_name_positions(content, name)
+  |> list.map(fn(pos) { #(pos.0, pos.1, len) })
+}
+
+/// Check whether a name appears in a blueprint-relevant quoted context.
+fn is_blueprint_name(content: String, name: String) -> Bool {
+  string.contains(content, "* \"" <> name <> "\"")
+  || string.contains(content, "for \"" <> name <> "\"")
 }

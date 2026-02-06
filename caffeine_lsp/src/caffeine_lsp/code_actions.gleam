@@ -56,6 +56,7 @@ fn diagnostic_to_action(
         Error(_) -> Error(Nil)
       }
     }
+    diagnostics.BlueprintNotFound -> Error(Nil)
     NoDiagnosticCode -> Error(Nil)
   }
 }

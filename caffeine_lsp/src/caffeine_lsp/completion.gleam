@@ -2,7 +2,9 @@ import caffeine_lang/frontend/ast
 import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
-import caffeine_lsp/lsp_types.{CikClass, CikField, CikKeyword, CikVariable}
+import caffeine_lsp/lsp_types.{
+  CikClass, CikField, CikKeyword, CikModule, CikVariable,
+}
 import gleam/bool
 import gleam/list
 import gleam/option
@@ -14,16 +16,20 @@ pub type CompletionItem {
 }
 
 /// Returns a list of completion items, context-aware based on
-/// the cursor position in the document.
+/// the cursor position in the document. Workspace blueprint names
+/// from other files are used for cross-file blueprint header completion.
 pub fn get_completions(
   content: String,
   line: Int,
   character: Int,
+  workspace_blueprint_names: List(String),
 ) -> List(CompletionItem) {
   // Parse once and reuse across all completion paths.
   let parsed = file_utils.parse(content)
   let context = get_context(content, parsed, line, character)
   case context {
+    BlueprintHeaderContext(prefix) ->
+      blueprint_header_completions(workspace_blueprint_names, prefix)
     ExtendsContext(used) -> extends_completions(content, parsed, used)
     TypeContext -> type_completions(parsed)
     FieldContext(fields) -> field_completions(fields)
@@ -34,6 +40,7 @@ pub fn get_completions(
 // --- Context detection ---
 
 type CompletionContext {
+  BlueprintHeaderContext(prefix: String)
   ExtendsContext(already_used: List(String))
   TypeContext
   FieldContext(available_fields: List(#(String, String)))
@@ -51,14 +58,19 @@ fn get_context(
     [line_text, ..] -> {
       let before_cursor = string.slice(line_text, 0, character)
       let trimmed = string.trim(before_cursor)
-      use <- bool.guard(
-        is_extends_context(trimmed),
-        ExtendsContext(already_used: extract_used_extends(trimmed)),
-      )
-      use <- bool.guard(is_type_context(trimmed), TypeContext)
-      case get_field_context(parsed, lines, line) {
-        option.Some(fields) -> FieldContext(fields)
-        option.None -> GeneralContext
+      case get_blueprint_header_prefix(trimmed) {
+        option.Some(prefix) -> BlueprintHeaderContext(prefix)
+        option.None -> {
+          use <- bool.guard(
+            is_extends_context(trimmed),
+            ExtendsContext(already_used: extract_used_extends(trimmed)),
+          )
+          use <- bool.guard(is_type_context(trimmed), TypeContext)
+          case get_field_context(parsed, lines, line) {
+            option.Some(fields) -> FieldContext(fields)
+            option.None -> GeneralContext
+          }
+        }
       }
     }
     [] -> GeneralContext
@@ -73,6 +85,20 @@ fn is_extends_context(before: String) -> Bool {
 fn is_type_context(before: String) -> Bool {
   // After a colon (field type position) or after a type keyword like "List("
   string.ends_with(string.trim(before), ":") || string.ends_with(before, "(")
+}
+
+/// Detect if cursor is inside a blueprint header reference, e.g.
+/// `Expectations for "api` → Some("api"), `Expectations for "` → Some("").
+fn get_blueprint_header_prefix(before: String) -> option.Option(String) {
+  case string.split_once(before, "Expectations for \"") {
+    Ok(#(_, after_quote)) ->
+      // Only match if the closing quote hasn't been typed yet
+      case string.contains(after_quote, "\"") {
+        True -> option.None
+        False -> option.Some(after_quote)
+      }
+    Error(_) -> option.None
+  }
 }
 
 /// Extract already-used extendable names from the extends context.
@@ -243,6 +269,22 @@ fn existing_provides_fields(provides: ast.Struct) -> List(String) {
 }
 
 // --- Completion generators ---
+
+/// Suggest blueprint names from the workspace, filtered by the typed prefix.
+fn blueprint_header_completions(
+  workspace_blueprint_names: List(String),
+  prefix: String,
+) -> List(CompletionItem) {
+  workspace_blueprint_names
+  |> list.filter(fn(name) { string.starts_with(name, prefix) })
+  |> list.map(fn(name) {
+    CompletionItem(
+      name,
+      lsp_types.completion_item_kind_to_int(CikModule),
+      "Blueprint",
+    )
+  })
+}
 
 fn extends_completions(
   content: String,

@@ -15,6 +15,8 @@ import caffeine_lsp/references
 import caffeine_lsp/rename
 import caffeine_lsp/selection_range.{type SelectionRange, HasParent, NoParent}
 import caffeine_lsp/semantic_tokens
+import caffeine_lsp/type_hierarchy.{BlueprintKind, ExpectationKind}
+import caffeine_lsp/workspace_symbols
 import gleam/list
 import gleam/option
 import gleam/string
@@ -320,12 +322,12 @@ pub fn hover_type_alias_test() {
 // ==========================================================================
 
 pub fn completion_returns_items_test() {
-  let items = completion.get_completions("", 0, 0)
+  let items = completion.get_completions("", 0, 0, [])
   { items != [] } |> should.be_true()
 }
 
 pub fn completion_includes_keywords_test() {
-  let items = completion.get_completions("", 0, 0)
+  let items = completion.get_completions("", 0, 0, [])
   let has_blueprints = list.any(items, fn(item) { item.label == "Blueprints" })
   has_blueprints |> should.be_true()
 }
@@ -334,7 +336,7 @@ pub fn completion_extends_context_test() {
   let source =
     "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
-  let items = completion.get_completions(source, 3, 22)
+  let items = completion.get_completions(source, 3, 22, [])
   let has_defaults = list.any(items, fn(item) { item.label == "_defaults" })
   has_defaults |> should.be_true()
 }
@@ -342,7 +344,7 @@ pub fn completion_extends_context_test() {
 pub fn completion_type_context_test() {
   let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
   // After the colon
-  let items = completion.get_completions(source, 2, 21)
+  let items = completion.get_completions(source, 2, 21, [])
   // Should include type names but not keywords like "Blueprints"
   let has_string = list.any(items, fn(item) { item.label == "String" })
   has_string |> should.be_true()
@@ -351,7 +353,7 @@ pub fn completion_type_context_test() {
 pub fn completion_includes_extendables_test() {
   let source =
     "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  let items = completion.get_completions(source, 4, 0)
+  let items = completion.get_completions(source, 4, 0, [])
   let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
 }
@@ -561,6 +563,101 @@ pub fn definition_empty_space_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_definition(source, 0, 10)
+  |> should.equal(option.None)
+}
+
+// ==========================================================================
+// Cross-file definition tests (blueprint ref detection)
+// ==========================================================================
+
+// ==== get_blueprint_ref_at_position ====
+// * ✅ cursor on blueprint name returns the name
+// * ✅ cursor in middle of name returns the name
+// * ✅ cursor on last char of name returns the name
+// * ✅ cursor on "Expectations" keyword returns None
+// * ✅ cursor on "for" keyword returns None
+// * ✅ cursor on opening quote returns None
+// * ✅ cursor past closing quote returns None
+// * ✅ cursor on item line returns None
+// * ✅ multiple blocks, cursor on second returns correct name
+// * ✅ blueprints file returns None
+
+pub fn blueprint_ref_on_name_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on 'a' of api_availability (col 18)
+  definition.get_blueprint_ref_at_position(source, 0, 18)
+  |> should.equal(option.Some("api_availability"))
+}
+
+pub fn blueprint_ref_middle_of_name_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on '_' between api and availability (col 21)
+  definition.get_blueprint_ref_at_position(source, 0, 21)
+  |> should.equal(option.Some("api_availability"))
+}
+
+pub fn blueprint_ref_last_char_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on last 'y' of api_availability (col 33)
+  definition.get_blueprint_ref_at_position(source, 0, 33)
+  |> should.equal(option.Some("api_availability"))
+}
+
+pub fn blueprint_ref_on_keyword_returns_none_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "Expectations" (col 5)
+  definition.get_blueprint_ref_at_position(source, 0, 5)
+  |> should.equal(option.None)
+}
+
+pub fn blueprint_ref_on_for_returns_none_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "for" (col 14)
+  definition.get_blueprint_ref_at_position(source, 0, 14)
+  |> should.equal(option.None)
+}
+
+pub fn blueprint_ref_on_quote_returns_none_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on opening quote (col 17)
+  definition.get_blueprint_ref_at_position(source, 0, 17)
+  |> should.equal(option.None)
+}
+
+pub fn blueprint_ref_past_closing_quote_returns_none_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on closing quote (col 34)
+  definition.get_blueprint_ref_at_position(source, 0, 34)
+  |> should.equal(option.None)
+}
+
+pub fn blueprint_ref_on_item_line_returns_none_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on item line (line 1)
+  definition.get_blueprint_ref_at_position(source, 1, 7)
+  |> should.equal(option.None)
+}
+
+pub fn blueprint_ref_multiple_blocks_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { threshold: 99.95 }\n\nExpectations for \"latency\"\n  * \"checkout_p99\":\n    Provides { threshold_ms: 500 }\n"
+  // Cursor on "latency" in second block (line 4, col 18)
+  definition.get_blueprint_ref_at_position(source, 4, 18)
+  |> should.equal(option.Some("latency"))
+}
+
+pub fn blueprint_ref_blueprints_file_returns_none_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  definition.get_blueprint_ref_at_position(source, 0, 16)
   |> should.equal(option.None)
 }
 
@@ -802,6 +899,85 @@ pub fn references_non_symbol_returns_empty_test() {
   |> should.equal([])
 }
 
+// ==== get_references (blueprint names) ====
+// * blueprint item name returns references within same file
+// * expects blueprint reference returns references
+
+pub fn references_blueprint_item_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor on "api" (line 1, col 5 is the 'a' in api)
+  let refs = references.get_references(source, 1, 5)
+  { list.length(refs) >= 1 }
+  |> should.be_true()
+}
+
+pub fn references_expects_blueprint_name_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "api_availability" (line 0, col 18)
+  let refs = references.get_references(source, 0, 18)
+  { list.length(refs) >= 1 }
+  |> should.be_true()
+}
+
+// ==== get_blueprint_name_at ====
+// * returns item name when cursor is on blueprint item
+// * returns blueprint name when cursor is on Expectations for header
+// * returns empty string when cursor is on keyword
+// * returns empty string when cursor is on field value
+
+pub fn get_blueprint_name_at_item_name_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor on "api" (line 1, col 5)
+  references.get_blueprint_name_at(source, 1, 5)
+  |> should.equal("api")
+}
+
+pub fn get_blueprint_name_at_expects_header_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "api_availability" (line 0, col 18)
+  references.get_blueprint_name_at(source, 0, 18)
+  |> should.equal("api_availability")
+}
+
+pub fn get_blueprint_name_at_keyword_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor on "Blueprints" keyword (line 0, col 3)
+  references.get_blueprint_name_at(source, 0, 3)
+  |> should.equal("")
+}
+
+pub fn get_blueprint_name_at_field_value_test() {
+  let source =
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { vendor: \"datadog\" }\n"
+  // Cursor on "datadog" -- this is a field value, not a blueprint name
+  references.get_blueprint_name_at(source, 2, 26)
+  |> should.equal("")
+}
+
+// ==== find_references_to_name ====
+// * finds all occurrences of a name
+// * returns empty list for non-existent name
+
+pub fn find_references_to_name_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let refs = references.find_references_to_name(source, "api_availability")
+  refs
+  |> should.equal([#(0, 18, 16)])
+}
+
+pub fn find_references_to_name_not_found_test() {
+  let source =
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  references.find_references_to_name(source, "missing")
+  |> should.equal([])
+}
+
 // ==========================================================================
 // Rename tests
 // ==========================================================================
@@ -883,7 +1059,7 @@ pub fn field_completion_suggests_extended_fields_test() {
   let source =
     "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      status: true\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
-  let items = completion.get_completions(source, 6, 6)
+  let items = completion.get_completions(source, 6, 6, [])
   // Should suggest env and threshold from _defaults (minus any already defined)
   let labels = list.map(items, fn(i) { i.label })
   // "status" is already defined, but env and threshold come from _defaults
@@ -896,7 +1072,7 @@ pub fn field_completion_excludes_defined_fields_test() {
   let source =
     "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      env: \"staging\"\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
-  let items = completion.get_completions(source, 6, 6)
+  let items = completion.get_completions(source, 6, 6, [])
   let labels = list.map(items, fn(i) { i.label })
   // env is already defined in Provides, should not be suggested
   list.contains(labels, "env") |> should.be_false()
@@ -1026,8 +1202,320 @@ pub fn extends_completion_filters_used_test() {
   // Cursor inside "extends [_base, _auth]" at position after "_base, "
   // Line 4: "  * "api" extends [_base, _auth]:"
   // Position 28 is right after the comma+space, before _auth
-  let items = completion.get_completions(source, 4, 28)
+  let items = completion.get_completions(source, 4, 28, [])
   let labels = list.map(items, fn(i) { i.label })
   // _base already appears before cursor, should be filtered out
   list.contains(labels, "_base") |> should.be_false()
+}
+
+// ==========================================================================
+// Cross-file diagnostics tests
+// ==========================================================================
+
+// ==== get_cross_file_diagnostics ====
+// * expects file with known blueprint returns no diagnostics
+// * expects file with unknown blueprint returns diagnostic
+// * blueprints file returns no diagnostics
+// * empty content returns no diagnostics
+// * multiple expects blocks with mix of known and unknown
+
+pub fn cross_file_known_blueprint_no_diagnostics_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  diagnostics.get_cross_file_diagnostics(source, ["api_availability"])
+  |> should.equal([])
+}
+
+pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let diags =
+    diagnostics.get_cross_file_diagnostics(source, ["other_blueprint"])
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(1)
+      diag.message
+      |> should.equal("Blueprint 'api_availability' not found in workspace")
+      diag.code |> should.equal(diagnostics.BlueprintNotFound)
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn cross_file_blueprints_file_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  diagnostics.get_cross_file_diagnostics(source, [])
+  |> should.equal([])
+}
+
+pub fn cross_file_empty_content_returns_empty_test() {
+  diagnostics.get_cross_file_diagnostics("", ["api"])
+  |> should.equal([])
+}
+
+pub fn cross_file_multiple_blocks_mixed_test() {
+  let source =
+    "Expectations for \"known_bp\"\n  * \"item1\":\n    Provides { a: true }\n\nExpectations for \"unknown_bp\"\n  * \"item2\":\n    Provides { b: false }\n"
+  let diags = diagnostics.get_cross_file_diagnostics(source, ["known_bp"])
+  case diags {
+    [diag] -> {
+      diag.message
+      |> should.equal("Blueprint 'unknown_bp' not found in workspace")
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn cross_file_empty_known_list_reports_all_test() {
+  let source =
+    "Expectations for \"my_blueprint\"\n  * \"item\":\n    Provides { status: true }\n"
+  let diags = diagnostics.get_cross_file_diagnostics(source, [])
+  case diags {
+    [diag] -> {
+      diag.message
+      |> should.equal("Blueprint 'my_blueprint' not found in workspace")
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Workspace symbol tests
+// ==========================================================================
+
+// ==== get_workspace_symbols ====
+// * empty string returns empty list
+// * blueprints file returns type aliases, extendables, and items (no fields)
+// * expects file returns extendables and items (no fields)
+// * invalid source returns empty list
+
+pub fn workspace_symbols_empty_test() {
+  workspace_symbols.get_workspace_symbols("")
+  |> should.equal([])
+}
+
+pub fn workspace_symbols_blueprints_test() {
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }
+_base (Requires): { env: String }
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { threshold: Float }
+    Provides { value: \"x\" }
+"
+  let symbols = workspace_symbols.get_workspace_symbols(source)
+  let names = list.map(symbols, fn(s) { s.name })
+  // Should include the type alias, extendable, and blueprint item
+  list.contains(names, "_env") |> should.be_true()
+  list.contains(names, "_base") |> should.be_true()
+  list.contains(names, "api") |> should.be_true()
+  // Should have exactly 3 symbols (no fields like env, threshold, value)
+  list.length(symbols) |> should.equal(3)
+}
+
+pub fn workspace_symbols_expects_test() {
+  let source =
+    "_defaults (Provides): { env: \"production\" }
+
+Expectations for \"api_availability\"
+  * \"checkout\":
+    Provides { status: true }
+  * \"payments\":
+    Provides { status: true }
+"
+  let symbols = workspace_symbols.get_workspace_symbols(source)
+  let names = list.map(symbols, fn(s) { s.name })
+  // Should include extendable and expect items
+  list.contains(names, "_defaults") |> should.be_true()
+  list.contains(names, "checkout") |> should.be_true()
+  list.contains(names, "payments") |> should.be_true()
+  // Should have exactly 3 symbols (no fields like env, status)
+  list.length(symbols) |> should.equal(3)
+}
+
+pub fn workspace_symbols_no_fields_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String, threshold: Float }
+    Provides { value: \"x\", vendor: \"datadog\" }
+"
+  let symbols = workspace_symbols.get_workspace_symbols(source)
+  let names = list.map(symbols, fn(s) { s.name })
+  // Only the blueprint item, not fields
+  names |> should.equal(["api"])
+}
+
+pub fn workspace_symbols_invalid_source_test() {
+  workspace_symbols.get_workspace_symbols("totally invalid {{{ source")
+  |> should.equal([])
+}
+
+pub fn workspace_symbols_kind_values_test() {
+  let source =
+    "_env (Type): String { x | x in { \"prod\" } }
+_base (Provides): { vendor: \"datadog\" }
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"x\" }
+"
+  let symbols = workspace_symbols.get_workspace_symbols(source)
+  case symbols {
+    [type_alias, extendable, item] -> {
+      // TypeParameter = 26, Variable = 13, Class = 5
+      type_alias.kind |> should.equal(26)
+      extendable.kind |> should.equal(13)
+      item.kind |> should.equal(5)
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Type hierarchy tests
+// ==========================================================================
+
+// ==== prepare_type_hierarchy ====
+// * blueprint item name returns BlueprintKind item
+// * expect item name returns ExpectationKind item with blueprint
+// * keyword returns empty list
+// * empty space returns empty list
+// * field name returns empty list
+
+pub fn type_hierarchy_blueprint_item_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"x\" }
+"
+  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 7)
+  case items {
+    [item] -> {
+      item.name |> should.equal("api")
+      item.kind |> should.equal(BlueprintKind)
+      item.blueprint |> should.equal("")
+      item.name_len |> should.equal(3)
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn type_hierarchy_expect_item_test() {
+  let source =
+    "Expectations for \"api_availability\"
+  * \"checkout\":
+    Provides { status: true }
+"
+  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 7)
+  case items {
+    [item] -> {
+      item.name |> should.equal("checkout")
+      item.kind |> should.equal(ExpectationKind)
+      item.blueprint |> should.equal("api_availability")
+      item.name_len |> should.equal(8)
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn type_hierarchy_keyword_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"x\" }
+"
+  type_hierarchy.prepare_type_hierarchy(source, 0, 3)
+  |> should.equal([])
+}
+
+pub fn type_hierarchy_empty_space_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"x\" }
+"
+  type_hierarchy.prepare_type_hierarchy(source, 0, 10)
+  |> should.equal([])
+}
+
+pub fn type_hierarchy_field_name_returns_empty_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"x\" }
+"
+  // "env" is a field name, not an item name
+  type_hierarchy.prepare_type_hierarchy(source, 2, 16)
+  |> should.equal([])
+}
+
+pub fn type_hierarchy_multiple_expects_blocks_test() {
+  let source =
+    "Expectations for \"bp_one\"\n  * \"item_a\":\n    Provides { status: true }\n\nExpectations for \"bp_two\"\n  * \"item_b\":\n    Provides { active: false }\n"
+  let items = type_hierarchy.prepare_type_hierarchy(source, 5, 7)
+  case items {
+    [item] -> {
+      item.name |> should.equal("item_b")
+      item.blueprint |> should.equal("bp_two")
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Cross-file blueprint completion tests
+// ==========================================================================
+
+// ==== blueprint header completion ====
+// * suggests workspace blueprint names when cursor is after Expectations for "
+// * filters suggestions by partial prefix
+// * returns empty when no workspace names provided
+// * does not trigger after closing quote
+
+pub fn blueprint_header_completion_suggests_names_test() {
+  let source = "Expectations for \""
+  // Cursor right after the opening quote (line 0, col 19)
+  let items =
+    completion.get_completions(source, 0, 19, [
+      "api_availability", "latency_slo",
+    ])
+  let labels = list.map(items, fn(i) { i.label })
+  list.contains(labels, "api_availability") |> should.be_true()
+  list.contains(labels, "latency_slo") |> should.be_true()
+}
+
+pub fn blueprint_header_completion_filters_by_prefix_test() {
+  let source = "Expectations for \"api"
+  // Cursor after "api" (line 0, col 22)
+  let items =
+    completion.get_completions(source, 0, 22, [
+      "api_availability", "latency_slo",
+    ])
+  let labels = list.map(items, fn(i) { i.label })
+  list.contains(labels, "api_availability") |> should.be_true()
+  list.contains(labels, "latency_slo") |> should.be_false()
+}
+
+pub fn blueprint_header_completion_empty_without_names_test() {
+  let source = "Expectations for \""
+  let items = completion.get_completions(source, 0, 19, [])
+  items |> should.equal([])
+}
+
+pub fn blueprint_header_completion_not_after_closing_quote_test() {
+  let source = "Expectations for \"api_availability\""
+  // Cursor after the closing quote — should NOT be in header context
+  let items =
+    completion.get_completions(source, 0, 36, ["api_availability", "other"])
+  let labels = list.map(items, fn(i) { i.label })
+  // Should fall through to general context, not blueprint header
+  list.contains(labels, "api_availability") |> should.be_false()
 }

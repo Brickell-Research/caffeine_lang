@@ -1,3 +1,4 @@
+import caffeine_lang/frontend/ast.{type ExpectsBlock}
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
@@ -12,6 +13,7 @@ import gleam/string
 /// Structured diagnostic codes for machine-readable identification.
 pub type DiagnosticCode {
   QuotedFieldName
+  BlueprintNotFound
   NoDiagnosticCode
 }
 
@@ -19,6 +21,7 @@ pub type DiagnosticCode {
 pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
   case code {
     QuotedFieldName -> option.Some("quoted-field-name")
+    BlueprintNotFound -> option.Some("blueprint-not-found")
     NoDiagnosticCode -> option.None
   }
 }
@@ -59,6 +62,44 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
       [parser_error_to_diagnostic(blueprint_err)]
     }
   }
+}
+
+/// Check blueprint references in an expects file against known workspace blueprints.
+/// Returns diagnostics for any blueprint refs not found in the known list.
+pub fn get_cross_file_diagnostics(
+  content: String,
+  known_blueprints: List(String),
+) -> List(Diagnostic) {
+  use <- bool.guard(when: string.trim(content) == "", return: [])
+  case file_utils.parse(content) {
+    Ok(file_utils.Expects(file)) ->
+      file.blocks
+      |> list.filter_map(fn(block) {
+        check_blueprint_ref(content, block, known_blueprints)
+      })
+    _ -> []
+  }
+}
+
+/// Check a single expects block's blueprint reference against known blueprints.
+fn check_blueprint_ref(
+  content: String,
+  block: ExpectsBlock,
+  known_blueprints: List(String),
+) -> Result(Diagnostic, Nil) {
+  use <- bool.guard(
+    when: list.contains(known_blueprints, block.blueprint),
+    return: Error(Nil),
+  )
+  let #(line, col) = position_utils.find_name_position(content, block.blueprint)
+  Ok(Diagnostic(
+    line: line,
+    column: col,
+    end_column: col + string.length(block.blueprint),
+    severity: lsp_types.diagnostic_severity_to_int(DsError),
+    message: "Blueprint '" <> block.blueprint <> "' not found in workspace",
+    code: BlueprintNotFound,
+  ))
 }
 
 /// Build a diagnostic at the position of a name in the source.

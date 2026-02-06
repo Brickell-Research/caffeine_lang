@@ -1,8 +1,10 @@
-import caffeine_lang/frontend/ast
+import caffeine_lang/frontend/ast.{type ExpectsBlock}
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
+import gleam/bool
 import gleam/list
 import gleam/option.{type Option}
+import gleam/result
 import gleam/string
 
 /// Returns the definition location (line, col, name_length) for the symbol
@@ -80,4 +82,51 @@ fn find_name_location(content: String, name: String) -> Option(#(Int, Int, Int))
     }
     False -> option.Some(#(line, col, string.length(name)))
   }
+}
+
+/// Returns the blueprint name if the cursor is on a blueprint reference
+/// in an `Expectations for "name"` header, or None otherwise.
+pub fn get_blueprint_ref_at_position(
+  content: String,
+  line: Int,
+  character: Int,
+) -> Option(String) {
+  case file_utils.parse(content) {
+    Ok(file_utils.Expects(file)) -> {
+      let lines = string.split(content, "\n")
+      case list.drop(lines, line) {
+        [line_text, ..] ->
+          find_blueprint_ref_on_line(line_text, character, file.blocks)
+        [] -> option.None
+      }
+    }
+    _ -> option.None
+  }
+}
+
+/// Check if the cursor is on a blueprint name within an Expectations header.
+fn find_blueprint_ref_on_line(
+  line_text: String,
+  character: Int,
+  blocks: List(ExpectsBlock),
+) -> Option(String) {
+  let prefix = "Expectations for \""
+  use <- bool.guard(!string.contains(line_text, prefix), option.None)
+  list.find_map(blocks, fn(block) {
+    let pattern = prefix <> block.blueprint <> "\""
+    use <- bool.guard(!string.contains(line_text, pattern), Error(Nil))
+    case string.split_once(line_text, prefix) {
+      Error(_) -> Error(Nil)
+      Ok(#(before, _)) -> {
+        let name_start = string.length(before) + string.length(prefix)
+        let name_end = name_start + string.length(block.blueprint)
+        case character >= name_start && character < name_end {
+          True -> Ok(block.blueprint)
+          False -> Error(Nil)
+        }
+      }
+    }
+  })
+  |> result.replace_error(Nil)
+  |> option.from_result
 }

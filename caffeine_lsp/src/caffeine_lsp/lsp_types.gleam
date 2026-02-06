@@ -11,6 +11,8 @@ pub type CompletionItemKind {
   CikVariable
   /// LSP CompletionItemKind 5.
   CikField
+  /// LSP CompletionItemKind 9.
+  CikModule
 }
 
 /// Converts a CompletionItemKind to its LSP protocol integer.
@@ -20,6 +22,7 @@ pub fn completion_item_kind_to_int(k: CompletionItemKind) -> Int {
     CikClass -> 7
     CikVariable -> 6
     CikField -> 5
+    CikModule -> 9
   }
 }
 
