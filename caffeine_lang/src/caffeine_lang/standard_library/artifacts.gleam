@@ -10,7 +10,7 @@ import caffeine_lang/linker/artifacts.{
 import caffeine_lang/types.{
   CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer,
   List as ListType, ModifierType, NumericType, OneOf, Optional, PrimitiveType,
-  RefinementType, SemanticType, String as StringType, URL,
+  RecordType, RefinementType, SemanticType, String as StringType, URL,
 }
 import gleam/dict
 import gleam/set
@@ -110,13 +110,12 @@ fn dependency_relations_artifact() -> Artifact {
       #(
         "relations",
         ParamInfo(
-          type_: CollectionType(Dict(
-            RefinementType(OneOf(
-              PrimitiveType(StringType),
-              set.from_list(["soft", "hard"]),
-            )),
-            CollectionType(ListType(PrimitiveType(StringType))),
-          )),
+          type_: RecordType(
+            dict.from_list([
+              #("hard", CollectionType(ListType(PrimitiveType(StringType)))),
+              #("soft", CollectionType(ListType(PrimitiveType(StringType)))),
+            ]),
+          ),
           description: "Map of dependency type to list of service names",
         ),
       ),
