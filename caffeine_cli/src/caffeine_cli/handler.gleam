@@ -122,6 +122,27 @@ pub fn types_command() -> glint.Command(Result(Nil, String)) {
   types_catalog(log_level_from_quiet(is_quiet))
 }
 
+/// Builds the validate subcommand.
+@internal
+pub fn validate_command() -> glint.Command(Result(Nil, String)) {
+  use <- glint.command_help(
+    "Validate .caffeine blueprints and expectations without writing output",
+  )
+  use quiet <- glint.flag(quiet_flag())
+  use target <- glint.flag(target_flag())
+  use blueprint_file <- glint.named_arg("blueprint_file")
+  use expectations_dir <- glint.named_arg("expectations_dir")
+  use named, _, flags <- glint.command()
+
+  let assert Ok(is_quiet) = quiet(flags)
+  let assert Ok(target) = target(flags)
+  let log_level = log_level_from_quiet(is_quiet)
+  let bp = blueprint_file(named)
+  let exp_dir = expectations_dir(named)
+
+  validate(bp, exp_dir, target, log_level)
+}
+
 /// Builds the lsp subcommand.
 @internal
 pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
@@ -253,6 +274,63 @@ fn compile(
       Ok(Nil)
     }
   }
+}
+
+fn validate(
+  blueprint_file: String,
+  expectations_dir: String,
+  target: String,
+  log_level: LogLevel,
+) -> Result(Nil, String) {
+  // Discover expectation files
+  use expectation_paths <- result.try(
+    file_discovery.get_caffeine_files(expectations_dir)
+    |> result.map_error(fn(err) { "File discovery error: " <> err.msg }),
+  )
+
+  // Read blueprint source
+  use blueprint_content <- result.try(
+    simplifile.read(blueprint_file)
+    |> result.map_error(fn(err) {
+      "Error reading blueprint file: "
+      <> simplifile.describe_error(err)
+      <> " ("
+      <> blueprint_file
+      <> ")"
+    }),
+  )
+  let blueprint = SourceFile(path: blueprint_file, content: blueprint_content)
+
+  // Read all expectation sources
+  use expectations <- result.try(
+    expectation_paths
+    |> list.map(fn(path) {
+      simplifile.read(path)
+      |> result.map(fn(content) { SourceFile(path: path, content: content) })
+      |> result.map_error(fn(err) {
+        "Error reading expectation file: "
+        <> simplifile.describe_error(err)
+        <> " ("
+        <> path
+        <> ")"
+      })
+    })
+    |> result.all(),
+  )
+
+  // Run compilation pipeline, discard output
+  use _output <- result.try(
+    compile_presenter.compile_with_output(
+      blueprint,
+      expectations,
+      target,
+      log_level,
+    )
+    |> result.map_error(fn(err) { "Compilation error: " <> err.msg }),
+  )
+
+  compile_presenter.log(log_level, "Validation passed")
+  Ok(Nil)
 }
 
 fn format_command(
