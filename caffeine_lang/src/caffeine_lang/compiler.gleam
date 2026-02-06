@@ -6,6 +6,7 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/dynatrace
+import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/honeycomb
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
@@ -20,6 +21,8 @@ import gleam/dict
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
+import gleam/string
+import terra_madre/common
 import terra_madre/render
 import terra_madre/terraform
 
@@ -168,19 +171,52 @@ fn run_code_generation(
       cloud: option.None,
     )
 
-  let config =
+  // Render boilerplate (terraform/provider/variable blocks) without resources.
+  let boilerplate_config =
     terraform.Config(
       terraform: option.Some(terraform_settings),
       providers: providers,
-      resources: all_resources,
+      resources: [],
       data_sources: [],
       variables: variables,
       outputs: [],
       locals: [],
       modules: [],
     )
+  let boilerplate = render.render_config(boilerplate_config)
 
-  let terraform_output = render.render_config(config)
+  // Build resource name → metadata lookup for source comments.
+  let metadata_by_name =
+    resolved_irs
+    |> list.flat_map(fn(ir) {
+      let base = common.sanitize_terraform_identifier(ir.unique_identifier)
+      [#(base, ir.metadata), #(base <> "_sli", ir.metadata)]
+    })
+    |> dict.from_list
+
+  // Render each resource with a source traceability comment.
+  let resource_sections =
+    all_resources
+    |> list.map(fn(resource) {
+      let rendered = generator_utils.render_resource_to_string(resource)
+      case dict.get(metadata_by_name, resource.name) {
+        Ok(metadata) ->
+          generator_utils.build_source_comment(metadata) <> "\n" <> rendered
+        Error(_) -> rendered
+      }
+    })
+
+  // Assemble final output: boilerplate + commented resources.
+  let terraform_output = case resource_sections {
+    [] -> boilerplate
+    sections -> {
+      let trimmed_boilerplate = string.drop_end(boilerplate, 1)
+      trimmed_boilerplate
+      <> "\n\n"
+      <> string.join(sections, "\n\n")
+      <> "\n"
+    }
+  }
 
   // Dependency graph is only useful when relations exist.
   let has_deps =

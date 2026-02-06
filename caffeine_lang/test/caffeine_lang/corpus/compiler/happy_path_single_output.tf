@@ -24,6 +24,7 @@ variable "datadog_app_key" {
   type = string
 }
 
+# Caffeine: acme.payments.slos.checkout_availability (blueprint: api_availability)
 resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
   tags = [

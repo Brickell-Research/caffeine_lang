@@ -24,6 +24,7 @@ variable "datadog_app_key" {
   type = string
 }
 
+# Caffeine: acme.payments.slos.checkout_availability (blueprint: api_availability)
 resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
   tags = [
@@ -51,6 +52,7 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   }
 }
 
+# Caffeine: acme.payments.slos.checkout_latency_p99 (blueprint: api_latency_p99)
 resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   name = "checkout_latency_p99"
   tags = [
@@ -78,6 +80,7 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   }
 }
 
+# Caffeine: acme.platform.slos.auth_service_availability (blueprint: api_availability)
 resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
   name = "auth_service_availability"
   tags = [
