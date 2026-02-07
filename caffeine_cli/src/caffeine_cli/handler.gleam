@@ -432,11 +432,34 @@ fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
   compile_presenter.log(log_level, string.repeat("=", 21))
   compile_presenter.log(log_level, "")
 
-  display.pretty_print_category(
-    "Types",
-    "All supported types in the Caffeine type system",
-    types.all_type_metas(),
-  )
+  [
+    display.pretty_print_category(
+      "PrimitiveTypes",
+      "Base value types for simple data",
+      types.primitive_all_type_metas(),
+    ),
+    display.pretty_print_category(
+      "CollectionTypes",
+      "Container types for grouping values",
+      types.collection_all_type_metas(),
+    ),
+    display.pretty_print_category(
+      "StructuredTypes",
+      "Named fields with typed values",
+      types.structured_all_type_metas(),
+    ),
+    display.pretty_print_category(
+      "ModifierTypes",
+      "Wrappers that change how values are handled",
+      types.modifier_all_type_metas(),
+    ),
+    display.pretty_print_category(
+      "RefinementTypes",
+      "Constraints that restrict allowed values",
+      types.refinement_all_type_metas(),
+    ),
+  ]
+  |> string.join("\n\n")
   |> compile_presenter.log(log_level, _)
 
   compile_presenter.log(log_level, "")

@@ -1797,10 +1797,10 @@ pub fn is_optional_or_defaulted_test() {
 }
 
 // ==== all_type_metas ====
-// * ✅ returns non-empty list with entries from all 4 categories
+// * ✅ returns non-empty list with entries from all 5 categories
 pub fn all_type_metas_test() {
   let metas = types.all_type_metas()
-  // Should have entries from primitives, collections, modifiers, and refinements
+  // Should have entries from primitives, collections, structured, modifiers, and refinements
   { metas != [] } |> should.be_true()
 
   // Verify it includes entries from each category by checking known names

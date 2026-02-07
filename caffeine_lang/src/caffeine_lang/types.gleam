@@ -113,7 +113,11 @@ pub type TypeMeta {
 /// types but are useful for documentation (hover, CLI `types` command).
 @internal
 pub fn all_type_metas() -> List(TypeMeta) {
-  list.flatten([completable_type_metas(), refinement_all_type_metas()])
+  list.flatten([
+    completable_type_metas(),
+    structured_all_type_metas(),
+    refinement_all_type_metas(),
+  ])
 }
 
 /// Returns type metadata for types that can be used directly in type position.
@@ -129,7 +133,9 @@ pub fn completable_type_metas() -> List(TypeMeta) {
   ])
 }
 
-fn primitive_all_type_metas() -> List(TypeMeta) {
+/// Returns type metadata for all primitive types.
+@internal
+pub fn primitive_all_type_metas() -> List(TypeMeta) {
   list.flatten([
     [primitive_type_meta(Boolean), primitive_type_meta(String)],
     numeric_all_type_metas(),
@@ -203,7 +209,9 @@ pub fn semantic_type_meta(typ: SemanticStringTypes) -> TypeMeta {
   }
 }
 
-fn collection_all_type_metas() -> List(TypeMeta) {
+/// Returns type metadata for all collection types.
+@internal
+pub fn collection_all_type_metas() -> List(TypeMeta) {
   [collection_type_meta(List(Nil)), collection_type_meta(Dict(Nil, Nil))]
 }
 
@@ -226,7 +234,9 @@ fn collection_type_meta(typ: CollectionTypes(accepted)) -> TypeMeta {
   }
 }
 
-fn modifier_all_type_metas() -> List(TypeMeta) {
+/// Returns type metadata for all modifier types.
+@internal
+pub fn modifier_all_type_metas() -> List(TypeMeta) {
   [modifier_type_meta(Optional(Nil)), modifier_type_meta(Defaulted(Nil, ""))]
 }
 
@@ -249,7 +259,9 @@ fn modifier_type_meta(typ: ModifierTypes(accepted)) -> TypeMeta {
   }
 }
 
-fn refinement_all_type_metas() -> List(TypeMeta) {
+/// Returns type metadata for all refinement types.
+@internal
+pub fn refinement_all_type_metas() -> List(TypeMeta) {
   [
     refinement_type_meta(OneOf(Nil, set.new())),
     refinement_type_meta(InclusiveRange(Nil, "", "")),
@@ -273,6 +285,19 @@ fn refinement_type_meta(typ: RefinementTypes(accepted)) -> TypeMeta {
         example: "Integer { x | x in ( 0..100 ) }",
       )
   }
+}
+
+/// Returns type metadata for structured types (Record).
+@internal
+pub fn structured_all_type_metas() -> List(TypeMeta) {
+  [
+    TypeMeta(
+      name: "Record",
+      description: "A group of named, typed fields",
+      syntax: "{ field: T, ... }",
+      example: "{ numerator: String, denominator: String }",
+    ),
+  ]
 }
 
 // ---------------------------------------------------------------------------
