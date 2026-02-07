@@ -55,7 +55,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,
@@ -103,7 +103,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,
@@ -150,7 +150,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_a", "avg:memory{env:staging}"),
@@ -200,7 +200,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_b", "sum:requests{region:us-east}"),
@@ -244,7 +244,7 @@ pub fn resolve_vendor_test() {
             value.StringValue(constants.vendor_datadog),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -272,7 +272,7 @@ pub fn resolve_vendor_test() {
             value.StringValue(constants.vendor_datadog),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -345,7 +345,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -404,7 +404,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("denominator", "avg:system.cpu{env:production}"),
@@ -471,7 +471,7 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -532,7 +532,7 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > 2500000000 per 5m)"),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("query", "p75:rum.lcp.duration{env:production}"),
@@ -593,7 +593,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -647,7 +647,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("query", "p75:rum.lcp.duration{env:production}"),
@@ -727,7 +727,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -797,7 +797,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #(
@@ -842,7 +842,7 @@ pub fn resolve_vendor_honeycomb_test() {
             value.StringValue(constants.vendor_honeycomb),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -870,7 +870,7 @@ pub fn resolve_vendor_honeycomb_test() {
             value.StringValue(constants.vendor_honeycomb),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -920,7 +920,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -960,7 +960,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -1000,7 +1000,7 @@ pub fn resolve_vendor_dynatrace_test() {
             value.StringValue(constants.vendor_dynatrace),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -1028,7 +1028,7 @@ pub fn resolve_vendor_dynatrace_test() {
             value.StringValue(constants.vendor_dynatrace),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -1083,7 +1083,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -1128,7 +1128,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+        artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -1184,7 +1184,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
         threshold: 0.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1226,7 +1226,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
         threshold: 0.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1276,7 +1276,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_a", "avg:memory{env:staging}"),
@@ -1318,7 +1318,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,

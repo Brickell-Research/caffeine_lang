@@ -83,7 +83,7 @@ fn make_dynatrace_ir(
         ),
       ),
     ],
-    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -194,14 +194,18 @@ pub fn window_to_evaluation_window_test() {
     #(90, Ok("-90d")),
     #(
       0,
-      Error(errors.GeneratorDynatraceTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_dynatrace,
         msg: "Illegal window_in_days value: 0. Dynatrace accepts values between 1 and 90.",
+        context: errors.empty_context(),
       )),
     ),
     #(
       91,
-      Error(errors.GeneratorDynatraceTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_dynatrace,
         msg: "Illegal window_in_days value: 91. Dynatrace accepts values between 1 and 90.",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -229,7 +233,7 @@ pub fn ir_to_terraform_resource_undefined_indicator_test() {
     )
 
   case dynatrace.ir_to_terraform_resource(ir) {
-    Error(errors.GeneratorDynatraceTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "undefined indicators")
       |> should.be_true
     _ -> should.fail()
@@ -283,7 +287,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([
           #("sli", "builtin:service.requestCount.server:splitBy()"),
@@ -297,7 +301,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
     )
 
   case dynatrace.ir_to_terraform_resource(ir) {
-    Error(errors.GeneratorDynatraceTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "missing evaluation")
       |> should.be_true
     _ -> should.fail()

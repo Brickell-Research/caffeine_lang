@@ -18,11 +18,14 @@ pub fn validate_value_type(
 ) -> Result(Value, CompilationError) {
   types.validate_value(expected_type, val)
   |> result.map_error(fn(err) {
-    errors.ParserJsonParserError(errors.format_validation_error_message(
-      err,
-      option.Some(type_key_identifier),
-      option.Some(val),
-    ))
+    errors.ParserJsonParserError(
+      msg: errors.format_validation_error_message(
+        err,
+        option.Some(type_key_identifier),
+        option.Some(val),
+      ),
+      context: errors.empty_context(),
+    )
   })
 }
 
@@ -124,10 +127,11 @@ pub fn validate_relevant_uniqueness(
     [] -> Ok(Nil)
     _ ->
       Error(errors.ParserDuplicateError(
-        "Duplicate "
-        <> thing_label
-        <> ": "
-        <> { dupe_names |> string.join(", ") },
+        msg: "Duplicate "
+          <> thing_label
+          <> ": "
+          <> { dupe_names |> string.join(", ") },
+        context: errors.empty_context(),
       ))
   }
 }
@@ -163,7 +167,8 @@ pub fn validate_inputs_for_collection(
     "" -> Ok(Nil)
     _ ->
       Error(errors.ParserJsonParserError(
-        "Input validation errors: " <> validation_errors,
+        msg: "Input validation errors: " <> validation_errors,
+        context: errors.empty_context(),
       ))
   }
 }
@@ -196,7 +201,11 @@ pub fn validate_no_overshadowing(
 
   case overshadow_errors {
     "" -> Ok(Nil)
-    _ -> Error(errors.ParserDuplicateError(msg: overshadow_errors))
+    _ ->
+      Error(errors.ParserDuplicateError(
+        msg: overshadow_errors,
+        context: errors.empty_context(),
+      ))
   }
 }
 

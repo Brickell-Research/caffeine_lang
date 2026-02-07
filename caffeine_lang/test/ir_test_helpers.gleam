@@ -34,7 +34,7 @@ pub fn make_slo_ir(
     unique_identifier: make_unique_id(org, service, name),
     artifact_refs: [SLO],
     values: values,
-    artifact_data: semantic_analyzer.SloOnly(make_test_slo_fields(
+    artifact_data: semantic_analyzer.slo_only(make_test_slo_fields(
       threshold,
       dict.new(),
     )),
@@ -70,7 +70,7 @@ pub fn make_ir_with_deps(
     unique_identifier: make_unique_id(org, service, name),
     artifact_refs: [SLO, DependencyRelations],
     values: values,
-    artifact_data: semantic_analyzer.SloWithDependency(
+    artifact_data: semantic_analyzer.slo_with_dependency(
       slo: make_test_slo_fields(threshold, dict.new()),
       dependency: make_test_dependency_fields(hard_deps, soft_deps),
     ),
@@ -94,10 +94,9 @@ pub fn make_deps_only_ir(
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
-    artifact_data: semantic_analyzer.DependencyOnly(make_test_dependency_fields(
-      hard_deps,
-      soft_deps,
-    )),
+    artifact_data: semantic_analyzer.dependency_only(
+      make_test_dependency_fields(hard_deps, soft_deps),
+    ),
     vendor: semantic_analyzer.NoVendor,
   )
 }

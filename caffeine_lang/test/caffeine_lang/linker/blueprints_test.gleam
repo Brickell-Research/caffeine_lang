@@ -235,6 +235,7 @@ pub fn validate_blueprints_test() {
       ],
       Error(errors.ParserDuplicateError(
         msg: "Duplicate blueprint names: success_rate",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -257,6 +258,7 @@ pub fn validate_blueprints_test() {
       ],
       Error(errors.ParserDuplicateError(
         msg: "blueprint 'success_rate' - overshadowing inherited_params from artifact: threshold",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -348,6 +350,7 @@ pub fn validate_blueprints_test() {
       ],
       Error(errors.ParserJsonParserError(
         msg: "Input validation errors: blueprint 'success_rate' - Extra keys in input: extra",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -368,6 +371,7 @@ pub fn validate_blueprints_test() {
       ],
       Error(errors.ParserJsonParserError(
         msg: "Input validation errors: blueprint 'success_rate' - expected (String) received (Int) value (123) for (value)",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -417,6 +421,7 @@ pub fn validate_blueprints_artifact_refs_test() {
       ],
       Error(errors.ParserDuplicateError(
         msg: "blueprint 'success_rate' - duplicate artifact references: SLO",
+        context: errors.empty_context(),
       )),
     ),
   ]

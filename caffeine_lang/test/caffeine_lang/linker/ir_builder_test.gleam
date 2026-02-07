@@ -460,7 +460,7 @@ fn make_ir(
     unique_identifier: org <> "_" <> service <> "_" <> name,
     artifact_refs: [SLO],
     values: values,
-    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
       threshold: helpers.extract_threshold(values),
       indicators: helpers.extract_indicators(values),
       window_in_days: helpers.extract_window_in_days(values),

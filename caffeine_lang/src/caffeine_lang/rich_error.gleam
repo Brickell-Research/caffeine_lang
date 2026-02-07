@@ -1,5 +1,6 @@
 /// Enriched error type with structured location and diagnostic data.
 /// Wraps a CompilationError with source context for rendering.
+import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
 import gleam/int
 import gleam/list
@@ -13,14 +14,9 @@ pub type RichError {
     code: ErrorCode,
     source_path: Option(String),
     source_content: Option(String),
-    location: Option(SourceLocation),
+    location: Option(errors.SourceLocation),
     suggestion: Option(String),
   )
-}
-
-/// A source location within a file (1-indexed).
-pub type SourceLocation {
-  SourceLocation(line: Int, column: Int, end_column: Option(Int))
 }
 
 /// Machine-readable error code.
@@ -54,29 +50,24 @@ pub fn error_code_for(error: CompilationError) -> ErrorCode {
     errors.SemanticAnalysisDependencyValidationError(..) ->
       ErrorCode("semantic", 404)
     errors.GeneratorSloQueryResolutionError(..) -> ErrorCode("codegen", 501)
-    errors.GeneratorDatadogTerraformResolutionError(..) ->
-      ErrorCode("codegen", 502)
-    errors.GeneratorHoneycombTerraformResolutionError(..) ->
-      ErrorCode("codegen", 503)
-    errors.GeneratorDynatraceTerraformResolutionError(..) ->
-      ErrorCode("codegen", 504)
-    errors.GeneratorNewrelicTerraformResolutionError(..) ->
-      ErrorCode("codegen", 505)
+    errors.GeneratorTerraformResolutionError(vendor:, ..) ->
+      vendor_to_error_code(vendor)
     errors.CQLResolverError(..) -> ErrorCode("cql", 601)
     errors.CQLParserError(..) -> ErrorCode("cql", 602)
     errors.CompilationErrors(..) -> ErrorCode("multiple", 0)
   }
 }
 
-/// Creates a RichError with minimal context (no source, no location, no suggestion).
+/// Creates a RichError, extracting context from the error's ErrorContext.
 pub fn from_compilation_error(error: CompilationError) -> RichError {
+  let ctx = errors.error_context(error)
   RichError(
     error:,
     code: error_code_for(error),
-    source_path: option.None,
-    source_content: option.None,
-    location: option.None,
-    suggestion: option.None,
+    source_path: ctx.source_path,
+    source_content: ctx.source_content,
+    location: ctx.location,
+    suggestion: ctx.suggestion,
   )
 }
 
@@ -92,4 +83,15 @@ pub fn from_compilation_errors(error: CompilationError) -> List(RichError) {
 /// Delegates to errors.to_message for consistent behavior.
 pub fn error_message(error: CompilationError) -> String {
   errors.to_message(error)
+}
+
+/// Maps a vendor string to its codegen error code.
+fn vendor_to_error_code(vendor: String) -> ErrorCode {
+  case vendor {
+    v if v == constants.vendor_datadog -> ErrorCode("codegen", 502)
+    v if v == constants.vendor_honeycomb -> ErrorCode("codegen", 503)
+    v if v == constants.vendor_dynatrace -> ErrorCode("codegen", 504)
+    v if v == constants.vendor_newrelic -> ErrorCode("codegen", 505)
+    _ -> ErrorCode("codegen", 500)
+  }
 }

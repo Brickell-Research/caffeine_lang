@@ -1,6 +1,6 @@
 import caffeine_lang/error_renderer
-import caffeine_lang/errors
-import caffeine_lang/rich_error.{ErrorCode, RichError, SourceLocation}
+import caffeine_lang/errors.{SourceLocation}
+import caffeine_lang/rich_error.{ErrorCode, RichError}
 import gleam/option
 import gleeunit/should
 
@@ -13,7 +13,10 @@ import gleeunit/should
 pub fn render_plain_no_location_test() {
   let err =
     RichError(
-      error: errors.LinkerParseError("something went wrong"),
+      error: errors.LinkerParseError(
+        msg: "something went wrong",
+        context: errors.empty_context(),
+      ),
       code: ErrorCode("linker", 301),
       source_path: option.None,
       source_content: option.None,
@@ -27,7 +30,10 @@ pub fn render_plain_no_location_test() {
 pub fn render_plain_with_location_test() {
   let err =
     RichError(
-      error: errors.FrontendParseError("Unknown type 'Strin'"),
+      error: errors.FrontendParseError(
+        msg: "Unknown type 'Strin'",
+        context: errors.empty_context(),
+      ),
       code: ErrorCode("parse", 103),
       source_path: option.Some("test.caffeine"),
       source_content: option.Some("line one\nenv: Strin\nline three"),
@@ -47,7 +53,10 @@ pub fn render_plain_with_location_test() {
 pub fn render_plain_with_suggestion_test() {
   let err =
     RichError(
-      error: errors.FrontendParseError("Unknown type 'Strin'"),
+      error: errors.FrontendParseError(
+        msg: "Unknown type 'Strin'",
+        context: errors.empty_context(),
+      ),
       code: ErrorCode("parse", 103),
       source_path: option.Some("test.caffeine"),
       source_content: option.Some("line one\nenv: Strin\nline three"),
@@ -67,7 +76,10 @@ pub fn render_plain_with_suggestion_test() {
 pub fn render_plain_path_no_location_test() {
   let err =
     RichError(
-      error: errors.SemanticAnalysisVendorResolutionError("vendor issue"),
+      error: errors.SemanticAnalysisVendorResolutionError(
+        msg: "vendor issue",
+        context: errors.empty_context(),
+      ),
       code: ErrorCode("semantic", 401),
       source_path: option.Some("my/file.caffeine"),
       source_content: option.None,

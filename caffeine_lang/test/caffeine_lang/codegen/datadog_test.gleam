@@ -140,7 +140,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -208,7 +208,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{env:production,status:2xx}"),
@@ -271,7 +271,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -328,7 +328,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.5,
             indicators: dict.from_list([
               #("numerator", "sum:api.requests{!status:5xx}"),
@@ -397,7 +397,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("good", "sum:http.requests{status:2xx}"),
@@ -452,7 +452,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.new(),
             window_in_days: 30,
@@ -541,7 +541,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloWithDependency(
+          artifact_data: semantic_analyzer.slo_with_dependency(
             slo: semantic_analyzer.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
@@ -633,7 +633,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloWithDependency(
+          artifact_data: semantic_analyzer.slo_with_dependency(
             slo: semantic_analyzer.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
@@ -725,7 +725,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloWithDependency(
+          artifact_data: semantic_analyzer.slo_with_dependency(
             slo: semantic_analyzer.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
@@ -809,7 +809,7 @@ pub fn generate_terraform_test() {
               value.DictValue(dict.from_list([])),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -889,7 +889,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -968,7 +968,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -1040,7 +1040,7 @@ pub fn generate_terraform_test() {
               value.StringValue("https://wiki.example.com/runbook/auth-latency"),
             ),
           ],
-          artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -1095,8 +1095,10 @@ pub fn window_to_timeframe_test() {
     #(90, Ok("90d")),
     #(
       120,
-      Error(errors.GeneratorDatadogTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_datadog,
         msg: "Illegal window_in_days value: 120. Accepted values are 7, 30, or 90.",
+        context: errors.empty_context(),
       )),
     ),
   ]

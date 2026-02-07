@@ -67,21 +67,24 @@ pub fn resolve_primitives_test() {
     #(
       "A + B",
       Error(errors.CQLResolverError(
-        "Invalid expression. Expected a top level division operator or time_slice.",
+        msg: "Invalid expression. Expected a top level division operator or time_slice.",
+        context: errors.empty_context(),
       )),
     ),
     // error for moderately complex non-division expression
     #(
       "A + B / C + D",
       Error(errors.CQLResolverError(
-        "Invalid expression. Expected a top level division operator or time_slice.",
+        msg: "Invalid expression. Expected a top level division operator or time_slice.",
+        context: errors.empty_context(),
       )),
     ),
     // error for nested and complex non-division expression
     #(
       "((A + B) - E) / C + D",
       Error(errors.CQLResolverError(
-        "Invalid expression. Expected a top level division operator or time_slice.",
+        msg: "Invalid expression. Expected a top level division operator or time_slice.",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -131,11 +134,13 @@ pub fn resolve_time_slice_valid_test() {
 pub fn resolve_time_slice_invalid_test() {
   let time_slice_operand_error =
     Error(errors.CQLResolverError(
-      "time_slice cannot be used as an operand. It must be the entire expression.",
+      msg: "time_slice cannot be used as an operand. It must be the entire expression.",
+      context: errors.empty_context(),
     ))
   let not_division_or_time_slice_error =
     Error(errors.CQLResolverError(
-      "Invalid expression. Expected a top level division operator or time_slice.",
+      msg: "Invalid expression. Expected a top level division operator or time_slice.",
+      context: errors.empty_context(),
     ))
 
   [

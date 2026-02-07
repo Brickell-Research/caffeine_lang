@@ -100,6 +100,7 @@ fn do_parse_and_resolve_query_template(
         Error(_) ->
           Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Unexpected incomplete `$$` for substring: " <> query,
+            context: errors.empty_context(),
           ))
         Ok(#(inside, rest)) -> {
           use rest_of_items <- result.try(do_parse_and_resolve_query_template(
@@ -113,6 +114,7 @@ fn do_parse_and_resolve_query_template(
             |> list.find(fn(vt) { vt.label == template.input_name })
             |> result.replace_error(errors.SemanticAnalysisTemplateParseError(
               msg: "Missing input for template: " <> template.input_name,
+              context: errors.empty_context(),
             )),
           )
           use resolved_template <- result.try(resolve_template(
@@ -194,6 +196,7 @@ pub fn parse_template_variable(
         "" ->
           Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty template variable name: " <> variable,
+            context: errors.empty_context(),
           ))
         _ ->
           Ok(TemplateVariable(
@@ -211,10 +214,12 @@ pub fn parse_template_variable(
         "", _ ->
           Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty input name in template: " <> variable,
+            context: errors.empty_context(),
           ))
         _, "" ->
           Error(errors.SemanticAnalysisTemplateParseError(
             msg: "Empty label name in template: " <> variable,
+            context: errors.empty_context(),
           ))
         _, _ -> parse_datadog_template_variable(trimmed_input, rest)
       }
@@ -235,6 +240,7 @@ pub fn parse_template_type(
     _ ->
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Unknown template type: " <> type_string,
+        context: errors.empty_context(),
       ))
   }
 }
@@ -251,10 +257,11 @@ pub fn resolve_template(
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "Mismatch between template input name ("
-        <> template.input_name
-        <> ") and input value label ("
-        <> value_tuple.label
-        <> ").",
+          <> template.input_name
+          <> ") and input value label ("
+          <> value_tuple.label
+          <> ").",
+        context: errors.empty_context(),
       ))
   })
 
@@ -267,7 +274,11 @@ pub fn resolve_template(
     )
   {
     Ok(resolved) -> Ok(resolved)
-    Error(msg) -> Error(errors.SemanticAnalysisTemplateResolutionError(msg:))
+    Error(msg) ->
+      Error(errors.SemanticAnalysisTemplateResolutionError(
+        msg:,
+        context: errors.empty_context(),
+      ))
   }
 }
 

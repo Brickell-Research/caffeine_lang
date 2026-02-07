@@ -193,20 +193,37 @@ fn build_artifact_data(
   artifact_refs: List(artifacts.ArtifactType),
   value_tuples: List(helpers.ValueTuple),
 ) -> semantic_analyzer.ArtifactData {
-  let has_slo = list.contains(artifact_refs, SLO)
-  let has_deps = list.contains(artifact_refs, DependencyRelations)
-  case has_slo, has_deps {
-    True, True ->
-      semantic_analyzer.SloWithDependency(
-        slo: build_slo_fields(value_tuples),
-        dependency: build_dependency_fields(value_tuples),
-      )
-    True, False -> semantic_analyzer.SloOnly(build_slo_fields(value_tuples))
-    False, True ->
-      semantic_analyzer.DependencyOnly(build_dependency_fields(value_tuples))
-    // Fallback: treat as SLO-only (shouldn't happen with valid artifacts).
-    False, False -> semantic_analyzer.SloOnly(build_slo_fields(value_tuples))
+  let fields =
+    artifact_refs
+    |> list.map(fn(ref) {
+      case ref {
+        SLO -> #(
+          SLO,
+          semantic_analyzer.SloArtifactFields(build_slo_fields(value_tuples)),
+        )
+        DependencyRelations -> #(
+          DependencyRelations,
+          semantic_analyzer.DependencyArtifactFields(build_dependency_fields(
+            value_tuples,
+          )),
+        )
+      }
+    })
+    |> dict.from_list
+
+  // Fallback: default to SLO if no artifacts matched.
+  let fields = case dict.is_empty(fields) {
+    True ->
+      dict.from_list([
+        #(
+          SLO,
+          semantic_analyzer.SloArtifactFields(build_slo_fields(value_tuples)),
+        ),
+      ])
+    False -> fields
   }
+
+  semantic_analyzer.ArtifactData(fields:)
 }
 
 /// Extract SLO-specific fields from value tuples.

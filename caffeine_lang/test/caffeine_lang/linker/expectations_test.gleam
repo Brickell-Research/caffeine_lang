@@ -185,6 +185,7 @@ pub fn validate_expectations_test() {
       ],
       Error(errors.ParserDuplicateError(
         msg: "Duplicate expectation names: my_expectation",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -229,6 +230,7 @@ pub fn validate_expectations_test() {
       ],
       Error(errors.ParserDuplicateError(
         msg: "expectation 'org.team.service.my_expectation' - overshadowing inputs from blueprint: vendor",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -252,6 +254,7 @@ pub fn validate_expectations_test() {
       ],
       Error(errors.ParserJsonParserError(
         msg: "Input validation errors: expectation 'org.team.service.my_expectation' - Missing keys in input: percentile",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -274,6 +277,7 @@ pub fn validate_expectations_test() {
       ],
       Error(errors.ParserJsonParserError(
         msg: "Input validation errors: expectation 'org.team.service.my_expectation' - Extra keys in input: extra",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -295,6 +299,7 @@ pub fn validate_expectations_test() {
       ],
       Error(errors.ParserJsonParserError(
         msg: "Input validation errors: expectation 'org.team.service.my_expectation' - expected (Float) received (String) value (\"not a float\") for (percentile)",
+        context: errors.empty_context(),
       )),
     ),
   ]

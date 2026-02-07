@@ -86,6 +86,7 @@ fn validate_ir_dependencies(
     semantic_analyzer.get_dependency_fields(ir.artifact_data)
     |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
       msg: self_path <> " - missing dependency artifact data",
+      context: errors.empty_context(),
     )),
   )
   let relations = dep.relations
@@ -135,10 +136,11 @@ fn do_check_for_duplicates(
         when: set.contains(seen, target),
         return: Error(errors.SemanticAnalysisDependencyValidationError(
           msg: "Duplicate dependency reference '"
-          <> target
-          <> "' in '"
-          <> self_path
-          <> "'",
+            <> target
+            <> "' in '"
+            <> self_path
+            <> "'",
+          context: errors.empty_context(),
         )),
       )
       do_check_for_duplicates(rest, set.insert(seen, target), self_path)
@@ -156,10 +158,11 @@ fn validate_dependency_target(
     Error(Nil) ->
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference '"
-        <> target
-        <> "' in '"
-        <> self_path
-        <> "': expected format 'org.team.service.name'",
+          <> target
+          <> "' in '"
+          <> self_path
+          <> "': expected format 'org.team.service.name'",
+        context: errors.empty_context(),
       ))
     Ok(_) -> {
       // Check for self-reference
@@ -167,10 +170,11 @@ fn validate_dependency_target(
         when: target == self_path,
         return: Error(errors.SemanticAnalysisDependencyValidationError(
           msg: "Invalid dependency reference '"
-          <> target
-          <> "' in '"
-          <> self_path
-          <> "': self-reference not allowed",
+            <> target
+            <> "' in '"
+            <> self_path
+            <> "': self-reference not allowed",
+          context: errors.empty_context(),
         )),
       )
       // Check if target exists
@@ -179,10 +183,11 @@ fn validate_dependency_target(
         Error(Nil) ->
           Error(errors.SemanticAnalysisDependencyValidationError(
             msg: "Invalid dependency reference '"
-            <> target
-            <> "' in '"
-            <> self_path
-            <> "': target does not exist",
+              <> target
+              <> "' in '"
+              <> self_path
+              <> "': target does not exist",
+            context: errors.empty_context(),
           ))
       }
     }
@@ -302,9 +307,10 @@ fn explore_neighbors(
         when: set.contains(in_progress, neighbor),
         return: Error(errors.SemanticAnalysisDependencyValidationError(
           msg: "Circular dependency detected: "
-          <> string.join(list.reverse(path), " -> ")
-          <> " -> "
-          <> neighbor,
+            <> string.join(list.reverse(path), " -> ")
+            <> " -> "
+            <> neighbor,
+          context: errors.empty_context(),
         )),
       )
 
@@ -334,14 +340,19 @@ fn validate_single_ir_hard_thresholds(
   expectation_index: Dict(String, IntermediateRepresentation),
 ) -> Result(Nil, CompilationError) {
   let self_path = ir_to_identifier(ir)
-  use #(slo, dep) <- result.try(case ir.artifact_data {
-    semantic_analyzer.SloWithDependency(slo:, dependency:) ->
-      Ok(#(slo, dependency))
-    _ ->
-      Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: self_path <> " - missing SLO or dependency artifact data",
-      ))
-  })
+  use #(slo, dep) <- result.try(
+    case
+      semantic_analyzer.get_slo_fields(ir.artifact_data),
+      semantic_analyzer.get_dependency_fields(ir.artifact_data)
+    {
+      option.Some(slo), option.Some(dep) -> Ok(#(slo, dep))
+      _, _ ->
+        Error(errors.SemanticAnalysisDependencyValidationError(
+          msg: self_path <> " - missing SLO or dependency artifact data",
+          context: errors.empty_context(),
+        ))
+    },
+  )
   let source_threshold = slo.threshold
   let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
 
@@ -375,6 +386,7 @@ fn validate_single_hard_threshold(
         semantic_analyzer.get_slo_fields(target_ir.artifact_data)
         |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
           msg: target_path <> " - missing SLO artifact data",
+          context: errors.empty_context(),
         )),
       )
       let target_threshold = target_slo.threshold
@@ -384,14 +396,15 @@ fn validate_single_hard_threshold(
         order.Gt ->
           Error(errors.SemanticAnalysisDependencyValidationError(
             msg: "Hard dependency threshold violation: '"
-            <> source_path
-            <> "' (threshold: "
-            <> float.to_string(source_threshold)
-            <> ") cannot exceed its hard dependency '"
-            <> target_path
-            <> "' (threshold: "
-            <> float.to_string(target_threshold)
-            <> ")",
+              <> source_path
+              <> "' (threshold: "
+              <> float.to_string(source_threshold)
+              <> ") cannot exceed its hard dependency '"
+              <> target_path
+              <> "' (threshold: "
+              <> float.to_string(target_threshold)
+              <> ")",
+            context: errors.empty_context(),
           ))
         _ -> Ok(Nil)
       }

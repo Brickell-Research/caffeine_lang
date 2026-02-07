@@ -152,6 +152,48 @@ pub fn parse_expr_test() {
   |> test_helpers.array_based_test_executor_1(parse_expr)
 }
 
+// ==== Operator precedence Tests ====
+// * ✅ multiply binds tighter than add: a + b * c
+// * ✅ multiply binds tighter than add: a * b + c
+// * ✅ division left-associative: a / b / c
+// * ✅ subtraction left-associative: a - b - c
+// * ✅ mixed add/sub with multiply: a + b * c - d
+pub fn operator_precedence_test() {
+  [
+    // a + b * c → Add(a, Mul(b, c)) — multiply binds tighter
+    #(
+      "a + b * c",
+      Ok(OperatorExpr(prim_word("a"), simple_op_cont("b", "c", Mul), Add)),
+    ),
+    // a * b + c → Add(Mul(a, b), c) — multiply binds tighter
+    #(
+      "a * b + c",
+      Ok(OperatorExpr(simple_op_cont("a", "b", Mul), prim_word("c"), Add)),
+    ),
+    // a / b / c — the parser finds the rightmost "/" at paren-level 0,
+    // splitting into "a / b" and "c", then recursively parses "a / b".
+    #(
+      "a / b / c",
+      Ok(OperatorExpr(simple_op_cont("a", "b", Div), prim_word("c"), Div)),
+    ),
+    // a - b - c — same strategy: rightmost "-" splits into "a - b" and "c"
+    #(
+      "a - b - c",
+      Ok(OperatorExpr(simple_op_cont("a", "b", Sub), prim_word("c"), Sub)),
+    ),
+    // a + b * c - d → Add(a, Sub(Mul(b, c), d))
+    #(
+      "a + b * c - d",
+      Ok(OperatorExpr(
+        prim_word("a"),
+        OperatorExpr(simple_op_cont("b", "c", Mul), prim_word("d"), Sub),
+        Add,
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(parse_expr)
+}
+
 // ==== is_balanced_parens Tests ====
 // * ✅ empty string
 // * ✅ balanced parentheses
@@ -190,7 +232,10 @@ pub fn find_rightmost_operator_at_level_test() {
     #(
       "(A + B) / C",
       "+",
-      Error(errors.CQLParserError(msg: "Operator not found")),
+      Error(errors.CQLParserError(
+        msg: "Operator not found",
+        context: errors.empty_context(),
+      )),
     ),
   ]
   |> test_helpers.array_based_test_executor_2(fn(input, operator) {

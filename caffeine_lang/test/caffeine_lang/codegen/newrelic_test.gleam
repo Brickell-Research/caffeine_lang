@@ -83,7 +83,7 @@ fn make_newrelic_ir(
         ),
       ),
     ],
-    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -181,14 +181,18 @@ pub fn window_to_rolling_count_test() {
     #(28, Ok(28)),
     #(
       30,
-      Error(errors.GeneratorNewrelicTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_newrelic,
         msg: "Illegal window_in_days value: 30. New Relic accepts only 1, 7, or 28.",
+        context: errors.empty_context(),
       )),
     ),
     #(
       0,
-      Error(errors.GeneratorNewrelicTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_newrelic,
         msg: "Illegal window_in_days value: 0. New Relic accepts only 1, 7, or 28.",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -269,7 +273,7 @@ pub fn ir_to_terraform_resource_undefined_indicator_test() {
     )
 
   case newrelic.ir_to_terraform_resource(ir) {
-    Error(errors.GeneratorNewrelicTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "undefined indicators")
       |> should.be_true
     _ -> should.fail()
@@ -318,7 +322,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("valid", "Transaction")]),
         window_in_days: 7,
@@ -330,7 +334,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
     )
 
   case newrelic.ir_to_terraform_resource(ir) {
-    Error(errors.GeneratorNewrelicTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "missing evaluation")
       |> should.be_true
     _ -> should.fail()

@@ -4,8 +4,8 @@ import caffeine_lang/analysis/semantic_analyzer.{
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
-  type CompilationError, GeneratorDatadogTerraformResolutionError,
-  GeneratorSloQueryResolutionError,
+  type CompilationError, GeneratorSloQueryResolutionError,
+  GeneratorTerraformResolutionError,
 }
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts
@@ -121,10 +121,12 @@ pub fn ir_to_terraform_resource(
   // Extract structured SLO fields from IR.
   use slo <- result.try(
     semantic_analyzer.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorDatadogTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_datadog,
       msg: "expectation '"
-      <> ir_to_identifier(ir)
-      <> "' - missing SLO artifact data",
+        <> ir_to_identifier(ir)
+        <> "' - missing SLO artifact data",
+      context: errors.empty_context(),
     )),
   )
   let threshold = slo.threshold
@@ -139,9 +141,10 @@ pub fn ir_to_terraform_resource(
     |> result.map_error(fn(err) {
       GeneratorSloQueryResolutionError(
         msg: "expectation '"
-        <> ir_to_identifier(ir)
-        <> "' - failed to resolve SLO query: "
-        <> err,
+          <> ir_to_identifier(ir)
+          <> "' - failed to resolve SLO query: "
+          <> err,
+        context: errors.empty_context(),
       )
     }),
   )
@@ -284,10 +287,12 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
     7 | 30 | 90 -> Ok(days_string <> "d")
     // TODO: catch this earlier on in the compilation pipeline. Possible with RefinementTypes 😁
     _ ->
-      Error(GeneratorDatadogTerraformResolutionError(
+      Error(GeneratorTerraformResolutionError(
+        vendor: constants.vendor_datadog,
         msg: "Illegal window_in_days value: "
-        <> days_string
-        <> ". Accepted values are 7, 30, or 90.",
+          <> days_string
+          <> ". Accepted values are 7, 30, or 90.",
+        context: errors.empty_context(),
       ))
   }
 }

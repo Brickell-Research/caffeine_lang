@@ -4,7 +4,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
-  type CompilationError, GeneratorDynatraceTerraformResolutionError,
+  type CompilationError, GeneratorTerraformResolutionError,
 }
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
@@ -107,25 +107,31 @@ pub fn ir_to_terraform_resource(
   // Extract structured SLO fields from IR.
   use slo <- result.try(
     semantic_analyzer.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorDynatraceTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_dynatrace,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
+      context: errors.empty_context(),
     )),
   )
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline.
   use evaluation_expr <- result.try(
     slo.evaluation
-    |> option.to_result(GeneratorDynatraceTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_dynatrace,
       msg: "expectation '"
-      <> identifier
-      <> "' - missing evaluation for Dynatrace SLO",
+        <> identifier
+        <> "' - missing evaluation for Dynatrace SLO",
+      context: errors.empty_context(),
     )),
   )
   use metric_expression <- result.try(
     cql_generator.resolve_slo_to_expression(evaluation_expr, slo.indicators)
     |> result.map_error(fn(err) {
-      GeneratorDynatraceTerraformResolutionError(
+      GeneratorTerraformResolutionError(
+        vendor: constants.vendor_dynatrace,
         msg: "expectation '" <> identifier <> "' - " <> err,
+        context: errors.empty_context(),
       )
     }),
   )
@@ -188,10 +194,12 @@ pub fn window_to_evaluation_window(
   case days >= 1 && days <= 90 {
     True -> Ok("-" <> int.to_string(days) <> "d")
     False ->
-      Error(GeneratorDynatraceTerraformResolutionError(
+      Error(GeneratorTerraformResolutionError(
+        vendor: constants.vendor_dynatrace,
         msg: "Illegal window_in_days value: "
-        <> int.to_string(days)
-        <> ". Dynatrace accepts values between 1 and 90.",
+          <> int.to_string(days)
+          <> ". Dynatrace accepts values between 1 and 90.",
+        context: errors.empty_context(),
       ))
   }
 }

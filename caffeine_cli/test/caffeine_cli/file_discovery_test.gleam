@@ -17,7 +17,8 @@ pub fn get_caffeine_files_test() {
     #(
       "non_existent_directory",
       Error(errors.LinkerParseError(
-        "No such file or directory (non_existent_directory)",
+        msg: "No such file or directory (non_existent_directory)",
+        context: errors.empty_context(),
       )),
     ),
     #(

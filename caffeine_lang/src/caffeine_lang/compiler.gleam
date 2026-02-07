@@ -1,6 +1,6 @@
 import caffeine_lang/analysis/dependency_validator
 import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ResolvedVendor,
+  type IntermediateRepresentation, NoVendor, ResolvedVendor,
 }
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
@@ -81,9 +81,11 @@ fn run_semantic_analysis(
   semantic_analyzer.resolve_intermediate_representations(validated_irs)
 }
 
-/// Vendor-specific code generation operations.
-type VendorOps {
-  VendorOps(
+/// Vendor-specific platform configuration bundling code generation
+/// and Terraform boilerplate.
+type VendorPlatform {
+  VendorPlatform(
+    vendor: vendor.Vendor,
     generate_resources: fn(List(IntermediateRepresentation)) ->
       Result(#(List(terraform.Resource), List(String)), errors.CompilationError),
     terraform_settings: terraform.TerraformSettings,
@@ -92,67 +94,65 @@ type VendorOps {
   )
 }
 
-fn datadog_ops() -> VendorOps {
-  VendorOps(
-    generate_resources: datadog.generate_resources,
-    terraform_settings: datadog.terraform_settings(),
-    provider: datadog.provider(),
-    variables: datadog.variables(),
-  )
-}
-
-fn honeycomb_ops() -> VendorOps {
-  VendorOps(
-    generate_resources: fn(irs) {
-      honeycomb.generate_resources(irs)
-      |> result.map(fn(r) { #(r, []) })
-    },
-    terraform_settings: honeycomb.terraform_settings(),
-    provider: honeycomb.provider(),
-    variables: honeycomb.variables(),
-  )
-}
-
-fn dynatrace_ops() -> VendorOps {
-  VendorOps(
-    generate_resources: fn(irs) {
-      dynatrace.generate_resources(irs)
-      |> result.map(fn(r) { #(r, []) })
-    },
-    terraform_settings: dynatrace.terraform_settings(),
-    provider: dynatrace.provider(),
-    variables: dynatrace.variables(),
-  )
-}
-
-fn newrelic_ops() -> VendorOps {
-  VendorOps(
-    generate_resources: fn(irs) {
-      newrelic.generate_resources(irs)
-      |> result.map(fn(r) { #(r, []) })
-    },
-    terraform_settings: newrelic.terraform_settings(),
-    provider: newrelic.provider(),
-    variables: newrelic.variables(),
-  )
+/// Returns the platform configuration for a given vendor.
+fn platform_for(v: vendor.Vendor) -> VendorPlatform {
+  case v {
+    vendor.Datadog ->
+      VendorPlatform(
+        vendor: vendor.Datadog,
+        generate_resources: datadog.generate_resources,
+        terraform_settings: datadog.terraform_settings(),
+        provider: datadog.provider(),
+        variables: datadog.variables(),
+      )
+    vendor.Honeycomb ->
+      VendorPlatform(
+        vendor: vendor.Honeycomb,
+        generate_resources: fn(irs) {
+          honeycomb.generate_resources(irs)
+          |> result.map(fn(r) { #(r, []) })
+        },
+        terraform_settings: honeycomb.terraform_settings(),
+        provider: honeycomb.provider(),
+        variables: honeycomb.variables(),
+      )
+    vendor.Dynatrace ->
+      VendorPlatform(
+        vendor: vendor.Dynatrace,
+        generate_resources: fn(irs) {
+          dynatrace.generate_resources(irs)
+          |> result.map(fn(r) { #(r, []) })
+        },
+        terraform_settings: dynatrace.terraform_settings(),
+        provider: dynatrace.provider(),
+        variables: dynatrace.variables(),
+      )
+    vendor.NewRelic ->
+      VendorPlatform(
+        vendor: vendor.NewRelic,
+        generate_resources: fn(irs) {
+          newrelic.generate_resources(irs)
+          |> result.map(fn(r) { #(r, []) })
+        },
+        terraform_settings: newrelic.terraform_settings(),
+        provider: newrelic.provider(),
+        variables: newrelic.variables(),
+      )
+  }
 }
 
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  let #(datadog_irs, honeycomb_irs, dynatrace_irs, newrelic_irs) =
-    group_by_vendor(resolved_irs)
+  let grouped = group_by_vendor(resolved_irs)
 
-  // Build vendor groups, defaulting to Datadog boilerplate if no IRs at all.
-  let vendor_groups = [
-    #(datadog_ops(), datadog_irs),
-    #(honeycomb_ops(), honeycomb_irs),
-    #(dynatrace_ops(), dynatrace_irs),
-    #(newrelic_ops(), newrelic_irs),
-  ]
-  let active_groups = list.filter(vendor_groups, fn(g) { !list.is_empty(g.1) })
+  // Build active platform groups, defaulting to Datadog boilerplate if no IRs.
+  let active_groups =
+    grouped
+    |> dict.to_list
+    |> list.map(fn(pair) { #(platform_for(pair.0), pair.1) })
   let active_groups = case list.is_empty(active_groups) {
-    True -> [#(datadog_ops(), [])]
+    True -> [#(platform_for(vendor.Datadog), [])]
     False -> active_groups
   }
 
@@ -161,20 +161,20 @@ fn run_code_generation(
   // list.append calls here are bounded and not a performance concern.
   use #(all_resources, all_warnings, required_providers, providers, variables) <- result.try(
     list.try_fold(active_groups, #([], [], [], [], []), fn(acc, group) {
-      let #(ops, irs) = group
+      let #(platform, irs) = group
       let #(resources, warnings, req_provs, provs, vars) = acc
       use #(vendor_resources, vendor_warnings) <- result.try(
-        ops.generate_resources(irs),
+        platform.generate_resources(irs),
       )
       Ok(#(
         list.append(resources, vendor_resources),
         list.append(warnings, vendor_warnings),
         list.append(
           req_provs,
-          dict.to_list(ops.terraform_settings.required_providers),
+          dict.to_list(platform.terraform_settings.required_providers),
         ),
-        list.append(provs, [ops.provider]),
-        list.append(vars, ops.variables),
+        list.append(provs, [platform.provider]),
+        list.append(vars, platform.variables),
       ))
     }),
   )
@@ -250,28 +250,18 @@ fn run_code_generation(
   ))
 }
 
-/// Group IRs by vendor into (datadog, honeycomb, dynatrace, newrelic) lists.
+/// Groups IRs by their resolved vendor, preserving input order within each group.
 fn group_by_vendor(
   irs: List(IntermediateRepresentation),
-) -> #(
-  List(IntermediateRepresentation),
-  List(IntermediateRepresentation),
-  List(IntermediateRepresentation),
-  List(IntermediateRepresentation),
-) {
-  let datadog_irs =
-    irs
-    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Datadog) })
-  let honeycomb_irs =
-    irs
-    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Honeycomb) })
-  let dynatrace_irs =
-    irs
-    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.Dynatrace) })
-  let newrelic_irs =
-    irs
-    |> list.filter(fn(ir) { ir.vendor == ResolvedVendor(vendor.NewRelic) })
-  #(datadog_irs, honeycomb_irs, dynatrace_irs, newrelic_irs)
+) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation)) {
+  list.group(irs, fn(ir) {
+    case ir.vendor {
+      ResolvedVendor(v) -> v
+      // Non-SLO IRs default to Datadog for boilerplate.
+      NoVendor -> vendor.Datadog
+    }
+  })
+  |> dict.map_values(fn(_, group) { list.reverse(group) })
 }
 
 fn parse_from_strings(

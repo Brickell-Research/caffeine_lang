@@ -41,11 +41,15 @@ pub type DependencyFields {
   )
 }
 
-/// Discriminated union of artifact-specific data.
+/// Artifact-specific data stored as a dict from artifact type to fields.
 pub type ArtifactData {
-  SloOnly(SloFields)
-  DependencyOnly(DependencyFields)
-  SloWithDependency(slo: SloFields, dependency: DependencyFields)
+  ArtifactData(fields: dict.Dict(ArtifactType, ArtifactFields))
+}
+
+/// Wrapper for artifact-specific field data.
+pub type ArtifactFields {
+  SloArtifactFields(SloFields)
+  DependencyArtifactFields(DependencyFields)
 }
 
 /// Internal representation of a parsed expectation with metadata and values.
@@ -100,24 +104,27 @@ pub fn resolve_vendor(
     Error(_) ->
       Error(errors.SemanticAnalysisVendorResolutionError(
         msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor input",
+        context: errors.empty_context(),
       ))
     Ok(vendor_value_tuple) -> {
       use vendor_string <- result.try(
         value.extract_string(vendor_value_tuple.value)
         |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
           msg: "expectation '"
-          <> ir_to_identifier(ir)
-          <> "' - vendor value is not a string",
+            <> ir_to_identifier(ir)
+            <> "' - vendor value is not a string",
+          context: errors.empty_context(),
         )),
       )
       use vendor_value <- result.try(
         vendor.resolve_vendor(vendor_string)
         |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
           msg: "expectation '"
-          <> ir_to_identifier(ir)
-          <> "' - unknown vendor '"
-          <> vendor_string
-          <> "'",
+            <> ir_to_identifier(ir)
+            <> "' - unknown vendor '"
+            <> vendor_string
+            <> "'",
+          context: errors.empty_context(),
         )),
       )
 
@@ -138,8 +145,9 @@ pub fn resolve_indicators(
         |> list.find(fn(vt) { vt.label == "indicators" })
         |> result.replace_error(errors.SemanticAnalysisTemplateResolutionError(
           msg: "expectation '"
-          <> ir_to_identifier(ir)
-          <> "' - missing 'indicators' field in IR",
+            <> ir_to_identifier(ir)
+            <> "' - missing 'indicators' field in IR",
+          context: errors.empty_context(),
         )),
       )
 
@@ -148,8 +156,9 @@ pub fn resolve_indicators(
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
-            <> ir_to_identifier(ir)
-            <> "' - failed to decode indicators",
+              <> ir_to_identifier(ir)
+              <> "' - failed to decode indicators",
+            context: errors.empty_context(),
           )
         }),
       )
@@ -204,8 +213,9 @@ pub fn resolve_indicators(
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
                 msg: "expectation '"
-                <> ir_to_identifier(ir)
-                <> "' - failed to decode 'evaluation' field as string",
+                  <> ir_to_identifier(ir)
+                  <> "' - failed to decode 'evaluation' field as string",
+                context: errors.empty_context(),
               )
             }),
           )
@@ -280,6 +290,7 @@ pub fn resolve_indicators(
     _ ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
         msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor resolved",
+        context: errors.empty_context(),
       ))
   }
 }
@@ -299,21 +310,49 @@ pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
 /// Extract SloFields from ArtifactData, if present.
 @internal
 pub fn get_slo_fields(data: ArtifactData) -> Option(SloFields) {
-  case data {
-    SloOnly(slo) -> option.Some(slo)
-    SloWithDependency(slo:, ..) -> option.Some(slo)
-    DependencyOnly(_) -> option.None
+  case dict.get(data.fields, SLO) {
+    Ok(SloArtifactFields(slo)) -> option.Some(slo)
+    _ -> option.None
   }
 }
 
 /// Extract DependencyFields from ArtifactData, if present.
 @internal
 pub fn get_dependency_fields(data: ArtifactData) -> Option(DependencyFields) {
-  case data {
-    DependencyOnly(dep) -> option.Some(dep)
-    SloWithDependency(dependency: dep, ..) -> option.Some(dep)
-    SloOnly(_) -> option.None
+  case dict.get(data.fields, artifacts.DependencyRelations) {
+    Ok(DependencyArtifactFields(dep)) -> option.Some(dep)
+    _ -> option.None
   }
+}
+
+/// Creates ArtifactData containing only SLO fields.
+@internal
+pub fn slo_only(slo: SloFields) -> ArtifactData {
+  ArtifactData(fields: dict.from_list([#(SLO, SloArtifactFields(slo))]))
+}
+
+/// Creates ArtifactData containing only dependency fields.
+@internal
+pub fn dependency_only(dep: DependencyFields) -> ArtifactData {
+  ArtifactData(
+    fields: dict.from_list([
+      #(artifacts.DependencyRelations, DependencyArtifactFields(dep)),
+    ]),
+  )
+}
+
+/// Creates ArtifactData containing both SLO and dependency fields.
+@internal
+pub fn slo_with_dependency(
+  slo slo: SloFields,
+  dependency dep: DependencyFields,
+) -> ArtifactData {
+  ArtifactData(
+    fields: dict.from_list([
+      #(SLO, SloArtifactFields(slo)),
+      #(artifacts.DependencyRelations, DependencyArtifactFields(dep)),
+    ]),
+  )
 }
 
 /// Update SloFields within ArtifactData using a transformation function.
@@ -321,10 +360,13 @@ fn update_slo_fields(
   data: ArtifactData,
   updater: fn(SloFields) -> SloFields,
 ) -> ArtifactData {
-  case data {
-    SloOnly(slo) -> SloOnly(updater(slo))
-    SloWithDependency(slo:, dependency:) ->
-      SloWithDependency(slo: updater(slo), dependency:)
-    DependencyOnly(_) -> data
+  case dict.get(data.fields, SLO) {
+    Ok(SloArtifactFields(slo)) ->
+      ArtifactData(fields: dict.insert(
+        data.fields,
+        SLO,
+        SloArtifactFields(updater(slo)),
+      ))
+    _ -> data
   }
 }

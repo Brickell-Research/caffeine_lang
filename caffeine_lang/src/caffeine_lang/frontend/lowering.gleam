@@ -101,7 +101,8 @@ fn parse_artifact_refs(
   |> list.try_map(fn(s) {
     artifacts.parse_artifact_type(s)
     |> result.replace_error(errors.FrontendValidationError(
-      "Unknown artifact type: '" <> s <> "'",
+      msg: "Unknown artifact type: '" <> s <> "'",
+      context: errors.empty_context(),
     ))
   })
 }

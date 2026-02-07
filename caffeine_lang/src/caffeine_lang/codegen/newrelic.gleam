@@ -4,7 +4,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
-  type CompilationError, GeneratorNewrelicTerraformResolutionError,
+  type CompilationError, GeneratorTerraformResolutionError,
 }
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
@@ -127,25 +127,31 @@ pub fn ir_to_terraform_resource(
   // Extract structured SLO fields from IR.
   use slo <- result.try(
     semantic_analyzer.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorNewrelicTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_newrelic,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
+      context: errors.empty_context(),
     )),
   )
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline.
   use evaluation_expr <- result.try(
     slo.evaluation
-    |> option.to_result(GeneratorNewrelicTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_newrelic,
       msg: "expectation '"
-      <> identifier
-      <> "' - missing evaluation for New Relic SLO",
+        <> identifier
+        <> "' - missing evaluation for New Relic SLO",
+      context: errors.empty_context(),
     )),
   )
   use _ <- result.try(
     cql_generator.resolve_slo_to_expression(evaluation_expr, slo.indicators)
     |> result.map_error(fn(err) {
-      GeneratorNewrelicTerraformResolutionError(
+      GeneratorTerraformResolutionError(
+        vendor: constants.vendor_newrelic,
         msg: "expectation '" <> identifier <> "' - " <> err,
+        context: errors.empty_context(),
       )
     }),
   )
@@ -222,22 +228,26 @@ fn build_events_block(
 
   use good_indicator <- result.try(
     dict.get(indicators, good_name)
-    |> result.replace_error(GeneratorNewrelicTerraformResolutionError(
+    |> result.replace_error(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_newrelic,
       msg: "expectation '"
-      <> identifier
-      <> "' - indicator '"
-      <> good_name
-      <> "' not found",
+        <> identifier
+        <> "' - indicator '"
+        <> good_name
+        <> "' not found",
+      context: errors.empty_context(),
     )),
   )
   use valid_indicator <- result.try(
     dict.get(indicators, valid_name)
-    |> result.replace_error(GeneratorNewrelicTerraformResolutionError(
+    |> result.replace_error(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_newrelic,
       msg: "expectation '"
-      <> identifier
-      <> "' - indicator '"
-      <> valid_name
-      <> "' not found",
+        <> identifier
+        <> "' - indicator '"
+        <> valid_name
+        <> "' not found",
+      context: errors.empty_context(),
     )),
   )
 
@@ -278,18 +288,22 @@ fn extract_good_valid_names(
       {
         True -> Ok(#(good_trimmed, valid_trimmed))
         False ->
-          Error(GeneratorNewrelicTerraformResolutionError(
+          Error(GeneratorTerraformResolutionError(
+            vendor: constants.vendor_newrelic,
             msg: "expectation '"
-            <> identifier
-            <> "' - evaluation references indicators not found in indicator map",
+              <> identifier
+              <> "' - evaluation references indicators not found in indicator map",
+            context: errors.empty_context(),
           ))
       }
     }
     _ ->
-      Error(GeneratorNewrelicTerraformResolutionError(
+      Error(GeneratorTerraformResolutionError(
+        vendor: constants.vendor_newrelic,
         msg: "expectation '"
-        <> identifier
-        <> "' - evaluation must be in 'good / valid' format for New Relic",
+          <> identifier
+          <> "' - evaluation must be in 'good / valid' format for New Relic",
+        context: errors.empty_context(),
       ))
   }
 }
@@ -335,10 +349,12 @@ pub fn window_to_rolling_count(days: Int) -> Result(Int, CompilationError) {
   case days {
     1 | 7 | 28 -> Ok(days)
     _ ->
-      Error(GeneratorNewrelicTerraformResolutionError(
+      Error(GeneratorTerraformResolutionError(
+        vendor: constants.vendor_newrelic,
         msg: "Illegal window_in_days value: "
-        <> int.to_string(days)
-        <> ". New Relic accepts only 1, 7, or 28.",
+          <> int.to_string(days)
+          <> ". New Relic accepts only 1, 7, or 28.",
+        context: errors.empty_context(),
       ))
   }
 }

@@ -128,6 +128,7 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference 'acme.platform.db.nonexistent_slo' in 'acme.platform.auth.login_slo': target does not exist",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -151,6 +152,7 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference 'invalid_format' in 'acme.platform.auth.login_slo': expected format 'org.team.service.name'",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -174,6 +176,7 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference 'acme.platform.auth.login_slo' in 'acme.platform.auth.login_slo': self-reference not allowed",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -197,6 +200,7 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Invalid dependency reference 'bad_format' in 'acme.platform.auth.login_slo': expected format 'org.team.service.name'",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -230,6 +234,7 @@ pub fn validate_dependency_relations_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Duplicate dependency reference 'acme.platform.db.availability_slo' in 'acme.platform.auth.login_slo'",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -405,6 +410,7 @@ pub fn detect_cycles_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.a.slo",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -446,6 +452,7 @@ pub fn detect_cycles_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.c.slo -> acme.platform.a.slo",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -478,6 +485,7 @@ pub fn detect_cycles_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Circular dependency detected: acme.platform.a.slo -> acme.platform.b.slo -> acme.platform.a.slo",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -569,6 +577,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
         msg: "Hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) cannot exceed its hard dependency 'acme.infra.db.query_slo' (threshold: 99.9)",
+        context: errors.empty_context(),
       )),
     ),
   ]

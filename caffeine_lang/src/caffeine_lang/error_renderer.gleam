@@ -1,7 +1,8 @@
 /// Plain-text error renderer (no ANSI codes).
 /// Composes error code, message, location, source snippet, and suggestion
 /// into Rust/Elm-style diagnostic output.
-import caffeine_lang/rich_error.{type RichError, type SourceLocation}
+import caffeine_lang/errors.{type SourceLocation}
+import caffeine_lang/rich_error.{type RichError}
 import caffeine_lang/source_snippet
 import gleam/int
 import gleam/list

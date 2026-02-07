@@ -4,6 +4,7 @@ import caffeine_lang/helpers
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
+import gleam/option
 import gleam/set
 import test_helpers
 
@@ -100,14 +101,22 @@ pub fn parse_and_resolve_query_template_test() {
       "foo.sum$$baz->faz$$",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
-        "test - Missing input for template: faz",
+        msg: "test - Missing input for template: faz",
+        context: errors.ErrorContext(
+          ..errors.empty_context(),
+          identifier: option.Some("test"),
+        ),
       )),
     ),
     #(
       "foo.sum$$baz",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
-        "test - Unexpected incomplete `$$` for substring: foo.sum$$baz",
+        msg: "test - Unexpected incomplete `$$` for substring: foo.sum$$baz",
+        context: errors.ErrorContext(
+          ..errors.empty_context(),
+          identifier: option.Some("test"),
+        ),
       )),
     ),
     #("foo", [], Ok("foo")),
@@ -525,31 +534,36 @@ pub fn parse_template_variable_test() {
     #(
       "",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Empty template variable name: ",
+        msg: "Empty template variable name: ",
+        context: errors.empty_context(),
       )),
     ),
     #(
       "  ",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Empty template variable name:   ",
+        msg: "Empty template variable name:   ",
+        context: errors.empty_context(),
       )),
     ),
     #(
       "->foo",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Empty input name in template: ->foo",
+        msg: "Empty input name in template: ->foo",
+        context: errors.empty_context(),
       )),
     ),
     #(
       "foo->",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Empty label name in template: foo->",
+        msg: "Empty label name in template: foo->",
+        context: errors.empty_context(),
       )),
     ),
     #(
       "foo->foo:unknown",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Unknown template type: unknown",
+        msg: "Unknown template type: unknown",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -567,7 +581,8 @@ pub fn parse_template_type_test() {
     #(
       "unknown",
       Error(errors.SemanticAnalysisTemplateParseError(
-        "Unknown template type: unknown",
+        msg: "Unknown template type: unknown",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -592,7 +607,8 @@ pub fn resolve_template_test() {
         value: value.BoolValue(True),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
-        "Mismatch between template input name (foo) and input value label (bar).",
+        msg: "Mismatch between template input name (foo) and input value label (bar).",
+        context: errors.empty_context(),
       )),
     ),
     // Dict unsupported error (error propagation from type module)
@@ -607,7 +623,8 @@ pub fn resolve_template_test() {
         value: value.DictValue(dict.from_list([])),
       ),
       Error(errors.SemanticAnalysisTemplateResolutionError(
-        "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
+        msg: "Unsupported templatized variable type: Dict(String, Boolean). Dict support is pending, open an issue if this is a desired use case.",
+        context: errors.empty_context(),
       )),
     ),
     // E2E: Default template type with string -> "attr:value"

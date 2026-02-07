@@ -1,39 +1,166 @@
 import caffeine_lang/types.{type ValidationError}
 import caffeine_lang/value.{type Value}
 import gleam/list
-import gleam/option
+import gleam/option.{type Option}
 import gleam/string
+
+/// Structured context attached to every compilation error.
+pub type ErrorContext {
+  ErrorContext(
+    identifier: Option(String),
+    source_path: Option(String),
+    source_content: Option(String),
+    location: Option(SourceLocation),
+    suggestion: Option(String),
+  )
+}
+
+/// A source location within a file (1-indexed).
+pub type SourceLocation {
+  SourceLocation(line: Int, column: Int, end_column: Option(Int))
+}
+
+/// Returns an ErrorContext with all fields set to None.
+pub fn empty_context() -> ErrorContext {
+  ErrorContext(
+    identifier: option.None,
+    source_path: option.None,
+    source_content: option.None,
+    location: option.None,
+    suggestion: option.None,
+  )
+}
 
 /// Represents top level compilation errors.
 pub type CompilationError {
   // Frontend Phase (parsing .caffeine files)
-  FrontendParseError(msg: String)
-  FrontendValidationError(msg: String)
+  FrontendParseError(msg: String, context: ErrorContext)
+  FrontendValidationError(msg: String, context: ErrorContext)
   // Parser Phase (part of initial parse & link step)
-  ParserJsonParserError(msg: String)
-  ParserDuplicateError(msg: String)
+  ParserJsonParserError(msg: String, context: ErrorContext)
+  ParserDuplicateError(msg: String, context: ErrorContext)
   // Linker Phase (part of initial parse & link step)
-  LinkerParseError(msg: String)
+  LinkerParseError(msg: String, context: ErrorContext)
   // Semantic Analysis Phase
-  SemanticAnalysisVendorResolutionError(msg: String)
-  SemanticAnalysisTemplateParseError(msg: String)
-  SemanticAnalysisTemplateResolutionError(msg: String)
-  SemanticAnalysisDependencyValidationError(msg: String)
+  SemanticAnalysisVendorResolutionError(msg: String, context: ErrorContext)
+  SemanticAnalysisTemplateParseError(msg: String, context: ErrorContext)
+  SemanticAnalysisTemplateResolutionError(msg: String, context: ErrorContext)
+  SemanticAnalysisDependencyValidationError(msg: String, context: ErrorContext)
   // Code Generation Phase
-  GeneratorSloQueryResolutionError(msg: String)
-  GeneratorDatadogTerraformResolutionError(msg: String)
-  GeneratorHoneycombTerraformResolutionError(msg: String)
-  GeneratorDynatraceTerraformResolutionError(msg: String)
-  GeneratorNewrelicTerraformResolutionError(msg: String)
+  GeneratorSloQueryResolutionError(msg: String, context: ErrorContext)
+  GeneratorTerraformResolutionError(
+    vendor: String,
+    msg: String,
+    context: ErrorContext,
+  )
   // Caffeine Query Language (CQL)
-  CQLResolverError(msg: String)
-  CQLParserError(msg: String)
+  CQLResolverError(msg: String, context: ErrorContext)
+  CQLParserError(msg: String, context: ErrorContext)
   // Multiple errors accumulated from independent operations.
   CompilationErrors(errors: List(CompilationError))
 }
 
+// ==== Smart constructors ====
+
+/// Creates a FrontendParseError with empty context.
+pub fn frontend_parse_error(msg msg: String) -> CompilationError {
+  FrontendParseError(msg:, context: empty_context())
+}
+
+/// Creates a FrontendValidationError with empty context.
+pub fn frontend_validation_error(msg msg: String) -> CompilationError {
+  FrontendValidationError(msg:, context: empty_context())
+}
+
+/// Creates a ParserJsonParserError with empty context.
+pub fn parser_json_parser_error(msg msg: String) -> CompilationError {
+  ParserJsonParserError(msg:, context: empty_context())
+}
+
+/// Creates a ParserDuplicateError with empty context.
+pub fn parser_duplicate_error(msg msg: String) -> CompilationError {
+  ParserDuplicateError(msg:, context: empty_context())
+}
+
+/// Creates a LinkerParseError with empty context.
+pub fn linker_parse_error(msg msg: String) -> CompilationError {
+  LinkerParseError(msg:, context: empty_context())
+}
+
+/// Creates a SemanticAnalysisVendorResolutionError with empty context.
+pub fn semantic_analysis_vendor_resolution_error(
+  msg msg: String,
+) -> CompilationError {
+  SemanticAnalysisVendorResolutionError(msg:, context: empty_context())
+}
+
+/// Creates a SemanticAnalysisTemplateParseError with empty context.
+pub fn semantic_analysis_template_parse_error(
+  msg msg: String,
+) -> CompilationError {
+  SemanticAnalysisTemplateParseError(msg:, context: empty_context())
+}
+
+/// Creates a SemanticAnalysisTemplateResolutionError with empty context.
+pub fn semantic_analysis_template_resolution_error(
+  msg msg: String,
+) -> CompilationError {
+  SemanticAnalysisTemplateResolutionError(msg:, context: empty_context())
+}
+
+/// Creates a SemanticAnalysisDependencyValidationError with empty context.
+pub fn semantic_analysis_dependency_validation_error(
+  msg msg: String,
+) -> CompilationError {
+  SemanticAnalysisDependencyValidationError(msg:, context: empty_context())
+}
+
+/// Creates a GeneratorSloQueryResolutionError with empty context.
+pub fn generator_slo_query_resolution_error(msg msg: String) -> CompilationError {
+  GeneratorSloQueryResolutionError(msg:, context: empty_context())
+}
+
+/// Creates a GeneratorTerraformResolutionError with empty context.
+pub fn generator_terraform_resolution_error(
+  vendor vendor: String,
+  msg msg: String,
+) -> CompilationError {
+  GeneratorTerraformResolutionError(vendor:, msg:, context: empty_context())
+}
+
+/// Creates a CQLResolverError with empty context.
+pub fn cql_resolver_error(msg msg: String) -> CompilationError {
+  CQLResolverError(msg:, context: empty_context())
+}
+
+/// Creates a CQLParserError with empty context.
+pub fn cql_parser_error(msg msg: String) -> CompilationError {
+  CQLParserError(msg:, context: empty_context())
+}
+
+/// Extracts the ErrorContext from any CompilationError variant.
+@internal
+pub fn error_context(error: CompilationError) -> ErrorContext {
+  case error {
+    FrontendParseError(context:, ..) -> context
+    FrontendValidationError(context:, ..) -> context
+    ParserJsonParserError(context:, ..) -> context
+    ParserDuplicateError(context:, ..) -> context
+    LinkerParseError(context:, ..) -> context
+    SemanticAnalysisVendorResolutionError(context:, ..) -> context
+    SemanticAnalysisTemplateParseError(context:, ..) -> context
+    SemanticAnalysisTemplateResolutionError(context:, ..) -> context
+    SemanticAnalysisDependencyValidationError(context:, ..) -> context
+    GeneratorSloQueryResolutionError(context:, ..) -> context
+    GeneratorTerraformResolutionError(context:, ..) -> context
+    CQLResolverError(context:, ..) -> context
+    CQLParserError(context:, ..) -> context
+    CompilationErrors(..) -> empty_context()
+  }
+}
+
 /// Prefixes a CompilationError's message with an identifier string.
-/// Useful for adding context like which expectation or blueprint caused the error.
+/// Also sets the context.identifier field for structured access.
 @internal
 pub fn prefix_error(
   error: CompilationError,
@@ -41,33 +168,85 @@ pub fn prefix_error(
 ) -> CompilationError {
   let prefix = identifier <> " - "
   case error {
-    FrontendParseError(msg:) -> FrontendParseError(msg: prefix <> msg)
-    FrontendValidationError(msg:) -> FrontendValidationError(msg: prefix <> msg)
-    ParserJsonParserError(msg:) -> ParserJsonParserError(msg: prefix <> msg)
-    ParserDuplicateError(msg:) -> ParserDuplicateError(msg: prefix <> msg)
-    LinkerParseError(msg:) -> LinkerParseError(msg: prefix <> msg)
-    SemanticAnalysisVendorResolutionError(msg:) ->
-      SemanticAnalysisVendorResolutionError(msg: prefix <> msg)
-    SemanticAnalysisTemplateParseError(msg:) ->
-      SemanticAnalysisTemplateParseError(msg: prefix <> msg)
-    SemanticAnalysisTemplateResolutionError(msg:) ->
-      SemanticAnalysisTemplateResolutionError(msg: prefix <> msg)
-    SemanticAnalysisDependencyValidationError(msg:) ->
-      SemanticAnalysisDependencyValidationError(msg: prefix <> msg)
-    GeneratorSloQueryResolutionError(msg:) ->
-      GeneratorSloQueryResolutionError(msg: prefix <> msg)
-    GeneratorDatadogTerraformResolutionError(msg:) ->
-      GeneratorDatadogTerraformResolutionError(msg: prefix <> msg)
-    GeneratorHoneycombTerraformResolutionError(msg:) ->
-      GeneratorHoneycombTerraformResolutionError(msg: prefix <> msg)
-    GeneratorDynatraceTerraformResolutionError(msg:) ->
-      GeneratorDynatraceTerraformResolutionError(msg: prefix <> msg)
-    GeneratorNewrelicTerraformResolutionError(msg:) ->
-      GeneratorNewrelicTerraformResolutionError(msg: prefix <> msg)
-    CQLResolverError(msg:) -> CQLResolverError(msg: prefix <> msg)
-    CQLParserError(msg:) -> CQLParserError(msg: prefix <> msg)
+    FrontendParseError(msg:, context:) ->
+      FrontendParseError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    FrontendValidationError(msg:, context:) ->
+      FrontendValidationError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    ParserJsonParserError(msg:, context:) ->
+      ParserJsonParserError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    ParserDuplicateError(msg:, context:) ->
+      ParserDuplicateError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    LinkerParseError(msg:, context:) ->
+      LinkerParseError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    SemanticAnalysisVendorResolutionError(msg:, context:) ->
+      SemanticAnalysisVendorResolutionError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    SemanticAnalysisTemplateParseError(msg:, context:) ->
+      SemanticAnalysisTemplateParseError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    SemanticAnalysisTemplateResolutionError(msg:, context:) ->
+      SemanticAnalysisTemplateResolutionError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    SemanticAnalysisDependencyValidationError(msg:, context:) ->
+      SemanticAnalysisDependencyValidationError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    GeneratorSloQueryResolutionError(msg:, context:) ->
+      GeneratorSloQueryResolutionError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    GeneratorTerraformResolutionError(vendor:, msg:, context:) ->
+      GeneratorTerraformResolutionError(
+        vendor:,
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    CQLResolverError(msg:, context:) ->
+      CQLResolverError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
+    CQLParserError(msg:, context:) ->
+      CQLParserError(
+        msg: prefix <> msg,
+        context: set_context_identifier(context, identifier),
+      )
     CompilationErrors(errors:) ->
       CompilationErrors(errors: list.map(errors, prefix_error(_, identifier)))
+  }
+}
+
+/// Sets the identifier field on an ErrorContext, preserving existing value if already set.
+fn set_context_identifier(
+  context: ErrorContext,
+  identifier: String,
+) -> ErrorContext {
+  case context.identifier {
+    option.Some(_) -> context
+    option.None -> ErrorContext(..context, identifier: option.Some(identifier))
   }
 }
 
@@ -91,22 +270,19 @@ pub fn to_message(error: CompilationError) -> String {
       |> list.flat_map(to_list)
       |> list.map(to_message)
       |> string.join("\n")
-    FrontendParseError(msg:) -> msg
-    FrontendValidationError(msg:) -> msg
-    ParserJsonParserError(msg:) -> msg
-    ParserDuplicateError(msg:) -> msg
-    LinkerParseError(msg:) -> msg
-    SemanticAnalysisVendorResolutionError(msg:) -> msg
-    SemanticAnalysisTemplateParseError(msg:) -> msg
-    SemanticAnalysisTemplateResolutionError(msg:) -> msg
-    SemanticAnalysisDependencyValidationError(msg:) -> msg
-    GeneratorSloQueryResolutionError(msg:) -> msg
-    GeneratorDatadogTerraformResolutionError(msg:) -> msg
-    GeneratorHoneycombTerraformResolutionError(msg:) -> msg
-    GeneratorDynatraceTerraformResolutionError(msg:) -> msg
-    GeneratorNewrelicTerraformResolutionError(msg:) -> msg
-    CQLResolverError(msg:) -> msg
-    CQLParserError(msg:) -> msg
+    FrontendParseError(msg:, ..) -> msg
+    FrontendValidationError(msg:, ..) -> msg
+    ParserJsonParserError(msg:, ..) -> msg
+    ParserDuplicateError(msg:, ..) -> msg
+    LinkerParseError(msg:, ..) -> msg
+    SemanticAnalysisVendorResolutionError(msg:, ..) -> msg
+    SemanticAnalysisTemplateParseError(msg:, ..) -> msg
+    SemanticAnalysisTemplateResolutionError(msg:, ..) -> msg
+    SemanticAnalysisDependencyValidationError(msg:, ..) -> msg
+    GeneratorSloQueryResolutionError(msg:, ..) -> msg
+    GeneratorTerraformResolutionError(msg:, ..) -> msg
+    CQLResolverError(msg:, ..) -> msg
+    CQLParserError(msg:, ..) -> msg
   }
 }
 

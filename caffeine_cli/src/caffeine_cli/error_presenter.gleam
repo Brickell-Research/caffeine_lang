@@ -1,7 +1,8 @@
 /// Colorized error renderer for CLI output.
 /// Applies ANSI color codes to RichError diagnostic output.
 import caffeine_cli/color.{type ColorMode}
-import caffeine_lang/rich_error.{type RichError, type SourceLocation}
+import caffeine_lang/errors.{type SourceLocation}
+import caffeine_lang/rich_error.{type RichError}
 import caffeine_lang/source_snippet
 import gleam/int
 import gleam/list

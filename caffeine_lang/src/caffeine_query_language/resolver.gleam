@@ -41,6 +41,7 @@ pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
         when: contains_time_slice(left) || contains_time_slice(right),
         return: Error(errors.CQLResolverError(
           msg: "time_slice cannot be used as an operand. It must be the entire expression.",
+          context: errors.empty_context(),
         )),
       )
       Ok(GoodOverTotal(left, right))
@@ -55,6 +56,7 @@ pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
     _ ->
       Error(errors.CQLResolverError(
         msg: "Invalid expression. Expected a top level division operator or time_slice.",
+        context: errors.empty_context(),
       ))
   }
 }

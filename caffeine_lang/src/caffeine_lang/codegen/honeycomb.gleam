@@ -4,7 +4,7 @@ import caffeine_lang/analysis/semantic_analyzer.{
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
-  type CompilationError, GeneratorHoneycombTerraformResolutionError,
+  type CompilationError, GeneratorTerraformResolutionError,
 }
 import caffeine_lang/helpers
 import caffeine_query_language/generator as cql_generator
@@ -110,8 +110,10 @@ pub fn ir_to_terraform_resources(
   // Extract structured SLO fields from IR.
   use slo <- result.try(
     semantic_analyzer.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorHoneycombTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_honeycomb,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
+      context: errors.empty_context(),
     )),
   )
   let threshold = slo.threshold
@@ -122,17 +124,21 @@ pub fn ir_to_terraform_resources(
   // by substituting indicator names into the evaluation formula.
   use evaluation_expr <- result.try(
     slo.evaluation
-    |> option.to_result(GeneratorHoneycombTerraformResolutionError(
+    |> option.to_result(GeneratorTerraformResolutionError(
+      vendor: constants.vendor_honeycomb,
       msg: "expectation '"
-      <> identifier
-      <> "' - missing evaluation for Honeycomb SLO",
+        <> identifier
+        <> "' - missing evaluation for Honeycomb SLO",
+      context: errors.empty_context(),
     )),
   )
   use sli_expression <- result.try(
     cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
     |> result.map_error(fn(err) {
-      GeneratorHoneycombTerraformResolutionError(
+      GeneratorTerraformResolutionError(
+        vendor: constants.vendor_honeycomb,
         msg: "expectation '" <> identifier <> "' - " <> err,
+        context: errors.empty_context(),
       )
     }),
   )
@@ -272,10 +278,12 @@ pub fn window_to_time_period(days: Int) -> Result(Int, CompilationError) {
   case days >= 1 && days <= 90 {
     True -> Ok(days)
     False ->
-      Error(GeneratorHoneycombTerraformResolutionError(
+      Error(GeneratorTerraformResolutionError(
+        vendor: constants.vendor_honeycomb,
         msg: "Illegal window_in_days value: "
-        <> int.to_string(days)
-        <> ". Honeycomb accepts values between 1 and 90.",
+          <> int.to_string(days)
+          <> ". Honeycomb accepts values between 1 and 90.",
+        context: errors.empty_context(),
       ))
   }
 }

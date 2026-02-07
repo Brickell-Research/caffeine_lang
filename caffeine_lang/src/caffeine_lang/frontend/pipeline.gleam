@@ -1,7 +1,7 @@
 /// Frontend pipeline for compiling .caffeine source files.
 /// Orchestrates the tokenizer, parser, validator, and generator
 /// to transform .caffeine source into Blueprint and Expectation types.
-import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/errors.{type CompilationError, SourceLocation}
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
@@ -10,9 +10,7 @@ import caffeine_lang/frontend/validator
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/position_utils
-import caffeine_lang/rich_error.{
-  type RichError, ErrorCode, RichError, SourceLocation,
-}
+import caffeine_lang/rich_error.{type RichError, ErrorCode, RichError}
 import caffeine_lang/source_file.{type SourceFile}
 import caffeine_lang/string_distance
 import gleam/list
@@ -64,7 +62,10 @@ fn parser_error_to_compilation_error(
   err: parser_error.ParserError,
   file_path: String,
 ) -> CompilationError {
-  errors.FrontendParseError(file_path <> ": " <> parser_error.to_string(err))
+  errors.FrontendParseError(
+    msg: file_path <> ": " <> parser_error.to_string(err),
+    context: errors.empty_context(),
+  )
 }
 
 fn validator_error_to_compilation_error(
@@ -72,7 +73,8 @@ fn validator_error_to_compilation_error(
   file_path: String,
 ) -> CompilationError {
   errors.FrontendValidationError(
-    file_path <> ": " <> validator_error_to_string(err),
+    msg: file_path <> ": " <> validator_error_to_string(err),
+    context: errors.empty_context(),
   )
 }
 
@@ -278,7 +280,8 @@ fn validator_errors_to_rich_error(
     // Empty list should not happen, but handle gracefully
     [] ->
       rich_error.from_compilation_error(errors.FrontendValidationError(
-        source.path <> ": unknown validation error",
+        msg: source.path <> ": unknown validation error",
+        context: errors.empty_context(),
       ))
   }
 }

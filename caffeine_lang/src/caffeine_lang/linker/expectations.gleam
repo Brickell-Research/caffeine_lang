@@ -86,6 +86,7 @@ fn validate_blueprint_refs(
     _ ->
       Error(errors.LinkerParseError(
         msg: "Unknown blueprint reference(s): " <> string.join(missing, ", "),
+        context: errors.empty_context(),
       ))
   }
 }

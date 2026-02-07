@@ -84,7 +84,7 @@ fn make_honeycomb_ir(
         ),
       ),
     ],
-    artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -199,14 +199,18 @@ pub fn window_to_time_period_test() {
     #(90, Ok(90)),
     #(
       0,
-      Error(errors.GeneratorHoneycombTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_honeycomb,
         msg: "Illegal window_in_days value: 0. Honeycomb accepts values between 1 and 90.",
+        context: errors.empty_context(),
       )),
     ),
     #(
       91,
-      Error(errors.GeneratorHoneycombTerraformResolutionError(
+      Error(errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_honeycomb,
         msg: "Illegal window_in_days value: 91. Honeycomb accepts values between 1 and 90.",
+        context: errors.empty_context(),
       )),
     ),
   ]
@@ -232,7 +236,7 @@ pub fn ir_to_terraform_resources_undefined_indicator_test() {
     )
 
   case honeycomb.ir_to_terraform_resources(ir) {
-    Error(errors.GeneratorHoneycombTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "undefined indicators")
       |> should.be_true
     _ -> should.fail()
@@ -282,7 +286,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.SloOnly(semantic_analyzer.SloFields(
+      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 30,
@@ -294,7 +298,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
     )
 
   case honeycomb.ir_to_terraform_resources(ir) {
-    Error(errors.GeneratorHoneycombTerraformResolutionError(msg:)) ->
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "missing evaluation")
       |> should.be_true
     _ -> should.fail()

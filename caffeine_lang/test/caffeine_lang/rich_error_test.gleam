@@ -1,3 +1,4 @@
+import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/rich_error.{ErrorCode, RichError}
 import gleam/option
@@ -25,23 +26,30 @@ pub fn error_code_to_string_test() {
 // * ✅ codegen error
 // * ✅ cql error
 pub fn error_code_for_test() {
-  errors.FrontendParseError("test")
+  errors.FrontendParseError(msg: "test", context: errors.empty_context())
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("parse", 100))
 
-  errors.FrontendValidationError("test")
+  errors.FrontendValidationError(msg: "test", context: errors.empty_context())
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("validation", 200))
 
-  errors.SemanticAnalysisVendorResolutionError("test")
+  errors.SemanticAnalysisVendorResolutionError(
+    msg: "test",
+    context: errors.empty_context(),
+  )
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("semantic", 401))
 
-  errors.GeneratorDatadogTerraformResolutionError("test")
+  errors.GeneratorTerraformResolutionError(
+    vendor: constants.vendor_datadog,
+    msg: "test",
+    context: errors.empty_context(),
+  )
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("codegen", 502))
 
-  errors.CQLParserError("test")
+  errors.CQLParserError(msg: "test", context: errors.empty_context())
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("cql", 602))
 }
@@ -49,7 +57,11 @@ pub fn error_code_for_test() {
 // ==== from_compilation_error ====
 // * ✅ creates RichError with no location/suggestion
 pub fn from_compilation_error_test() {
-  let err = errors.FrontendParseError("test message")
+  let err =
+    errors.FrontendParseError(
+      msg: "test message",
+      context: errors.empty_context(),
+    )
   let rich = rich_error.from_compilation_error(err)
   rich
   |> should.equal(RichError(
@@ -65,11 +77,14 @@ pub fn from_compilation_error_test() {
 // ==== error_message ====
 // * ✅ extracts message from each variant
 pub fn error_message_test() {
-  errors.FrontendParseError("parse error msg")
+  errors.FrontendParseError(
+    msg: "parse error msg",
+    context: errors.empty_context(),
+  )
   |> rich_error.error_message
   |> should.equal("parse error msg")
 
-  errors.CQLResolverError("cql msg")
+  errors.CQLResolverError(msg: "cql msg", context: errors.empty_context())
   |> rich_error.error_message
   |> should.equal("cql msg")
 }

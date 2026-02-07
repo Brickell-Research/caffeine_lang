@@ -48,7 +48,8 @@ fn read_directory_or_error(
     Ok(items) -> Ok(items)
     Error(err) ->
       Error(errors.LinkerParseError(
-        simplifile.describe_error(err) <> " (" <> directory_path <> ")",
+        msg: simplifile.describe_error(err) <> " (" <> directory_path <> ")",
+        context: errors.empty_context(),
       ))
   }
 }
