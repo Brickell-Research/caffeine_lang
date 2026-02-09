@@ -1,7 +1,8 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type ExtendableKind, type Field, type Literal, type Struct, type TypeAlias,
+  type ExtendableKind, type Field, type Literal, type ParsedArtifactRef,
+  type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -382,11 +383,12 @@ fn parse_blueprints_block(
 
 fn parse_artifacts(
   state: ParserState,
-) -> Result(#(List(String), ParserState), ParserError) {
+) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
   case peek(state) {
     token.LiteralString(name) -> {
+      use ref <- result.try(resolve_artifact_ref(name, state))
       let state = advance(state)
-      parse_artifacts_loop(state, [name])
+      parse_artifacts_loop(state, [ref])
     }
     tok ->
       Error(parser_error.UnexpectedToken(
@@ -400,15 +402,16 @@ fn parse_artifacts(
 
 fn parse_artifacts_loop(
   state: ParserState,
-  acc: List(String),
-) -> Result(#(List(String), ParserState), ParserError) {
+  acc: List(ParsedArtifactRef),
+) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
   case peek(state) {
     token.SymbolPlus -> {
       let state = advance(state)
       case peek(state) {
         token.LiteralString(name) -> {
+          use ref <- result.try(resolve_artifact_ref(name, state))
           let state = advance(state)
-          parse_artifacts_loop(state, [name, ..acc])
+          parse_artifacts_loop(state, [ref, ..acc])
         }
         tok ->
           Error(parser_error.UnexpectedToken(
@@ -420,6 +423,24 @@ fn parse_artifacts_loop(
       }
     }
     _ -> Ok(#(list.reverse(acc), state))
+  }
+}
+
+/// Resolves an artifact name string to a ParsedArtifactRef.
+fn resolve_artifact_ref(
+  name: String,
+  state: ParserState,
+) -> Result(ParsedArtifactRef, ParserError) {
+  case name {
+    "SLO" -> Ok(ast.ParsedSLO)
+    "DependencyRelations" -> Ok(ast.ParsedDependencyRelations)
+    _ ->
+      Error(parser_error.UnexpectedToken(
+        "\"SLO\" or \"DependencyRelations\"",
+        "\"" <> name <> "\"",
+        state.line,
+        state.column,
+      ))
   }
 }
 

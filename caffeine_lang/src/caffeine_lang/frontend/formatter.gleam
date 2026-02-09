@@ -164,7 +164,7 @@ fn format_blueprints_block(block: BlueprintsBlock) -> String {
   let header =
     "Blueprints for "
     <> block.artifacts
-    |> list.map(fn(a) { "\"" <> a <> "\"" })
+    |> list.map(fn(a) { "\"" <> ast.parsed_artifact_ref_to_string(a) <> "\"" })
     |> string.join(" + ")
 
   let items =

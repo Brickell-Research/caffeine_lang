@@ -76,16 +76,16 @@ pub fn render_plain_with_suggestion_test() {
 pub fn render_plain_path_no_location_test() {
   let err =
     RichError(
-      error: errors.SemanticAnalysisVendorResolutionError(
+      error: errors.LinkerVendorResolutionError(
         msg: "vendor issue",
         context: errors.empty_context(),
       ),
-      code: ErrorCode("semantic", 401),
+      code: ErrorCode("linker", 304),
       source_path: option.Some("my/file.caffeine"),
       source_content: option.None,
       location: option.None,
       suggestion: option.None,
     )
   error_renderer.render_plain(err)
-  |> should.equal("error[E401]: vendor issue\n  --> my/file.caffeine")
+  |> should.equal("error[E304]: vendor issue\n  --> my/file.caffeine")
 }

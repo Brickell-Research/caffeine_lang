@@ -1,6 +1,6 @@
 ## Availability
 # SLO blueprints for availability
-Blueprints for "availability_slo"
+Blueprints for "SLO"
   # API SLO
   * "api":
     Requires { env: String }
@@ -14,13 +14,13 @@ Blueprints for "availability_slo"
 
 ## Latency
 # SLO blueprints for latency
-Blueprints for "latency_slo"
+Blueprints for "SLO"
   * "api_latency":
     Requires { env: String }
     Provides { vendor: "datadog" }
 
 ## Throughput
-Blueprints for "throughput_slo"
+Blueprints for "SLO"
   * "api_throughput":
     Requires { env: String }
     Provides { vendor: "datadog" }

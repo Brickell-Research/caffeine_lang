@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
@@ -126,7 +124,7 @@ pub fn ir_to_terraform_resource(
 
   // Extract structured SLO fields from IR.
   use slo <- result.try(
-    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    ir.get_slo_fields(ir.artifact_data)
     |> option.to_result(GeneratorTerraformResolutionError(
       vendor: constants.vendor_newrelic,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
@@ -361,7 +359,7 @@ pub fn window_to_rolling_count(days: Int) -> Result(Int, CompilationError) {
 
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+  let runbook = case ir.get_slo_fields(ir.artifact_data) {
     option.Some(slo) -> slo.runbook
     option.None -> option.None
   }

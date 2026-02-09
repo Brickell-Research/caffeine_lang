@@ -1,9 +1,11 @@
+/// Semantic analysis phase: resolves indicators for intermediate representations.
 import caffeine_lang/analysis/templatizer
-import caffeine_lang/analysis/vendor.{type Vendor}
+import caffeine_lang/analysis/vendor
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/helpers.{type ValueTuple}
-import caffeine_lang/linker/artifacts.{
-  type ArtifactType, type DependencyRelationType, SLO,
+import caffeine_lang/helpers
+import caffeine_lang/linker/artifacts.{SLO}
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, IntermediateRepresentation, SloFields,
 }
 import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
@@ -12,72 +14,10 @@ import caffeine_lang/value
 import gleam/bool
 import gleam/dict
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option
 import gleam/result
 
-/// Represents whether a vendor has been resolved for an IR.
-pub type VendorState {
-  NoVendor
-  ResolvedVendor(Vendor)
-}
-
-/// Structured SLO artifact fields extracted from raw values.
-pub type SloFields {
-  SloFields(
-    threshold: Float,
-    indicators: dict.Dict(String, String),
-    window_in_days: Int,
-    evaluation: Option(String),
-    tags: List(#(String, String)),
-    runbook: Option(String),
-  )
-}
-
-/// Structured dependency artifact fields extracted from raw values.
-pub type DependencyFields {
-  DependencyFields(
-    relations: dict.Dict(DependencyRelationType, List(String)),
-    tags: List(#(String, String)),
-  )
-}
-
-/// Artifact-specific data stored as a dict from artifact type to fields.
-pub type ArtifactData {
-  ArtifactData(fields: dict.Dict(ArtifactType, ArtifactFields))
-}
-
-/// Wrapper for artifact-specific field data.
-pub type ArtifactFields {
-  SloArtifactFields(SloFields)
-  DependencyArtifactFields(DependencyFields)
-}
-
-/// Internal representation of a parsed expectation with metadata and values.
-pub type IntermediateRepresentation {
-  IntermediateRepresentation(
-    metadata: IntermediateRepresentationMetaData,
-    unique_identifier: String,
-    artifact_refs: List(ArtifactType),
-    values: List(ValueTuple),
-    artifact_data: ArtifactData,
-    vendor: VendorState,
-  )
-}
-
-/// Metadata associated with an intermediate representation including organization and service identifiers.
-pub type IntermediateRepresentationMetaData {
-  IntermediateRepresentationMetaData(
-    friendly_label: String,
-    org_name: String,
-    service_name: String,
-    blueprint_name: String,
-    team_name: String,
-    // Metadata specific to any given expectation.
-    misc: dict.Dict(String, List(String)),
-  )
-}
-
-/// Resolves vendor and indicators for a list of intermediate representations.
+/// Resolves indicators for a list of intermediate representations.
 /// Accumulates errors from all IRs instead of stopping at the first failure.
 @internal
 pub fn resolve_intermediate_representations(
@@ -89,48 +29,9 @@ pub fn resolve_intermediate_representations(
       when: !list.contains(ir.artifact_refs, SLO),
       return: Ok(ir),
     )
-    use ir_with_vendor <- result.try(resolve_vendor(ir))
-    resolve_indicators(ir_with_vendor)
+    resolve_indicators(ir)
   })
   |> errors.from_results()
-}
-
-/// Resolves the vendor string to a Vendor type for an intermediate representation.
-@internal
-pub fn resolve_vendor(
-  ir: IntermediateRepresentation,
-) -> Result(IntermediateRepresentation, CompilationError) {
-  case ir.values |> list.find(fn(value) { value.label == "vendor" }) {
-    Error(_) ->
-      Error(errors.SemanticAnalysisVendorResolutionError(
-        msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor input",
-        context: errors.empty_context(),
-      ))
-    Ok(vendor_value_tuple) -> {
-      use vendor_string <- result.try(
-        value.extract_string(vendor_value_tuple.value)
-        |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
-          msg: "expectation '"
-            <> ir_to_identifier(ir)
-            <> "' - vendor value is not a string",
-          context: errors.empty_context(),
-        )),
-      )
-      use vendor_value <- result.try(
-        vendor.resolve_vendor(vendor_string)
-        |> result.replace_error(errors.SemanticAnalysisVendorResolutionError(
-          msg: "expectation '"
-            <> ir_to_identifier(ir)
-            <> "' - unknown vendor '"
-            <> vendor_string
-            <> "'",
-          context: errors.empty_context(),
-        )),
-      )
-
-      Ok(IntermediateRepresentation(..ir, vendor: ResolvedVendor(vendor_value)))
-    }
-  }
 }
 
 /// Resolves indicator templates in an intermediate representation.
@@ -139,13 +40,13 @@ pub fn resolve_indicators(
   ir: IntermediateRepresentation,
 ) -> Result(IntermediateRepresentation, CompilationError) {
   case ir.vendor {
-    ResolvedVendor(vendor.Datadog) -> {
+    option.Some(vendor.Datadog) -> {
       use indicators_value_tuple <- result.try(
         ir.values
         |> list.find(fn(vt) { vt.label == "indicators" })
         |> result.replace_error(errors.SemanticAnalysisTemplateResolutionError(
           msg: "expectation '"
-            <> ir_to_identifier(ir)
+            <> ir.ir_to_identifier(ir)
             <> "' - missing 'indicators' field in IR",
           context: errors.empty_context(),
         )),
@@ -156,14 +57,14 @@ pub fn resolve_indicators(
         |> result.map_error(fn(_) {
           errors.SemanticAnalysisTemplateResolutionError(
             msg: "expectation '"
-              <> ir_to_identifier(ir)
+              <> ir.ir_to_identifier(ir)
               <> "' - failed to decode indicators",
             context: errors.empty_context(),
           )
         }),
       )
 
-      let identifier = ir_to_identifier(ir)
+      let identifier = ir.ir_to_identifier(ir)
 
       // Resolve all indicators and collect results.
       use resolved_indicators <- result.try(
@@ -213,7 +114,7 @@ pub fn resolve_indicators(
             |> result.map_error(fn(_) {
               errors.SemanticAnalysisTemplateResolutionError(
                 msg: "expectation '"
-                  <> ir_to_identifier(ir)
+                  <> ir.ir_to_identifier(ir)
                   <> "' - failed to decode 'evaluation' field as string",
                 context: errors.empty_context(),
               )
@@ -254,12 +155,12 @@ pub fn resolve_indicators(
       let resolved_eval = case resolved_evaluation_tuple {
         option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
         option.None ->
-          get_slo_fields(ir.artifact_data)
+          ir.get_slo_fields(ir.artifact_data)
           |> option.map(fn(slo) { slo.evaluation })
           |> option.unwrap(option.None)
       }
       let new_artifact_data =
-        update_slo_fields(ir.artifact_data, fn(slo) {
+        ir.update_slo_fields(ir.artifact_data, fn(slo) {
           SloFields(
             ..slo,
             indicators: resolved_indicators_dict,
@@ -275,98 +176,24 @@ pub fn resolve_indicators(
         ),
       )
     }
-    ResolvedVendor(vendor.Honeycomb) -> {
+    option.Some(vendor.Honeycomb) -> {
       // Honeycomb does not use template resolution — indicators are passed through as-is.
       Ok(ir)
     }
-    ResolvedVendor(vendor.Dynatrace) -> {
+    option.Some(vendor.Dynatrace) -> {
       // Dynatrace does not use template resolution — indicators are passed through as-is.
       Ok(ir)
     }
-    ResolvedVendor(vendor.NewRelic) -> {
+    option.Some(vendor.NewRelic) -> {
       // New Relic does not use template resolution — indicators are passed through as-is.
       Ok(ir)
     }
-    _ ->
+    option.None ->
       Error(errors.SemanticAnalysisTemplateResolutionError(
-        msg: "expectation '" <> ir_to_identifier(ir) <> "' - no vendor resolved",
+        msg: "expectation '"
+          <> ir.ir_to_identifier(ir)
+          <> "' - no vendor resolved",
         context: errors.empty_context(),
       ))
-  }
-}
-
-/// Build a dotted identifier from IR metadata: org.team.service.name
-@internal
-pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
-  ir.metadata.org_name
-  <> "."
-  <> ir.metadata.team_name
-  <> "."
-  <> ir.metadata.service_name
-  <> "."
-  <> ir.metadata.friendly_label
-}
-
-/// Extract SloFields from ArtifactData, if present.
-@internal
-pub fn get_slo_fields(data: ArtifactData) -> Option(SloFields) {
-  case dict.get(data.fields, SLO) {
-    Ok(SloArtifactFields(slo)) -> option.Some(slo)
-    _ -> option.None
-  }
-}
-
-/// Extract DependencyFields from ArtifactData, if present.
-@internal
-pub fn get_dependency_fields(data: ArtifactData) -> Option(DependencyFields) {
-  case dict.get(data.fields, artifacts.DependencyRelations) {
-    Ok(DependencyArtifactFields(dep)) -> option.Some(dep)
-    _ -> option.None
-  }
-}
-
-/// Creates ArtifactData containing only SLO fields.
-@internal
-pub fn slo_only(slo: SloFields) -> ArtifactData {
-  ArtifactData(fields: dict.from_list([#(SLO, SloArtifactFields(slo))]))
-}
-
-/// Creates ArtifactData containing only dependency fields.
-@internal
-pub fn dependency_only(dep: DependencyFields) -> ArtifactData {
-  ArtifactData(
-    fields: dict.from_list([
-      #(artifacts.DependencyRelations, DependencyArtifactFields(dep)),
-    ]),
-  )
-}
-
-/// Creates ArtifactData containing both SLO and dependency fields.
-@internal
-pub fn slo_with_dependency(
-  slo slo: SloFields,
-  dependency dep: DependencyFields,
-) -> ArtifactData {
-  ArtifactData(
-    fields: dict.from_list([
-      #(SLO, SloArtifactFields(slo)),
-      #(artifacts.DependencyRelations, DependencyArtifactFields(dep)),
-    ]),
-  )
-}
-
-/// Update SloFields within ArtifactData using a transformation function.
-fn update_slo_fields(
-  data: ArtifactData,
-  updater: fn(SloFields) -> SloFields,
-) -> ArtifactData {
-  case dict.get(data.fields, SLO) {
-    Ok(SloArtifactFields(slo)) ->
-      ArtifactData(fields: dict.insert(
-        data.fields,
-        SLO,
-        SloArtifactFields(updater(slo)),
-      ))
-    _ -> data
   }
 }

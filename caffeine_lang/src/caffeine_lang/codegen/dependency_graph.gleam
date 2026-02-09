@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, Soft}
 import gleam/dict
 import gleam/list
@@ -57,7 +55,7 @@ fn build_edges(irs: List(IntermediateRepresentation)) -> List(String) {
   |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))
-    case semantic_analyzer.get_dependency_fields(ir.artifact_data) {
+    case ir.get_dependency_fields(ir.artifact_data) {
       option.None -> []
       option.Some(dep) -> {
         let hard_edges =

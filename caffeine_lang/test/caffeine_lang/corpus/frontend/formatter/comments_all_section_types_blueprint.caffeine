@@ -13,7 +13,7 @@ Blueprints for "SLO"
     Provides { threshold: 99.9 }
 
 ## Second blueprint section
-Blueprints for "Latency"
+Blueprints for "SLO"
   * "api_latency" extends [_base]:
     Requires { env: _env }
     Provides { threshold_ms: 500 }

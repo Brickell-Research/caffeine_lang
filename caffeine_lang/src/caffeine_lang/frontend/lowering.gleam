@@ -1,9 +1,9 @@
 /// Frontend lowering for Caffeine AST.
 /// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
-import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Literal, type Struct, type TypeAlias,
+  type Extendable, type Field, type Literal, type ParsedArtifactRef, type Struct,
+  type TypeAlias,
 }
 import caffeine_lang/linker/artifacts.{type ArtifactType}
 import caffeine_lang/linker/blueprints.{type Blueprint, Blueprint}
@@ -17,25 +17,21 @@ import caffeine_lang/types.{
 import caffeine_lang/value
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/result
 import gleam/string
 
 /// Lowers blueprints from a validated blueprints AST.
 @internal
-pub fn lower_blueprints(
-  file: BlueprintsFile,
-) -> Result(List(Blueprint), CompilationError) {
+pub fn lower_blueprints(file: BlueprintsFile) -> List(Blueprint) {
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
   file.blocks
-  |> list.try_map(fn(block) {
+  |> list.flat_map(fn(block) {
     block.items
-    |> list.try_map(fn(item) {
+    |> list.map(fn(item) {
       generate_blueprint_item(item, block.artifacts, extendables, type_aliases)
     })
   })
-  |> result.map(list.flatten)
 }
 
 /// Lowers expectations from a validated expects AST.
@@ -72,11 +68,11 @@ fn build_type_alias_map(
 /// Generates a single blueprint from an AST item.
 fn generate_blueprint_item(
   item: BlueprintItem,
-  raw_artifacts: List(String),
+  parsed_artifacts: List(ParsedArtifactRef),
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, ParsedType),
-) -> Result(Blueprint, CompilationError) {
-  use artifact_refs <- result.try(parse_artifact_refs(raw_artifacts))
+) -> Blueprint {
+  let artifact_refs = list.map(parsed_artifacts, lower_artifact_ref)
 
   let #(merged_requires, merged_provides) =
     merge_blueprint_extends(item, extendables)
@@ -84,27 +80,20 @@ fn generate_blueprint_item(
   let params = struct_to_params(merged_requires, type_aliases)
   let inputs = struct_to_inputs(merged_provides)
 
-  Ok(Blueprint(
+  Blueprint(
     name: item.name,
     artifact_refs: artifact_refs,
     params: params,
     inputs: inputs,
-  ))
+  )
 }
 
-/// Parses a list of raw artifact type strings into typed ArtifactType values.
-/// Returns a FrontendValidationError if any string is not a recognized artifact type.
-fn parse_artifact_refs(
-  raw: List(String),
-) -> Result(List(ArtifactType), CompilationError) {
-  raw
-  |> list.try_map(fn(s) {
-    artifacts.parse_artifact_type(s)
-    |> result.replace_error(errors.FrontendValidationError(
-      msg: "Unknown artifact type: '" <> s <> "'",
-      context: errors.empty_context(),
-    ))
-  })
+/// Converts a ParsedArtifactRef to an ArtifactType (infallible).
+fn lower_artifact_ref(ref: ParsedArtifactRef) -> ArtifactType {
+  case ref {
+    ast.ParsedSLO -> artifacts.SLO
+    ast.ParsedDependencyRelations -> artifacts.DependencyRelations
+  }
 }
 
 /// Generates a single expectation from an AST item.

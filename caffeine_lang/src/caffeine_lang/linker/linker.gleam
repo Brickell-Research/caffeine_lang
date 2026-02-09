@@ -1,4 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/blueprints
@@ -18,6 +18,7 @@ pub fn link(
   expectation_sources: List(SourceFile),
 ) -> Result(List(IntermediateRepresentation), CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
+  let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
 
   // Compile blueprints .caffeine source, then validate
   use raw_blueprints <- result.try(pipeline.compile_blueprints(blueprint))
@@ -31,7 +32,7 @@ pub fn link(
     validated_blueprints,
   ))
 
-  Ok(ir_builder.build_all(expectations_with_paths))
+  ir_builder.build_all(expectations_with_paths, reserved_labels:)
 }
 
 fn parse_expectation_sources(

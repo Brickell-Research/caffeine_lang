@@ -1,5 +1,5 @@
-import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/linker/ir
 import caffeine_lang/codegen/honeycomb
 import caffeine_lang/constants
 import caffeine_lang/errors
@@ -38,9 +38,9 @@ fn make_honeycomb_ir(
   window_in_days: Int,
   evaluation: String,
   indicators: List(#(String, String)),
-) -> semantic_analyzer.IntermediateRepresentation {
-  semantic_analyzer.IntermediateRepresentation(
-    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+) -> ir.IntermediateRepresentation {
+  ir.IntermediateRepresentation(
+    metadata: ir.IntermediateRepresentationMetaData(
       friendly_label: friendly_label,
       org_name: org,
       service_name: service,
@@ -84,7 +84,7 @@ fn make_honeycomb_ir(
         ),
       ),
     ],
-    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+    artifact_data: ir.slo_only(ir.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -92,7 +92,7 @@ fn make_honeycomb_ir(
       tags: [],
       runbook: option.None,
     )),
-    vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
+    vendor: option.Some(vendor.Honeycomb),
   )
 }
 
@@ -187,33 +187,12 @@ pub fn generate_terraform_test() {
 }
 
 // ==== window_to_time_period ====
-// * ✅ 1 -> Ok(1) (minimum)
-// * ✅ 30 -> Ok(30)
-// * ✅ 90 -> Ok(90) (maximum)
-// * ❌ 0 -> Error
-// * ❌ 91 -> Error
+// * ✅ 1 -> 1 (minimum)
+// * ✅ 30 -> 30
+// * ✅ 90 -> 90 (maximum)
+// Range (1-90) enforced by standard library type constraint at linker level.
 pub fn window_to_time_period_test() {
-  [
-    #(1, Ok(1)),
-    #(30, Ok(30)),
-    #(90, Ok(90)),
-    #(
-      0,
-      Error(errors.GeneratorTerraformResolutionError(
-        vendor: constants.vendor_honeycomb,
-        msg: "Illegal window_in_days value: 0. Honeycomb accepts values between 1 and 90.",
-        context: errors.empty_context(),
-      )),
-    ),
-    #(
-      91,
-      Error(errors.GeneratorTerraformResolutionError(
-        vendor: constants.vendor_honeycomb,
-        msg: "Illegal window_in_days value: 91. Honeycomb accepts values between 1 and 90.",
-        context: errors.empty_context(),
-      )),
-    ),
-  ]
+  [#(1, 1), #(30, 30), #(90, 90)]
   |> test_helpers.array_based_test_executor_1(honeycomb.window_to_time_period)
 }
 
@@ -246,8 +225,8 @@ pub fn ir_to_terraform_resources_undefined_indicator_test() {
 pub fn ir_to_terraform_resources_missing_evaluation_test() {
   // Build an IR without an evaluation value to test the error path.
   let ir =
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
         friendly_label: "No Eval SLO",
         org_name: "acme",
         service_name: "payments",
@@ -286,7 +265,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+      artifact_data: ir.slo_only(ir.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 30,
@@ -294,7 +273,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         tags: [],
         runbook: option.None,
       )),
-      vendor: semantic_analyzer.ResolvedVendor(vendor.Honeycomb),
+      vendor: option.Some(vendor.Honeycomb),
     )
 
   case honeycomb.ir_to_terraform_resources(ir) {

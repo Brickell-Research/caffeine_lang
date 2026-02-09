@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
@@ -106,7 +104,7 @@ pub fn ir_to_terraform_resource(
 
   // Extract structured SLO fields from IR.
   use slo <- result.try(
-    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    ir.get_slo_fields(ir.artifact_data)
     |> option.to_result(GeneratorTerraformResolutionError(
       vendor: constants.vendor_dynatrace,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
@@ -136,10 +134,7 @@ pub fn ir_to_terraform_resource(
     }),
   )
 
-  use evaluation_window <- result.try(
-    window_to_evaluation_window(slo.window_in_days)
-    |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
-  )
+  let evaluation_window = window_to_evaluation_window(slo.window_in_days)
 
   let description = build_description(ir)
 
@@ -167,7 +162,7 @@ pub fn ir_to_terraform_resource(
 
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+  let runbook = case ir.get_slo_fields(ir.artifact_data) {
     option.Some(slo) -> slo.runbook
     option.None -> option.None
   }
@@ -186,20 +181,8 @@ fn build_description(ir: IntermediateRepresentation) -> String {
 }
 
 /// Convert window_in_days to Dynatrace evaluation_window format ("-{N}d").
-/// Dynatrace accepts evaluation windows of 1-90 days.
+/// Range (1-90) is guaranteed by the standard library type constraint.
 @internal
-pub fn window_to_evaluation_window(
-  days: Int,
-) -> Result(String, CompilationError) {
-  case days >= 1 && days <= 90 {
-    True -> Ok("-" <> int.to_string(days) <> "d")
-    False ->
-      Error(GeneratorTerraformResolutionError(
-        vendor: constants.vendor_dynatrace,
-        msg: "Illegal window_in_days value: "
-          <> int.to_string(days)
-          <> ". Dynatrace accepts values between 1 and 90.",
-        context: errors.empty_context(),
-      ))
-  }
+pub fn window_to_evaluation_window(days: Int) -> String {
+  "-" <> int.to_string(days) <> "d"
 }

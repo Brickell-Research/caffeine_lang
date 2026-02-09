@@ -1,5 +1,5 @@
-import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/linker/ir
 import caffeine_lang/codegen/datadog
 import caffeine_lang/constants
 import caffeine_lang/errors
@@ -96,8 +96,8 @@ pub fn generate_terraform_test() {
     // simple SLO with numerator/denominator queries
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -140,7 +140,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -151,7 +151,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "simple_slo",
@@ -159,8 +159,8 @@ pub fn generate_terraform_test() {
     // SLO with resolved template queries (tags filled in)
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -208,7 +208,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{env:production,status:2xx}"),
@@ -219,7 +219,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "resolved_templates",
@@ -227,8 +227,8 @@ pub fn generate_terraform_test() {
     // multiple SLOs generate multiple resources
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -271,7 +271,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -282,10 +282,10 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "API Availability SLO",
             org_name: "org",
             service_name: "team",
@@ -328,7 +328,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.5,
             indicators: dict.from_list([
               #("numerator", "sum:api.requests{!status:5xx}"),
@@ -339,7 +339,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "multiple_slos",
@@ -347,8 +347,8 @@ pub fn generate_terraform_test() {
     // complex CQL expression: (good + partial) / total
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Composite SLO",
             org_name: "org",
             service_name: "team",
@@ -397,7 +397,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("good", "sum:http.requests{status:2xx}"),
@@ -409,7 +409,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "complex_expression",
@@ -417,8 +417,8 @@ pub fn generate_terraform_test() {
     // fully resolved SLO time slice
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Time Slice SLO",
             org_name: "org",
             service_name: "team",
@@ -452,7 +452,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.new(),
             window_in_days: 30,
@@ -462,7 +462,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "resolved_time_slice_expression",
@@ -470,8 +470,8 @@ pub fn generate_terraform_test() {
     // SLO with both hard and soft dependencies (multiple each)
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -541,8 +541,8 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_with_dependency(
-            slo: semantic_analyzer.SloFields(
+          artifact_data: ir.slo_with_dependency(
+            slo: ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -553,7 +553,7 @@ pub fn generate_terraform_test() {
               tags: [],
               runbook: option.None,
             ),
-            dependency: semantic_analyzer.DependencyFields(
+            dependency: ir.DependencyFields(
               relations: dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo", "storage_slo"]),
@@ -561,7 +561,7 @@ pub fn generate_terraform_test() {
               tags: [],
             ),
           ),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_both_dependencies",
@@ -569,8 +569,8 @@ pub fn generate_terraform_test() {
     // SLO with only hard dependencies
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -633,8 +633,8 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_with_dependency(
-            slo: semantic_analyzer.SloFields(
+          artifact_data: ir.slo_with_dependency(
+            slo: ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -645,14 +645,14 @@ pub fn generate_terraform_test() {
               tags: [],
               runbook: option.None,
             ),
-            dependency: semantic_analyzer.DependencyFields(
+            dependency: ir.DependencyFields(
               relations: dict.from_list([
                 #(Hard, ["db_slo", "storage_slo"]),
               ]),
               tags: [],
             ),
           ),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_hard_dependency_only",
@@ -660,8 +660,8 @@ pub fn generate_terraform_test() {
     // SLO with mixed dependencies (soft has multiple, hard has one)
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -725,8 +725,8 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_with_dependency(
-            slo: semantic_analyzer.SloFields(
+          artifact_data: ir.slo_with_dependency(
+            slo: ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -737,7 +737,7 @@ pub fn generate_terraform_test() {
               tags: [],
               runbook: option.None,
             ),
-            dependency: semantic_analyzer.DependencyFields(
+            dependency: ir.DependencyFields(
               relations: dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo"]),
@@ -745,7 +745,7 @@ pub fn generate_terraform_test() {
               tags: [],
             ),
           ),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_mixed_dependencies",
@@ -753,8 +753,8 @@ pub fn generate_terraform_test() {
     // SLO with empty tags dict
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -809,7 +809,7 @@ pub fn generate_terraform_test() {
               value.DictValue(dict.from_list([])),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -820,7 +820,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_empty_tags",
@@ -828,8 +828,8 @@ pub fn generate_terraform_test() {
     // SLO with user-provided tags
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -889,7 +889,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -900,7 +900,7 @@ pub fn generate_terraform_test() {
             tags: [#("env", "prod"), #("tier", "1")],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_tags",
@@ -908,8 +908,8 @@ pub fn generate_terraform_test() {
     // SLO with overshadowing user tag
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -968,7 +968,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -979,7 +979,7 @@ pub fn generate_terraform_test() {
             tags: [#("team", "override_team")],
             runbook: option.None,
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_overshadowing_tags_WITH_WARNINGS",
@@ -987,8 +987,8 @@ pub fn generate_terraform_test() {
     // SLO with runbook URL
     #(
       [
-        semantic_analyzer.IntermediateRepresentation(
-          metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
             friendly_label: "Auth Latency SLO",
             org_name: "org",
             service_name: "team",
@@ -1040,7 +1040,7 @@ pub fn generate_terraform_test() {
               value.StringValue("https://wiki.example.com/runbook/auth-latency"),
             ),
           ],
-          artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -1053,7 +1053,7 @@ pub fn generate_terraform_test() {
               "https://wiki.example.com/runbook/auth-latency",
             ),
           )),
-          vendor: semantic_analyzer.ResolvedVendor(vendor.Datadog),
+          vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_runbook",
@@ -1087,17 +1087,17 @@ pub fn generate_terraform_test() {
 // * ✅ 7 -> "7d"
 // * ✅ 30 -> "30d"
 // * ✅ 90 -> "90d"
-// * ✅ 120 -> "120d"
+// * ❌ 15 -> Error (in range 1-90 but not in Datadog's {7,30,90})
 pub fn window_to_timeframe_test() {
   [
     #(7, Ok("7d")),
     #(30, Ok("30d")),
     #(90, Ok("90d")),
     #(
-      120,
+      15,
       Error(errors.GeneratorTerraformResolutionError(
         vendor: constants.vendor_datadog,
-        msg: "Illegal window_in_days value: 120. Accepted values are 7, 30, or 90.",
+        msg: "Illegal window_in_days value: 15. Accepted values are 7, 30, or 90.",
         context: errors.empty_context(),
       )),
     ),

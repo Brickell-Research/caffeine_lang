@@ -42,8 +42,7 @@ pub fn error_code_for(error: CompilationError) -> ErrorCode {
     errors.LinkerValueValidationError(..) -> ErrorCode("linker", 302)
     errors.LinkerDuplicateError(..) -> ErrorCode("linker", 303)
     errors.LinkerParseError(..) -> ErrorCode("linker", 301)
-    errors.SemanticAnalysisVendorResolutionError(..) ->
-      ErrorCode("semantic", 401)
+    errors.LinkerVendorResolutionError(..) -> ErrorCode("linker", 304)
     errors.SemanticAnalysisTemplateParseError(..) -> ErrorCode("semantic", 402)
     errors.SemanticAnalysisTemplateResolutionError(..) ->
       ErrorCode("semantic", 403)

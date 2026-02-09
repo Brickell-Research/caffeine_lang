@@ -2,6 +2,7 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/validations
+import caffeine_lang/string_distance
 import caffeine_lang/value.{type Value}
 import gleam/dict
 import gleam/list
@@ -71,6 +72,7 @@ pub fn validate_expectations(
 }
 
 /// Validates that every expectation's blueprint_ref matches an existing blueprint.
+/// Includes Levenshtein-based "did you mean?" suggestions for unknown refs.
 fn validate_blueprint_refs(
   expectations: List(Expectation),
   blueprints: List(Blueprint),
@@ -83,6 +85,17 @@ fn validate_blueprint_refs(
 
   case missing {
     [] -> Ok(Nil)
+    [single_ref] -> {
+      let suggestion =
+        string_distance.closest_match(single_ref, blueprint_names)
+      Error(errors.LinkerParseError(
+        msg: "Unknown blueprint reference: " <> single_ref,
+        context: errors.ErrorContext(
+          ..errors.empty_context(),
+          suggestion:,
+        ),
+      ))
+    }
     _ ->
       Error(errors.LinkerParseError(
         msg: "Unknown blueprint reference(s): " <> string.join(missing, ", "),

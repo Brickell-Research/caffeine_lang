@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
@@ -9,7 +7,6 @@ import caffeine_lang/errors.{
 import caffeine_lang/helpers
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
-import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
@@ -109,7 +106,7 @@ pub fn ir_to_terraform_resources(
 
   // Extract structured SLO fields from IR.
   use slo <- result.try(
-    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    ir.get_slo_fields(ir.artifact_data)
     |> option.to_result(GeneratorTerraformResolutionError(
       vendor: constants.vendor_honeycomb,
       msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
@@ -143,10 +140,7 @@ pub fn ir_to_terraform_resources(
     }),
   )
 
-  use time_period <- result.try(
-    window_to_time_period(window_in_days)
-    |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
-  )
+  let time_period = window_to_time_period(window_in_days)
 
   let derived_column_alias = resource_name <> "_sli"
 
@@ -195,7 +189,7 @@ pub fn ir_to_terraform_resources(
 
 /// Build a description string for the SLO.
 fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+  let runbook = case ir.get_slo_fields(ir.artifact_data) {
     option.Some(slo) -> slo.runbook
     option.None -> option.None
   }
@@ -231,7 +225,7 @@ fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
     |> collapse_multi_value_tags
 
   // Build user-provided tags from structured artifact data.
-  let user_tag_pairs = case semantic_analyzer.get_slo_fields(ir.artifact_data) {
+  let user_tag_pairs = case ir.get_slo_fields(ir.artifact_data) {
     option.Some(slo) -> slo.tags
     option.None -> []
   }
@@ -272,18 +266,8 @@ fn collapse_multi_value_tags(
 }
 
 /// Convert window_in_days to Honeycomb time_period (in days).
-/// Honeycomb accepts time periods of 1-90 days.
+/// Range (1-90) is guaranteed by the standard library type constraint.
 @internal
-pub fn window_to_time_period(days: Int) -> Result(Int, CompilationError) {
-  case days >= 1 && days <= 90 {
-    True -> Ok(days)
-    False ->
-      Error(GeneratorTerraformResolutionError(
-        vendor: constants.vendor_honeycomb,
-        msg: "Illegal window_in_days value: "
-          <> int.to_string(days)
-          <> ". Honeycomb accepts values between 1 and 90.",
-        context: errors.empty_context(),
-      ))
-  }
+pub fn window_to_time_period(days: Int) -> Int {
+  days
 }

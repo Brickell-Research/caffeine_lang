@@ -85,7 +85,7 @@ pub fn extract_path_prefix_test() {
 
 // ==== extract_threshold ====
 // * ✅ present threshold value
-// * ✅ missing threshold returns default 99.9
+// Threshold is a required param; missing case is a structural invariant violation.
 pub fn extract_threshold_test() {
   let with_threshold = [
     helpers.ValueTuple(
@@ -96,9 +96,6 @@ pub fn extract_threshold_test() {
   ]
   helpers.extract_threshold(with_threshold)
   |> should.equal(95.0)
-
-  helpers.extract_threshold([])
-  |> should.equal(99.9)
 }
 
 // ==== extract_relations ====

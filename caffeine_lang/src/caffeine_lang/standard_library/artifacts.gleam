@@ -40,10 +40,14 @@ fn slo_artifact() -> Artifact {
         "window_in_days",
         ParamInfo(
           type_: ModifierType(Defaulted(
-            PrimitiveType(NumericType(Integer)),
+            RefinementType(InclusiveRange(
+              PrimitiveType(NumericType(Integer)),
+              "1",
+              "90",
+            )),
             "30",
           )),
-          description: "Rolling window for measurement",
+          description: "Rolling window for measurement (1-90 days)",
         ),
       ),
       #(

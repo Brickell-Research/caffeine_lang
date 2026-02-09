@@ -41,8 +41,9 @@ pub type CompilationError {
   LinkerDuplicateError(msg: String, context: ErrorContext)
   // Linker Phase (parse step)
   LinkerParseError(msg: String, context: ErrorContext)
+  // Linker Phase (vendor resolution)
+  LinkerVendorResolutionError(msg: String, context: ErrorContext)
   // Semantic Analysis Phase
-  SemanticAnalysisVendorResolutionError(msg: String, context: ErrorContext)
   SemanticAnalysisTemplateParseError(msg: String, context: ErrorContext)
   SemanticAnalysisTemplateResolutionError(msg: String, context: ErrorContext)
   SemanticAnalysisDependencyValidationError(msg: String, context: ErrorContext)
@@ -87,11 +88,9 @@ pub fn linker_parse_error(msg msg: String) -> CompilationError {
   LinkerParseError(msg:, context: empty_context())
 }
 
-/// Creates a SemanticAnalysisVendorResolutionError with empty context.
-pub fn semantic_analysis_vendor_resolution_error(
-  msg msg: String,
-) -> CompilationError {
-  SemanticAnalysisVendorResolutionError(msg:, context: empty_context())
+/// Creates a LinkerVendorResolutionError with empty context.
+pub fn linker_vendor_resolution_error(msg msg: String) -> CompilationError {
+  LinkerVendorResolutionError(msg:, context: empty_context())
 }
 
 /// Creates a SemanticAnalysisTemplateParseError with empty context.
@@ -147,7 +146,7 @@ pub fn error_context(error: CompilationError) -> ErrorContext {
     LinkerValueValidationError(context:, ..) -> context
     LinkerDuplicateError(context:, ..) -> context
     LinkerParseError(context:, ..) -> context
-    SemanticAnalysisVendorResolutionError(context:, ..) -> context
+    LinkerVendorResolutionError(context:, ..) -> context
     SemanticAnalysisTemplateParseError(context:, ..) -> context
     SemanticAnalysisTemplateResolutionError(context:, ..) -> context
     SemanticAnalysisDependencyValidationError(context:, ..) -> context
@@ -193,8 +192,8 @@ pub fn prefix_error(
         msg: prefix <> msg,
         context: set_context_identifier(context, identifier),
       )
-    SemanticAnalysisVendorResolutionError(msg:, context:) ->
-      SemanticAnalysisVendorResolutionError(
+    LinkerVendorResolutionError(msg:, context:) ->
+      LinkerVendorResolutionError(
         msg: prefix <> msg,
         context: set_context_identifier(context, identifier),
       )
@@ -275,7 +274,7 @@ pub fn to_message(error: CompilationError) -> String {
     LinkerValueValidationError(msg:, ..) -> msg
     LinkerDuplicateError(msg:, ..) -> msg
     LinkerParseError(msg:, ..) -> msg
-    SemanticAnalysisVendorResolutionError(msg:, ..) -> msg
+    LinkerVendorResolutionError(msg:, ..) -> msg
     SemanticAnalysisTemplateParseError(msg:, ..) -> msg
     SemanticAnalysisTemplateResolutionError(msg:, ..) -> msg
     SemanticAnalysisDependencyValidationError(msg:, ..) -> msg

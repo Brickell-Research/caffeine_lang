@@ -3,7 +3,7 @@ Blueprints for "SLO"
     Requires { env: String }
     Provides { vendor: "datadog" }
 
-Blueprints for "DependencyRelation"
+Blueprints for "DependencyRelations"
   * "hard_dep":
     Requires { from: String, to: String }
     Provides { type: "hard" }

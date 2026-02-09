@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentationMetaData,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentationMetaData}
 import gleam/option
 import gleam/string
 import terra_madre/render

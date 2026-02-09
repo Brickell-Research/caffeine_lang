@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
@@ -120,7 +118,7 @@ pub fn ir_to_terraform_resource(
 
   // Extract structured SLO fields from IR.
   use slo <- result.try(
-    semantic_analyzer.get_slo_fields(ir.artifact_data)
+    ir.get_slo_fields(ir.artifact_data)
     |> option.to_result(GeneratorTerraformResolutionError(
       vendor: constants.vendor_datadog,
       msg: "expectation '"
@@ -151,7 +149,7 @@ pub fn ir_to_terraform_resource(
 
   // Build dependency relation tags if artifact refs include DependencyRelations.
   let dependency_tags = case
-    semantic_analyzer.get_dependency_fields(ir.artifact_data)
+    ir.get_dependency_fields(ir.artifact_data)
   {
     option.Some(dep) -> build_dependency_tags(dep.relations)
     option.None -> []
@@ -280,12 +278,12 @@ fn build_dependency_tags(
 }
 
 /// Convert window_in_days to Datadog timeframe string.
+/// Range (1-90) is guaranteed by the standard library; Datadog further restricts to {7, 30, 90}.
 @internal
 pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
   let days_string = int.to_string(days)
   case days {
     7 | 30 | 90 -> Ok(days_string <> "d")
-    // TODO: catch this earlier on in the compilation pipeline. Possible with RefinementTypes 😁
     _ ->
       Error(GeneratorTerraformResolutionError(
         vendor: constants.vendor_datadog,

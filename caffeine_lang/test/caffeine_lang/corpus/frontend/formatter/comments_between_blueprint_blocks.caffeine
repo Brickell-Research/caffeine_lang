@@ -7,7 +7,7 @@ Blueprints for "SLO"
 
 ##  === Latency Blueprints ===
 # These blueprints track latency
-Blueprints for "LatencySLO"
+Blueprints for "SLO"
   * "api_latency":
     Requires { env: String }
     Provides { vendor: "datadog" }

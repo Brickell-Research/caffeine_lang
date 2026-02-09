@@ -1,5 +1,5 @@
-import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/linker/ir
 import caffeine_lang/codegen/newrelic
 import caffeine_lang/constants
 import caffeine_lang/errors
@@ -37,9 +37,9 @@ fn make_newrelic_ir(
   window_in_days: Int,
   evaluation: String,
   indicators: List(#(String, String)),
-) -> semantic_analyzer.IntermediateRepresentation {
-  semantic_analyzer.IntermediateRepresentation(
-    metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+) -> ir.IntermediateRepresentation {
+  ir.IntermediateRepresentation(
+    metadata: ir.IntermediateRepresentationMetaData(
       friendly_label: friendly_label,
       org_name: org,
       service_name: service,
@@ -83,7 +83,7 @@ fn make_newrelic_ir(
         ),
       ),
     ],
-    artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+    artifact_data: ir.slo_only(ir.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -91,7 +91,7 @@ fn make_newrelic_ir(
       tags: [],
       runbook: option.None,
     )),
-    vendor: semantic_analyzer.ResolvedVendor(vendor.NewRelic),
+    vendor: option.Some(vendor.NewRelic),
   )
 }
 
@@ -282,8 +282,8 @@ pub fn ir_to_terraform_resource_undefined_indicator_test() {
 
 pub fn ir_to_terraform_resource_missing_evaluation_test() {
   let ir =
-    semantic_analyzer.IntermediateRepresentation(
-      metadata: semantic_analyzer.IntermediateRepresentationMetaData(
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
         friendly_label: "No Eval SLO",
         org_name: "acme",
         service_name: "payments",
@@ -322,7 +322,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: semantic_analyzer.slo_only(semantic_analyzer.SloFields(
+      artifact_data: ir.slo_only(ir.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("valid", "Transaction")]),
         window_in_days: 7,
@@ -330,7 +330,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
         tags: [],
         runbook: option.None,
       )),
-      vendor: semantic_analyzer.ResolvedVendor(vendor.NewRelic),
+      vendor: option.Some(vendor.NewRelic),
     )
 
   case newrelic.ir_to_terraform_resource(ir) {

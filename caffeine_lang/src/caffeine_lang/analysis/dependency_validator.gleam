@@ -1,6 +1,4 @@
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, ir_to_identifier,
-}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO}
 import gleam/bool
@@ -83,7 +81,7 @@ fn validate_ir_dependencies(
 
   // Extract the relations from structured artifact data.
   use dep <- result.try(
-    semantic_analyzer.get_dependency_fields(ir.artifact_data)
+    ir.get_dependency_fields(ir.artifact_data)
     |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
       msg: self_path <> " - missing dependency artifact data",
       context: errors.empty_context(),
@@ -217,7 +215,7 @@ fn build_adjacency_list(
   irs
   |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.filter_map(fn(ir) {
-    case semantic_analyzer.get_dependency_fields(ir.artifact_data) {
+    case ir.get_dependency_fields(ir.artifact_data) {
       option.Some(dep) -> {
         let path = ir_to_identifier(ir)
         let targets = get_all_dependency_targets(dep.relations)
@@ -342,8 +340,8 @@ fn validate_single_ir_hard_thresholds(
   let self_path = ir_to_identifier(ir)
   use #(slo, dep) <- result.try(
     case
-      semantic_analyzer.get_slo_fields(ir.artifact_data),
-      semantic_analyzer.get_dependency_fields(ir.artifact_data)
+      ir.get_slo_fields(ir.artifact_data),
+      ir.get_dependency_fields(ir.artifact_data)
     {
       option.Some(slo), option.Some(dep) -> Ok(#(slo, dep))
       _, _ ->
@@ -383,7 +381,7 @@ fn validate_single_hard_threshold(
       )
 
       use target_slo <- result.try(
-        semantic_analyzer.get_slo_fields(target_ir.artifact_data)
+        ir.get_slo_fields(target_ir.artifact_data)
         |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
           msg: target_path <> " - missing SLO artifact data",
           context: errors.empty_context(),

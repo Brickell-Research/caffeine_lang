@@ -26,8 +26,7 @@ fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint) {
   let content = lowering_path(file_name <> ".caffeine") |> read_file
   let assert Ok(file) = parser.parse_blueprints_file(content)
   let assert Ok(validated) = validator.validate_blueprints_file(file)
-  let assert Ok(blueprints) = lowering.lower_blueprints(validated)
-  blueprints
+  lowering.lower_blueprints(validated)
 }
 
 fn parse_and_lower_expects(file_name: String) -> List(Expectation) {

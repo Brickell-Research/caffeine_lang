@@ -34,12 +34,12 @@ pub fn error_code_for_test() {
   |> rich_error.error_code_for
   |> should.equal(ErrorCode("validation", 200))
 
-  errors.SemanticAnalysisVendorResolutionError(
+  errors.LinkerVendorResolutionError(
     msg: "test",
     context: errors.empty_context(),
   )
   |> rich_error.error_code_for
-  |> should.equal(ErrorCode("semantic", 401))
+  |> should.equal(ErrorCode("linker", 304))
 
   errors.GeneratorTerraformResolutionError(
     vendor: constants.vendor_datadog,

@@ -124,7 +124,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -162,7 +162,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -187,7 +187,7 @@ pub fn parse_blueprints_file_test() {
             ),
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["DependencyRelation"],
+              artifacts: [ast.ParsedDependencyRelations],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -230,7 +230,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO", "DependencyRelation"],
+              artifacts: [ast.ParsedSLO, ast.ParsedDependencyRelations],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -291,7 +291,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -347,7 +347,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -385,7 +385,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -423,7 +423,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -461,7 +461,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -536,7 +536,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -621,7 +621,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -659,7 +659,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: ["SLO"],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],

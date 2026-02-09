@@ -77,11 +77,13 @@ pub fn extract_value(
   |> result.try(fn(vt) { extractor(vt.value) })
 }
 
-/// Extract the threshold from a list of values, falling back to the default.
+/// Extract the threshold from a list of values.
+/// Threshold is a required param — linker validation guarantees it exists.
 @internal
 pub fn extract_threshold(values: List(ValueTuple)) -> Float {
-  extract_value(values, "threshold", value.extract_float)
-  |> result.unwrap(default_threshold_percentage)
+  let assert Ok(threshold) =
+    extract_value(values, "threshold", value.extract_float)
+  threshold
 }
 
 /// Extract dependency relations as a Dict of relation type to target list.

@@ -1,8 +1,7 @@
 import caffeine_lang/analysis/dependency_validator
-import caffeine_lang/analysis/semantic_analyzer.{
-  type IntermediateRepresentation, NoVendor, ResolvedVendor,
-}
+import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/dynatrace
@@ -256,9 +255,9 @@ fn group_by_vendor(
 ) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation)) {
   list.group(irs, fn(ir) {
     case ir.vendor {
-      ResolvedVendor(v) -> v
+      option.Some(v) -> v
       // Non-SLO IRs default to Datadog for boilerplate.
-      NoVendor -> vendor.Datadog
+      option.None -> vendor.Datadog
     }
   })
   |> dict.map_values(fn(_, group) { list.reverse(group) })
@@ -270,6 +269,7 @@ fn parse_from_strings(
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
+  let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
 
   use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
@@ -298,9 +298,8 @@ fn parse_from_strings(
     ),
   )
 
-  Ok(
-    ir_builder.build_all([
-      #(expectations_blueprint_collection, expectations_path),
-    ]),
+  ir_builder.build_all(
+    [#(expectations_blueprint_collection, expectations_path)],
+    reserved_labels:,
   )
 }
