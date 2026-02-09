@@ -39,8 +39,8 @@ pub fn error_code_for(error: CompilationError) -> ErrorCode {
   case error {
     errors.FrontendParseError(..) -> ErrorCode("parse", 100)
     errors.FrontendValidationError(..) -> ErrorCode("validation", 200)
-    errors.ParserJsonParserError(..) -> ErrorCode("linker", 302)
-    errors.ParserDuplicateError(..) -> ErrorCode("linker", 303)
+    errors.LinkerValueValidationError(..) -> ErrorCode("linker", 302)
+    errors.LinkerDuplicateError(..) -> ErrorCode("linker", 303)
     errors.LinkerParseError(..) -> ErrorCode("linker", 301)
     errors.SemanticAnalysisVendorResolutionError(..) ->
       ErrorCode("semantic", 401)

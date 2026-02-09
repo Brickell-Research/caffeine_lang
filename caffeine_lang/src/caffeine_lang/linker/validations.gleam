@@ -18,7 +18,7 @@ pub fn validate_value_type(
 ) -> Result(Value, CompilationError) {
   types.validate_value(expected_type, val)
   |> result.map_error(fn(err) {
-    errors.ParserJsonParserError(
+    errors.LinkerValueValidationError(
       msg: errors.format_validation_error_message(
         err,
         option.Some(type_key_identifier),
@@ -110,7 +110,7 @@ pub fn inputs_validator(
 }
 
 /// Validates that all items in a list have unique values for a given property.
-/// Returns a ParserDuplicateError listing any duplicate values found.
+/// Returns a LinkerDuplicateError listing any duplicate values found.
 @internal
 pub fn validate_relevant_uniqueness(
   items: List(a),
@@ -126,7 +126,7 @@ pub fn validate_relevant_uniqueness(
   case dupe_names {
     [] -> Ok(Nil)
     _ ->
-      Error(errors.ParserDuplicateError(
+      Error(errors.LinkerDuplicateError(
         msg: "Duplicate "
           <> thing_label
           <> ": "
@@ -166,7 +166,7 @@ pub fn validate_inputs_for_collection(
   case validation_errors {
     "" -> Ok(Nil)
     _ ->
-      Error(errors.ParserJsonParserError(
+      Error(errors.LinkerValueValidationError(
         msg: "Input validation errors: " <> validation_errors,
         context: errors.empty_context(),
       ))
@@ -202,7 +202,7 @@ pub fn validate_no_overshadowing(
   case overshadow_errors {
     "" -> Ok(Nil)
     _ ->
-      Error(errors.ParserDuplicateError(
+      Error(errors.LinkerDuplicateError(
         msg: overshadow_errors,
         context: errors.empty_context(),
       ))

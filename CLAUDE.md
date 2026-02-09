@@ -85,7 +85,7 @@ Key points:
 
 `CompilationError` in `errors.gleam` has phase-specific variants:
 - `FrontendParseError`, `FrontendValidationError` (tokenizer/parser/validator)
-- `ParserJsonParserError`, `ParserDuplicateError`
+- `LinkerValueValidationError`, `LinkerDuplicateError`
 - `LinkerParseError`
 - `SemanticAnalysisVendorResolutionError`, `SemanticAnalysisTemplateParseError`, `SemanticAnalysisTemplateResolutionError`, `SemanticAnalysisDependencyValidationError`
 - `GeneratorSloQueryResolutionError`, `GeneratorDatadogTerraformResolutionError`, `GeneratorHoneycombTerraformResolutionError`

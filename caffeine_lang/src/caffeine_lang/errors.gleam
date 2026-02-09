@@ -36,10 +36,10 @@ pub type CompilationError {
   // Frontend Phase (parsing .caffeine files)
   FrontendParseError(msg: String, context: ErrorContext)
   FrontendValidationError(msg: String, context: ErrorContext)
-  // Parser Phase (part of initial parse & link step)
-  ParserJsonParserError(msg: String, context: ErrorContext)
-  ParserDuplicateError(msg: String, context: ErrorContext)
-  // Linker Phase (part of initial parse & link step)
+  // Linker Phase (value and uniqueness validation)
+  LinkerValueValidationError(msg: String, context: ErrorContext)
+  LinkerDuplicateError(msg: String, context: ErrorContext)
+  // Linker Phase (parse step)
   LinkerParseError(msg: String, context: ErrorContext)
   // Semantic Analysis Phase
   SemanticAnalysisVendorResolutionError(msg: String, context: ErrorContext)
@@ -72,14 +72,14 @@ pub fn frontend_validation_error(msg msg: String) -> CompilationError {
   FrontendValidationError(msg:, context: empty_context())
 }
 
-/// Creates a ParserJsonParserError with empty context.
-pub fn parser_json_parser_error(msg msg: String) -> CompilationError {
-  ParserJsonParserError(msg:, context: empty_context())
+/// Creates a LinkerValueValidationError with empty context.
+pub fn linker_value_validation_error(msg msg: String) -> CompilationError {
+  LinkerValueValidationError(msg:, context: empty_context())
 }
 
-/// Creates a ParserDuplicateError with empty context.
-pub fn parser_duplicate_error(msg msg: String) -> CompilationError {
-  ParserDuplicateError(msg:, context: empty_context())
+/// Creates a LinkerDuplicateError with empty context.
+pub fn linker_duplicate_error(msg msg: String) -> CompilationError {
+  LinkerDuplicateError(msg:, context: empty_context())
 }
 
 /// Creates a LinkerParseError with empty context.
@@ -144,8 +144,8 @@ pub fn error_context(error: CompilationError) -> ErrorContext {
   case error {
     FrontendParseError(context:, ..) -> context
     FrontendValidationError(context:, ..) -> context
-    ParserJsonParserError(context:, ..) -> context
-    ParserDuplicateError(context:, ..) -> context
+    LinkerValueValidationError(context:, ..) -> context
+    LinkerDuplicateError(context:, ..) -> context
     LinkerParseError(context:, ..) -> context
     SemanticAnalysisVendorResolutionError(context:, ..) -> context
     SemanticAnalysisTemplateParseError(context:, ..) -> context
@@ -178,13 +178,13 @@ pub fn prefix_error(
         msg: prefix <> msg,
         context: set_context_identifier(context, identifier),
       )
-    ParserJsonParserError(msg:, context:) ->
-      ParserJsonParserError(
+    LinkerValueValidationError(msg:, context:) ->
+      LinkerValueValidationError(
         msg: prefix <> msg,
         context: set_context_identifier(context, identifier),
       )
-    ParserDuplicateError(msg:, context:) ->
-      ParserDuplicateError(
+    LinkerDuplicateError(msg:, context:) ->
+      LinkerDuplicateError(
         msg: prefix <> msg,
         context: set_context_identifier(context, identifier),
       )
@@ -272,8 +272,8 @@ pub fn to_message(error: CompilationError) -> String {
       |> string.join("\n")
     FrontendParseError(msg:, ..) -> msg
     FrontendValidationError(msg:, ..) -> msg
-    ParserJsonParserError(msg:, ..) -> msg
-    ParserDuplicateError(msg:, ..) -> msg
+    LinkerValueValidationError(msg:, ..) -> msg
+    LinkerDuplicateError(msg:, ..) -> msg
     LinkerParseError(msg:, ..) -> msg
     SemanticAnalysisVendorResolutionError(msg:, ..) -> msg
     SemanticAnalysisTemplateParseError(msg:, ..) -> msg

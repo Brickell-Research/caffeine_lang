@@ -278,7 +278,7 @@ pub fn validate_value_type_test() {
 
   // sad paths
   let json_error = fn(msg) {
-    Error(errors.ParserJsonParserError(
+    Error(errors.LinkerValueValidationError(
       msg: msg,
       context: errors.empty_context(),
     ))
@@ -893,7 +893,7 @@ pub fn validate_relevant_uniqueness_test() {
   [
     #(
       [#("alice", 1), #("alice", 2)],
-      Error(errors.ParserDuplicateError(
+      Error(errors.LinkerDuplicateError(
         msg: "Duplicate names: alice",
         context: errors.empty_context(),
       )),
@@ -923,7 +923,7 @@ pub fn validate_relevant_uniqueness_test() {
         label: "names",
       )
     result |> should.be_error
-    let assert Error(errors.ParserDuplicateError(msg:, ..)) = result
+    let assert Error(errors.LinkerDuplicateError(msg:, ..)) = result
     string.contains(msg, expected_substring) |> should.be_true
   })
 }
