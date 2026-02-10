@@ -17,11 +17,57 @@ terra_madre = ">=0.0.6"
 [dev-dependencies]
 gleeunit = ">= 1.0.2"
 simplifile = ">= 2.3.0 and < 3.0.0"
-gleamy_bench = ">= 0.6.0 and < 1.0.2"
 
-# Mark implementation-detail modules as internal (hidden from docs)
+# Public API: compiler, errors, source_file
+# Everything else is internal (hidden from Hex docs, still importable by monorepo siblings)
 [internal-modules]
-"caffeine_lang/parser/artifacts" = true
-"caffeine_lang/parser/blueprints" = true
-"caffeine_lang/parser/expectations" = true
-"caffeine_lang/parser/validations" = true
+# Analysis pipeline
+"caffeine_lang/analysis/dependency_validator" = true
+"caffeine_lang/analysis/semantic_analyzer" = true
+"caffeine_lang/analysis/templatizer" = true
+"caffeine_lang/analysis/vendor" = true
+# Code generation
+"caffeine_lang/codegen/datadog" = true
+"caffeine_lang/codegen/dependency_graph" = true
+"caffeine_lang/codegen/dynatrace" = true
+"caffeine_lang/codegen/generator_utils" = true
+"caffeine_lang/codegen/honeycomb" = true
+"caffeine_lang/codegen/newrelic" = true
+# Frontend
+"caffeine_lang/frontend/ast" = true
+"caffeine_lang/frontend/formatter" = true
+"caffeine_lang/frontend/lowering" = true
+"caffeine_lang/frontend/parser" = true
+"caffeine_lang/frontend/parser_error" = true
+"caffeine_lang/frontend/pipeline" = true
+"caffeine_lang/frontend/token" = true
+"caffeine_lang/frontend/tokenizer" = true
+"caffeine_lang/frontend/tokenizer_error" = true
+"caffeine_lang/frontend/validator" = true
+# Linker
+"caffeine_lang/linker/artifacts" = true
+"caffeine_lang/linker/blueprints" = true
+"caffeine_lang/linker/expectations" = true
+"caffeine_lang/linker/ir" = true
+"caffeine_lang/linker/ir_builder" = true
+"caffeine_lang/linker/linker" = true
+"caffeine_lang/linker/validations" = true
+# Utilities
+"caffeine_lang/constants" = true
+"caffeine_lang/error_renderer" = true
+"caffeine_lang/helpers" = true
+"caffeine_lang/parsing_utils" = true
+"caffeine_lang/position_utils" = true
+"caffeine_lang/rich_error" = true
+"caffeine_lang/source_snippet" = true
+"caffeine_lang/string_distance" = true
+"caffeine_lang/types" = true
+"caffeine_lang/value" = true
+# Standard library
+"caffeine_lang/standard_library/artifacts" = true
+# CQL
+"caffeine_query_language/ast" = true
+"caffeine_query_language/generator" = true
+"caffeine_query_language/parser" = true
+"caffeine_query_language/printer" = true
+"caffeine_query_language/resolver" = true
