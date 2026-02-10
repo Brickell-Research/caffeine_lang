@@ -207,11 +207,7 @@ jobs:
         VERSION=${{ steps.version.outputs.version }}
         echo "Publishing caffeine_lang v${VERSION} to Hex..."
         cd caffeine_lang
-        if gleam publish --yes 2>&1; then
-          echo "Published to Hex successfully"
-        else
-          echo "Hex publish failed (version may already exist) - continuing"
-        fi
+        gleam publish --yes
 
     - name: Update Homebrew formula
       env:
