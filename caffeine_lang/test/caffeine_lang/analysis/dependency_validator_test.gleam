@@ -342,6 +342,7 @@ pub fn detect_cycles_test() {
   |> test_helpers.array_based_test_executor_1(validate_ok)
 
   // No cycle: diamond A -> B, A -> C, B -> D, C -> D
+  // A's threshold must be below composite ceiling of B and C (~99.8001)
   [
     #(
       [
@@ -352,7 +353,7 @@ pub fn detect_cycles_test() {
           "slo",
           hard_deps: ["acme.platform.b.slo", "acme.platform.c.slo"],
           soft_deps: [],
-          threshold: default_threshold,
+          threshold: 99.0,
         ),
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -495,12 +496,16 @@ pub fn detect_cycles_test() {
 }
 
 // ==== validate_hard_dependency_thresholds (via validate_dependency_relations) ====
-// * ✅ source threshold <= target threshold (99.9 <= 99.99)
-// * ✅ equal thresholds (99.9 == 99.9)
-// * ❌ source threshold > target threshold (99.99 > 99.9)
+// * ✅ source threshold <= single dep threshold (99.9 <= 99.99)
+// * ✅ equal thresholds with single dep (99.9 == 99.9)
+// * ❌ source threshold > single dep threshold (99.99 > 99.9)
 // * ✅ soft dependencies skip threshold check
 // * ✅ skip when source has no SLO artifact
 // * ✅ skip when target has no SLO artifact
+// * ✅ 2 hard deps, source below composite ceiling
+// * ❌ 2 hard deps at 99.99%, source at 99.99% exceeds composite ceiling
+// * ❌ 3 hard deps, source above composite ceiling
+// * ✅ mix of hard deps with and without SLO (only SLO deps count)
 pub fn validate_hard_dependency_thresholds_test() {
   // Source threshold <= target threshold (99.9 <= 99.99)
   [
@@ -576,7 +581,7 @@ pub fn validate_hard_dependency_thresholds_test() {
         ),
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: "Hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) cannot exceed its hard dependency 'acme.infra.db.query_slo' (threshold: 99.9)",
+        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) exceeds the composite availability ceiling of 99.9 from its hard dependencies: 'acme.infra.db.query_slo' (99.9)",
         context: errors.empty_context(),
       )),
     ),
@@ -654,6 +659,169 @@ pub fn validate_hard_dependency_thresholds_test() {
           "infra",
           "db",
           "query_slo",
+          hard_deps: [],
+          soft_deps: [],
+        ),
+      ],
+      Ok(Nil),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(validate_ok)
+
+  // 2 hard deps, source below composite ceiling
+  [
+    #(
+      [
+        ir_test_helpers.make_ir_with_deps(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          hard_deps: [
+            "acme.infra.db.query_slo",
+            "acme.infra.cache.redis_slo",
+          ],
+          soft_deps: [],
+          threshold: 99.9,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "db",
+          "query_slo",
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "cache",
+          "redis_slo",
+          threshold: 99.99,
+        ),
+      ],
+      Ok(Nil),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(validate_ok)
+
+  // 2 hard deps at 99.99%, source at 99.99% exceeds composite ceiling (~99.98)
+  [
+    #(
+      [
+        ir_test_helpers.make_ir_with_deps(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          hard_deps: [
+            "acme.infra.db.query_slo",
+            "acme.infra.cache.redis_slo",
+          ],
+          soft_deps: [],
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "db",
+          "query_slo",
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "cache",
+          "redis_slo",
+          threshold: 99.99,
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) exceeds the composite availability ceiling of 99.98000099999999 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99)",
+        context: errors.empty_context(),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // 3 hard deps at 99.99%, source at 99.98% exceeds composite ceiling (~99.97)
+  [
+    #(
+      [
+        ir_test_helpers.make_ir_with_deps(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          hard_deps: [
+            "acme.infra.db.query_slo",
+            "acme.infra.cache.redis_slo",
+            "acme.infra.queue.rabbit_slo",
+          ],
+          soft_deps: [],
+          threshold: 99.98,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "db",
+          "query_slo",
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "cache",
+          "redis_slo",
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "queue",
+          "rabbit_slo",
+          threshold: 99.99,
+        ),
+      ],
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.98) exceeds the composite availability ceiling of 99.97000299989998 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99), 'acme.infra.queue.rabbit_slo' (99.99)",
+        context: errors.empty_context(),
+      )),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(irs) {
+    dependency_validator.validate_dependency_relations(irs)
+  })
+
+  // Mix of hard deps with and without SLO (only SLO deps count in composite)
+  [
+    #(
+      [
+        ir_test_helpers.make_ir_with_deps(
+          "acme",
+          "platform",
+          "auth",
+          "login_slo",
+          hard_deps: [
+            "acme.infra.db.query_slo",
+            "acme.infra.cache.redis_slo",
+          ],
+          soft_deps: [],
+          threshold: 99.9,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "infra",
+          "db",
+          "query_slo",
+          threshold: 99.99,
+        ),
+        ir_test_helpers.make_deps_only_ir(
+          "acme",
+          "infra",
+          "cache",
+          "redis_slo",
           hard_deps: [],
           soft_deps: [],
         ),

@@ -331,8 +331,9 @@ fn explore_neighbors(
 
 // ==== Hard dependency threshold validation ====
 
-/// Validates hard dependency thresholds for a single IR.
-/// A source's threshold must not exceed its hard dependency's threshold.
+/// Validates hard dependency thresholds for a single IR using composite ceiling.
+/// The composite ceiling is the product of all hard dependency thresholds,
+/// representing the maximum achievable availability given those dependencies.
 fn validate_single_ir_hard_thresholds(
   ir: IntermediateRepresentation,
   expectation_index: Dict(String, IntermediateRepresentation),
@@ -354,58 +355,66 @@ fn validate_single_ir_hard_thresholds(
   let source_threshold = slo.threshold
   let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
 
-  hard_targets
-  |> list.try_each(fn(target) {
-    validate_single_hard_threshold(
-      self_path,
-      source_threshold,
-      target,
-      expectation_index,
-    )
+  let dep_thresholds =
+    collect_hard_dep_thresholds(hard_targets, expectation_index)
+
+  // Nothing to validate if no deps have SLO thresholds
+  use <- bool.guard(when: list.is_empty(dep_thresholds), return: Ok(Nil))
+
+  let composite_ceiling =
+    compute_composite_ceiling(list.map(dep_thresholds, fn(pair) { pair.1 }))
+
+  case float.compare(source_threshold, composite_ceiling) {
+    order.Gt -> {
+      let deps_description =
+        dep_thresholds
+        |> list.map(fn(pair) {
+          "'" <> pair.0 <> "' (" <> float.to_string(pair.1) <> ")"
+        })
+        |> string.join(", ")
+      Error(errors.SemanticAnalysisDependencyValidationError(
+        msg: "Composite hard dependency threshold violation: '"
+          <> self_path
+          <> "' (threshold: "
+          <> float.to_string(source_threshold)
+          <> ") exceeds the composite availability ceiling of "
+          <> float.to_string(composite_ceiling)
+          <> " from its hard dependencies: "
+          <> deps_description,
+        context: errors.empty_context(),
+      ))
+    }
+    _ -> Ok(Nil)
+  }
+}
+
+/// Collects thresholds from hard dependency targets that have SLO artifacts.
+/// Skips targets that don't exist in the index or don't have SLO artifacts.
+fn collect_hard_dep_thresholds(
+  targets: List(String),
+  expectation_index: Dict(String, IntermediateRepresentation),
+) -> List(#(String, Float)) {
+  targets
+  |> list.filter_map(fn(target_path) {
+    case dict.get(expectation_index, target_path) {
+      Error(Nil) -> Error(Nil)
+      Ok(target_ir) -> {
+        use <- bool.guard(
+          when: !list.contains(target_ir.artifact_refs, SLO),
+          return: Error(Nil),
+        )
+        case ir.get_slo_fields(target_ir.artifact_data) {
+          option.None -> Error(Nil)
+          option.Some(slo) -> Ok(#(target_path, slo.threshold))
+        }
+      }
+    }
   })
 }
 
-fn validate_single_hard_threshold(
-  source_path: String,
-  source_threshold: Float,
-  target_path: String,
-  expectation_index: Dict(String, IntermediateRepresentation),
-) -> Result(Nil, CompilationError) {
-  case dict.get(expectation_index, target_path) {
-    Error(Nil) -> Ok(Nil)
-    Ok(target_ir) -> {
-      // Only validate if target also has SLO artifact
-      use <- bool.guard(
-        when: !list.contains(target_ir.artifact_refs, SLO),
-        return: Ok(Nil),
-      )
-
-      use target_slo <- result.try(
-        ir.get_slo_fields(target_ir.artifact_data)
-        |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
-          msg: target_path <> " - missing SLO artifact data",
-          context: errors.empty_context(),
-        )),
-      )
-      let target_threshold = target_slo.threshold
-
-      // Use float.compare for proper floating point comparison
-      case float.compare(source_threshold, target_threshold) {
-        order.Gt ->
-          Error(errors.SemanticAnalysisDependencyValidationError(
-            msg: "Hard dependency threshold violation: '"
-              <> source_path
-              <> "' (threshold: "
-              <> float.to_string(source_threshold)
-              <> ") cannot exceed its hard dependency '"
-              <> target_path
-              <> "' (threshold: "
-              <> float.to_string(target_threshold)
-              <> ")",
-            context: errors.empty_context(),
-          ))
-        _ -> Ok(Nil)
-      }
-    }
-  }
+/// Computes the composite availability ceiling from a list of thresholds.
+/// Each threshold is a percentage (e.g. 99.99). The composite ceiling is
+/// the product of individual availabilities.
+fn compute_composite_ceiling(thresholds: List(Float)) -> Float {
+  list.fold(thresholds, 1.0, fn(acc, t) { acc *. { t /. 100.0 } }) *. 100.0
 }
