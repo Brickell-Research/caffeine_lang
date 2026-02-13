@@ -1,0 +1,2694 @@
+Ok, kick off some teams to go look into the LSP
+
+---
+
+understand the architecture so I can propose an idea I have
+
+---
+
+<task-notification>
+<task-id>a4eab5d</task-id>
+<status>completed</status>
+<summary>Agent "Explore LSP server core architecture" completed</summary>
+<result>Perfect! Now I have a comprehensive view. Let me create a thorough summary:
+
+## Caffeine LSP Architecture Summary
+
+Based on my exploration of the codebase, here's a detailed breakdown of the Caffeine Language Server Protocol implementation:
+
+### 1. **Dual-Layer Architecture**
+
+The LSP is structured as a **two-layer system**:
+
+**TypeScript/Deno Wrapper (`lsp_server.ts`)** - The outer layer:
+- Entry point for the LSP server using `vscode-languageserver-node` 
+- Handles the LSP protocol (initialization, request routing, response formatting)
+- Manages document lifecycle and workspace state
+- Converts between LSP protocol types and Gleam types
+- Orchestrates cross-file concerns (workspace blueprint index, file tracking)
+
+**Gleam Intelligence Modules** - The inner layer:
+- Pure logic modules providing language-specific intelligence
+- Stateless, deterministic functions that analyze source text
+- Compiled to JavaScript and imported into the TypeScript wrapper
+- Each module handles a specific feature (diagnostics, hover, completion, etc.)
+
+### 2. **TypeScript Server State Management**
+
+The TypeScript wrapper maintains three key pieces of state:
+
+**Document Manager** (`documents: TextDocuments`):
+- Tracks all currently open documents via `vscode-languageserver-node`
+- Provides access to latest document text via `documents.get(uri)`
+- Automatically handles `didOpen`, `didChange`, and `didClose` events
+
+**Workspace Blueprint Index** (`blueprintIndex: Map<string, Set<string>>`):
+- Maps file URIs to sets of blueprint names defined in those files
+- Populated during initialization by scanning the workspace
+- Updated whenever blueprints file content changes
+- Used for:
+  - Cross-file blueprint reference resolution
+  - Workspace symbol search
+  - Type hierarchy navigation
+
+**Workspace Files Tracker** (`workspaceFiles: Set<string>`):
+- Set of all discovered `.caffeine` files in the workspace
+- Populated during initialization via `scanCaffeineFiles()`
+- Updated when files are created, modified, or deleted (via watched files)
+- Enables workspace-wide symbol search and cross-file analysis
+
+### 3. **Request Dispatch and Routing**
+
+The TypeScript wrapper uses `vscode-languageserver-node`'s handler registration pattern:
+
+```
+Client Request → LSP Protocol Handler → Extract parameters
+                                        → Get document text
+                                        → Call Gleam intelligence module
+                                        → Convert result to LSP format
+                                        → Send response
+```
+
+**Key Handler Pattern** (all ~25 handlers follow this pattern):
+1. Extract request parameters (position, URI, etc.)
+2. Retrieve document via `documents.get(uri)` or `getFileContent(uri)`
+3. Call Gleam function with raw source text and position
+4. Convert Gleam result to LSP types
+5. Return to client
+
+**Example: Hover Handler** (lines 303-320):
+```typescript
+connection.onHover((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+  try {
+    const result = get_hover(doc.getText(), params.position.line, params.position.character);
+    if (result instanceof Some) {
+      return { contents: { kind: "markdown" as const, value: result[0] } };
+    }
+  } catch { /* ignore */ }
+  return null;
+});
+```
+
+### 4. **Document Lifecycle**
+
+**Opening a Document**:
+- Client sends `textDocument/didOpen` with document text
+- `documents` manager stores it internally
+- During diagnostics (if blueprints file), blueprint index is populated
+
+**Modifying a Document** (lines 244-299):
+- `onDidChangeContent` fires with new text
+- Debounced to 300ms to avoid excessive diagnostics runs
+- Blueprint index is updated (`extractBlueprintNames()`)
+- Single-file diagnostics run via `get_diagnostics(text)`
+- If blueprints changed, cross-file expects file diagnostics re-run via `revalidateExpectsFiles()`
+- This cascading validation ensures expectations stay in sync with blueprint definitions
+
+**Closing a Document** (lines 943-976):
+- Clear diagnostics for the closed document
+- Read file from disk to maintain blueprint index accuracy (file still exists on disk)
+- If file was deleted from disk, clean up blueprint index
+- Re-validate all expects files if blueprint availability changed
+
+### 5. **File Type Detection and Parsing**
+
+The Gleam `file_utils.gleam` module (46 lines) provides:
+
+**`parse(content)` function** - Core parsing dispatcher:
+- Tries to detect file type by looking for `"Expectations"` keyword at start
+- Prioritizes expected type but falls back to the other
+- Returns `ParsedFile` union: `Blueprints(BlueprintsFile) | Expects(ExpectsFile)`
+- If both fail, returns tuple of both errors
+
+**`is_defined_symbol(content, name)`** - Fast symbol detection:
+- Avoids full parse for lightweight checks
+- Checks if name appears as extendable/alias (`_name (`) or item (`* "name"`)
+- Used in references/rename to filter out undefined symbols
+
+### 6. **Position Utilities and Text Navigation**
+
+The `position_utils.gleam` module (230 lines) provides:
+
+**Core Functions**:
+- `extract_word_at(content, line, character)` - Extract word under cursor with grapheme awareness
+- `find_name_position(content, name)` - Find first occurrence of a name (0-indexed)
+- `find_all_name_positions(content, name)` - Find all occurrences
+- `is_word_char(g)` - Determine if a grapheme is part of a word
+
+**Position Handling**:
+- Converts between LSP 0-indexed positions and internal coordinates
+- Grapheme-aware (handles multi-byte characters correctly)
+- Word boundary detection prevents matching partial words
+
+### 7. **Gleam Intelligence Modules** (20 modules, ~2700 lines total)
+
+**Core Modules**:
+- **`diagnostics.gleam`** (343 lines) - Single-file and cross-file diagnostics
+  - Parses file as blueprints/expects
+  - Runs validator for type/semantic checks
+  - Maps validator errors to LSP diagnostics with codes
+  - Cross-file validation: checks expects blueprint refs against workspace blueprints
+
+- **`hover.gleam`** (200 lines) - Hover documentation
+  - Extracts word at position
+  - Looks up built-in types → keywords → user-defined symbols
+  - Returns markdown formatted documentation
+  - Supports: type aliases, extendables, blueprint items, fields
+
+- **`completion.gleam`** (430 lines) - Context-aware completions
+  - Detects 5 contexts: BlueprintHeader, Extends, Type, Field, General
+  - Blueprint header: workspace blueprint names
+  - Extends: available extendables (filtered by already-used)
+  - Type: primitive and collection types
+  - Field: available fields in current block
+  - General: all symbols (keywords, types, extendables, items)
+
+- **`definition.gleam`** (132 lines) - Go-to-definition
+  - Same-file: finds in type aliases, extendables, items
+  - Cross-file: blueprint references via `get_blueprint_ref_at_position()`
+  - Used by both definition and declaration handlers
+
+- **`references.gleam`** (62 lines) - Find references
+  - Same-file via `get_references()`: extendables, type aliases, items, blueprint names
+  - Cross-file: for blueprint names, searches all workspace files via `find_references_to_name()`
+
+- **`code_actions.gleam`** (102 lines) - Quickfix actions
+  - Generates fixes for specific diagnostic codes
+  - Example: QuotedFieldName → "Remove quotes" action
+  - Maps diagnostic location to edit location
+
+**Feature Modules**:
+- **`semantic_tokens.gleam`** (156 lines) - Syntax highlighting
+- **`document_symbols.gleam`** (176 lines) - Outline view
+- **`lsp_types.gleam`** (122 lines) - Enum constants for LSP protocol
+- **`type_hierarchy.gleam`** (128 lines) - Blueprint/expectation hierarchy
+- **`selection_range.gleam`** (277 lines) - Smart selection expansion
+- **`workspace_symbols.gleam`** (103 lines) - Workspace-wide symbol search
+- **`folding_range.gleam`** (86 lines) - Code folding regions
+- **`rename.gleam`** (52 lines) - Symbol rename
+- **`highlight.gleam`** (25 lines) - Document highlight
+- **`linked_editing_range.gleam`** (25 lines) - Linked editing
+- **`keyword_info.gleam`** (38 lines) - Keyword metadata
+
+### 8. **Cross-File Coordination**
+
+**Blueprint Index Mechanism** (lines 170-238):
+
+```
+Initialization: scanCaffeineFiles() → extract names for each file → blueprintIndex
+
+Document Change: 
+  - extractBlueprintNames(text) → updated set
+  - Compare with old set → changed?
+  - If changed → revalidateExpectsFiles() for all open expects files
+
+Watched Files:
+  - File created/changed → scan → update blueprintIndex
+  - File deleted → remove from blueprintIndex
+  - Blueprint changes → revalidateExpectsFiles()
+```
+
+**Blueprint Name Extraction** (lines 176-187):
+- Regex pattern: `* "name"` (blueprint item definition)
+- Skips comment lines (starting with `#`)
+- Returns list of names found
+
+**Cross-File Validation** (lines 220-238, 69-82 in diagnostics.gleam):
+```typescript
+// TypeScript: revalidateExpectsFiles()
+for (const doc of documents.all()) {
+  if (isExpectsFile(doc.text)) {
+    const diags = get_diagnostics(doc.text);
+    const crossDiags = get_cross_file_diagnostics(doc.text, allKnownBlueprints());
+    send all diagnostics to editor
+  }
+}
+```
+
+**Gleam: get_cross_file_diagnostics()** (diagnostics.gleam):
+- Takes expects file content and list of workspace blueprint names
+- Parses file to find blueprint references in headers
+- For each reference, checks against known blueprints
+- Returns diagnostic if blueprint not found
+
+### 9. **Error Handling Strategy**
+
+**Graceful Degradation**:
+- All handlers wrapped in try-catch
+- Parse errors → return empty results (no exception thrown)
+- Malformed input → skip validation gracefully
+- File I/O errors → fallback to in-memory document
+
+**Diagnostic Error Mapping** (diagnostics.gleam):
+- Phase-specific errors from tokenizer/parser/validator
+- Custom DiagnosticCode enum: `QuotedFieldName`, `BlueprintNotFound`, `NoDiagnosticCode`
+- Codes enable targeted code actions
+
+### 10. **State Flow Summary**
+
+```
+┌─────────────────┐
+│  Client Editor  │
+└────────┬────────┘
+         │ LSP Protocol (JSON-RPC)
+         ↓
+┌─────────────────────────────────┐
+│   TypeScript/Deno LSP Server    │
+├─────────────────────────────────┤
+│ documents (TextDocuments)        │ ← Open document content
+│ blueprintIndex (Map)             │ ← Blueprint names by file
+│ workspaceFiles (Set)             │ ← All .caffeine files
+└──────────────┬──────────────────┘
+               │ Calls Gleam functions with raw text + position
+               ↓
+┌─────────────────────────────────┐
+│   Gleam Intelligence Modules    │
+├─────────────────────────────────┤
+│ diagnostics, hover, completion  │
+│ definition, references, etc.    │ ← Pure functions, stateless
+└─────────────────────────────────┘
+```
+
+### 11. **Handler Summary** (19 LSP handlers)
+
+| Handler | Gleam Function | Cross-File? |
+|---------|---|---|
+| Diagnostics | `get_diagnostics()` + `get_cross_file_diagnostics()` | Yes |
+| Hover | `get_hover()` | No |
+| Completion | `get_completions()` | Yes (blueprints) |
+| Formatting | `format()` | No |
+| Document Symbols | `get_symbols()` | No |
+| Definition | `get_definition()` + `get_blueprint_ref_at_position()` | Yes |
+| Declaration | Same as Definition | Yes |
+| Highlight | `get_highlights()` | No |
+| References | `get_references()` + `find_references_to_name()` | Yes |
+| Rename Prepare | `prepare_rename()` | No |
+| Rename Request | `get_rename_edits()` | No |
+| Folding Ranges | `get_folding_ranges()` | No |
+| Selection Range | `get_selection_range()` | No |
+| Linked Editing | `get_linked_editing_ranges()` | No |
+| Semantic Tokens | `get_semantic_tokens()` | No |
+| Code Actions | `get_code_actions()` | No |
+| Workspace Symbols | `get_workspace_symbols()` + blueprint index | Yes |
+| Type Hierarchy Prepare | `prepare_type_hierarchy()` | Yes |
+| Type Hierarchy Supertypes/Subtypes | Blueprint index search | Yes |
+
+### Key Architectural Insights
+
+1. **Separation of Concerns**: TypeScript handles protocol/IO, Gleam handles intelligence
+2. **Stateless Intelligence**: Gleam modules are pure functions that analyze text in isolation
+3. **Workspace Coordination**: TypeScript maintains the blueprint index to enable cross-file features
+4. **Graceful Degradation**: Parse failures don't crash the server, just return empty results
+5. **Efficient Updates**: Debouncing (300ms) and smart invalidation prevent excessive recompilation
+6. **Blueprint Index as Cache**: Fast lookup for cross-file operations without re-parsing all files on every keystroke
+
+The architecture achieves high performance by keeping the Gleam modules stateless and leveraging the blueprint index to avoid full-workspace parses on every diagnostic run.</result>
+<usage>total_tokens: 74710
+tool_uses: 19
+duration_ms: 58545</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a4eab5d.output
+
+---
+
+<task-notification>
+<task-id>a6a913a</task-id>
+<status>completed</status>
+<summary>Agent "Explore LSP data flow and compiler integration" completed</summary>
+<result>Excellent! Now I have enough information to write a comprehensive report. Let me create the final analysis:
+
+## Caffeine LSP Integration with Compiler Pipeline - Complete Analysis
+
+Based on my exploration of the codebase, here's a detailed analysis of how the Caffeine LSP integrates with the compiler pipeline:
+
+---
+
+### 1. LSP Invocation Strategy: Partial Pipeline, Not Full Compilation
+
+The LSP **does NOT invoke the full compilation pipeline** (tokenizer→parser→validator→lowering→linker→semantic analyzer→codegen). Instead, it uses **selective frontend stages** for different features:
+
+**For Diagnostics (lsp_types/diagnostics.gleam:44-65):**
+```
+Input: String content
+├─ Stage 1: file_utils.parse(content) → Tokenizer + Parser
+│  └─ Detect file type (blueprints vs expects)
+│  └─ Try parsing as blueprints, fallback to expects
+├─ Stage 2: validator.validate_blueprints_file() / validate_expects_file()
+│  └─ Run 10 ValidatorError checks (duplicates, undefined refs, circular aliases, etc.)
+└─ Output: List<Diagnostic>
+```
+
+**Key insight from file_utils.gleam:23-45:** The LSP cleverly detects file type by checking if content starts with "Expectations", avoiding double-parsing by trying the likely type first.
+
+---
+
+### 2. Diagnostic Generation Architecture
+
+**Pipeline Used:** `Tokenizer → Parser → Validator` (stops here, doesn't continue)
+
+**Code path (diagnostics.gleam):**
+1. **Tokenizer errors** → tokenizer_error_to_diagnostic() (line 302-326)
+2. **Parser errors** → parser_error_to_diagnostic() (line 227-299)
+   - Includes ParserError variants like UnexpectedToken, UnexpectedEOF, UnknownType, InvalidRefinement, QuotedFieldName
+3. **Validator errors** → validator_error_to_diagnostic() (line 123-224)
+   - 10 error types: DuplicateExtendable, UndefinedExtendable, DuplicateExtendsReference, InvalidExtendableKind, UndefinedTypeAlias, DuplicateTypeAlias, CircularTypeAlias, InvalidDictKeyTypeAlias, ExtendableOvershadowing, ExtendableTypeAliasNameCollision
+
+**Special: Cross-file diagnostics (diagnostics.gleam:69-82):**
+- Runs only on Expects files
+- Checks if blueprint references (`Expectations for "name"`) exist in workspace blueprints
+- Workspace blueprint names tracked in TypeScript lsp_server.ts via `blueprintIndex` map
+
+---
+
+### 3. Position Mapping: 0-Indexed LSP vs 1-Indexed Tokenizer
+
+**Conversion happens at three points:**
+
+a) **In semantic_tokens.gleam (line 48-50):** LSP positions stored as 1-indexed in tokenizer
+```gleam
+let line = tok.line - 1  // Convert tokenizer 1-indexed to LSP 0-indexed
+let col = tok.column - 1
+```
+
+b) **In diagnostics.gleam (line 329-342):** Helper functions convert tokenizer output
+```gleam
+fn to_lsp_line(line: Int) -> Int {
+  case line > 0 { True -> line - 1, False -> 0 }
+}
+fn to_lsp_column(column: Int) -> Int {
+  case column > 0 { True -> column - 1, False -> 0 }
+}
+```
+
+c) **In position_utils.gleam (line 7-31):** Text search works natively in 0-indexed (LSP)
+- `find_name_position()` returns 0-indexed tuples
+- `extract_word_at()` works with 0-indexed line/character
+- Grapheme-aware (handles multi-byte characters correctly)
+
+---
+
+### 4. Data from Compiler Pipeline Used by LSP Features
+
+| Feature | Uses | Source |
+|---------|------|--------|
+| **Diagnostics** | Tokens, AST, ValidatorError types | `tokenizer`, `parser`, `validator` |
+| **Semantic Tokens** | Token stream + next token lookahead | `tokenizer.tokenize()` returns List(PositionedToken) |
+| **Hover** | AST (extendables, type aliases, items, fields) + TypeMeta | `file_utils.parse()` → AST, `types.all_type_metas()` |
+| **Completion** | AST for context detection + TypeMeta for suggestions | `file_utils.parse()` → AST, `types` module |
+| **Go-to-Definition** | AST names + position search | `file_utils.parse()` → all user symbols |
+| **References** | Position search in text + text pattern matching | `position_utils.find_all_name_positions()` |
+| **Document Symbols** | AST (type aliases, extendables, items, fields) | `file_utils.parse()` → file structure |
+| **Code Actions** | Diagnostics + position context | Quickfix actions triggered by diagnostics |
+
+**Key observation:** LSP **never uses** IR, semantic analysis, or codegen—only the frontend AST.
+
+---
+
+### 5. Incremental Updates vs Full Re-parses
+
+**LSP handles incremental updates via debouncing in TypeScript (lsp_server.ts:244-299):**
+
+```typescript
+documents.onDidChangeContent((change) => {
+  // Debounce: cancel previous timer, wait 300ms
+  if (existing) clearTimeout(existing);
+  diagnosticTimers.set(uri, setTimeout(() => {
+    // Full re-parse of document (300ms debounce)
+    const singleDiags = gleamArray(get_diagnostics(text));
+    
+    // Update workspace blueprint index
+    const newNames = extractBlueprintNames(text);
+    blueprintIndex.set(uri, new Set(newNames));
+    
+    // If blueprint index changed, re-validate ALL expects files
+    if (namesChanged) revalidateExpectsFiles();
+  }, 300));
+});
+```
+
+**Incremental strategy:**
+1. **No AST caching** — each keystroke triggers full tokenizer→parser→validator
+2. **Debounced (300ms)** — waits for user to stop typing
+3. **Smart revalidation** — only re-checks other files if blueprint definitions changed
+4. **Blueprint index tracking** — TypeScript-side optimization to avoid rescanning all files
+
+---
+
+### 6. Dependency Surface: caffeine_lang Modules Used
+
+**Direct imports from caffeine_lang in caffeine_lsp:**
+
+```
+caffeine_lang/frontend/
+  ├─ ast.{BlueprintsFile, ExpectsFile, ExpectsBlock, all AST types}
+  ├─ parser.{parse_blueprints_file, parse_expects_file}
+  ├─ parser_error.{ParserError type}
+  ├─ tokenizer.{tokenize}
+  ├─ tokenizer_error.{TokenizerError type}
+  ├─ token.{PositionedToken, Token}
+  └─ validator.{validate_blueprints_file, validate_expects_file, ValidatorError type}
+
+caffeine_lang/
+  └─ types.{all_type_metas, parsed_type_to_string, TypeMeta}
+```
+
+**Modules NOT used by LSP:**
+- `frontend/lowering` — converts ParsedType to AcceptedTypes
+- `frontend/formatter` — used only by `format` command (lsp_server.ts line 36)
+- `linker/*` — IR building, linking
+- `analysis/*` — semantic analysis, vendor resolution
+- `codegen/*` — Terraform generation
+- `compiler.gleam` — full pipeline orchestration
+
+**Tight boundary:** LSP imports are **frontend-only** except for `types` module which provides type metadata.
+
+---
+
+### 7. Gleam-TypeScript Boundary (lsp_server.ts)
+
+**Architecture:** Pure Gleam intelligence + TypeScript LSP protocol handling
+
+**Gleam modules exposed to TypeScript (lsp_server.ts:26-44):**
+```typescript
+import { get_diagnostics, diagnostic_code_to_string } from "./diagnostics.mjs"
+import { get_hover } from "./hover.mjs"
+import { get_completions } from "./completion.mjs"
+import { get_semantic_tokens, token_types } from "./semantic_tokens.mjs"
+import { get_symbols } from "./document_symbols.mjs"
+import { get_definition, get_blueprint_ref_at_position } from "./definition.mjs"
+import { get_code_actions } from "./code_actions.mjs"
+import { format } from "../caffeine_lang/frontend/formatter.mjs"  // From caffeine_lang!
+import { get_references, get_blueprint_name_at } from "./references.mjs"
+// ... more features
+```
+
+**TypeScript-side state management:**
+- `blueprintIndex: Map<URI, Set<blueprint_names>>` — workspace-wide blueprint tracking
+- `diagnosticTimers: Map<URI, timeout>` — debouncing per document
+- `documents: TextDocuments` — VSCode protocol documents
+- `workspaceFiles: Set<URI>` — discovered .caffeine files
+
+---
+
+### 8. Summary: LSP as a Thin Intelligence Layer
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│               LSP Server (TypeScript)                        │
+│  - Protocol handling (VSCode LanguageServer)                 │
+│  - Document management                                       │
+│  - Workspace file tracking (blueprint index)                 │
+│  - Debouncing (300ms)                                        │
+│  - Cross-file revalidation logic                             │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+          [Calls Gleam modules]
+                 │
+    ┌────────────▼─────────────────────────────────────────┐
+    │    caffeine_lsp (20 Gleam modules)                    │
+    │  - diagnostics, hover, completion, semantic_tokens    │
+    │  - definition, references, symbols, code_actions      │
+    │  - All work on: AST + position search + type metadata │
+    └────────────────┬─────────────────────────────────────┘
+                     │
+          [Uses only frontend + types]
+                     │
+    ┌────────────────▼─────────────────────────────────────┐
+    │  caffeine_lang (Compiler Library)                     │
+    │                                                        │
+    │  Frontend pipeline:                                    │
+    │  ├─ tokenizer.gleam → PositionedToken list            │
+    │  ├─ parser.gleam → AST (BlueprintsFile/ExpectsFile)  │
+    │  └─ validator.gleam → ValidatorError list             │
+    │                                                        │
+    │  NOT used by LSP:                                      │
+    │  ├─ lowering → ParsedType resolution                  │
+    │  ├─ linker → IR building                              │
+    │  ├─ semantic_analyzer → vendor resolution             │
+    │  └─ codegen → Terraform generation                    │
+    │                                                        │
+    │  Shared:                                               │
+    │  └─ types.gleam → TypeMeta, type parsing/rendering    │
+    └────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 9. File-Type Detection Strategy
+
+**Clever optimization in file_utils.gleam:25-45:**
+```gleam
+pub fn parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError)) {
+  case string.starts_with(string.trim_start(content), "Expectations") {
+    True -> {
+      // Try expects first (likely match)
+      case parser.parse_expects_file(content) {
+        Ok(file) -> Ok(Expects(file))
+        Error(ex_err) ->
+          // Fallback to blueprints
+          case parser.parse_blueprints_file(content) {
+            Ok(file) -> Ok(Blueprints(file))
+            Error(bp_err) -> Error(#(bp_err, ex_err))
+          }
+      }
+    }
+    False -> {
+      // Try blueprints first (likely match)
+      case parser.parse_blueprints_file(content) {
+        Ok(file) -> Ok(Blueprints(file))
+        Error(bp_err) ->
+          // Fallback to expects
+          case parser.parse_expects_file(content) {
+            Ok(file) -> Ok(Expects(file))
+            Error(ex_err) -> Error(#(bp_err, ex_err))
+          }
+      }
+    }
+  }
+}
+```
+
+Avoids double-parsing by trying the likely type first, then falling back.
+
+---
+
+### 10. Key Design Differences: LSP vs Full Compiler
+
+| Aspect | LSP | Full Compiler |
+|--------|-----|---------------|
+| **Pipeline** | Frontend only (tokenizer→parser→validator) | Full (→lowering→linker→semantic→codegen) |
+| **State** | Per-document diagnostics (no caching) | Builds IR, artifact graph, vendor grouping |
+| **Position tracking** | Text-based search + AST | IR metadata, artifact references |
+| **Error handling** | Diagnostic codes (DSError, DSWarning) | CompilationError variants with context |
+| **Vendor awareness** | None (blueprint indices only) | Full (Datadog, Honeycomb, Dynatrace, NewRelic) |
+| **File types** | Blueprints vs Expects | Same, but continues to linking |
+| **Type resolution** | ParsedType strings | Lowering resolves to AcceptedTypes |
+| **Incrementality** | Debounced full re-parse | Incremental linking per expectation file |
+
+---
+
+### Conclusion
+
+The Caffeine LSP is **a minimal, focused interface** that:
+1. **Reuses only the frontend** (tokenizer, parser, validator) from caffeine_lang
+2. **Implements its own position tracking** (0-indexed, grapheme-aware)
+3. **Maintains workspace state in TypeScript** (blueprint index, file tracking)
+4. **Debounces at 300ms** to avoid constant full re-parses
+5. **Avoids the linker & semantic analyzer entirely** by working on AST
+6. **Never touches codegen** — purely language intelligence, no Terraform
+7. **Uses types.gleam for metadata** (type descriptions, syntax examples)
+
+This design keeps the LSP fast (300ms debounce vs full compilation) while reusing the compiler's proven parsing/validation logic.</result>
+<usage>total_tokens: 81854
+tool_uses: 29
+duration_ms: 82118</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a6a913a.output
+
+---
+
+<task-notification>
+<task-id>a051f83</task-id>
+<status>completed</status>
+<summary>Agent "Explore LSP TypeScript/Deno layer" completed</summary>
+<result>Excellent! Now I have a comprehensive understanding. Let me create a detailed report of my findings.
+
+## Comprehensive Analysis: Caffeine LSP TypeScript/Deno Server Wrapper Layer
+
+### Overview
+
+The Caffeine LSP implements a sophisticated two-layer architecture:
+1. **TypeScript/Deno wrapper** (`lsp_server.ts`) - Protocol handling and workspace management
+2. **Gleam intelligence modules** - Pure language logic compiled to JavaScript
+
+All language-specific operations are delegated from TypeScript to Gleam-compiled modules, enabling a clean separation of concerns.
+
+---
+
+## Key Files and Architecture
+
+### 1. Entry Point: `/Users/rdurst/BrickellResearch/caffeine/main.mjs`
+
+This is the Deno compilation entry point that intercepts the `lsp` command:
+
+```typescript
+// Lines 1-32: Entry point dispatch logic
+if (args.includes("lsp")) {
+  // Patch process.kill for Deno compatibility
+  const { default: proc } = await import("node:process");
+  const _kill = proc.kill.bind(proc);
+  proc.kill = function (pid, signal) {
+    if (signal === 0) {
+      try {
+        return _kill(pid, signal);
+      } catch {
+        return true;
+      }
+    }
+    return _kill(pid, signal);
+  };
+
+  await import("./lsp_server.ts");
+} else {
+  // Run normal CLI commands
+  const { main } = await import(
+    "./caffeine_cli/build/dev/javascript/caffeine_cli/caffeine_cli.mjs"
+  );
+  main();
+}
+```
+
+**Key insight**: Patches `process.kill` to handle Deno's spurious failures when vscode-languageserver checks if the parent editor process is alive (via `process.kill(pid, 0)`).
+
+---
+
+### 2. TypeScript LSP Server: `/Users/rdurst/BrickellResearch/caffeine/lsp_server.ts`
+
+**980 lines** of TypeScript that implements the complete LSP protocol layer. Uses `vscode-languageserver-node` (v9.0.1).
+
+#### Imports from Compiled Gleam Modules
+
+Lines 25-44 import all intelligence functions from `.mjs` files (Gleam compiled to JavaScript):
+
+```typescript
+import { get_diagnostics, get_cross_file_diagnostics, diagnostic_code_to_string, ... } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_hover } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
+import { get_completions } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
+import { get_semantic_tokens, token_types } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/semantic_tokens.mjs";
+import { get_symbols } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/document_symbols.mjs";
+import { get_definition, get_blueprint_ref_at_position } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
+import { get_code_actions, ActionDiagnostic } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/code_actions.mjs";
+import { format } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/frontend/formatter.mjs";
+import { get_highlights } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/highlight.mjs";
+import { get_references, get_blueprint_name_at, find_references_to_name } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
+import { prepare_rename, get_rename_edits } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/rename.mjs";
+import { get_folding_ranges } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/folding_range.mjs";
+import { get_selection_range } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/selection_range.mjs";
+import { get_linked_editing_ranges } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/linked_editing_range.mjs";
+import { get_workspace_symbols } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/workspace_symbols.mjs";
+import { prepare_type_hierarchy, BlueprintKind } 
+  from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/type_hierarchy.mjs";
+```
+
+Also imports Gleam runtime types (lines 46-48):
+
+```typescript
+import { Ok, toList } from "./caffeine_lsp/build/dev/javascript/prelude.mjs";
+import { Some } from "./caffeine_lsp/build/dev/javascript/gleam_stdlib/gleam/option.mjs";
+```
+
+#### Helper Functions
+
+**Lines 53-72**: Utility functions for type conversion between Gleam and LSP:
+
+```typescript
+// Convert GleamList to JS array
+function gleamArray(gl: GleamList): any[] {
+  return gl.toArray();
+}
+
+// Build LSP Range from positions
+function range(startLine, startChar, endLine, endChar) {
+  return {
+    start: { line: startLine, character: startChar },
+    end: { line: endLine, character: endChar },
+  };
+}
+```
+
+#### LSP Connection Setup
+
+**Lines 74-75**: Initialize vscode-languageserver connection:
+
+```typescript
+const connection = createConnection(ProposedFeatures.all);
+const documents = new TextDocuments(TextDocument);
+```
+
+---
+
+### 3. Capabilities Registration: `onInitialize`
+
+**Lines 112-168**: Reports all supported LSP features to the client:
+
+```typescript
+connection.onInitialize((params: any) => {
+  // Scan workspace for .caffeine files on startup
+  const rootUri = params.rootUri ?? params.rootPath;
+  if (rootUri) {
+    workspaceRoot = rootUri.startsWith("file://") 
+      ? fileURLToPath(rootUri) 
+      : rootUri;
+    scanCaffeineFiles(workspaceRoot);
+  }
+
+  return {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Full,
+      hoverProvider: true,
+      definitionProvider: true,
+      declarationProvider: true,
+      documentHighlightProvider: true,
+      referencesProvider: true,
+      renameProvider: { prepareProvider: true },
+      foldingRangeProvider: true,
+      selectionRangeProvider: true,
+      linkedEditingRangeProvider: true,
+      documentFormattingProvider: true,
+      documentSymbolProvider: true,
+      workspaceSymbolProvider: true,
+      typeHierarchyProvider: true,
+      completionProvider: {
+        triggerCharacters: [":", "[", "{", ",", "\""],
+      },
+      codeActionProvider: {
+        codeActionKinds: ["quickfix"],
+      },
+      semanticTokensProvider: {
+        legend: {
+          tokenTypes: gleamArray(token_types as GleamList),
+          tokenModifiers: [],
+        },
+        full: true,
+      },
+    },
+    serverInfo: {
+      name: "caffeine-lsp",
+      version: "0.1.0",
+    },
+  };
+});
+```
+
+**Reported capabilities:**
+- Text document sync (full)
+- Hover, Definition, Declaration
+- Document & Workspace Symbols
+- References, Rename (with prepare)
+- Semantic Tokens (11 token types)
+- Code Actions (quickfix only)
+- Completion (5 trigger characters: `:`, `[`, `{`, `,`, `"`)
+- Folding Ranges, Selection Ranges, Linked Editing Ranges
+- Type Hierarchy (prepare, supertypes, subtypes)
+- Formatting
+
+---
+
+### 4. Workspace Management
+
+**Lines 170-203**: Blueprint index for cross-file operations:
+
+```typescript
+const blueprintIndex = new Map<string, Set<string>>();
+
+function extractBlueprintNames(text: string): string[] {
+  if (!text.includes("Blueprints for")) return [];
+  const names: string[] = [];
+  const pattern = /\*\s+"([^"]+)"/;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    const match = pattern.exec(line);
+    if (match) names.push(match[1]);
+  }
+  return names;
+}
+
+function allKnownBlueprints(): string[] {
+  const names: string[] = [];
+  for (const set of blueprintIndex.values()) {
+    for (const name of set) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+function isExpectsFile(text: string): boolean {
+  return text.includes("Expectations for");
+}
+```
+
+**Cross-file diagnostics** (lines 220-238): When blueprints change, re-validates all open expects files that might reference them.
+
+---
+
+### 5. Protocol Handlers
+
+The TypeScript layer registers 20+ LSP event handlers that delegate to Gleam modules:
+
+#### Diagnostics (Lines 240-299)
+
+```typescript
+documents.onDidChangeContent((change) => {
+  const uri = change.document.uri;
+  
+  // Debounce to 300ms
+  const existing = diagnosticTimers.get(uri);
+  if (existing) clearTimeout(existing);
+  
+  diagnosticTimers.set(uri, setTimeout(() => {
+    const text = documents.get(uri).getText();
+    
+    // Update blueprint index
+    const newNames = extractBlueprintNames(text);
+    blueprintIndex.set(uri, new Set(newNames));
+    
+    // Call Gleam diagnostics functions
+    const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+    let crossDiags = [];
+    if (isExpectsFile(text)) {
+      crossDiags = gleamArray(
+        get_cross_file_diagnostics(text, toList(allKnownBlueprints())) as GleamList
+      );
+    }
+    
+    connection.sendDiagnostics({
+      uri,
+      diagnostics: [...singleDiags, ...crossDiags].map(gleamDiagToLsp),
+    });
+    
+    // Re-validate other expects files if blueprints changed
+    if (namesChanged) revalidateExpectsFiles();
+  }, 300));
+});
+```
+
+#### Hover (Lines 303-320)
+
+```typescript
+connection.onHover((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return null;
+  
+  try {
+    const result = get_hover(
+      doc.getText(),
+      params.position.line,
+      params.position.character,
+    );
+    if (result instanceof Some) {
+      return {
+        contents: { kind: "markdown" as const, value: result[0] },
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
+});
+```
+
+#### Completion (Lines 324-341)
+
+```typescript
+connection.onCompletion((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  const text = doc ? doc.getText() : "";
+  
+  try {
+    const blueprintNames = toList(allKnownBlueprints());
+    const items = gleamArray(
+      get_completions(
+        text, 
+        params.position.line, 
+        params.position.character, 
+        blueprintNames
+      ) as GleamList,
+    );
+    return items.map((item) => ({
+      label: item.label,
+      kind: item.kind,
+      detail: item.detail,
+    }));
+  } catch {
+    return [];
+  }
+});
+```
+
+#### Formatting (Lines 345-363)
+
+```typescript
+connection.onDocumentFormatting((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return [];
+  
+  const text = doc.getText();
+  try {
+    const result = format(text);
+    if (result instanceof Ok) {
+      const lineCount = text.split("\n").length;
+      return [{
+        range: range(0, 0, lineCount, 0),
+        newText: result[0],
+      }];
+    }
+  } catch { /* ignore */ }
+  return [];
+});
+```
+
+#### Go-to-Definition with Cross-File Support (Lines 426-464)
+
+Two-step lookup:
+1. Try in-file definition via `get_definition()`
+2. Fall back to cross-file blueprint reference via `get_blueprint_ref_at_position()`
+
+```typescript
+connection.onDefinition((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  const text = doc.getText();
+  
+  try {
+    // First: try in-file
+    const result = get_definition(text, params.position.line, params.position.character);
+    if (result instanceof Some) {
+      const [defLine, defCol, nameLen] = result[0];
+      return {
+        uri: params.textDocument.uri,
+        range: range(defLine, defCol, defLine, defCol + nameLen),
+      };
+    }
+    
+    // Second: try cross-file blueprint
+    const bpRef = get_blueprint_ref_at_position(text, params.position.line, params.position.character);
+    if (bpRef instanceof Some) {
+      const target = findCrossFileBlueprintDef(bpRef[0]);
+      if (target) {
+        return {
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
+        };
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+});
+```
+
+#### Semantic Tokens (Lines 692-702)
+
+```typescript
+connection.languages.semanticTokens.on((params) => {
+  const doc = documents.get(params.textDocument.uri);
+  if (!doc) return { data: [] };
+  
+  try {
+    const data = gleamArray(get_semantic_tokens(doc.getText()) as GleamList);
+    return { data };
+  } catch {
+    return { data: [] };
+  }
+});
+```
+
+Semantic token types are provided by the Gleam module's `token_types` constant (11 types):
+- keyword, type, string, number, variable, comment, operator, property, function, modifier, enumMember
+
+#### Code Actions (Lines 706-753)
+
+Converts diagnostic codes to actionable quickfixes:
+
+```typescript
+connection.onCodeAction((params) => {
+  const uri = params.textDocument.uri;
+  
+  try {
+    const gleamDiags = toList(
+      params.context.diagnostics.map((d) =>
+        new ActionDiagnostic(
+          d.range.start.line,
+          d.range.start.character,
+          d.range.end.line,
+          d.range.end.character,
+          d.message,
+          d.code === "quoted-field-name" ? new QuotedFieldName()
+            : d.code === "blueprint-not-found" ? new BlueprintNotFound()
+            : new NoDiagnosticCode(),
+        ),
+      ),
+    );
+    
+    const actions = gleamArray(get_code_actions(gleamDiags, uri) as GleamList);
+    return actions.map((action) => ({
+      title: action.title,
+      kind: action.kind,
+      isPreferred: action.is_preferred,
+      diagnostics: [...],
+      edit: {
+        changes: {
+          [action.uri]: gleamArray(action.edits as GleamList).map((e) => ({
+            range: range(e.start_line, e.start_character, e.end_line, e.end_character),
+            newText: e.new_text,
+          })),
+        },
+      },
+    }));
+  } catch {
+    return [];
+  }
+});
+```
+
+#### References with Cross-File Lookup (Lines 529-575)
+
+Searches workspace `.caffeine` files not just open documents:
+
+```typescript
+connection.onReferences((params) => {
+  const text = doc.getText();
+  
+  // Same-file references
+  const sameFileRefs = gleamArray(get_references(text, line, char) as GleamList)
+    .map((r) => ({
+      uri: params.textDocument.uri,
+      range: range(r[0], r[1], r[0], r[1] + r[2]),
+    }));
+  
+  // Cross-file blueprint references
+  const blueprintName = get_blueprint_name_at(text, line, char) as string;
+  const crossFileRefs = [];
+  for (const uri of workspaceFiles) {
+    const otherText = getFileContent(uri);
+    const otherRefs = gleamArray(find_references_to_name(otherText, blueprintName) as GleamList);
+    crossFileRefs.push(...otherRefs.map((r) => ({
+      uri,
+      range: range(r[0], r[1], r[0], r[1] + r[2]),
+    })));
+  }
+  
+  return [...sameFileRefs, ...crossFileRefs];
+});
+```
+
+#### Type Hierarchy (Lines 786-899)
+
+Implements prepare/supertypes/subtypes:
+
+```typescript
+connection.languages.typeHierarchy.onPrepare((params) => {
+  const items = gleamArray(
+    prepare_type_hierarchy(doc.getText(), params.position.line, params.position.character) as GleamList
+  );
+  return items.map((item) => ({
+    name: item.name,
+    kind: 5, // SymbolKind.Class
+    uri: params.textDocument.uri,
+    range: range(...),
+    data: {
+      kind: item.kind instanceof BlueprintKind ? "blueprint" : "expectation",
+      blueprint: item.blueprint,
+    },
+  }));
+});
+
+connection.languages.typeHierarchy.onSupertypes((params: any) => {
+  // Find blueprint definitions in workspace
+});
+
+connection.languages.typeHierarchy.onSubtypes((params: any) => {
+  // Find expectations that extend blueprint
+});
+```
+
+---
+
+### 6. Gleam Intelligence Modules
+
+Located in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/`:
+
+#### Module Exports (LSP Interface Contracts)
+
+**diagnostics.gleam** (Lines 44-72):
+```gleam
+pub fn get_diagnostics(content: String) -> List(Diagnostic)
+pub fn get_cross_file_diagnostics(content: String, known_blueprints: List(String)) -> List(Diagnostic)
+pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String)
+
+pub type Diagnostic {
+  Diagnostic(line: Int, column: Int, end_column: Int, severity: Int, message: String, code: DiagnosticCode)
+}
+
+pub type DiagnosticCode { QuotedFieldName | BlueprintNotFound | NoDiagnosticCode }
+```
+
+**hover.gleam** (Lines 12-18):
+```gleam
+pub fn get_hover(content: String, line: Int, character: Int) -> Option(String)
+```
+
+**completion.gleam**:
+```gleam
+pub fn get_completions(
+  content: String,
+  line: Int,
+  character: Int,
+  workspace_blueprint_names: List(String),
+) -> List(CompletionItem)
+
+pub type CompletionItem { CompletionItem(label: String, kind: Int, detail: String) }
+```
+
+**semantic_tokens.gleam** (Lines 12-25):
+```gleam
+pub const token_types = [
+  "keyword", "type", "string", "number", "variable", "comment", "operator",
+  "property", "function", "modifier", "enumMember",
+]
+
+pub fn get_semantic_tokens(content: String) -> List(Int)
+```
+
+**definition.gleam**:
+```gleam
+pub fn get_definition(content: String, line: Int, character: Int) -> Option(#(Int, Int, Int))
+pub fn get_blueprint_ref_at_position(content: String, line: Int, character: Int) -> Option(String)
+```
+
+**references.gleam**:
+```gleam
+pub fn get_references(content: String, line: Int, character: Int) -> List(#(Int, Int, Int))
+pub fn get_blueprint_name_at(content: String, line: Int, character: Int) -> String
+pub fn find_references_to_name(content: String, name: String) -> List(#(Int, Int, Int))
+```
+
+**code_actions.gleam** (Lines 41-46):
+```gleam
+pub type ActionDiagnostic { ActionDiagnostic(line, character, end_line, end_character, message, code) }
+pub type CodeAction { CodeAction(title, kind, is_preferred, diagnostic, uri, edits) }
+pub fn get_code_actions(diags: List(ActionDiagnostic), uri: String) -> List(CodeAction)
+```
+
+#### Helper Modules
+
+**file_utils.gleam** (Lines 25-46):
+- `parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError))`
+- Detects "Blueprints for" vs "Expectations for" to choose parser
+- Returns `ParsedFile { Blueprints(BlueprintsFile) | Expects(ExpectsFile) }`
+
+**position_utils.gleam** (Lines 7-59):
+- `find_name_position(content, name)` → `#(Int, Int)` (0-indexed line, col)
+- `extract_word_at(content, line, character)` → `String` (grapheme-aware)
+- Converts 1-indexed tokenizer positions to 0-indexed LSP positions
+
+**lsp_types.gleam** (Lines 1-123):
+Typed LSP constants (no raw magic numbers):
+```gleam
+pub type CompletionItemKind { CikKeyword | CikClass | CikVariable | CikField | CikModule }
+pub type SymbolKind { SkModule | SkClass | SkProperty | SkVariable | SkTypeParameter }
+pub type DiagnosticSeverity { DsError | DsWarning }
+pub type SemanticTokenType { SttKeyword | SttType | ... | SttEnumMember }
+
+// Converters
+pub fn completion_item_kind_to_int(k: CompletionItemKind) -> Int
+pub fn symbol_kind_to_int(k: SymbolKind) -> Int
+pub fn diagnostic_severity_to_int(k: DiagnosticSeverity) -> Int
+pub fn semantic_token_type_to_int(k: SemanticTokenType) -> Int
+```
+
+---
+
+### 7. CLI Integration
+
+**caffeine_cli/src/caffeine_cli.gleam** (Lines 24):
+```gleam
+|> glint.add(at: ["lsp"], do: handler.lsp_command())
+```
+
+**caffeine_cli/src/caffeine_cli/handler.gleam**:
+```gleam
+pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
+  use <- glint.command_help("Start the Language Server Protocol server")
+  use _, _, _ <- glint.command()
+
+  Error(
+    "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
+  )
+}
+```
+
+The LSP command is intercepted at the Deno/Node level in `main.mjs` before the Gleam CLI code runs.
+
+---
+
+### 8. FFI Bindings
+
+**caffeine_cli/src/caffeine_cli_ffi.mjs**:
+```javascript
+@external(erlang, "erlang", "halt")
+@external(javascript, "./caffeine_cli_ffi.mjs", "halt")
+fn halt(code: Int) -> Nil
+```
+
+Handles both Erlang and JavaScript/Deno exit behavior.
+
+---
+
+### 9. Build System
+
+**Makefile**:
+```makefile
+build:
+	cd caffeine_lang && gleam build
+	cd caffeine_lsp && gleam build
+	cd caffeine_cli && gleam build
+```
+
+**Gleam compilation flow**:
+1. `gleam build` compiles Gleam to JavaScript (`.mjs` files) in `build/dev/javascript/`
+2. `lsp_server.ts` imports these compiled modules
+3. `deno compile` bundles `lsp_server.ts` + `.mjs` files into a single binary
+
+**deno.json**:
+```json
+{
+  "nodeModulesDir": "auto",
+  "compilerOptions": { "allowJs": true },
+  "imports": {
+    "vscode-languageserver/node.js": "npm:vscode-languageserver@^9.0.1",
+    "vscode-languageserver-textdocument": "npm:vscode-languageserver-textdocument@^1.0.11"
+  }
+}
+```
+
+---
+
+## Protocol Flow Examples
+
+### Example 1: Hover on Type Name
+
+1. **Client** sends `textDocument/hover` with position (line=5, char=10)
+2. **TypeScript handler** (line 303) receives request
+3. Extracts document text and calls `get_hover(text, 5, 10)`
+4. **Gleam hover.gleam** extracts word at position, looks up in:
+   - Type system metadata (types.gleam)
+   - Keyword definitions
+   - User-defined symbols (extendables, type aliases, items)
+5. Returns markdown documentation wrapped in `Some`
+6. **TypeScript** wraps in `HoverResponse` and sends back
+
+### Example 2: Cross-File Blueprint Reference
+
+1. **Client** clicks "Go to Definition" on `"api"` (blueprint reference in expects file)
+2. **TypeScript handler** (line 426) receives `textDocument/definition`
+3. First tries in-file: `get_definition()` returns `None`
+4. Then tries cross-file: `get_blueprint_ref_at_position()` returns `Some("api")`
+5. **TypeScript** searches `blueprintIndex` for file containing blueprint "api"
+6. Calls `findBlueprintItemLocation(text, "api")` to find the `* "api"` definition line
+7. Returns `LocationLink` with cross-file position
+
+### Example 3: Completion Trigger
+
+1. **Client** types `Expectations for "api` (quote triggers completion)
+2. **TypeScript handler** (line 324) receives completion request
+3. Extracts `workspace_blueprint_names = allKnownBlueprints()` from `blueprintIndex`
+4. Calls `get_completions(text, line, char, workspace_blueprint_names)`
+5. **Gleam** detects `BlueprintHeaderContext` by analyzing text before cursor
+6. Calls `blueprint_header_completions(workspace_blueprint_names, "api")`
+7. Filters blueprints starting with "api", returns `CompletionItem` list
+8. **TypeScript** maps to LSP completion items with kind/detail and sends
+
+### Example 4: Diagnostics with Cross-File Validation
+
+1. **User** opens expects file referencing blueprint "nonexistent"
+2. **TypeScript** debounces to 300ms (line 252), then calls:
+   - `get_diagnostics(text)` → finds syntax/validation errors
+   - `get_cross_file_diagnostics(text, allKnownBlueprints())` → finds blueprint reference error
+3. **Gleam diagnostics.gleam** checks if "nonexistent" exists in known_blueprints list
+4. Returns `Diagnostic` with code `BlueprintNotFound`, message, and position
+5. **TypeScript** converts to LSP diagnostic and sends to client
+6. **Client** highlights red squiggle and offers code action (if any)
+
+---
+
+## Key Design Decisions
+
+### 1. **Gleam Compilation to JavaScript**
+- All language intelligence is written in Gleam (type-safe)
+- Compiled to `.mjs` modules that are imported by TypeScript
+- Enables both Erlang and JavaScript target support for testing
+
+### 2. **Debounced Diagnostics**
+- 300ms debounce on document changes (line 252)
+- Avoids running expensive parser/validator on every keystroke
+- Revalidates cross-file diagnostics when blueprint definitions change
+
+### 3. **Workspace Blueprint Index**
+- Fast lookup of blueprint definitions across files
+- Updated on file open, change, and watched file events
+- Powers cross-file go-to-definition and completion
+
+### 4. **Dual Parser Detection**
+- `file_utils.parse()` detects "Blueprints for" vs "Expectations for"
+- Tries appropriate parser first, falls back to other
+- Avoids double-parsing and handles transitions between file types
+
+### 5. **Position Handling**
+- Tokenizer uses 1-indexed positions (Gleam convention)
+- LSP uses 0-indexed positions
+- Conversion happens in position_utils (subtract 1)
+- Grapheme-aware word extraction for Unicode safety
+
+### 6. **Type Safety Across Boundary**
+- Gleam types (Option, Result, custom types) compile to tagged unions in JS
+- TypeScript checks `instanceof Some`, `instanceof Ok` to pattern match
+- `gleamArray()` helper converts Gleam lists to JS arrays
+- `toList()` helper converts JS arrays to Gleam lists
+
+### 7. **Error Handling**
+- All Gleam functions return `Result` or `Option`
+- TypeScript wraps in try-catch but primarily checks return types
+- Malformed input simply returns empty lists (diagnostic, completion, etc.)
+
+### 8. **No External Language Processes**
+- Everything runs in a single Deno process
+- No spawning child processes or IPC
+- Fast response times for editor interactions
+
+---
+
+## Supported LSP Features (20+)
+
+1. **Diagnostics** - Single-file + cross-file
+2. **Hover** - Types, keywords, user symbols
+3. **Completion** - Context-aware with 5 triggers
+4. **Semantic Tokens** - 11 token types
+5. **Go-to-Definition** - In-file + cross-file blueprints
+6. **Go-to-Declaration** - Same as definition
+7. **Find References** - In-file + cross-file blueprints
+8. **Rename** - With prepare step
+9. **Document Symbols** - Hierarchical outline
+10. **Workspace Symbols** - Global search with filter
+11. **Document Highlight** - Same symbol occurrences
+12. **Folding Ranges** - Collapse blocks
+13. **Selection Ranges** - Smart text selection
+14. **Linked Editing Ranges** - Mirror edits (blueprints/expectations pairs)
+15. **Code Actions** - Quickfix for specific diagnostics
+16. **Formatting** - Idempotent formatter
+17. **Type Hierarchy** - Blueprint → expectations graph
+18. **Watched Files** - Track external file changes
+
+---
+
+## File Locations Summary
+
+| File | Purpose |
+|------|---------|
+| `/main.mjs` | Deno entry point, dispatches to LSP or CLI |
+| `/lsp_server.ts` | Protocol handler, 20+ LSP handlers, workspace management |
+| `/deno.json` | Dependencies: vscode-languageserver, vscode-languageserver-textdocument |
+| `caffeine_lsp/gleam.toml` | Declares caffeine_lang dependency |
+| `caffeine_lsp/src/caffeine_lsp/*.gleam` | 20 intelligence modules, compiled to `.mjs` |
+| `caffeine_lsp/src/caffeine_lsp/lsp_types.gleam` | Typed LSP constants (no magic numbers) |
+| `caffeine_lsp/src/caffeine_lsp/file_utils.gleam` | File detection & parsing |
+| `caffeine_lsp/src/caffeine_lsp/position_utils.gleam` | Position conversion, word extraction |
+| `caffeine_cli/src/caffeine_cli_ffi.mjs` | FFI for halt function |
+| `caffeine_cli/src/caffeine_cli/handler.gleam` | LSP command registration (no-op) |
+
+---
+
+## Summary
+
+The Caffeine LSP is a masterclass in **clean architecture at language boundaries**:
+
+- **Pure Gleam intelligence** compiled to JavaScript → testable, type-safe, reusable
+- **TypeScript/Deno wrapper** → handles protocol, workspace, and cross-file operations
+- **No external processes** → single fast Deno binary
+- **Comprehensive LSP support** → 20+ features, many with cross-file capabilities
+- **Efficient workspace scanning** → blueprint index for O(1) lookups
+- **Graceful error handling** → malformed input simply returns empty results
+
+The architecture separates concerns cleanly: Gleam focuses on language semantics (parsing, validation, analysis), while TypeScript focuses on LSP protocol mechanics (capabilities negotiation, file management, cross-file coordination).</result>
+<usage>total_tokens: 89761
+tool_uses: 33
+duration_ms: 103025</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a051f83.output
+
+---
+
+<task-notification>
+<task-id>a42be9c</task-id>
+<status>completed</status>
+<summary>Agent "Explore LSP feature modules" completed</summary>
+<result>Excellent! Now I have a comprehensive understanding. Let me compile my findings into a detailed report.
+
+## LSP Package Module Overview
+
+Based on my thorough exploration of the `caffeine_lsp` package, here's a comprehensive breakdown of all 20 feature modules and how they work:
+
+### 1. **Core Infrastructure Modules**
+
+#### `file_utils.gleam` (47 lines)
+- **Purpose**: Utilities for parsing and file type detection
+- **Key Functions**:
+  - `parse(content)`: Intelligently detects and parses files as either `Blueprints` or `Expects` files by heuristic (checks if content starts with "Expectations")
+  - `is_defined_symbol(content, name)`: Fast text-based check for whether a name is user-defined (extendables start with `_` and appear as `_name (`, items appear as `* "name"`)
+- **Why Separate**: Avoids redundant full parsing when only presence of definitions is needed
+- **Interaction**: Used by every feature module that needs to know if something is a valid symbol
+
+#### `position_utils.gleam` (231 lines)
+- **Purpose**: Position calculation and word extraction at cursor locations
+- **Key Functions**:
+  - `extract_word_at(content, line, char)`: Grapheme-aware word extraction at cursor (handles Unicode correctly)
+  - `find_name_position(content, name)`: First whole-word occurrence of a name → `#(line, col)`
+  - `find_all_name_positions(content, name)`: All occurrences as list of `#(line, col)` tuples
+  - `find_name_position_in_lines(lines, name)`: Optimized variant taking pre-split lines
+- **Key Insight**: Implements proper word boundary detection (must not be adjacent to word chars `[a-zA-Z0-9_]`)
+- **Used By**: Almost every other feature module (definition, references, rename, document symbols, workspace symbols, type hierarchy, hover, highlight)
+
+#### `lsp_types.gleam` (123 lines)
+- **Purpose**: Type-safe wrappers for LSP protocol constants
+- **Enum Types**:
+  - `CompletionItemKind`: Keyword, Class, Variable, Field, Module
+  - `SymbolKind`: Module, Class, Property, Variable, TypeParameter
+  - `DiagnosticSeverity`: Error, Warning
+  - `SemanticTokenType`: Keyword, Type, String, Number, Variable, Comment, Operator, Property, Function, Modifier, EnumMember
+- **Pattern**: Each type has a converter function to int (e.g., `completion_item_kind_to_int`) for wire protocol
+
+#### `keyword_info.gleam` (39 lines)
+- **Purpose**: Single source of truth for language keyword metadata
+- **Data**: List of `KeywordMeta` records with name and description for: Blueprints, Expectations, for, extends, Requires, Provides, Type
+- **Used By**: `hover` and `completion` modules
+
+---
+
+### 2. **Diagnostics & Validation**
+
+#### `diagnostics.gleam` (344 lines)
+- **Input/Output Pattern**: `String → List(Diagnostic)`
+- **Two Entry Points**:
+  - `get_diagnostics(content)`: Single-file analysis (tokenizer → parser → validator errors)
+  - `get_cross_file_diagnostics(content, known_blueprints)`: Validates blueprint references in Expectations files against workspace blueprint names
+- **Diagnostic Types**: Custom `DiagnosticCode` enum (QuotedFieldName, BlueprintNotFound, NoDiagnosticCode)
+- **Error Sources**:
+  - Parser errors (tokenizer errors, unexpected tokens, unknown types)
+  - Validator errors (duplicate extendables, undefined extendables, circular type aliases, etc.)
+  - Cross-file validation (blueprint references not in known list)
+- **Key Pattern**: Converts tokenizer/parser/validator error types to Diagnostic records with line/column positioning
+- **Position Conversion**: Converts 1-indexed tokenizer positions to 0-indexed LSP positions
+
+---
+
+### 3. **Hover & Completion (Context-Aware)**
+
+#### `hover.gleam` (201 lines)
+- **Input/Output Pattern**: `(String, line: Int, character: Int) → Option(String)` (returns markdown)
+- **Lookup Strategy** (layered):
+  1. Built-in types (from `types.all_type_metas()`)
+  2. Keywords (Blueprints, Requires, Provides, etc.)
+  3. User-defined symbols:
+     - Extendables (`_name` with fields)
+     - Type aliases (with resolved type)
+     - Blueprint items (shows extends list and field counts)
+     - Expect items (similar info)
+     - Fields (shows value)
+- **Key Insight**: Re-parses file on hover (simple per-file operation) and does linear search
+- **Output Format**: Markdown with bold name, description, and details
+
+#### `completion.gleam` (431 lines)
+- **Input/Output Pattern**: `(String, line: Int, character: Int, workspace_blueprint_names: List(String)) → List(CompletionItem)`
+- **Context Detection** (5 modes):
+  - `BlueprintHeaderContext`: Inside `Expectations for "..."` → suggest blueprint names from workspace
+  - `ExtendsContext`: After `extends [` → suggest extendables (excluding already-used)
+  - `TypeContext`: After `:` or inside type expression → suggest type keywords + type aliases
+  - `FieldContext`: Inside Requires/Provides → suggest available fields from extended extendables
+  - `GeneralContext`: Suggest keywords, types, extendables, type aliases
+- **Cross-File Integration**: Takes workspace blueprint names as parameter (populated by TypeScript server's `blueprintIndex`)
+- **Field Completion Logic**: 
+  - Walks backward to find enclosing item name
+  - Determines if cursor is in Requires or Provides section
+  - Collects fields from extended extendables, filters to unused ones
+  - Gracefully degrades to text extraction if parse fails (mid-edit)
+
+---
+
+### 4. **Semantic Tokens**
+
+#### `semantic_tokens.gleam` (157 lines)
+- **Input/Output Pattern**: `String → List(Int)` (LSP semantic tokens protocol)
+- **Token Legend** (11 types): keyword, type, string, number, variable, comment, operator, property, function, modifier, enumMember
+- **Algorithm**: 
+  - Tokenizes once using `tokenizer.tokenize()`
+  - Encodes as relative delta format: `[deltaLine, deltaStartChar, length, tokenType, tokenModifiers]`
+  - Stores in reverse during accumulation, reverses at end
+  - Position conversion: 1-indexed tokenizer → 0-indexed LSP
+- **Classification Logic**: Context-dependent (e.g., `_name` followed by `(` → function; `_name` alone → variable; `name` followed by `:` → property)
+- **Modifiers**: Always 0 (unused in Caffeine)
+
+---
+
+### 5. **Navigation Features**
+
+#### `definition.gleam` (133 lines)
+- **Input/Output Pattern**: `(String, line: Int, character: Int) → Option(#(Int, Int, Int))` (line, col, name_length)
+- **Two Functions**:
+  - `get_definition()`: Returns definition location in same file
+  - `get_blueprint_ref_at_position()`: Detects if cursor is on blueprint name in `Expectations for "name"` header (cross-file indicator)
+- **Lookup**: Type aliases, extendables, then blueprint/expect items
+- **Cross-File Hook**: Returns blueprint name which TypeScript server uses to find definition in other files
+- **Smart Fallback**: Checks if location is genuinely at (0,0) or not found by verifying content starts with name
+
+#### `references.gleam` (63 lines)
+- **Input/Output Pattern**: `(String, line: Int, character: Int) → List(#(Int, Int, Int))` (all occurrences)
+- **Key Functions**:
+  - `get_references()`: Returns all positions of symbol under cursor
+  - `get_blueprint_name_at()`: Exported helper for TypeScript to detect cross-file references
+  - `find_references_to_name()`: Direct lookup by name (used for cross-file)
+- **Symbol Detection**: Checks if name is defined (using `file_utils.is_defined_symbol()`) or is a blueprint name (quoted context)
+- **Returns**: List of tuples with length already calculated
+
+#### `rename.gleam` (53 lines)
+- **Input/Output Pattern**: `prepare_rename()` → `Option(#(Int, Int, Int))`, `get_rename_edits()` → `List(#(Int, Int, Int))`
+- **Two-Phase**:
+  - `prepare_rename()`: Validates cursor is on a renameable symbol and returns its range
+  - `get_rename_edits()`: Returns all occurrences to be renamed
+- **Validation**: Only allows renaming defined symbols (uses `is_defined_symbol()`)
+
+---
+
+### 6. **Document Structure**
+
+#### `document_symbols.gleam` (177 lines)
+- **Input/Output Pattern**: `String → List(DocumentSymbol)` (for outline/breadcrumb)
+- **Recursive Structure**:
+  - Top level: Type aliases, extendables, blocks (Blueprints/Expectations)
+  - Children of blocks: Items (blueprint/expect)
+  - Children of items: Fields (requires/provides)
+- **Symbol Types**: SkTypeParameter (aliases), SkVariable (extendables), SkModule (blocks), SkClass (items), SkProperty (fields)
+- **Optimization**: Uses `find_name_position_in_lines()` with pre-split lines to avoid repeated splitting
+
+#### `workspace_symbols.gleam` (104 lines)
+- **Input/Output Pattern**: `String → List(WorkspaceSymbol)` (flat, for cross-file search)
+- **Flat Structure**: Top-level symbols only (no children), includes type aliases, extendables, blueprint items, expect items
+- **Used By**: TypeScript server's `workspace/symbol` handler (searches across open files)
+
+#### `type_hierarchy.gleam` (129 lines)
+- **Input/Output Pattern**: `(String, line: Int, character: Int) → List(TypeHierarchyItem)`
+- **Hierarchy Concept**:
+  - Blueprint items = supertypes (BlueprintKind)
+  - Expectation items = subtypes (ExpectationKind)
+  - Each expect item references a blueprint via block's `blueprint` field
+- **Data**: Contains name, kind, location, and blueprint name for type hierarchy protocol
+
+---
+
+### 7. **Editing & Formatting**
+
+#### `code_actions.gleam` (103 lines)
+- **Input/Output Pattern**: `(List(ActionDiagnostic), uri: String) → List(CodeAction)` (quickfixes)
+- **Currently Implemented**: Single quickfix for `QuotedFieldName` diagnostic (removes quotes from field names)
+- **Extensible**: Pattern matches on `DiagnosticCode` to support future code actions
+- **Text Edits**: Provides precise start/end ranges for editor to apply changes
+
+#### `highlight.gleam` (26 lines)
+- **Input/Output Pattern**: Same as references: `(String, line: Int, character: Int) → List(#(Int, Int, Int))`
+- **Purpose**: Highlights all occurrences of symbol under cursor (sidebar highlight)
+- **Same Logic as References**: Uses `position_utils.find_all_name_positions()`
+
+#### `linked_editing_range.gleam` (26 lines)
+- **Input/Output Pattern**: Same as highlight: `(String, line: Int, character: Int) → List(#(Int, Int, Int))`
+- **Purpose**: Enables synchronized editing when user edits one occurrence
+- **Implementation**: Identical to references (all occurrences must update together)
+
+---
+
+### 8. **Structural Navigation**
+
+#### `folding_range.gleam` (87 lines)
+- **Input/Output Pattern**: `String → List(FoldingRange)` (indentation-based regions)
+- **Foldable Regions** (by indent level):
+  - Level 0: Blueprints/Expectations blocks, extendables, section comments (`##`)
+  - Level 2: Items (`* "name":`)
+  - Level 4: Requires/Provides sections
+- **Algorithm**: Scans forward from each foldable start, finds end as last non-blank line before same/lower indent
+
+#### `selection_range.gleam` (278 lines)
+- **Input/Output Pattern**: `(String, line: Int, _character: Int) → SelectionRange` (nested scopes)
+- **Scope Hierarchy** (widest to narrowest):
+  - File (outermost)
+  - Block (Blueprints/Expectations or extendable)
+  - Item (`* "name":`)
+  - Section (Requires/Provides)
+  - Line (innermost)
+- **Recursive Structure**: Each scope has optional parent of wider scope (linked list)
+- **Algorithm**: Walks forward/backward through lines, tracking indent levels and keywords
+
+---
+
+### 9. **Cross-File Architecture** (How Blueprint Index Works)
+
+The LSP features support **cross-file operations** via a blueprint index maintained by the TypeScript server (`lsp_server.ts`):
+
+**Blueprint Index** (`blueprintIndex` in lsp_server.ts):
+- Map: `file_uri → Set<blueprint_item_names>`
+- Built on initialization by scanning all `.caffeine` files
+- Updated whenever a file's blueprint definitions change
+- Enables fast lookups: `blueprintName → file_uri + location`
+
+**Cross-File Features**:
+
+1. **Go-to-Definition for Blueprint References**:
+   - User clicks on blueprint name in `Expectations for "name"` header
+   - Gleam module `definition.get_blueprint_ref_at_position()` returns blueprint name
+   - TypeScript server uses blueprint index to find defining file/location
+   - Returns multi-file location
+
+2. **Blueprint Completion**:
+   - `completion.get_completions()` takes workspace blueprint names as parameter
+   - TypeScript server provides these from `allKnownBlueprints()` (collected from blueprint index)
+   - Suggestions filtered by user's prefix
+
+3. **Cross-File Diagnostics**:
+   - `diagnostics.get_cross_file_diagnostics()` validates blueprint refs against workspace list
+   - TypeScript server rebuilds this list whenever any file's blueprints change
+   - Triggers re-validation of all open Expectations files when blueprint index changes
+
+4. **References & Rename** (within-file only):
+   - These only work for symbols defined in same file
+   - Blueprint references in Expectations headers are single-file (per-file header)
+
+---
+
+### 10. **Interaction Patterns**
+
+**Caching Strategy**:
+- TypeScript server maintains `blueprintIndex` and debounces diagnostics (300ms)
+- Gleam modules are **stateless**: each call is independent
+- No caching within Gleam (re-parses on every feature call)
+
+**Error Handling**:
+- All features gracefully degrade on parse failures
+- Return empty results rather than throwing errors
+- Completion fallback to text extraction when parse fails
+
+**Parsing Pattern**:
+- `file_utils.parse()` tries both file types with a heuristic (checks first non-whitespace)
+- Caches result within single feature call if multiple passes needed
+- Validators run only if parser succeeds
+
+**Position Convention**:
+- Internal: 0-indexed (LSP convention)
+- Tokenizer: 1-indexed (converted on input/output)
+- Grapheme-aware word extraction to handle Unicode correctly
+
+---
+
+### Summary Table
+
+| Module | Input | Output | Purpose | Scope |
+|--------|-------|--------|---------|-------|
+| **diagnostics** | String | Diagnostic[] | Parse/validate errors + cross-file refs | Single + workspace |
+| **hover** | String + pos | Markdown? | Hover tooltips | Single |
+| **completion** | String + pos + bp_names | CompletionItem[] | Context-aware completions | Single + workspace |
+| **semantic_tokens** | String | Int[] | Syntax coloring | Single |
+| **definition** | String + pos | (line,col,len)? + blueprint_name? | Go to definition | Single + workspace |
+| **references** | String + pos | (line,col,len)[] | Find all occurrences | Single |
+| **rename** | String + pos | (line,col,len)[] | Rename all occurrences | Single |
+| **document_symbols** | String | DocumentSymbol[] (nested) | File outline | Single |
+| **workspace_symbols** | String | WorkspaceSymbol[] (flat) | Workspace search | Workspace |
+| **type_hierarchy** | String + pos | TypeHierarchyItem[] | Blueprint/expectation hierarchy | Single |
+| **code_actions** | Diagnostic[] | CodeAction[] | Quickfixes | Single |
+| **highlight** | String + pos | (line,col,len)[] | Highlight occurrences | Single |
+| **linked_editing_range** | String + pos | (line,col,len)[] | Sync edit ranges | Single |
+| **folding_range** | String | FoldingRange[] | Code folding regions | Single |
+| **selection_range** | String + pos | SelectionRange (nested) | Expand/shrink selection | Single |
+
+**Position Utils**: Used by 90% of modules for name extraction and positioning
+**File Utils**: Used for symbol detection and parsing
+**LSP Types**: Used by all output-producing modules
+**Keyword Info**: Used by hover and completion
+
+All 20 modules in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/` are now accounted for and documented.</result>
+<usage>total_tokens: 92316
+tool_uses: 36
+duration_ms: 116847</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a42be9c.output
+
+---
+
+When we specify relations (DependencyRelations) can we go to source, linking the relation name to the file its implemented in. Also what would it take to squiggly if that relation doesnt exist?
+
+---
+
+yes, look into what this would take, propose a plan. Also how much of this can we do by getting whatever is implemented in the compiler for free?
+
+---
+
+<task-notification>
+<task-id>ad7a5ea</task-id>
+<status>completed</status>
+<summary>Agent "Explore identifier construction from files" completed</summary>
+<result>Perfect! Now I have a complete understanding. Let me create a comprehensive summary.
+
+## Summary: Dotted Identifier Construction in Caffeine
+
+### Answer: It's **PURELY FILE-PATH DERIVED**
+
+The `org.team.service.name` dotted identifier is constructed **entirely from the file path on disk**, NOT from the file content. This is critical for the LSP to understand.
+
+---
+
+## How It Works
+
+### 1. **Path Extraction Function** (`helpers.extract_path_prefix`)
+Located in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/src/caffeine_lang/helpers.gleam` (lines 36-62):
+
+```gleam
+pub fn extract_path_prefix(path: String) -> #(String, String, String) {
+  case
+    path
+    |> string.split("/")
+    |> list.reverse
+    |> list.take(3)                    // Take last 3 path segments
+    |> list.reverse
+    |> list.map(fn(segment) {
+      // Remove file extensions (.caffeine or .json)
+      case string.ends_with(segment, ".caffeine") {
+        True -> string.drop_end(segment, 9)
+        False ->
+          case string.ends_with(segment, ".json") {
+            True -> string.drop_end(segment, 5)
+            False -> segment
+          }
+      }
+    })
+  {
+    [org, team, service] -> #(org, team, service)
+    _ -> #("unknown", "unknown", "unknown")
+  }
+}
+```
+
+**Key behavior:**
+- Takes the **last 3 path segments** from the file path
+- Removes `.caffeine` or `.json` extensions
+- Returns triple `#(org, team, service)` where these are just the directory/filename parts
+
+### 2. **Example Path Processing**
+
+For a file at: `examples/org1/platform_team/authentication.caffeine`
+
+Path is split: `["examples", "org1", "platform_team", "authentication.caffeine"]`
+
+Last 3 elements reversed: `["org1", "platform_team", "authentication"]`
+
+Extensions removed: `["org1", "platform_team", "authentication"]`
+
+Result: `#("org1", "platform_team", "authentication")`
+
+### 3. **IR Metadata Population** 
+In `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/linker/ir_builder.gleam` (lines 49-93):
+
+```gleam
+fn build(
+  expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+  file_path: String,  // <-- File path is the SOURCE of truth
+  reserved_labels: Set(String),
+) -> Result(List(ir.IntermediateRepresentation), CompilationError) {
+  let #(org, team, service) = helpers.extract_path_prefix(file_path)  // LINE 54
+
+  expectations_blueprint_collection
+  |> list.try_map(fn(expectation_and_blueprint_pair) {
+    let #(expectation, blueprint) = expectation_and_blueprint_pair
+
+    // ... merge inputs ...
+
+    let unique_name = org <> "_" <> service <> "_" <> expectation.name  // LINE 66
+    
+    Ok(ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: expectation.name,     // From file CONTENT
+        org_name: org,                         // From FILE PATH
+        service_name: service,                 // From FILE PATH
+        blueprint_name: blueprint.name,        // From file CONTENT
+        team_name: team,                       // From FILE PATH
+        misc: misc_metadata,
+      ),
+      unique_identifier: unique_name,
+      // ... other fields ...
+    ))
+  })
+}
+```
+
+### 4. **Dotted Identifier Construction**
+In `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/linker/ir.gleam` (lines 67-77):
+
+```gleam
+pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
+  ir.metadata.org_name
+  <> "."
+  <> ir.metadata.team_name
+  <> "."
+  <> ir.metadata.service_name
+  <> "."
+  <> ir.metadata.friendly_label  // <-- Only this comes from file content
+}
+```
+
+This constructs: `org.team.service.friendly_label`
+
+---
+
+## IR Metadata Type
+From `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/linker/ir.gleam` (lines 54-65):
+
+```gleam
+pub type IntermediateRepresentationMetaData {
+  IntermediateRepresentationMetaData(
+    friendly_label: String,        // Expectation name from file content
+    org_name: String,              // From file path (3rd-to-last segment)
+    service_name: String,          // From file path (last segment)
+    blueprint_name: String,        // Blueprint name from file content
+    team_name: String,             // From file path (2nd-to-last segment)
+    misc: dict.Dict(String, List(String)),  // User tags from file content
+  )
+}
+```
+
+---
+
+## Where Path is Passed In
+
+### CLI (`caffeine_cli/handler.gleam`)
+Lines 175-216:
+1. CLI reads blueprint file path and expectations directory
+2. Discovers all `.caffeine` files in expectations directory
+3. Creates `SourceFile` records with `path` and `content` for each file
+4. Calls compiler with this list
+5. Compiler calls `ir_builder.build_all()` which iterates each file and calls `build()` with the file path
+
+### Compiler Entry Point (`caffeine_lang/compiler.gleam`)
+Lines 40-47 (`compile` function):
+- Takes `SourceFile` records with `path` field
+- Passes to `linker.link()` → `ir_builder.build_all()`
+- Each file's path is used to extract org/team/service
+
+### Browser Mode (`compile_from_strings`)
+Lines 51-63:
+- Takes `expectations_path` as a string parameter
+- Uses this path to extract org/team/service
+- Default path if not provided: `"browser/expectations.caffeine"` → would extract `#("browser", "expectations", "caffeine")`
+
+---
+
+## LSP Implications
+
+**The LSP server DOES NOT have direct access to org/team/service determination** without:
+
+1. **File path information**: The LSP server receives document URIs from the editor, which contain the filesystem path. The LSP TypeScript wrapper (`lsp_server.ts`) can extract this via `fileURLToPath(uri)`.
+
+2. **No full compilation in LSP diagnostics**: The LSP does NOT call the full compiler pipeline for individual file diagnostics. Instead:
+   - Single-file diagnostics: Just calls parser + validator on file content (no org/team/service needed)
+   - Cross-file diagnostics: Validates blueprint references only
+
+3. **If LSP wanted to determine identifiers**, it would need to:
+   - Extract the file path from the document URI
+   - Call `helpers.extract_path_prefix()` with that path
+   - This is currently NOT done by the LSP (which makes sense - LSP operates on file content, not full compilation)
+
+---
+
+## Key Takeaway
+
+**NO external configuration, CLI args, or config files are needed.** The identifier is deterministic based purely on:
+- **File path on disk** → org, team, service
+- **File content (expectation name)** → friendly_label
+
+Given a `.caffeine` file anywhere on disk, Caffeine can deterministically compute what identifier each expectation would produce using just the file's absolute path.</result>
+<usage>total_tokens: 73156
+tool_uses: 26
+duration_ms: 60102</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ad7a5ea.output
+
+---
+
+<task-notification>
+<task-id>ab0611c</task-id>
+<status>completed</status>
+<summary>Agent "Explore cross-file diagnostic pattern" completed</summary>
+<result>Perfect! Now I have a complete understanding. Let me create a comprehensive summary document:
+
+## Cross-File Dependency Pattern Analysis in Caffeine LSP
+
+Based on my thorough analysis of the TypeScript server (`lsp_server.ts`) and Gleam modules, here's the complete pattern for implementing an expectation identifier index and cross-file dependency relations support:
+
+---
+
+### **1. BLUEPRINT INDEX END-TO-END PATTERN (lsp_server.ts)**
+
+#### **A. Initialization (`scanCaffeineFiles` → blueprint index)**
+```typescript
+// File: lsp_server.ts:82-97 (scanCaffeineFiles)
+// File: lsp_server.ts:119-130 (onInitialize)
+
+1. On initialize:
+   - Get workspaceRoot from LSP params
+   - Recursively walk all directories looking for .caffeine files
+   - Store URIs in Set<string> (workspaceFiles)
+   - For EACH found file:
+     * Read file content (getFileContent)
+     * Extract blueprint names using extractBlueprintNames
+     * If names found, add to blueprintIndex: Map<URI, Set<string>>
+
+2. extractBlueprintNames(text: string): string[]
+   - Only works on "Blueprints for" files (quick text check)
+   - Pattern match: /\*\s+"([^"]+)"/ (blueprint item names)
+   - Skip comment lines (#)
+   - Returns array of blueprint item names
+```
+
+#### **B. File Change Tracking (debounced diagnostics)**
+```typescript
+// File: lsp_server.ts:244-299 (documents.onDidChangeContent)
+
+On every keystroke (debounced 300ms):
+1. Extract blueprint names from current file content
+2. Get old names from blueprintIndex for this URI
+3. Update blueprintIndex with new names (or delete if empty)
+4. Detect if blueprint set changed (size/contents differ)
+5. Run single-file diagnostics immediately
+6. If file is expects file, run get_cross_file_diagnostics
+7. If blueprints changed in ANY file, call revalidateExpectsFiles()
+   (rescans ALL open expects files with new blueprint list)
+```
+
+#### **C. Building Known Blueprints List**
+```typescript
+// File: lsp_server.ts:190-198 (allKnownBlueprints)
+
+function allKnownBlueprints(): string[]
+  - Iterate blueprintIndex.values() (all Sets)
+  - Flatten all blueprint names into single array
+  - Return to Gleam as toList() for type compatibility
+
+Usage sites:
+  - Line 222: revalidateExpectsFiles() → passes to get_cross_file_diagnostics
+  - Line 275: onDidChangeContent → passes to get_cross_file_diagnostics
+  - Line 329: onCompletion → passes to get_completions
+```
+
+#### **D. File Content Reading**
+```typescript
+// File: lsp_server.ts:100-109 (getFileContent)
+
+Priority order:
+1. Check documents.get(uri) - prefer open document (live editor content)
+2. Fall back to fs.readFileSync() - read from disk
+3. Return null if both fail (file deleted/unreadable)
+
+Used by:
+  - scanCaffeineFiles (init)
+  - onDidChangeWatchedFiles (external changes)
+  - findCrossFileBlueprintDef (go-to-definition)
+  - onReferences (cross-file references)
+  - onWorkspaceSymbol (workspace search)
+```
+
+---
+
+### **2. CROSS-FILE DIAGNOSTICS (diagnostics.gleam)**
+
+#### **Gleam Function Signature**
+```gleam
+// File: diagnostics.gleam:69-82
+
+pub fn get_cross_file_diagnostics(
+  content: String,
+  known_blueprints: List(String),
+) -> List(Diagnostic)
+```
+
+#### **Implementation Flow**
+```gleam
+1. Guard: if content empty, return []
+2. Parse content (file_utils.parse):
+   - Only produces diagnostics for ExpectsFile type
+   - Returns [] for Blueprints files
+3. For each ExpectsBlock in file.blocks:
+   - Call check_blueprint_ref(content, block, known_blueprints)
+4. Return list of diagnostics where blueprint not found
+
+check_blueprint_ref logic (lines 85-103):
+  - Check if block.blueprint in known_blueprints list
+  - If found, return Error(Nil) (no diagnostic)
+  - If NOT found:
+    * Use position_utils.find_name_position() to locate blueprint name in source
+    * Create Diagnostic with:
+      - Line/col from find_name_position
+      - Code: BlueprintNotFound
+      - Severity: DsError (from lsp_types)
+      - Message: "Blueprint 'X' not found in workspace"
+    * Return Ok(diagnostic)
+```
+
+#### **Position Finding**
+```gleam
+// File: position_utils.gleam:7-10, 24-31
+
+pub fn find_name_position(content: String, name: String) -> #(Int, Int)
+  - Split content into lines
+  - Search for first whole-word occurrence of name
+  - Return #(0-indexed line, 0-indexed column)
+  - Handles word boundaries (not substring matches)
+  
+pub fn find_all_name_positions(content: String, name: String) -> List(#(Int, Int))
+  - Find ALL occurrences
+  - Returns list of positions
+  - Used for references and rename operations
+```
+
+---
+
+### **3. CROSS-FILE GO-TO-DEFINITION (lsp_server.ts)**
+
+#### **Pattern Flow**
+```typescript
+// File: lsp_server.ts:426-464 (onDefinition)
+
+1. Try in-file definition first (get_definition from Gleam)
+   - If found, return location in same file
+2. If not found, try blueprint reference (get_blueprint_ref_at_position)
+   - Checks if cursor on "Expectations for \"blueprint_name\""
+   - Returns just the blueprint name string
+3. If blueprint ref found, call findCrossFileBlueprintDef(blueprintName)
+   - Returns { uri, line, col, nameLen } or null
+4. Return LSP Location with cross-file URI
+
+Declaration handler (line 468-506): identical to definition
+```
+
+#### **Cross-File Blueprint Lookup**
+```typescript
+// File: lsp_server.ts:412-424 (findCrossFileBlueprintDef)
+
+function findCrossFileBlueprintDef(
+  blueprintItemName: string,
+): { uri: string; line: number; col: number; nameLen: number } | null
+
+Implementation:
+1. Iterate blueprintIndex entries (Map<URI, Set<string>>)
+2. Check if Set contains blueprintItemName
+3. For matching URI:
+   - Read file content via getFileContent(uri)
+   - Call findBlueprintItemLocation(text, blueprintItemName)
+   - Return with uri + location info
+4. Return null if not found in any file
+
+findBlueprintItemLocation(text, itemName): location or null
+  - Split text into lines
+  - Search for: /^\s*\*\s+"/ pattern
+  - Extract name from within quotes
+  - Column = position inside quotes (skip opening quote)
+  - Returns { line, col, nameLen }
+```
+
+---
+
+### **4. WORKSPACE FILE TRACKING**
+
+#### **Watched File Events**
+```typescript
+// File: lsp_server.ts:903-939 (onDidChangeWatchedFiles)
+
+For each file change:
+1. If Deleted:
+   - Remove from workspaceFiles Set
+   - If in blueprintIndex, delete and set blueprintsChanged=true
+2. If Created or Changed:
+   - Add to workspaceFiles Set
+   - Read file content
+   - Extract blueprint names
+   - Update blueprintIndex
+   - Detect if blueprint set changed
+   - If changed, set blueprintsChanged=true
+3. If blueprintsChanged, call revalidateExpectsFiles()
+   (rescans ALL open expects files with new blueprint list)
+
+Document Close (line 942-976):
+  - Read file from disk (still exists, just editor tab closed)
+  - Update blueprintIndex accordingly
+  - If blueprint availability changed, revalidateExpectsFiles()
+```
+
+#### **Revalidate All Expects Files**
+```typescript
+// File: lsp_server.ts:221-238 (revalidateExpectsFiles)
+
+function revalidateExpectsFiles()
+1. Build known_blueprints = toList(allKnownBlueprints())
+2. For each open document:
+   - Check if isExpectsFile(text)
+   - Run get_diagnostics (single-file)
+   - Run get_cross_file_diagnostics (with known_blueprints)
+   - Combine diagnostics
+   - Send via connection.sendDiagnostics()
+```
+
+---
+
+### **5. CROSS-FILE REFERENCES (lsp_server.ts)**
+
+#### **Pattern**
+```typescript
+// File: lsp_server.ts:529-575 (onReferences)
+
+1. Get same-file references:
+   - Call get_references (Gleam) for in-file refs
+   - Return as array of { uri: current_uri, range }
+2. Check if cursor on blueprint name:
+   - Call get_blueprint_name_at(text, line, char)
+   - If empty string, return just same-file refs
+3. For each workspace file (NOT just open ones):
+   - Call getFileContent(uri) - reads from disk
+   - Call find_references_to_name(text, blueprintName)
+   - Collect all matches with cross-file URIs
+4. Return combined same-file + cross-file references
+
+Key: Uses WORKSPACE FILES (all .caffeine files), not just open documents
+     This is why workspaceFiles Set is maintained separately
+```
+
+---
+
+### **6. WORKSPACE SYMBOLS (lsp_server.ts)**
+
+#### **Pattern**
+```typescript
+// File: lsp_server.ts:758-782 (onWorkspaceSymbol)
+
+1. For each file in workspaceFiles:
+   - Read content via getFileContent(uri)
+   - Call get_workspace_symbols(text) (Gleam)
+   - Filter by query (case-insensitive substring)
+   - Return { name, kind, location: { uri, range } }
+2. Note: searches ALL workspace files, not just open ones
+
+Used by: Type Hierarchy supertypes/subtypes (lines 819-852, 855-899)
+```
+
+---
+
+### **7. KEY DATA STRUCTURES**
+
+#### **TypeScript-Side**
+```typescript
+// Blueprint Index: Maps file URI to set of blueprint item names
+const blueprintIndex = new Map<string, Set<string>>();
+
+// Workspace Files: All discovered .caffeine files
+const workspaceFiles = new Set<string>();
+
+// Open Documents: Managed by TextDocuments<TextDocument>
+const documents = new TextDocuments(TextDocument);
+```
+
+#### **Gleam-Side (AST)**
+```gleam
+// File: ast.gleam
+
+pub type ExpectsBlock {
+  ExpectsBlock(
+    blueprint: String,      // <- The blueprint name to look up
+    items: List(ExpectItem),
+    leading_comments: List(Comment),
+  )
+}
+
+pub type BlueprintItem {
+  BlueprintItem(
+    name: String,           // <- The blueprint item name
+    extends: List(String),
+    requires: Struct,
+    provides: Struct,
+    leading_comments: List(Comment),
+  )
+}
+
+pub type ExpectItem {
+  ExpectItem(
+    name: String,           // <- The expectation item name
+    extends: List(String),
+    provides: Struct,
+    leading_comments: List(Comment),
+  )
+}
+```
+
+---
+
+### **8. REPLICATION PATTERN FOR DEPENDENCY RELATIONS**
+
+To build an **expectation identifier index** for cross-file dependency relations:
+
+#### **TypeScript Side** (parallel to blueprintIndex)
+```typescript
+// New index structure:
+const expectationIndex = new Map<string, Set<string>>();
+
+// Extract function (parallel to extractBlueprintNames):
+function extractExpectationNames(text: string): string[] {
+  if (!text.includes("Expectations for")) return [];
+  
+  // Match: * "name": in Expectations files
+  const names: string[] = [];
+  const pattern = /\*\s+"([^"]+)"/;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    const match = pattern.exec(line);
+    if (match) names.push(match[1]);
+  }
+  return names;
+}
+
+// Populate on init, update on file changes (same pattern as blueprints)
+// In onInitialize, onDidChangeContent, onDidChangeWatchedFiles, onDidClose
+```
+
+#### **Gleam Side** (parallel to get_cross_file_diagnostics)
+```gleam
+// New function: check dependency relations against known expectations
+pub fn get_cross_file_dependency_diagnostics(
+  content: String,
+  known_expectations: List(String),
+) -> List(Diagnostic)
+  // Only for Blueprints files (reverse of blueprint check)
+  // Scan for DependencyRelations artifact
+  // Validate dependency identifiers exist in known_expectations
+  // Return diagnostics for missing dependencies
+```
+
+#### **Go-to-Definition** (parallel to findCrossFileBlueprintDef)
+```typescript
+function findCrossFileExpectationDef(
+  expectationItemName: string,
+): { uri: string; line: number; col: number; nameLen: number } | null {
+  for (const [uri, names] of expectationIndex) {
+    if (!names.has(expectationItemName)) continue;
+    const text = getFileContent(uri);
+    if (!text) continue;
+    const loc = findExpectationItemLocation(text, expectationItemName);
+    if (loc) return { uri, ...loc };
+  }
+  return null;
+}
+
+function findExpectationItemLocation(
+  text: string,
+  itemName: string,
+): { line: number; col: number; nameLen: number } | null {
+  // Pattern: * "itemName": in Expectations for blocks
+  // Same logic as findBlueprintItemLocation
+}
+```
+
+---
+
+### **9. CRITICAL IMPLEMENTATION NOTES**
+
+1. **Always prefer open documents over disk** (getFileContent)
+   - Editor content takes precedence
+   - Fall back to fs.readFileSync() for unopened workspace files
+
+2. **Whole-word matching only** (position_utils.gleam)
+   - Don't match substrings
+   - Respects word boundaries (alphanumeric + underscore)
+
+3. **Case sensitivity**
+   - Names are case-sensitive
+   - Blueprint references must match exactly
+
+4. **Debouncing**
+   - Diagnostics debounced 300ms per file change
+   - Prevents excessive re-validation on rapid edits
+
+5. **Revalidation cascade**
+   - Change in blueprints file → revalidate ALL open expects files
+   - Change in expects file → revalidate just that file
+   - Keeps dependencies in sync across workspace
+
+6. **File type detection** (file_utils.gleam:25-45)
+   - Try parse as Expectations first (if starts with "Expectations")
+   - Fall back to Blueprints
+   - Allows single file to attempt both parsers
+
+7. **Index updates vs. file changes**
+   - blueprintIndex is the source of truth for workspace state
+   - Updated BEFORE any revalidation
+   - Used for fast lookups in go-to-def, references, completion
+
+---
+
+### **Absolute File Paths for Reference**
+
+Key implementation files:
+- `/Users/rdurst/BrickellResearch/caffeine/lsp_server.ts` - TypeScript server (blueprint index, go-to-def, cross-file refs)
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/diagnostics.gleam` - Cross-file diagnostics
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/position_utils.gleam` - Position finding
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/definition.gleam` - In-file definition lookup
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/references.gleam` - Reference finding
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/src/caffeine_lsp/file_utils.gleam` - File parsing helpers
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/src/caffeine_lang/frontend/ast.gleam` - AST structures</result>
+<usage>total_tokens: 66309
+tool_uses: 12
+duration_ms: 53292</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ab0611c.output
+
+---
+
+<task-notification>
+<task-id>ae0bb6d</task-id>
+<status>completed</status>
+<summary>Agent "Explore dependency validator reuse" completed</summary>
+<result>Perfect! Now I have a comprehensive picture. Let me create the final report.
+
+## Summary: Dependency Validation Logic & LSP Reusability
+
+Based on my thorough exploration of the Caffeine compiler, here's what you need to know about the dependency validation logic and its reusability in the LSP:
+
+### 1. **File: `dependency_validator.gleam`** (421 lines)
+
+**Exposed Functions:**
+
+```gleam
+@internal pub fn validate_dependency_relations(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(IntermediateRepresentation), CompilationError)
+
+@internal pub fn build_expectation_index(
+  irs: List(IntermediateRepresentation),
+) -> Dict(String, IntermediateRepresentation)
+
+@internal pub fn parse_dependency_path(
+  path: String,
+) -> Result(#(String, String, String, String), Nil)
+```
+
+**What It Does:**
+
+The module performs three categories of validation:
+
+1. **Reference Validation** (lines 22-54):
+   - Checks all dependency targets are valid identifiers (format: `org.team.service.name`)
+   - Verifies targets exist in the expectation index
+   - Prevents self-references
+   - Detects duplicates within each relation type (hard/soft independently)
+
+2. **Circular Dependency Detection** (lines 209-330):
+   - Builds an adjacency list from all IRs with `DependencyRelations` artifact
+   - Uses DFS-based cycle detection with a visited set and in-progress path tracking
+   - Reports cycles as: `"Circular dependency detected: a -> b -> c -> a"`
+
+3. **Hard Dependency Threshold Validation** (lines 332-420):
+   - Only for IRs with BOTH `SLO` AND `DependencyRelations` artifacts
+   - Computes "composite ceiling" = product of all hard dependency thresholds
+   - Source IR's threshold must be ≤ composite ceiling
+   - Example: if A depends on B (99.9%) and C (99.5%), A's threshold must be ≤ 99.4005%
+
+**Key Data Flow:**
+```
+Input: List(IntermediateRepresentation)
+  ↓
+1. build_expectation_index(irs) → Dict(identifier_string, IR)
+2. validate_ir_dependencies(each IR, index) → List of errors
+3. detect_cycles(irs) → Cycle error if found
+4. validate_single_ir_hard_thresholds(each IR, index) → Threshold errors
+  ↓
+Output: Ok(original irs) or Error(first CompilationError found)
+```
+
+---
+
+### 2. **Type Dependencies**
+
+**From `linker/ir.gleam`:**
+
+```gleam
+pub type DependencyFields {
+  DependencyFields(
+    relations: dict.Dict(DependencyRelationType, List(String)),
+    tags: List(#(String, String)),
+  )
+}
+
+pub type SloFields {
+  SloFields(
+    threshold: Float,
+    indicators: dict.Dict(String, String),
+    window_in_days: Int,
+    evaluation: Option(String),
+    tags: List(#(String, String)),
+    runbook: Option(String),
+  )
+}
+
+pub type IntermediateRepresentation {
+  IntermediateRepresentation(
+    metadata: IntermediateRepresentationMetaData,
+    unique_identifier: String,
+    artifact_refs: List(ArtifactType),  // [SLO, DependencyRelations, ...]
+    values: List(ValueTuple),
+    artifact_data: ArtifactData,  // Contains structured SloFields/DependencyFields
+    vendor: Option(Vendor),
+  )
+}
+```
+
+**From `linker/artifacts.gleam`:**
+
+```gleam
+pub type DependencyRelationType {
+  Hard      // If dependency down, dependent down
+  Soft      // Dependent can degrade but continue
+}
+
+pub fn parse_relation_type(s: String) -> Result(DependencyRelationType, Nil)
+pub fn relation_type_to_string(rt: DependencyRelationType) -> String
+```
+
+---
+
+### 3. **Can We Extract Relations at AST Level?**
+
+**Short Answer: YES, partially.**
+
+The AST (from `parser.gleam`) represents relations as:
+- A nested literal struct in the `provides` block of an expectation
+- Example: `provides { relations { hard: [a.b.c.d, ...], soft: [...] } }`
+
+**How it flows through the pipeline:**
+
+```
+Parser Output (AST)
+  └─ ExpectsFile / BlueprintsFile
+      └─ ExpectItem / BlueprintItem
+          └─ Struct(fields: List(Field))
+              └─ Field(name: "relations", value: LiteralValue(LiteralStruct(...)))
+
+                ↓↓↓ Through Validator & Lowering ↓↓↓
+
+Value Tuple
+  └─ ValueTuple(
+      label: "relations",
+      typ: CollectionType(Dict(String, List(String))),
+      value: DictValue(
+        "hard": ListValue([StringValue("org.team.service.name"), ...]),
+        "soft": ListValue([StringValue(...), ...])
+      )
+    )
+
+                ↓↓↓ Through IR Builder ↓↓↓
+
+DependencyFields
+  └─ DependencyFields(
+      relations: Dict(Hard, [...], Soft, [...]),
+      tags: [...]
+    )
+```
+
+**The extraction function in `helpers.gleam` (lines 89-126):**
+
+```gleam
+@internal
+pub fn extract_relations(
+  values: List(ValueTuple),
+) -> dict.Dict(DependencyRelationType, List(String)) {
+  values
+  |> list.find(fn(vt) { vt.label == "relations" })
+  |> result.try(fn(vt) {
+    case vt.value {
+      value.DictValue(d) ->
+        d
+        |> dict.to_list
+        |> list.try_map(fn(pair) {
+          case pair.1 {
+            value.ListValue(items) -> {
+              items
+              |> list.try_map(value.extract_string)
+              |> result.map(fn(strings) { #(pair.0, strings) })
+            }
+            _ -> Error(Nil)
+          }
+        })
+        |> result.map(fn(pairs) {
+          pairs
+          |> list.filter_map(fn(pair) {
+            case artifacts.parse_relation_type(pair.0) {
+              Ok(rt) -> Ok(#(rt, pair.1))
+              Error(Nil) -> Error(Nil)
+            }
+          })
+          |> dict.from_list
+        })
+      _ -> Error(Nil)
+    }
+  })
+  |> result.unwrap(dict.new())
+}
+```
+
+This function:
+- Takes a list of `ValueTuple` (what the IR builder creates)
+- Finds the "relations" tuple
+- Extracts string lists from the Dict values
+- Parses string keys ("hard"/"soft") into `DependencyRelationType` enum
+- Returns `Dict(Hard | Soft, List(String))`
+
+---
+
+### 4. **How `dependency_validator` Is Called**
+
+**From `compiler.gleam` (lines 74-81):**
+
+```gleam
+fn run_semantic_analysis(
+  irs: List(IntermediateRepresentation),
+) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+  use validated_irs <- result.try(
+    dependency_validator.validate_dependency_relations(irs),
+  )
+  semantic_analyzer.resolve_intermediate_representations(validated_irs)
+}
+```
+
+**Data prep before this call:**
+
+The full pipeline that builds IRs is:
+1. **`pipeline.compile_blueprints()`** → Parse + validate blueprints → AST
+2. **`pipeline.compile_expects()`** → Parse + validate expectations → AST
+3. **`blueprints.validate_blueprints()`** → Merge with artifacts, validate → Blueprint objects
+4. **`expectations.validate_expectations()`** → Resolve blueprint refs, validate → Expectation objects
+5. **`ir_builder.build_all()`** → Construct IRs with ValueTuples and structured ArtifactData
+6. **`dependency_validator.validate_dependency_relations()`** ← **HERE**
+7. **`semantic_analyzer.resolve_intermediate_representations()`** → Template substitution
+
+---
+
+### 5. **What Would It Take to Validate in the LSP?**
+
+**Option A: Work with ValueTuples (Minimal IR)**
+
+The LSP could validate at a simpler level by:
+
+1. After parsing/validating an expectation AST, construct minimal `ValueTuple` objects
+2. Call `helpers.extract_relations(value_tuples)` to get `Dict(DependencyRelationType, List(String))`
+3. Construct a simple `expectation_index: Dict(String, Option(DependencyFields))`
+4. Run **just these validation functions** from `dependency_validator`:
+
+```gleam
+// These don't need full IR objects:
+dependency_validator.parse_dependency_path(target_string)  // Format check
+check_for_duplicates_per_relation(relations, self_path)    // Dup detection
+validate_dependency_target(target, self_path, index)       // Existence check
+```
+
+**However:**
+- Circular cycle detection requires building the full adjacency list (could still work)
+- Hard threshold validation requires the IR because it needs to fetch targets and check `ir.artifact_refs` to see if they have `SLO` artifact
+
+**Option B: Use Full IR Construction (Current Approach)**
+
+The LSP would need to run through the full `ir_builder.build_all()` for each open document, which is expensive but complete.
+
+---
+
+### 6. **Key Insights for LSP Integration**
+
+| Validation Check | Data Required | Complexity | Reusability |
+|---|---|---|---|
+| **Format (4-part path)** | Just string | ✓ Trivial | `parse_dependency_path()` |
+| **Duplicates within relation** | Relation lists | ✓ Simple | Helper function easily extractable |
+| **Target exists** | Relation strings + expectation index | ✓ Simple | `validate_dependency_target()` (almost) |
+| **Self-reference** | Target string + self path | ✓ Trivial | One-liner check |
+| **Circular cycles** | All IRs or full adjacency list | ⚠ Medium | `detect_cycles()` reusable, but needs IR index |
+| **Hard threshold ceiling** | Full SLO+Dependency IRs | ✗ Hard | `validate_single_ir_hard_thresholds()` needs full IR with thresholds |
+
+---
+
+### 7. **Concrete Recommendation**
+
+For the LSP, you have two practical paths:
+
+**Path 1: Extract a lightweight validation module** (Best for performance)
+
+Create `lsp_dependency_validator.gleam` that:
+
+```gleam
+pub fn validate_reference_format_and_duplicates(
+  relations: Dict(DependencyRelationType, List(String)),
+  self_identifier: String,
+) -> List(CompilationError)
+
+pub fn validate_references_exist(
+  relations: Dict(DependencyRelationType, List(String)),
+  self_identifier: String,
+  known_expectation_identifiers: List(String),  // From LSP blueprint index
+) -> List(CompilationError)
+```
+
+These would be **lightweight wrappers around existing functions**, requiring only:
+- The relation dictionary (extractable at AST → ValueTuple level)
+- A list of known identifier strings (LSP already maintains blueprint index)
+- NO need for full IR objects
+
+**Path 2: Reuse full validation** (Simpler but slower)
+
+Build full IRs in the LSP (or a subset of them) and call `dependency_validator` directly. This means running the linker for each open expectation file, which is doable but more expensive.
+
+---
+
+### **File Locations Summary**
+
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/src/caffeine_lang/analysis/dependency_validator.gleam` — Main validation logic
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/src/caffeine_lang/helpers.gleam` — `extract_relations()` and related helpers
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/src/caffeine_lang/linker/ir_builder.gleam` — IR construction
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/ir_test_helpers.gleam` — Example IR construction patterns
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/dependency_validator_test.gleam` — Full test suite showing all validation scenarios</result>
+<usage>total_tokens: 71418
+tool_uses: 19
+duration_ms: 60015</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ae0bb6d.output
+
+---
+
+let's do it, start building
