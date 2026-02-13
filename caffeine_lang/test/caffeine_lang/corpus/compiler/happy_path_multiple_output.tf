@@ -24,6 +24,34 @@ variable "datadog_app_key" {
   type = string
 }
 
+# Caffeine: acme.platform.slos.auth_service_availability (blueprint: api_availability)
+resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
+  name = "auth_service_availability"
+  tags = [
+    "managed_by:caffeine",
+    "caffeine_version:{{VERSION}}",
+    "org:acme",
+    "team:platform",
+    "service:slos",
+    "blueprint:api_availability",
+    "expectation:auth_service_availability",
+    "artifact:SLO",
+    "env:production",
+    "service:auth-service",
+    "vendor:datadog",
+  ]
+  type = "metric"
+
+  query {
+    denominator = "sum:http.requests{env:production,service:auth-service}"
+    numerator = "sum:http.requests{env:production,service:auth-service,!status:5xx}"
+  }
+  thresholds {
+    target = 99.99
+    timeframe = "30d"
+  }
+}
+
 # Caffeine: acme.payments.slos.checkout_availability (blueprint: api_availability)
 resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
   name = "checkout_availability"
@@ -77,33 +105,5 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   thresholds {
     target = 99.0
     timeframe = "7d"
-  }
-}
-
-# Caffeine: acme.platform.slos.auth_service_availability (blueprint: api_availability)
-resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
-  name = "auth_service_availability"
-  tags = [
-    "managed_by:caffeine",
-    "caffeine_version:{{VERSION}}",
-    "org:acme",
-    "team:platform",
-    "service:slos",
-    "blueprint:api_availability",
-    "expectation:auth_service_availability",
-    "artifact:SLO",
-    "env:production",
-    "service:auth-service",
-    "vendor:datadog",
-  ]
-  type = "metric"
-
-  query {
-    denominator = "sum:http.requests{env:production,service:auth-service}"
-    numerator = "sum:http.requests{env:production,service:auth-service,!status:5xx}"
-  }
-  thresholds {
-    target = 99.99
-    timeframe = "30d"
   }
 }

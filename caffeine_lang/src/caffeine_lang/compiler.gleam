@@ -260,7 +260,11 @@ fn group_by_vendor(
       option.None -> vendor.Datadog
     }
   })
-  |> dict.map_values(fn(_, group) { list.reverse(group) })
+  |> dict.map_values(fn(_, group) {
+    list.sort(group, fn(a, b) {
+      string.compare(a.unique_identifier, b.unique_identifier)
+    })
+  })
 }
 
 fn parse_from_strings(
