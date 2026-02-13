@@ -1,0 +1,86 @@
+Implement the following plan:
+
+# Plan: Deduplicate Codegen Vendor Boilerplate (A + B + C)
+
+## Context
+The 4 vendor codegen modules (datadog, honeycomb, dynatrace, newrelic) repeat identical patterns for description building, SLO field extraction, and error construction. This plan extracts shared logic into `generator_utils.gleam`.
+
+## Changes
+
+### A. Move `build_description` to `generator_utils.gleam`
+
+Honeycomb (191-208), Dynatrace (164-181), and NewRelic (361-378) have word-for-word identical `build_description` functions. Datadog handles it differently (inline, runbook-only as a single attribute).
+
+**Action:**
+1. Add `pub fn build_description(ir: IntermediateRepresentation) -> String` to `generator_utils.gleam`
+2. Delete the private `build_description` from `honeycomb.gleam`, `dynatrace.gleam`, `newrelic.gleam`
+3. Replace calls with `generator_utils.build_description(ir)`
+4. Datadog stays as-is (different logic — uses runbook in description attribute but also has tags)
+
+### B. Add SLO extraction helpers to `generator_utils.gleam`
+
+Three helpers to replace repeated error-wrapping patterns:
+
+```gleam
+/// Extract SLO fields from IR, returning a codegen error if missing.
+pub fn require_slo_fields(
+  ir: IntermediateRepresentation,
+  vendor vendor_name: String,
+) -> Result(SloFields, CompilationError)
+
+/// Extract evaluation expression from SLO fields, returning a codegen error if missing.
+pub fn require_evaluation(
+  slo: SloFields,
+  ir: IntermediateRepresentation,
+  vendor vendor_name: String,
+) -> Result(String, CompilationError)
+
+/// Resolve CQL expression, wrapping errors with vendor/identifier context.
+pub fn resolve_cql_expression(
+  evaluation_expr: String,
+  indicators: Dict(String, String),
+  ir: IntermediateRepresentation,
+  vendor vendor_name: String,
+) -> Result(String, CompilationError)
+```
+
+**Action:**
+1. Add 3 functions to `generator_utils.gleam`
+2. Update `honeycomb.gleam`, `dynatrace.gleam`, `newrelic.gleam` to use them (all 3 use all 3 helpers)
+3. Update `datadog.gleam` to use `require_slo_fields` only (Datadog uses CQL differently via `resolve_slo_to_hcl` not `resolve_slo_to_expression`, and evaluation is optional with a default)
+
+### C. Add `resolution_error` helper
+
+**Action:**
+1. Add to `generator_utils.gleam`:
+   ```gleam
+   pub fn resolution_error(vendor vendor_name: String, msg msg: String) -> CompilationError
+   ```
+2. Replace `GeneratorTerraformResolutionError(vendor:, msg:, context: errors.empty_context())` calls across all 4 vendor modules
+
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `codegen/generator_utils.gleam` | Add `build_description`, `require_slo_fields`, `require_evaluation`, `resolve_cql_expression`, `resolution_error` |
+| `codegen/honeycomb.gleam` | Use shared helpers, delete local `build_description` |
+| `codegen/dynatrace.gleam` | Use shared helpers, delete local `build_description` |
+| `codegen/newrelic.gleam` | Use shared helpers, delete local `build_description` |
+| `codegen/datadog.gleam` | Use `require_slo_fields` and `resolution_error` only |
+
+## Verification
+
+```bash
+cd caffeine_lang && gleam test && gleam test --target javascript
+```
+
+All existing corpus-based snapshot tests validate the output is unchanged.
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/rdurst/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+ok, can we now go back to our list?

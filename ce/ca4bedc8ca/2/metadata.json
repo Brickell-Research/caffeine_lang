@@ -1,9 +1,11 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "ceca4bedc8ca",
+  "session_id": "fc1b6372-cf48-474e-8fe0-a169de234fbd",
   "strategy": "manual-commit",
+  "created_at": "2026-02-13T23:39:49.242066Z",
   "branch": "main",
-  "checkpoints_count": 7,
+  "checkpoints_count": 1,
   "files_touched": [
     ".claude/settings.local.json",
     "caffeine_cli/.claude/settings.local.json",
@@ -34,41 +36,27 @@
     "caffeine_lang/src/caffeine_lang/codegen/generator_utils.gleam",
     "caffeine_lang/src/caffeine_lang/codegen/honeycomb.gleam",
     "caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam",
-    "caffeine_lang/src/caffeine_lang/compiler.gleam",
-    "caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_output.tf",
     "caffeine_lsp/build/packages/gleam_stdlib/README.md",
     "caffeine_lsp/build/packages/gleeunit/README.md",
     "caffeine_lsp/build/packages/terra_madre/LICENSE",
     "caffeine_lsp/build/packages/terra_madre/README.md"
   ],
-  "sessions": [
-    {
-      "metadata": "/ce/ca4bedc8ca/0/metadata.json",
-      "transcript": "/ce/ca4bedc8ca/0/full.jsonl",
-      "context": "/ce/ca4bedc8ca/0/context.md",
-      "content_hash": "/ce/ca4bedc8ca/0/content_hash.txt",
-      "prompt": "/ce/ca4bedc8ca/0/prompt.txt"
-    },
-    {
-      "metadata": "/ce/ca4bedc8ca/1/metadata.json",
-      "transcript": "/ce/ca4bedc8ca/1/full.jsonl",
-      "context": "/ce/ca4bedc8ca/1/context.md",
-      "content_hash": "/ce/ca4bedc8ca/1/content_hash.txt",
-      "prompt": "/ce/ca4bedc8ca/1/prompt.txt"
-    },
-    {
-      "metadata": "/ce/ca4bedc8ca/2/metadata.json",
-      "transcript": "/ce/ca4bedc8ca/2/full.jsonl",
-      "context": "/ce/ca4bedc8ca/2/context.md",
-      "content_hash": "/ce/ca4bedc8ca/2/content_hash.txt",
-      "prompt": "/ce/ca4bedc8ca/2/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
   "token_usage": {
-    "input_tokens": 128,
-    "cache_creation_tokens": 189396,
-    "cache_read_tokens": 5409834,
-    "output_tokens": 6066,
-    "api_call_count": 80
-  }
+    "input_tokens": 39,
+    "cache_creation_tokens": 55517,
+    "cache_read_tokens": 2152762,
+    "output_tokens": 4127,
+    "api_call_count": 33
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-13T23:39:49.083728Z",
+    "agent_lines": 167,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 1632,
+    "total_committed": 167,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst-BrickellResearch-caffeine/fc1b6372-cf48-474e-8fe0-a169de234fbd.jsonl"
 }
