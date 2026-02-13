@@ -1,12 +1,13 @@
-import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{
   type CompilationError, GeneratorSloQueryResolutionError,
-  GeneratorTerraformResolutionError,
 }
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, ir_to_identifier,
+}
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/int
@@ -117,16 +118,10 @@ pub fn ir_to_terraform_resource(
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract structured SLO fields from IR.
-  use slo <- result.try(
-    ir.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorTerraformResolutionError(
-      vendor: constants.vendor_datadog,
-      msg: "expectation '"
-        <> ir_to_identifier(ir)
-        <> "' - missing SLO artifact data",
-      context: errors.empty_context(),
-    )),
-  )
+  use slo <- result.try(generator_utils.require_slo_fields(
+    ir,
+    vendor: constants.vendor_datadog,
+  ))
   let threshold = slo.threshold
   let window_in_days = slo.window_in_days
   let indicators = slo.indicators
@@ -148,9 +143,7 @@ pub fn ir_to_terraform_resource(
   )
 
   // Build dependency relation tags if artifact refs include DependencyRelations.
-  let dependency_tags = case
-    ir.get_dependency_fields(ir.artifact_data)
-  {
+  let dependency_tags = case ir.get_dependency_fields(ir.artifact_data) {
     option.Some(dep) -> build_dependency_tags(dep.relations)
     option.None -> []
   }
@@ -285,12 +278,11 @@ pub fn window_to_timeframe(days: Int) -> Result(String, CompilationError) {
   case days {
     7 | 30 | 90 -> Ok(days_string <> "d")
     _ ->
-      Error(GeneratorTerraformResolutionError(
+      Error(generator_utils.resolution_error(
         vendor: constants.vendor_datadog,
         msg: "Illegal window_in_days value: "
           <> days_string
           <> ". Accepted values are 7, 30, or 90.",
-        context: errors.empty_context(),
       ))
   }
 }

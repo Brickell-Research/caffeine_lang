@@ -1,10 +1,9 @@
-import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
-import caffeine_lang/errors.{
-  type CompilationError, GeneratorTerraformResolutionError,
+import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, ir_to_identifier,
 }
-import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -123,36 +122,23 @@ pub fn ir_to_terraform_resource(
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract structured SLO fields from IR.
-  use slo <- result.try(
-    ir.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorTerraformResolutionError(
-      vendor: constants.vendor_newrelic,
-      msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
-      context: errors.empty_context(),
-    )),
-  )
+  use slo <- result.try(generator_utils.require_slo_fields(
+    ir,
+    vendor: constants.vendor_newrelic,
+  ))
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline.
-  use evaluation_expr <- result.try(
-    slo.evaluation
-    |> option.to_result(GeneratorTerraformResolutionError(
-      vendor: constants.vendor_newrelic,
-      msg: "expectation '"
-        <> identifier
-        <> "' - missing evaluation for New Relic SLO",
-      context: errors.empty_context(),
-    )),
-  )
-  use _ <- result.try(
-    cql_generator.resolve_slo_to_expression(evaluation_expr, slo.indicators)
-    |> result.map_error(fn(err) {
-      GeneratorTerraformResolutionError(
-        vendor: constants.vendor_newrelic,
-        msg: "expectation '" <> identifier <> "' - " <> err,
-        context: errors.empty_context(),
-      )
-    }),
-  )
+  use evaluation_expr <- result.try(generator_utils.require_evaluation(
+    slo,
+    ir,
+    vendor: constants.vendor_newrelic,
+  ))
+  use _ <- result.try(generator_utils.resolve_cql_expression(
+    evaluation_expr,
+    slo.indicators,
+    ir,
+    vendor: constants.vendor_newrelic,
+  ))
 
   use rolling_count <- result.try(
     window_to_rolling_count(slo.window_in_days)
@@ -166,7 +152,7 @@ pub fn ir_to_terraform_resource(
     identifier,
   ))
 
-  let description = build_description(ir)
+  let description = generator_utils.build_description(ir)
 
   let resource =
     terraform.Resource(
@@ -226,26 +212,24 @@ fn build_events_block(
 
   use good_indicator <- result.try(
     dict.get(indicators, good_name)
-    |> result.replace_error(GeneratorTerraformResolutionError(
+    |> result.replace_error(generator_utils.resolution_error(
       vendor: constants.vendor_newrelic,
       msg: "expectation '"
         <> identifier
         <> "' - indicator '"
         <> good_name
         <> "' not found",
-      context: errors.empty_context(),
     )),
   )
   use valid_indicator <- result.try(
     dict.get(indicators, valid_name)
-    |> result.replace_error(GeneratorTerraformResolutionError(
+    |> result.replace_error(generator_utils.resolution_error(
       vendor: constants.vendor_newrelic,
       msg: "expectation '"
         <> identifier
         <> "' - indicator '"
         <> valid_name
         <> "' not found",
-      context: errors.empty_context(),
     )),
   )
 
@@ -286,22 +270,20 @@ fn extract_good_valid_names(
       {
         True -> Ok(#(good_trimmed, valid_trimmed))
         False ->
-          Error(GeneratorTerraformResolutionError(
+          Error(generator_utils.resolution_error(
             vendor: constants.vendor_newrelic,
             msg: "expectation '"
               <> identifier
               <> "' - evaluation references indicators not found in indicator map",
-            context: errors.empty_context(),
           ))
       }
     }
     _ ->
-      Error(GeneratorTerraformResolutionError(
+      Error(generator_utils.resolution_error(
         vendor: constants.vendor_newrelic,
         msg: "expectation '"
           <> identifier
           <> "' - evaluation must be in 'good / valid' format for New Relic",
-        context: errors.empty_context(),
       ))
   }
 }
@@ -347,32 +329,11 @@ pub fn window_to_rolling_count(days: Int) -> Result(Int, CompilationError) {
   case days {
     1 | 7 | 28 -> Ok(days)
     _ ->
-      Error(GeneratorTerraformResolutionError(
+      Error(generator_utils.resolution_error(
         vendor: constants.vendor_newrelic,
         msg: "Illegal window_in_days value: "
           <> int.to_string(days)
           <> ". New Relic accepts only 1, 7, or 28.",
-        context: errors.empty_context(),
       ))
-  }
-}
-
-/// Build a description string for the SLO.
-fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case ir.get_slo_fields(ir.artifact_data) {
-    option.Some(slo) -> slo.runbook
-    option.None -> option.None
-  }
-
-  case runbook {
-    option.Some(url) -> "[Runbook](" <> url <> ")"
-    option.None ->
-      "Managed by Caffeine ("
-      <> ir.metadata.org_name
-      <> "/"
-      <> ir.metadata.team_name
-      <> "/"
-      <> ir.metadata.service_name
-      <> ")"
   }
 }

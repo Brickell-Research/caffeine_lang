@@ -1,11 +1,8 @@
-import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
-import caffeine_lang/errors.{
-  type CompilationError, GeneratorTerraformResolutionError,
-}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_query_language/generator as cql_generator
+import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import gleam/dict
 import gleam/list
 import gleam/option
@@ -101,44 +98,30 @@ pub fn variables() -> List(terraform.Variable) {
 pub fn ir_to_terraform_resources(
   ir: IntermediateRepresentation,
 ) -> Result(List(terraform.Resource), CompilationError) {
-  let identifier = ir_to_identifier(ir)
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
   // Extract structured SLO fields from IR.
-  use slo <- result.try(
-    ir.get_slo_fields(ir.artifact_data)
-    |> option.to_result(GeneratorTerraformResolutionError(
-      vendor: constants.vendor_honeycomb,
-      msg: "expectation '" <> identifier <> "' - missing SLO artifact data",
-      context: errors.empty_context(),
-    )),
-  )
+  use slo <- result.try(generator_utils.require_slo_fields(
+    ir,
+    vendor: constants.vendor_honeycomb,
+  ))
   let threshold = slo.threshold
   let window_in_days = slo.window_in_days
   let indicators = slo.indicators
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline
   // by substituting indicator names into the evaluation formula.
-  use evaluation_expr <- result.try(
-    slo.evaluation
-    |> option.to_result(GeneratorTerraformResolutionError(
-      vendor: constants.vendor_honeycomb,
-      msg: "expectation '"
-        <> identifier
-        <> "' - missing evaluation for Honeycomb SLO",
-      context: errors.empty_context(),
-    )),
-  )
-  use sli_expression <- result.try(
-    cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
-    |> result.map_error(fn(err) {
-      GeneratorTerraformResolutionError(
-        vendor: constants.vendor_honeycomb,
-        msg: "expectation '" <> identifier <> "' - " <> err,
-        context: errors.empty_context(),
-      )
-    }),
-  )
+  use evaluation_expr <- result.try(generator_utils.require_evaluation(
+    slo,
+    ir,
+    vendor: constants.vendor_honeycomb,
+  ))
+  use sli_expression <- result.try(generator_utils.resolve_cql_expression(
+    evaluation_expr,
+    indicators,
+    ir,
+    vendor: constants.vendor_honeycomb,
+  ))
 
   let time_period = window_to_time_period(window_in_days)
 
@@ -160,7 +143,7 @@ pub fn ir_to_terraform_resources(
     )
 
   // Resource 2: honeycombio_slo.
-  let slo_description = build_description(ir)
+  let slo_description = generator_utils.build_description(ir)
   let slo_attributes = [
     #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
     #("description", hcl.StringLiteral(slo_description)),
@@ -185,26 +168,6 @@ pub fn ir_to_terraform_resources(
     )
 
   Ok([derived_column, slo])
-}
-
-/// Build a description string for the SLO.
-fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case ir.get_slo_fields(ir.artifact_data) {
-    option.Some(slo) -> slo.runbook
-    option.None -> option.None
-  }
-
-  case runbook {
-    option.Some(url) -> "[Runbook](" <> url <> ")"
-    option.None ->
-      "Managed by Caffeine ("
-      <> ir.metadata.org_name
-      <> "/"
-      <> ir.metadata.team_name
-      <> "/"
-      <> ir.metadata.service_name
-      <> ")"
-  }
 }
 
 /// Build tags as a map expression for Honeycomb.
