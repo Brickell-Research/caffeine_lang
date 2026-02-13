@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "4f857da13643",
+  "session_id": "8bd921dd-077e-47e5-b14e-cb7a9406cf15",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-13T23:59:57.869162Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "caffeine_lsp/src/caffeine_lsp/code_actions.gleam",
+    "caffeine_lsp/src/caffeine_lsp/definition.gleam",
+    "caffeine_lsp/src/caffeine_lsp/diagnostics.gleam",
+    "lsp_server.ts"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "9aee3147-ee66-4ee9-a13a-c4dea542a5f2",
+  "checkpoint_transcript_start": 338,
+  "transcript_lines_at_start": 338,
+  "token_usage": {
+    "input_tokens": 25,
+    "cache_creation_tokens": 95877,
+    "cache_read_tokens": 1130358,
+    "output_tokens": 99,
+    "api_call_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-13T23:59:56.760446Z",
+    "agent_lines": 0,
+    "human_added": 16,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 16,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst-BrickellResearch-caffeine/8bd921dd-077e-47e5-b14e-cb7a9406cf15.jsonl"
+}

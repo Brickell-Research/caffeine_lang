@@ -38,7 +38,11 @@
     "caffeine_lsp/build/packages/gleam_stdlib/README.md",
     "caffeine_lsp/build/packages/gleeunit/README.md",
     "caffeine_lsp/build/packages/terra_madre/LICENSE",
-    "caffeine_lsp/build/packages/terra_madre/README.md"
+    "caffeine_lsp/build/packages/terra_madre/README.md",
+    "caffeine_lsp/src/caffeine_lsp/code_actions.gleam",
+    "caffeine_lsp/src/caffeine_lsp/definition.gleam",
+    "caffeine_lsp/src/caffeine_lsp/diagnostics.gleam",
+    "lsp_server.ts"
   ],
   "sessions": [
     {
@@ -54,13 +58,20 @@
       "context": "/4f/857da13643/1/context.md",
       "content_hash": "/4f/857da13643/1/content_hash.txt",
       "prompt": "/4f/857da13643/1/prompt.txt"
+    },
+    {
+      "metadata": "/4f/857da13643/2/metadata.json",
+      "transcript": "/4f/857da13643/2/full.jsonl",
+      "context": "/4f/857da13643/2/context.md",
+      "content_hash": "/4f/857da13643/2/content_hash.txt",
+      "prompt": "/4f/857da13643/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 21,
-    "cache_creation_tokens": 44937,
-    "cache_read_tokens": 1003004,
-    "output_tokens": 163,
-    "api_call_count": 15
+    "input_tokens": 46,
+    "cache_creation_tokens": 140814,
+    "cache_read_tokens": 2133362,
+    "output_tokens": 262,
+    "api_call_count": 24
   }
 }
