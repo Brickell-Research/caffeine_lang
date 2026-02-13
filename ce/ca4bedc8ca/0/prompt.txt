@@ -1,0 +1,465 @@
+ok, is the team agent feature for claude enabled?
+
+---
+
+yes, but first tests are failing now
+
+---
+
+I see this Run cd caffeine_lang && gleam test
+  Compiling caffeine_lang
+   Compiled in 1.31s
+    Running caffeine_lang_test.main
+................................................
+panic src/gleeunit/should.gleam:10
+ test: caffeine_lang@compiler_test.compile_test
+ info: 
+Ok("terraform {\n  required_providers {\n    datadog = {\n      source = \"DataDog/datadog\"\n      version = \"~> 3.0\"\n    }\n  }\n}\n\nprovider \"datadog\" {\n  api_key = var.datadog_api_key\n  app_key = var.datadog_app_key\n}\n\nvariable \"datadog_api_key\" {\n  description = \"Datadog API key\"\n  sensitive = true\n  type = string\n}\n\nvariable \"datadog_app_key\" {\n  description = \"Datadog Application key\"\n  sensitive = true\n  type = string\n}\n\n# Caffeine: acme.platform.slos.auth_service_availability (blueprint: api_availability)\nresource \"datadog_service_level_objective\" \"acme_slos_auth_service_availability\" {\n  name = \"auth_service_availability\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:platform\",\n    \"service:slos\",\n    \"blueprint:api_availability\",\n    \"expectation:auth_service_availability\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:auth-service\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.requests{env:production,service:auth-service}\"\n    numerator = \"sum:http.requests{env:production,service:auth-service,!status:5xx}\"\n  }\n  thresholds {\n    target = 99.99\n    timeframe = \"30d\"\n  }\n}\n\n# Caffeine: acme.payments.slos.checkout_availability (blueprint: api_availability)\nresource \"datadog_service_level_objective\" \"acme_slos_checkout_availability\" {\n  name = \"checkout_availability\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:payments\",\n    \"service:slos\",\n    \"blueprint:api_availability\",\n    \"expectation:checkout_availability\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:checkout-api\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.requests{env:production,service:checkout-api}\"\n    numerator = \"sum:http.requests{env:production,service:checkout-api,!status:5xx}\"\n  }\n  thresholds {\n    target = 99.95\n    timeframe = \"30d\"\n  }\n}\n\n# Caffeine: acme.payments.slos.checkout_latency_p99 (blueprint: api_latency_p99)\nresource \"datadog_service_level_objective\" \"acme_slos_checkout_latency_p99\" {\n  name = \"checkout_latency_p99\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:payments\",\n    \"service:slos\",\n    \"blueprint:api_latency_p99\",\n    \"expectation:checkout_latency_p99\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:checkout-api\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.latency.p99{env:production,service:checkout-api}\"\n    numerator = \"sum:http.latency.p99{env:production,service:checkout-api,le:500}\"\n  }\n  thresholds {\n    target = 99.0\n    timeframe = \"7d\"\n  }\n}\n")
+should equal
+Ok("terraform {\n  required_providers {\n    datadog = {\n      source = \"DataDog/datadog\"\n      version = \"~> 3.0\"\n    }\n  }\n}\n\nprovider \"datadog\" {\n  api_key = var.datadog_api_key\n  app_key = var.datadog_app_key\n}\n\nvariable \"datadog_api_key\" {\n  description = \"Datadog API key\"\n  sensitive = true\n  type = string\n}\n\nvariable \"datadog_app_key\" {\n  description = \"Datadog Application key\"\n  sensitive = true\n  type = string\n}\n\n# Caffeine: acme.payments.slos.checkout_availability (blueprint: api_availability)\nresource \"datadog_service_level_objective\" \"acme_slos_checkout_availability\" {\n  name = \"checkout_availability\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:payments\",\n    \"service:slos\",\n    \"blueprint:api_availability\",\n    \"expectation:checkout_availability\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:checkout-api\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.requests{env:production,service:checkout-api}\"\n    numerator = \"sum:http.requests{env:production,service:checkout-api,!status:5xx}\"\n  }\n  thresholds {\n    target = 99.95\n    timeframe = \"30d\"\n  }\n}\n\n# Caffeine: acme.payments.slos.checkout_latency_p99 (blueprint: api_latency_p99)\nresource \"datadog_service_level_objective\" \"acme_slos_checkout_latency_p99\" {\n  name = \"checkout_latency_p99\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:payments\",\n    \"service:slos\",\n    \"blueprint:api_latency_p99\",\n    \"expectation:checkout_latency_p99\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:checkout-api\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.latency.p99{env:production,service:checkout-api}\"\n    numerator = \"sum:http.latency.p99{env:production,service:checkout-api,le:500}\"\n  }\n  thresholds {\n    target = 99.0\n    timeframe = \"7d\"\n  }\n}\n\n# Caffeine: acme.platform.slos.auth_service_availability (blueprint: api_availability)\nresource \"datadog_service_level_objective\" \"acme_slos_auth_service_availability\" {\n  name = \"auth_service_availability\"\n  tags = [\n    \"managed_by:caffeine\",\n    \"caffeine_version:4.4.0\",\n    \"org:acme\",\n    \"team:platform\",\n    \"service:slos\",\n    \"blueprint:api_availability\",\n    \"expectation:auth_service_availability\",\n    \"artifact:SLO\",\n    \"env:production\",\n    \"service:auth-service\",\n    \"vendor:datadog\",\n  ]\n  type = \"metric\"\n\n  query {\n    denominator = \"sum:http.requests{env:production,service:auth-service}\"\n    numerator = \"sum:http.requests{env:production,service:auth-service,!status:5xx}\"\n  }\n  thresholds {\n    target = 99.99\n    timeframe = \"30d\"\n  }\n}\n")
+
+---
+
+yep do this
+
+---
+
+ok, now can you kick off a bunch of teams to go INDEPTH with assume/guarantee ideas? Our SLO approach + dependency mapping can get us pretty close to a model where _measurable_ assumes can be explicitly stated here I think.
+
+---
+
+how are the agents doing?
+
+---
+
+<teammate-message teammate_id="industry-researcher" color="yellow" summary="Complete industry SLO dependency research report">
+## Industry SLO Dependency & Error Budget Research — Complete
+
+Here's a comprehensive synthesis of industry practices around SLO dependencies, cascading failures, error budget reasoning, and composable reliability contracts.
+
+---
+
+### 1. Google SRE Practices
+
+**Error Budget Policy (SRE Workbook Ch. "Error Budget Policy"):**
+- An error budget = `1 - SLO`. A 99.9% SLO → 0.1% error budget.
+- **Core rule**: If error budget is exhausted in a 4-week window, all releases halt except P0/security fixes until SLO is restored.
+- **Dependency carve-out**: Teams may continue non-reliability work *if* the outage was caused by another team's service, and *that team* has themselves frozen releases.
+- **Escalation**: If a dependency outside your control consumes the bulk of your error budget, you must engage the dependency owner, showing SLI metrics and negotiating reliability improvements or resilience changes.
+- **Velocity tension**: "Error budgets balance service reliability with the pace of innovation. Changes cause ~70% of outages."
+- **Postmortem trigger**: If a single incident consumes >20% of the 4-week budget.
+
+**SLO-Based Alerting (SRE Workbook Ch. "Alerting on SLOs"):**
+- **Multi-window multi-burn-rate** is the recommended approach:
+  - Burn rate = how fast error budget depletes. 1x = exhausts in 30 days, 10x = exhausts in 3 days.
+  - Budget consumption = `(burn_rate × window_size) / period`
+  - **Recommended thresholds (99.9% SLO)**:
+    | Severity | Long Window | Short Window | Burn Rate | Budget Impact |
+    |----------|-------------|--------------|-----------|---------------|
+    | Page     | 1 hour      | 5 minutes    | 14.4x     | 2%            |
+    | Page     | 6 hours     | 30 minutes   | 6x        | 5%            |
+    | Ticket   | 3 days      | 6 hours      | 1x        | 10%           |
+  - Short window ≈ 1/12 of long window, ensures problem is *actively ongoing*, not residual.
+- **No dependency-aware alerting discussed** — Google's alerting docs focus on individual service SLOs.
+
+**Dependency SLOs (Google CRE Blog, SRE Book):**
+- "When modeling risk from a dependency, you can use its published SLO, or observed/historical performance instead — SLOs tend to be conservative and will overestimate risk."
+- **Hard vs Soft dependencies**: Hard dependency outage = your service is out. Soft dependency outage = no impact if designed correctly.
+- Key recommendation: "Think about what level of service your *users* need, not what SLO you can *achieve* given dependencies."
+- "If a dependency causes frequent SLO violations, either mitigate the risk from it, or mitigate *other* risks to free up error budget."
+- **No composite SLO mechanism in the SRE books** — dependency reasoning is manual/analytical, not automated.
+
+---
+
+### 2. Algebraic SLO Composition — The Math
+
+**Sources**: Alex Ewerlöf's composite SLO articles, "The Calculus of Service Availability" (ACM Queue/Communications)
+
+**Serial Dependencies (Critical Path):**
+```
+P(system) = P(A) × P(B) × P(C)
+```
+Example: 99.8% × 95.3% = 95.1% composite availability.
+- **Ceiling theorem**: A system *cannot be more reliable than its least reliable critical dependency*. Each serial dependency makes the composite worse.
+- **Fan-out amplification**: N serial dependencies at 99.9% each → 99.9%^N. At N=10, that's 99.0%. At N=100, it's 90.5%.
+
+**Parallel Dependencies (Redundant Paths):**
+```
+P(system_down) = P(A_down) × P(B_down)
+```
+Or equivalently: `P(system) = 1 - (1-P(A)) × (1-P(B))`
+Example: Two paths at 99.8% and 95.3% error budgets (0.2% and 4.7% unavailability) → 0.0094% downtime → 99.9906% availability.
+
+**The Calculus of Service Availability (ACM):**
+- "A service cannot be more available than the intersection of all its critical dependencies."
+- If N unique critical deps, each contributes 1/N to dependency-induced unavailability, **regardless of depth** in the hierarchy.
+- `Availability = MTTF / (MTTF + MTTR)` — fundamental definition.
+
+**Correlated vs Independent Failures:**
+- All multiplication formulas assume **independent failures**. In reality, correlation is never zero (shared infrastructure, shared region, shared deployment pipeline).
+- "Three copies in three distributed instances provides theoretical 1 − 0.01³ (nine 9s) if independent; actual availability is much higher than three 9s but nowhere close to nine 9s."
+- **Implication for DSL**: Any composition algebra needs a "correlation factor" or at least an acknowledgment that pure multiplication is optimistic for parallel and pessimistic for serial deps.
+
+**Partial Dependencies / Degraded Mode:**
+- Not all dependencies affect all operations. Browser can serve cached content without API, API can serve some endpoints without auth service.
+- **This maps directly to Caffeine's model**: A service might have hard deps (serial) and soft deps (parallel/fallback), and the composite SLO differs by operation/user journey.
+
+---
+
+### 3. SLO-as-Code Tools
+
+**OpenSLO (openslo.com, v1.0 spec):**
+- YAML-based, vendor-neutral SLO specification, Apache 2 licensed.
+- **7 resource types**: DataSource, SLI, SLO, Service, AlertPolicy, AlertCondition, AlertNotificationTarget.
+- SLO spec supports multiple objectives with individual indicators, `compositeWeight` field (default 1), and `budgetingMethod` (Occurrences, Timeslices, RatioTimeslices).
+- **No dependency/relationship fields** between SLOs or services. No mechanism to declare "this SLO depends on that SLO."
+- Composite SLO = multiple objectives within a single SLO document, weighted by `compositeWeight`.
+
+**Sloth (github.com/slok/sloth):**
+- Prometheus SLO generator, supports OpenSLO + Kubernetes CRDs.
+- Generates Prometheus recording rules + alerting rules from SLO specs.
+- CRD: `PrometheusServiceLevel` with `Service`, `SLOs[]`, each SLO has `Objective`, `SLI` (Events/Plugin/Raw).
+- **No dependency features whatsoever** — purely per-service SLO definitions.
+
+**Nobl9:**
+- **Composite SLO 1.0 & 2.0** — most advanced dependency-aware SLO tooling found:
+  - Combine up to 12 individual SLOs into one composite, weighted by impact.
+  - Composite error budget burns if *any* component objective is burning.
+  - Weighting example: `(99% × 40% + 98% × 30% + 95% × 20% + 97% × 10%) × 100 = 97.7%`
+  - Multi-window, multi-burn-rate alerting on composites (recommend 2x burn for 1hr, or <10% remaining budget).
+  - Composite SLO 2.0 (Dec 2024): Hierarchical aggregation across teams/projects, cross-data-source (Dynatrace + CloudWatch + etc.).
+- **Still no explicit "assumes" declarations** — weighting is manual, no formal dependency graph.
+
+**Grafana SLO Terraform Provider:**
+- Auto-generates recording rules, dashboards, and alerts from SLO definition.
+- No composite/dependency features.
+
+**Harness SRM:**
+- SLO as code via Terraform, GitHub storage.
+- No dependency composition features.
+
+**Google SLO Generator (github.com/GoogleCloudPlatform/slo-monitoring-using-terraform):**
+- Terraform-based SLO provisioning for Google Cloud Monitoring.
+- No dependency features.
+
+**Key Gap Across All Tools**: **None of them support declarative dependency assumptions.** You can weight and compose SLOs, but you cannot declare "I assume my database provides p99 < 50ms" and have the system validate that assumption or compute your achievable SLO.
+
+---
+
+### 4. Runtime Validation & Dependency Health
+
+**Circuit Breakers as Implicit Assume/Guarantee:**
+- A circuit breaker *implicitly encodes* the assumption "my dependency responds within X ms with < Y% errors."
+- Three states: Closed (assumption holds), Open (assumption violated → fast-fail), Half-Open (testing recovery).
+- **Key insight for Caffeine**: Circuit breaker thresholds ARE dependency assumptions. They're just not declared alongside SLOs — they're buried in service code. A DSL could unify these.
+
+**Netflix Adaptive Concurrency Limits:**
+- Based on TCP congestion control (AIMD, Vegas, Gradient algorithms).
+- Uses **Little's Law**: `Limit = Average_RPS × Average_Latency`.
+- **Server limiter**: Protects from increased traffic OR latency spikes from dependencies.
+- The Gradient algorithm: `gradient = RTT_noload / RTT_actual`. Value of 1 = no queueing (increase limit). Value < 1 = queue forming (decrease limit).
+- **This is runtime validation of an implicit assumption**: "my server can handle N concurrent requests given current dependency latency."
+
+**Netflix Service-Level Prioritized Load Shedding (2024-2025):**
+- Four priority buckets: CRITICAL, DEGRADED, BEST_EFFORT, BULK.
+- **Rephrases SLOs as utilization thresholds**: If CPU > 60%, shed BEST_EFFORT; if CPU > 80%, shed DEGRADED.
+- Priority propagated downstream via request headers — upstream can't escalate, only degrade.
+- **Key pattern for Caffeine**: This is an explicit guarantee: "I guarantee CRITICAL traffic meets SLO up to 80% utilization; DEGRADED traffic guaranteed only up to 60%."
+
+**Amazon Dependency Isolation (AWS Builders Library):**
+- **Bulkhead pattern**: Partition resources per dependency to prevent one slow dependency from consuming all capacity.
+- Little's Law applied: `Concurrency = arrival_rate × latency`. Slow dependency → higher concurrency → exhausted resources.
+- **Runtime detection**: When concurrency per dependency exceeds bulkhead limit, the system fast-fails rather than cascading.
+- Configuration should be changeable at runtime, not just startup.
+
+**Adaptive Load Shedding (Agoda, Uber):**
+- Service monitors its own CPU/latency/concurrency and sheds load dynamically.
+- Backpressure signals inform upstream to slow down.
+- Uber's implementation (2024): Dynamic, per-service load shedding based on real-time capacity metrics.
+
+---
+
+### 5. Academic & Industry Papers
+
+**"The Calculus of Service Availability" (ACM Queue, Ben Treynor Sloss et al.):**
+- Most comprehensive treatment of dependency math for SLOs.
+- Key formula: composite availability bounded by product of critical dependencies.
+- Addresses correlated failures, MTTF/MTTR, and practical dependency management.
+
+**"CASLO: Joint Scaling and Deployment for Microservices Leveraging Context-Aware SLO Assignment" (ScienceDirect 2025):**
+- Academic paper on context-aware SLO assignment that adapts to microservice scaling decisions.
+
+**USENIX OSDI Paper on SLO Violation Mitigation:**
+- Application-architecture-agnostic framework using multilevel ML models for fine-grained resource management to prevent SLO violations.
+
+**"Assume-Guarantee Verification for Distributed Systems" (UCL/Prism):**
+- Formal verification: if rest of system fulfills a process's assumption, that process must ensure its local guarantee.
+- Enables: decentralized synthesis, information integrity (no sharing beyond contract), decoupled maintenance.
+
+**WS-Agreement and WSLA Specifications (SEI/CMU):**
+- Formal SLA languages for SOA. "Usually, no hard guarantees are given; SLOs are only outlined and not specified formally."
+- This is exactly the gap Caffeine can fill.
+
+**Service Mesh Observability (Istio/Envoy):**
+- Automatic service dependency discovery via sidecar proxies.
+- Every request generates latency/error/traffic metrics per dependency.
+- Distributed tracing shows call flows and dependency contribution to latency.
+- **Enables** runtime validation of assumptions but doesn't *declare* them.
+
+---
+
+### 6. Practical Challenges
+
+**Shared Dependencies:**
+- Database used by 50 services = one failure affects all 50. Standard serial composition math applies: each service independently multiplies the DB's unavailability into their SLO.
+- Runtime coupling: long transaction in one service locks table for all others.
+- **For the DSL**: Need to model shared resources explicitly so the system can warn: "10 services assume Database X provides 99.99%, but Database X's published SLO is 99.95%."
+
+**Transitive Dependencies:**
+- If A→B→C, what does A assume about C? Two approaches:
+  1. **A only assumes about B** (B's guarantee encapsulates C's behavior) — cleaner, but B must accurately model its own dependencies.
+  2. **A explicitly declares assumptions about C** — more transparent, but couples A to B's implementation.
+- Google recommends: "Model each dependency's risk individually, regardless of depth in the hierarchy."
+
+**Fan-Out Amplification:**
+- Restrict fan-out to ~10 direct dependencies with max 2 levels of composition to stay manageable (~100 services).
+- Each new serial dependency degrades composite SLO multiplicatively.
+
+**Version Skew & Rolling Deployments:**
+- During rolling deploys, different versions may provide different guarantees.
+- "Changes are a major source of instability, representing ~70% of outages."
+
+**Correlated Failures:**
+- Pure multiplication formulas assume independence. Real systems have correlated failure modes (shared AZ, shared control plane, shared deploy pipeline).
+- No practical tooling handles this automatically — it requires human judgment.
+
+---
+
+### Summary: Key Takeaways for Caffeine's Assume/Guarantee Design
+
+1. **The math is well-established** (serial = multiply, parallel = 1-product-of-failures, ceiling theorem) but **no tool codifies it declaratively alongside SLO definitions**.
+
+2. **The industry gap** is between: (a) SLO definitions (what you promise) and (b) dependency assumptions (what you need). These live in different systems: SLO tools vs circuit breaker configs vs load shedding thresholds vs service mesh telemetry.
+
+3. **Nobl9 Composite SLO 2.0** is closest to what we want but still lacks explicit "assumes" declarations — it only composes observed SLOs with weights.
+
+4. **OpenSLO has no dependency model at all** — but its YAML structure is the closest to what Caffeine's syntax might look like for the SLO-as-code aspect.
+
+5. **Circuit breakers, concurrency limits, and load shedding thresholds are implicit dependency assumptions** — Caffeine can make these explicit and first-class.
+
+6. **Correlated failures** are the hardest unsolved problem — pure algebraic composition is too optimistic for parallel and too pessimistic for some serial scenarios.
+
+7. **The "Calculus of Service Availability"** principle — "each critical dependency contributes 1/N to unavailability regardless of depth" — is a powerful simplification Caffeine could codify.
+
+8. **Netflix's priority propagation** (CRITICAL/DEGRADED/BEST_EFFORT/BULK with downstream headers) is a form of assume/guarantee: "I guarantee this SLO for CRITICAL traffic, given utilization stays below X%."
+
+Task #3 is complete. Ready for next assignment.
+
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="industry-researcher" color="yellow">
+{"type":"idle_notification","from":"industry-researcher","timestamp":"2026-02-13T23:34:42.205Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="industry-researcher" color="yellow" summary="Re-sending full industry SLO research report">
+I already sent you the full research report in my previous message — it should be in your inbox. But here it is again in full:
+
+## Industry SLO Dependency & Error Budget Research — Complete
+
+---
+
+### 1. Google SRE Practices
+
+**Error Budget Policy (SRE Workbook Ch. "Error Budget Policy"):**
+- An error budget = `1 - SLO`. A 99.9% SLO → 0.1% error budget.
+- **Core rule**: If error budget is exhausted in a 4-week window, all releases halt except P0/security fixes until SLO is restored.
+- **Dependency carve-out**: Teams may continue non-reliability work *if* the outage was caused by another team's service, and *that team* has themselves frozen releases.
+- **Escalation**: If a dependency outside your control consumes the bulk of your error budget, you must engage the dependency owner, showing SLI metrics and negotiating reliability improvements or resilience changes.
+- **Velocity tension**: "Error budgets balance service reliability with the pace of innovation. Changes cause ~70% of outages."
+- **Postmortem trigger**: If a single incident consumes >20% of the 4-week budget.
+
+**SLO-Based Alerting (SRE Workbook Ch. "Alerting on SLOs"):**
+- **Multi-window multi-burn-rate** is the recommended approach:
+  - Burn rate = how fast error budget depletes. 1x = exhausts in 30 days, 10x = exhausts in 3 days.
+  - Budget consumption = `(burn_rate × window_size) / period`
+  - **Recommended thresholds (99.9% SLO)**:
+    | Severity | Long Window | Short Window | Burn Rate | Budget Impact |
+    |----------|-------------|--------------|-----------|---------------|
+    | Page     | 1 hour      | 5 minutes    | 14.4x     | 2%            |
+    | Page     | 6 hours     | 30 minutes   | 6x        | 5%            |
+    | Ticket   | 3 days      | 6 hours      | 1x        | 10%           |
+  - Short window ≈ 1/12 of long window, ensures problem is *actively ongoing*, not residual.
+- **No dependency-aware alerting discussed** — Google's alerting docs focus on individual service SLOs only.
+
+**Dependency SLOs (Google CRE Blog, SRE Book):**
+- "When modeling risk from a dependency, you can use its published SLO, or observed/historical performance instead — SLOs tend to be conservative and will overestimate risk."
+- **Hard vs Soft dependencies**: Hard dependency outage = your service is out. Soft dependency outage = no impact if designed correctly.
+- Key recommendation: "Think about what level of service your *users* need, not what SLO you can *achieve* given dependencies."
+- "If a dependency causes frequent SLO violations, either mitigate the risk from it, or mitigate *other* risks to free up error budget."
+- **No composite SLO mechanism in the SRE books** — dependency reasoning is manual/analytical, not automated.
+
+---
+
+### 2. Algebraic SLO Composition — The Math
+
+**Sources**: Alex Ewerlöf's composite SLO articles, "The Calculus of Service Availability" (ACM Queue/Communications)
+
+**Serial Dependencies (Critical Path):**
+```
+P(system) = P(A) × P(B) × P(C)
+```
+Example: 99.8% × 95.3% = 95.1% composite availability.
+- **Ceiling theorem**: A system *cannot be more reliable than its least reliable critical dependency*. Each serial dependency makes the composite worse.
+- **Fan-out amplification**: N serial dependencies at 99.9% each → 99.9%^N. At N=10, that's 99.0%. At N=100, it's 90.5%.
+
+**Parallel Dependencies (Redundant Paths):**
+```
+P(system_down) = P(A_down) × P(B_down)
+```
+Or equivalently: `P(system) = 1 - (1-P(A)) × (1-P(B))`
+Example: Two paths at 99.8% and 95.3% → 0.2% × 4.7% = 0.0094% downtime → 99.9906% availability.
+
+**The Calculus of Service Availability (ACM, Ben Treynor Sloss et al.):**
+- "A service cannot be more available than the intersection of all its critical dependencies."
+- If N unique critical deps, each contributes 1/N to dependency-induced unavailability, **regardless of depth** in the hierarchy.
+- `Availability = MTTF / (MTTF + MTTR)` — fundamental definition.
+
+**Correlated vs Independent Failures:**
+- All multiplication formulas assume **independent failures**. In reality, correlation is never zero (shared infrastructure, shared region, shared deployment pipeline).
+- "Three copies in three distributed instances provides theoretical 1 − 0.01³ (nine 9s) if independent; actual availability is much higher than three 9s but nowhere close to nine 9s."
+- **Implication for DSL**: Any composition algebra needs a "correlation factor" or at least an acknowledgment that pure multiplication is optimistic for parallel and pessimistic for serial deps.
+
+**Partial Dependencies / Degraded Mode:**
+- Not all dependencies affect all operations. Browser can serve cached content without API, API can serve some endpoints without auth service.
+- A service might have hard deps (serial) and soft deps (parallel/fallback), and the composite SLO differs by operation/user journey.
+
+---
+
+### 3. SLO-as-Code Tools
+
+**OpenSLO (openslo.com, v1.0 spec):**
+- YAML-based, vendor-neutral SLO specification, Apache 2 licensed.
+- **7 resource types**: DataSource, SLI, SLO, Service, AlertPolicy, AlertCondition, AlertNotificationTarget.
+- SLO spec supports multiple objectives with individual indicators, `compositeWeight` field (default 1), and `budgetingMethod` (Occurrences, Timeslices, RatioTimeslices).
+- **No dependency/relationship fields** between SLOs or services. No mechanism to declare "this SLO depends on that SLO."
+
+**Sloth (github.com/slok/sloth):**
+- Prometheus SLO generator, supports OpenSLO + Kubernetes CRDs.
+- Generates Prometheus recording rules + alerting rules from SLO specs.
+- CRD: `PrometheusServiceLevel` with `Service`, `SLOs[]`, each with `Objective`, `SLI` (Events/Plugin/Raw).
+- **No dependency features whatsoever** — purely per-service SLO definitions.
+
+**Nobl9:**
+- **Composite SLO 1.0 & 2.0** — most advanced dependency-aware SLO tooling found:
+  - Combine up to 12 individual SLOs into one composite, weighted by impact.
+  - Composite error budget burns if *any* component objective is burning.
+  - Weighting example: `(99% × 40% + 98% × 30% + 95% × 20% + 97% × 10%) × 100 = 97.7%`
+  - Multi-window, multi-burn-rate alerting on composites.
+  - Composite SLO 2.0 (Dec 2024): Hierarchical aggregation across teams/projects, cross-data-source.
+- **Still no explicit "assumes" declarations** — weighting is manual, no formal dependency graph.
+
+**Grafana, Harness SRM, Google SLO Generator:**
+- All support SLO-as-code via Terraform but **none have dependency composition features**.
+
+**Key Gap Across All Tools**: **None support declarative dependency assumptions.** You can weight and compose SLOs, but you cannot declare "I assume my database provides p99 < 50ms" and have the system validate that assumption or compute your achievable SLO.
+
+---
+
+### 4. Runtime Validation & Dependency Health
+
+**Circuit Breakers as Implicit Assume/Guarantee:**
+- A circuit breaker *implicitly encodes* the assumption "my dependency responds within X ms with < Y% errors."
+- Three states: Closed (assumption holds), Open (assumption violated → fast-fail), Half-Open (testing recovery).
+- **Key insight**: Circuit breaker thresholds ARE dependency assumptions — just not declared alongside SLOs. A DSL could unify these.
+
+**Netflix Adaptive Concurrency Limits:**
+- Based on TCP congestion control (AIMD, Vegas, Gradient algorithms).
+- Uses **Little's Law**: `Limit = Average_RPS × Average_Latency`.
+- The Gradient algorithm: `gradient = RTT_noload / RTT_actual`. Value of 1 = no queueing → increase limit. Value < 1 = queue forming → decrease limit.
+- **This is runtime validation of an implicit assumption**: "my server can handle N concurrent requests given current dependency latency."
+
+**Netflix Service-Level Prioritized Load Shedding (2024-2025):**
+- Four priority buckets: CRITICAL, DEGRADED, BEST_EFFORT, BULK.
+- **Rephrases SLOs as utilization thresholds**: CPU > 60% → shed BEST_EFFORT; CPU > 80% → shed DEGRADED.
+- Priority propagated downstream via request headers — upstream can't escalate, only degrade.
+- **This is an explicit guarantee**: "I guarantee CRITICAL traffic meets SLO up to 80% utilization."
+
+**Amazon Dependency Isolation (AWS Builders Library):**
+- **Bulkhead pattern**: Partition resources per dependency to prevent one slow dependency from consuming all capacity.
+- Little's Law: `Concurrency = arrival_rate × latency`. Slow dependency → higher concurrency → exhausted resources.
+- When concurrency per dependency exceeds bulkhead limit, fast-fail rather than cascade.
+
+**Datadog Service Map:**
+- Visualizes upstream/downstream service dependencies affecting SLOs.
+- Composite monitors combine burn rate monitors with logical OR.
+- **No declarative dependency SLO** — purely observational.
+
+**Dynatrace Service Flow:**
+- Real-time dependency mapping and fault-tree analysis for root cause.
+- SLOs "directly or indirectly connected" to services.
+- **No declarative assumptions** — runtime intelligence only.
+
+---
+
+### 5. Academic & Industry Papers
+
+**"The Calculus of Service Availability" (ACM Queue):**
+- Most comprehensive treatment of dependency math for SLOs. Composite availability bounded by product of critical dependencies.
+
+**"Assume-Guarantee Verification for Distributed Systems" (UCL/Prism):**
+- If rest of system fulfills a process's assumption, that process must ensure its local guarantee.
+- Enables: decentralized synthesis, information integrity, decoupled maintenance.
+
+**WS-Agreement and WSLA (SEI/CMU):**
+- Formal SLA languages for SOA. "Usually, no hard guarantees are given; SLOs are only outlined and not specified formally." — **exactly the gap Caffeine can fill.**
+
+**Service Mesh Observability (Istio/Envoy):**
+- Automatic dependency discovery. Every request generates latency/error/traffic metrics per dependency.
+- **Enables** runtime validation of assumptions but doesn't *declare* them.
+
+---
+
+### 6. Practical Challenges
+
+**Shared Dependencies:** Database used by 50 services = one failure affects all 50. Need to model shared resources explicitly so the system can warn: "10 services assume Database X provides 99.99%, but Database X's published SLO is 99.95%."
+
+**Transitive Dependencies (A→B→C):** Two approaches: (1) A only assumes about B (B encapsulates C) — cleaner; (2) A explicitly declares assumptions about C — more transparent but couples. Google recommends modeling each dependency's risk individually regardless of depth.
+
+**Fan-Out Amplification:** Restrict to ~10 direct dependencies with max 2 levels to stay manageable.
+
+**Correlated Failures:** Pure multiplication assumes independence. Real systems have correlated failure modes. No practical tooling handles this automatically.
+
+---
+
+### Summary: 8 Key Takeaways for Caffeine
+
+1. **The math is well-established** but **no tool codifies it declaratively alongside SLO definitions**.
+2. **The industry gap** is between SLO definitions (what you promise) and dependency assumptions (what you need) — these live in different systems.
+3. **Nobl9 Composite SLO 2.0** is closest but still lacks explicit "assumes" declarations.
+4. **OpenSLO has no dependency model at all** — but its YAML structure is a reference point.
+5. **Circuit breakers, concurrency limits, and load shedding thresholds are implicit dependency assumptions** — Caffeine can make these explicit and first-class.
+6. **Correlated failures** are the hardest unsolved problem.
+7. **"Each critical dependency contributes 1/N to unavailability regardless of depth"** (Calculus of Service Availability) — a powerful simplification Caffeine could codify.
+8. **Netflix's priority propagation** is a form of assume/guarantee: "I guarantee this SLO for CRITICAL traffic, given utilization < X%."
+
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="industry-researcher" color="yellow">
+{"type":"idle_notification","from":"industry-researcher","timestamp":"2026-02-13T23:36:09.574Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"industry-researcher has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="industry-researcher" color="yellow">
+{"type":"shutdown_approved","requestId":"shutdown-1771025779801@industry-researcher","from":"industry-researcher","timestamp":"2026-02-13T23:36:24.073Z","paneId":"%58","backendType":"tmux"}
+</teammate-message>

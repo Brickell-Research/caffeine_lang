@@ -1,0 +1,55 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "ceca4bedc8ca",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    ".claude/settings.local.json",
+    "caffeine_cli/.claude/settings.local.json",
+    "caffeine_cli/build/packages/argv/README.md",
+    "caffeine_cli/build/packages/envoy/README.md",
+    "caffeine_cli/build/packages/filepath/README.md",
+    "caffeine_cli/build/packages/gleam_community_ansi/README.md",
+    "caffeine_cli/build/packages/gleam_community_colour/README.md",
+    "caffeine_cli/build/packages/gleam_json/README.md",
+    "caffeine_cli/build/packages/gleam_regexp/README.md",
+    "caffeine_cli/build/packages/gleam_stdlib/README.md",
+    "caffeine_cli/build/packages/gleeunit/README.md",
+    "caffeine_cli/build/packages/glint/LICENSE",
+    "caffeine_cli/build/packages/glint/README.md",
+    "caffeine_cli/build/packages/simplifile/README.md",
+    "caffeine_cli/build/packages/snag/README.md",
+    "caffeine_cli/build/packages/terra_madre/LICENSE",
+    "caffeine_cli/build/packages/terra_madre/README.md",
+    "caffeine_lang/.claude/settings.local.json",
+    "caffeine_lang/build/packages/filepath/README.md",
+    "caffeine_lang/build/packages/gleam_stdlib/README.md",
+    "caffeine_lang/build/packages/gleeunit/README.md",
+    "caffeine_lang/build/packages/simplifile/README.md",
+    "caffeine_lang/build/packages/terra_madre/LICENSE",
+    "caffeine_lang/build/packages/terra_madre/README.md",
+    "caffeine_lang/src/caffeine_lang/compiler.gleam",
+    "caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_output.tf",
+    "caffeine_lsp/build/packages/gleam_stdlib/README.md",
+    "caffeine_lsp/build/packages/gleeunit/README.md",
+    "caffeine_lsp/build/packages/terra_madre/LICENSE",
+    "caffeine_lsp/build/packages/terra_madre/README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ce/ca4bedc8ca/0/metadata.json",
+      "transcript": "/ce/ca4bedc8ca/0/full.jsonl",
+      "context": "/ce/ca4bedc8ca/0/context.md",
+      "content_hash": "/ce/ca4bedc8ca/0/content_hash.txt",
+      "prompt": "/ce/ca4bedc8ca/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 66063,
+    "cache_read_tokens": 1218532,
+    "output_tokens": 81,
+    "api_call_count": 16
+  }
+}
