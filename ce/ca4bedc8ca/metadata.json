@@ -3,7 +3,7 @@
   "checkpoint_id": "ceca4bedc8ca",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     ".claude/settings.local.json",
     "caffeine_cli/.claude/settings.local.json",
@@ -43,13 +43,20 @@
       "context": "/ce/ca4bedc8ca/0/context.md",
       "content_hash": "/ce/ca4bedc8ca/0/content_hash.txt",
       "prompt": "/ce/ca4bedc8ca/0/prompt.txt"
+    },
+    {
+      "metadata": "/ce/ca4bedc8ca/1/metadata.json",
+      "transcript": "/ce/ca4bedc8ca/1/full.jsonl",
+      "context": "/ce/ca4bedc8ca/1/context.md",
+      "content_hash": "/ce/ca4bedc8ca/1/content_hash.txt",
+      "prompt": "/ce/ca4bedc8ca/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 34,
-    "cache_creation_tokens": 66063,
-    "cache_read_tokens": 1218532,
-    "output_tokens": 81,
-    "api_call_count": 16
+    "input_tokens": 89,
+    "cache_creation_tokens": 133879,
+    "cache_read_tokens": 3257072,
+    "output_tokens": 1939,
+    "api_call_count": 47
   }
 }
