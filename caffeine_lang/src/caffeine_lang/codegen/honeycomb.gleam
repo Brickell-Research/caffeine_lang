@@ -15,7 +15,7 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use resources <- result.try(generate_resources(irs))
+  use #(resources, _warnings) <- result.try(generate_resources(irs))
   Ok(generator_utils.render_terraform_config(
     resources: resources,
     settings: terraform_settings(),
@@ -28,11 +28,11 @@ pub fn generate_terraform(
 @internal
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
-) -> Result(List(terraform.Resource), CompilationError) {
+) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   use resource_lists <- result.try(
     irs |> list.try_map(ir_to_terraform_resources),
   )
-  Ok(list.flatten(resource_lists))
+  Ok(#(list.flatten(resource_lists), []))
 }
 
 /// Terraform settings block with required Honeycomb provider.

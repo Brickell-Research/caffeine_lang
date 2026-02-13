@@ -15,7 +15,7 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use resources <- result.try(generate_resources(irs))
+  use #(resources, _warnings) <- result.try(generate_resources(irs))
   Ok(generator_utils.render_terraform_config(
     resources: resources,
     settings: terraform_settings(),
@@ -28,8 +28,10 @@ pub fn generate_terraform(
 @internal
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
-) -> Result(List(terraform.Resource), CompilationError) {
-  irs |> list.try_map(ir_to_terraform_resource)
+) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
+  irs
+  |> list.try_map(ir_to_terraform_resource)
+  |> result.map(fn(r) { #(r, []) })
 }
 
 /// Terraform settings block with required Dynatrace provider.

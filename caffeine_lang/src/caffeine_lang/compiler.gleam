@@ -107,10 +107,7 @@ fn platform_for(v: vendor.Vendor) -> VendorPlatform {
     vendor.Honeycomb ->
       VendorPlatform(
         vendor: vendor.Honeycomb,
-        generate_resources: fn(irs) {
-          honeycomb.generate_resources(irs)
-          |> result.map(fn(r) { #(r, []) })
-        },
+        generate_resources: honeycomb.generate_resources,
         terraform_settings: honeycomb.terraform_settings(),
         provider: honeycomb.provider(),
         variables: honeycomb.variables(),
@@ -118,10 +115,7 @@ fn platform_for(v: vendor.Vendor) -> VendorPlatform {
     vendor.Dynatrace ->
       VendorPlatform(
         vendor: vendor.Dynatrace,
-        generate_resources: fn(irs) {
-          dynatrace.generate_resources(irs)
-          |> result.map(fn(r) { #(r, []) })
-        },
+        generate_resources: dynatrace.generate_resources,
         terraform_settings: dynatrace.terraform_settings(),
         provider: dynatrace.provider(),
         variables: dynatrace.variables(),
@@ -129,10 +123,7 @@ fn platform_for(v: vendor.Vendor) -> VendorPlatform {
     vendor.NewRelic ->
       VendorPlatform(
         vendor: vendor.NewRelic,
-        generate_resources: fn(irs) {
-          newrelic.generate_resources(irs)
-          |> result.map(fn(r) { #(r, []) })
-        },
+        generate_resources: newrelic.generate_resources,
         terraform_settings: newrelic.terraform_settings(),
         provider: newrelic.provider(),
         variables: newrelic.variables(),
