@@ -1,4 +1,6 @@
-import caffeine_lang/frontend/ast.{type ExpectsBlock}
+import caffeine_lang/frontend/ast.{
+  type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Struct,
+}
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
@@ -14,6 +16,7 @@ import gleam/string
 pub type DiagnosticCode {
   QuotedFieldName
   BlueprintNotFound
+  DependencyNotFound
   NoDiagnosticCode
 }
 
@@ -22,6 +25,7 @@ pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
   case code {
     QuotedFieldName -> option.Some("quoted-field-name")
     BlueprintNotFound -> option.Some("blueprint-not-found")
+    DependencyNotFound -> option.Some("dependency-not-found")
     NoDiagnosticCode -> option.None
   }
 }
@@ -99,6 +103,111 @@ fn check_blueprint_ref(
     severity: lsp_types.diagnostic_severity_to_int(DsError),
     message: "Blueprint '" <> block.blueprint <> "' not found in workspace",
     code: BlueprintNotFound,
+  ))
+}
+
+/// Check dependency relation targets against known expectation identifiers.
+/// Returns diagnostics for any dependency targets not found in the known list.
+pub fn get_cross_file_dependency_diagnostics(
+  content: String,
+  known_identifiers: List(String),
+) -> List(Diagnostic) {
+  use <- bool.guard(when: string.trim(content) == "", return: [])
+  case file_utils.parse(content) {
+    Ok(parsed) -> {
+      let targets = extract_relation_targets(parsed)
+      targets
+      |> list.filter_map(fn(target) {
+        check_dependency_ref(content, target, known_identifiers)
+      })
+    }
+    Error(_) -> []
+  }
+}
+
+/// Extract all dependency target strings from relation fields in a parsed file.
+fn extract_relation_targets(parsed: file_utils.ParsedFile) -> List(String) {
+  case parsed {
+    file_utils.Blueprints(file) ->
+      extract_relation_targets_from_blueprints(file)
+    file_utils.Expects(file) -> extract_relation_targets_from_expects(file)
+  }
+}
+
+fn extract_relation_targets_from_blueprints(
+  file: BlueprintsFile,
+) -> List(String) {
+  file.blocks
+  |> list.flat_map(fn(block) {
+    block.items
+    |> list.flat_map(fn(item) {
+      extract_relation_targets_from_struct(item.provides)
+    })
+  })
+}
+
+fn extract_relation_targets_from_expects(file: ExpectsFile) -> List(String) {
+  file.blocks
+  |> list.flat_map(fn(block) {
+    block.items
+    |> list.flat_map(fn(item) {
+      extract_relation_targets_from_struct(item.provides)
+    })
+  })
+}
+
+/// Walk a provides struct to find relation target strings.
+fn extract_relation_targets_from_struct(provides: Struct) -> List(String) {
+  provides.fields
+  |> list.filter_map(fn(field) {
+    case field.name {
+      "relations" -> Ok(extract_strings_from_relations(field.value))
+      _ -> Error(Nil)
+    }
+  })
+  |> list.flatten
+}
+
+/// Extract string values from a relations literal struct (hard/soft lists).
+fn extract_strings_from_relations(value: ast.Value) -> List(String) {
+  case value {
+    ast.LiteralValue(ast.LiteralStruct(fields, _)) ->
+      fields
+      |> list.flat_map(fn(f) {
+        case f.value {
+          ast.LiteralValue(ast.LiteralList(elements)) ->
+            elements
+            |> list.filter_map(fn(elem) {
+              case elem {
+                ast.LiteralString(s) -> Ok(s)
+                _ -> Error(Nil)
+              }
+            })
+          _ -> []
+        }
+      })
+    _ -> []
+  }
+}
+
+/// Check a single dependency target against known identifiers.
+fn check_dependency_ref(
+  content: String,
+  target: String,
+  known_identifiers: List(String),
+) -> Result(Diagnostic, Nil) {
+  use <- bool.guard(
+    when: list.contains(known_identifiers, target),
+    return: Error(Nil),
+  )
+  let #(line, col) = position_utils.find_name_position(content, target)
+  Ok(Diagnostic(
+    line: line,
+    column: col,
+    end_column: col + string.length(target),
+    severity: lsp_types.diagnostic_severity_to_int(DsError),
+    message: "Dependency '" <> target <> "' not found in workspace",
+    code: DependencyNotFound,
   ))
 }
 

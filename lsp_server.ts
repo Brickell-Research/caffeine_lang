@@ -23,7 +23,7 @@ if (!process.argv.includes("--stdio")) {
 }
 
 // Gleam-compiled intelligence modules
-import { get_diagnostics, get_cross_file_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_diagnostics, get_cross_file_diagnostics, get_cross_file_dependency_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 import { get_completions } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 import {
@@ -31,7 +31,7 @@ import {
   token_types,
 } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/semantic_tokens.mjs";
 import { get_symbols } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/document_symbols.mjs";
-import { get_definition, get_blueprint_ref_at_position } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
+import { get_definition, get_blueprint_ref_at_position, get_relation_ref_at_position } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
 import { get_code_actions, ActionDiagnostic } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/code_actions.mjs";
 import { format } from "./caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/frontend/formatter.mjs";
 import { get_highlights } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/highlight.mjs";
@@ -117,13 +117,17 @@ connection.onInitialize((params: any) => {
         ? fileURLToPath(rootUri)
         : rootUri;
       scanCaffeineFiles(workspaceRoot);
-      // Build initial blueprint index from all discovered files
+      // Build initial blueprint and expectation indices from all discovered files
       for (const uri of workspaceFiles) {
         const text = getFileContent(uri);
         if (text) {
           const names = extractBlueprintNames(text);
           if (names.length > 0) {
             blueprintIndex.set(uri, new Set(names));
+          }
+          const ids = extractExpectationIdentifiers(text, uri);
+          if (ids.size > 0) {
+            expectationIndex.set(uri, ids);
           }
         }
       }
@@ -202,6 +206,79 @@ function isExpectsFile(text: string): boolean {
   return text.includes("Expectations for");
 }
 
+// --- Workspace Expectation Index ---
+
+/** Maps file URIs to expectation item names and their dotted identifiers. */
+const expectationIndex = new Map<string, Map<string, string>>();
+
+/** Extract org/team/service from a file path (last 3 path segments). */
+function extractPathPrefix(filePath: string): [string, string, string] {
+  const segments = filePath.split(path.sep);
+  const last3 = segments.slice(-3);
+  if (last3.length < 3) return ["unknown", "unknown", "unknown"];
+  const [org, team, serviceFile] = last3;
+  const service = serviceFile.replace(/\.caffeine$/, "").replace(/\.json$/, "");
+  return [org, team, service];
+}
+
+/** Extract expectation identifiers (org.team.service.name) from an expects file. */
+function extractExpectationIdentifiers(
+  text: string,
+  uri: string,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  if (!text.includes("Expectations for")) return result;
+
+  let filePath: string;
+  try {
+    filePath = fileURLToPath(uri);
+  } catch {
+    return result;
+  }
+  const [org, team, service] = extractPathPrefix(filePath);
+
+  const pattern = /\*\s+"([^"]+)"/;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    const match = pattern.exec(line);
+    if (match) {
+      const name = match[1];
+      result.set(name, `${org}.${team}.${service}.${name}`);
+    }
+  }
+  return result;
+}
+
+/** Collect all known expectation dotted identifiers across the workspace. */
+function allKnownExpectationIdentifiers(): string[] {
+  const ids: string[] = [];
+  for (const idMap of expectationIndex.values()) {
+    for (const dottedId of idMap.values()) {
+      ids.push(dottedId);
+    }
+  }
+  return ids;
+}
+
+/** Look up an expectation definition by dotted identifier. */
+function findExpectationByIdentifier(
+  dottedId: string,
+): { uri: string; line: number; col: number; nameLen: number } | null {
+  const parts = dottedId.split(".");
+  if (parts.length !== 4) return null;
+  const itemName = parts[3];
+
+  for (const [uri, idMap] of expectationIndex) {
+    if (idMap.get(itemName) !== dottedId) continue;
+    const text = getFileContent(uri);
+    if (!text) continue;
+    // Reuse blueprint item location finder — same * "name" pattern
+    const loc = findBlueprintItemLocation(text, itemName);
+    if (loc) return { uri, ...loc };
+  }
+  return null;
+}
+
 /** Convert a Gleam diagnostic to an LSP diagnostic. */
 // deno-lint-ignore no-explicit-any
 function gleamDiagToLsp(d: any) {
@@ -217,16 +294,24 @@ function gleamDiagToLsp(d: any) {
     : base;
 }
 
-/** Run cross-file diagnostics for all open expects files. */
-function revalidateExpectsFiles() {
-  const knownList = toList(allKnownBlueprints());
+/** Run cross-file diagnostics for all open documents. */
+function revalidateCrossFileDiagnostics() {
+  const knownBlueprints = toList(allKnownBlueprints());
+  const knownExpectations = toList(allKnownExpectationIdentifiers());
   for (const doc of documents.all()) {
     const text = doc.getText();
-    if (!isExpectsFile(text)) continue;
     try {
       const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
-      const crossDiags = gleamArray(get_cross_file_diagnostics(text, knownList) as GleamList);
-      const allDiags = [...singleDiags, ...crossDiags];
+      let crossDiags: ReturnType<typeof gleamArray> = [];
+      if (isExpectsFile(text)) {
+        crossDiags = gleamArray(
+          get_cross_file_diagnostics(text, knownBlueprints) as GleamList,
+        );
+      }
+      const depDiags = gleamArray(
+        get_cross_file_dependency_diagnostics(text, knownExpectations) as GleamList,
+      );
+      const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
       connection.sendDiagnostics({
         uri: doc.uri,
         diagnostics: allDiags.map(gleamDiagToLsp),
@@ -265,6 +350,15 @@ documents.onDidChangeContent((change) => {
         blueprintIndex.delete(uri);
       }
 
+      // Update expectation index for this file
+      const newIds = extractExpectationIdentifiers(text, uri);
+      const oldIds = expectationIndex.get(uri);
+      if (newIds.size > 0) {
+        expectationIndex.set(uri, newIds);
+      } else {
+        expectationIndex.delete(uri);
+      }
+
       try {
         const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
 
@@ -276,7 +370,15 @@ documents.onDidChangeContent((change) => {
           );
         }
 
-        const allDiags = [...singleDiags, ...crossDiags];
+        // Add dependency diagnostics for files with relations
+        const depDiags = gleamArray(
+          get_cross_file_dependency_diagnostics(
+            text,
+            toList(allKnownExpectationIdentifiers()),
+          ) as GleamList,
+        );
+
+        const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
         connection.sendDiagnostics({
           uri,
           diagnostics: allDiags.map(gleamDiagToLsp),
@@ -285,14 +387,22 @@ documents.onDidChangeContent((change) => {
         connection.sendDiagnostics({ uri, diagnostics: [] });
       }
 
-      // If blueprint index changed, re-validate all open expects files.
-      // This triggers when: (a) names changed in a blueprints file, or
-      // (b) a file that WAS a blueprints file no longer is (names removed).
+      // If blueprint index changed, re-validate all open documents.
       const namesChanged = !oldNames
         || oldNames.size !== newNames.length
         || newNames.some((n) => !oldNames.has(n));
-      if ((namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0)) {
-        revalidateExpectsFiles();
+      const blueprintsChanged =
+        (namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0);
+
+      // If expectation index changed, re-validate all open documents.
+      const idsChanged = !oldIds
+        || oldIds.size !== newIds.size
+        || [...newIds.entries()].some(([k, v]) => oldIds.get(k) !== v);
+      const expectationsChanged =
+        (idsChanged && newIds.size > 0) || (oldIds && newIds.size === 0);
+
+      if (blueprintsChanged || expectationsChanged) {
+        revalidateCrossFileDiagnostics();
       }
     }, 300),
   );
@@ -459,6 +569,22 @@ connection.onDefinition((params) => {
         };
       }
     }
+
+    // Third: try dependency relation reference
+    const relRef = get_relation_ref_at_position(
+      text,
+      params.position.line,
+      params.position.character,
+    );
+    if (relRef instanceof Some) {
+      const target = findExpectationByIdentifier(relRef[0] as string);
+      if (target) {
+        return {
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
+        };
+      }
+    }
   } catch { /* ignore */ }
   return null;
 });
@@ -494,6 +620,22 @@ connection.onDeclaration((params) => {
     );
     if (bpRef instanceof Some) {
       const target = findCrossFileBlueprintDef(bpRef[0] as string);
+      if (target) {
+        return {
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
+        };
+      }
+    }
+
+    // Third: try dependency relation reference
+    const relRef = get_relation_ref_at_position(
+      text,
+      params.position.line,
+      params.position.character,
+    );
+    if (relRef instanceof Some) {
+      const target = findExpectationByIdentifier(relRef[0] as string);
       if (target) {
         return {
           uri: target.uri,
@@ -718,6 +860,7 @@ connection.onCodeAction((params) => {
             d.message,
             d.code === "quoted-field-name" ? new QuotedFieldName()
               : d.code === "blueprint-not-found" ? new BlueprintNotFound()
+              : d.code === "dependency-not-found" ? new DependencyNotFound()
               : new NoDiagnosticCode(),
           ),
       ),
@@ -912,8 +1055,12 @@ connection.onDidChangeWatchedFiles((params) => {
         blueprintIndex.delete(uri);
         blueprintsChanged = true;
       }
+      if (expectationIndex.has(uri)) {
+        expectationIndex.delete(uri);
+        blueprintsChanged = true;
+      }
     } else {
-      // Created or Changed — update workspace tracking and blueprint index
+      // Created or Changed — update workspace tracking and indices
       workspaceFiles.add(uri);
       const text = getFileContent(uri);
       if (text) {
@@ -924,17 +1071,29 @@ connection.onDidChangeWatchedFiles((params) => {
         } else {
           blueprintIndex.delete(uri);
         }
-        // Detect whether the set of blueprint names actually changed
         const changed = !oldNames
           || oldNames.size !== names.length
           || names.some((n) => !oldNames.has(n));
         if (changed) blueprintsChanged = true;
+
+        // Update expectation index
+        const ids = extractExpectationIdentifiers(text, uri);
+        const oldIds = expectationIndex.get(uri);
+        if (ids.size > 0) {
+          expectationIndex.set(uri, ids);
+        } else {
+          expectationIndex.delete(uri);
+        }
+        const idsChanged = !oldIds
+          || oldIds.size !== ids.size
+          || [...ids.entries()].some(([k, v]) => oldIds.get(k) !== v);
+        if (idsChanged) blueprintsChanged = true;
       }
     }
   }
 
   if (blueprintsChanged) {
-    revalidateExpectsFiles();
+    revalidateCrossFileDiagnostics();
   }
 });
 
@@ -955,7 +1114,8 @@ documents.onDidClose((event) => {
     }
   })();
 
-  const hadBefore = blueprintIndex.has(uri);
+  const hadBlueprintsBefore = blueprintIndex.has(uri);
+  const hadExpectationsBefore = expectationIndex.has(uri);
   if (diskText) {
     const names = extractBlueprintNames(diskText);
     if (names.length > 0) {
@@ -963,15 +1123,23 @@ documents.onDidClose((event) => {
     } else {
       blueprintIndex.delete(uri);
     }
+    const ids = extractExpectationIdentifiers(diskText, uri);
+    if (ids.size > 0) {
+      expectationIndex.set(uri, ids);
+    } else {
+      expectationIndex.delete(uri);
+    }
   } else {
     // File was deleted from disk while open — clean up
     blueprintIndex.delete(uri);
+    expectationIndex.delete(uri);
   }
 
-  const hasAfter = blueprintIndex.has(uri);
-  // If blueprint availability changed, re-validate expects files
-  if (hadBefore || hasAfter) {
-    revalidateExpectsFiles();
+  const hasBlueprintsAfter = blueprintIndex.has(uri);
+  const hasExpectationsAfter = expectationIndex.has(uri);
+  // If any index availability changed, re-validate open documents
+  if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
+    revalidateCrossFileDiagnostics();
   }
 });
 

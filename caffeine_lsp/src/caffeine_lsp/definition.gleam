@@ -104,6 +104,66 @@ pub fn get_blueprint_ref_at_position(
   }
 }
 
+/// Returns the dotted identifier if the cursor is on a dependency relation
+/// string (e.g., "org.team.service.name"), or None otherwise.
+pub fn get_relation_ref_at_position(
+  content: String,
+  line: Int,
+  character: Int,
+) -> Option(String) {
+  let lines = string.split(content, "\n")
+  case list.drop(lines, line) {
+    [line_text, ..] -> extract_dependency_ref_on_line(line_text, character)
+    [] -> option.None
+  }
+}
+
+/// Extract a dependency path string if the cursor is inside a quoted string
+/// that matches the org.team.service.name pattern.
+fn extract_dependency_ref_on_line(
+  line_text: String,
+  character: Int,
+) -> Option(String) {
+  let parts = string.split(line_text, "\"")
+  scan_string_parts(parts, 0, 0, character)
+}
+
+fn scan_string_parts(
+  parts: List(String),
+  part_idx: Int,
+  pos: Int,
+  target: Int,
+) -> Option(String) {
+  case parts {
+    [] -> option.None
+    [part, ..rest] -> {
+      let part_len = string.length(part)
+      let end_pos = pos + part_len
+      // Odd-indexed parts (1, 3, 5, ...) are inside quote pairs
+      let is_string_content = part_idx % 2 == 1
+      case is_string_content && target >= pos && target < end_pos {
+        True -> {
+          case is_dependency_path(part) {
+            True -> option.Some(part)
+            False -> option.None
+          }
+        }
+        // +1 to skip the quote separator between parts
+        False -> scan_string_parts(rest, part_idx + 1, end_pos + 1, target)
+      }
+    }
+  }
+}
+
+/// Check if a string looks like a dependency path (exactly 4 non-empty
+/// dot-separated segments).
+fn is_dependency_path(s: String) -> Bool {
+  case string.split(s, ".") {
+    [a, b, c, d] -> a != "" && b != "" && c != "" && d != ""
+    _ -> False
+  }
+}
+
 /// Check if the cursor is on a blueprint name within an Expectations header.
 fn find_blueprint_ref_on_line(
   line_text: String,
