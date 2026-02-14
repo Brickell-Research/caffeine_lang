@@ -1,0 +1,24 @@
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "researcher-gaps". 
+
+Your task (Task #1): Research current LSP test infrastructure and gaps.
+
+Explore the caffeine_lsp package to understand:
+1. What tests currently exist in caffeine_lsp/test/ — read the test files and understand what they cover
+2. What LSP features are implemented in lsp_server.ts (the root-level file, NOT inside caffeine_lsp/) — read the full file
+3. What's tested at the unit level vs what has NO integration/e2e coverage
+4. How the Gleam intelligence modules are called from lsp_server.ts
+5. What has broken before — look at recent commits that fixed LSP bugs (e.g., commits with "LSP" or "lsp" in the message)
+
+The project root is /Users/rdurst/.REDACTED
+
+Produce a detailed gap analysis: which LSP features/flows are most at risk of breaking without e2e tests. Focus on the integration boundary between lsp_server.ts and the Gleam modules — that's where things break.
+
+When done, update Task #1 to completed using TaskUpdate.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="researcher-gaps" color="blue">
+{"type":"task_assignment","taskId":"1","subject":"Research current LSP test infrastructure and gaps","description":"Explore the caffeine_lsp package to understand:\n1. What tests currently exist (unit tests in caffeine_lsp/test/)\n2. What LSP features are implemented in lsp_server.ts (diagnostics, hover, completion, semantic tokens, go-to-definition, code actions, formatting, references, rename, folding, selection range, linked editing, workspace symbols, type hierarchy, highlights)\n3. What's tested at the unit level vs what has no integration coverage\n4. How the Gleam intelligence modules are called from lsp_server.ts\n5. What has broken before (look at recent fix commits for LSP bugs)\nProduce a gap analysis: which LSP features/flows are most at risk of breaking without e2e tests.","assignedBy":"researcher-gaps","timestamp":"2026-02-14T04:53:26.429Z"}
+</teammate-message>
