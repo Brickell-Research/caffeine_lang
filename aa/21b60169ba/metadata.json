@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "aa21b60169ba",
+  "strategy": "manual-commit",
+  "branch": "rdurst/type-system-expansions",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/settings.local.json",
+    "caffeine_cli/build/packages/argv/README.md",
+    "caffeine_cli/build/packages/envoy/README.md",
+    "caffeine_cli/build/packages/filepath/README.md",
+    "caffeine_cli/build/packages/gleam_community_ansi/README.md",
+    "caffeine_cli/build/packages/gleam_community_colour/README.md",
+    "caffeine_cli/build/packages/gleam_json/README.md",
+    "caffeine_cli/build/packages/gleam_regexp/README.md",
+    "caffeine_cli/build/packages/gleam_stdlib/README.md",
+    "caffeine_cli/build/packages/gleeunit/README.md",
+    "caffeine_cli/build/packages/glint/LICENSE",
+    "caffeine_cli/build/packages/glint/README.md",
+    "caffeine_cli/build/packages/simplifile/README.md",
+    "caffeine_cli/build/packages/snag/README.md",
+    "caffeine_cli/build/packages/terra_madre/LICENSE",
+    "caffeine_cli/build/packages/terra_madre/README.md",
+    "caffeine_lang/build/packages/filepath/README.md",
+    "caffeine_lang/build/packages/gleam_stdlib/README.md",
+    "caffeine_lang/build/packages/gleeunit/README.md",
+    "caffeine_lang/build/packages/simplifile/README.md",
+    "caffeine_lang/build/packages/terra_madre/LICENSE",
+    "caffeine_lang/build/packages/terra_madre/README.md",
+    "caffeine_lsp/build/packages/gleam_stdlib/README.md",
+    "caffeine_lsp/build/packages/gleeunit/README.md",
+    "caffeine_lsp/build/packages/terra_madre/LICENSE",
+    "caffeine_lsp/build/packages/terra_madre/README.md",
+    "test/lsp_e2e/fixtures/quoted_field.caffeine",
+    "test/lsp_e2e/fixtures/with_extendable.caffeine",
+    "test/lsp_e2e/formatting_and_more_test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/aa/21b60169ba/0/metadata.json",
+      "transcript": "/aa/21b60169ba/0/full.jsonl",
+      "context": "/aa/21b60169ba/0/context.md",
+      "content_hash": "/aa/21b60169ba/0/content_hash.txt",
+      "prompt": "/aa/21b60169ba/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1881,
+    "cache_creation_tokens": 39658,
+    "cache_read_tokens": 955976,
+    "output_tokens": 270,
+    "api_call_count": 20
+  }
+}

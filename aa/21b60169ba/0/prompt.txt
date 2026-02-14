@@ -1,0 +1,80 @@
+<teammate-message teammate_id="team-lead">
+{"type":"task_assignment","taskId":"7","subject":"Write e2e tests for formatting, semantic tokens, and remaining features","description":"Using the test harness from task 4, write e2e tests covering:\n1. Formatting: send a formatting request, verify the response applies correct formatting\n2. Semantic tokens: request semantic tokens, verify token types are returned\n3. Document symbols: request symbols, verify symbol list matches file structure\n4. Code actions: open a file with a fixable diagnostic, verify code action is offered\n5. References: find all references to a blueprint name\n6. Rename: rename a blueprint and verify all references update\n7. Folding ranges: verify fold ranges are returned for blocks\nAdd a Makefile target or script to run the e2e tests, suitable for CI/CD integration.","assignedBy":"team-lead","timestamp":"2026-02-14T05:25:47.243Z"}
+</teammate-message>
+
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "features-tester-2".
+
+Your task (Task #7): Write e2e tests for formatting, semantic tokens, and remaining features.
+
+## Context
+
+The project root is `/Users/rdurst/.REDACTED`.
+
+There's already a working e2e test harness at `test/lsp_e2e/`. Read these files first:
+- `test/lsp_e2e/client.ts` — the LspTestClient class with all convenience methods
+- `test/lsp_e2e/lsp_e2e_test.ts` — existing foundation tests (3 tests, all passing)
+- `test/lsp_e2e/fixtures/` — existing .caffeine fixture files (especially `unformatted.caffeine`)
+
+## Caffeine Syntax Reference (from real corpus files)
+
+**Blueprints file:**
+```
+Blueprints for "SLO"
+  * "api_availability":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
+```
+
+**Expects file:**
+```
+Expectations for "api_availability"
+  * "checkout":
+    Provides { env: "production", threshold: 99.95 }
+```
+
+**With extendables and extends:**
+```
+_defaults (Provides): { env: "production", window_in_days: 30 }
+
+Expectations for "api_availability"
+  * "checkout" extends [_defaults]:
+    Provides { threshold: 99.95 }
+```
+
+## What to write
+
+Create a NEW test file `test/lsp_e2e/formatting_and_more_test.ts` (separate from other test files to avoid conflicts). Create any new fixtures needed in `test/lsp_e2e/fixtures/`.
+
+### Tests to add:
+
+1. **Formatting fixes spacing** — Open the `unformatted.caffeine` file, send formatting request, verify text edits are returned that would fix the formatting. The formatted result should match what `format()` produces. You can verify the edit is a full-document replacement with cleaned-up content.
+
+2. **Formatting already-formatted file** — Open `valid_blueprint.caffeine`, send formatting request, verify either no edits or an identity edit (content unchanged).
+
+3. **Semantic tokens returned** — Open a blueprint file, send semantic tokens request, verify the `data` array is non-empty (it should have at least some tokens for keywords, strings, types, etc.). The data is encoded as groups of 5 integers per token: [deltaLine, deltaStartChar, length, tokenType, tokenModifiers].
+
+4. **Document symbols** — Open a blueprint file, send document symbols request, verify at least one symbol is returned. Check that the symbol has a `name` and `kind` and `range`.
+
+5. **Code actions for quickfix** — Open a file that produces a diagnostic with a fixable code. For example, a field name with quotes that shouldn't have them (the QuotedFieldName diagnostic code offers a quickfix). Send a code action request with that diagnostic, verify a quickfix action is returned. This one may be tricky — check the Gleam unit tests in `caffeine_lsp/test/caffeine_lsp_test.gleam` for code action test examples to understand what diagnostic codes trigger quickfixes.
+
+6. **References for extendable** — Open a file with an extendable `_defaults` that's referenced via `extends [_defaults]`. Send a references request on the extendable name, verify it returns locations for both the definition and the usage.
+
+## Important notes
+
+- Use `Deno.test({ name: ..., sanitizeResources: false, sanitizeOps: false, async fn() { ... } })` format
+- Each test creates its own `LspTestClient(ROOT_DIR)`, calls `start()`, `initialize()`, tests, `shutdown()`
+- Import LspTestClient from `./client.ts`
+- Import assertions from `jsr:@std/assert`
+- Formatting returns an array of TextEdit objects: `{ range, newText }`
+- Semantic tokens returns `{ data: number[] }`
+- Document symbols returns DocumentSymbol array with `name`, `kind`, `range`, `selectionRange`, potentially `children`
+- Code actions returns an array of CodeAction objects with `title`, `kind`, `edit` 
+- After opening a document, wait for diagnostics to settle before sending requests (or at least add a small delay)
+- Positions are 0-based (line 0 = first line)
+- Run `deno test --allow-read --allow-write --allow-env --allow-run test/lsp_e2e/formatting_and_more_test.ts` to verify
+- CRITICAL: Do NOT modify any existing files except to create new ones.
+- Look at the Gleam unit tests in `caffeine_lsp/test/caffeine_lsp_test.gleam` for examples of what the modules return.
+
+When done, mark Task #7 as completed using TaskUpdate.
+</teammate-message>
