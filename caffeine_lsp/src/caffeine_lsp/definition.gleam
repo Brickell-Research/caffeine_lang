@@ -124,6 +124,8 @@ fn extract_dependency_ref_on_line(
   line_text: String,
   character: Int,
 ) -> Option(String) {
+  // Relations strings always appear inside list brackets
+  use <- bool.guard(!string.contains(line_text, "["), option.None)
   let parts = string.split(line_text, "\"")
   scan_string_parts(parts, 0, 0, character)
 }

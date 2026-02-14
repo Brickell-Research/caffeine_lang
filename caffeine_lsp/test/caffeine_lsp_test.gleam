@@ -662,6 +662,62 @@ pub fn blueprint_ref_blueprints_file_returns_none_test() {
 }
 
 // ==========================================================================
+// Cross-file relation ref tests (dependency go-to-definition)
+// ==========================================================================
+
+// ==== get_relation_ref_at_position ====
+// * ✅ cursor on dotted path in list returns the path
+// * ✅ cursor in middle of path returns the path
+// * ✅ cursor outside quotes returns None
+// * ✅ non-4-segment string in list returns None
+// * ✅ dotted path not in list context returns None
+// * ✅ empty content returns None
+
+pub fn relation_ref_on_valid_path_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  // Line 2, cursor on 'o' of org.team.svc.dep (col 36)
+  definition.get_relation_ref_at_position(source, 2, 36)
+  |> should.equal(option.Some("org.team.svc.dep"))
+}
+
+pub fn relation_ref_middle_of_path_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  // Line 2, cursor on 't' of team (col 40)
+  definition.get_relation_ref_at_position(source, 2, 40)
+  |> should.equal(option.Some("org.team.svc.dep"))
+}
+
+pub fn relation_ref_outside_quotes_returns_none_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  // Line 2, cursor on '[' (col 34) — outside quotes
+  definition.get_relation_ref_at_position(source, 2, 34)
+  |> should.equal(option.None)
+}
+
+pub fn relation_ref_non_dependency_string_returns_none_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
+  // Cursor inside "not_a_path" — not a 4-segment dotted path
+  definition.get_relation_ref_at_position(source, 2, 23)
+  |> should.equal(option.None)
+}
+
+pub fn relation_ref_not_in_list_returns_none_test() {
+  // Dotted path in a plain field value (no list brackets)
+  let source = "    Provides { name: \"org.team.svc.dep\" }\n"
+  definition.get_relation_ref_at_position(source, 0, 22)
+  |> should.equal(option.None)
+}
+
+pub fn relation_ref_empty_content_returns_none_test() {
+  definition.get_relation_ref_at_position("", 0, 0)
+  |> should.equal(option.None)
+}
+
+// ==========================================================================
 // Code action tests
 // ==========================================================================
 
@@ -1289,6 +1345,79 @@ pub fn cross_file_empty_known_list_reports_all_test() {
     [diag] -> {
       diag.message
       |> should.equal("Blueprint 'my_blueprint' not found in workspace")
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==== get_cross_file_dependency_diagnostics ====
+// * ✅ known target returns no diagnostics
+// * ✅ unknown target returns DependencyNotFound diagnostic
+// * ✅ empty content returns no diagnostics
+// * ✅ file without relations returns no diagnostics
+// * ✅ multiple targets with mix of known and unknown
+// * ✅ duplicate targets produce single diagnostic
+
+pub fn dependency_known_target_no_diagnostics_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  diagnostics.get_cross_file_dependency_diagnostics(source, [
+    "org.team.svc.dep",
+  ])
+  |> should.equal([])
+}
+
+pub fn dependency_unknown_target_returns_diagnostic_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(1)
+      diag.message
+      |> should.equal("Dependency 'org.team.svc.dep' not found in workspace")
+      diag.code |> should.equal(diagnostics.DependencyNotFound)
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn dependency_empty_content_returns_empty_test() {
+  diagnostics.get_cross_file_dependency_diagnostics("", [])
+  |> should.equal([])
+}
+
+pub fn dependency_no_relations_returns_empty_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { status: true }\n"
+  diagnostics.get_cross_file_dependency_diagnostics(source, [])
+  |> should.equal([])
+}
+
+pub fn dependency_multiple_mixed_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"known.t.s.dep\", \"unknown.t.s.dep\"] } }\n"
+  let diags =
+    diagnostics.get_cross_file_dependency_diagnostics(source, [
+      "known.t.s.dep",
+    ])
+  case diags {
+    [diag] -> {
+      diag.message
+      |> should.equal("Dependency 'unknown.t.s.dep' not found in workspace")
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn dependency_duplicate_targets_single_diagnostic_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.t.s.dep\"], soft: [\"org.t.s.dep\"] } }\n"
+  let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
+  case diags {
+    [diag] -> {
+      diag.message
+      |> should.equal("Dependency 'org.t.s.dep' not found in workspace")
     }
     _ -> should.fail()
   }

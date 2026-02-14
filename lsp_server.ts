@@ -359,42 +359,13 @@ documents.onDidChangeContent((change) => {
         expectationIndex.delete(uri);
       }
 
-      try {
-        const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
-
-        // Add cross-file diagnostics for expects files
-        let crossDiags: ReturnType<typeof gleamArray> = [];
-        if (isExpectsFile(text)) {
-          crossDiags = gleamArray(
-            get_cross_file_diagnostics(text, toList(allKnownBlueprints())) as GleamList,
-          );
-        }
-
-        // Add dependency diagnostics for files with relations
-        const depDiags = gleamArray(
-          get_cross_file_dependency_diagnostics(
-            text,
-            toList(allKnownExpectationIdentifiers()),
-          ) as GleamList,
-        );
-
-        const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
-        connection.sendDiagnostics({
-          uri,
-          diagnostics: allDiags.map(gleamDiagToLsp),
-        });
-      } catch {
-        connection.sendDiagnostics({ uri, diagnostics: [] });
-      }
-
-      // If blueprint index changed, re-validate all open documents.
+      // Check if indices changed — if so, revalidate all documents at once
       const namesChanged = !oldNames
         || oldNames.size !== newNames.length
         || newNames.some((n) => !oldNames.has(n));
       const blueprintsChanged =
         (namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0);
 
-      // If expectation index changed, re-validate all open documents.
       const idsChanged = !oldIds
         || oldIds.size !== newIds.size
         || [...newIds.entries()].some(([k, v]) => oldIds.get(k) !== v);
@@ -402,7 +373,35 @@ documents.onDidChangeContent((change) => {
         (idsChanged && newIds.size > 0) || (oldIds && newIds.size === 0);
 
       if (blueprintsChanged || expectationsChanged) {
+        // Revalidate all open documents (includes current file)
         revalidateCrossFileDiagnostics();
+      } else {
+        // No index changes — only send diagnostics for the current file
+        try {
+          const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+
+          let crossDiags: ReturnType<typeof gleamArray> = [];
+          if (isExpectsFile(text)) {
+            crossDiags = gleamArray(
+              get_cross_file_diagnostics(text, toList(allKnownBlueprints())) as GleamList,
+            );
+          }
+
+          const depDiags = gleamArray(
+            get_cross_file_dependency_diagnostics(
+              text,
+              toList(allKnownExpectationIdentifiers()),
+            ) as GleamList,
+          );
+
+          const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
+          connection.sendDiagnostics({
+            uri,
+            diagnostics: allDiags.map(gleamDiagToLsp),
+          });
+        } catch {
+          connection.sendDiagnostics({ uri, diagnostics: [] });
+        }
       }
     }, 300),
   );
@@ -1044,7 +1043,7 @@ connection.languages.typeHierarchy.onSubtypes((params: any) => {
 // --- Watched Files ---
 
 connection.onDidChangeWatchedFiles((params) => {
-  let blueprintsChanged = false;
+  let indicesChanged = false;
   for (const change of params.changes) {
     const uri = change.uri;
     if (!uri.endsWith(".caffeine")) continue;
@@ -1053,11 +1052,11 @@ connection.onDidChangeWatchedFiles((params) => {
       workspaceFiles.delete(uri);
       if (blueprintIndex.has(uri)) {
         blueprintIndex.delete(uri);
-        blueprintsChanged = true;
+        indicesChanged = true;
       }
       if (expectationIndex.has(uri)) {
         expectationIndex.delete(uri);
-        blueprintsChanged = true;
+        indicesChanged = true;
       }
     } else {
       // Created or Changed — update workspace tracking and indices
@@ -1074,7 +1073,7 @@ connection.onDidChangeWatchedFiles((params) => {
         const changed = !oldNames
           || oldNames.size !== names.length
           || names.some((n) => !oldNames.has(n));
-        if (changed) blueprintsChanged = true;
+        if (changed) indicesChanged = true;
 
         // Update expectation index
         const ids = extractExpectationIdentifiers(text, uri);
@@ -1087,12 +1086,12 @@ connection.onDidChangeWatchedFiles((params) => {
         const idsChanged = !oldIds
           || oldIds.size !== ids.size
           || [...ids.entries()].some(([k, v]) => oldIds.get(k) !== v);
-        if (idsChanged) blueprintsChanged = true;
+        if (idsChanged) indicesChanged = true;
       }
     }
   }
 
-  if (blueprintsChanged) {
+  if (indicesChanged) {
     revalidateCrossFileDiagnostics();
   }
 });

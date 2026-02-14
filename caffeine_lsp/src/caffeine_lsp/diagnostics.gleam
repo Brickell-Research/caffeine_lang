@@ -117,6 +117,7 @@ pub fn get_cross_file_dependency_diagnostics(
     Ok(parsed) -> {
       let targets = extract_relation_targets(parsed)
       targets
+      |> list.unique
       |> list.filter_map(fn(target) {
         check_dependency_ref(content, target, known_identifiers)
       })
