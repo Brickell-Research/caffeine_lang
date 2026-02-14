@@ -1,0 +1,21 @@
+Kick off a bunch of teams to understand the cli implementation
+
+---
+
+Kick off a ton agents to understand areas of code duplication
+
+---
+
+ok, rank this list by ease
+
+---
+
+Ok, do the first couple
+
+---
+
+ok, whats next?
+
+---
+
+can we first commit this code?

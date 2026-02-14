@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "c7b291279902",
+  "strategy": "manual-commit",
+  "branch": "rdurst/cli",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".claude/settings.local.json",
+    "caffeine_cli/build/packages/argv/README.md",
+    "caffeine_cli/build/packages/envoy/README.md",
+    "caffeine_cli/build/packages/filepath/README.md",
+    "caffeine_cli/build/packages/gleam_community_ansi/README.md",
+    "caffeine_cli/build/packages/gleam_community_colour/README.md",
+    "caffeine_cli/build/packages/gleam_json/README.md",
+    "caffeine_cli/build/packages/gleam_regexp/README.md",
+    "caffeine_cli/build/packages/gleam_stdlib/README.md",
+    "caffeine_cli/build/packages/gleeunit/README.md",
+    "caffeine_cli/build/packages/glint/LICENSE",
+    "caffeine_cli/build/packages/glint/README.md",
+    "caffeine_cli/build/packages/simplifile/README.md",
+    "caffeine_cli/build/packages/snag/README.md",
+    "caffeine_cli/build/packages/terra_madre/LICENSE",
+    "caffeine_cli/build/packages/terra_madre/README.md",
+    "caffeine_cli/src/caffeine_cli/handler.gleam",
+    "caffeine_lang/build/packages/filepath/README.md",
+    "caffeine_lang/build/packages/gleam_stdlib/README.md",
+    "caffeine_lang/build/packages/gleeunit/README.md",
+    "caffeine_lang/build/packages/simplifile/README.md",
+    "caffeine_lang/build/packages/terra_madre/LICENSE",
+    "caffeine_lang/build/packages/terra_madre/README.md",
+    "caffeine_lang/test/caffeine_lang/codegen/datadog_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/dynatrace_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/honeycomb_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam",
+    "caffeine_lang/test/ir_test_helpers.gleam",
+    "caffeine_lang/test/test_helpers.gleam",
+    "caffeine_lsp/build/packages/gleam_stdlib/README.md",
+    "caffeine_lsp/build/packages/gleeunit/README.md",
+    "caffeine_lsp/build/packages/terra_madre/LICENSE",
+    "caffeine_lsp/build/packages/terra_madre/README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c7/b291279902/0/metadata.json",
+      "transcript": "/c7/b291279902/0/full.jsonl",
+      "context": "/c7/b291279902/0/context.md",
+      "content_hash": "/c7/b291279902/0/content_hash.txt",
+      "prompt": "/c7/b291279902/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16239,
+    "cache_creation_tokens": 181783,
+    "cache_read_tokens": 5440065,
+    "output_tokens": 1551,
+    "api_call_count": 41
+  }
+}
