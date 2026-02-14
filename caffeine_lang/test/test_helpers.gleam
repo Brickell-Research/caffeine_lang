@@ -1,6 +1,16 @@
 /// TODO: very interested in figuring out if we could collapse these to a single executor function.
+import caffeine_lang/constants
 import gleam/list
+import gleam/string
 import gleeunit/should
+import simplifile
+
+/// Reads a corpus file from the generator test directory, replacing the version placeholder.
+pub fn read_generator_corpus(file_name: String) -> String {
+  let path = "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
+  let assert Ok(content) = simplifile.read(path)
+  string.replace(content, "{{VERSION}}", constants.version)
+}
 
 /// Test executor for functions with 1 input
 pub fn array_based_test_executor_1(
