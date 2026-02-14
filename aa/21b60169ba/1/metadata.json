@@ -1,9 +1,11 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "aa21b60169ba",
+  "session_id": "231cad87-338f-433d-9a66-d6534d9534a1",
   "strategy": "manual-commit",
+  "created_at": "2026-02-14T05:42:46.332644Z",
   "branch": "rdurst/type-system-expansions",
-  "checkpoints_count": 3,
+  "checkpoints_count": 2,
   "files_touched": [
     ".claude/settings.local.json",
     "caffeine_cli/build/packages/argv/README.md",
@@ -30,32 +32,23 @@
     "caffeine_lsp/build/packages/gleam_stdlib/README.md",
     "caffeine_lsp/build/packages/gleeunit/README.md",
     "caffeine_lsp/build/packages/terra_madre/LICENSE",
-    "caffeine_lsp/build/packages/terra_madre/README.md",
-    "test/lsp_e2e/fixtures/quoted_field.caffeine",
-    "test/lsp_e2e/fixtures/with_extendable.caffeine",
-    "test/lsp_e2e/formatting_and_more_test.ts"
+    "caffeine_lsp/build/packages/terra_madre/README.md"
   ],
-  "sessions": [
-    {
-      "metadata": "/aa/21b60169ba/0/metadata.json",
-      "transcript": "/aa/21b60169ba/0/full.jsonl",
-      "context": "/aa/21b60169ba/0/context.md",
-      "content_hash": "/aa/21b60169ba/0/content_hash.txt",
-      "prompt": "/aa/21b60169ba/0/prompt.txt"
-    },
-    {
-      "metadata": "/aa/21b60169ba/1/metadata.json",
-      "transcript": "/aa/21b60169ba/1/full.jsonl",
-      "context": "/aa/21b60169ba/1/context.md",
-      "content_hash": "/aa/21b60169ba/1/content_hash.txt",
-      "prompt": "/aa/21b60169ba/1/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
   "token_usage": {
-    "input_tokens": 1892,
-    "cache_creation_tokens": 102040,
-    "cache_read_tokens": 1212552,
-    "output_tokens": 359,
-    "api_call_count": 27
+    "input_tokens": 11,
+    "cache_creation_tokens": 62382,
+    "cache_read_tokens": 256576,
+    "output_tokens": 89,
+    "api_call_count": 7
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T05:42:46.294846Z",
+    "agent_lines": 0,
+    "human_added": 212,
+    "human_modified": 1263,
+    "human_removed": 0,
+    "total_committed": 1475,
+    "agent_percentage": 0
   }
 }

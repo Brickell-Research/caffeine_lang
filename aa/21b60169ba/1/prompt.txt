@@ -1,0 +1,29 @@
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "researcher-endpoints".
+
+Your task (Task #3): Catalog all LSP server endpoints and their behavior.
+
+Read lsp_server.ts (at the project root /Users/rdurst/.REDACTED.ts) thoroughly and catalog every LSP endpoint/handler. For each one document:
+- The LSP method name (e.g., textDocument/hover)
+- What Gleam module function it delegates to
+- What parameters it expects from the client
+- What it returns
+- Any server state it depends on (blueprintIndex, expectationIndex, workspaceFiles, document text, etc.)
+- Any async behavior or side effects (e.g., publishing diagnostics as notifications)
+
+Also document:
+- The initialization flow (onInitialize, scanCaffeineFiles, index building)
+- Document lifecycle handlers (didOpen, didChange, didClose, watched file changes)
+- How diagnostics are triggered and debounced
+- The cross-file revalidation mechanism
+
+This becomes the test matrix for which endpoints need e2e coverage.
+
+When done, update Task #3 to completed using TaskUpdate.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="researcher-endpoints" color="yellow">
+{"type":"task_assignment","taskId":"3","subject":"Catalog all LSP server endpoints and their behavior","description":"Read lsp_server.ts thoroughly and catalog every LSP endpoint/handler:\n- What request/notification it handles\n- What Gleam module it delegates to\n- What parameters it expects\n- What it returns\n- Any state it depends on (blueprintIndex, expectationIndex, workspaceFiles, document text)\n- Any async behavior or side effects\nThis becomes the test matrix for which endpoints need e2e coverage.\nAlso note the initialization flow (onInitialize, scanCaffeineFiles, index building) and document lifecycle (didOpen, didChange, didClose, watched file changes).","assignedBy":"researcher-endpoints","timestamp":"2026-02-14T04:54:26.952Z"}
+</teammate-message>
