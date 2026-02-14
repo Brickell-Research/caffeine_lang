@@ -5,6 +5,10 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
+    "caffeine_lang/src/caffeine_lang/codegen/dynatrace.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/honeycomb.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam",
+    "caffeine_lang/src/caffeine_lang/compiler.gleam",
     "caffeine_lsp/src/caffeine_lsp/definition.gleam",
     "caffeine_lsp/src/caffeine_lsp/diagnostics.gleam",
     "caffeine_lsp/test/caffeine_lsp_test.gleam",
@@ -17,13 +21,20 @@
       "context": "/55/c8aa773ded/0/context.md",
       "content_hash": "/55/c8aa773ded/0/content_hash.txt",
       "prompt": "/55/c8aa773ded/0/prompt.txt"
+    },
+    {
+      "metadata": "/55/c8aa773ded/1/metadata.json",
+      "transcript": "/55/c8aa773ded/1/full.jsonl",
+      "context": "/55/c8aa773ded/1/context.md",
+      "content_hash": "/55/c8aa773ded/1/content_hash.txt",
+      "prompt": "/55/c8aa773ded/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 34,
-    "cache_creation_tokens": 53758,
-    "cache_read_tokens": 2789254,
-    "output_tokens": 12602,
-    "api_call_count": 22
+    "input_tokens": 46,
+    "cache_creation_tokens": 98070,
+    "cache_read_tokens": 3191488,
+    "output_tokens": 12729,
+    "api_call_count": 30
   }
 }
