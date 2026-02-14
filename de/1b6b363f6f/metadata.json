@@ -5,18 +5,6 @@
   "branch": "rdurst/cli",
   "checkpoints_count": 1,
   "files_touched": [
-    "caffeine_cli/src/caffeine_cli/handler.gleam",
-    "caffeine_lang/test/caffeine_lang/codegen/datadog_test.gleam",
-    "caffeine_lang/test/caffeine_lang/codegen/dynatrace_test.gleam",
-    "caffeine_lang/test/caffeine_lang/codegen/honeycomb_test.gleam",
-    "caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam",
-    "caffeine_lang/test/ir_test_helpers.gleam",
-    "caffeine_lang/test/test_helpers.gleam",
-    "caffeine_lsp/src/caffeine_lsp/highlight.gleam",
-    "caffeine_lsp/src/caffeine_lsp/linked_editing_range.gleam",
-    "caffeine_lsp/src/caffeine_lsp/position_utils.gleam",
-    "caffeine_lsp/src/caffeine_lsp/references.gleam",
-    "caffeine_lsp/src/caffeine_lsp/rename.gleam",
     "lsp_server.ts"
   ],
   "sessions": [
@@ -29,10 +17,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 16310,
-    "cache_creation_tokens": 303844,
-    "cache_read_tokens": 11480958,
-    "output_tokens": 15898,
-    "api_call_count": 98
+    "input_tokens": 32,
+    "cache_creation_tokens": 16631,
+    "cache_read_tokens": 4363512,
+    "output_tokens": 869,
+    "api_call_count": 28
   }
 }
