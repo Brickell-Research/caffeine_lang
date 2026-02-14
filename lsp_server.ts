@@ -23,7 +23,7 @@ if (!process.argv.includes("--stdio")) {
 }
 
 // Gleam-compiled intelligence modules
-import { get_diagnostics, get_cross_file_diagnostics, get_cross_file_dependency_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_diagnostics, get_cross_file_diagnostics, get_cross_file_dependency_diagnostics, get_all_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 import { get_completions } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 import {
@@ -79,17 +79,17 @@ let workspaceRoot: string | null = null;
 const workspaceFiles = new Set<string>();
 
 /** Recursively find all .caffeine files under a directory. */
-function scanCaffeineFiles(dir: string): void {
+async function scanCaffeineFiles(dir: string): Promise<void> {
   let entries: fs.Dirent[];
   try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
+    entries = await fs.promises.readdir(dir, { withFileTypes: true });
   } catch {
     return;
   }
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      scanCaffeineFiles(full);
+      await scanCaffeineFiles(full);
     } else if (entry.isFile() && entry.name.endsWith(".caffeine")) {
       workspaceFiles.add(pathToFileURL(full).toString());
     }
@@ -108,15 +108,27 @@ function getFileContent(uri: string): string | null {
   }
 }
 
+/** Async version: prefer open document, fall back to async disk read. */
+async function getFileContentAsync(uri: string): Promise<string | null> {
+  const doc = documents.get(uri);
+  if (doc) return doc.getText();
+  try {
+    const filePath = fileURLToPath(uri);
+    return await fs.promises.readFile(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
 // deno-lint-ignore no-explicit-any
-connection.onInitialize((params: any) => {
+connection.onInitialize(async (params: any) => {
   const rootUri: string | undefined = params.rootUri ?? params.rootPath;
   if (rootUri) {
     try {
       workspaceRoot = rootUri.startsWith("file://")
         ? fileURLToPath(rootUri)
         : rootUri;
-      scanCaffeineFiles(workspaceRoot);
+      await scanCaffeineFiles(workspaceRoot);
       // Build initial blueprint and expectation indices from all discovered files
       for (const uri of workspaceFiles) {
         const text = getFileContent(uri);
@@ -261,16 +273,16 @@ function allKnownExpectationIdentifiers(): string[] {
 }
 
 /** Look up an expectation definition by dotted identifier. */
-function findExpectationByIdentifier(
+async function findExpectationByIdentifier(
   dottedId: string,
-): { uri: string; line: number; col: number; nameLen: number } | null {
+): Promise<{ uri: string; line: number; col: number; nameLen: number } | null> {
   const parts = dottedId.split(".");
   if (parts.length !== 4) return null;
   const itemName = parts[3];
 
   for (const [uri, idMap] of expectationIndex) {
     if (idMap.get(itemName) !== dottedId) continue;
-    const text = getFileContent(uri);
+    const text = await getFileContentAsync(uri);
     if (!text) continue;
     // Reuse blueprint item location finder — same * "name" pattern
     const loc = findBlueprintItemLocation(text, itemName);
@@ -294,30 +306,19 @@ function gleamDiagToLsp(d: any) {
     : base;
 }
 
-/** Gather single-file, cross-file, and dependency diagnostics for a document. */
-// deno-lint-ignore no-explicit-any
-function gatherDiagnostics(text: string, knownBlueprints: any, knownExpectations: any): any[] {
-  const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
-  let crossDiags: ReturnType<typeof gleamArray> = [];
-  if (isExpectsFile(text)) {
-    crossDiags = gleamArray(
-      get_cross_file_diagnostics(text, knownBlueprints) as GleamList,
-    );
-  }
-  const depDiags = gleamArray(
-    get_cross_file_dependency_diagnostics(text, knownExpectations) as GleamList,
-  );
-  return [...singleDiags, ...crossDiags, ...depDiags].map(gleamDiagToLsp);
-}
-
-/** Run cross-file diagnostics for all open documents. */
+/** Run all diagnostics for all open documents using single-parse path. */
 function revalidateCrossFileDiagnostics() {
   const knownBlueprints = toList(allKnownBlueprints());
   const knownExpectations = toList(allKnownExpectationIdentifiers());
   for (const doc of documents.all()) {
     try {
-      const diagnostics = gatherDiagnostics(doc.getText(), knownBlueprints, knownExpectations);
-      connection.sendDiagnostics({ uri: doc.uri, diagnostics });
+      const allDiags = gleamArray(
+        get_all_diagnostics(doc.getText(), knownBlueprints, knownExpectations) as GleamList,
+      );
+      connection.sendDiagnostics({
+        uri: doc.uri,
+        diagnostics: allDiags.map(gleamDiagToLsp),
+      });
     } catch {
       /* ignore */
     }
@@ -361,6 +362,17 @@ function updateIndicesForFile(uri: string, text: string): boolean {
   return changed;
 }
 
+/** Coalesce rapid revalidation triggers into a single run. */
+let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRevalidation() {
+  if (revalidateTimer) return;
+  revalidateTimer = setTimeout(() => {
+    revalidateTimer = null;
+    revalidateCrossFileDiagnostics();
+  }, 50);
+}
+
 // --- Diagnostics ---
 
 const diagnosticTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -382,16 +394,21 @@ documents.onDidChangeContent((change) => {
 
       if (updateIndicesForFile(uri, text)) {
         // Indices changed — revalidate all open documents (includes current file)
-        revalidateCrossFileDiagnostics();
+        scheduleRevalidation();
       } else {
         // No index changes — only send diagnostics for the current file
         try {
-          const diagnostics = gatherDiagnostics(
-            text,
-            toList(allKnownBlueprints()),
-            toList(allKnownExpectationIdentifiers()),
+          const allDiags = gleamArray(
+            get_all_diagnostics(
+              text,
+              toList(allKnownBlueprints()),
+              toList(allKnownExpectationIdentifiers()),
+            ) as GleamList,
           );
-          connection.sendDiagnostics({ uri, diagnostics });
+          connection.sendDiagnostics({
+            uri,
+            diagnostics: allDiags.map(gleamDiagToLsp),
+          });
         } catch {
           connection.sendDiagnostics({ uri, diagnostics: [] });
         }
@@ -511,13 +528,13 @@ function findBlueprintItemLocation(
 }
 
 /** Look up a cross-file blueprint definition by blueprint item name. */
-function findCrossFileBlueprintDef(
+async function findCrossFileBlueprintDef(
   blueprintItemName: string,
-): { uri: string; line: number; col: number; nameLen: number } | null {
+): Promise<{ uri: string; line: number; col: number; nameLen: number } | null> {
   // Use the blueprint index for a fast lookup by item name
   for (const [uri, names] of blueprintIndex) {
     if (!names.has(blueprintItemName)) continue;
-    const text = getFileContent(uri);
+    const text = await getFileContentAsync(uri);
     if (!text) continue;
     const loc = findBlueprintItemLocation(text, blueprintItemName);
     if (loc) return { uri, ...loc };
@@ -525,9 +542,9 @@ function findCrossFileBlueprintDef(
   return null;
 }
 
-/** Shared handler for definition and declaration requests. */
+/** Shared async handler for definition and declaration requests. */
 // deno-lint-ignore no-explicit-any
-function resolveDefinitionOrDeclaration(params: any) {
+async function resolveDefinitionOrDeclaration(params: any) {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return null;
 
@@ -555,7 +572,7 @@ function resolveDefinitionOrDeclaration(params: any) {
       params.position.character,
     );
     if (bpRef instanceof Some) {
-      const target = findCrossFileBlueprintDef(bpRef[0] as string);
+      const target = await findCrossFileBlueprintDef(bpRef[0] as string);
       if (target) {
         return {
           uri: target.uri,
@@ -571,7 +588,7 @@ function resolveDefinitionOrDeclaration(params: any) {
       params.position.character,
     );
     if (relRef instanceof Some) {
-      const target = findExpectationByIdentifier(relRef[0] as string);
+      const target = await findExpectationByIdentifier(relRef[0] as string);
       if (target) {
         return {
           uri: target.uri,
@@ -607,7 +624,7 @@ connection.onDocumentHighlight((params) => {
 
 // --- Find All References ---
 
-connection.onReferences((params) => {
+connection.onReferences(async (params) => {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return [];
 
@@ -634,7 +651,7 @@ connection.onReferences((params) => {
     for (const uri of workspaceFiles) {
       if (searched.has(uri)) continue;
       searched.add(uri);
-      const otherText = getFileContent(uri);
+      const otherText = await getFileContentAsync(uri);
       if (!otherText) continue;
       try {
         const otherRefs = gleamArray(
@@ -837,13 +854,13 @@ connection.onCodeAction((params) => {
 // --- Workspace Symbols ---
 
 // deno-lint-ignore no-explicit-any
-connection.onWorkspaceSymbol((params: any) => {
+connection.onWorkspaceSymbol(async (params: any) => {
   const query = (params.query ?? "").toLowerCase();
   // deno-lint-ignore no-explicit-any
   const results: any[] = [];
 
   for (const uri of workspaceFiles) {
-    const text = getFileContent(uri);
+    const text = await getFileContentAsync(uri);
     if (!text) continue;
 
     try {
@@ -898,7 +915,7 @@ connection.languages.typeHierarchy.onPrepare((params) => {
 });
 
 // deno-lint-ignore no-explicit-any
-connection.languages.typeHierarchy.onSupertypes((params: any) => {
+connection.languages.typeHierarchy.onSupertypes(async (params: any) => {
   const data = params.item?.data;
   if (!data || data.kind !== "expectation" || !data.blueprint) return [];
 
@@ -906,7 +923,7 @@ connection.languages.typeHierarchy.onSupertypes((params: any) => {
   // deno-lint-ignore no-explicit-any
   const results: any[] = [];
   for (const uri of workspaceFiles) {
-    const text = getFileContent(uri);
+    const text = await getFileContentAsync(uri);
     if (!text || !text.trimStart().startsWith("Blueprints")) continue;
     // Quick check: does file contain the blueprint name?
     if (!text.includes(`"${data.blueprint}"`)) continue;
@@ -934,7 +951,7 @@ connection.languages.typeHierarchy.onSupertypes((params: any) => {
 });
 
 // deno-lint-ignore no-explicit-any
-connection.languages.typeHierarchy.onSubtypes((params: any) => {
+connection.languages.typeHierarchy.onSubtypes(async (params: any) => {
   const data = params.item?.data;
   if (!data || data.kind !== "blueprint") return [];
 
@@ -943,7 +960,7 @@ connection.languages.typeHierarchy.onSubtypes((params: any) => {
   const results: any[] = [];
 
   for (const uri of workspaceFiles) {
-    const text = getFileContent(uri);
+    const text = await getFileContentAsync(uri);
     if (!text || !text.trimStart().startsWith("Expectations")) continue;
     // Quick check: does file reference this blueprint?
     if (!text.includes(`"${blueprintName}"`)) continue;
@@ -1009,7 +1026,7 @@ connection.onDidChangeWatchedFiles((params) => {
   }
 
   if (indicesChanged) {
-    revalidateCrossFileDiagnostics();
+    scheduleRevalidation();
   }
 });
 
@@ -1021,31 +1038,32 @@ documents.onDidClose((event) => {
   connection.sendDiagnostics({ uri, diagnostics: [] });
 
   // Re-read from disk to keep the blueprint index accurate (the file still exists,
-  // we just closed the editor tab).
-  const diskText = (() => {
+  // we just closed the editor tab). Use async read to avoid blocking.
+  (async () => {
+    let diskText: string | null = null;
     try {
-      return fs.readFileSync(fileURLToPath(uri), "utf-8");
+      diskText = await fs.promises.readFile(fileURLToPath(uri), "utf-8");
     } catch {
-      return null;
+      // File may have been deleted
+    }
+
+    const hadBlueprintsBefore = blueprintIndex.has(uri);
+    const hadExpectationsBefore = expectationIndex.has(uri);
+    if (diskText) {
+      updateIndicesForFile(uri, diskText);
+    } else {
+      // File was deleted from disk while open — clean up
+      blueprintIndex.delete(uri);
+      expectationIndex.delete(uri);
+    }
+
+    const hasBlueprintsAfter = blueprintIndex.has(uri);
+    const hasExpectationsAfter = expectationIndex.has(uri);
+    // If any index availability changed, re-validate open documents
+    if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
+      scheduleRevalidation();
     }
   })();
-
-  const hadBlueprintsBefore = blueprintIndex.has(uri);
-  const hadExpectationsBefore = expectationIndex.has(uri);
-  if (diskText) {
-    updateIndicesForFile(uri, diskText);
-  } else {
-    // File was deleted from disk while open — clean up
-    blueprintIndex.delete(uri);
-    expectationIndex.delete(uri);
-  }
-
-  const hasBlueprintsAfter = blueprintIndex.has(uri);
-  const hasExpectationsAfter = expectationIndex.has(uri);
-  // If any index availability changed, re-validate open documents
-  if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
-    revalidateCrossFileDiagnostics();
-  }
 });
 
 documents.listen(connection);
