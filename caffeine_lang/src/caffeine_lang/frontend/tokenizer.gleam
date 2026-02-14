@@ -145,11 +145,14 @@ fn tokenize_loop(
 
         "-" -> {
           case read_number(rest, "-") {
-            Ok(#(tok, remaining, len)) ->
-              tokenize_loop(advance(state, remaining, len), [
-                token.PositionedToken(tok, state.line, state.column),
+            Ok(#(tok, remaining, len)) -> {
+              let #(final_tok, final_remaining, final_len) =
+                maybe_percentage(tok, remaining, len)
+              tokenize_loop(advance(state, final_remaining, final_len), [
+                token.PositionedToken(final_tok, state.line, state.column),
                 ..acc
               ])
+            }
             Error(Nil) ->
               Error(tokenizer_error.InvalidCharacter(
                 state.line,
@@ -161,11 +164,14 @@ fn tokenize_loop(
 
         "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> {
           case read_number(state.source, "") {
-            Ok(#(tok, remaining, len)) ->
-              tokenize_loop(advance(state, remaining, len), [
-                token.PositionedToken(tok, state.line, state.column),
+            Ok(#(tok, remaining, len)) -> {
+              let #(final_tok, final_remaining, final_len) =
+                maybe_percentage(tok, remaining, len)
+              tokenize_loop(advance(state, final_remaining, final_len), [
+                token.PositionedToken(final_tok, state.line, state.column),
                 ..acc
               ])
+            }
             Error(Nil) ->
               Error(tokenizer_error.InvalidCharacter(
                 state.line,
@@ -329,6 +335,25 @@ fn parse_float(
   }
 }
 
+/// Checks if a number token is followed by `%`, converting it to LiteralPercentage.
+fn maybe_percentage(
+  tok: Token,
+  remaining: String,
+  len: Int,
+) -> #(Token, String, Int) {
+  case string.pop_grapheme(remaining) {
+    Ok(#("%", after_percent)) -> {
+      let float_val = case tok {
+        token.LiteralInteger(n) -> int.to_float(n)
+        token.LiteralFloat(f) -> f
+        _ -> 0.0
+      }
+      #(token.LiteralPercentage(float_val), after_percent, len + 1)
+    }
+    _ -> #(tok, remaining, len)
+  }
+}
+
 fn is_digit(char: String) -> Bool {
   case string.to_utf_codepoints(char) {
     [cp] -> {
@@ -393,6 +418,7 @@ fn keyword_or_identifier(word: String) -> Token {
     "Defaulted" -> token.KeywordDefaulted
     "Type" -> token.KeywordType
     "URL" -> token.KeywordURL
+    "Percentage" -> token.KeywordPercentage
     "true" -> token.LiteralTrue
     "false" -> token.LiteralFalse
     _ -> token.Identifier(word)

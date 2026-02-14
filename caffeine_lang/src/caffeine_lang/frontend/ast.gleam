@@ -171,6 +171,7 @@ pub type Literal {
   LiteralString(value: String)
   LiteralInteger(value: Int)
   LiteralFloat(value: Float)
+  LiteralPercentage(value: Float)
   LiteralTrue
   LiteralFalse
   LiteralList(elements: List(Literal))
@@ -202,6 +203,7 @@ pub fn literal_to_string(lit: Literal) -> String {
     LiteralString(s) -> "\"" <> s <> "\""
     LiteralInteger(n) -> string.inspect(n)
     LiteralFloat(f) -> string.inspect(f)
+    LiteralPercentage(f) -> string.inspect(f) <> "%"
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(_) -> "[...]"

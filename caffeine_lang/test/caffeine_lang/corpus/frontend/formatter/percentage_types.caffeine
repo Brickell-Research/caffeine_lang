@@ -1,0 +1,8 @@
+Blueprints for "SLO"
+  * "test":
+    Requires {
+      threshold: Percentage,
+      target: Percentage { x | x in ( 99.0..100.0 ) },
+      level: Defaulted(Percentage, 99.9%)
+    }
+    Provides { value: "x" }

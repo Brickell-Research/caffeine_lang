@@ -5,7 +5,8 @@ import caffeine_lang/frontend/ast.{
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
   type Field, type Literal, type Struct, type TypeAlias, ExtendableProvides,
   ExtendableRequires, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
-  LiteralString, LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
+  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
+  Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -15,7 +16,7 @@ import caffeine_lang/types.{
   type RefinementTypes, Boolean, Defaulted, Dict, Float, InclusiveRange, Integer,
   List as ListType, NumericType, OneOf, Optional, ParsedCollection,
   ParsedModifier, ParsedPrimitive, ParsedRecord, ParsedRefinement,
-  ParsedTypeAliasRef, SemanticType, String as StringType, URL,
+  ParsedTypeAliasRef, Percentage, SemanticType, String as StringType, URL,
 }
 import gleam/bool
 import gleam/dict
@@ -306,6 +307,7 @@ fn format_primitive_type(p: PrimitiveTypes) -> String {
       case n {
         Integer -> "Integer"
         Float -> "Float"
+        Percentage -> "Percentage"
       }
     SemanticType(s) ->
       case s {
@@ -365,19 +367,25 @@ fn needs_string_quoting(t: ParsedType) -> Bool {
   }
 }
 
-/// A default value needs quoting if it isn't a number or boolean literal.
+/// A default value needs quoting if it isn't a number, boolean, or percentage literal.
 fn value_needs_quoting(val: String) -> Bool {
   case val {
     "True" | "False" -> False
-    _ ->
-      case int.parse(val) {
+    _ -> {
+      // Strip % suffix for percentage literals
+      let cleaned = case string.ends_with(val, "%") {
+        True -> string.drop_end(val, 1)
+        False -> val
+      }
+      case int.parse(cleaned) {
         Ok(_) -> False
         Error(_) ->
-          case float.parse(val) {
+          case float.parse(cleaned) {
             Ok(_) -> False
             Error(_) -> True
           }
       }
+    }
   }
 }
 
@@ -406,6 +414,7 @@ fn format_literal(l: Literal, indent: Int, context: FieldContext) -> String {
     LiteralString(s) -> "\"" <> s <> "\""
     LiteralInteger(i) -> int.to_string(i)
     LiteralFloat(f) -> float.to_string(f)
+    LiteralPercentage(f) -> float.to_string(f) <> "%"
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(elements) -> format_literal_list(elements, indent, context)

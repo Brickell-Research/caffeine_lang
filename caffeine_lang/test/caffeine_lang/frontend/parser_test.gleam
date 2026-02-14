@@ -41,6 +41,10 @@ fn float_type() -> types.ParsedType {
   types.ParsedPrimitive(types.NumericType(types.Float))
 }
 
+fn percentage_type() -> types.ParsedType {
+  types.ParsedPrimitive(types.NumericType(types.Percentage))
+}
+
 fn boolean_type() -> types.ParsedType {
   types.ParsedPrimitive(types.Boolean)
 }
@@ -111,6 +115,7 @@ fn range_type(
 // * ✅ happy path - advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ happy path - nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
 // * ✅ happy path - record type
+// * ✅ happy path - percentage types (plain, refined, defaulted)
 pub fn parse_blueprints_file_test() {
   [
     // single block
@@ -693,6 +698,61 @@ pub fn parse_blueprints_file_test() {
         ),
       ),
     ),
+    // percentage types (plain, refined, defaulted)
+    #(
+      blueprints_path("happy_path_percentage_types"),
+      Ok(
+        ast.BlueprintsFile(
+          trailing_comments: [],
+          type_aliases: [],
+          extendables: [],
+          blocks: [
+            ast.BlueprintsBlock(
+              leading_comments: [],
+              artifacts: [ast.ParsedSLO],
+              items: [
+                ast.BlueprintItem(
+                  leading_comments: [],
+                  name: "test",
+                  extends: [],
+                  requires: ast.Struct(trailing_comments: [], fields: [
+                    ast.Field(
+                      "threshold",
+                      ast.TypeValue(percentage_type()),
+                      leading_comments: [],
+                    ),
+                    ast.Field(
+                      "target",
+                      ast.TypeValue(range_type(
+                        types.NumericType(types.Percentage),
+                        "99.0",
+                        "100.0",
+                      )),
+                      leading_comments: [],
+                    ),
+                    ast.Field(
+                      "level",
+                      ast.TypeValue(defaulted_type(
+                        percentage_type(),
+                        "99.9%",
+                      )),
+                      leading_comments: [],
+                    ),
+                  ]),
+                  provides: ast.Struct(trailing_comments: [], fields: [
+                    ast.Field(
+                      "value",
+                      ast.LiteralValue(ast.LiteralString("x")),
+                      leading_comments: [],
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file_path) {
     parser.parse_blueprints_file(read_file(file_path))
@@ -705,6 +765,7 @@ pub fn parse_blueprints_file_test() {
 // * ✅ happy path - with extendable
 // * ✅ happy path - with extends
 // * ✅ happy path - list and struct literals
+// * ✅ happy path - percentage literal
 pub fn parse_expects_file_test() {
   [
     // single block
@@ -902,6 +963,32 @@ pub fn parse_expects_file_test() {
               ]),
             ),
           ]),
+        ]),
+      ),
+    ),
+    // percentage literal
+    #(
+      expects_path("happy_path_percentage_literal"),
+      Ok(
+        ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
+          ast.ExpectsBlock(
+            leading_comments: [],
+            blueprint: "api_availability",
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "checkout",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.9)),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
         ]),
       ),
     ),

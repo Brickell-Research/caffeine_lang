@@ -232,6 +232,52 @@ pub fn lower_blueprints_type_alias_test() {
   )
 }
 
+// ==== lower_blueprints (percentage types) ====
+// * ✅ Percentage lowers to PrimitiveType(NumericType(Percentage))
+// * ✅ Percentage refinement range lowers correctly
+// * ✅ Defaulted(Percentage, 99.9%) lowers correctly
+pub fn lower_blueprints_percentage_types_test() {
+  let blueprints = parse_and_lower_blueprints("blueprints_percentage_types")
+  let assert Ok(bp) = list.first(blueprints)
+
+  // Plain Percentage
+  let assert Ok(threshold_type) = dict.get(bp.params, "threshold")
+  threshold_type
+  |> should.equal(types.PrimitiveType(types.NumericType(types.Percentage)))
+
+  // Percentage { x | x in ( 99.0..100.0 ) }
+  let assert Ok(target_type) = dict.get(bp.params, "target")
+  target_type
+  |> should.equal(
+    types.RefinementType(types.InclusiveRange(
+      types.PrimitiveType(types.NumericType(types.Percentage)),
+      "99.0",
+      "100.0",
+    )),
+  )
+
+  // Defaulted(Percentage, 99.9%)
+  let assert Ok(level_type) = dict.get(bp.params, "level")
+  level_type
+  |> should.equal(
+    types.ModifierType(types.Defaulted(
+      types.PrimitiveType(types.NumericType(types.Percentage)),
+      "99.9%",
+    )),
+  )
+}
+
+// ==== lower_expectations (percentage literal) ====
+// * ✅ percentage literal lowers to FloatValue
+pub fn lower_expectations_percentage_literal_test() {
+  let expectations = parse_and_lower_expects("expects_percentage_literal")
+  let assert Ok(exp) = list.first(expectations)
+
+  let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
+  let assert Ok(threshold_float) = value.extract_float(threshold_val)
+  threshold_float |> should.equal(99.9)
+}
+
 // ==== lower_expectations ====
 // * ✅ simple expectation produces correct name, blueprint_ref, inputs
 // * ✅ expectation with extends (extendable flattening)

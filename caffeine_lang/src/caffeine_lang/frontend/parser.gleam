@@ -11,7 +11,8 @@ import caffeine_lang/types.{
   type ParsedType, type PrimitiveTypes, type RefinementTypes, Boolean, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, NumericType, OneOf, Optional,
   ParsedCollection, ParsedModifier, ParsedPrimitive, ParsedRecord,
-  ParsedRefinement, ParsedTypeAliasRef, SemanticType, String as StringType, URL,
+  ParsedRefinement, ParsedTypeAliasRef, Percentage, SemanticType,
+  String as StringType, URL,
 }
 import gleam/dict
 import gleam/float
@@ -797,6 +798,8 @@ fn parse_type(
     token.KeywordFloat -> parse_type_with_refinement(state, NumericType(Float))
     token.KeywordBoolean -> parse_type_with_refinement(state, Boolean)
     token.KeywordURL -> parse_type_with_refinement(state, SemanticType(URL))
+    token.KeywordPercentage ->
+      parse_type_with_refinement(state, NumericType(Percentage))
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
     token.KeywordOptional -> parse_optional_type(state)
@@ -876,6 +879,10 @@ fn parse_collection_inner_type(
     token.KeywordURL -> {
       let state = advance(state)
       Ok(#(ParsedPrimitive(SemanticType(URL)), state))
+    }
+    token.KeywordPercentage -> {
+      let state = advance(state)
+      Ok(#(ParsedPrimitive(NumericType(Percentage)), state))
     }
     token.KeywordList -> parse_list_type(state)
     token.KeywordDict -> parse_dict_type(state)
@@ -1091,6 +1098,8 @@ fn parse_refinement_body(
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
       use _ <- result.try(validate_oneof_literals(values, primitive, state))
+      // For Percentage OneOf, validate all values are within [0.0, 100.0]
+      use _ <- result.try(validate_percentage_oneof(values, primitive, state))
       let string_values = list.map(values, literal_to_string)
       Ok(#(
         OneOf(ParsedPrimitive(primitive), set.from_list(string_values)),
@@ -1105,6 +1114,13 @@ fn parse_refinement_body(
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
       use _ <- result.try(validate_oneof_literals([min, max], primitive, state))
+      // For Percentage ranges, validate bounds are within [0.0, 100.0]
+      use _ <- result.try(validate_percentage_range(
+        min,
+        max,
+        primitive,
+        state,
+      ))
       Ok(#(
         InclusiveRange(
           ParsedPrimitive(primitive),
@@ -1124,6 +1140,96 @@ fn parse_refinement_body(
   }
 }
 
+/// Validates that Percentage InclusiveRange bounds are within [0.0, 100.0].
+fn validate_percentage_range(
+  min: Literal,
+  max: Literal,
+  primitive: PrimitiveTypes,
+  state: ParserState,
+) -> Result(Nil, ParserError) {
+  case primitive {
+    NumericType(Percentage) -> {
+      let min_f = literal_to_float(min)
+      let max_f = literal_to_float(max)
+      case min_f, max_f {
+        Ok(lo), Ok(hi) ->
+          case lo >=. 0.0 && hi <=. 100.0 {
+            True -> Ok(Nil)
+            False ->
+              Error(parser_error.InvalidRefinement(
+                "Percentage range bounds must be within 0.0 and 100.0, got "
+                  <> literal_to_string(min)
+                  <> ".."
+                  <> literal_to_string(max),
+                state.line,
+                state.column,
+              ))
+          }
+        _, _ ->
+          Error(parser_error.InvalidRefinement(
+            "Percentage range bounds must be numeric",
+            state.line,
+            state.column,
+          ))
+      }
+    }
+    _ -> Ok(Nil)
+  }
+}
+
+/// Validates that Percentage OneOf values are within [0.0, 100.0].
+fn validate_percentage_oneof(
+  values: List(Literal),
+  primitive: PrimitiveTypes,
+  state: ParserState,
+) -> Result(Nil, ParserError) {
+  case primitive {
+    NumericType(Percentage) -> validate_percentage_oneof_loop(values, state)
+    _ -> Ok(Nil)
+  }
+}
+
+fn validate_percentage_oneof_loop(
+  values: List(Literal),
+  state: ParserState,
+) -> Result(Nil, ParserError) {
+  case values {
+    [] -> Ok(Nil)
+    [first, ..rest] -> {
+      case literal_to_float(first) {
+        Ok(f) ->
+          case f >=. 0.0 && f <=. 100.0 {
+            True -> validate_percentage_oneof_loop(rest, state)
+            False ->
+              Error(parser_error.InvalidRefinement(
+                "Percentage value must be between 0.0 and 100.0, got "
+                  <> literal_to_string(first),
+                state.line,
+                state.column,
+              ))
+          }
+        Error(_) ->
+          Error(parser_error.InvalidRefinement(
+            "Percentage value must be numeric, got "
+              <> literal_to_string(first),
+            state.line,
+            state.column,
+          ))
+      }
+    }
+  }
+}
+
+/// Extracts the float value from a numeric literal.
+fn literal_to_float(literal: Literal) -> Result(Float, Nil) {
+  case literal {
+    ast.LiteralFloat(f) -> Ok(f)
+    ast.LiteralPercentage(f) -> Ok(f)
+    ast.LiteralInteger(n) -> Ok(int.to_float(n))
+    _ -> Error(Nil)
+  }
+}
+
 // =============================================================================
 // LITERALS
 // =============================================================================
@@ -1135,6 +1241,8 @@ fn parse_literal(
     token.LiteralString(s) -> Ok(#(ast.LiteralString(s), advance(state)))
     token.LiteralInteger(n) -> Ok(#(ast.LiteralInteger(n), advance(state)))
     token.LiteralFloat(f) -> Ok(#(ast.LiteralFloat(f), advance(state)))
+    token.LiteralPercentage(f) ->
+      Ok(#(ast.LiteralPercentage(f), advance(state)))
     token.LiteralTrue -> Ok(#(ast.LiteralTrue, advance(state)))
     token.LiteralFalse -> Ok(#(ast.LiteralFalse, advance(state)))
     token.SymbolLeftBracket -> parse_literal_list(state)
@@ -1208,6 +1316,7 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralString(s) -> s
     ast.LiteralInteger(n) -> int.to_string(n)
     ast.LiteralFloat(f) -> float.to_string(f)
+    ast.LiteralPercentage(f) -> float.to_string(f) <> "%"
     ast.LiteralTrue -> "True"
     ast.LiteralFalse -> "False"
     ast.LiteralList(_) -> "[]"
@@ -1250,6 +1359,8 @@ fn literal_matches_primitive(
     StringType, ast.LiteralString(_) -> True
     NumericType(Integer), ast.LiteralInteger(_) -> True
     NumericType(Float), ast.LiteralFloat(_) -> True
+    NumericType(Percentage), ast.LiteralFloat(_) -> True
+    NumericType(Percentage), ast.LiteralPercentage(_) -> True
     Boolean, ast.LiteralTrue -> True
     Boolean, ast.LiteralFalse -> True
     SemanticType(_), ast.LiteralString(_) -> True
