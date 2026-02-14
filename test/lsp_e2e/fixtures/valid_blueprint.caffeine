@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "test_blueprint":
+    Requires { vendor: String, threshold: Float }
+    Provides { vendor: "datadog", threshold: 99.9 }
