@@ -77,13 +77,11 @@ pub fn render_resource_to_string(resource: Resource) -> String {
 /// Build a description string for an SLO resource.
 /// Uses the runbook URL if present, otherwise a standard "Managed by Caffeine" message.
 @internal
-pub fn build_description(ir: IntermediateRepresentation) -> String {
-  let runbook = case ir.get_slo_fields(ir.artifact_data) {
-    option.Some(slo) -> slo.runbook
-    option.None -> option.None
-  }
-
-  case runbook {
+pub fn build_description(
+  ir: IntermediateRepresentation,
+  with slo: SloFields,
+) -> String {
+  case slo.runbook {
     option.Some(url) -> "[Runbook](" <> url <> ")"
     option.None ->
       "Managed by Caffeine ("
@@ -124,9 +122,20 @@ pub fn require_evaluation(
     msg: "expectation '"
       <> ir_to_identifier(ir)
       <> "' - missing evaluation for "
-      <> vendor_name
+      <> vendor_display_name(vendor_name)
       <> " SLO",
   ))
+}
+
+/// Maps a vendor constant to a human-friendly display name.
+fn vendor_display_name(vendor: String) -> String {
+  case vendor {
+    "datadog" -> "Datadog"
+    "honeycomb" -> "Honeycomb"
+    "dynatrace" -> "Dynatrace"
+    "newrelic" -> "New Relic"
+    other -> other
+  }
 }
 
 /// Resolve a CQL expression by substituting indicators, wrapping errors with vendor context.

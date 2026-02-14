@@ -23,7 +23,7 @@ if (!process.argv.includes("--stdio")) {
 }
 
 // Gleam-compiled intelligence modules
-import { get_diagnostics, get_cross_file_diagnostics, get_cross_file_dependency_diagnostics, get_all_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+import { get_all_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 import { get_completions } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 import {
@@ -131,7 +131,7 @@ connection.onInitialize(async (params: any) => {
       await scanCaffeineFiles(workspaceRoot);
       // Build initial blueprint and expectation indices from all discovered files
       for (const uri of workspaceFiles) {
-        const text = getFileContent(uri);
+        const text = await getFileContentAsync(uri);
         if (text) {
           const names = extractBlueprintNames(text);
           if (names.length > 0) {
@@ -211,11 +211,6 @@ function allKnownBlueprints(): string[] {
     }
   }
   return names;
-}
-
-/** Check whether file content is an expects file. */
-function isExpectsFile(text: string): boolean {
-  return text.includes("Expectations for");
 }
 
 // --- Workspace Expectation Index ---
@@ -362,11 +357,11 @@ function updateIndicesForFile(uri: string, text: string): boolean {
   return changed;
 }
 
-/** Coalesce rapid revalidation triggers into a single run. */
+/** Coalesce rapid revalidation triggers into a single trailing-edge run. */
 let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleRevalidation() {
-  if (revalidateTimer) return;
+  if (revalidateTimer) clearTimeout(revalidateTimer);
   revalidateTimer = setTimeout(() => {
     revalidateTimer = null;
     revalidateCrossFileDiagnostics();
@@ -1037,6 +1032,10 @@ documents.onDidClose((event) => {
   // Clear diagnostics for the closed document so stale markers don't linger
   connection.sendDiagnostics({ uri, diagnostics: [] });
 
+  // Capture index state before the async read so we detect changes correctly.
+  const hadBlueprintsBefore = blueprintIndex.has(uri);
+  const hadExpectationsBefore = expectationIndex.has(uri);
+
   // Re-read from disk to keep the blueprint index accurate (the file still exists,
   // we just closed the editor tab). Use async read to avoid blocking.
   (async () => {
@@ -1047,8 +1046,6 @@ documents.onDidClose((event) => {
       // File may have been deleted
     }
 
-    const hadBlueprintsBefore = blueprintIndex.has(uri);
-    const hadExpectationsBefore = expectationIndex.has(uri);
     if (diskText) {
       updateIndicesForFile(uri, diskText);
     } else {
@@ -1063,7 +1060,7 @@ documents.onDidClose((event) => {
     if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
       scheduleRevalidation();
     }
-  })();
+  })().catch(() => { /* async close handler — errors are non-fatal */ });
 });
 
 documents.listen(connection);

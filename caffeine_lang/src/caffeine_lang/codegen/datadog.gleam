@@ -23,6 +23,8 @@ const default_evaluation = "numerator / denominator"
 
 /// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
 /// Includes provider configuration and variables.
+/// Note: Datadog does not use generator_utils.generate_terraform because it
+/// returns warnings alongside the HCL string.
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(#(String, List(String)), CompilationError) {

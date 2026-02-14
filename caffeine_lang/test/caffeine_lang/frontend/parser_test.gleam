@@ -732,10 +732,7 @@ pub fn parse_blueprints_file_test() {
                     ),
                     ast.Field(
                       "level",
-                      ast.TypeValue(defaulted_type(
-                        percentage_type(),
-                        "99.9%",
-                      )),
+                      ast.TypeValue(defaulted_type(percentage_type(), "99.9%")),
                       leading_comments: [],
                     ),
                   ]),

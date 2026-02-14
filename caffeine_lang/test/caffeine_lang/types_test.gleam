@@ -159,11 +159,7 @@ pub fn validate_numeric_value_test() {
     #(
       #(Percentage, string_val),
       Error([
-        types.ValidationError(
-          expected: "Percentage",
-          found: "String",
-          path: [],
-        ),
+        types.ValidationError(expected: "Percentage", found: "String", path: []),
       ]),
     ),
     #(
@@ -1251,19 +1247,11 @@ pub fn parse_refinement_type_test() {
     // ==== Happy Path (Percentage) ====
     #(
       "Percentage { x | x in ( 99.0..100.0 ) }",
-      Ok(InclusiveRange(
-        PrimitiveType(NumericType(Percentage)),
-        "99.0",
-        "100.0",
-      )),
+      Ok(InclusiveRange(PrimitiveType(NumericType(Percentage)), "99.0", "100.0")),
     ),
     #(
       "Percentage { x | x in ( 0.0..100.0 ) }",
-      Ok(InclusiveRange(
-        PrimitiveType(NumericType(Percentage)),
-        "0.0",
-        "100.0",
-      )),
+      Ok(InclusiveRange(PrimitiveType(NumericType(Percentage)), "0.0", "100.0")),
     ),
     #(
       "Percentage { x | x in { 99.0, 99.5, 99.9 } }",

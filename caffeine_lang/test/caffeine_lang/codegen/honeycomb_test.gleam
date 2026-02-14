@@ -31,18 +31,18 @@ fn make_honeycomb_ir(
   indicators: List(#(String, String)),
 ) -> ir.IntermediateRepresentation {
   ir_test_helpers.make_vendor_slo_ir(
-    friendly_label: friendly_label,
-    unique_identifier: unique_identifier,
-    org: org,
-    team: team,
-    service: service,
-    blueprint: blueprint,
-    threshold: threshold,
-    window_in_days: window_in_days,
-    evaluation: evaluation,
-    indicators: indicators,
-    vendor_string: constants.vendor_honeycomb,
-    vendor_enum: vendor.Honeycomb,
+    friendly_label,
+    unique_identifier,
+    org,
+    team,
+    service,
+    blueprint,
+    threshold,
+    window_in_days,
+    evaluation,
+    indicators,
+    constants.vendor_honeycomb,
+    vendor.Honeycomb,
   )
 }
 

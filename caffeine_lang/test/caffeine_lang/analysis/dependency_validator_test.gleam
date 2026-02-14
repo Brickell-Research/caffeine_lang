@@ -736,7 +736,7 @@ pub fn validate_hard_dependency_thresholds_test() {
         ),
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) exceeds the composite availability ceiling of 99.98000099999999 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99)",
+        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.99) exceeds the composite availability ceiling of 99.98 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99)",
         context: errors.empty_context(),
       )),
     ),
@@ -785,7 +785,7 @@ pub fn validate_hard_dependency_thresholds_test() {
         ),
       ],
       Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.98) exceeds the composite availability ceiling of 99.97000299989998 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99), 'acme.infra.queue.rabbit_slo' (99.99)",
+        msg: "Composite hard dependency threshold violation: 'acme.platform.auth.login_slo' (threshold: 99.98) exceeds the composite availability ceiling of 99.97 from its hard dependencies: 'acme.infra.db.query_slo' (99.99), 'acme.infra.cache.redis_slo' (99.99), 'acme.infra.queue.rabbit_slo' (99.99)",
         context: errors.empty_context(),
       )),
     ),

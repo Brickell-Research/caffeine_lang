@@ -166,7 +166,11 @@ fn primitive_type_meta(typ: PrimitiveTypes) -> TypeMeta {
 }
 
 fn numeric_all_type_metas() -> List(TypeMeta) {
-  [numeric_type_meta(Integer), numeric_type_meta(Float), numeric_type_meta(Percentage)]
+  [
+    numeric_type_meta(Integer),
+    numeric_type_meta(Float),
+    numeric_type_meta(Percentage),
+  ]
 }
 
 /// Returns metadata for a NumericTypes variant.
