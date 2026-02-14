@@ -1,0 +1,13 @@
+Kick off a bunch of agents to understand the compiler architecture
+
+---
+
+kick off a bunch of agents to look at architectural duplication and redundancy - dive deep!!!
+
+---
+
+ok, lets make a todo list for this and then plan the first item
+
+---
+
+[Request interrupted by user for tool use]

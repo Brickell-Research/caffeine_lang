@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "c46a845e3026",
+  "strategy": "manual-commit",
+  "branch": "rdurst/compiler",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/settings.local.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c4/6a845e3026/0/metadata.json",
+      "transcript": "/c4/6a845e3026/0/full.jsonl",
+      "context": "/c4/6a845e3026/0/context.md",
+      "content_hash": "/c4/6a845e3026/0/content_hash.txt",
+      "prompt": "/c4/6a845e3026/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4161,
+    "cache_creation_tokens": 128832,
+    "cache_read_tokens": 1157696,
+    "output_tokens": 1618,
+    "api_call_count": 14
+  }
+}
