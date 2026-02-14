@@ -1,0 +1,131 @@
+Implement the following plan:
+
+# Plan: Extract Vendor Codegen Boilerplate into generator_utils
+
+## Context
+
+All 4 vendor codegen modules (datadog, honeycomb, dynatrace, newrelic) duplicate identical boilerplate for `terraform_settings()`, `provider()`, `generate_terraform()`, and `generate_resources()`. Only the vendor-specific resource building (`ir_to_terraform_resource`) and a few helper functions are truly unique per vendor. This refactoring extracts shared patterns into `generator_utils.gleam`, reducing ~200 lines of boilerplate while keeping vendor-specific logic in vendor modules.
+
+**Key constraint:** Datadog is special — its `generate_terraform` returns warnings (`#(String, List(String))`) and its `generate_resources` uses `try_fold` for per-resource warning accumulation. Datadog only benefits from Steps 1-2.
+
+## Files Modified
+
+- `caffeine_lang/src/caffeine_lang/codegen/generator_utils.gleam` — add 4 builder functions
+- `caffeine_lang/src/caffeine_lang/codegen/datadog.gleam` — delegate terraform_settings + provider
+- `caffeine_lang/src/caffeine_lang/codegen/honeycomb.gleam` — delegate all 4
+- `caffeine_lang/src/caffeine_lang/codegen/dynatrace.gleam` — delegate all 4
+- `caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam` — delegate all 4
+
+## Steps
+
+### Step 1: Add `build_terraform_settings` to generator_utils
+
+Add to `generator_utils.gleam`:
+```gleam
+@internal
+pub fn build_terraform_settings(
+  provider_name provider_name: String,
+  source source: String,
+  version version: String,
+) -> terraform.TerraformSettings
+```
+
+Then in each vendor module, replace the body of `terraform_settings()` with a one-liner call. Example for datadog:
+```gleam
+generator_utils.build_terraform_settings(
+  provider_name: constants.provider_datadog,
+  source: "DataDog/datadog",
+  version: "~> 3.0",
+)
+```
+
+Vendor args: honeycomb (`"honeycombio/honeycombio"`, `"~> 0.31"`), dynatrace (`"dynatrace-oss/dynatrace"`, `"~> 1.0"`), newrelic (`"newrelic/newrelic"`, `"~> 3.0"`).
+
+### Step 2: Add `build_provider` to generator_utils
+
+Add to `generator_utils.gleam` (also add `import terra_madre/hcl`):
+```gleam
+@internal
+pub fn build_provider(
+  name name: String,
+  attributes attributes: List(#(String, hcl.Expr)),
+) -> terraform.Provider
+```
+
+Then in each vendor module, replace the body of `provider()` with a one-liner. Each vendor passes its own attribute list (e.g. datadog passes api_key + app_key, honeycomb passes only api_key, etc.).
+
+### Step 3: Add `generate_resources_simple` to generator_utils
+
+Add to `generator_utils.gleam` (also add `import gleam/list`):
+```gleam
+@internal
+pub fn generate_resources_simple(
+  irs: List(IntermediateRepresentation),
+  mapper mapper: fn(IntermediateRepresentation) -> Result(Resource, CompilationError),
+) -> Result(#(List(Resource), List(String)), CompilationError)
+```
+
+Implementation: `list.try_map(mapper) |> result.map(fn(r) { #(r, []) })`.
+
+Delegate from **dynatrace** and **newrelic** `generate_resources()`. Not datadog (warning accumulation) or honeycomb (multi-resource per IR).
+
+### Step 4: Add `generate_resources_multi` to generator_utils
+
+```gleam
+@internal
+pub fn generate_resources_multi(
+  irs: List(IntermediateRepresentation),
+  mapper mapper: fn(IntermediateRepresentation) -> Result(List(Resource), CompilationError),
+) -> Result(#(List(Resource), List(String)), CompilationError)
+```
+
+Implementation: `list.try_map(mapper) |> result.map(fn(lists) { #(list.flatten(lists), []) })`.
+
+Delegate from **honeycomb** `generate_resources()`.
+
+### Step 5: Add `generate_terraform` helper to generator_utils
+
+```gleam
+@internal
+pub fn generate_terraform(
+  irs: List(IntermediateRepresentation),
+  settings settings: TerraformSettings,
+  provider provider: Provider,
+  variables variables: List(Variable),
+  generate_resources generate_resources: fn(List(IntermediateRepresentation)) ->
+    Result(#(List(Resource), List(String)), CompilationError),
+) -> Result(String, CompilationError)
+```
+
+Implementation: calls `generate_resources(irs)`, discards warnings, calls `render_terraform_config`.
+
+Delegate from **honeycomb**, **dynatrace**, and **newrelic** `generate_terraform()`. NOT datadog (different return type with warnings).
+
+### What stays as-is
+
+- **`variables()`** — each vendor has unique variable definitions, no structural duplication to extract
+- **`ir_to_terraform_resource()`** — vendor-specific by definition
+- **Datadog's `generate_terraform`** — different return type (includes warnings)
+- **Datadog's `generate_resources`** — uses `try_fold` for per-resource warning accumulation
+
+## Verification
+
+After each step, run:
+```bash
+cd caffeine_lang && gleam test && gleam test --target javascript
+```
+
+All existing tests (terraform_settings_test, provider_test, variables_test, generate_terraform_test, window conversion tests, ir_to_terraform_resource tests) pass unchanged since behavior is identical — only the internal implementation delegates to shared helpers.
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/rdurst/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+ok whats next?
+
+---
+
+yes commit this firsy

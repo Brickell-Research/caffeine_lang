@@ -1,9 +1,11 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "c46a845e3026",
+  "session_id": "6f43cd6f-8873-4965-ad4a-39be1f21316c",
   "strategy": "manual-commit",
+  "created_at": "2026-02-14T01:24:07.691717Z",
   "branch": "rdurst/compiler",
-  "checkpoints_count": 2,
+  "checkpoints_count": 1,
   "files_touched": [
     ".claude/settings.local.json",
     "caffeine_cli/build/packages/argv/README.md",
@@ -37,27 +39,22 @@
     "caffeine_lsp/build/packages/terra_madre/LICENSE",
     "caffeine_lsp/build/packages/terra_madre/README.md"
   ],
-  "sessions": [
-    {
-      "metadata": "/c4/6a845e3026/0/metadata.json",
-      "transcript": "/c4/6a845e3026/0/full.jsonl",
-      "context": "/c4/6a845e3026/0/context.md",
-      "content_hash": "/c4/6a845e3026/0/content_hash.txt",
-      "prompt": "/c4/6a845e3026/0/prompt.txt"
-    },
-    {
-      "metadata": "/c4/6a845e3026/1/metadata.json",
-      "transcript": "/c4/6a845e3026/1/full.jsonl",
-      "context": "/c4/6a845e3026/1/context.md",
-      "content_hash": "/c4/6a845e3026/1/content_hash.txt",
-      "prompt": "/c4/6a845e3026/1/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
   "token_usage": {
-    "input_tokens": 17374,
-    "cache_creation_tokens": 188066,
-    "cache_read_tokens": 2393440,
-    "output_tokens": 1697,
-    "api_call_count": 34
-  }
+    "input_tokens": 13213,
+    "cache_creation_tokens": 59234,
+    "cache_read_tokens": 1235744,
+    "output_tokens": 79,
+    "api_call_count": 20
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T01:24:07.547451Z",
+    "agent_lines": 139,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 7,
+    "total_committed": 139,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst--claude-squad-worktrees-rdurst-compiler-1893f54b0a523950/6f43cd6f-8873-4965-ad4a-39be1f21316c.jsonl"
 }
