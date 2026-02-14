@@ -42,12 +42,42 @@ pub type Diagnostic {
   )
 }
 
+/// Run all diagnostic checks with a single parse pass.
+/// Combines validation, cross-file blueprint, and dependency diagnostics.
+pub fn get_all_diagnostics(
+  content: String,
+  known_blueprints: List(String),
+  known_identifiers: List(String),
+) -> List(Diagnostic) {
+  use <- bool.guard(when: string.trim(content) == "", return: [])
+  let parsed = file_utils.parse(content)
+  let validation_diags = get_diagnostics_from_parsed(content, parsed)
+  case parsed {
+    Ok(file) -> {
+      let cross_file_diags =
+        get_cross_file_from_parsed(content, file, known_blueprints)
+      let dep_diags =
+        get_dependency_from_parsed(content, file, known_identifiers)
+      list.flatten([validation_diags, cross_file_diags, dep_diags])
+    }
+    Error(_) -> validation_diags
+  }
+}
+
 /// Analyze source text and return diagnostics.
 /// Tries to parse as blueprints first, then as expects.
 /// If parsing succeeds, runs the validator for additional checks.
 pub fn get_diagnostics(content: String) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
-  case file_utils.parse(content) {
+  get_diagnostics_from_parsed(content, file_utils.parse(content))
+}
+
+/// Validation diagnostics from a pre-parsed result.
+fn get_diagnostics_from_parsed(
+  content: String,
+  parsed: Result(file_utils.ParsedFile, #(ParserError, ParserError)),
+) -> List(Diagnostic) {
+  case parsed {
     Ok(file_utils.Blueprints(file)) ->
       case validator.validate_blueprints_file(file) {
         Ok(_) -> []
@@ -76,7 +106,19 @@ pub fn get_cross_file_diagnostics(
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
   case file_utils.parse(content) {
-    Ok(file_utils.Expects(file)) ->
+    Ok(parsed) -> get_cross_file_from_parsed(content, parsed, known_blueprints)
+    _ -> []
+  }
+}
+
+/// Blueprint reference checks from a successfully parsed file.
+fn get_cross_file_from_parsed(
+  content: String,
+  parsed: file_utils.ParsedFile,
+  known_blueprints: List(String),
+) -> List(Diagnostic) {
+  case parsed {
+    file_utils.Expects(file) ->
       file.blocks
       |> list.filter_map(fn(block) {
         check_blueprint_ref(content, block, known_blueprints)
@@ -114,16 +156,24 @@ pub fn get_cross_file_dependency_diagnostics(
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
   case file_utils.parse(content) {
-    Ok(parsed) -> {
-      let targets = extract_relation_targets(parsed)
-      targets
-      |> list.unique
-      |> list.filter_map(fn(target) {
-        check_dependency_ref(content, target, known_identifiers)
-      })
-    }
+    Ok(parsed) ->
+      get_dependency_from_parsed(content, parsed, known_identifiers)
     Error(_) -> []
   }
+}
+
+/// Dependency checks from a successfully parsed file.
+fn get_dependency_from_parsed(
+  content: String,
+  parsed: file_utils.ParsedFile,
+  known_identifiers: List(String),
+) -> List(Diagnostic) {
+  let targets = extract_relation_targets(parsed)
+  targets
+  |> list.unique
+  |> list.filter_map(fn(target) {
+    check_dependency_ref(content, target, known_identifiers)
+  })
 }
 
 /// Extract all dependency target strings from relation fields in a parsed file.

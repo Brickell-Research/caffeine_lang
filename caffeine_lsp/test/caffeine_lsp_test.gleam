@@ -1424,6 +1424,84 @@ pub fn dependency_duplicate_targets_single_diagnostic_test() {
 }
 
 // ==========================================================================
+// Combined diagnostics tests (get_all_diagnostics)
+// ==========================================================================
+
+// ==== get_all_diagnostics ====
+// * ✅ empty content returns no diagnostics
+// * ✅ valid expects with known blueprint returns no diagnostics
+// * ✅ valid expects with unknown blueprint returns BlueprintNotFound
+// * ✅ expects with unknown dependency returns DependencyNotFound
+// * ✅ combines validation + cross-file + dependency diagnostics
+// * ✅ invalid syntax returns parse error only
+
+pub fn all_diagnostics_empty_content_test() {
+  diagnostics.get_all_diagnostics("", [], [])
+  |> should.equal([])
+}
+
+pub fn all_diagnostics_valid_expects_known_blueprint_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  diagnostics.get_all_diagnostics(source, ["api_availability"], [])
+  |> should.equal([])
+}
+
+pub fn all_diagnostics_unknown_blueprint_test() {
+  let source =
+    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  let diags = diagnostics.get_all_diagnostics(source, [], [])
+  let has_bp_not_found =
+    list.any(diags, fn(d) {
+      d.code == diagnostics.BlueprintNotFound
+      && string.contains(d.message, "api_availability")
+    })
+  has_bp_not_found |> should.be_true()
+}
+
+pub fn all_diagnostics_unknown_dependency_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  let diags = diagnostics.get_all_diagnostics(source, ["bp"], [])
+  let has_dep_not_found =
+    list.any(diags, fn(d) {
+      d.code == diagnostics.DependencyNotFound
+      && string.contains(d.message, "org.team.svc.dep")
+    })
+  has_dep_not_found |> should.be_true()
+}
+
+pub fn all_diagnostics_combines_all_checks_test() {
+  // Expects file with validation error (overshadowing), unknown blueprint, and unknown dep
+  let source =
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"unknown_bp\"\n  * \"item\" extends [_defaults]:\n    Provides { env: \"staging\", relations: { hard: [\"org.t.s.dep\"] } }\n"
+  let diags = diagnostics.get_all_diagnostics(source, [], [])
+  // Should have validation error (overshadowing), blueprint not found, and dependency not found
+  let has_overshadow =
+    list.any(diags, fn(d) { string.contains(d.message, "overshadows") })
+  let has_bp =
+    list.any(diags, fn(d) { d.code == diagnostics.BlueprintNotFound })
+  let has_dep =
+    list.any(diags, fn(d) { d.code == diagnostics.DependencyNotFound })
+  has_overshadow |> should.be_true()
+  has_bp |> should.be_true()
+  has_dep |> should.be_true()
+}
+
+pub fn all_diagnostics_parse_error_test() {
+  let source = "Blueprints for"
+  let diags = diagnostics.get_all_diagnostics(source, [], [])
+  // Should produce at least one diagnostic (parse error)
+  case diags {
+    [first, ..] -> {
+      first.severity |> should.equal(1)
+      { first.message != "" } |> should.be_true()
+    }
+    [] -> should.fail()
+  }
+}
+
+// ==========================================================================
 // Workspace symbol tests
 // ==========================================================================
 
