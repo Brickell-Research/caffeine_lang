@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "2ea10d8887d2",
+  "strategy": "manual-commit",
+  "branch": "rdurst/cli",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "lsp_server.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/2e/a10d8887d2/0/metadata.json",
+      "transcript": "/2e/a10d8887d2/0/full.jsonl",
+      "context": "/2e/a10d8887d2/0/context.md",
+      "content_hash": "/2e/a10d8887d2/0/content_hash.txt",
+      "prompt": "/2e/a10d8887d2/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 70803,
+    "cache_read_tokens": 1751208,
+    "output_tokens": 12201,
+    "api_call_count": 22
+  }
+}
