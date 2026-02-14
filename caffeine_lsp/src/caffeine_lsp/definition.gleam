@@ -111,31 +111,44 @@ pub fn get_relation_ref_at_position(
   line: Int,
   character: Int,
 ) -> Option(String) {
+  get_relation_ref_with_range_at_position(content, line, character)
+  |> option.map(fn(pair) { pair.0 })
+}
+
+/// Returns the dotted identifier and its start column if the cursor is on a
+/// dependency relation string (e.g., "org.team.service.name"), or None.
+pub fn get_relation_ref_with_range_at_position(
+  content: String,
+  line: Int,
+  character: Int,
+) -> Option(#(String, Int)) {
   let lines = string.split(content, "\n")
   case list.drop(lines, line) {
-    [line_text, ..] -> extract_dependency_ref_on_line(line_text, character)
+    [line_text, ..] ->
+      extract_dependency_ref_with_range_on_line(line_text, character)
     [] -> option.None
   }
 }
 
-/// Extract a dependency path string if the cursor is inside a quoted string
-/// that matches the org.team.service.name pattern.
-fn extract_dependency_ref_on_line(
+/// Extract a dependency path string and its start column if the cursor is
+/// inside a quoted string that matches the org.team.service.name pattern.
+fn extract_dependency_ref_with_range_on_line(
   line_text: String,
   character: Int,
-) -> Option(String) {
+) -> Option(#(String, Int)) {
   // Relations strings always appear inside list brackets
   use <- bool.guard(!string.contains(line_text, "["), option.None)
   let parts = string.split(line_text, "\"")
   scan_string_parts(parts, 0, 0, character)
 }
 
+/// Returns #(content, start_col) for the matched string part.
 fn scan_string_parts(
   parts: List(String),
   part_idx: Int,
   pos: Int,
   target: Int,
-) -> Option(String) {
+) -> Option(#(String, Int)) {
   case parts {
     [] -> option.None
     [part, ..rest] -> {
@@ -146,7 +159,7 @@ fn scan_string_parts(
       case is_string_content && target >= pos && target < end_pos {
         True -> {
           case is_dependency_path(part) {
-            True -> option.Some(part)
+            True -> option.Some(#(part, pos))
             False -> option.None
           }
         }

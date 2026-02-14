@@ -214,6 +214,54 @@ fn find_whole_word(line: String, name: String, offset: Int) -> Result(Int, Nil) 
   }
 }
 
+/// Find all positions where a string appears inside double quotes.
+/// Returns (line, col) of the content start (after the opening quote).
+pub fn find_all_quoted_string_positions(
+  content: String,
+  target: String,
+) -> List(#(Int, Int)) {
+  let quoted = "\"" <> target <> "\""
+  let lines = string.split(content, "\n")
+  find_all_quoted_in_lines(lines, quoted, 0, [])
+  |> list.reverse
+}
+
+fn find_all_quoted_in_lines(
+  lines: List(String),
+  quoted: String,
+  line_idx: Int,
+  acc: List(#(Int, Int)),
+) -> List(#(Int, Int)) {
+  case lines {
+    [] -> acc
+    [first, ..rest] -> {
+      let matches = find_all_quoted_on_line(first, quoted, 0, [])
+      let new_acc =
+        list.fold(list.reverse(matches), acc, fn(a, col) {
+          [#(line_idx, col), ..a]
+        })
+      find_all_quoted_in_lines(rest, quoted, line_idx + 1, new_acc)
+    }
+  }
+}
+
+fn find_all_quoted_on_line(
+  line: String,
+  quoted: String,
+  offset: Int,
+  acc: List(Int),
+) -> List(Int) {
+  case string.split_once(line, quoted) {
+    Error(_) -> list.reverse(acc)
+    Ok(#(before, after)) -> {
+      // +1 for the opening quote — position of the content itself
+      let col = offset + string.length(before) + 1
+      let new_offset = offset + string.length(before) + string.length(quoted)
+      find_all_quoted_on_line(after, quoted, new_offset, [col, ..acc])
+    }
+  }
+}
+
 fn is_word_char(g: String) -> Bool {
   case g {
     "_" -> True
