@@ -1,0 +1,85 @@
+<teammate-message teammate_id="team-lead">
+{"type":"task_assignment","taskId":"6","subject":"Write e2e tests for hover, completion, and go-to-definition","description":"Using the test harness from task 4, write e2e tests covering:\n1. Hover: hover over a type keyword, verify hover content\n2. Hover: hover over a field name, verify hover content\n3. Completion: trigger completion after typing, verify completion items\n4. Completion: trigger completion with : trigger character, verify context-aware completions\n5. Go-to-definition: navigate from an expects file reference to the blueprint definition\n6. Go-to-definition: navigate from a relation reference to the target expectation\nThese features have been frequently touched in recent refactors and need regression coverage.","assignedBy":"team-lead","timestamp":"2026-02-14T05:25:46.896Z"}
+</teammate-message>
+
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "features-tester-1".
+
+Your task (Task #6): Write e2e tests for hover, completion, and go-to-definition.
+
+## Context
+
+The project root is `/Users/rdurst/.REDACTED`.
+
+There's already a working e2e test harness at `test/lsp_e2e/`. Read these files first:
+- `test/lsp_e2e/client.ts` — the LspTestClient class with all convenience methods
+- `test/lsp_e2e/lsp_e2e_test.ts` — existing foundation tests (3 tests, all passing)
+- `test/lsp_e2e/fixtures/` — existing .caffeine fixture files
+
+## Caffeine Syntax Reference (from real corpus files)
+
+**Blueprints file:**
+```
+Blueprints for "SLO"
+  * "api_availability":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
+```
+
+**Expects file:**
+```
+Expectations for "api_availability"
+  * "checkout":
+    Provides { env: "production", threshold: 99.95 }
+```
+
+**With extendables and extends:**
+```
+_defaults (Provides): { env: "production", window_in_days: 30 }
+
+Expectations for "api_availability"
+  * "checkout" extends [_defaults]:
+    Provides { threshold: 99.95 }
+```
+
+**Type alias:**
+```
+_env (Type): String { x | x in { prod, staging, dev } }
+```
+
+## What to write
+
+Create a NEW test file `test/lsp_e2e/features_test.ts` (separate from the existing test file to avoid conflicts with other test writers). Create any new fixtures needed in `test/lsp_e2e/fixtures/`.
+
+### Tests to add:
+
+1. **Hover on type keyword** — Open a blueprint file, hover over a type keyword like "String", verify hover returns markdown content mentioning the type.
+
+2. **Hover on field name** — Open a blueprint file, hover over a field name like "vendor", verify hover returns some content.
+
+3. **Hover on empty space** — Hover on a blank line or whitespace, verify hover returns null.
+
+4. **Completion after field name** — Open a blueprint file and trigger completion at a position within the Requires block, verify completion items are returned (type keywords like String, Integer, Float, Boolean, etc.).
+
+5. **Completion with blueprint names** — Open an expects file and trigger completion at a position where blueprint names would be suggested, verify the workspace blueprint names appear in completions.
+
+6. **Go-to-definition for extendable** — Open a file with an extendable `_defaults (Provides): { ... }` and a block that uses `extends [_defaults]`. Send definition request on `_defaults` in the extends clause, verify it returns a location pointing to the extendable definition.
+
+## Important notes
+
+- Use `Deno.test({ name: ..., sanitizeResources: false, sanitizeOps: false, async fn() { ... } })` format
+- Each test creates its own `LspTestClient(ROOT_DIR)`, calls `start()`, `initialize()`, tests, `shutdown()`
+- Import LspTestClient from `./client.ts`
+- Import assertions from `jsr:@std/assert`
+- Hover returns `{ contents: { kind: "markdown", value: string } }` or null
+- Completion returns an array of CompletionItem objects with `label`, `kind`, `detail` fields
+- Definition returns a Location `{ uri, range }` or null or an array of locations
+- When testing hover/completion/definition, you need to open the document first (the server needs document text)
+- After opening a document, wait for diagnostics to settle before sending requests (or at least add a small delay)
+- Positions are 0-based (line 0 = first line, character 0 = first column)
+- Run `deno test --allow-read --allow-write --allow-env --allow-run test/lsp_e2e/features_test.ts` to verify your tests pass
+- CRITICAL: Do NOT modify any existing files except to create new ones.
+- Look at the Gleam unit tests in `caffeine_lsp/test/caffeine_lsp_test.gleam` for examples of what content the hover, completion, and definition functions return — this tells you what to assert.
+
+When done, mark Task #6 as completed using TaskUpdate.
+</teammate-message>

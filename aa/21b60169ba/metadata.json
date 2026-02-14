@@ -3,7 +3,7 @@
   "checkpoint_id": "aa21b60169ba",
   "strategy": "manual-commit",
   "branch": "rdurst/type-system-expansions",
-  "checkpoints_count": 7,
+  "checkpoints_count": 8,
   "files_touched": [
     ".claude/settings.local.json",
     "Makefile",
@@ -34,6 +34,7 @@
     "caffeine_lsp/build/packages/terra_madre/README.md",
     "test/lsp_e2e/client.ts",
     "test/lsp_e2e/diagnostics_test.ts",
+    "test/lsp_e2e/features_test.ts",
     "test/lsp_e2e/fixtures/invalid_syntax.caffeine",
     "test/lsp_e2e/fixtures/multiple_errors.caffeine",
     "test/lsp_e2e/fixtures/quoted_field.caffeine",
@@ -79,13 +80,20 @@
       "context": "/aa/21b60169ba/4/context.md",
       "content_hash": "/aa/21b60169ba/4/content_hash.txt",
       "prompt": "/aa/21b60169ba/4/prompt.txt"
+    },
+    {
+      "metadata": "/aa/21b60169ba/5/metadata.json",
+      "transcript": "/aa/21b60169ba/5/full.jsonl",
+      "context": "/aa/21b60169ba/5/context.md",
+      "content_hash": "/aa/21b60169ba/5/content_hash.txt",
+      "prompt": "/aa/21b60169ba/5/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 12292,
-    "cache_creation_tokens": 403675,
-    "cache_read_tokens": 8008765,
-    "output_tokens": 6057,
-    "api_call_count": 125
+    "input_tokens": 14154,
+    "cache_creation_tokens": 466903,
+    "cache_read_tokens": 9856483,
+    "output_tokens": 9675,
+    "api_call_count": 155
   }
 }
