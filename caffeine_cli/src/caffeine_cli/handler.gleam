@@ -3,6 +3,7 @@ import caffeine_cli/compile_presenter.{type LogLevel}
 import caffeine_cli/display
 import caffeine_cli/error_presenter
 import caffeine_cli/file_discovery
+import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/frontend/formatter
@@ -179,52 +180,12 @@ fn compile(
   target: String,
   log_level: LogLevel,
 ) -> Result(Nil, String) {
-  // Discover expectation files
-  use expectation_paths <- result.try(
-    file_discovery.get_caffeine_files(expectations_dir)
-    |> result.map_error(fn(err) { format_compilation_error(err) }),
-  )
-
-  // Read blueprint source
-  use blueprint_content <- result.try(
-    simplifile.read(blueprint_file)
-    |> result.map_error(fn(err) {
-      "Error reading blueprint file: "
-      <> simplifile.describe_error(err)
-      <> " ("
-      <> blueprint_file
-      <> ")"
-    }),
-  )
-  let blueprint = SourceFile(path: blueprint_file, content: blueprint_content)
-
-  // Read all expectation sources
-  use expectations <- result.try(
-    expectation_paths
-    |> list.map(fn(path) {
-      simplifile.read(path)
-      |> result.map(fn(content) { SourceFile(path: path, content: content) })
-      |> result.map_error(fn(err) {
-        "Error reading expectation file: "
-        <> simplifile.describe_error(err)
-        <> " ("
-        <> path
-        <> ")"
-      })
-    })
-    |> result.all(),
-  )
-
-  // Compile with presentation output
-  use output <- result.try(
-    compile_presenter.compile_with_output(
-      blueprint,
-      expectations,
-      target,
-      log_level,
-    )
-    |> result.map_error(fn(err) { format_compilation_error(err) }),
-  )
+  use output <- result.try(load_and_compile(
+    blueprint_file,
+    expectations_dir,
+    target,
+    log_level,
+  ))
 
   case output_path {
     option.None -> {
@@ -286,6 +247,24 @@ fn validate(
   target: String,
   log_level: LogLevel,
 ) -> Result(Nil, String) {
+  use _output <- result.try(load_and_compile(
+    blueprint_file,
+    expectations_dir,
+    target,
+    log_level,
+  ))
+
+  compile_presenter.log(log_level, "Validation passed")
+  Ok(Nil)
+}
+
+/// Discovers, reads, and compiles blueprint and expectation files.
+fn load_and_compile(
+  blueprint_file: String,
+  expectations_dir: String,
+  target: String,
+  log_level: LogLevel,
+) -> Result(CompilationOutput, String) {
   // Discover expectation files
   use expectation_paths <- result.try(
     file_discovery.get_caffeine_files(expectations_dir)
@@ -293,16 +272,7 @@ fn validate(
   )
 
   // Read blueprint source
-  use blueprint_content <- result.try(
-    simplifile.read(blueprint_file)
-    |> result.map_error(fn(err) {
-      "Error reading blueprint file: "
-      <> simplifile.describe_error(err)
-      <> " ("
-      <> blueprint_file
-      <> ")"
-    }),
-  )
+  use blueprint_content <- result.try(read_file(blueprint_file))
   let blueprint = SourceFile(path: blueprint_file, content: blueprint_content)
 
   // Read all expectation sources
@@ -312,7 +282,7 @@ fn validate(
       simplifile.read(path)
       |> result.map(fn(content) { SourceFile(path: path, content: content) })
       |> result.map_error(fn(err) {
-        "Error reading expectation file: "
+        "Error reading file: "
         <> simplifile.describe_error(err)
         <> " ("
         <> path
@@ -322,19 +292,14 @@ fn validate(
     |> result.all(),
   )
 
-  // Run compilation pipeline, discard output
-  use _output <- result.try(
-    compile_presenter.compile_with_output(
-      blueprint,
-      expectations,
-      target,
-      log_level,
-    )
-    |> result.map_error(fn(err) { format_compilation_error(err) }),
+  // Compile with presentation output
+  compile_presenter.compile_with_output(
+    blueprint,
+    expectations,
+    target,
+    log_level,
   )
-
-  compile_presenter.log(log_level, "Validation passed")
-  Ok(Nil)
+  |> result.map_error(fn(err) { format_compilation_error(err) })
 }
 
 fn format_command(

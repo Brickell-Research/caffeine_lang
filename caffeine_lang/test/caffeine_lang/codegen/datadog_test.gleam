@@ -12,20 +12,10 @@ import gleam/list
 import gleam/option
 import gleam/string
 import gleeunit/should
-import simplifile
 import terra_madre/terraform
 import test_helpers
 
 // ==== Helpers ====
-fn corpus_path(file_name: String) {
-  "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
-}
-
-fn read_corpus(file_name: String) -> String {
-  let assert Ok(content) = simplifile.read(corpus_path(file_name))
-  // Replace version placeholder with actual version constant
-  string.replace(content, "{{VERSION}}", constants.version)
-}
 
 // ==== terraform_settings ====
 // * ✅ includes Datadog provider requirement
@@ -1065,7 +1055,7 @@ pub fn generate_terraform_test() {
       True -> {
         let actual_corpus =
           string.drop_end(corpus_file, string.length("_WITH_WARNINGS"))
-        let expected = read_corpus(actual_corpus)
+        let expected = test_helpers.read_generator_corpus(actual_corpus)
         let result = datadog.generate_terraform(input)
         case result {
           Ok(#(tf, warnings)) -> {
@@ -1076,7 +1066,7 @@ pub fn generate_terraform_test() {
         }
       }
       False -> {
-        let expected = read_corpus(corpus_file)
+        let expected = test_helpers.read_generator_corpus(corpus_file)
         datadog.generate_terraform(input) |> should.equal(Ok(#(expected, [])))
       }
     }

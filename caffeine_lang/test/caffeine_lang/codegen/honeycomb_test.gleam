@@ -12,20 +12,11 @@ import gleam/list
 import gleam/option
 import gleam/string
 import gleeunit/should
-import simplifile
+import ir_test_helpers
 import terra_madre/terraform
 import test_helpers
 
 // ==== Helpers ====
-fn corpus_path(file_name: String) {
-  "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
-}
-
-fn read_corpus(file_name: String) -> String {
-  let assert Ok(content) = simplifile.read(corpus_path(file_name))
-  // Replace version placeholder with actual version constant
-  string.replace(content, "{{VERSION}}", constants.version)
-}
 
 fn make_honeycomb_ir(
   friendly_label: String,
@@ -39,60 +30,19 @@ fn make_honeycomb_ir(
   evaluation: String,
   indicators: List(#(String, String)),
 ) -> ir.IntermediateRepresentation {
-  ir.IntermediateRepresentation(
-    metadata: ir.IntermediateRepresentationMetaData(
-      friendly_label: friendly_label,
-      org_name: org,
-      service_name: service,
-      blueprint_name: blueprint,
-      team_name: team,
-      misc: dict.new(),
-    ),
+  ir_test_helpers.make_vendor_slo_ir(
+    friendly_label: friendly_label,
     unique_identifier: unique_identifier,
-    artifact_refs: [SLO],
-    values: [
-      helpers.ValueTuple(
-        "vendor",
-        types.PrimitiveType(types.String),
-        value.StringValue(constants.vendor_honeycomb),
-      ),
-      helpers.ValueTuple(
-        "threshold",
-        types.PrimitiveType(types.NumericType(types.Float)),
-        value.FloatValue(threshold),
-      ),
-      helpers.ValueTuple(
-        "window_in_days",
-        types.PrimitiveType(types.NumericType(types.Integer)),
-        value.IntValue(window_in_days),
-      ),
-      helpers.ValueTuple(
-        "evaluation",
-        types.PrimitiveType(types.String),
-        value.StringValue(evaluation),
-      ),
-      helpers.ValueTuple(
-        "indicators",
-        types.CollectionType(types.Dict(
-          types.PrimitiveType(types.String),
-          types.PrimitiveType(types.String),
-        )),
-        value.DictValue(
-          indicators
-          |> list.map(fn(pair) { #(pair.0, value.StringValue(pair.1)) })
-          |> dict.from_list,
-        ),
-      ),
-    ],
-    artifact_data: ir.slo_only(ir.SloFields(
-      threshold: threshold,
-      indicators: indicators |> dict.from_list,
-      window_in_days: window_in_days,
-      evaluation: option.Some(evaluation),
-      tags: [],
-      runbook: option.None,
-    )),
-    vendor: option.Some(vendor.Honeycomb),
+    org: org,
+    team: team,
+    service: service,
+    blueprint: blueprint,
+    threshold: threshold,
+    window_in_days: window_in_days,
+    evaluation: evaluation,
+    indicators: indicators,
+    vendor_string: constants.vendor_honeycomb,
+    vendor_enum: vendor.Honeycomb,
   )
 }
 
@@ -181,7 +131,7 @@ pub fn generate_terraform_test() {
   ]
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
-    let expected = read_corpus(corpus_name)
+    let expected = test_helpers.read_generator_corpus(corpus_name)
     honeycomb.generate_terraform(input) |> should.equal(Ok(expected))
   })
 }

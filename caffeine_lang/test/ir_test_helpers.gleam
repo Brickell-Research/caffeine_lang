@@ -144,6 +144,78 @@ fn make_relations_value(
   )
 }
 
+/// Creates an SLO IR for any vendor with full indicator and evaluation support.
+pub fn make_vendor_slo_ir(
+  friendly_label friendly_label: String,
+  unique_identifier unique_identifier: String,
+  org org: String,
+  team team: String,
+  service service: String,
+  blueprint blueprint: String,
+  threshold threshold: Float,
+  window_in_days window_in_days: Int,
+  evaluation evaluation: String,
+  indicators indicators: List(#(String, String)),
+  vendor_string vendor_string: String,
+  vendor_enum vendor_enum: vendor.Vendor,
+) -> ir.IntermediateRepresentation {
+  ir.IntermediateRepresentation(
+    metadata: ir.IntermediateRepresentationMetaData(
+      friendly_label: friendly_label,
+      org_name: org,
+      service_name: service,
+      blueprint_name: blueprint,
+      team_name: team,
+      misc: dict.new(),
+    ),
+    unique_identifier: unique_identifier,
+    artifact_refs: [SLO],
+    values: [
+      helpers.ValueTuple(
+        "vendor",
+        types.PrimitiveType(types.String),
+        value.StringValue(vendor_string),
+      ),
+      helpers.ValueTuple(
+        "threshold",
+        types.PrimitiveType(types.NumericType(types.Float)),
+        value.FloatValue(threshold),
+      ),
+      helpers.ValueTuple(
+        "window_in_days",
+        types.PrimitiveType(types.NumericType(types.Integer)),
+        value.IntValue(window_in_days),
+      ),
+      helpers.ValueTuple(
+        "evaluation",
+        types.PrimitiveType(types.String),
+        value.StringValue(evaluation),
+      ),
+      helpers.ValueTuple(
+        "indicators",
+        types.CollectionType(types.Dict(
+          types.PrimitiveType(types.String),
+          types.PrimitiveType(types.String),
+        )),
+        value.DictValue(
+          indicators
+          |> list.map(fn(pair) { #(pair.0, value.StringValue(pair.1)) })
+          |> dict.from_list,
+        ),
+      ),
+    ],
+    artifact_data: ir.slo_only(ir.SloFields(
+      threshold: threshold,
+      indicators: indicators |> dict.from_list,
+      window_in_days: window_in_days,
+      evaluation: option.Some(evaluation),
+      tags: [],
+      runbook: option.None,
+    )),
+    vendor: option.Some(vendor_enum),
+  )
+}
+
 /// Builds default SloFields for tests.
 fn make_test_slo_fields(
   threshold: Float,
