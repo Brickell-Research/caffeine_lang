@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "734bedc6dd99",
+  "session_id": "bd58b24e-f683-4a76-ba77-6324537b844f",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-14T02:12:47.926987Z",
+  "branch": "rdurst/type-system-expansions",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".claude/settings.local.json"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 10839,
+    "cache_creation_tokens": 145596,
+    "cache_read_tokens": 2250006,
+    "output_tokens": 14954,
+    "api_call_count": 23
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T02:12:45.950267Z",
+    "agent_lines": 0,
+    "human_added": 513,
+    "human_modified": 7,
+    "human_removed": 0,
+    "total_committed": 520,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst--claude-squad-worktrees-rdurst-type-system-expansions-1893f7752b417bb8/bd58b24e-f683-4a76-ba77-6324537b844f.jsonl"
+}

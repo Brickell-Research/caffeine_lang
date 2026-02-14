@@ -1,0 +1,2164 @@
+Ok, dig into the caffeine type system
+
+---
+
+lets explore whether there are any types that might actually support more use cases. Kick off a few teams to look at other type systems
+
+---
+
+<task-notification>
+<task-id>ad0cbca</task-id>
+<status>completed</status>
+<summary>Agent "Research config DSL type systems" completed</summary>
+<result>
+
+# Type Systems of Configuration DSLs: Research Summary
+
+I'll research each DSL's type system in detail, focusing on features beyond what Caffeine already supports.
+
+---
+
+## 1. CUE Language
+
+### Types Beyond Basic Primitives
+
+CUE's type system is built on a **value lattice** where types and values exist on the same spectrum. Every value is a constraint, and every constraint is a value.
+
+**Core types:**
+- `null`, `bool`, `int`, `float`, `string`, `bytes`
+- `number` (supertype of `int` and `float`)
+- Structs (like records/dicts) and Lists
+- `_` (top/any) and `_|_` (bottom/error)
+
+**Key distinction from Caffeine:** CUE does not distinguish between types and values. `string` is a constraint that accepts any string. `"hello"` is a constraint that accepts only `"hello"`. Both live in the same lattice.
+
+### Constraint/Refinement Mechanisms
+
+CUE's **unification** operator (`&`) is its core mechanism. Constraints are progressively narrowed:
+
+```cue
+// Numeric constraints
+port: int & >0 & <=65535
+timeout: int & >=1 & <=3600
+
+// String constraints  
+protocol: "http" | "https" | "grpc"
+name: =~"^[a-z][a-z0-9-]*$"   // regex constraint
+name: !~"--"                    // negative regex constraint
+
+// Combining constraints
+threshold: float & >=0.0 & <=100.0
+```
+
+**Bounds operators:** `<`, `>`, `<=`, `>=`, `!=` are all first-class constraint operators on values.
+
+**Regular expression constraints:** `=~` (matches) and `!~` (does not match) apply regex patterns as type-level constraints on strings.
+
+### Enums, Unions, Defaults, Optionals
+
+```cue
+// Disjunctions (unions/enums)
+severity: "critical" | "warning" | "info"
+
+// Disjunctions with defaults (marked with *)
+severity: *"warning" | "critical" | "info"
+
+// Optional fields
+config: {
+    name:     string
+    timeout?: int    // optional field
+}
+
+// Null union (like Optional)
+value: int | null
+```
+
+CUE does **not** have tagged unions / sum types. Disjunctions are untagged.
+
+### Unique Features Relevant to SLO DSLs
+
+1. **Value lattice / unification:** Constraints compose naturally. You can define a base SLO template and unify it with overrides -- conflicts are caught at the type level, not at runtime.
+
+2. **Comprehensions with constraints:**
+```cue
+// Generate SLOs for each service
+slos: {
+    for svc in services {
+        "\(svc.name)-availability": {
+            target: float & >=99.0 & <=100.0
+            window: "7d" | "28d" | "30d" | "90d"
+        }
+    }
+}
+```
+
+3. **Definitions (schemas):** Prefixed with `#`, definitions are not emitted as data but serve as reusable type constraints:
+```cue
+#SLO: {
+    target:  float & >=90.0 & <=100.0
+    window:  #Duration
+    service: string & =~"^[a-z]"
+}
+
+#Duration: =~"^[0-9]+(s|m|h|d)$"
+```
+
+4. **String interpolation with constraints** -- computed string values:
+```cue
+monitor_name: "\(service)-\(env)-availability"
+```
+
+---
+
+## 2. Dhall Language
+
+### Types Beyond Basic Primitives
+
+Dhall is a **total, typed configuration language** with a type system inspired by System F-omega (like Haskell without the runtime).
+
+**Core types:**
+- `Bool`, `Natural`, `Integer`, `Double`, `Text`
+- `Optional T`, `List T`
+- Records: `{ name : Text, port : Natural }`
+- Unions: `< Severity.Critical | Severity.Warning | Severity.Info >`
+- Functions: `Natural -> Text` (yes, Dhall has functions, but they always terminate)
+- `Type`, `Kind`, `Sort` (universe hierarchy)
+
+**Key distinction from Caffeine:** Dhall has **full parametric polymorphism** and **union types (sum types)** as first-class citizens.
+
+### Constraint/Refinement Mechanisms
+
+Dhall intentionally has **no refinement types or value constraints**. Its philosophy is that the type system ensures structural correctness, but value validation is left to downstream consumers.
+
+However, Dhall achieves constraint-like behavior through:
+
+1. **Smart constructors** (functions that validate and wrap):
+```dhall
+let mkPort = \(n : Natural) ->
+      if Natural/lessThan n 65536
+      then Some n
+      else None Natural
+```
+
+2. **Union types as bounded enums:**
+```dhall
+let Severity = < Critical | Warning | Info >
+let severity = Severity.Warning
+```
+
+3. **Newtypes for semantic distinction:**
+```dhall
+let Percentage = { unPercentage : Double }
+let mkPercentage : Double -> Optional Percentage =
+      \(d : Double) -> ...
+```
+
+### Enums, Unions, Defaults, Optionals
+
+```dhall
+-- Union types (tagged unions / sum types)
+let Window = < SevenDays | TwentyEightDays | ThirtyDays | NinetyDays >
+
+-- Unions with payloads (tagged unions with data)
+let Threshold = 
+    < GreaterThan : Double
+    | LessThan : Double
+    | Between : { low : Double, high : Double }
+    >
+
+-- Optionals
+let Config = { name : Text, timeout : Optional Natural }
+let default = { name = "my-slo", timeout = None Natural }
+
+-- Defaults via record merge
+let defaults = { timeout = 30, window = Window.ThirtyDays }
+let override = defaults // { timeout = 60 }  -- right-biased merge
+```
+
+### Unique Features Relevant to SLO DSLs
+
+1. **Tagged unions for threshold comparisons:**
+```dhall
+let Comparison =
+    < GreaterThan : Double
+    | GreaterThanOrEqual : Double
+    | LessThan : Double
+    | LessThanOrEqual : Double
+    >
+
+let alert_threshold = Comparison.GreaterThanOrEqual 99.9
+```
+This is extremely relevant to SLO definitions where you need to express "error rate < 0.1%" or "availability >= 99.9%".
+
+2. **Totality guarantee:** Every Dhall expression is guaranteed to terminate. No infinite loops, no exceptions. This is ideal for a configuration language where you never want evaluation to hang or crash.
+
+3. **Imports with integrity checks:**
+```dhall
+let SLO = https://example.com/schemas/slo.dhall
+    sha256:abc123...
+```
+Schemas can be imported from URLs with cryptographic verification.
+
+4. **Type-level functions (generics):**
+```dhall
+let Metric : Type -> Type =
+      \(a : Type) -> { name : Text, value : a, unit : Text }
+
+let latency : Metric Double = { name = "p99_latency", value = 0.5, unit = "seconds" }
+```
+
+---
+
+## 3. HCL (Terraform / HashiCorp Configuration Language)
+
+### Types Beyond Basic Primitives
+
+HCL's type system is relatively simple compared to CUE or Dhall:
+
+**Primitive types:** `string`, `number`, `bool`
+
+**Collection types:**
+- `list(type)` -- ordered sequence
+- `set(type)` -- unordered unique values
+- `map(type)` -- string-keyed dictionary
+- `tuple([type1, type2, ...])` -- fixed-length heterogeneous list
+- `object({key1 = type1, key2 = type2})` -- structural record type
+
+**Special types:**
+- `any` -- dynamic type (opted out of static checking)
+- `null` -- absence of value (distinct from Optional)
+
+### Constraint/Refinement Mechanisms
+
+HCL itself has **no built-in refinement types**, but Terraform adds a **validation block** mechanism:
+
+```hcl
+variable "slo_target" {
+  type = number
+  
+  validation {
+    condition     = var.slo_target >= 90.0 && var.slo_target <= 100.0
+    error_message = "SLO target must be between 90.0 and 100.0."
+  }
+}
+
+variable "window" {
+  type = string
+  
+  validation {
+    condition     = can(regex("^[0-9]+(s|m|h|d)$", var.window))
+    error_message = "Window must be a duration like '30d' or '24h'."
+  }
+}
+
+variable "environment" {
+  type = string
+  
+  validation {
+    condition     = contains(["prod", "staging", "dev"], var.environment)
+    error_message = "Environment must be prod, staging, or dev."
+  }
+}
+```
+
+Key points:
+- Validations are **runtime checks**, not type-level constraints
+- Multiple validation blocks can be stacked
+- The `can()` function tests whether an expression would produce an error
+
+### Enums, Unions, Defaults, Optionals
+
+```hcl
+// Defaults
+variable "timeout" {
+  type    = number
+  default = 30
+}
+
+// Optionals (Terraform 1.3+)
+variable "config" {
+  type = object({
+    name    = string
+    timeout = optional(number, 30)   // optional with default
+    tags    = optional(map(string))   // optional without default (null if omitted)
+  })
+}
+
+// No native enum type -- use validation
+variable "severity" {
+  type = string
+  validation {
+    condition = contains(["critical", "warning", "info"], var.severity)
+    error_message = "Must be critical, warning, or info."
+  }
+}
+```
+
+HCL has **no union types or tagged unions**. Dynamic typing with `any` is the workaround.
+
+### Unique Features Relevant to SLO DSLs
+
+1. **`optional()` with inline defaults in object types:** This is cleaner than Caffeine's separate `Defaulted` wrapper:
+```hcl
+type = object({
+  target  = number
+  window  = optional(string, "30d")
+  tags    = optional(map(string), {})
+})
+```
+
+2. **`sensitive` flag** for marking values that should not appear in logs/output:
+```hcl
+variable "api_key" {
+  type      = string
+  sensitive = true
+}
+```
+
+3. **`nullable` control** (Terraform 1.1+): Separate from optional, controls whether `null` is a valid value:
+```hcl
+variable "override" {
+  type     = string
+  nullable = false   // null assignment is an error
+}
+```
+
+4. **Dynamic blocks** for generating repeated nested structures:
+```hcl
+dynamic "tag" {
+  for_each = var.tags
+  content {
+    key   = tag.key
+    value = tag.value
+  }
+}
+```
+
+---
+
+## 4. Jsonnet
+
+### Types Beyond Basic Primitives
+
+Jsonnet is **dynamically typed** -- it has runtime types but no static type system.
+
+**Runtime types:** `null`, `boolean`, `number` (IEEE 754 double), `string`, `array`, `object`, `function`
+
+**No static types.** Jsonnet is essentially "JSON with functions and computation." Type errors are caught at evaluation time, not before.
+
+### Constraint/Refinement Mechanisms
+
+Since Jsonnet has no static types, constraints are expressed as **runtime assertions:**
+
+```jsonnet
+local validateTarget(t) =
+  assert t >= 90.0 && t <= 100.0 : "Target must be between 90 and 100, got %s" % t;
+  t;
+
+local validateDuration(d) =
+  assert std.length(std.findSubstr("^[0-9]+(s|m|h|d)$", d)) > 0 : "Invalid duration: %s" % d;
+  d;
+
+{
+  slo: {
+    target: validateTarget(99.9),
+    window: validateDuration("30d"),
+  },
+}
+```
+
+### Enums, Unions, Defaults, Optionals
+
+```jsonnet
+// No native enums -- use conventions
+local Severity = {
+  Critical: "critical",
+  Warning: "warning",
+  Info: "info",
+};
+
+// Defaults via object inheritance
+local SLODefaults = {
+  window: "30d",
+  severity: Severity.Warning,
+};
+
+// "Override" via object concatenation (+)
+local mySLO = SLODefaults + {
+  name: "availability",
+  target: 99.9,
+  window: "7d",  // overrides default
+};
+
+// Optionals -- just omit the field or use null
+local config = {
+  name: "my-service",
+  timeout: null,  // "absent"
+};
+```
+
+### Unique Features Relevant to SLO DSLs
+
+1. **Object-oriented mixins via `+` operator:**
+```jsonnet
+local BaseSLO = {
+  window: "30d",
+  evaluator: "threshold",
+};
+
+local LatencySLO = BaseSLO + {
+  type: "latency",
+  threshold: { p99: 500 },
+};
+
+local AvailabilitySLO = BaseSLO + {
+  type: "availability",
+  target: 99.9,
+};
+```
+This is similar to Caffeine's `extends` but more flexible -- any object can be merged with any other.
+
+2. **`self` and `super` for late binding:**
+```jsonnet
+local SLO = {
+  target: 99.9,
+  error_budget: 100.0 - self.target,  // computed from self
+};
+```
+This enables **derived/computed values** -- the error budget is always consistent with the target.
+
+3. **`std.manifestYamlDoc` / `std.manifestJsonEx`:** Built-in serialization functions. Relevant because SLO configs often need to be emitted in multiple formats.
+
+4. **Hidden fields (`::`):**
+```jsonnet
+{
+  target:: 99.9,          // hidden -- not in output
+  error_budget: 100.0 - self.target,  // uses hidden field
+}
+// Output: { "error_budget": 0.1 }
+```
+Hidden fields exist for computation but are excluded from output. Useful for intermediate values in SLO calculations.
+
+---
+
+## Cross-Cutting Analysis: Features Missing from Caffeine
+
+### 1. Duration / Time Values
+
+**Current gap:** Caffeine has no duration type. Users must use raw strings like `"30d"`.
+
+| DSL | Approach |
+|-----|----------|
+| CUE | String constraint: `=~"^[0-9]+(s\|m\|h\|d)$"` |
+| Dhall | Newtype: `{ seconds : Natural }` with smart constructor |
+| HCL | String + validation block with regex |
+| Jsonnet | Runtime assertion |
+
+**Recommendation for Caffeine:** A first-class `Duration` type with parsed components would be the strongest approach. Example:
+
+```
+Requires:
+  evaluation_window (Duration)
+  alert_delay (Duration)
+```
+
+The type would accept string literals like `"30s"`, `"5m"`, `"1h"`, `"7d"` and parse them at compile time into a structured representation. This is superior to all four DSLs' approaches because it would provide **compile-time validation** of duration formats rather than runtime regex matching. The compiler could also validate that durations are sensible (e.g., an SLO window of `"0s"` is likely an error).
+
+### 2. Percentage Values
+
+**Current gap:** Caffeine uses `Float` with `InclusiveRange` for percentages, but there is no semantic distinction between "99.9% SLO target" and "0.5 latency seconds."
+
+| DSL | Approach |
+|-----|----------|
+| CUE | `float & >=0.0 & <=100.0` (structural, no semantic type) |
+| Dhall | Newtype `Percentage` (semantic, user-defined) |
+| HCL | `number` + validation block |
+| Jsonnet | Runtime assertion |
+
+**Recommendation for Caffeine:** A `Percentage` type that is syntactic sugar for `Float { x | 0.0 <= x <= 100.0 }` but carries semantic meaning. This would enable:
+
+```
+Requires:
+  target (Percentage)         # 99.9 means 99.9%
+  error_budget (Percentage)   # derived: 100.0 - target
+```
+
+The codegen layer could then automatically handle formatting (e.g., converting 99.9 to 0.999 for APIs that expect decimal form).
+
+### 3. Threshold Comparisons (>, <, >=, <=)
+
+**Current gap:** Caffeine has `InclusiveRange(low, high)` but no way to express one-sided bounds like "greater than 0" or "at most 500ms."
+
+| DSL | Approach |
+|-----|----------|
+| CUE | First-class: `>0`, `<=500`, `>=99.9 & <=100.0` |
+| Dhall | Tagged union: `< GreaterThan : Double \| LessThan : Double \| ... >` |
+| HCL | Validation expressions: `condition = var.x > 0` |
+| Jsonnet | Runtime assertions |
+
+**Recommendation for Caffeine:** Extend the constraint system with one-sided bounds. Two possible approaches:
+
+**Option A -- Extend InclusiveRange syntax:**
+```
+# Open-ended ranges
+latency_ms (Integer { x | x >= 0 })           # lower bound only
+error_count (Integer { x | x <= 1000 })        # upper bound only
+
+# Exclusive bounds
+latency_ms (Float { x | 0.0 < x < 100.0 })    # exclusive range
+```
+
+**Option B -- Separate constraint types:**
+```
+MinBound(Integer, 0)
+MaxBound(Integer, 1000)
+ExclusiveRange(Float, 0.0, 100.0)
+```
+
+Option A (richer range syntax) is more consistent with Caffeine's existing `InclusiveRange` and `OneOf` constraint syntax.
+
+### 4. Enum Unions / Tagged Unions
+
+**Current gap:** Caffeine has `OneOf` for constraining a value to a set of literals, but no tagged unions where each variant can carry different data.
+
+| DSL | Approach |
+|-----|----------|
+| CUE | Disjunctions: `"http" \| "grpc"` (untagged) |
+| Dhall | Full sum types: `< HTTP \| GRPC : { port : Natural } >` |
+| HCL | No support (uses `any` + validation) |
+| Jsonnet | No support (dynamic typing) |
+
+**Recommendation for Caffeine:** For a declarative SLO DSL, full tagged unions are likely overkill. However, **enum types** (named sets of values) would be valuable:
+
+```
+# Named enum type (reusable)
+_severity (Enum): { critical, warning, info }
+
+# Usage
+Requires:
+  alert_severity (Enum _severity)
+```
+
+This is a modest extension of `OneOf` -- giving the set a name and making it referenceable. Caffeine's existing type alias mechanism (`_env (Type): ...`) already supports this pattern, so it may just need better documentation rather than a new type.
+
+For cases where different enum variants need different associated data, **discriminated records** might be more appropriate than full tagged unions:
+
+```
+# Instead of tagged unions, use a discriminated record pattern
+Requires:
+  monitor_type (String { x | x in { "metric", "log", "synthetic" } })
+  # Different fields are relevant depending on monitor_type
+  metric_query (Optional(String))    # only for metric monitors
+  log_query (Optional(String))       # only for log monitors
+  synthetic_url (Optional(URL))      # only for synthetic monitors
+```
+
+This avoids the complexity of tagged unions while still expressing the pattern. A future enhancement could add compile-time validation that the correct optional fields are provided based on the discriminant.
+
+### 5. String Patterns / Regex Constraints
+
+**Current gap:** Caffeine has `OneOf` for exact string matching but no pattern/regex constraints.
+
+| DSL | Approach |
+|-----|----------|
+| CUE | `=~"^pattern$"` and `!~"pattern"` as type constraints |
+| Dhall | No built-in support |
+| HCL | `can(regex(...))` in validation blocks |
+| Jsonnet | `std.findSubstr` in assertions |
+
+**Recommendation for Caffeine:** A `Pattern` or `Matching` constraint type:
+
+```
+Requires:
+  service_name (String { x | x matches "^[a-z][a-z0-9-]*$" })
+  metric_query (String { x | x matches "^(avg|sum|max|min|count):" })
+```
+
+This would be most valuable for validating query strings, service names, and other structured string values that have known formats. CUE's approach of `=~` as a type-level constraint is the cleanest model.
+
+**Practical consideration:** Regex support adds complexity to the compiler. A simpler alternative is **prefix/suffix/contains constraints**:
+
+```
+Requires:
+  metric_query (String { x | x starts_with "avg:" })
+```
+
+### 6. Computed / Derived Values
+
+**Current gap:** Caffeine is purely declarative with no computation.
+
+| DSL | Approach |
+|-----|----------|
+| CUE | Unification: fields can reference other fields |
+| Dhall | Functions (total, terminating) |
+| HCL | Expressions, `locals` block, built-in functions |
+| Jsonnet | Full computation with `self` references |
+
+**Recommendation for Caffeine:** Limited derived values would be extremely useful for SLO definitions:
+
+```
+Provides:
+  target: 99.9
+  error_budget: 100.0 - target           # derived
+  window_seconds: window * 86400          # derived from duration
+  monitor_name: "$service$-$env$-slo"     # string interpolation (already supported)
+```
+
+Caffeine already has template variables (`$var->attr$`) for string interpolation. Extending this to numeric computation would enable:
+- Error budget = 100 - target
+- Burn rate thresholds derived from target and window
+- Alert thresholds as multiples of baseline
+
+However, **this is a significant complexity increase**. A conservative approach would be to support only a small set of built-in derivations rather than a general expression language:
+- `complement(Percentage)` -- returns `100.0 - value`
+- `to_seconds(Duration)` -- converts duration to seconds
+- `to_decimal(Percentage)` -- converts `99.9` to `0.999`
+
+### 7. Unit-Aware Numerics
+
+**Current gap:** Caffeine has `Integer` and `Float` with no unit tracking.
+
+| DSL | Approach |
+|-----|----------|
+| CUE | No unit system |
+| Dhall | Newtypes (manual) |
+| HCL | No unit system |
+| Jsonnet | No unit system |
+
+**None of these DSLs have built-in unit awareness.** This is an area where Caffeine could innovate.
+
+**Recommendation for Caffeine:** Rather than a full unit system (which is very complex), support **unit-annotated numeric types:**
+
+```
+Requires:
+  latency_threshold (Float<ms>)       # milliseconds
+  timeout (Integer<s>)                # seconds  
+  error_rate (Float<percent>)         # percentage
+  throughput (Integer<req/s>)         # requests per second
+```
+
+The unit annotation would serve two purposes:
+1. **Documentation** -- makes the expected unit explicit in the type
+2. **Codegen** -- the code generator can convert between units if needed (e.g., some APIs want seconds, others want milliseconds)
+
+A simpler version that fits Caffeine's existing type system would be to just have `Duration` and `Percentage` as special types (as recommended above) rather than a general unit system.
+
+---
+
+## Prioritized Recommendations for Caffeine
+
+Based on the research, here are the most impactful additions ranked by **value to SLO configuration** vs. **implementation complexity:**
+
+### High Value, Lower Complexity
+
+1. **Duration type** -- `Duration` accepting `"30s"`, `"5m"`, `"1h"`, `"7d"`, `"28d"`. Compile-time parsing and validation. This is the single most useful addition for SLO definitions where time windows are ubiquitous.
+
+2. **One-sided bounds** -- Extending `InclusiveRange` to support open-ended ranges (`>= 0`, `<= 100`). Many SLO fields have natural lower or upper bounds but not both.
+
+3. **Exclusive range bounds** -- Adding `<` and `>` (strict inequality) alongside the existing `<=` and `>=` from `InclusiveRange`.
+
+### High Value, Moderate Complexity
+
+4. **Percentage type** -- Semantic wrapper around `Float` with `[0.0, 100.0]` range built-in. Enables codegen to auto-convert between percentage and decimal representations.
+
+5. **String pattern constraints** -- `Matching(String, regex)` or extending the constraint syntax with `x matches "pattern"`. Valuable for validating query strings and naming conventions.
+
+### Moderate Value, Higher Complexity
+
+6. **Computed/derived values** -- Even a limited form (complement, unit conversion) would reduce duplication in SLO definitions. But this fundamentally changes Caffeine from purely declarative to having expressions.
+
+7. **Tagged unions** -- Full sum types where each variant carries different data. Powerful but adds significant complexity to the type system, parser, and codegen. The discriminated-record pattern with optionals is a simpler alternative.
+
+### Lower Priority
+
+8. **Unit-annotated numerics** -- Nice for documentation but can be approximated by naming conventions and doc comments. A full unit system is very complex.
+
+9. **Sensitive/redacted type modifier** -- Like HCL's `sensitive`. Useful for API keys in SLO configurations but narrow in scope.
+
+---
+
+## Concrete Examples: Applying These to SLO Configuration
+
+Here is how an SLO definition might look with these type extensions:
+
+```caffeine
+# Duration type for time windows
+# Percentage type for targets
+# One-sided bounds for thresholds
+# String patterns for queries
+
+_env (Type): String { x | x in { prod, staging, dev } }
+
+Blueprint AvailabilitySLO:
+  Requires:
+    service_name (String { x | x matches "^[a-z][a-z0-9-]+$" })
+    environment (_env)
+    target (Percentage)                              # 99.0 - 100.0 implied
+    evaluation_window (Duration)                     # "7d", "28d", "30d"
+    alert_threshold (Float { x | x > 0.0 })         # one-sided bound
+    alert_window (Duration { x | x >= "5m" })        # duration with constraint
+    burn_rate_short (Float { x | x >= 1.0 })         # lower bound only
+    burn_rate_long (Float { x | x >= 1.0 })
+    
+  Provides:
+    slo_name: "$service_name$-$environment$-availability"
+    ...
+```
+
+This would give Caffeine a type system that is more expressive than HCL or Jsonnet, comparable to CUE for constraint validation, while remaining simpler and more focused than Dhall's full dependent-type approach -- well-suited to the specific domain of service reliability configuration.</result>
+<usage>total_tokens: 22103
+tool_uses: 0
+duration_ms: 134258</usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>aa19ea3</task-id>
+<status>completed</status>
+<summary>Agent "Audit current Caffeine type usage" completed</summary>
+<result>Now I have all the information I need. Let me compile my findings:
+
+## Comprehensive Type System Usage Analysis - Caffeine Codebase
+
+Based on my thorough exploration of the Caffeine codebase, here are the significant gaps and opportunities for type system expansion:
+
+### 1. **STRUCTURED DATA ENCODED AS STRINGS (Primary Gaps)**
+
+#### Duration/Time Intervals (Currently: String)
+The codebase extensively uses string-encoded durations in the CQL (Caffeine Query Language):
+- **Evidence**: `test/caffeine_query_language/parser_test.gleam` shows parsing of `"30s"`, `"5m"`, `"1h"`, `"1.5h"`
+- **Parsed to**: `interval_seconds: Float` in `TimeSliceExp`
+- **Validation**: Currently happens in the parser, not in the type system
+- **Gap**: No `Duration` type. Users write string like `"per 30s"` and parser extracts the seconds
+
+#### Percentages (Currently: Float with range validation)
+- **Evidence**: `threshold: Float { x | x in ( 0.0 .. 100.0 ) }` in `standard_library/artifacts.gleam`
+- **Usage**: SLO thresholds like `99.95` (percent), and window-in-days like `30` (days)
+- **Problem**: Both percentages and plain integers use Float/Integer, with ranges to distinguish
+- **Gap**: No dedicated `Percentage` type. Could be `Float { x | x in ( 0.0 .. 100.0 ) }` or a semantic type
+
+#### Query Expressions (Currently: String)
+- **Evidence**: `indicators: Dict(String, String)` contains raw query strings like `"sum:http.requests{$env->env$}"`
+- **Codegen consumes these raw**: `resolve_slo_to_hcl()` in `codegen/generator.gleam` parses them
+- **Gap**: No `Query` or `MetricExpression` type for validation
+
+#### Evaluation Expressions (Currently: String)
+- **Evidence**: `evaluation: Optional(String)` with default `"numerator / denominator"`
+- **Used by**: CQL generator to build HCL blocks
+- **Gap**: No `EvaluationExpression` type; currently validated only during code generation
+
+### 2. **RECORD TYPES WITH FIXED SCHEMA (Currently Supported but Under-utilized)**
+
+#### Indicators Field
+- **Current type**: `Dict(String, String)` - map of indicator name to query expression
+- **Actual structure**: Named queries like `{ numerator: "...", denominator: "..." }`
+- **Codegen expects**: Known field names like "numerator" and "denominator"
+- **Gap**: Could be `Record(numerator: String, denominator: String)` to validate field names and ensure both are present
+
+#### Dependencies Field
+- **Current type**: `Record({ hard: List(String), soft: List(String) })`
+- **Usage**: Validated for hard/soft dependency relationships
+- **Current handling**: Works, but the Record type was recently added and is underutilized elsewhere
+
+#### Tags Field
+- **Current type**: `Optional(Dict(String, String))` - key-value pairs
+- **Usage pattern**: Converted to `List(#(String, String))` for codegen (`tags: slo.tags`)
+- **Gap**: Dict works but the conversion to pairs happens at codegen time, not in validation
+
+### 3. **SEMANTIC STRING TYPES BEYOND URL**
+
+Currently only has: `URL` (validates `http://` or `https://`)
+
+**Missing opportunities**:
+- **Email address**: Not present in codebase, but likely useful for metadata/runbook contacts
+- **DNS hostname**: Service names like `"auth-service"` are validated only by convention
+- **Environment names**: Values like `"production"`, `"staging"`, `"dev"` are currently just `String` with `OneOf` refinement
+- **Vendor names**: Already handled with `OneOf` over specific strings: `"datadog"`, `"honeycomb"`, `"dynatrace"`, `"newrelic"`
+
+### 4. **VALIDATION GAPS IN CODEGEN**
+
+#### Time Window Constraints
+- **Evidence**: `window_to_timeframe()` in `codegen/datadog.gleam` line 276
+- **Current code**:
+```gleam
+case days {
+  7 | 30 | 90 -> Ok(days_string <> "d")
+  _ -> Error("Illegal window_in_days value: " <> days_string <> 
+             ". Accepted values are 7, 30, or 90.")
+}
+```
+- **Current type**: `Integer { x | x in ( 1..90 ) }` - allows 1-90 but Datadog only accepts 7, 30, 90
+- **Gap**: Should be `Integer { x | x in { 7, 30, 90 } }` (OneOf, not InclusiveRange)
+
+#### Query String Parsing Deferred
+- **Evidence**: In `semantic_analyzer.gleam`, query templates are parsed late (semantic analysis phase)
+- **Gap**: No compile-time type that validates query expression syntax at type-check time
+
+#### Threshold Percentages with Vendor Constraints
+- **Honeycomb**: Might have different valid percentage ranges than Datadog
+- **Currently**: Same `Float { x | x in ( 0.0 .. 100.0 ) }` for all vendors
+- **Gap**: Could benefit from vendor-specific types or parameterized refinements
+
+### 5. **COMPLEX TYPE PATTERNS NOT YET MODELED**
+
+#### Template Variable Format
+- **Current handling**: Parse templates like `$$env->env:tag$$` at resolution time
+- **Type**: Just `String` in the template fields
+- **Gap**: Could have a dedicated `TemplateVariable` type that encodes the syntax rules:
+```gleam
+TemplateVariable {
+  name: String,         // env
+  attribute: String,    // env
+  format: TemplateFormat // tag, not, default, raw
+}
+```
+
+#### CQL Expression Polymorphism
+- Time slice: `time_slice(Query < 99.5 per 5m)` - with interval unit parsing
+- Metric slice: Plain arithmetic on indicators
+- **Current**: Both are just `String` in `evaluation: Optional(String)`
+- **Gap**: Could be a union type: `EvaluationExpr = TimeSliceEval | MetricEval`
+
+### 6. **PENDING/KNOWN LIMITATIONS (From Code Comments)**
+
+1. **TODO in types.gleam:654**: "fix, this is terrible" - Refinement type parsing has hacky exclusion list:
+```gleam
+case raw {
+  "Boolean" | "Dict" | "List" | "Optional" -> Error(Nil)
+  _ -> { ... }
+}
+```
+
+2. **Dict support for template variables**: From `types.gleam:1347` and test assertions:
+```
+"Dict support is pending, open an issue if this is a desired use case."
+```
+This means `Dict` values cannot be template variables yet.
+
+3. **Type aliases in records**: `ParsedRecord` supports type alias refs (`ParsedTypeAliasRef`), but only for forward reference in the parser. During lowering, all are resolved. However, recursive record types are currently rejected.
+
+### 7. **REAL-WORLD USAGE PATTERNS FROM TEST CORPUS**
+
+Looking at actual test files shows:
+- Percentages: `threshold: 99.95`, `threshold: 99.99` (Float values representing percentages)
+- Days: `window_in_days: 30`, `window_in_days: 7` (Integer, validated 1-90 in type but 7/30/90 in Datadog codegen)
+- Strings with semantic meaning:
+  - Environment: `env: "production"`, `env: "staging"`
+  - Service: `service: "auth-service"`
+  - Vendor: `vendor: "datadog"`
+  - Query expressions: `"sum:http.requests{$env->env$}"`
+
+### 8. **STRUCTURED DATA IN PROVIDES BLOCKS**
+
+Example from corpus:
+```caffeine
+Provides {
+  value: "numerator / denominator",
+  queries: {
+    numerator: "sum:http.requests{...}",
+    denominator: "sum:http.requests{...}"
+  }
+}
+```
+
+**Current modeling**: Handled as loose `String` for `value` and `Dict(String, String)` for `queries`
+**Gap**: Could validate that `queries` record has exactly `numerator` and `denominator` fields
+
+### SUMMARY OF KEY TYPE GAPS
+
+| Gap | Current Type | Could Be | Benefit |
+|-----|-------------|----------|---------|
+| Duration syntax like "30s" | String | `Duration` or `DurationString` | Compile-time parsing & validation |
+| Percentages (0-100) | `Float { x \| x in (0..100) }` | `Percentage` (semantic type) | Clarity + unit distinction |
+| Query expressions | String | `MetricQuery` (semantic type) | Early validation, better errors |
+| Window days with Datadog constraint | `Integer { x \| x in (1..90) }` | `Integer { x \| x in {7,30,90} }` | Prevents invalid codegen |
+| Template variable format | String | `TemplateVariable` (record type) | Structured validation |
+| Indicators record | `Dict(String, String)` | `Record(numerator: String, denominator: String)` | Field name validation |
+| Email/Hostname | Not present | `Email`, `Hostname` (semantic types) | Metadata validation |
+
+**Most impactful additions** would be:
+1. **Duration type** - used in CQL expressions
+2. **Percentage type** - used in SLO thresholds and query comparisons  
+3. **Stricter refinement for window_in_days** - prevents runtime Datadog errors
+4. **Query expression validation** - early detection of syntax errors</result>
+<usage>total_tokens: 102009
+tool_uses: 34
+duration_ms: 107788</usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>aedf353</task-id>
+<status>completed</status>
+<summary>Agent "Research observability DSL types" completed</summary>
+<result>---
+
+# Domain-Specific Type Additions for Caffeine SLO DSL: Research and Recommendations
+
+## Current State Analysis
+
+Caffeine's type system today has: `Boolean`, `String`, `Integer`, `Float`, `URL`, `List(T)`, `Dict(K,V)`, `Optional(T)`, `Defaulted(T, default)`, `OneOf(T, set)`, `InclusiveRange(T, low, high)`, `Record`.
+
+The SLO standard library artifact (in `/Users/rdurst/.REDACTED.gleam`) currently defines SLO params as:
+- `threshold`: `Float { x | x in ( 0.0..100.0 ) }` -- a percentage as a bare float
+- `window_in_days`: `Defaulted(Integer { x | x in ( 1..90 ) }, 30)` -- duration encoded as a plain integer
+- `indicators`: `Dict(String, String)` -- untyped query strings
+- `evaluation`: `String` -- untyped CQL expression
+- `vendor`: `String { x | x in { datadog, honeycomb, dynatrace, newrelic } }` -- enum-as-string
+- `tags`: `Optional(Dict(String, String))`
+- `runbook`: `Optional(URL)`
+
+The codegen modules then perform vendor-specific validation at generation time:
+- **Datadog** (`datadog.gleam:277`): `window_to_timeframe` rejects anything except 7, 30, 90
+- **New Relic** (`newrelic.gleam:330`): `window_to_rolling_count` rejects anything except 1, 7, 28
+- **Honeycomb** (`honeycomb.gleam:234`): passes through raw days
+- **Dynatrace** (`dynatrace.gleam:151`): formats as `-Nd`, accepts any value
+
+This means constraints that should be caught at compile time are deferred to code generation. Domain-specific types would push these checks earlier in the pipeline.
+
+---
+
+## Platform-by-Platform Data Model Analysis
+
+### 1. OpenSLO (Open Standard)
+
+OpenSLO defines these key domain types:
+- **Duration**: ISO 8601 durations (e.g., `1d`, `7d`, `28d`, `30d`, `90d`). Their `budgetingMethod` distinguishes `Occurrences` (event-based) and `Timeslices` (time-window-based).
+- **Target/Threshold**: Float between 0 and 1 (ratio, not percentage). `0.999` not `99.9`.
+- **Time window**: `Rolling` with a duration, or `Calendar` with `year`/`quarter`/`month`/`week`/`day` enum + start day.
+- **SLI types**: `ratioMetric` (good/total events) and `thresholdMetric` (single metric against threshold).
+- **Comparison operators**: `<`, `<=`, `>`, `>=` used in threshold SLIs.
+- **Burn rate**: Defined in alert policies as a multiplier (e.g., `14.4x` for 1h window, `6x` for 6h window).
+
+### 2. Sloth (Kubernetes SLO Generator)
+
+Sloth's Go structs define:
+- **Objective target**: Float64, 0-100 percentage.
+- **Time window**: String like `30d`, parsed into Go `time.Duration`.
+- **SLI types**: `events` (ratio, good/total NRQL-like) or `raw` (direct ratio expression).
+- **Alert windows**: Paired `short` (5m, 30m, 1h) and `long` (1h, 6h, 3d) for multi-burn-rate alerts.
+- **Burn rate factors**: Derived from the window ratio. Sloth generates recording rules with `error_budget_ratio` and `burn_rate` labels.
+
+### 3. Google SRE Workbook
+
+Google's SLI/SLO specification patterns:
+- **SLI types**: Availability, Latency, Freshness, Correctness, Throughput, Durability.
+- **Target**: Expressed as percentage (99.9%) with explicit distinction between "target" and "lower bound."
+- **Time windows**: Rolling (30 days standard) or calendar-aligned (month/quarter).
+- **Error budget**: `1 - SLO_target` expressed as both a percentage and absolute number of allowed bad events.
+- **Burn rate**: Ratio of actual error rate to error budget consumption rate. Standard multi-window: 1h/5m at 14.4x, 6h/30m at 6x, 1d/2h at 3x, 3d/1d at 1x.
+- **Thresholds**: Latency SLIs use "X% of requests complete within Y ms" -- combines a percentage, a duration, and a comparison.
+
+### 4. Datadog SLO API
+
+Datadog's SLO model:
+- **SLO types**: `metric` (good/total query ratio), `monitor` (monitor uptime), `time_slice` (metric against threshold over intervals).
+- **Timeframes**: Restricted enum: `7d`, `30d`, `90d` (for monitor/metric), plus `custom` for time_slice.
+- **Target**: Float 0.0-100.0 (percentage). Both `target` and optional `warning` threshold.
+- **Time slice specifics**: `comparator` (`>`, `>=`, `<`, `<=`), `query_interval_seconds` (integer: 60, 300), `threshold` (float).
+- **Tags**: `List(String)` in `key:value` format.
+
+### 5. Honeycomb SLO
+
+Honeycomb's model:
+- **SLI**: A derived column expression (boolean expression per-span).
+- **Target**: `target_percentage` Float 0.0-100.0.
+- **Time period**: Integer in days (1-90).
+- **Budget rate**: Derived. Honeycomb surfaces remaining budget as percentage.
+- **Tags**: `Dict(String, String)` map.
+
+### 6. Prometheus / PromQL
+
+Prometheus's type system for recording rules:
+- **Duration**: Suffixed strings: `s`, `m`, `h`, `d`, `w`, `y` (e.g., `5m`, `1h`, `30d`).
+- **Range vectors**: Metric name with time range `[5m]`.
+- **Rate windows**: Time durations for `rate()`, `increase()` functions.
+- **Recording rule names**: Convention `namespace:metric:operations` with specific naming rules.
+- **Burn rate recording rules**: `slo:sli_error:ratio_rate_1h`, `slo:error_budget:ratio`.
+
+### 7. Nobl9
+
+Nobl9's SLO platform model:
+- **SLI types**: `RawMetric` (direct metric), `CountMetric` (good/total counts), `ThresholdMetric`.
+- **Budgeting method**: `Occurrences` or `Timeslices`.
+- **Target**: Float 0-1 (ratio) or 0-100 depending on context. They support both.
+- **Time windows**: `Rolling` (duration 1m to 31d) or `Calendar` (day/week/month/quarter/year with timezone).
+- **Composite SLOs**: SLOs that aggregate other SLOs with weighted or boolean logic.
+- **Alert conditions**: `BurnRate` (multiplier + lookback windows) or `BudgetRemaining` (percentage threshold).
+
+---
+
+## Prioritized Type Additions
+
+### Priority 1: Duration (Highest Value, Most Impact)
+
+**Why**: Duration is the single most pervasive domain type across all platforms. Currently encoded as `Integer` (`window_in_days`), losing unit information and preventing the compiler from enforcing valid duration units. Every codegen module has a `window_to_*` function that manually validates and converts -- this is the type system's job.
+
+**What it replaces**: `window_in_days: Defaulted(Integer { x | x in ( 1..90 ) }, 30)` becomes `window: Defaulted(Duration, 30d)`.
+
+**Representation**: A semantic type (like `URL`) under `SemanticStringTypes`. Stored as a string literal in source (e.g., `"30d"`), parsed into a canonical internal representation. The `Value` type already supports `StringValue` so the runtime representation is straightforward.
+
+**Syntax in Caffeine**:
+```
+# In a type position:
+window: Duration
+
+# With refinement:
+window: Duration { x | x in { 7d, 30d, 90d } }
+
+# With default:
+window: Defaulted(Duration, 30d)
+
+# Valid duration literals (in Provides / Expectations):
+window: 30d
+window: 5m
+window: 1h
+interval: 300s
+```
+
+**Supported units**: `s` (seconds), `m` (minutes), `h` (hours), `d` (days), `w` (weeks). This covers:
+- Datadog timeframes: `7d`, `30d`, `90d`
+- Datadog time_slice intervals: `60s`, `300s`
+- Prometheus rate windows: `5m`, `1h`, `30m`
+- New Relic rolling windows: `1d`, `7d`, `28d`
+- OpenSLO/Nobl9 durations: arbitrary
+
+**Validation**: Parse regex `^\d+(s|m|h|d|w)$`. Optionally normalize to a canonical unit (seconds) for comparison in `InclusiveRange`.
+
+**Codegen impact**: Each vendor module's `window_to_*` function would receive a `Duration` value and convert to its native format (Datadog `"7d"`, New Relic integer `7`, Dynatrace `"-7d"`, Honeycomb integer `7`). The `Value` ADT would gain a `DurationValue(Int, DurationUnit)` variant (or simply validate the `StringValue` at parse time).
+
+**Where it fits in the type hierarchy**: Add `Duration` as a new variant of `SemanticStringTypes` alongside `URL`:
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration
+}
+```
+
+---
+
+### Priority 2: Percentage
+
+**Why**: SLO targets are fundamentally percentages, but the compiler currently treats them as raw `Float { x | x in ( 0.0..100.0 ) }`. This creates ambiguity -- does `99.9` mean 99.9% or 0.999? Different platforms use different conventions (Datadog/Honeycomb: 0-100, OpenSLO/Nobl9: 0-1). A `Percentage` type eliminates this confusion and lets codegen normalize.
+
+**What it replaces**: `threshold: Float { x | x in ( 0.0..100.0 ) }` becomes `threshold: Percentage`.
+
+**Syntax**:
+```
+# In type position:
+threshold: Percentage
+
+# With refinement (narrow range):
+threshold: Percentage { x | x in ( 99.0..100.0 ) }
+
+# Values (in Provides / Expectations):
+threshold: 99.9%
+threshold: 99.95%
+```
+
+**Validation**: Parse regex `^\d+(\.\d+)?%$`. Validate 0.0-100.0 range. Internally store as float.
+
+**Codegen normalization**: Each vendor receives the float value and formats as needed:
+- Datadog: `99.9` (float, 0-100 scale)
+- OpenSLO-style: `0.999` (ratio, 0-1 scale)
+- Honeycomb: `99.9` (float, 0-100 scale)
+
+**Where it fits**: Another `SemanticStringTypes` variant (similar to URL and Duration -- it is a string with semantic parsing):
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration
+  Percentage
+}
+```
+
+Or, more precisely, a new `SemanticNumericTypes` category under `NumericTypes`, since it validates and stores a Float with domain constraints:
+```gleam
+pub type NumericTypes {
+  Float
+  Integer
+  Percentage
+}
+```
+
+---
+
+### Priority 3: Enum / Named Union (Vendor-Aware Enums)
+
+**Why**: The `vendor` field is currently `String { x | x in { datadog, honeycomb, dynatrace, newrelic } }` -- a refinement on String. But this is really a fixed, compiler-known enum. The vendor values have deep semantic meaning: they control which codegen path runs, which window constraints apply, which evaluation formats are valid. A first-class enum would enable:
+1. Cross-field validation (e.g., "if vendor is datadog, window must be 7d/30d/90d")
+2. Better LSP completions (show vendor-specific params)
+3. Exhaustiveness checking in future conditional features
+
+**However**: This is partially handled already by `OneOf` refinements, and the codebase philosophy is "purely declarative, no control flow." The `Vendor` type in `analysis/vendor.gleam` already provides the internal enum. The real gap is not a new type but rather **cross-field constraints** (see Priority 6).
+
+**Recommendation**: Defer a standalone Enum type. Instead, consider making `OneOf` more ergonomic with named sets (type aliases already serve this role somewhat). The existing approach works -- this is lower priority than Duration and Percentage because the compiler already handles it correctly with `OneOf`.
+
+---
+
+### Priority 4: Comparator / Threshold Expression
+
+**Why**: The CQL time_slice syntax already has `Comparator` (`<`, `<=`, `>`, `>=`) in its AST, and Datadog's time_slice SLOs require comparator + threshold + interval. Currently these are buried inside the evaluation string. A first-class `Comparator` type would let blueprints expose comparator as a typed parameter rather than encoding it in a string.
+
+**Syntax**:
+```
+# In type position:
+comparator: Comparator
+
+# Values:
+comparator: ">="
+comparator: "<"
+```
+
+**Analysis**: This has limited scope -- it only affects time_slice SLOs on Datadog. The CQL parser already handles this within the evaluation expression. Making it a standalone type would require restructuring how evaluation works. **Recommendation**: Low priority. The CQL approach is cleaner for this use case.
+
+---
+
+### Priority 5: TimeWindow (Rolling vs Calendar)
+
+**Why**: OpenSLO, Nobl9, and Google SRE all distinguish between `Rolling` and `Calendar` time windows. Caffeine currently only supports rolling windows via `window_in_days`. Calendar-aligned windows (month/quarter/year) are a different semantic concept and would require:
+- Start-of-period alignment (e.g., "calendar month starting Monday")
+- Different codegen for each platform
+- Timezone awareness
+
+**Syntax**:
+```
+# Simple rolling (most common):
+window: Rolling(30d)
+
+# Calendar aligned:
+window: Calendar(month)
+window: Calendar(quarter)
+
+# If implemented as a Record variant:
+window: { kind: "rolling", duration: 30d }
+window: { kind: "calendar", period: "month", timezone: "America/New_York" }
+```
+
+**Analysis**: This would be a compound semantic type rather than a simple primitive. The current approach (just `window_in_days`) covers the 90%+ case. Calendar windows would primarily benefit Nobl9 and future OpenSLO compatibility. **Recommendation**: Medium priority. Can be deferred until calendar-aligned SLOs are a requested feature. If Duration (Priority 1) is added, Rolling windows are naturally `Duration` values.
+
+---
+
+### Priority 6: Cross-Field Constraints (Vendor-Dependent Validation)
+
+**Why**: The most painful gap in the current system is not a missing type but missing **cross-field constraints**. For example:
+- Datadog requires `window_in_days` to be one of `{7, 30, 90}`
+- New Relic requires `window_in_days` to be one of `{1, 7, 28}`
+- Honeycomb accepts any `1-90`
+- Dynatrace accepts any `1-90`
+
+Currently these checks happen in codegen (`window_to_timeframe`, `window_to_rolling_count`), which means errors surface late. The ideal solution would be conditional refinement types:
+```
+# Hypothetical syntax:
+window: Duration { x | x in { 7d, 30d, 90d } } when vendor == "datadog"
+window: Duration { x | x in { 1d, 7d, 28d } } when vendor == "newrelic"
+```
+
+**Analysis**: This is a language design question, not just a type system question. Caffeine is "purely declarative -- no control flow." Conditional types would introduce a form of dependent typing that conflicts with this philosophy. The current approach (validate in codegen, surface clear errors) is pragmatically correct even if not ideal from a type-theory perspective.
+
+**Recommendation**: Do not add conditional/dependent types now. Instead, when Duration is added, the standard library can define vendor-specific blueprints that bake in the correct constraints:
+```
+# In blueprints:
+Blueprints for "SLO"
+  * "datadog_availability":
+    Requires {
+      window: Defaulted(Duration { x | x in { 7d, 30d, 90d } }, 30d)
+      ...
+    }
+  * "newrelic_availability":
+    Requires {
+      window: Defaulted(Duration { x | x in { 1d, 7d, 28d } }, 7d)
+      ...
+    }
+```
+
+This is already possible with the existing `OneOf` refinement type -- it just needs Duration to be a type that supports `OneOf`.
+
+---
+
+### Priority 7: Burn Rate Multiplier
+
+**Why**: Burn rate alerting is a Google SRE best practice adopted by all major platforms. A burn rate is a float multiplier (e.g., `14.4x` means the error budget would be exhausted 14.4 times faster than the SLO allows). Typical multi-window configs:
+
+| Severity | Long Window | Short Window | Burn Rate |
+|----------|-------------|--------------|-----------|
+| Page     | 1h          | 5m           | 14.4x     |
+| Page     | 6h          | 30m          | 6x        |
+| Ticket   | 1d          | 2h           | 3x        |
+| Ticket   | 3d          | 1d           | 1x        |
+
+**Syntax**:
+```
+# As a standalone type:
+burn_rate: BurnRate
+
+# Values:
+burn_rate: 14.4x
+
+# As part of an alert config record:
+alerts: List({
+  severity: String { x | x in { page, ticket } },
+  burn_rate: Float,
+  long_window: Duration,
+  short_window: Duration
+})
+```
+
+**Analysis**: Burn rate is just a positive Float with a conventional `x` suffix. It does not warrant a standalone type -- `Float { x | x in ( 0.0..1000.0 ) }` with a `BurnRate` type alias would suffice. The more important addition is Duration (for the alert windows). **Recommendation**: If Duration exists, burn rate alerting can be expressed with existing types plus Records. No new type needed.
+
+---
+
+## Final Prioritized Recommendations
+
+| Priority | Type | Category | Effort | Impact | Recommendation |
+|----------|------|----------|--------|--------|----------------|
+| **1** | **Duration** | SemanticStringType | Medium | Very High | **Add now.** Replaces `window_in_days` integer hack. Enables all time-based fields across vendors. Composable with `OneOf`, `Defaulted`, `InclusiveRange`. |
+| **2** | **Percentage** | SemanticNumericType | Low-Medium | High | **Add now.** Replaces bare `Float` for thresholds. Eliminates 0-100 vs 0-1 ambiguity. Simple validation. |
+| **3** | Comparator | SemanticStringType | Low | Low | **Defer.** CQL handles this internally. |
+| **4** | TimeWindow | Compound type | High | Medium | **Defer.** Rolling windows covered by Duration. Calendar alignment is a future feature. |
+| **5** | Enum | Type category | Medium | Medium | **Defer.** `OneOf` already serves this purpose. |
+| **6** | Cross-field constraints | Language feature | Very High | High | **Defer.** Use vendor-specific blueprints instead. |
+| **7** | BurnRate | Float alias | Low | Low | **Defer.** Plain `Float` suffices; Duration is the key enabler. |
+
+---
+
+## Concrete Implementation Sketch for Duration
+
+To show how Duration would integrate with the existing type architecture, here is where it would slot in.
+
+In `/Users/rdurst/.REDACTED.gleam`:
+
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration
+}
+```
+
+The `parse_semantic_type` function would gain:
+```gleam
+fn parse_semantic_type(raw: String) -> Result(SemanticStringTypes, Nil) {
+  case raw {
+    "URL" -> Ok(URL)
+    "Duration" -> Ok(Duration)
+    _ -> Error(Nil)
+  }
+}
+```
+
+The `validate_semantic_value` function would gain a Duration case:
+```gleam
+Duration, value.StringValue(str) ->
+  case validate_duration(str) {
+    Ok(Nil) -> Ok(val)
+    Error(Nil) ->
+      Error([ValidationError(
+        expected: "Duration (e.g., 30s, 5m, 1h, 7d, 4w)",
+        found: str,
+        path: [],
+      )])
+  }
+```
+
+With a validation function:
+```gleam
+fn validate_duration(s: String) -> Result(Nil, Nil) {
+  // Match pattern: one or more digits followed by s/m/h/d/w
+  // Parse the numeric part and ensure it's positive
+  ...
+}
+```
+
+Duration would need to be refinement-compatible (support `OneOf` and `InclusiveRange`). For `OneOf`, the set values would be duration literals like `"7d"`, `"30d"`, `"90d"`. For `InclusiveRange`, normalization to a common unit (seconds) would be needed for comparison.
+
+The standard library SLO artifact would become:
+```gleam
+#("window", ParamInfo(
+  type_: ModifierType(Defaulted(
+    RefinementType(InclusiveRange(
+      PrimitiveType(SemanticType(Duration)),
+      "1d",
+      "90d",
+    )),
+    "30d",
+  )),
+  description: "Rolling window for measurement",
+)),
+```
+
+And in `.caffeine` files:
+```
+Expectations for "api_availability"
+  * "checkout_availability":
+    Provides {
+      threshold: 99.95,
+      window: 30d
+    }
+```
+
+## Concrete Implementation Sketch for Percentage
+
+Percentage could live under a new `SemanticNumericTypes` category (since it stores a float, not a string), or more simply as another `SemanticStringTypes` variant that parses `"99.9%"` as a string literal.
+
+The simpler approach (SemanticStringTypes):
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration
+  Percentage
+}
+```
+
+Validation: strip trailing `%`, parse as float, ensure 0.0 <= x <= 100.0.
+
+In `.caffeine` files:
+```
+Expectations for "api_availability"
+  * "checkout_availability":
+    Provides {
+      threshold: 99.95%,
+      window: 30d
+    }
+```
+
+The alternative (keeping threshold as `Float` with a range refinement) is already working and is not broken -- Percentage adds ergonomic clarity but less correctness improvement than Duration. This is why it is Priority 2 rather than Priority 1.</result>
+<usage>total_tokens: 89371
+tool_uses: 36
+duration_ms: 221570</usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>a5545e7</task-id>
+<status>completed</status>
+<summary>Agent "Research refinement/dependent type systems" completed</summary>
+<result>Here is the complete structured analysis:
+
+---
+
+# Type System Expansion Research for Caffeine DSL
+
+## Current Baseline
+
+Caffeine's type system (in `/Users/rdurst/.REDACTED.gleam`) currently has:
+
+- **Primitives**: `Boolean`, `String`, `Integer`, `Float`, `URL`
+- **Collections**: `List(T)`, `Dict(K, V)`
+- **Modifiers**: `Optional(T)`, `Defaulted(T, default)`
+- **Refinements**: `OneOf(T, set)`, `InclusiveRange(T, low, high)`
+- **Structured**: `Record({ field: T, ... })`
+
+The refinement system uses the syntax `T { x | x in { ... } }` for enumeration and `T { x | x in ( low..high ) }` for ranges. Only `String`, `Integer`, `Float` (and `Defaulted` wrapping those) are refinement-compatible. The standard library (in `/Users/rdurst/.REDACTED.gleam`) already uses these types to define SLO and DependencyRelations artifact schemas.
+
+---
+
+## 1. Liquid Haskell -- Refinement Types with SMT-Backed Predicates
+
+### Relevant Concepts
+
+Liquid Haskell extends Haskell's type system with logical predicates over values, verified at compile time by an SMT solver. Key ideas:
+
+- **Predicate refinements**: `{v: Int | v > 0 && v < 100}` -- arbitrary boolean predicates over values
+- **Measures**: Functions lifted into the type system (e.g., `measure len :: [a] -> Int`) that let you write `{v: [a] | len v > 0}` for non-empty lists
+- **Abstract refinements**: Polymorphic predicates passed as type parameters, enabling generic "sorted list", "unique list", etc.
+- **Dependent function types**: `x: Int -> {v: Int | v > x}` -- output type depends on input value
+
+### What is Applicable to Caffeine
+
+Caffeine does not need an SMT solver, but the *concepts* translate well:
+
+**a) Measure-based collection constraints (NonEmpty, MinLength, MaxLength)**
+
+Liquid Haskell's `{v: [a] | len v > 0}` maps to collection size constraints. Currently, Caffeine has no way to express "this list must have at least one element."
+
+```caffeine
+# Current: no constraint on list emptiness
+Requires { services: List(String) }
+
+# Proposed: lifted collection predicates
+Requires { services: List(String) { x | len(x) >= 1 } }
+Requires { tags: Dict(String, String) { x | len(x) <= 10 } }
+```
+
+**b) Dependent types / conditional field presence**
+
+Liquid Haskell's dependent function types inspire conditional field requirements. In SLO configs, if `vendor` is `"datadog"`, then `indicators` must be a `Dict(String, String)`, but if `vendor` is `"honeycomb"`, it might need a different shape.
+
+```caffeine
+# Hypothetical: conditional field types
+Requires {
+  vendor: String { x | x in { datadog, honeycomb } },
+  indicators: when vendor = "datadog" then Dict(String, String)
+              when vendor = "honeycomb" then { column: String, dataset: String }
+}
+```
+
+**c) Positive/negative numeric refinements beyond ranges**
+
+```caffeine
+Requires { retry_count: Integer { x | x >= 0 } }
+Requires { timeout_ms: Integer { x | x > 0 } }
+```
+
+### Priority Assessment
+
+- **NonEmpty / collection length constraints**: HIGH -- prevents misconfigured SLOs with empty indicator lists
+- **Conditional types**: MEDIUM -- complex to implement, but highly valuable for multi-vendor blueprints
+- **Arbitrary numeric predicates**: LOW -- `InclusiveRange` already covers the 90% case; open intervals would cover the rest
+
+---
+
+## 2. TypeScript -- Template Literal Types, Branded Types, Discriminated Unions
+
+### Relevant Concepts
+
+- **Template literal types**: `` type Env = `${string}-${Region}` `` -- types that constrain string structure via interpolation patterns
+- **Branded types**: `type USD = number & { readonly __brand: "USD" }` -- nominal typing via phantom fields to prevent mixing semantically different values
+- **Discriminated unions**: `type Shape = { kind: "circle", radius: number } | { kind: "square", side: number }` -- unions of records where a literal tag field determines which variant applies
+- **Mapped types / conditional types**: `type Required<T> = { [K in keyof T]-?: T[K] }` -- types computed from other types
+
+### What is Applicable to Caffeine
+
+**a) Discriminated unions (tagged record variants)**
+
+This is the TypeScript feature most directly relevant to Caffeine. Currently, vendor-specific configuration is stringly-typed. Discriminated unions would let blueprints express "the shape of `indicators` depends on which `vendor` is selected."
+
+```caffeine
+# Current approach: vendor is a OneOf string, indicators is generic Dict
+Requires {
+  vendor: String { x | x in { datadog, honeycomb } },
+  indicators: Dict(String, String)
+}
+
+# Proposed: discriminated union on vendor
+Requires {
+  vendor: "datadog" -> {
+    indicators: Dict(String, String),
+    evaluation: String
+  },
+  vendor: "honeycomb" -> {
+    column: String,
+    dataset: String,
+    op: String { x | x in { HEATMAP, CONCURRENCY } }
+  }
+}
+```
+
+**b) Template literal / pattern-constrained strings**
+
+```caffeine
+# Current: no structural constraint on string content
+Requires { service_name: String }
+
+# Proposed: pattern-constrained string
+Requires { service_name: String { x | x matches "^[a-z][a-z0-9-]*$" } }
+```
+
+**c) Branded/semantic string types**
+
+Caffeine already has `URL` as a `SemanticStringTypes` variant in `types.gleam` -- the architecture is ready to expand.
+
+```caffeine
+Requires {
+  runbook: Optional(URL),           # existing
+  owner_email: Email,               # new
+  deployment_version: Semver        # new
+}
+```
+
+### Priority Assessment
+
+- **Pattern-constrained strings (regex)**: HIGH -- prevents malformed metric queries, service names, tag values at compile time
+- **Additional semantic string types (Duration, Percentage)**: HIGH -- domain-native for SLO configurations
+- **Discriminated unions**: MEDIUM-HIGH -- powerful but adds significant complexity to parser and type checker
+- **Branded types**: LOW -- Caffeine's type alias system partially covers this
+
+---
+
+## 3. Zod / Valibot / ArkType -- Runtime Validation Schemas
+
+### Relevant Concepts
+
+**Zod:**
+- `z.string().min(1).max(255)` -- string length constraints
+- `z.string().regex(/^[a-z]+$/)` -- regex validation
+- `z.string().email()`, `.url()`, `.uuid()`, `.ip()` -- built-in format validators
+- `z.number().positive()`, `.nonnegative()`, `.int()`, `.min(0).max(100)` -- numeric constraints
+- `z.array(z.string()).nonempty().max(10)` -- collection size constraints
+- `z.discriminatedUnion("type", [...])` -- tagged unions
+- `z.string().duration()` -- ISO 8601 duration strings
+
+**Valibot:**
+- `pipe(string(), minLength(1), regex(/pattern/))` -- composable validation pipeline
+- `variant("type", [...])` -- discriminated unions
+
+**ArkType:**
+- `type({ name: "string > 0" })` -- inline constraint syntax within string DSL
+- Intersection via `&`: `"number > 0 & number < 100"` -- composable constraints
+
+### What is Applicable to Caffeine
+
+**a) String length constraints**
+
+```caffeine
+Requires { 
+  name: String { x | len(x) in ( 1..255 ) },
+  description: Optional(String { x | len(x) in ( 0..2000 ) })
+}
+```
+
+**b) Collection size constraints**
+
+```caffeine
+Requires {
+  indicators: Dict(String, String) { x | len(x) in ( 1..20 ) },
+  tags: Optional(List(String) { x | len(x) in ( 1..50 ) })
+}
+```
+
+**c) Composable/intersection constraints**
+
+Currently, Caffeine allows ONE refinement per type (`OneOf` OR `InclusiveRange`, not both). Intersection would allow combining:
+
+```caffeine
+Requires {
+  env: String { x | x matches "^[a-z]+$" } { x | x in { prod, staging, dev } }
+}
+```
+
+**d) Duration parsing type**
+
+```caffeine
+Requires { 
+  timeout: Duration,
+  window: Duration { x | x in ( 1m..90d ) }
+}
+```
+
+### Priority Assessment
+
+- **Collection size constraints (NonEmpty, min/max length)**: HIGH
+- **String length constraints**: MEDIUM
+- **Duration type**: HIGH -- native to the SLO domain
+- **Intersection/composable constraints**: MEDIUM
+- **Coercion/transform types**: LOW -- Caffeine is declarative, not computational
+
+---
+
+## 4. JSON Schema -- Format Types, Pattern Constraints, Conditional Schemas, Composition
+
+### Relevant Concepts
+
+- **`format` keyword**: `"email"`, `"hostname"`, `"ipv4"`, `"uri"`, `"duration"`, `"uuid"`
+- **`pattern` keyword**: `{"type": "string", "pattern": "^[a-z]+-[a-z]+$"}`
+- **`minLength` / `maxLength`**: string length bounds
+- **`minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`**: numeric bounds with open/closed intervals
+- **`minItems` / `maxItems`**: array size constraints
+- **`uniqueItems`**: array element uniqueness
+- **Composition**: `allOf` (intersection), `anyOf` (union), `oneOf` (discriminated union)
+- **`if` / `then` / `else`**: conditional schemas
+- **`dependentRequired`**: "if field A is present, fields B and C must also be present"
+
+### What is Applicable to Caffeine
+
+**a) `exclusiveMinimum` / `exclusiveMaximum` -- Open interval ranges**
+
+Currently Caffeine only has `InclusiveRange`. JSON Schema's exclusive bounds are needed for cases like "threshold must be strictly greater than 0 but at most 100."
+
+```caffeine
+Requires {
+  threshold: Float { x | x in ( 0.0<..100.0 ) },  # exclusive low, inclusive high
+  error_budget: Float { x | x in ( 0.0<..<1.0 ) }  # exclusive both
+}
+```
+
+**Where this matters today**: The SLO `threshold` field in the standard library is defined as `InclusiveRange(Float, "0.0", "100.0")`. A threshold of exactly 0.0 is semantically meaningless for an SLO -- exclusive low bound would catch this.
+
+**b) `format` keyword -- Semantic string types**
+
+```caffeine
+Requires {
+  runbook: Optional(URL),          # already exists
+  timeout: Duration,               # NEW
+  alert_email: Email,              # NEW
+  host: Hostname,                  # NEW
+}
+```
+
+**c) `pattern` keyword -- Regex-constrained strings**
+
+```caffeine
+Requires {
+  service_name: String { x | x matches "^[a-z][a-z0-9-]*$" },
+  metric_tag: String { x | x matches "^[a-z_]+:[a-z0-9_.-]+$" }
+}
+```
+
+**d) `minItems` / `maxItems` -- Collection constraints**
+
+```caffeine
+Requires {
+  indicators: Dict(String, String) { x | len(x) in ( 1..20 ) },
+  environments: List(String) { x | len(x) in ( 1..5 ), unique }
+}
+```
+
+**e) `if` / `then` / `else` and `dependentRequired` -- Conditional schemas**
+
+```caffeine
+# Option A: guard clause on fields
+Requires {
+  vendor: String { x | x in { datadog, honeycomb } },
+  indicators: when vendor in { datadog } then Dict(String, String),
+  column: when vendor in { honeycomb } then String
+}
+
+# Option B: conditional blocks
+Requires {
+  vendor: String { x | x in { datadog, honeycomb } },
+  when vendor = "datadog" {
+    indicators: Dict(String, String),
+    evaluation: Defaulted(String, "numerator / denominator")
+  },
+  when vendor = "honeycomb" {
+    column: String,
+    dataset: String
+  }
+}
+```
+
+### Priority Assessment
+
+- **Exclusive ranges**: HIGH -- minimal implementation cost, builds on existing `InclusiveRange`
+- **Pattern/regex strings**: HIGH -- catches malformed queries/identifiers at compile time
+- **Collection size constraints**: HIGH -- prevents empty indicator maps
+- **Additional format types (Duration, Percentage)**: HIGH -- domain-native
+- **Conditional schemas**: MEDIUM -- powerful but complex
+- **Type composition (allOf/anyOf)**: LOW -- `extends` already handles most needs
+
+---
+
+## 5. Protocol Buffers / Buf Validate -- Proto Field Constraints
+
+### Relevant Concepts
+
+- **Numeric**: `(buf.validate.field).int32 = { gt: 0, lte: 100 }` -- gt (exclusive), gte (inclusive)
+- **String**: `{ min_len: 1, max_len: 255, pattern: "^[a-z]+$" }`
+- **String formats**: `{ email: true }`, `hostname: true`, `ip: true`, `uri: true`, `uuid: true`
+- **Duration**: `{ gte: { seconds: 0 }, lte: { seconds: 86400 } }` -- range constraints on durations
+- **Repeated (list)**: `{ min_items: 1, max_items: 10, unique: true }`
+- **Map**: `{ min_pairs: 1, max_pairs: 100 }`
+- **Cross-field**: CEL expressions: `{ expression: "this.start_time < this.end_time" }`
+
+### What is Applicable to Caffeine
+
+**a) Duration as a first-class type with range constraints**
+
+```caffeine
+Requires {
+  timeout: Duration,
+  window: Duration { x | x in ( 1d..90d ) },
+  check_interval: Duration { x | x in ( 30s..1h ) }
+}
+
+Provides {
+  timeout: "30s",
+  window: "30d",
+  check_interval: "5m"
+}
+```
+
+**Where this matters**: `window_in_days` in the SLO standard library is currently `Integer` with range `1..90`. A `Duration` type is more expressive, self-documenting, and prevents unit ambiguity.
+
+**b) Exclusive bounds**
+
+```caffeine
+Requires {
+  threshold: Float { x | x in ( 0.0<..100.0 ) },   # 0.0 < x <= 100.0
+}
+```
+
+**c) Map pair constraints**
+
+```caffeine
+Requires {
+  indicators: Dict(String, String) { x | len(x) in ( 1..20 ) }
+}
+```
+
+### Priority Assessment
+
+- **Duration type with range constraints**: HIGH -- the single most domain-relevant missing type
+- **Exclusive bounds**: HIGH -- trivial extension of existing infrastructure
+- **Collection size constraints**: HIGH -- consistent with all other systems surveyed
+- **Cross-field validation**: LOW -- conflicts with Caffeine's declarative philosophy
+
+---
+
+## Synthesis: Prioritized Recommendations
+
+### Tier 1 -- High Impact, Low-Medium Complexity
+
+#### 1a. Exclusive Ranges (Open Intervals)
+
+**Appears in**: JSON Schema, Buf validate, Liquid Haskell
+
+**Implementation**: Parameterize `InclusiveRange` with bound-inclusivity flags.
+
+```gleam
+// In types.gleam:
+Range(accepted, low: String, high: String, low_inclusive: Bool, high_inclusive: Bool)
+```
+
+```caffeine
+threshold: Float { x | x in ( 0.0<..100.0 ) }    # 0 < x <= 100
+error_rate: Float { x | x in ( 0.0<..<1.0 ) }    # 0 < x < 1
+```
+
+Recommended syntax: `<` markers on bound side, extending the existing `( low..high )` form. The `<` is visually clear and does not conflict with existing syntax.
+
+#### 1b. Duration Type
+
+**Appears in**: Buf validate, Zod, JSON Schema
+
+**Implementation**: Add `Duration` to `SemanticStringTypes`. Duration values are strings parsed into a canonical representation. Support range refinements on durations.
+
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration  // parses "30s", "5m", "2h", "7d", "1h30m"
+}
+```
+
+```caffeine
+Requires {
+  window: Duration { x | x in ( 1d..90d ) },
+  check_interval: Defaulted(Duration, "5m"),
+  timeout: Duration
+}
+```
+
+#### 1c. Percentage Type
+
+**Appears in**: Common across all validation libraries; directly used in SLO thresholds
+
+**Implementation**: Add `Percentage` to `SemanticStringTypes`, validate `0.0 <= x <= 100.0`.
+
+```caffeine
+Requires { threshold: Percentage, error_budget_burn_rate: Percentage }
+```
+
+Alternatively, keep this as a documented type alias pattern (`Float { x | x in ( 0.0..100.0 ) }`) since Caffeine already supports that refinement. The named type improves readability in the SLO domain.
+
+#### 1d. Pattern-Constrained Strings (Regex)
+
+**Appears in**: JSON Schema, Buf validate, Zod, ArkType, Liquid Haskell
+
+**Implementation**: Add a `Matches` variant to `RefinementTypes`.
+
+```gleam
+pub type RefinementTypes(accepted) {
+  OneOf(accepted, set.Set(String))
+  InclusiveRange(accepted, String, String)
+  Matches(accepted, String)  // regex pattern constraint
+}
+```
+
+```caffeine
+Requires {
+  service_name: String { x | x matches "^[a-z][a-z0-9-]*$" },
+  metric_tag: String { x | x matches "^[a-z_]+:[a-z0-9_.-]+$" }
+}
+```
+
+Cross-target consideration: Both Erlang (`re` module) and JavaScript (`RegExp`) support PCRE-like syntax but feature sets differ slightly. Caffeine would need to define a supported regex subset.
+
+#### 1e. Collection Size Constraints
+
+**Appears in**: JSON Schema, Buf validate, Zod, Liquid Haskell
+
+**Implementation**: Extend the refinement system to support `len()` as a measure function on collections and strings.
+
+```caffeine
+Requires {
+  indicators: Dict(String, String) { x | len(x) in ( 1..20 ) },
+  environments: List(String) { x | len(x) in ( 1..5 ) }
+}
+```
+
+This is the most impactful single addition: the SLO `indicators` field should never be empty, and currently an empty dict `{}` passes type checking but produces broken Terraform output.
+
+### Tier 2 -- High Impact, High Complexity
+
+#### 2a. Conditional / Dependent Types
+
+**Appears in**: JSON Schema, TypeScript, Buf validate, Liquid Haskell
+
+The motivating case is multi-vendor blueprints where required fields depend on which vendor is selected. Current workaround: separate blueprints per vendor, which duplicates shared fields.
+
+Two proposed designs:
+
+```caffeine
+# Option A: When-clauses on individual fields
+Requires {
+  vendor: _vendor,
+  indicators: when vendor in { datadog, newrelic } then Dict(String, String),
+  column: when vendor in { honeycomb } then String
+}
+
+# Option B: Variant blocks
+Requires {
+  variant vendor {
+    "datadog" | "newrelic" -> { indicators: Dict(String, String) },
+    "honeycomb" -> { column: String, dataset: String }
+  }
+}
+```
+
+This touches the parser, validator, lowering, linker, and semantic analyzer.
+
+#### 2b. Additional Semantic String Types
+
+Expand `SemanticStringTypes` beyond `URL` incrementally: **Duration**, **Hostname** (service identification), **Email** (alert routing).
+
+#### 2c. Intersection / Composable Refinements
+
+Allow multiple refinement predicates on a single type. Defer until pattern/regex strings create a real need for combining constraints.
+
+### Tier 3 -- Lower Priority
+
+- **Cross-field validation** (CEL-style): Requires an expression evaluator, conflicts with declarative philosophy
+- **String length constraints**: Falls out naturally from the `len()` predicate in collection constraints
+- **Unique items constraint**: Useful but rarely critical
+
+---
+
+## Recommended Implementation Roadmap
+
+### Phase 1: Extend Existing Refinement Infrastructure
+1. **Exclusive ranges** -- Parameterize `InclusiveRange` with bound inclusivity flags
+2. **`Duration` semantic type** -- Add variant, implement parsing for duration strings
+3. **`Percentage` semantic type** -- Add variant, validate bounds
+
+### Phase 2: New Refinement Predicates
+4. **Pattern/regex strings** (`Matches` refinement) -- New `RefinementTypes` variant
+5. **Collection size constraints** (`len(x) in (...)`) -- Extend refinement system to support `len()`
+
+### Phase 3: Advanced Type Features
+6. **Conditional types** (discriminated unions / when-clauses)
+7. **Additional semantic types** (`Email`, `Hostname`)
+
+### Phase 4: Composition
+8. **Intersection constraints**
+9. **Cross-field validation**
+
+---
+
+## Appendix: Proposed Type System Changes in `types.gleam`
+
+After Phases 1-2, the key types would look like:
+
+```gleam
+pub type SemanticStringTypes {
+  URL
+  Duration    // Phase 1
+  Percentage  // Phase 1
+  Email       // Phase 3
+  Hostname    // Phase 3
+}
+
+pub type RefinementTypes(accepted) {
+  OneOf(accepted, set.Set(String))
+  Range(accepted, String, String, BoundType, BoundType)  // Phase 1 (replaces InclusiveRange)
+  Matches(accepted, String)                                // Phase 2
+  LengthRange(accepted, String, String, BoundType, BoundType) // Phase 2
+}
+
+pub type BoundType {
+  Inclusive
+  Exclusive
+}
+```
+
+The refinement guard syntax would extend from:
+
+```
+x | x in { val1, val2 }      # OneOf (existing)
+x | x in ( low..high )       # Range, both inclusive (existing behavior)
+```
+
+to:
+
+```
+x | x in { val1, val2 }      # OneOf (existing)
+x | x in ( low..high )       # Range, both inclusive (existing behavior)
+x | x in ( low<..high )      # Range, exclusive low
+x | x in ( low..<high )      # Range, exclusive high  
+x | x in ( low<..<high )     # Range, both exclusive
+x | x matches "pattern"      # Matches (new)
+x | len(x) in ( low..high )  # LengthRange (new)
+```</result>
+<usage>total_tokens: 86011
+tool_uses: 19
+duration_ms: 310594</usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+Explain more the dependent types and tagged unions
+
+---
+
+Ok, yeah we sort of already solved this. What other features? Also compare whatever new type gains we'd get to also enabling imports between blueprint files.
+
+---
+
+Let's implement Percentage. Give me a plan for that
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **Initial request**: User asked to "dig into the caffeine type system" - exploration/research request.
+
+2. **First exploration**: I launched an Explore agent that thoroughly analyzed the type system, producing a comprehensive breakdown of AcceptedTypes, ParsedType, the compilation pipeline, type aliases, etc.
+
+3. **Second request**: User asked to "explore whether there are any types that might actually support more use cases" and to "kick off a few teams to look at other type systems."
+
+4. **Research phase**: I launched 4 parallel research agents:
+   - Config DSL type systems (CUE, Dhall, HCL, Jsonnet)
+   - Refinement/dependent type systems (Liquid Haskell, TypeScript, Zod, JSON Schema, Protobuf)
+   - Observability domain types (OpenSLO, Datadog, Honeycomb, Prometheus, Nobl9)
+   - Internal audit of how Caffeine actually uses types
+
+5. **Synthesis**: After all agents reported, I synthesized findings into a prioritized recommendation:
+   - Tier 1: Duration, Exclusive Ranges, Regex Strings, Collection Size Constraints
+   - Tier 2: Percentage, Additional Semantic Strings
+   - Tier 3: Conditional/Dependent Types, Tagged Unions, Cross-field Validation
+
+6. **User asked for deeper explanation**: "Explain more the dependent types and tagged unions"
+
+7. **Deep dive on dependent types/tagged unions**: I explored the codebase (standard library artifacts, codegen window validators, vendor dispatch in semantic analyzer, actual .caffeine corpus files) and presented three approaches:
+   - Dependent types (when guards on fields)
+   - Tagged unions (variant blocks)
+   - Pragmatic middle ground (separate blueprints + extendables - already works today)
+
+8. **User response**: "Ok, yeah we sort of already solved this. What other features? Also compare whatever new type gains we'd get to also enabling imports between blueprint files."
+
+9. **Imports research**: I launched an Explore agent to understand the multi-file compilation model. Key findings:
+   - Single blueprint file, multiple expectation files
+   - Type aliases and extendables are file-scoped (resolved at lowering time)
+   - No cross-file sharing mechanism
+
+10. **Comparison synthesis**: I compared type system additions vs imports, concluding imports deliver more structural value but type additions are cheaper wins.
+
+11. **User chose**: "Let's implement Percentage. Give me a plan for that"
+
+12. **Plan mode entered**: I began planning the Percentage type implementation.
+
+13. **First exploration in plan mode**: Traced URL semantic type end-to-end through every layer (types.gleam, tokenizer, token, parser, formatter, LSP, CLI, tests) to understand the pattern.
+
+14. **Design questions asked**: I asked the user two questions:
+    - Value syntax: numeric (99.9) vs string with suffix ("99.9%")
+    - Refinement support
+    
+15. **User answers**: 
+    - "99.9% not a string" (distinct literal syntax with % suffix)
+    - "yes support refinements, but then ensure we dont have anything < 0 or > 100"
+
+16. **Second exploration in plan mode**: Explored Value type, Defaulted parsing, Literal → Value conversion, formatter behavior for values.
+
+17. **Plan written**: Wrote detailed plan to `/Users/rdurst/.claude/plans/lovely-hopping-sprout.md`
+
+Key design decisions in the plan:
+- Percentage under NumericTypes (not SemanticStringTypes)
+- New LiteralPercentage(Float) in AST Literal type
+- Reuse FloatValue(Float) in Value type (no new Value variant)
+- Both 99.9% and 99.9 valid for Percentage fields (backward compatible)
+- Defaulted stores "99.9%" string, validation strips optional %
+- Refinement bounds validated within [0.0, 100.0]
+- 11 files to modify across caffeine_lang, caffeine_lsp
+
+The plan was written but ExitPlanMode was not yet called when the summary was requested.
+
+Summary:
+1. Primary Request and Intent:
+   The user's requests evolved through several phases:
+   - **Phase 1**: Explore and understand the Caffeine type system in depth
+   - **Phase 2**: Research other type systems (config DSLs, refinement types, observability platforms) to find expansion opportunities
+   - **Phase 3**: Deep dive on dependent types and tagged unions specifically
+   - **Phase 4**: After acknowledging dependent types are already solved by existing features (separate blueprints + extendables), compare remaining type additions against enabling imports between blueprint files
+   - **Phase 5**: Implement the `Percentage` type — create a detailed implementation plan
+
+   The user explicitly chose:
+   - Value syntax: `99.9%` as a distinct literal (not a string, not a plain float)
+   - Refinement support: Yes, but enforce that nothing goes below 0 or above 100
+
+2. Key Technical Concepts:
+   - **Caffeine**: A Gleam-based DSL compiler generating reliability artifacts (Terraform for Datadog/Honeycomb/Dynatrace/NewRelic SLOs) from service expectation definitions
+   - **Two parallel type hierarchies**: `ParsedType` (frontend) and `AcceptedTypes` (backend), connected by lowering phase
+   - **Type taxonomy**: PrimitiveType (Boolean, String, NumericType(Integer|Float), SemanticType(URL)), CollectionType (List, Dict), ModifierType (Optional, Defaulted), RefinementType (OneOf, InclusiveRange), RecordType
+   - **Compilation pipeline**: Tokenizer → Parser → Validator → Lowering (ParsedType→AcceptedTypes) → Linker → Semantic Analyzer → Codegen
+   - **Type aliases**: File-scoped, resolved during lowering, `ParsedTypeAliasRef` eliminated before linker
+   - **Extendables**: Reusable Requires/Provides blocks, also file-scoped, inlined at compile time
+   - **Standard library artifacts**: Hardcoded SLO and DependencyRelations schemas in `standard_library/artifacts.gleam`
+   - **Single blueprint file architecture**: Compiler takes one blueprint file + multiple expectation files
+   - **Vendor dispatch**: Semantic analyzer dispatches on vendor (Datadog/Honeycomb/Dynatrace/NewRelic) for template resolution; codegen has vendor-specific validation (e.g., Datadog only accepts window 7/30/90 days)
+   - **Value type**: `Value` ADT with `StringValue`, `IntValue`, `FloatValue`, `BoolValue`, `ListValue`, `DictValue`, `NilValue`
+   - **Literal type**: AST-level `Literal` with `LiteralString`, `LiteralInteger`, `LiteralFloat`, `LiteralTrue`, `LiteralFalse`, etc. — converted to Value during linker/IR building
+   - **Defaulted storage**: `Defaulted(T, String)` stores default as string via `literal_to_string()`, validated by `validate_primitive_default_value()`
+
+3. Files and Code Sections:
+   - **`caffeine_lang/src/caffeine_lang/types.gleam`** (~1584 lines)
+     - Central type system module. Contains `AcceptedTypes`, `ParsedType`, `NumericTypes`, `SemanticStringTypes`, all parsing/validation/resolution/metadata functions.
+     - Key types:
+       ```gleam
+       pub type NumericTypes { Integer, Float }
+       pub type SemanticStringTypes { URL }
+       pub type RefinementTypes(accepted) {
+         OneOf(accepted, set.Set(String))
+         InclusiveRange(accepted, String, String)
+       }
+       ```
+     - Percentage will be added to `NumericTypes`
+
+   - **`caffeine_lang/src/caffeine_lang/value.gleam`** (lines 11-20)
+     - Value ADT used throughout linker/codegen:
+       ```gleam
+       pub type Value {
+         StringValue(String)
+         IntValue(Int)
+         FloatValue(Float)
+         BoolValue(Bool)
+         ListValue(List(Value))
+         DictValue(Dict(String, Value))
+         NilValue
+       }
+       ```
+     - Percentage will reuse `FloatValue(Float)` (no new variant)
+
+   - **`caffeine_lang/src/caffeine_lang/frontend/token.gleam`**
+     - Token type with `KeywordURL` (line 25), literal tokens `LiteralString`, `LiteralInteger`, `LiteralFloat`, `LiteralTrue`, `LiteralFalse` (lines 26-30)
+     - Will add `KeywordPercentage` and `LiteralPercentage(Float)`
+
+   - **`caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam`**
+     - Keyword recognition at line 395: `"URL" -> token.KeywordURL`
+     - Will add `"Percentage" -> token.KeywordPercentage` and modify number tokenization to check for trailing `%`
+
+   - **`caffeine_lang/src/caffeine_lang/frontend/ast.gleam`**
+     - Contains `Literal` type with variants for AST value representation
+     - Will add `LiteralPercentage(Float)`
+
+   - **`caffeine_lang/src/caffeine_lang/frontend/parser.gleam`**
+     - Type parsing at line 799: `token.KeywordURL -> parse_type_with_refinement(state, SemanticType(URL))`
+     - `parse_literal()` at lines 1131-1150
+     - `literal_to_string()` at lines 1206-1216 (converts Literal to String for Defaulted storage)
+     - `parse_defaulted_type()` at lines 964-985 (parses default value as Literal, converts to string)
+     - Collection inner type parsing at line 876-878
+     - Will add Percentage handling in all these locations
+
+   - **`caffeine_lang/src/caffeine_lang/frontend/formatter.gleam`**
+     - Formats AST Literals directly (not Values) at lines 404-418
+     - Type formatting at lines 310-314
+     - Will add `Percentage -> "Percentage"` and `LiteralPercentage(f) -> float.to_string(f) <> "%"`
+
+   - **`caffeine_lang/src/caffeine_lang/standard_library/artifacts.gleam`**
+     - SLO artifact definition with hardcoded types
+     - Current threshold: `RefinementType(InclusiveRange(PrimitiveType(NumericType(Float)), "0.0", "100.0"))`
+     - Will change to `PrimitiveType(NumericType(Percentage))`
+
+   - **`caffeine_lang/src/caffeine_lang/analysis/semantic_analyzer.gleam`**
+     - Vendor dispatch at lines 42-195: `case ir.vendor { Datadog -> ..., Honeycomb -> ..., etc. }`
+
+   - **`caffeine_lang/src/caffeine_lang/analysis/vendor.gleam`**
+     - `Vendor` enum: `Datadog | Honeycomb | Dynatrace | NewRelic`
+     - `resolve_vendor()` function
+
+   - **`caffeine_lang/src/caffeine_lang/codegen/datadog.gleam`**
+     - `window_to_timeframe()` at line 276: rejects anything except 7/30/90
+     - Shows the late validation problem that motivated type system exploration
+
+   - **`caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam`**
+     - `window_to_rolling_count()` at line 330: rejects anything except 1/7/28
+
+   - **`caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam`**
+     - Line 103: `token.KeywordURL -> Ok(#(type_, 3))` — syntax highlighting for URL (3 chars)
+     - Will add `token.KeywordPercentage -> Ok(#(type_, 10))` (10 chars)
+
+   - **`caffeine_lang/test/caffeine_lang/types_test.gleam`**
+     - Tests for parsing, string conversion, validation, metadata for all types including URL
+     - Will extend all relevant test functions for Percentage
+
+   - **Test corpus `.caffeine` files** (various)
+     - `happy_path_multiple_blueprints.caffeine`: Shows blueprint syntax with Requires/Provides
+     - `happy_path_type_alias_blueprints.caffeine`: Shows type alias usage
+     - Example user syntax: `threshold: 99.99`, `window_in_days: 30`, `vendor: "datadog"`
+
+   - **`caffeine_lang/src/caffeine_lang/compiler.gleam`**
+     - Entry point: `compile(blueprint: SourceFile, expectations: List(SourceFile))`
+     - Single blueprint file + multiple expectations
+
+   - **`caffeine_lang/src/caffeine_lang/linker/linker.gleam`**
+     - `link(blueprint, expectation_sources)` — takes single blueprint file
+     - Builds IRs from expectations validated against blueprints
+
+   - **`caffeine_lang/src/caffeine_lang/linker/artifacts.gleam`**
+     - `ParamInfo`, `Artifact`, `ArtifactType` types
+     - DependencyRelations artifact definition
+
+   - **Plan file**: `/Users/rdurst/.claude/plans/lovely-hopping-sprout.md`
+     - Written with complete implementation plan for Percentage type
+
+4. Errors and Fixes:
+   - No code errors encountered (this was a research and planning session, no code was written)
+   - The refinement/validation research agent (a5545e7) was denied WebSearch permission but fell back to using its training data knowledge, which was sufficient
+
+5. Problem Solving:
+   - **Dependent types vs tagged unions vs existing features**: After thorough analysis, determined that Caffeine's existing `extends` + separate blueprints already solve the vendor-dependent schema problem. No new language features needed.
+   - **Imports vs type additions**: Compared organizational capability (imports) vs correctness improvements (type additions). Imports deliver more structural value but are higher effort. User chose to start with a type addition (Percentage).
+   - **Percentage type hierarchy placement**: Considered SemanticStringTypes (like URL) vs NumericTypes. Chose NumericTypes because percentage values are numeric, not strings, and the user wants `99.9%` literal syntax (not `"99.9%"` strings).
+   - **Value variant design**: Considered adding `PercentageValue(Float)` vs reusing `FloatValue(Float)`. Chose to reuse `FloatValue` for simplicity — the type annotation distinguishes percentage from float. Both `99.9%` and `99.9` produce `FloatValue(99.9)`, making the change backward compatible.
+   - **Defaulted handling**: `literal_to_string(LiteralPercentage(99.9))` → `"99.9%"`, validation strips optional `%` before parsing as float.
+
+6. All User Messages:
+   - "Ok, dig into the caffeine type system"
+   - "lets explore whether there are any types that might actually support more use cases. Kick off a few teams to look at other type systems"
+   - (Waited for agents)
+   - "Explain more the dependent types and tagged unions"
+   - "Ok, yeah we sort of already solved this. What other features? Also compare whatever new type gains we'd get to also enabling imports between blueprint files."
+   - "Let's implement Percentage. Give me a plan for that"
+   - (Answered design questions): "99.9% not a string" for value syntax, "yes support refinements, but then ensure we dont have anything < 0 or > 100" for refinement support
+
+7. Pending Tasks:
+   - **Implement Percentage type**: Plan is written at `/Users/rdurst/.claude/plans/lovely-hopping-sprout.md` but has NOT been approved yet. Plan mode is still active. ExitPlanMode has not been called.
+
+8. Current Work:
+   I am in **plan mode** working on the Percentage type implementation plan. The plan has been written to `/Users/rdurst/.claude/plans/lovely-hopping-sprout.md` covering all 11 files to modify. The user's design choices are:
+   - Value syntax: `99.9%` as a distinct literal (not a string)
+   - Refinement support: Yes, with bounds clamped to [0.0, 100.0]
+   
+   The plan covers: types.gleam, token.gleam, tokenizer.gleam, ast.gleam, parser.gleam, formatter.gleam, lowering.gleam, Literal→Value conversion, semantic_tokens.gleam, standard_library/artifacts.gleam, and comprehensive tests.
+
+9. Optional Next Step:
+   Call `ExitPlanMode` to present the plan for user approval, then begin implementation once approved. The plan file is complete and ready for review.
+   
+   Direct quote from user's most recent request: "Let's implement Percentage. Give me a plan for that"
+   
+   The plan has been written but ExitPlanMode was not called before the summary was requested. The next step is to exit plan mode and get approval to implement.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/rdurst/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+[Request interrupted by user for tool use]
