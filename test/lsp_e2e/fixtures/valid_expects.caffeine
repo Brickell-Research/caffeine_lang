@@ -1,0 +1,3 @@
+Expectations for "test_blueprint"
+  * "test_expectation":
+    Provides { vendor: "datadog", threshold: 99.9 }

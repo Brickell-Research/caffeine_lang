@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix test build ci watch watch-js lines-of-code
+.PHONY: lint lint-fix test test-e2e build ci watch watch-js lines-of-code
 
 # Check code formatting
 lint:
@@ -23,6 +23,12 @@ test:
 	cd caffeine_lang && gleam test
 	cd caffeine_lsp && gleam test
 	cd caffeine_cli && gleam test
+
+# Run LSP end-to-end tests
+test-e2e:
+	cd caffeine_lang && gleam build --target javascript
+	cd caffeine_lsp && gleam build --target javascript
+	deno test --allow-read --allow-write --allow-env --allow-run test/lsp_e2e/
 
 # Run CI pipeline: format check, build, then test
 ci: lint build test

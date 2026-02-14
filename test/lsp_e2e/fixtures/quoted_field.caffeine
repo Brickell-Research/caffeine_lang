@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "test_blueprint":
+    Requires { "env": String }
+    Provides { vendor: "datadog" }
