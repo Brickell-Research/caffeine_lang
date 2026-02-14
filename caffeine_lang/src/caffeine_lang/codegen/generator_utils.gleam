@@ -1,6 +1,4 @@
-import caffeine_lang/errors.{
-  type CompilationError, GeneratorTerraformResolutionError,
-}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type IntermediateRepresentationMetaData,
   type SloFields, ir_to_identifier,
@@ -105,12 +103,11 @@ pub fn require_slo_fields(
   vendor vendor_name: String,
 ) -> Result(SloFields, CompilationError) {
   ir.get_slo_fields(ir.artifact_data)
-  |> option.to_result(GeneratorTerraformResolutionError(
+  |> option.to_result(resolution_error(
     vendor: vendor_name,
     msg: "expectation '"
       <> ir_to_identifier(ir)
       <> "' - missing SLO artifact data",
-    context: errors.empty_context(),
   ))
 }
 
@@ -122,14 +119,13 @@ pub fn require_evaluation(
   vendor vendor_name: String,
 ) -> Result(String, CompilationError) {
   slo.evaluation
-  |> option.to_result(GeneratorTerraformResolutionError(
+  |> option.to_result(resolution_error(
     vendor: vendor_name,
     msg: "expectation '"
       <> ir_to_identifier(ir)
       <> "' - missing evaluation for "
       <> vendor_name
       <> " SLO",
-    context: errors.empty_context(),
   ))
 }
 
@@ -143,10 +139,9 @@ pub fn resolve_cql_expression(
 ) -> Result(String, CompilationError) {
   cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
   |> result.map_error(fn(err) {
-    GeneratorTerraformResolutionError(
+    resolution_error(
       vendor: vendor_name,
       msg: "expectation '" <> ir_to_identifier(ir) <> "' - " <> err,
-      context: errors.empty_context(),
     )
   })
 }
@@ -157,11 +152,7 @@ pub fn resolution_error(
   vendor vendor_name: String,
   msg msg: String,
 ) -> CompilationError {
-  GeneratorTerraformResolutionError(
-    vendor: vendor_name,
-    msg: msg,
-    context: errors.empty_context(),
-  )
+  errors.generator_terraform_resolution_error(vendor: vendor_name, msg:)
 }
 
 /// Build a TerraformSettings block with a single required provider.

@@ -84,9 +84,8 @@ fn validate_ir_dependencies(
   // Extract the relations from structured artifact data.
   use dep <- result.try(
     ir.get_dependency_fields(ir.artifact_data)
-    |> option.to_result(errors.SemanticAnalysisDependencyValidationError(
+    |> option.to_result(errors.semantic_analysis_dependency_validation_error(
       msg: self_path <> " - missing dependency artifact data",
-      context: errors.empty_context(),
     )),
   )
   let relations = dep.relations
@@ -134,13 +133,12 @@ fn do_check_for_duplicates(
     [target, ..rest] -> {
       use <- bool.guard(
         when: set.contains(seen, target),
-        return: Error(errors.SemanticAnalysisDependencyValidationError(
+        return: Error(errors.semantic_analysis_dependency_validation_error(
           msg: "Duplicate dependency reference '"
-            <> target
-            <> "' in '"
-            <> self_path
-            <> "'",
-          context: errors.empty_context(),
+          <> target
+          <> "' in '"
+          <> self_path
+          <> "'",
         )),
       )
       do_check_for_duplicates(rest, set.insert(seen, target), self_path)
@@ -156,39 +154,26 @@ fn validate_dependency_target(
   // First, validate the format
   case parse_dependency_path(target) {
     Error(Nil) ->
-      Error(errors.SemanticAnalysisDependencyValidationError(
-        msg: "Invalid dependency reference '"
-          <> target
-          <> "' in '"
-          <> self_path
-          <> "': expected format 'org.team.service.name'",
-        context: errors.empty_context(),
+      Error(dependency_ref_error(
+        target,
+        self_path,
+        "expected format 'org.team.service.name'",
       ))
     Ok(_) -> {
       // Check for self-reference
       use <- bool.guard(
         when: target == self_path,
-        return: Error(errors.SemanticAnalysisDependencyValidationError(
-          msg: "Invalid dependency reference '"
-            <> target
-            <> "' in '"
-            <> self_path
-            <> "': self-reference not allowed",
-          context: errors.empty_context(),
+        return: Error(dependency_ref_error(
+          target,
+          self_path,
+          "self-reference not allowed",
         )),
       )
       // Check if target exists
       case dict.get(expectation_index, target) {
         Ok(_) -> Ok(Nil)
         Error(Nil) ->
-          Error(errors.SemanticAnalysisDependencyValidationError(
-            msg: "Invalid dependency reference '"
-              <> target
-              <> "' in '"
-              <> self_path
-              <> "': target does not exist",
-            context: errors.empty_context(),
-          ))
+          Error(dependency_ref_error(target, self_path, "target does not exist"))
       }
     }
   }
@@ -206,6 +191,22 @@ pub fn parse_dependency_path(
     -> Ok(#(org, team, service, name))
     _ -> Error(Nil)
   }
+}
+
+/// Build a dependency reference error with a consistent message format.
+fn dependency_ref_error(
+  target: String,
+  self_path: String,
+  reason: String,
+) -> CompilationError {
+  errors.semantic_analysis_dependency_validation_error(
+    msg: "Invalid dependency reference '"
+    <> target
+    <> "' in '"
+    <> self_path
+    <> "': "
+    <> reason,
+  )
 }
 
 // ==== Circular dependency detection ====
@@ -305,12 +306,11 @@ fn explore_neighbors(
       // Cycle detected: neighbor is on the current DFS path
       use <- bool.guard(
         when: set.contains(in_progress, neighbor),
-        return: Error(errors.SemanticAnalysisDependencyValidationError(
+        return: Error(errors.semantic_analysis_dependency_validation_error(
           msg: "Circular dependency detected: "
-            <> string.join(list.reverse(path), " -> ")
-            <> " -> "
-            <> neighbor,
-          context: errors.empty_context(),
+          <> string.join(list.reverse(path), " -> ")
+          <> " -> "
+          <> neighbor,
         )),
       )
 
@@ -348,9 +348,8 @@ fn validate_single_ir_hard_thresholds(
     {
       option.Some(slo), option.Some(dep) -> Ok(#(slo, dep))
       _, _ ->
-        Error(errors.SemanticAnalysisDependencyValidationError(
+        Error(errors.semantic_analysis_dependency_validation_error(
           msg: self_path <> " - missing SLO or dependency artifact data",
-          context: errors.empty_context(),
         ))
     },
   )
@@ -374,16 +373,15 @@ fn validate_single_ir_hard_thresholds(
           "'" <> pair.0 <> "' (" <> float.to_string(pair.1) <> ")"
         })
         |> string.join(", ")
-      Error(errors.SemanticAnalysisDependencyValidationError(
+      Error(errors.semantic_analysis_dependency_validation_error(
         msg: "Composite hard dependency threshold violation: '"
-          <> self_path
-          <> "' (threshold: "
-          <> float.to_string(source_threshold)
-          <> ") exceeds the composite availability ceiling of "
-          <> float.to_string(composite_ceiling)
-          <> " from its hard dependencies: "
-          <> deps_description,
-        context: errors.empty_context(),
+        <> self_path
+        <> "' (threshold: "
+        <> float.to_string(source_threshold)
+        <> ") exceeds the composite availability ceiling of "
+        <> float.to_string(composite_ceiling)
+        <> " from its hard dependencies: "
+        <> deps_description,
       ))
     }
     _ -> Ok(Nil)

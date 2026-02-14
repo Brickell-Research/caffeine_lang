@@ -98,9 +98,8 @@ fn do_parse_and_resolve_query_template(
     Ok(#(before, rest)) -> {
       case string.split_once(rest, "$$") {
         Error(_) ->
-          Error(errors.SemanticAnalysisTemplateParseError(
+          Error(errors.semantic_analysis_template_parse_error(
             msg: "Unexpected incomplete `$$` for substring: " <> query,
-            context: errors.empty_context(),
           ))
         Ok(#(inside, rest)) -> {
           use rest_of_items <- result.try(do_parse_and_resolve_query_template(
@@ -112,10 +111,11 @@ fn do_parse_and_resolve_query_template(
           use value_tuple <- result.try(
             value_tuples
             |> list.find(fn(vt) { vt.label == template.input_name })
-            |> result.replace_error(errors.SemanticAnalysisTemplateParseError(
-              msg: "Missing input for template: " <> template.input_name,
-              context: errors.empty_context(),
-            )),
+            |> result.replace_error(
+              errors.semantic_analysis_template_parse_error(
+                msg: "Missing input for template: " <> template.input_name,
+              ),
+            ),
           )
           use resolved_template <- result.try(resolve_template(
             template,
@@ -194,9 +194,8 @@ pub fn parse_template_variable(
       let trimmed = string.trim(variable)
       case trimmed {
         "" ->
-          Error(errors.SemanticAnalysisTemplateParseError(
+          Error(errors.semantic_analysis_template_parse_error(
             msg: "Empty template variable name: " <> variable,
-            context: errors.empty_context(),
           ))
         _ ->
           Ok(TemplateVariable(
@@ -212,14 +211,12 @@ pub fn parse_template_variable(
 
       case trimmed_input, rest {
         "", _ ->
-          Error(errors.SemanticAnalysisTemplateParseError(
+          Error(errors.semantic_analysis_template_parse_error(
             msg: "Empty input name in template: " <> variable,
-            context: errors.empty_context(),
           ))
         _, "" ->
-          Error(errors.SemanticAnalysisTemplateParseError(
+          Error(errors.semantic_analysis_template_parse_error(
             msg: "Empty label name in template: " <> variable,
-            context: errors.empty_context(),
           ))
         _, _ -> parse_datadog_template_variable(trimmed_input, rest)
       }
@@ -238,9 +235,8 @@ pub fn parse_template_type(
   case type_string {
     "not" -> Ok(Not)
     _ ->
-      Error(errors.SemanticAnalysisTemplateParseError(
+      Error(errors.semantic_analysis_template_parse_error(
         msg: "Unknown template type: " <> type_string,
-        context: errors.empty_context(),
       ))
   }
 }
@@ -255,13 +251,12 @@ pub fn resolve_template(
   use _ <- result.try(case template.input_name == value_tuple.label {
     True -> Ok(Nil)
     _ ->
-      Error(errors.SemanticAnalysisTemplateResolutionError(
+      Error(errors.semantic_analysis_template_resolution_error(
         msg: "Mismatch between template input name ("
-          <> template.input_name
-          <> ") and input value label ("
-          <> value_tuple.label
-          <> ").",
-        context: errors.empty_context(),
+        <> template.input_name
+        <> ") and input value label ("
+        <> value_tuple.label
+        <> ").",
       ))
   })
 
@@ -275,10 +270,7 @@ pub fn resolve_template(
   {
     Ok(resolved) -> Ok(resolved)
     Error(msg) ->
-      Error(errors.SemanticAnalysisTemplateResolutionError(
-        msg:,
-        context: errors.empty_context(),
-      ))
+      Error(errors.semantic_analysis_template_resolution_error(msg:))
   }
 }
 

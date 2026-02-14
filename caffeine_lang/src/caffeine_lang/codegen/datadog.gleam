@@ -1,8 +1,6 @@
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
-import caffeine_lang/errors.{
-  type CompilationError, GeneratorSloQueryResolutionError,
-}
+import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/ir.{
@@ -121,12 +119,11 @@ pub fn ir_to_terraform_resource(
   use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
     cql_generator.resolve_slo_to_hcl(evaluation_expr, indicators)
     |> result.map_error(fn(err) {
-      GeneratorSloQueryResolutionError(
+      errors.generator_slo_query_resolution_error(
         msg: "expectation '"
-          <> ir_to_identifier(ir)
-          <> "' - failed to resolve SLO query: "
-          <> err,
-        context: errors.empty_context(),
+        <> ir_to_identifier(ir)
+        <> "' - failed to resolve SLO query: "
+        <> err,
       )
     }),
   )

@@ -108,30 +108,27 @@ fn resolve_vendor_from_values(
 
   case vendor_value {
     Error(Nil) ->
-      Error(errors.LinkerVendorResolutionError(
+      Error(errors.linker_vendor_resolution_error(
         msg: "expectation '" <> identifier <> "' - missing 'vendor' field",
-        context: errors.empty_context(),
       ))
     Ok(vt) ->
       case value.extract_string(vt.value) {
         Error(_) ->
-          Error(errors.LinkerVendorResolutionError(
+          Error(errors.linker_vendor_resolution_error(
             msg: "expectation '"
-              <> identifier
-              <> "' - 'vendor' field is not a string",
-            context: errors.empty_context(),
+            <> identifier
+            <> "' - 'vendor' field is not a string",
           ))
         Ok(vendor_string) ->
           case vendor.resolve_vendor(vendor_string) {
             Ok(v) -> Ok(option.Some(v))
             Error(_) ->
-              Error(errors.LinkerVendorResolutionError(
+              Error(errors.linker_vendor_resolution_error(
                 msg: "expectation '"
-                  <> identifier
-                  <> "' - unknown vendor '"
-                  <> vendor_string
-                  <> "'",
-                context: errors.empty_context(),
+                <> identifier
+                <> "' - unknown vendor '"
+                <> vendor_string
+                <> "'",
               ))
           }
       }

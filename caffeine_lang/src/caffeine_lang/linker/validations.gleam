@@ -18,13 +18,12 @@ pub fn validate_value_type(
 ) -> Result(Value, CompilationError) {
   types.validate_value(expected_type, val)
   |> result.map_error(fn(err) {
-    errors.LinkerValueValidationError(
+    errors.linker_value_validation_error(
       msg: errors.format_validation_error_message(
         err,
         option.Some(type_key_identifier),
         option.Some(val),
       ),
-      context: errors.empty_context(),
     )
   })
 }
@@ -126,12 +125,11 @@ pub fn validate_relevant_uniqueness(
   case dupe_names {
     [] -> Ok(Nil)
     _ ->
-      Error(errors.LinkerDuplicateError(
+      Error(errors.linker_duplicate_error(
         msg: "Duplicate "
-          <> thing_label
-          <> ": "
-          <> { dupe_names |> string.join(", ") },
-        context: errors.empty_context(),
+        <> thing_label
+        <> ": "
+        <> { dupe_names |> string.join(", ") },
       ))
   }
 }
@@ -166,9 +164,8 @@ pub fn validate_inputs_for_collection(
   case validation_errors {
     "" -> Ok(Nil)
     _ ->
-      Error(errors.LinkerValueValidationError(
+      Error(errors.linker_value_validation_error(
         msg: "Input validation errors: " <> validation_errors,
-        context: errors.empty_context(),
       ))
   }
 }
@@ -201,11 +198,7 @@ pub fn validate_no_overshadowing(
 
   case overshadow_errors {
     "" -> Ok(Nil)
-    _ ->
-      Error(errors.LinkerDuplicateError(
-        msg: overshadow_errors,
-        context: errors.empty_context(),
-      ))
+    _ -> Error(errors.linker_duplicate_error(msg: overshadow_errors))
   }
 }
 

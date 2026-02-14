@@ -44,22 +44,22 @@ pub fn resolve_indicators(
       use indicators_value_tuple <- result.try(
         ir.values
         |> list.find(fn(vt) { vt.label == "indicators" })
-        |> result.replace_error(errors.SemanticAnalysisTemplateResolutionError(
-          msg: "expectation '"
+        |> result.replace_error(
+          errors.semantic_analysis_template_resolution_error(
+            msg: "expectation '"
             <> ir.ir_to_identifier(ir)
             <> "' - missing 'indicators' field in IR",
-          context: errors.empty_context(),
-        )),
+          ),
+        ),
       )
 
       use indicators_dict <- result.try(
         value.extract_string_dict(indicators_value_tuple.value)
         |> result.map_error(fn(_) {
-          errors.SemanticAnalysisTemplateResolutionError(
+          errors.semantic_analysis_template_resolution_error(
             msg: "expectation '"
-              <> ir.ir_to_identifier(ir)
-              <> "' - failed to decode indicators",
-            context: errors.empty_context(),
+            <> ir.ir_to_identifier(ir)
+            <> "' - failed to decode indicators",
           )
         }),
       )
@@ -112,11 +112,10 @@ pub fn resolve_indicators(
           use evaluation_string <- result.try(
             value.extract_string(evaluation_tuple.value)
             |> result.map_error(fn(_) {
-              errors.SemanticAnalysisTemplateResolutionError(
+              errors.semantic_analysis_template_resolution_error(
                 msg: "expectation '"
-                  <> ir.ir_to_identifier(ir)
-                  <> "' - failed to decode 'evaluation' field as string",
-                context: errors.empty_context(),
+                <> ir.ir_to_identifier(ir)
+                <> "' - failed to decode 'evaluation' field as string",
               )
             }),
           )
@@ -189,11 +188,10 @@ pub fn resolve_indicators(
       Ok(ir)
     }
     option.None ->
-      Error(errors.SemanticAnalysisTemplateResolutionError(
+      Error(errors.semantic_analysis_template_resolution_error(
         msg: "expectation '"
-          <> ir.ir_to_identifier(ir)
-          <> "' - no vendor resolved",
-        context: errors.empty_context(),
+        <> ir.ir_to_identifier(ir)
+        <> "' - no vendor resolved",
       ))
   }
 }

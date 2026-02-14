@@ -62,9 +62,8 @@ fn parser_error_to_compilation_error(
   err: parser_error.ParserError,
   file_path: String,
 ) -> CompilationError {
-  errors.FrontendParseError(
+  errors.frontend_parse_error(
     msg: file_path <> ": " <> parser_error.to_string(err),
-    context: errors.empty_context(),
   )
 }
 
@@ -72,9 +71,8 @@ fn validator_error_to_compilation_error(
   err: validator.ValidatorError,
   file_path: String,
 ) -> CompilationError {
-  errors.FrontendValidationError(
+  errors.frontend_validation_error(
     msg: file_path <> ": " <> validator_error_to_string(err),
-    context: errors.empty_context(),
   )
 }
 
@@ -278,9 +276,8 @@ fn validator_errors_to_rich_error(
     }
     // Empty list should not happen, but handle gracefully
     [] ->
-      rich_error.from_compilation_error(errors.FrontendValidationError(
+      rich_error.from_compilation_error(errors.frontend_validation_error(
         msg: source.path <> ": unknown validation error",
-        context: errors.empty_context(),
       ))
   }
 }
