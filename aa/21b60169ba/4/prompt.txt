@@ -1,0 +1,74 @@
+<teammate-message teammate_id="team-lead">
+{"type":"task_assignment","taskId":"5","subject":"Write e2e tests for diagnostics and cross-file validation","description":"Using the test harness from task 4, write e2e tests covering:\n1. Single-file diagnostics: open a .caffeine file with errors, verify diagnostic messages\n2. Single-file diagnostics: open a valid file, verify no diagnostics\n3. Cross-file diagnostics: open blueprint + expects files, verify cross-file validation works\n4. Document change: modify a document, verify diagnostics update\n5. Document close: close a document, verify diagnostics are cleared\n6. Error recovery: open a file with syntax errors, fix them, verify diagnostics clear\nThese are the most critical tests since diagnostics breaking silently is the #1 LSP regression risk.","assignedBy":"team-lead","timestamp":"2026-02-14T05:25:46.386Z"}
+</teammate-message>
+
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "diagnostics-tester".
+
+Your task (Task #5): Write e2e tests for diagnostics and cross-file validation.
+
+## Context
+
+The project root is `/Users/rdurst/.REDACTED`.
+
+There's already a working e2e test harness at `test/lsp_e2e/`. Read these files first:
+- `test/lsp_e2e/client.ts` — the LspTestClient class with all convenience methods
+- `test/lsp_e2e/lsp_e2e_test.ts` — existing foundation tests (3 tests, all passing)
+- `test/lsp_e2e/fixtures/` — existing .caffeine fixture files
+
+The test harness spawns the LSP server as a Deno subprocess over stdio. Each test creates its own client, initializes, and shuts down.
+
+## Caffeine Syntax Reference (from real corpus files)
+
+**Blueprints file:**
+```
+Blueprints for "SLO"
+  * "api_availability":
+    Requires { env: String }
+    Provides { vendor: "datadog" }
+```
+
+**Expects file:**
+```
+Expectations for "api_availability"
+  * "checkout":
+    Provides { env: "production", threshold: 99.95 }
+```
+
+**With extendables and extends:**
+```
+_defaults (Provides): { env: "production", window_in_days: 30 }
+
+Expectations for "api_availability"
+  * "checkout" extends [_defaults]:
+    Provides { threshold: 99.95 }
+```
+
+## What to write
+
+Add tests to `test/lsp_e2e/lsp_e2e_test.ts` (append after the existing tests). Create any new fixtures needed in `test/lsp_e2e/fixtures/`.
+
+### Tests to add:
+
+1. **Document change updates diagnostics** — Open a valid file, verify 0 diagnostics. Then change it to have an error, verify diagnostics appear. IMPORTANT: When you change a document, wait for new diagnostics. You may need to call `client.clearNotifications()` between steps.
+
+2. **Document close clears diagnostics** — Open an invalid file, verify diagnostics. Then close the document, wait briefly, verify diagnostics are cleared (the server sends empty diagnostics on close).
+
+3. **Cross-file blueprint validation** — Open an expects file that references a blueprint name. Since the blueprint file isn't in the workspace, it should produce a diagnostic about the unknown blueprint. Then open the blueprint file. The expects file should get revalidated and the diagnostic should clear. This tests the cross-file revalidation pipeline.
+
+4. **Multiple diagnostics in one file** — Create a fixture with multiple errors (e.g., multiple missing colons or invalid syntax), verify that multiple diagnostics are returned.
+
+## Important notes
+
+- Use `Deno.test({ name: ..., sanitizeResources: false, sanitizeOps: false, async fn() { ... } })` format
+- Each test creates its own `LspTestClient(ROOT_DIR)`, calls `start()`, `initialize()`, tests, `shutdown()`
+- Diagnostics are async (300ms debounce + 50ms revalidation) — use `client.waitForDiagnostics(uri)` which has a 5s default timeout
+- When checking cross-file revalidation after opening a second file, you need to wait for the revalidation to fire. After opening the second file, call `client.waitForDiagnostics(firstUri)` to wait for the revalidated diagnostics.
+- For document close clearing diagnostics: the server sends `publishDiagnostics` with empty array when closing. You can wait for this.
+- File URIs should use `file://` prefix: `file:///path/to/file.caffeine`
+- Look at how the existing tests use `fixtureUri()` and `readFixture()` helpers
+- Run `make test-e2e` to verify all tests pass after your changes
+- CRITICAL: Do NOT modify any existing tests. Only append new tests.
+
+When done, mark Task #5 as completed using TaskUpdate.
+</teammate-message>
