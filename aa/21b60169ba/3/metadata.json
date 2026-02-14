@@ -1,9 +1,11 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "aa21b60169ba",
+  "session_id": "999ab42a-04d4-476f-aed0-d91519dd2d9c",
   "strategy": "manual-commit",
+  "created_at": "2026-02-14T05:42:46.77138Z",
   "branch": "rdurst/type-system-expansions",
-  "checkpoints_count": 6,
+  "checkpoints_count": 1,
   "files_touched": [
     ".claude/settings.local.json",
     "Makefile",
@@ -36,49 +38,26 @@
     "test/lsp_e2e/diagnostics_test.ts",
     "test/lsp_e2e/fixtures/invalid_syntax.caffeine",
     "test/lsp_e2e/fixtures/multiple_errors.caffeine",
-    "test/lsp_e2e/fixtures/quoted_field.caffeine",
     "test/lsp_e2e/fixtures/unformatted.caffeine",
     "test/lsp_e2e/fixtures/valid_blueprint.caffeine",
     "test/lsp_e2e/fixtures/valid_expects.caffeine",
-    "test/lsp_e2e/fixtures/with_extendable.caffeine",
-    "test/lsp_e2e/formatting_and_more_test.ts",
     "test/lsp_e2e/lsp_e2e_test.ts"
   ],
-  "sessions": [
-    {
-      "metadata": "/aa/21b60169ba/0/metadata.json",
-      "transcript": "/aa/21b60169ba/0/full.jsonl",
-      "context": "/aa/21b60169ba/0/context.md",
-      "content_hash": "/aa/21b60169ba/0/content_hash.txt",
-      "prompt": "/aa/21b60169ba/0/prompt.txt"
-    },
-    {
-      "metadata": "/aa/21b60169ba/1/metadata.json",
-      "transcript": "/aa/21b60169ba/1/full.jsonl",
-      "context": "/aa/21b60169ba/1/context.md",
-      "content_hash": "/aa/21b60169ba/1/content_hash.txt",
-      "prompt": "/aa/21b60169ba/1/prompt.txt"
-    },
-    {
-      "metadata": "/aa/21b60169ba/2/metadata.json",
-      "transcript": "/aa/21b60169ba/2/full.jsonl",
-      "context": "/aa/21b60169ba/2/context.md",
-      "content_hash": "/aa/21b60169ba/2/content_hash.txt",
-      "prompt": "/aa/21b60169ba/2/prompt.txt"
-    },
-    {
-      "metadata": "/aa/21b60169ba/3/metadata.json",
-      "transcript": "/aa/21b60169ba/3/full.jsonl",
-      "context": "/aa/21b60169ba/3/context.md",
-      "content_hash": "/aa/21b60169ba/3/content_hash.txt",
-      "prompt": "/aa/21b60169ba/3/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
   "token_usage": {
-    "input_tokens": 10435,
-    "cache_creation_tokens": 338003,
-    "cache_read_tokens": 6505270,
-    "output_tokens": 3196,
-    "api_call_count": 100
+    "input_tokens": 7026,
+    "cache_creation_tokens": 98604,
+    "cache_read_tokens": 4089364,
+    "output_tokens": 1961,
+    "api_call_count": 53
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T05:42:46.592656Z",
+    "agent_lines": 900,
+    "human_added": 0,
+    "human_modified": 575,
+    "human_removed": 688,
+    "total_committed": 1475,
+    "agent_percentage": 61.016949152542374
   }
 }

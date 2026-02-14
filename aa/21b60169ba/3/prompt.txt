@@ -1,0 +1,140 @@
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "harness-builder".
+
+Your task (Task #4): Design the e2e test harness and write the test infrastructure.
+
+## Context
+
+The Caffeine project has an LSP server at `/Users/rdurst/.REDACTED.ts` that runs via Deno over stdio using JSON-RPC. There are currently ZERO e2e tests for it. You need to build the test infrastructure.
+
+## Research Findings
+
+### How the server runs
+- `deno run --no-check --allow-read --allow-write --allow-env lsp_server.ts --stdio`
+- It imports compiled Gleam JS modules from `caffeine_lsp/build/dev/javascript/` and `caffeine_lang/build/dev/javascript/`
+- The `--stdio` flag is auto-appended in lsp_server.ts (lines 19-23)
+- Gleam JS build must exist before tests run
+
+### Recommended approach
+- Use **Deno's built-in test runner** (`Deno.test`)
+- Hand-roll a JSON-RPC client over subprocess stdio (~100 LOC)
+- Place tests in `test/lsp_e2e/` at repo root
+- Use `.caffeine` fixture files in `test/lsp_e2e/fixtures/`
+
+### Server timing
+- Diagnostic debounce: 300ms per document
+- Cross-file revalidation: 50ms trailing-edge debounce
+- Tests need `waitForNotification` with adequate timeout
+
+## What to build
+
+### 1. `test/lsp_e2e/client.ts` — LSP test client
+
+Build a reusable `LspTestClient` class that:
+- Spawns `lsp_server.ts` as a subprocess via `Deno.Command`
+- Implements JSON-RPC message encoding/decoding over stdio (`Content-Length: N\r\n\r\n{json}`)
+- Tracks pending requests (id → promise) and incoming notifications
+- Has convenience methods:
+  - `initialize(rootUri?)` — full initialize handshake (initialize request + initialized notification)
+  - `openDocument(uri, text, version?)` — sends `textDocument/didOpen`
+  - `changeDocument(uri, text, version)` — sends `textDocument/didChange` (full sync)
+  - `closeDocument(uri)` — sends `textDocument/didClose`
+  - `hover(uri, line, char)` — sends `textDocument/hover`, returns result
+  - `completion(uri, line, char)` — sends `textDocument/completion`, returns items
+  - `definition(uri, line, char)` — sends `textDocument/definition`, returns location(s)
+  - `formatting(uri)` — sends `textDocument/formatting`, returns text edits
+  - `semanticTokens(uri)` — sends `textDocument/semanticTokens/full`, returns data
+  - `documentSymbols(uri)` — sends `textDocument/documentSymbol`, returns symbols
+  - `codeActions(uri, range, diagnostics)` — sends `textDocument/codeAction`, returns actions
+  - `references(uri, line, char)` — sends `textDocument/references`, returns locations
+  - `rename(uri, line, char, newName)` — sends `textDocument/rename`, returns workspace edit
+  - `waitForDiagnostics(uri, timeoutMs?)` — waits for `textDocument/publishDiagnostics` notification matching the URI
+  - `clearNotifications()` — clears collected notifications
+  - `shutdown()` — sends shutdown request + exit notification, kills process
+- Error handling: timeouts, process crashes, parse errors
+- The client should handle the async reading loop in a non-blocking way
+
+### 2. `test/lsp_e2e/fixtures/` — Test fixtures
+
+Create these .caffeine files:
+
+**`valid_blueprint.caffeine`** — A minimal valid blueprint:
+```
+Blueprints for "test_org" > "test_team" > "test_service" with "test_bp"
+
+TestBlueprint
+  Requires
+    vendor: String
+    threshold: Float
+  Provides
+    vendor: "datadog"
+    threshold: 99.9
+```
+
+**`valid_expects.caffeine`** — A minimal valid expects file:
+```
+Expectations for "test_org" > "test_team" > "test_service" with "test_bp" > TestBlueprint
+
+test_expectation
+  Provides
+    vendor: "datadog"
+    threshold: 99.9
+```
+
+**`invalid_syntax.caffeine`** — A file with a syntax error (e.g., missing colon):
+```
+Blueprints for "test_org" > "test_team" > "test_service" with "test_bp"
+
+BadBlueprint
+  Requires
+    vendor String
+```
+
+**`unformatted.caffeine`** — A valid but poorly formatted file (extra spaces, etc.) that the formatter would fix:
+```
+Blueprints for "test_org">"test_team">"test_service" with "test_bp"
+
+TestBlueprint
+  Requires
+    vendor:   String
+    threshold:Float
+  Provides
+    vendor:"datadog"
+    threshold:99.9
+```
+
+### 3. `test/lsp_e2e/lsp_e2e_test.ts` — Foundation tests
+
+Write these initial tests to validate the harness works:
+
+1. **Initialize/shutdown** — Start LSP, send initialize, verify capabilities object has expected providers, then shutdown cleanly
+2. **Open valid document** — Open valid_blueprint.caffeine, wait for diagnostics notification, verify zero diagnostics
+3. **Open invalid document** — Open invalid_syntax.caffeine, wait for diagnostics, verify at least one diagnostic with appropriate message
+
+### 4. Makefile target
+
+Read the existing Makefile at the project root to understand its structure, then add a `test-e2e` target:
+```makefile
+test-e2e:
+	cd caffeine_lang && gleam build --target javascript
+	cd caffeine_lsp && gleam build --target javascript
+	deno test --allow-read --allow-write --allow-env --allow-run test/lsp_e2e/
+```
+
+Also add it to the `ci` target if there is one.
+
+## Important notes
+
+- Read existing files before creating/editing (Read tool required before Edit/Write)
+- Use `jsr:@std/assert` for Deno assertions (assertEquals, assertExists, etc.)
+- Make sure the Deno.Command spawns the server from the correct working directory
+- The server needs `--allow-read --allow-write --allow-env` permissions
+- Test functions should use `Deno.test` with async functions
+- Each test should create its own client instance and shut it down (isolation)
+- Use `sanitizeResources: false, sanitizeOps: false` in Deno.test options since subprocess cleanup may have timing issues
+- IMPORTANT: The fixtures should use proper Caffeine DSL syntax. Look at existing test corpus files in `caffeine_lang/test/caffeine_lang/corpus/` and `caffeine_lsp/test/caffeine_lsp/corpus/` for examples of valid syntax.
+- IMPORTANT: Read the tokenizer and parser to understand exact syntax requirements if unsure.
+- Use `file://` URIs for document identifiers (standard LSP convention)
+
+When done, mark Task #4 as completed using TaskUpdate, then check TaskList for next work.
+</teammate-message>
