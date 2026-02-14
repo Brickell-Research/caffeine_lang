@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "c0267adce8d3",
+  "strategy": "manual-commit",
+  "branch": "rdurst/type-system-expansions",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "caffeine_cli/src/caffeine_cli/handler.gleam",
+    "caffeine_lang/src/caffeine_lang/analysis/dependency_validator.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/datadog.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/dynatrace.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/generator_utils.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/honeycomb.gleam",
+    "caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam",
+    "caffeine_lang/src/caffeine_lang/compiler.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/ast.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/formatter.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/lowering.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/parser.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/token.gleam",
+    "caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam",
+    "caffeine_lang/src/caffeine_lang/standard_library/artifacts.gleam",
+    "caffeine_lang/src/caffeine_lang/types.gleam",
+    "caffeine_lang/test/caffeine_lang/analysis/dependency_validator_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/dynatrace_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/honeycomb_test.gleam",
+    "caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam",
+    "caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/percentage_types.caffeine",
+    "caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_percentage_types.caffeine",
+    "caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_percentage_literal.caffeine",
+    "caffeine_lang/test/caffeine_lang/corpus/frontend/parser/blueprints_file/happy_path_percentage_types.caffeine",
+    "caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_percentage_literal.caffeine",
+    "caffeine_lang/test/caffeine_lang/frontend/formatter_test.gleam",
+    "caffeine_lang/test/caffeine_lang/frontend/lowering_test.gleam",
+    "caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam",
+    "caffeine_lang/test/caffeine_lang/frontend/tokenizer_test.gleam",
+    "caffeine_lang/test/caffeine_lang/types_test.gleam",
+    "caffeine_lang/test/ir_test_helpers.gleam",
+    "caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam",
+    "lsp_server.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c0/267adce8d3/0/metadata.json",
+      "transcript": "/c0/267adce8d3/0/full.jsonl",
+      "context": "/c0/267adce8d3/0/context.md",
+      "content_hash": "/c0/267adce8d3/0/content_hash.txt",
+      "prompt": "/c0/267adce8d3/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3692,
+    "cache_creation_tokens": 485648,
+    "cache_read_tokens": 22096137,
+    "output_tokens": 17661,
+    "api_call_count": 197
+  }
+}
