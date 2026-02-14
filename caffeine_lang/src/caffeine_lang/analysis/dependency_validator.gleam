@@ -1,6 +1,8 @@
-import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO}
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, ir_to_identifier,
+}
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/float

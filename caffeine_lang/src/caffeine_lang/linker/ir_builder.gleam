@@ -1,10 +1,10 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/ir
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts.{type Artifact, DependencyRelations, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/linker/ir
 import caffeine_lang/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
   List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RecordType,
@@ -109,9 +109,7 @@ fn resolve_vendor_from_values(
   case vendor_value {
     Error(Nil) ->
       Error(errors.LinkerVendorResolutionError(
-        msg: "expectation '"
-          <> identifier
-          <> "' - missing 'vendor' field",
+        msg: "expectation '" <> identifier <> "' - missing 'vendor' field",
         context: errors.empty_context(),
       ))
     Ok(vt) ->
@@ -267,15 +265,10 @@ fn build_artifact_data(
     artifact_refs
     |> list.map(fn(ref) {
       case ref {
-        SLO -> #(
-          SLO,
-          ir.SloArtifactFields(build_slo_fields(value_tuples)),
-        )
+        SLO -> #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples)))
         DependencyRelations -> #(
           DependencyRelations,
-          ir.DependencyArtifactFields(build_dependency_fields(
-            value_tuples,
-          )),
+          ir.DependencyArtifactFields(build_dependency_fields(value_tuples)),
         )
       }
     })
@@ -285,10 +278,7 @@ fn build_artifact_data(
   let fields = case dict.is_empty(fields) {
     True ->
       dict.from_list([
-        #(
-          SLO,
-          ir.SloArtifactFields(build_slo_fields(value_tuples)),
-        ),
+        #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples))),
       ])
     False -> fields
   }
@@ -297,9 +287,7 @@ fn build_artifact_data(
 }
 
 /// Extract SLO-specific fields from value tuples.
-fn build_slo_fields(
-  value_tuples: List(helpers.ValueTuple),
-) -> ir.SloFields {
+fn build_slo_fields(value_tuples: List(helpers.ValueTuple)) -> ir.SloFields {
   let threshold = helpers.extract_threshold(value_tuples)
   let indicators = helpers.extract_indicators(value_tuples)
   let window_in_days = helpers.extract_window_in_days(value_tuples)

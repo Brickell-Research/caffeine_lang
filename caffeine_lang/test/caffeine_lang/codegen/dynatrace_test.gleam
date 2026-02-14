@@ -1,10 +1,10 @@
 import caffeine_lang/analysis/vendor
-import caffeine_lang/linker/ir
 import caffeine_lang/codegen/dynatrace
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts.{SLO}
+import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict

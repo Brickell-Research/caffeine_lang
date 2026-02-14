@@ -1,7 +1,7 @@
 import caffeine_lang/analysis/dependency_validator
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import caffeine_lang/errors
 import caffeine_lang/helpers
+import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import gleam/dict
 import ir_test_helpers
 import test_helpers
