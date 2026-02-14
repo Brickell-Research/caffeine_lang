@@ -18,13 +18,13 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use #(resources, _warnings) <- result.try(generate_resources(irs))
-  Ok(generator_utils.render_terraform_config(
-    resources: resources,
+  generator_utils.generate_terraform(
+    irs,
     settings: terraform_settings(),
-    providers: [provider()],
+    provider: provider(),
     variables: variables(),
-  ))
+    generate_resources: generate_resources,
+  )
 }
 
 /// Generate only the Terraform resources for New Relic IRs (no config/provider).
@@ -32,43 +32,30 @@ pub fn generate_terraform(
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
-  irs
-  |> list.try_map(ir_to_terraform_resource)
-  |> result.map(fn(r) { #(r, []) })
+  generator_utils.generate_resources_simple(
+    irs,
+    mapper: ir_to_terraform_resource,
+  )
 }
 
 /// Terraform settings block with required New Relic provider.
 @internal
 pub fn terraform_settings() -> terraform.TerraformSettings {
-  terraform.TerraformSettings(
-    required_version: option.None,
-    required_providers: dict.from_list([
-      #(
-        constants.provider_newrelic,
-        terraform.ProviderRequirement(
-          "newrelic/newrelic",
-          option.Some("~> 3.0"),
-        ),
-      ),
-    ]),
-    backend: option.None,
-    cloud: option.None,
+  generator_utils.build_terraform_settings(
+    provider_name: constants.provider_newrelic,
+    source: "newrelic/newrelic",
+    version: "~> 3.0",
   )
 }
 
 /// New Relic provider configuration using variables for credentials.
 @internal
 pub fn provider() -> terraform.Provider {
-  terraform.Provider(
-    name: constants.provider_newrelic,
-    alias: option.None,
-    attributes: dict.from_list([
-      #("account_id", hcl.ref("var.newrelic_account_id")),
-      #("api_key", hcl.ref("var.newrelic_api_key")),
-      #("region", hcl.ref("var.newrelic_region")),
-    ]),
-    blocks: [],
-  )
+  generator_utils.build_provider(name: constants.provider_newrelic, attributes: [
+    #("account_id", hcl.ref("var.newrelic_account_id")),
+    #("api_key", hcl.ref("var.newrelic_api_key")),
+    #("region", hcl.ref("var.newrelic_region")),
+  ])
 }
 
 /// Variables for New Relic account ID, API key, and region.

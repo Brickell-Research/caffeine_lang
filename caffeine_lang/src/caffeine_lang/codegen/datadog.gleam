@@ -57,31 +57,20 @@ pub fn generate_resources(
 /// Terraform settings block with required Datadog provider.
 @internal
 pub fn terraform_settings() -> terraform.TerraformSettings {
-  terraform.TerraformSettings(
-    required_version: option.None,
-    required_providers: dict.from_list([
-      #(
-        constants.provider_datadog,
-        terraform.ProviderRequirement("DataDog/datadog", option.Some("~> 3.0")),
-      ),
-    ]),
-    backend: option.None,
-    cloud: option.None,
+  generator_utils.build_terraform_settings(
+    provider_name: constants.provider_datadog,
+    source: "DataDog/datadog",
+    version: "~> 3.0",
   )
 }
 
 /// Datadog provider configuration using variables for credentials.
 @internal
 pub fn provider() -> terraform.Provider {
-  terraform.Provider(
-    name: constants.provider_datadog,
-    alias: option.None,
-    attributes: dict.from_list([
-      #("api_key", hcl.ref("var.datadog_api_key")),
-      #("app_key", hcl.ref("var.datadog_app_key")),
-    ]),
-    blocks: [],
-  )
+  generator_utils.build_provider(name: constants.provider_datadog, attributes: [
+    #("api_key", hcl.ref("var.datadog_api_key")),
+    #("app_key", hcl.ref("var.datadog_app_key")),
+  ])
 }
 
 /// Variables for Datadog API credentials.

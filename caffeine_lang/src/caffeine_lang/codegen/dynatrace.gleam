@@ -4,7 +4,6 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import gleam/dict
 import gleam/int
-import gleam/list
 import gleam/option
 import gleam/result
 import terra_madre/common
@@ -15,13 +14,13 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use #(resources, _warnings) <- result.try(generate_resources(irs))
-  Ok(generator_utils.render_terraform_config(
-    resources: resources,
+  generator_utils.generate_terraform(
+    irs,
     settings: terraform_settings(),
-    providers: [provider()],
+    provider: provider(),
     variables: variables(),
-  ))
+    generate_resources: generate_resources,
+  )
 }
 
 /// Generate only the Terraform resources for Dynatrace IRs (no config/provider).
@@ -29,41 +28,31 @@ pub fn generate_terraform(
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
-  irs
-  |> list.try_map(ir_to_terraform_resource)
-  |> result.map(fn(r) { #(r, []) })
+  generator_utils.generate_resources_simple(
+    irs,
+    mapper: ir_to_terraform_resource,
+  )
 }
 
 /// Terraform settings block with required Dynatrace provider.
 @internal
 pub fn terraform_settings() -> terraform.TerraformSettings {
-  terraform.TerraformSettings(
-    required_version: option.None,
-    required_providers: dict.from_list([
-      #(
-        constants.provider_dynatrace,
-        terraform.ProviderRequirement(
-          "dynatrace-oss/dynatrace",
-          option.Some("~> 1.0"),
-        ),
-      ),
-    ]),
-    backend: option.None,
-    cloud: option.None,
+  generator_utils.build_terraform_settings(
+    provider_name: constants.provider_dynatrace,
+    source: "dynatrace-oss/dynatrace",
+    version: "~> 1.0",
   )
 }
 
 /// Dynatrace provider configuration using variables for credentials.
 @internal
 pub fn provider() -> terraform.Provider {
-  terraform.Provider(
+  generator_utils.build_provider(
     name: constants.provider_dynatrace,
-    alias: option.None,
-    attributes: dict.from_list([
+    attributes: [
       #("dt_env_url", hcl.ref("var.dynatrace_env_url")),
       #("dt_api_token", hcl.ref("var.dynatrace_api_token")),
-    ]),
-    blocks: [],
+    ],
   )
 }
 

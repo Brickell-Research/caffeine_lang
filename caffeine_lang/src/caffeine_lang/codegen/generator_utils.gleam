@@ -7,9 +7,11 @@ import caffeine_lang/linker/ir.{
 }
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
+import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
+import terra_madre/hcl
 import terra_madre/render
 import terra_madre/terraform.{
   type Provider, type Resource, type TerraformSettings, type Variable,
@@ -160,4 +162,85 @@ pub fn resolution_error(
     msg: msg,
     context: errors.empty_context(),
   )
+}
+
+/// Build a TerraformSettings block with a single required provider.
+@internal
+pub fn build_terraform_settings(
+  provider_name provider_name: String,
+  source source: String,
+  version version: String,
+) -> TerraformSettings {
+  terraform.TerraformSettings(
+    required_version: option.None,
+    required_providers: dict.from_list([
+      #(
+        provider_name,
+        terraform.ProviderRequirement(source, option.Some(version)),
+      ),
+    ]),
+    backend: option.None,
+    cloud: option.None,
+  )
+}
+
+/// Build a Provider block with the given name and attributes.
+@internal
+pub fn build_provider(
+  name name: String,
+  attributes attributes: List(#(String, hcl.Expr)),
+) -> Provider {
+  terraform.Provider(
+    name: name,
+    alias: option.None,
+    attributes: dict.from_list(attributes),
+    blocks: [],
+  )
+}
+
+/// Generate resources by mapping each IR to a single resource.
+/// Returns an empty warnings list. Suitable for vendors without per-resource warnings.
+@internal
+pub fn generate_resources_simple(
+  irs: List(IntermediateRepresentation),
+  mapper mapper: fn(IntermediateRepresentation) ->
+    Result(Resource, CompilationError),
+) -> Result(#(List(Resource), List(String)), CompilationError) {
+  irs
+  |> list.try_map(mapper)
+  |> result.map(fn(r) { #(r, []) })
+}
+
+/// Generate resources by mapping each IR to a list of resources, then flattening.
+/// Returns an empty warnings list. Suitable for vendors that produce multiple resources per IR.
+@internal
+pub fn generate_resources_multi(
+  irs: List(IntermediateRepresentation),
+  mapper mapper: fn(IntermediateRepresentation) ->
+    Result(List(Resource), CompilationError),
+) -> Result(#(List(Resource), List(String)), CompilationError) {
+  irs
+  |> list.try_map(mapper)
+  |> result.map(fn(lists) { #(list.flatten(lists), []) })
+}
+
+/// Generate Terraform HCL by assembling resources, settings, provider, and variables.
+/// Discards warnings from resource generation. Suitable for vendors whose
+/// `generate_terraform` returns `Result(String, CompilationError)`.
+@internal
+pub fn generate_terraform(
+  irs: List(IntermediateRepresentation),
+  settings settings: TerraformSettings,
+  provider provider: Provider,
+  variables variables: List(Variable),
+  generate_resources generate_resources: fn(List(IntermediateRepresentation)) ->
+    Result(#(List(Resource), List(String)), CompilationError),
+) -> Result(String, CompilationError) {
+  use #(resources, _warnings) <- result.try(generate_resources(irs))
+  Ok(render_terraform_config(
+    resources: resources,
+    settings: settings,
+    providers: [provider],
+    variables: variables,
+  ))
 }
