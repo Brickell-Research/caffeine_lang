@@ -8,7 +8,7 @@ import {
   assert,
   assertNotEquals,
 } from "jsr:@std/assert";
-import { LspTestClient } from "./client.ts";
+import { LspTestClient, withTimeout } from "./client.ts";
 
 const ROOT_DIR = new URL("../../", import.meta.url).pathname.replace(
   /\/$/,
@@ -44,7 +44,7 @@ Deno.test({
   name: "formatting fixes spacing in unformatted file",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -77,7 +77,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== formatting_already_formatted ====
@@ -86,7 +86,7 @@ Deno.test({
   name: "formatting already-formatted file returns identity or no edits",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -112,7 +112,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== semantic_tokens_returned ====
@@ -121,7 +121,7 @@ Deno.test({
   name: "semantic tokens returns non-empty token data",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -169,7 +169,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== document_symbols ====
@@ -178,7 +178,7 @@ Deno.test({
   name: "document symbols returns symbols for blueprint file",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -211,7 +211,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== code_actions_quickfix ====
@@ -220,7 +220,7 @@ Deno.test({
   name: "code actions returns quickfix for quoted field name",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -268,7 +268,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== references_for_extendable ====
@@ -277,7 +277,7 @@ Deno.test({
   name: "references returns definition and usage for extendable",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -303,5 +303,5 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });

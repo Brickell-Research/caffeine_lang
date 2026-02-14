@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assert } from "jsr:@std/assert";
-import { LspTestClient } from "./client.ts";
+import { LspTestClient, withTimeout } from "./client.ts";
 
 const ROOT_DIR = new URL("../../", import.meta.url).pathname.replace(
   /\/$/,
@@ -28,7 +28,7 @@ Deno.test({
   name: "hover on type keyword returns markdown content",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -55,7 +55,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== hover_on_field_name ====
@@ -64,7 +64,7 @@ Deno.test({
   name: "hover on field name returns content",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -91,7 +91,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== hover_on_empty_space ====
@@ -100,7 +100,7 @@ Deno.test({
   name: "hover on whitespace returns null",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -120,7 +120,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== completion_type_keywords ====
@@ -129,7 +129,7 @@ Deno.test({
   name: "completion in Requires block returns type keywords",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -157,7 +157,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== completion_blueprint_names ====
@@ -166,7 +166,7 @@ Deno.test({
   name: "completion suggests blueprint names from workspace",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -201,7 +201,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== goto_definition_extendable ====
@@ -210,7 +210,7 @@ Deno.test({
   name: "go-to-definition on extendable navigates to definition",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -242,5 +242,5 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });

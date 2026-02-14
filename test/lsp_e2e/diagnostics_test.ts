@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assert } from "jsr:@std/assert";
-import { LspTestClient } from "./client.ts";
+import { LspTestClient, withTimeout } from "./client.ts";
 
 const ROOT_DIR = new URL("../../", import.meta.url).pathname.replace(
   /\/$/,
@@ -29,7 +29,7 @@ Deno.test({
   name: "diagnostics: valid blueprint produces zero diagnostics",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -51,7 +51,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== single_file_valid_expects ====
@@ -60,7 +60,7 @@ Deno.test({
   name: "diagnostics: valid expects file produces diagnostics response",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -83,7 +83,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== single_file_syntax_error ====
@@ -92,7 +92,7 @@ Deno.test({
   name: "diagnostics: syntax error produces meaningful diagnostic",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -122,7 +122,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== cross_file_blueprint_found ====
@@ -131,7 +131,7 @@ Deno.test({
   name: "diagnostics: cross-file blueprint reference resolves when blueprint is open",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -163,7 +163,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== document_change_updates_diagnostics ====
@@ -172,7 +172,7 @@ Deno.test({
   name: "diagnostics: document change updates diagnostics",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -203,7 +203,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== document_close_clears_diagnostics ====
@@ -212,7 +212,7 @@ Deno.test({
   name: "diagnostics: document close clears diagnostics",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -242,7 +242,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== error_recovery ====
@@ -251,7 +251,7 @@ Deno.test({
   name: "diagnostics: error recovery clears diagnostics after fix",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -283,7 +283,7 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });
 
 // ==== empty_document ====
@@ -292,7 +292,7 @@ Deno.test({
   name: "diagnostics: empty document produces zero diagnostics",
   sanitizeResources: false,
   sanitizeOps: false,
-  async fn() {
+  fn: withTimeout(async () => {
     const client = new LspTestClient(ROOT_DIR);
     try {
       await client.start();
@@ -310,5 +310,5 @@ Deno.test({
     } finally {
       await client.shutdown();
     }
-  },
+  }),
 });

@@ -555,3 +555,24 @@ function findSequence(buffer: Uint8Array, sequence: Uint8Array): number {
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Wraps an async test function with a hard timeout.
+ * If the test hangs (server doesn't respond, deadlock, etc.), this
+ * rejects after timeoutMs so CI doesn't stall.
+ */
+export function withTimeout(
+  fn: () => Promise<void>,
+  timeoutMs = 30_000,
+): () => Promise<void> {
+  return () =>
+    Promise.race([
+      fn(),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Test timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        )
+      ),
+    ]);
+}
