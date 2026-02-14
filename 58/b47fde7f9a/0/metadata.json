@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "58b47fde7f9a",
+  "session_id": "1ac3f0fb-5a36-4c25-910e-096b3d4c700f",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-14T05:51:10.631008Z",
+  "branch": "rdurst/type-system-expansions",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Makefile",
+    "test/lsp_e2e/client.ts",
+    "test/lsp_e2e/diagnostics_test.ts",
+    "test/lsp_e2e/features_test.ts",
+    "test/lsp_e2e/formatting_and_more_test.ts"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "a0c80ccc-1629-4cf6-b7e7-dd395a9b57f3",
+  "checkpoint_transcript_start": 1474,
+  "transcript_lines_at_start": 1474,
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 15781,
+    "cache_read_tokens": 1249088,
+    "output_tokens": 1314,
+    "api_call_count": 19
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T05:51:08.975635Z",
+    "agent_lines": 64,
+    "human_added": 1264,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1328,
+    "agent_percentage": 4.819277108433735
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst--claude-squad-worktrees-rdurst-type-system-expansions-1893f7752b417bb8/1ac3f0fb-5a36-4c25-910e-096b3d4c700f.jsonl"
+}
