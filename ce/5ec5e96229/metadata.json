@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "ce5ec5e96229",
+  "strategy": "manual-commit",
+  "branch": "fix/lsp-relation-string-full-range",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "caffeine_lsp/src/caffeine_lsp/definition.gleam",
+    "caffeine_lsp/src/caffeine_lsp/highlight.gleam",
+    "caffeine_lsp/src/caffeine_lsp/position_utils.gleam",
+    "caffeine_lsp/src/caffeine_lsp/references.gleam",
+    "lsp_server.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ce/5ec5e96229/0/metadata.json",
+      "transcript": "/ce/5ec5e96229/0/full.jsonl",
+      "context": "/ce/5ec5e96229/0/context.md",
+      "content_hash": "/ce/5ec5e96229/0/content_hash.txt",
+      "prompt": "/ce/5ec5e96229/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 49,
+    "cache_creation_tokens": 54246,
+    "cache_read_tokens": 2432424,
+    "output_tokens": 1014,
+    "api_call_count": 43
+  }
+}

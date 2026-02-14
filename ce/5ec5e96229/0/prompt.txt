@@ -1,0 +1,5 @@
+Ok so for the LSP for go to and highlight of relations of strings, it only underlines and highlights one word at a time within the string
+
+---
+
+commit this - push it - put up PR
