@@ -31,7 +31,7 @@ import {
   token_types,
 } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/semantic_tokens.mjs";
 import { get_symbols } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/document_symbols.mjs";
-import { get_definition, get_blueprint_ref_at_position, get_relation_ref_at_position } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
+import { get_definition, get_blueprint_ref_at_position, get_relation_ref_with_range_at_position } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
 import { get_code_actions, ActionDiagnostic } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/code_actions.mjs";
 import { format } from "./caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/frontend/formatter.mjs";
 import { get_highlights } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/highlight.mjs";
@@ -577,18 +577,24 @@ async function resolveDefinitionOrDeclaration(params: any) {
     }
 
     // Third: try dependency relation reference
-    const relRef = get_relation_ref_at_position(
+    const relRefWithRange = get_relation_ref_with_range_at_position(
       text,
       params.position.line,
       params.position.character,
     );
-    if (relRef instanceof Some) {
-      const target = await findExpectationByIdentifier(relRef[0] as string);
+    if (relRefWithRange instanceof Some) {
+      const refStr = relRefWithRange[0][0] as string;
+      const refStartCol = relRefWithRange[0][1] as number;
+      const refLen = refStr.length;
+      const target = await findExpectationByIdentifier(refStr);
       if (target) {
-        return {
-          uri: target.uri,
-          range: range(target.line, target.col, target.line, target.col + target.nameLen),
-        };
+        const srcLine = params.position.line;
+        return [{
+          originSelectionRange: range(srcLine, refStartCol, srcLine, refStartCol + refLen),
+          targetUri: target.uri,
+          targetRange: range(target.line, target.col, target.line, target.col + target.nameLen),
+          targetSelectionRange: range(target.line, target.col, target.line, target.col + target.nameLen),
+        }];
       }
     }
   } catch { /* ignore */ }
