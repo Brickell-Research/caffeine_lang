@@ -157,11 +157,7 @@ fn validate_no_duplicate_artifact_refs(
 
   case duplicates {
     [] -> Ok(Nil)
-    [first, ..] ->
-      Error(errors.LinkerDuplicateError(
-        msg: first,
-        context: errors.empty_context(),
-      ))
+    [first, ..] -> Error(errors.linker_duplicate_error(msg: first))
   }
 }
 
@@ -187,11 +183,7 @@ fn validate_no_conflicting_params(
 
   case conflicts {
     [] -> Ok(Nil)
-    [first, ..] ->
-      Error(errors.LinkerDuplicateError(
-        msg: first,
-        context: errors.empty_context(),
-      ))
+    [first, ..] -> Error(errors.linker_duplicate_error(msg: first))
   }
 }
 

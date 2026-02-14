@@ -39,9 +39,8 @@ pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
       // Check that neither operand contains a time_slice expression
       use <- bool.guard(
         when: contains_time_slice(left) || contains_time_slice(right),
-        return: Error(errors.CQLResolverError(
+        return: Error(errors.cql_resolver_error(
           msg: "time_slice cannot be used as an operand. It must be the entire expression.",
-          context: errors.empty_context(),
         )),
       )
       Ok(GoodOverTotal(left, right))
@@ -54,9 +53,8 @@ pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
         query: spec.query,
       ))
     _ ->
-      Error(errors.CQLResolverError(
+      Error(errors.cql_resolver_error(
         msg: "Invalid expression. Expected a top level division operator or time_slice.",
-        context: errors.empty_context(),
       ))
   }
 }

@@ -290,11 +290,7 @@ pub fn find_rightmost_operator_at_level(
   case start_pos >= string.length(input) {
     True ->
       case rightmost_pos {
-        -1 ->
-          Error(errors.CQLParserError(
-            msg: "Operator not found",
-            context: errors.empty_context(),
-          ))
+        -1 -> Error(errors.cql_parser_error(msg: "Operator not found"))
         pos -> {
           let left = string.trim(string.slice(input, 0, pos))
           let right_start = pos + operator_length
