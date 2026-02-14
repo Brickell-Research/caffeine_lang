@@ -101,6 +101,7 @@ fn classify_token(
     token.KeywordFloat -> Ok(#(type_, 5))
     token.KeywordBoolean -> Ok(#(type_, 7))
     token.KeywordURL -> Ok(#(type_, 3))
+    token.KeywordPercentage -> Ok(#(type_, 10))
 
     // Modifier keywords — collection types and optionality
     token.KeywordList -> Ok(#(modifier, 4))
@@ -118,6 +119,9 @@ fn classify_token(
     // Number literals
     token.LiteralInteger(n) -> Ok(#(number, string.length(int.to_string(n))))
     token.LiteralFloat(f) -> Ok(#(number, string.length(float.to_string(f))))
+    // Percentage literal — +1 for % suffix
+    token.LiteralPercentage(f) ->
+      Ok(#(number, string.length(float.to_string(f)) + 1))
 
     // Refinement variable
     token.KeywordX -> Ok(#(variable, 1))

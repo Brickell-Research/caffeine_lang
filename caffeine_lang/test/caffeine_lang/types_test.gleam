@@ -1,7 +1,8 @@
 import caffeine_lang/types.{
   type AcceptedTypes, type PrimitiveTypes, Boolean, CollectionType, Defaulted,
   Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
-  Optional, PrimitiveType, RecordType, RefinementType, SemanticType, String, URL,
+  Optional, Percentage, PrimitiveType, RecordType, RefinementType, SemanticType,
+  String, URL,
 }
 import caffeine_lang/value
 import gleam/dict
@@ -20,6 +21,7 @@ import test_helpers
 // ==== Happy Path ====
 // * ✅ Float
 // * ✅ Integer
+// * ✅ Percentage
 // ==== Sad Path ====
 // * ✅ Unknown type
 // * ✅ Empty string
@@ -27,6 +29,7 @@ pub fn parse_numeric_type_test() {
   [
     #("Float", Ok(Float)),
     #("Integer", Ok(Integer)),
+    #("Percentage", Ok(Percentage)),
     #("Unknown", Error(Nil)),
     #("", Error(Nil)),
     #("float", Error(Nil)),
@@ -38,8 +41,9 @@ pub fn parse_numeric_type_test() {
 // ==== numeric_type_to_string ====
 // * ✅ Float -> "Float"
 // * ✅ Integer -> "Integer"
+// * ✅ Percentage -> "Percentage"
 pub fn numeric_type_to_string_test() {
-  [#(Float, "Float"), #(Integer, "Integer")]
+  [#(Float, "Float"), #(Integer, "Integer"), #(Percentage, "Percentage")]
   |> test_helpers.array_based_test_executor_1(types.numeric_type_to_string)
 }
 
@@ -47,9 +51,13 @@ pub fn numeric_type_to_string_test() {
 // ==== Happy Path ====
 // * ✅ Integer with valid int string
 // * ✅ Float with valid float string
+// * ✅ Percentage with valid float string
+// * ✅ Percentage with % suffix
 // ==== Sad Path ====
 // * ✅ Integer with non-integer string
 // * ✅ Float with non-float string
+// * ✅ Percentage out of range
+// * ✅ Percentage invalid string
 pub fn validate_numeric_default_value_test() {
   [
     // Integer
@@ -62,6 +70,15 @@ pub fn validate_numeric_default_value_test() {
     #(#(Float, "3.14"), Ok(Nil)),
     #(#(Float, "-1.5"), Ok(Nil)),
     #(#(Float, "hello"), Error(Nil)),
+    // Percentage
+    #(#(Percentage, "99.9%"), Ok(Nil)),
+    #(#(Percentage, "99.9"), Ok(Nil)),
+    #(#(Percentage, "0.0"), Ok(Nil)),
+    #(#(Percentage, "100.0"), Ok(Nil)),
+    #(#(Percentage, "101.0"), Error(Nil)),
+    #(#(Percentage, "-1.0"), Error(Nil)),
+    #(#(Percentage, "abc"), Error(Nil)),
+    #(#(Percentage, "99.9%%"), Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_numeric_default_value(input.0, input.1)
@@ -104,6 +121,55 @@ pub fn validate_numeric_value_test() {
       #(Float, string_val),
       Error([
         types.ValidationError(expected: "Float", found: "String", path: []),
+      ]),
+    ),
+  ]
+  |> test_helpers.array_based_test_executor_1(fn(input) {
+    types.validate_numeric_value(input.0, input.1)
+  })
+
+  // Percentage validation
+  let pct_ok = value.FloatValue(99.9)
+  let pct_too_high = value.FloatValue(101.0)
+  let pct_too_low = value.FloatValue(-1.0)
+  [
+    #(#(Percentage, pct_ok), Ok(pct_ok)),
+    #(#(Percentage, value.FloatValue(0.0)), Ok(value.FloatValue(0.0))),
+    #(#(Percentage, value.FloatValue(100.0)), Ok(value.FloatValue(100.0))),
+    #(
+      #(Percentage, pct_too_high),
+      Error([
+        types.ValidationError(
+          expected: "Percentage (0.0 <= x <= 100.0)",
+          found: "101.0",
+          path: [],
+        ),
+      ]),
+    ),
+    #(
+      #(Percentage, pct_too_low),
+      Error([
+        types.ValidationError(
+          expected: "Percentage (0.0 <= x <= 100.0)",
+          found: "-1.0",
+          path: [],
+        ),
+      ]),
+    ),
+    #(
+      #(Percentage, string_val),
+      Error([
+        types.ValidationError(
+          expected: "Percentage",
+          found: "String",
+          path: [],
+        ),
+      ]),
+    ),
+    #(
+      #(Percentage, int_val),
+      Error([
+        types.ValidationError(expected: "Percentage", found: "Int", path: []),
       ]),
     ),
   ]
@@ -439,6 +505,7 @@ pub fn resolve_primitive_to_string_test() {
 // * ✅ String -> Ok(String)
 // * ✅ Integer -> Ok(NumericType(Integer))
 // * ✅ Float -> Ok(NumericType(Float))
+// * ✅ Percentage -> Ok(NumericType(Percentage))
 // * ✅ Boolean -> Error(Nil) (excluded from refinements)
 // * ✅ URL -> Error(Nil) (excluded from refinements)
 // * ✅ Unknown -> Error(Nil)
@@ -447,6 +514,7 @@ pub fn parse_refinement_compatible_primitive_test() {
     #("String", Ok(String)),
     #("Integer", Ok(NumericType(Integer))),
     #("Float", Ok(NumericType(Float))),
+    #("Percentage", Ok(NumericType(Percentage))),
     #("Boolean", Error(Nil)),
     #("URL", Error(Nil)),
     #("Unknown", Error(Nil)),
@@ -1180,6 +1248,34 @@ pub fn parse_refinement_type_test() {
     #("Integer { x | xin { 10, 20, 30 } }", Error(Nil)),
     #("Integer { x | x in { 10, 10, 20 } }", Error(Nil)),
     #("String { x | x in { pizza, pizza, pasta } }", Error(Nil)),
+    // ==== Happy Path (Percentage) ====
+    #(
+      "Percentage { x | x in ( 99.0..100.0 ) }",
+      Ok(InclusiveRange(
+        PrimitiveType(NumericType(Percentage)),
+        "99.0",
+        "100.0",
+      )),
+    ),
+    #(
+      "Percentage { x | x in ( 0.0..100.0 ) }",
+      Ok(InclusiveRange(
+        PrimitiveType(NumericType(Percentage)),
+        "0.0",
+        "100.0",
+      )),
+    ),
+    #(
+      "Percentage { x | x in { 99.0, 99.5, 99.9 } }",
+      Ok(OneOf(
+        PrimitiveType(NumericType(Percentage)),
+        set.from_list(["99.0", "99.5", "99.9"]),
+      )),
+    ),
+    // ==== Sad Path (Percentage) ====
+    // Bounds outside [0, 100]
+    #("Percentage { x | x in ( -1.0..100.0 ) }", Error(Nil)),
+    #("Percentage { x | x in ( 0.0..200.0 ) }", Error(Nil)),
     // ==== Sad Path (InclusiveRange) ====
     #("String { x | x in ( a..z ) }", Error(Nil)),
     #("Integer { x | x in ( 0.5..100.5 ) }", Error(Nil)),
@@ -2117,7 +2213,7 @@ fn parse_refinement_compatible(raw: String) -> Result(AcceptedTypes, Nil) {
   |> result.map(PrimitiveType)
 }
 
-/// Parses only Integer, Float, or String primitives (excludes Boolean).
+/// Parses only Integer, Float, Percentage, or String primitives (excludes Boolean).
 fn parse_refinement_compatible_primitive(
   raw: String,
 ) -> Result(PrimitiveTypes, Nil) {
@@ -2125,6 +2221,7 @@ fn parse_refinement_compatible_primitive(
     "String" -> Ok(String)
     "Integer" -> Ok(NumericType(Integer))
     "Float" -> Ok(NumericType(Float))
+    "Percentage" -> Ok(NumericType(Percentage))
     _ -> Error(Nil)
   }
 }

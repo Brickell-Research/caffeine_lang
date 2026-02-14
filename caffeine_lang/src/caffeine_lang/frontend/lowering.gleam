@@ -275,6 +275,7 @@ pub fn literal_to_value(lit: Literal) -> value.Value {
     ast.LiteralString(s) -> value.StringValue(transform_template_vars(s))
     ast.LiteralInteger(i) -> value.IntValue(i)
     ast.LiteralFloat(f) -> value.FloatValue(f)
+    ast.LiteralPercentage(f) -> value.FloatValue(f)
     ast.LiteralTrue -> value.BoolValue(True)
     ast.LiteralFalse -> value.BoolValue(False)
     ast.LiteralList(elements) ->

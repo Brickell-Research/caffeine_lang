@@ -8,8 +8,8 @@ import caffeine_lang/linker/artifacts.{
   type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
 }
 import caffeine_lang/types.{
-  CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer,
-  List as ListType, ModifierType, NumericType, OneOf, Optional, PrimitiveType,
+  CollectionType, Defaulted, Dict, InclusiveRange, Integer, List as ListType,
+  ModifierType, NumericType, OneOf, Optional, Percentage, PrimitiveType,
   RecordType, RefinementType, SemanticType, String as StringType, URL,
 }
 import gleam/dict
@@ -28,12 +28,8 @@ fn slo_artifact() -> Artifact {
       #(
         "threshold",
         ParamInfo(
-          type_: RefinementType(InclusiveRange(
-            PrimitiveType(NumericType(Float)),
-            "0.0",
-            "100.0",
-          )),
-          description: "Target percentage (e.g., 99.9)",
+          type_: PrimitiveType(NumericType(Percentage)),
+          description: "Target percentage (e.g., 99.9%)",
         ),
       ),
       #(

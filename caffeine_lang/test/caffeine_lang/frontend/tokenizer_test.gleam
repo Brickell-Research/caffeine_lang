@@ -48,6 +48,7 @@ pub fn tokenize_keywords_test() {
 // * ✅ Dict type
 // * ✅ Optional type
 // * ✅ Defaulted type
+// * ✅ Percentage type
 pub fn tokenize_type_keywords_test() {
   [
     #("String", Ok([token.KeywordString, token.EOF])),
@@ -59,6 +60,7 @@ pub fn tokenize_type_keywords_test() {
     #("Dict", Ok([token.KeywordDict, token.EOF])),
     #("Optional", Ok([token.KeywordOptional, token.EOF])),
     #("Defaulted", Ok([token.KeywordDefaulted, token.EOF])),
+    #("Percentage", Ok([token.KeywordPercentage, token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -103,6 +105,9 @@ pub fn tokenize_string_literals_test() {
 // * ✅ negative float
 // * ✅ zero float
 // * ✅ float with decimals
+// * ✅ percentage from float
+// * ✅ percentage from integer
+// * ✅ zero percentage
 pub fn tokenize_numeric_literals_test() {
   [
     #("42", Ok([token.LiteralInteger(42), token.EOF])),
@@ -112,6 +117,9 @@ pub fn tokenize_numeric_literals_test() {
     #("-3.14", Ok([token.LiteralFloat(-3.14), token.EOF])),
     #("0.0", Ok([token.LiteralFloat(0.0), token.EOF])),
     #("99.95", Ok([token.LiteralFloat(99.95), token.EOF])),
+    #("99.9%", Ok([token.LiteralPercentage(99.9), token.EOF])),
+    #("100%", Ok([token.LiteralPercentage(100.0), token.EOF])),
+    #("0%", Ok([token.LiteralPercentage(0.0), token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }

@@ -51,6 +51,7 @@ pub type PrimitiveTypes {
 pub type NumericTypes {
   Float
   Integer
+  Percentage
 }
 
 /// SemanticStringTypes are strings with semantic meaning and validation.
@@ -165,7 +166,7 @@ fn primitive_type_meta(typ: PrimitiveTypes) -> TypeMeta {
 }
 
 fn numeric_all_type_metas() -> List(TypeMeta) {
-  [numeric_type_meta(Integer), numeric_type_meta(Float)]
+  [numeric_type_meta(Integer), numeric_type_meta(Float), numeric_type_meta(Percentage)]
 }
 
 /// Returns metadata for a NumericTypes variant.
@@ -186,6 +187,13 @@ pub fn numeric_type_meta(typ: NumericTypes) -> TypeMeta {
         description: "Decimal numbers",
         syntax: "Float",
         example: "3.14, 99.9, 0.0",
+      )
+    Percentage ->
+      TypeMeta(
+        name: "Percentage",
+        description: "A numeric value between 0.0 and 100.0 representing a percentage",
+        syntax: "Percentage",
+        example: "99.9%",
       )
   }
 }
@@ -334,6 +342,7 @@ pub fn numeric_type_to_string(numeric_type: NumericTypes) -> String {
   case numeric_type {
     Float -> "Float"
     Integer -> "Integer"
+    Percentage -> "Percentage"
   }
 }
 
@@ -514,7 +523,7 @@ pub fn parse_primitive_type(raw: String) -> Result(PrimitiveTypes, Nil) {
   }
 }
 
-/// Parses only refinement-compatible primitives: String, Integer, Float.
+/// Parses only refinement-compatible primitives: String, Integer, Float, Percentage.
 /// Excludes Boolean and semantic types which are not valid in refinement contexts.
 @internal
 pub fn parse_refinement_compatible_primitive(
@@ -534,6 +543,7 @@ pub fn parse_numeric_type(raw: String) -> Result(NumericTypes, Nil) {
   case raw {
     "Float" -> Ok(Float)
     "Integer" -> Ok(Integer)
+    "Percentage" -> Ok(Percentage)
     _ -> Error(Nil)
   }
 }
@@ -749,9 +759,9 @@ fn parse_inclusive_range(
   raw: String,
   validate_set_value: fn(accepted, String) -> Result(Nil, Nil),
 ) -> Result(RefinementTypes(accepted), Nil) {
-  // InclusiveRange only supports Integer/Float primitives, not Defaulted or other types
+  // InclusiveRange only supports Integer/Float/Percentage primitives, not Defaulted or other types
   case raw_typ {
-    "Integer" | "Float" -> {
+    "Integer" | "Float" | "Percentage" -> {
       // Must end with ") }" (inner closing paren, space, outer closing brace)
       // But there may or may not be a space before the inner closing paren
       case string.ends_with(raw, ") }") {
@@ -774,7 +784,14 @@ fn parse_inclusive_range(
                 Ok(_) -> {
                   // Validate bounds based on type and ensure low <= high
                   case validate_bounds_order(raw_typ, low, high) {
-                    Ok(_) -> Ok(InclusiveRange(typ, low, high))
+                    Ok(_) ->
+                      // For Percentage, additionally validate bounds within [0.0, 100.0]
+                      case raw_typ {
+                        "Percentage" ->
+                          validate_percentage_range_bounds(low, high)
+                          |> result.map(fn(_) { InclusiveRange(typ, low, high) })
+                        _ -> Ok(InclusiveRange(typ, low, high))
+                      }
                     Error(_) -> Error(Nil)
                   }
                 }
@@ -802,6 +819,21 @@ fn validate_bounds_order(
       validate_in_range(numeric, low, low, high)
       |> result.replace_error(Nil)
     Error(Nil) -> Error(Nil)
+  }
+}
+
+/// Validates that Percentage range bounds are within [0.0, 100.0].
+fn validate_percentage_range_bounds(
+  low: String,
+  high: String,
+) -> Result(Nil, Nil) {
+  case float.parse(low), float.parse(high) {
+    Ok(l), Ok(h) ->
+      case l >=. 0.0 && h <=. 100.0 {
+        True -> Ok(Nil)
+        False -> Error(Nil)
+      }
+    _, _ -> Error(Nil)
   }
 }
 
@@ -947,6 +979,26 @@ pub fn validate_numeric_value(
     Float, _ ->
       Error([
         ValidationError(expected: "Float", found: value.classify(val), path: []),
+      ])
+    Percentage, value.FloatValue(f) ->
+      case f >=. 0.0 && f <=. 100.0 {
+        True -> Ok(val)
+        False ->
+          Error([
+            ValidationError(
+              expected: "Percentage (0.0 <= x <= 100.0)",
+              found: float.to_string(f),
+              path: [],
+            ),
+          ])
+      }
+    Percentage, _ ->
+      Error([
+        ValidationError(
+          expected: "Percentage",
+          found: value.classify(val),
+          path: [],
+        ),
       ])
   }
 }
@@ -1190,6 +1242,8 @@ fn value_to_type_string(
       Ok(int.to_string(i))
     PrimitiveType(NumericType(Float)), value.FloatValue(f) ->
       Ok(float.to_string(f))
+    PrimitiveType(NumericType(Percentage)), value.FloatValue(f) ->
+      Ok(float.to_string(f))
     PrimitiveType(SemanticType(_)), value.StringValue(s) -> Ok(s)
     ModifierType(Optional(inner)), value.NilValue -> {
       // Absent optional resolves to empty string
@@ -1233,7 +1287,17 @@ pub fn validate_numeric_default_value(
   numeric: NumericTypes,
   default_val: String,
 ) -> Result(Nil, Nil) {
-  parse_numeric_string(numeric, default_val) |> result.replace(Nil)
+  case numeric {
+    Percentage -> {
+      // Percentage defaults must parse as float and be within [0.0, 100.0]
+      use f <- result.try(parse_numeric_string(Percentage, default_val))
+      case f >=. 0.0 && f <=. 100.0 {
+        True -> Ok(Nil)
+        False -> Error(Nil)
+      }
+    }
+    _ -> parse_numeric_string(numeric, default_val) |> result.replace(Nil)
+  }
 }
 
 fn parse_numeric_string(
@@ -1243,6 +1307,14 @@ fn parse_numeric_string(
   case numeric {
     Integer -> int.parse(value) |> result.map(int.to_float)
     Float -> float.parse(value)
+    Percentage -> {
+      // Strip optional % suffix before parsing as float
+      let cleaned = case string.ends_with(value, "%") {
+        True -> string.drop_end(value, 1)
+        False -> value
+      }
+      float.parse(cleaned)
+    }
   }
 }
 
@@ -1360,6 +1432,7 @@ pub fn resolve_primitive_to_string(
     String, value.StringValue(s) -> s
     NumericType(Integer), value.IntValue(i) -> int.to_string(i)
     NumericType(Float), value.FloatValue(f) -> float.to_string(f)
+    NumericType(Percentage), value.FloatValue(f) -> float.to_string(f)
     SemanticType(_), value.StringValue(s) -> s
     _, _ -> value.to_string(val)
   }
