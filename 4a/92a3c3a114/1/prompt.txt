@@ -1,0 +1,226 @@
+Implement the following plan:
+
+# Fix LSP Hangs: Parse Caching + Async I/O + Diagnostic Coalescing
+
+## Context
+
+The LSP hangs when hovering, editing, then saving because JavaScript is single-threaded and the diagnostic pipeline blocks the event loop. The root causes:
+1. **Triple-parsing**: Each diagnostic cycle parses the same file 3 times (`get_diagnostics`, `get_cross_file_diagnostics`, `get_cross_file_dependency_diagnostics` each independently call `file_utils.parse()`)
+2. **Synchronous file I/O**: `readFileSync`/`readdirSync` in loops over all workspace files blocks the event loop
+3. **No diagnostic coalescing**: `revalidateCrossFileDiagnostics` can be triggered from 3 different code paths with no deduplication
+4. **Workspace-wide sync loops**: `onReferences`, `onWorkspaceSymbol`, `typeHierarchy.onSupertypes/onSubtypes` synchronously read+parse every workspace file
+
+## Changes
+
+### 1. Gleam: Add `get_all_diagnostics` that parses once (diagnostics.gleam)
+
+Add a new public function that takes pre-parsed content and runs all three diagnostic checks with a single parse:
+
+```gleam
+pub fn get_all_diagnostics(
+  content: String,
+  known_blueprints: List(String),
+  known_identifiers: List(String),
+) -> List(Diagnostic)
+```
+
+This function will:
+- Guard on empty content
+- Call `file_utils.parse(content)` once
+- Run validation diagnostics on the parse result
+- Run cross-file blueprint checks on the parse result (if Expects file)
+- Run dependency checks on the parse result
+- Combine and return all diagnostics
+
+Internally, extract the per-parse-result logic from the existing three functions into private helpers that accept `ParsedFile` instead of `String`. Keep the existing 3 public functions as-is for backwards compatibility (tests use them individually).
+
+**New private helpers:**
+- `get_diagnostics_from_parsed(content, parsed)` — validation diagnostics from a `Result(ParsedFile, ...)`
+- `get_cross_file_from_parsed(content, parsed, known_blueprints)` — blueprint ref checks from a `ParsedFile`
+- `get_dependency_from_parsed(content, parsed, known_identifiers)` — dependency checks from a `ParsedFile`
+
+**Files**: `caffeine_lsp/src/caffeine_lsp/diagnostics.gleam`
+
+### 2. TypeScript: Replace 3 diagnostic calls with 1 (lsp_server.ts)
+
+Replace all sites that call the three diagnostic functions separately with a single `get_all_diagnostics()` call.
+
+**Site 1 — `revalidateCrossFileDiagnostics` (lines 298-323):**
+```typescript
+// Before: 3 calls
+const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+const crossDiags = gleamArray(get_cross_file_diagnostics(text, knownBlueprints) as GleamList);
+const depDiags = gleamArray(get_cross_file_dependency_diagnostics(text, knownExpectations) as GleamList);
+
+// After: 1 call
+const allDiags = gleamArray(get_all_diagnostics(text, knownBlueprints, knownExpectations) as GleamList);
+```
+
+**Site 2 — `onDidChangeContent` single-file path (lines 380-404):** Same replacement.
+
+**Import change**: Add `get_all_diagnostics` to the import from diagnostics.mjs (line 26).
+
+### 3. TypeScript: Make `getFileContent` async (lsp_server.ts)
+
+Replace `fs.readFileSync` with `fs.promises.readFile`:
+
+```typescript
+async function getFileContentAsync(uri: string): Promise<string | null> {
+  const doc = documents.get(uri);
+  if (doc) return doc.getText();
+  try {
+    const filePath = fileURLToPath(uri);
+    return await fs.promises.readFile(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+```
+
+Keep the existing sync `getFileContent` for use in notification handlers where we can't easily go async (or where the document is always open and the sync path is just `doc.getText()`).
+
+### 4. TypeScript: Make workspace-scanning handlers async (lsp_server.ts)
+
+Convert these request handlers to `async` (vscode-languageserver supports async handlers natively):
+
+- **`onReferences`** (line 670): Use `getFileContentAsync` + `await` in the cross-file loop
+- **`onWorkspaceSymbol`** (line 900): Use `getFileContentAsync` + `await` in the workspace loop
+- **`typeHierarchy.onSupertypes`** (line 961): Use `getFileContentAsync` + `await`
+- **`typeHierarchy.onSubtypes`** (line 997): Use `getFileContentAsync` + `await`
+- **`findCrossFileBlueprintDef`** (line 519): Make async, use `getFileContentAsync`
+- **`findExpectationByIdentifier`** (line 264): Make async, use `getFileContentAsync`
+- **`onDefinition`** (line 535): Make async (calls findCrossFileBlueprintDef/findExpectationByIdentifier)
+- **`onDeclaration`** (line 593): Make async (same reason)
+
+### 5. TypeScript: Make `scanCaffeineFiles` async (lsp_server.ts)
+
+Replace `readdirSync` with `fs.promises.readdir`:
+
+```typescript
+async function scanCaffeineFiles(dir: string): Promise<void> {
+  let entries: fs.Dirent[];
+  try {
+    entries = await fs.promises.readdir(dir, { withFileTypes: true });
+  } catch { return; }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await scanCaffeineFiles(full);
+    } else if (entry.isFile() && entry.name.endsWith(".caffeine")) {
+      workspaceFiles.add(pathToFileURL(full).toString());
+    }
+  }
+}
+```
+
+Make `onInitialize` async to await it.
+
+### 6. TypeScript: Coalesce `revalidateCrossFileDiagnostics` (lsp_server.ts)
+
+Add a debounce/coalesce guard so multiple rapid triggers don't each run the full revalidation:
+
+```typescript
+let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRevalidation() {
+  if (revalidateTimer) return; // Already scheduled
+  revalidateTimer = setTimeout(() => {
+    revalidateTimer = null;
+    revalidateCrossFileDiagnostics();
+  }, 50); // Short delay to coalesce rapid triggers
+}
+```
+
+Replace all 3 call sites of `revalidateCrossFileDiagnostics()` with `scheduleRevalidation()`:
+- Line 377 (onDidChangeContent)
+- Line 1095 (onDidChangeWatchedFiles)
+- Line 1141 (onDidClose)
+
+### 7. TypeScript: Make `onDidClose` disk read async (lsp_server.ts)
+
+Replace the `readFileSync` at line 1110 with `fs.promises.readFile`.
+
+## Files Modified
+
+1. `caffeine_lsp/src/caffeine_lsp/diagnostics.gleam` — Add `get_all_diagnostics` + private parsed helpers
+2. `lsp_server.ts` — All TypeScript changes (async I/O, parse caching callsite, coalescing)
+3. `caffeine_lsp/test/caffeine_lsp_test.gleam` — Add tests for `get_all_diagnostics`
+
+## Verification
+
+1. `cd caffeine_lsp && gleam test && gleam test --target javascript` — Gleam tests pass on both targets
+2. `cd caffeine_lang && gleam test && gleam test --target javascript` — No regressions in lang package
+3. `cd caffeine_lsp && gleam build --target javascript` — JS build succeeds (needed for lsp_server.ts imports)
+4. Manual test: open a `.caffeine` file in editor, hover, edit, save — verify no hang
+5. `make ci` — Full CI passes
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/rdurst/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+<task-notification>
+<task-id>a040f2f</task-id>
+<status>completed</status>
+<summary>Agent "Read lsp_server.ts fully" completed</summary>
+<result>Perfect! I have the complete LSP server file. Here's the full contents of `/Users/rdurst/.claude-squad/worktrees/rdurst/lsp_1893f50bc2391880/lsp_server.ts`:
+
+The file contains a TypeScript LSP server implementation (1,147 lines) with the following structure:
+
+**Key Components:**
+
+1. **Imports** (lines 1-48): Gleam-compiled intelligence modules and vscode-languageserver utilities
+
+2. **Helper Functions** (lines 53-109):
+   - `gleamArray()` - Converts GleamList to JS array
+   - `range()` - Builds LSP Range objects
+   - `getFileContent()` - Reads file from open documents or disk
+
+3. **Initialization** (lines 112-172):
+   - Sets up workspace file tracking
+   - Scans for `.caffeine` files and builds blueprint/expectation indices
+
+4. **Workspace Indices** (lines 174-280):
+   - `blueprintIndex` - Maps URIs to blueprint item names
+   - `expectationIndex` - Maps URIs to expectation identifiers
+   - Index extraction and lookup functions
+
+5. **Diagnostics** (lines 325-408):
+   - `gleamDiagToLsp()` - Converts Gleam diagnostics to LSP format
+   - `revalidateCrossFileDiagnostics()` - Validates all open documents (line 298)
+   - Debounced diagnostics on document changes (300ms timeout)
+   - Index change detection to determine when full revalidation is needed
+
+6. **LSP Features** (lines 410+):
+   - Hover, Completion, Formatting, Document Symbols
+   - Go-to-Definition (with cross-file blueprint lookup)
+   - Declaration, Document Highlight, References, Rename
+   - Folding Ranges, Selection Ranges, Linked Editing Ranges
+   - Semantic Tokens, Code Actions, Workspace Symbols, Type Hierarchy
+
+7. **File Watching** (lines 1043-1142):
+   - Tracks created/changed/deleted `.caffeine` files
+   - Updates indices and triggers `revalidateCrossFileDiagnostics()`
+   - Handles document close with disk re-read
+
+**Current Diagnostic Strategy:**
+- Debounces per-file diagnostics with 300ms timeout (line 406)
+- Calls `revalidateCrossFileDiagnostics()` which iterates all open documents and sends diagnostics individually (lines 315-318)
+- No coalescing or async I/O optimization
+
+This is ready for your proposed changes to async I/O, parse caching, and diagnostic coalescing.</result>
+<usage>total_tokens: 52138
+tool_uses: 7
+duration_ms: 23574</usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+ok, we're rebased and commits pushed right?
+
+---
+
+yes commit these, then rebase again from main

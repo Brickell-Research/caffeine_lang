@@ -1,9 +1,11 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "4a92a3c3a114",
+  "session_id": "187cee29-dbed-44f7-8689-905b33b018f8",
   "strategy": "manual-commit",
+  "created_at": "2026-02-14T01:50:12.189474Z",
   "branch": "rdurst/lsp",
-  "checkpoints_count": 4,
+  "checkpoints_count": 2,
   "files_touched": [
     ".claude/settings.local.json",
     "caffeine_cli/build/packages/argv/README.md",
@@ -35,27 +37,22 @@
     "caffeine_lsp/test/caffeine_lsp_test.gleam",
     "lsp_server.ts"
   ],
-  "sessions": [
-    {
-      "metadata": "/4a/92a3c3a114/0/metadata.json",
-      "transcript": "/4a/92a3c3a114/0/full.jsonl",
-      "context": "/4a/92a3c3a114/0/context.md",
-      "content_hash": "/4a/92a3c3a114/0/content_hash.txt",
-      "prompt": "/4a/92a3c3a114/0/prompt.txt"
-    },
-    {
-      "metadata": "/4a/92a3c3a114/1/metadata.json",
-      "transcript": "/4a/92a3c3a114/1/full.jsonl",
-      "context": "/4a/92a3c3a114/1/context.md",
-      "content_hash": "/4a/92a3c3a114/1/content_hash.txt",
-      "prompt": "/4a/92a3c3a114/1/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
   "token_usage": {
-    "input_tokens": 1672,
-    "cache_creation_tokens": 290814,
-    "cache_read_tokens": 7670196,
-    "output_tokens": 11514,
-    "api_call_count": 74
-  }
+    "input_tokens": 70,
+    "cache_creation_tokens": 117276,
+    "cache_read_tokens": 6490083,
+    "output_tokens": 11402,
+    "api_call_count": 62
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T01:50:11.713223Z",
+    "agent_lines": 0,
+    "human_added": 1439,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1439,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-rdurst--claude-squad-worktrees-rdurst-lsp-1893f50bc2391880/187cee29-dbed-44f7-8689-905b33b018f8.jsonl"
 }
