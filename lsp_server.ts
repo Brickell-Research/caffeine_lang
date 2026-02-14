@@ -294,32 +294,71 @@ function gleamDiagToLsp(d: any) {
     : base;
 }
 
+/** Gather single-file, cross-file, and dependency diagnostics for a document. */
+// deno-lint-ignore no-explicit-any
+function gatherDiagnostics(text: string, knownBlueprints: any, knownExpectations: any): any[] {
+  const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
+  let crossDiags: ReturnType<typeof gleamArray> = [];
+  if (isExpectsFile(text)) {
+    crossDiags = gleamArray(
+      get_cross_file_diagnostics(text, knownBlueprints) as GleamList,
+    );
+  }
+  const depDiags = gleamArray(
+    get_cross_file_dependency_diagnostics(text, knownExpectations) as GleamList,
+  );
+  return [...singleDiags, ...crossDiags, ...depDiags].map(gleamDiagToLsp);
+}
+
 /** Run cross-file diagnostics for all open documents. */
 function revalidateCrossFileDiagnostics() {
   const knownBlueprints = toList(allKnownBlueprints());
   const knownExpectations = toList(allKnownExpectationIdentifiers());
   for (const doc of documents.all()) {
-    const text = doc.getText();
     try {
-      const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
-      let crossDiags: ReturnType<typeof gleamArray> = [];
-      if (isExpectsFile(text)) {
-        crossDiags = gleamArray(
-          get_cross_file_diagnostics(text, knownBlueprints) as GleamList,
-        );
-      }
-      const depDiags = gleamArray(
-        get_cross_file_dependency_diagnostics(text, knownExpectations) as GleamList,
-      );
-      const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
-      connection.sendDiagnostics({
-        uri: doc.uri,
-        diagnostics: allDiags.map(gleamDiagToLsp),
-      });
+      const diagnostics = gatherDiagnostics(doc.getText(), knownBlueprints, knownExpectations);
+      connection.sendDiagnostics({ uri: doc.uri, diagnostics });
     } catch {
       /* ignore */
     }
   }
+}
+
+// --- Index Update Helper ---
+
+/** Updates both blueprint and expectation indices for a file. Returns true if either changed. */
+function updateIndicesForFile(uri: string, text: string): boolean {
+  let changed = false;
+
+  const newNames = extractBlueprintNames(text);
+  const oldNames = blueprintIndex.get(uri);
+  if (newNames.length > 0) {
+    blueprintIndex.set(uri, new Set(newNames));
+  } else {
+    blueprintIndex.delete(uri);
+  }
+  const namesChanged = !oldNames
+    || oldNames.size !== newNames.length
+    || newNames.some((n) => !oldNames.has(n));
+  if ((namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0)) {
+    changed = true;
+  }
+
+  const newIds = extractExpectationIdentifiers(text, uri);
+  const oldIds = expectationIndex.get(uri);
+  if (newIds.size > 0) {
+    expectationIndex.set(uri, newIds);
+  } else {
+    expectationIndex.delete(uri);
+  }
+  const idsChanged = !oldIds
+    || oldIds.size !== newIds.size
+    || [...newIds.entries()].some(([k, v]) => oldIds.get(k) !== v);
+  if ((idsChanged && newIds.size > 0) || (oldIds && newIds.size === 0)) {
+    changed = true;
+  }
+
+  return changed;
 }
 
 // --- Diagnostics ---
@@ -341,64 +380,18 @@ documents.onDidChangeContent((change) => {
       if (!doc) return;
       const text = doc.getText();
 
-      // Update blueprint index for this file
-      const newNames = extractBlueprintNames(text);
-      const oldNames = blueprintIndex.get(uri);
-      if (newNames.length > 0) {
-        blueprintIndex.set(uri, new Set(newNames));
-      } else {
-        blueprintIndex.delete(uri);
-      }
-
-      // Update expectation index for this file
-      const newIds = extractExpectationIdentifiers(text, uri);
-      const oldIds = expectationIndex.get(uri);
-      if (newIds.size > 0) {
-        expectationIndex.set(uri, newIds);
-      } else {
-        expectationIndex.delete(uri);
-      }
-
-      // Check if indices changed — if so, revalidate all documents at once
-      const namesChanged = !oldNames
-        || oldNames.size !== newNames.length
-        || newNames.some((n) => !oldNames.has(n));
-      const blueprintsChanged =
-        (namesChanged && newNames.length > 0) || (oldNames && newNames.length === 0);
-
-      const idsChanged = !oldIds
-        || oldIds.size !== newIds.size
-        || [...newIds.entries()].some(([k, v]) => oldIds.get(k) !== v);
-      const expectationsChanged =
-        (idsChanged && newIds.size > 0) || (oldIds && newIds.size === 0);
-
-      if (blueprintsChanged || expectationsChanged) {
-        // Revalidate all open documents (includes current file)
+      if (updateIndicesForFile(uri, text)) {
+        // Indices changed — revalidate all open documents (includes current file)
         revalidateCrossFileDiagnostics();
       } else {
         // No index changes — only send diagnostics for the current file
         try {
-          const singleDiags = gleamArray(get_diagnostics(text) as GleamList);
-
-          let crossDiags: ReturnType<typeof gleamArray> = [];
-          if (isExpectsFile(text)) {
-            crossDiags = gleamArray(
-              get_cross_file_diagnostics(text, toList(allKnownBlueprints())) as GleamList,
-            );
-          }
-
-          const depDiags = gleamArray(
-            get_cross_file_dependency_diagnostics(
-              text,
-              toList(allKnownExpectationIdentifiers()),
-            ) as GleamList,
+          const diagnostics = gatherDiagnostics(
+            text,
+            toList(allKnownBlueprints()),
+            toList(allKnownExpectationIdentifiers()),
           );
-
-          const allDiags = [...singleDiags, ...crossDiags, ...depDiags];
-          connection.sendDiagnostics({
-            uri,
-            diagnostics: allDiags.map(gleamDiagToLsp),
-          });
+          connection.sendDiagnostics({ uri, diagnostics });
         } catch {
           connection.sendDiagnostics({ uri, diagnostics: [] });
         }
@@ -532,65 +525,9 @@ function findCrossFileBlueprintDef(
   return null;
 }
 
-connection.onDefinition((params) => {
-  const doc = documents.get(params.textDocument.uri);
-  if (!doc) return null;
-
-  const text = doc.getText();
-
-  try {
-    // First: try in-file definition (existing behavior)
-    const result = get_definition(
-      text,
-      params.position.line,
-      params.position.character,
-    );
-    if (result instanceof Some) {
-      const [defLine, defCol, nameLen] = [result[0][0], result[0][1], result[0][2]];
-      return {
-        uri: params.textDocument.uri,
-        range: range(defLine, defCol, defLine, defCol + nameLen),
-      };
-    }
-
-    // Second: try cross-file blueprint reference
-    const bpRef = get_blueprint_ref_at_position(
-      text,
-      params.position.line,
-      params.position.character,
-    );
-    if (bpRef instanceof Some) {
-      const target = findCrossFileBlueprintDef(bpRef[0] as string);
-      if (target) {
-        return {
-          uri: target.uri,
-          range: range(target.line, target.col, target.line, target.col + target.nameLen),
-        };
-      }
-    }
-
-    // Third: try dependency relation reference
-    const relRef = get_relation_ref_at_position(
-      text,
-      params.position.line,
-      params.position.character,
-    );
-    if (relRef instanceof Some) {
-      const target = findExpectationByIdentifier(relRef[0] as string);
-      if (target) {
-        return {
-          uri: target.uri,
-          range: range(target.line, target.col, target.line, target.col + target.nameLen),
-        };
-      }
-    }
-  } catch { /* ignore */ }
-  return null;
-});
-
-// --- Declaration (delegates to definition) ---
-
-connection.onDeclaration((params) => {
+/** Shared handler for definition and declaration requests. */
+// deno-lint-ignore no-explicit-any
+function resolveDefinitionOrDeclaration(params: any) {
   const doc = documents.get(params.textDocument.uri);
   if (!doc) return null;
 
@@ -644,7 +581,10 @@ connection.onDeclaration((params) => {
     }
   } catch { /* ignore */ }
   return null;
-});
+}
+
+connection.onDefinition(resolveDefinitionOrDeclaration);
+connection.onDeclaration(resolveDefinitionOrDeclaration);
 
 // --- Document Highlight ---
 
@@ -1062,31 +1002,8 @@ connection.onDidChangeWatchedFiles((params) => {
       // Created or Changed — update workspace tracking and indices
       workspaceFiles.add(uri);
       const text = getFileContent(uri);
-      if (text) {
-        const names = extractBlueprintNames(text);
-        const oldNames = blueprintIndex.get(uri);
-        if (names.length > 0) {
-          blueprintIndex.set(uri, new Set(names));
-        } else {
-          blueprintIndex.delete(uri);
-        }
-        const changed = !oldNames
-          || oldNames.size !== names.length
-          || names.some((n) => !oldNames.has(n));
-        if (changed) indicesChanged = true;
-
-        // Update expectation index
-        const ids = extractExpectationIdentifiers(text, uri);
-        const oldIds = expectationIndex.get(uri);
-        if (ids.size > 0) {
-          expectationIndex.set(uri, ids);
-        } else {
-          expectationIndex.delete(uri);
-        }
-        const idsChanged = !oldIds
-          || oldIds.size !== ids.size
-          || [...ids.entries()].some(([k, v]) => oldIds.get(k) !== v);
-        if (idsChanged) indicesChanged = true;
+      if (text && updateIndicesForFile(uri, text)) {
+        indicesChanged = true;
       }
     }
   }
@@ -1116,18 +1033,7 @@ documents.onDidClose((event) => {
   const hadBlueprintsBefore = blueprintIndex.has(uri);
   const hadExpectationsBefore = expectationIndex.has(uri);
   if (diskText) {
-    const names = extractBlueprintNames(diskText);
-    if (names.length > 0) {
-      blueprintIndex.set(uri, new Set(names));
-    } else {
-      blueprintIndex.delete(uri);
-    }
-    const ids = extractExpectationIdentifiers(diskText, uri);
-    if (ids.size > 0) {
-      expectationIndex.set(uri, ids);
-    } else {
-      expectationIndex.delete(uri);
-    }
+    updateIndicesForFile(uri, diskText);
   } else {
     // File was deleted from disk while open — clean up
     blueprintIndex.delete(uri);
