@@ -6,7 +6,7 @@ import gleam/string
 
 /// Returns all reference locations as #(line, col, length) for the symbol
 /// under the cursor. Returns an empty list if the cursor is not on a
-/// defined symbol.
+/// defined symbol or blueprint name.
 pub fn get_references(
   content: String,
   line: Int,

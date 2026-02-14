@@ -156,8 +156,7 @@ pub fn get_cross_file_dependency_diagnostics(
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
   case file_utils.parse(content) {
-    Ok(parsed) ->
-      get_dependency_from_parsed(content, parsed, known_identifiers)
+    Ok(parsed) -> get_dependency_from_parsed(content, parsed, known_identifiers)
     Error(_) -> []
   }
 }

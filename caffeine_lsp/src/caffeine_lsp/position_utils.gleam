@@ -1,3 +1,4 @@
+import caffeine_lsp/file_utils
 import gleam/bool
 import gleam/list
 import gleam/string
@@ -226,5 +227,25 @@ fn is_word_char(g: String) -> Bool {
         }
         _ -> False
       }
+  }
+}
+
+/// Find all positions of a defined symbol under the cursor.
+/// Returns #(line, col, length) for each occurrence, or an empty list
+/// if the cursor is not on a defined symbol.
+pub fn find_defined_symbol_positions(
+  content: String,
+  line: Int,
+  character: Int,
+) -> List(#(Int, Int, Int)) {
+  let word = extract_word_at(content, line, character)
+  case word {
+    "" -> []
+    name -> {
+      use <- bool.guard(!file_utils.is_defined_symbol(content, name), [])
+      let len = string.length(name)
+      find_all_name_positions(content, name)
+      |> list.map(fn(pos) { #(pos.0, pos.1, len) })
+    }
   }
 }
