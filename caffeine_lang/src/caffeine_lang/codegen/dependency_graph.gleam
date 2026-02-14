@@ -1,5 +1,7 @@
-import caffeine_lang/linker/ir.{type IntermediateRepresentation, ir_to_identifier}
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, Soft}
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, ir_to_identifier,
+}
 import gleam/dict
 import gleam/list
 import gleam/option

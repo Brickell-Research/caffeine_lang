@@ -34,10 +34,7 @@ pub fn make_slo_ir(
     unique_identifier: make_unique_id(org, service, name),
     artifact_refs: [SLO],
     values: values,
-    artifact_data: ir.slo_only(make_test_slo_fields(
-      threshold,
-      dict.new(),
-    )),
+    artifact_data: ir.slo_only(make_test_slo_fields(threshold, dict.new())),
     vendor: option.Some(vendor.Datadog),
   )
 }
@@ -94,9 +91,10 @@ pub fn make_deps_only_ir(
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
-    artifact_data: ir.dependency_only(
-      make_test_dependency_fields(hard_deps, soft_deps),
-    ),
+    artifact_data: ir.dependency_only(make_test_dependency_fields(
+      hard_deps,
+      soft_deps,
+    )),
     vendor: option.None,
   )
 }

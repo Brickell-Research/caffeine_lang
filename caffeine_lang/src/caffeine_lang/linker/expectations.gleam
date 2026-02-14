@@ -90,10 +90,7 @@ fn validate_blueprint_refs(
         string_distance.closest_match(single_ref, blueprint_names)
       Error(errors.LinkerParseError(
         msg: "Unknown blueprint reference: " <> single_ref,
-        context: errors.ErrorContext(
-          ..errors.empty_context(),
-          suggestion:,
-        ),
+        context: errors.ErrorContext(..errors.empty_context(), suggestion:),
       ))
     }
     _ ->

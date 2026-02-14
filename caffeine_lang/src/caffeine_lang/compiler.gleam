@@ -1,7 +1,6 @@
 import caffeine_lang/analysis/dependency_validator
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/dynatrace
@@ -13,6 +12,7 @@ import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
+import caffeine_lang/linker/ir.{type IntermediateRepresentation}
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
 import caffeine_lang/source_file.{type SourceFile, SourceFile}

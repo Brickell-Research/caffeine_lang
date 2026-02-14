@@ -161,10 +161,7 @@ pub fn build_all_test() {
         artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
-          #(
-            "threshold",
-            types.PrimitiveType(types.NumericType(types.Float)),
-          ),
+          #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
             "optional_field",
@@ -188,9 +185,7 @@ pub fn build_all_test() {
       )
 
     ir.values
-    |> list.filter(fn(vt) {
-      vt.label != "vendor" && vt.label != "threshold"
-    })
+    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -216,10 +211,7 @@ pub fn build_all_test() {
         artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
-          #(
-            "threshold",
-            types.PrimitiveType(types.NumericType(types.Float)),
-          ),
+          #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
             "defaulted_field",
@@ -244,9 +236,7 @@ pub fn build_all_test() {
       )
 
     ir.values
-    |> list.filter(fn(vt) {
-      vt.label != "vendor" && vt.label != "threshold"
-    })
+    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -273,10 +263,7 @@ pub fn build_all_test() {
         artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
-          #(
-            "threshold",
-            types.PrimitiveType(types.NumericType(types.Float)),
-          ),
+          #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
             "environment",
@@ -304,9 +291,7 @@ pub fn build_all_test() {
       )
 
     ir.values
-    |> list.filter(fn(vt) {
-      vt.label != "vendor" && vt.label != "threshold"
-    })
+    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -336,10 +321,7 @@ pub fn build_all_test() {
         artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
-          #(
-            "threshold",
-            types.PrimitiveType(types.NumericType(types.Float)),
-          ),
+          #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("from_blueprint", types.PrimitiveType(types.String)),
           #(
             "from_expectation",
@@ -364,9 +346,7 @@ pub fn build_all_test() {
       )
 
     ir.values
-    |> list.filter(fn(vt) {
-      vt.label != "vendor" && vt.label != "threshold"
-    })
+    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -522,7 +502,9 @@ fn make_blueprint(
   blueprints.Blueprint(
     name: name,
     artifact_refs: [SLO],
-    params: [#("vendor", types.PrimitiveType(types.String)), ..{
+    params: [
+      #("vendor", types.PrimitiveType(types.String)),
+      ..{
         params
         |> list.map(fn(p) {
           let #(label, typ) = p
@@ -534,7 +516,8 @@ fn make_blueprint(
             }),
           )
         })
-      }]
+      }
+    ]
       |> dict.from_list,
     inputs: dict.from_list([
       #("vendor", value.StringValue(constants.vendor_datadog)),
@@ -552,4 +535,3 @@ fn make_expectation(
     inputs: dict.from_list(inputs),
   )
 }
-

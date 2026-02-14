@@ -15,13 +15,13 @@ import terra_madre/terraform
 pub fn generate_terraform(
   irs: List(IntermediateRepresentation),
 ) -> Result(String, CompilationError) {
-  use #(resources, _warnings) <- result.try(generate_resources(irs))
-  Ok(generator_utils.render_terraform_config(
-    resources: resources,
+  generator_utils.generate_terraform(
+    irs,
     settings: terraform_settings(),
-    providers: [provider()],
+    provider: provider(),
     variables: variables(),
-  ))
+    generate_resources: generate_resources,
+  )
 }
 
 /// Generate only the Terraform resources for Honeycomb IRs (no config/provider).
@@ -29,41 +29,28 @@ pub fn generate_terraform(
 pub fn generate_resources(
   irs: List(IntermediateRepresentation),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
-  use resource_lists <- result.try(
-    irs |> list.try_map(ir_to_terraform_resources),
+  generator_utils.generate_resources_multi(
+    irs,
+    mapper: ir_to_terraform_resources,
   )
-  Ok(#(list.flatten(resource_lists), []))
 }
 
 /// Terraform settings block with required Honeycomb provider.
 @internal
 pub fn terraform_settings() -> terraform.TerraformSettings {
-  terraform.TerraformSettings(
-    required_version: option.None,
-    required_providers: dict.from_list([
-      #(
-        constants.provider_honeycombio,
-        terraform.ProviderRequirement(
-          "honeycombio/honeycombio",
-          option.Some("~> 0.31"),
-        ),
-      ),
-    ]),
-    backend: option.None,
-    cloud: option.None,
+  generator_utils.build_terraform_settings(
+    provider_name: constants.provider_honeycombio,
+    source: "honeycombio/honeycombio",
+    version: "~> 0.31",
   )
 }
 
 /// Honeycomb provider configuration using variables for credentials.
 @internal
 pub fn provider() -> terraform.Provider {
-  terraform.Provider(
+  generator_utils.build_provider(
     name: constants.provider_honeycombio,
-    alias: option.None,
-    attributes: dict.from_list([
-      #("api_key", hcl.ref("var.honeycomb_api_key")),
-    ]),
-    blocks: [],
+    attributes: [#("api_key", hcl.ref("var.honeycomb_api_key"))],
   )
 }
 
