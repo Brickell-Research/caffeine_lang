@@ -110,7 +110,7 @@ pub fn ir_to_terraform_resource(
 
   let evaluation_window = window_to_evaluation_window(slo.window_in_days)
 
-  let description = generator_utils.build_description(ir)
+  let description = generator_utils.build_description(ir, with: slo)
 
   let resource =
     terraform.Resource(

@@ -141,7 +141,7 @@ pub fn ir_to_terraform_resource(
     identifier,
   ))
 
-  let description = generator_utils.build_description(ir)
+  let description = generator_utils.build_description(ir, with: slo)
 
   let resource =
     terraform.Resource(

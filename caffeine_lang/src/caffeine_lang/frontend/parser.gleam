@@ -1115,12 +1115,7 @@ fn parse_refinement_body(
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
       use _ <- result.try(validate_oneof_literals([min, max], primitive, state))
       // For Percentage ranges, validate bounds are within [0.0, 100.0]
-      use _ <- result.try(validate_percentage_range(
-        min,
-        max,
-        primitive,
-        state,
-      ))
+      use _ <- result.try(validate_percentage_range(min, max, primitive, state))
       Ok(#(
         InclusiveRange(
           ParsedPrimitive(primitive),
@@ -1210,8 +1205,7 @@ fn validate_percentage_oneof_loop(
           }
         Error(_) ->
           Error(parser_error.InvalidRefinement(
-            "Percentage value must be numeric, got "
-              <> literal_to_string(first),
+            "Percentage value must be numeric, got " <> literal_to_string(first),
             state.line,
             state.column,
           ))

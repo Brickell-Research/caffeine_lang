@@ -240,7 +240,7 @@ fn run_code_generation(
   ))
 }
 
-/// Groups IRs by their resolved vendor, preserving input order within each group.
+/// Groups IRs by their resolved vendor, sorted by unique_identifier within each group.
 fn group_by_vendor(
   irs: List(IntermediateRepresentation),
 ) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation)) {

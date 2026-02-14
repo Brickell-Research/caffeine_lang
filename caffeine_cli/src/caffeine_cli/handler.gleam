@@ -282,7 +282,7 @@ fn load_and_compile(
       simplifile.read(path)
       |> result.map(fn(content) { SourceFile(path: path, content: content) })
       |> result.map_error(fn(err) {
-        "Error reading file: "
+        "Error reading expectation file: "
         <> simplifile.describe_error(err)
         <> " ("
         <> path

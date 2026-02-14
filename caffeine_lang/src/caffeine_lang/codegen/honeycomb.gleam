@@ -130,7 +130,7 @@ pub fn ir_to_terraform_resources(
     )
 
   // Resource 2: honeycombio_slo.
-  let slo_description = generator_utils.build_description(ir)
+  let slo_description = generator_utils.build_description(ir, with: slo)
   let slo_attributes = [
     #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
     #("description", hcl.StringLiteral(slo_description)),

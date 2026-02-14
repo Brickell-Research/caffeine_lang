@@ -146,18 +146,18 @@ fn make_relations_value(
 
 /// Creates an SLO IR for any vendor with full indicator and evaluation support.
 pub fn make_vendor_slo_ir(
-  friendly_label friendly_label: String,
-  unique_identifier unique_identifier: String,
-  org org: String,
-  team team: String,
-  service service: String,
-  blueprint blueprint: String,
-  threshold threshold: Float,
-  window_in_days window_in_days: Int,
-  evaluation evaluation: String,
-  indicators indicators: List(#(String, String)),
-  vendor_string vendor_string: String,
-  vendor_enum vendor_enum: vendor.Vendor,
+  friendly_label: String,
+  unique_identifier: String,
+  org: String,
+  team: String,
+  service: String,
+  blueprint: String,
+  threshold: Float,
+  window_in_days: Int,
+  evaluation: String,
+  indicators: List(#(String, String)),
+  vendor_string: String,
+  vendor_enum: vendor.Vendor,
 ) -> ir.IntermediateRepresentation {
   ir.IntermediateRepresentation(
     metadata: ir.IntermediateRepresentationMetaData(

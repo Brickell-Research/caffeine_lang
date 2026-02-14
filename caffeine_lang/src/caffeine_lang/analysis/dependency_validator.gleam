@@ -6,6 +6,7 @@ import caffeine_lang/linker/ir.{
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/float
+import gleam/int
 import gleam/list
 import gleam/option
 import gleam/order
@@ -19,7 +20,7 @@ import gleam/string
 /// - Reference an expectation that exists in the compilation
 /// - Not reference the expectation itself (no self-references)
 /// - Not form circular dependency chains
-/// - Satisfy hard dependency threshold constraints (source <= target)
+/// - Satisfy composite hard dependency threshold constraints
 @internal
 pub fn validate_dependency_relations(
   irs: List(IntermediateRepresentation),
@@ -365,6 +366,9 @@ fn validate_single_ir_hard_thresholds(
   let composite_ceiling =
     compute_composite_ceiling(list.map(dep_thresholds, fn(pair) { pair.1 }))
 
+  // Round ceiling to 4 decimal places for cleaner error messages
+  let display_ceiling = round_to_4(composite_ceiling)
+
   case float.compare(source_threshold, composite_ceiling) {
     order.Gt -> {
       let deps_description =
@@ -379,7 +383,7 @@ fn validate_single_ir_hard_thresholds(
         <> "' (threshold: "
         <> float.to_string(source_threshold)
         <> ") exceeds the composite availability ceiling of "
-        <> float.to_string(composite_ceiling)
+        <> float.to_string(display_ceiling)
         <> " from its hard dependencies: "
         <> deps_description,
       ))
@@ -390,6 +394,8 @@ fn validate_single_ir_hard_thresholds(
 
 /// Collects thresholds from hard dependency targets that have SLO artifacts.
 /// Skips targets that don't exist in the index or don't have SLO artifacts.
+/// Note: targets with SLO in artifact_refs but missing SLO data are skipped
+/// because the linker guarantees consistency between artifact_refs and artifact_data.
 fn collect_hard_dep_thresholds(
   targets: List(String),
   expectation_index: Dict(String, IntermediateRepresentation),
@@ -417,4 +423,9 @@ fn collect_hard_dep_thresholds(
 /// the product of individual availabilities.
 fn compute_composite_ceiling(thresholds: List(Float)) -> Float {
   list.fold(thresholds, 1.0, fn(acc, t) { acc *. { t /. 100.0 } }) *. 100.0
+}
+
+/// Rounds a float to 4 decimal places for cleaner display.
+fn round_to_4(f: Float) -> Float {
+  int.to_float(float.round(f *. 10_000.0)) /. 10_000.0
 }
