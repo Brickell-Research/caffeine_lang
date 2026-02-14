@@ -1,0 +1,26 @@
+<teammate-message teammate_id="team-lead">
+You are on team "lsp-e2e-tests". Your name is "researcher-frameworks". 
+
+Your task (Task #2): Research LSP e2e testing frameworks and patterns.
+
+The Caffeine project has an LSP server written in TypeScript (lsp_server.ts at the project root) that runs via Deno. It communicates over stdio using JSON-RPC (the standard LSP protocol). The project root is /Users/rdurst/.REDACTED
+
+Research and recommend:
+1. How to spawn the LSP server as a subprocess and communicate over stdio with JSON-RPC
+2. Whether to use Deno's built-in test runner (deno test) or something else
+3. Look at how vscode-languageserver-node protocol messages are structured
+4. Design a test client that can: initialize the LSP, open documents, send requests, receive responses/notifications
+5. Consider timing: diagnostics are sent asynchronously via notifications, so tests need to wait for them
+6. Look at the project's existing infrastructure — check if there's a Makefile, package.json, deno.json, etc. to understand the build/test setup
+7. Check how the LSP server is currently compiled/run (look at Makefile, any compile scripts, the lsp_server.ts imports)
+
+Produce a concrete recommendation: what framework/approach to use, what the test file structure should look like, and a skeleton of the test client class.
+
+When done, update Task #2 to completed using TaskUpdate.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="researcher-frameworks" color="green">
+{"type":"task_assignment","taskId":"2","subject":"Research LSP e2e testing frameworks and patterns","description":"Research how to write integration/end-to-end tests for LSP servers that can run in CI/CD:\n1. Look at how the LSP protocol works over stdio (JSON-RPC)\n2. Research testing approaches: spawning the LSP as a subprocess and sending JSON-RPC messages\n3. Consider what tools/languages to use — the project already has Deno/TypeScript for the LSP server, so a Deno/TS test harness would fit naturally\n4. Look at patterns like: initialize handshake, open document, wait for diagnostics, send requests, verify responses\n5. Consider how to structure fixtures (.caffeine files) for test scenarios\n6. The tests need to be runnable in CI with `deno test` or similar\nProduce a recommended approach with concrete framework/tool choices.","assignedBy":"researcher-frameworks","timestamp":"2026-02-14T04:53:34.528Z"}
+</teammate-message>
