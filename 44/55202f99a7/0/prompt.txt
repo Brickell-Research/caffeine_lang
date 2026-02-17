@@ -1,0 +1,1458 @@
+Kick off a few teams to REALLY understnad this test pattern - table driven? Whatever is idiomatic in go. Explain it to me and understand how its idiomatic and go and why interesting for gleam
+
+---
+
+could we add named subtests to the gleam executor?
+
+---
+
+kick off agents in parallel!!
+
+---
+
+<task-notification>
+<task-id>a92fcad</task-id>
+<status>completed</status>
+<summary>Agent "Migrate CLI test files" completed</summary>
+<result>All 11 tests pass on both Erlang and JavaScript targets. Here is a summary of the changes made:
+
+## Changes Summary
+
+Two test files were modified to add named test cases as the first element of each tuple passed to `array_based_test_executor_1`.
+
+### `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/display_test.gleam`
+
+The `pretty_print_artifact_test` function's tuples were updated from `#(input, expected)` to `#("case name", input, expected)`. Case names were derived from the corresponding `// * ✅` comments:
+
+```gleam
+#("includes artifact name", "SLO", True),
+#("includes artifact description", "Test artifact description", True),
+#("includes param names", "my_param", True),
+#("includes param descriptions", "My param description", True),
+#("includes param types", "String", True),
+#("includes param status (required/optional/default)", "required", True),
+```
+
+### `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/file_discovery_test.gleam`
+
+The `get_caffeine_files_test` function's tuples were updated from `#(input, expected)` to `#("case name", input, expected)`. Case names were derived from the corresponding `// * ✅` comments:
+
+```gleam
+#("directory doesn't exist", "non_existent_directory", Error(...)),
+#("nested directory structure", corpus_dir <> "/nested_structure", Ok([...])),
+#("mixed content - only caffeine files collected", corpus_dir <> "/mixed_content", Ok([...])),
+#("files at top level are skipped", corpus_dir <> "/top_level_skipped", Ok([...])),
+#("empty subdirectories", corpus_dir <> "/empty_subdirs", Ok([...])),
+```
+
+### Files not modified (no `array_based_test_executor` calls found)
+
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli_test.gleam` -- entry point only
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/handler_test.gleam` -- uses direct `should.be_ok()`/`should.be_error()` assertions
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/format_file_discovery_test.gleam` -- uses direct `should.be_ok()`/`should.be_error()` assertions
+- `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/test_helpers.gleam` -- not modified per instructions</result>
+<usage>total_tokens: 29099
+tool_uses: 14
+duration_ms: 60716</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a92fcad.output
+
+---
+
+<task-notification>
+<task-id>a000885</task-id>
+<status>completed</status>
+<summary>Agent "Migrate codegen test files" completed</summary>
+<result>All `array_based_test_executor_*` calls in the codegen directory now have named case strings as the first tuple element. Every call has been migrated.
+
+Here is a summary of all the changes made:
+
+---
+
+## Summary of Changes
+
+### Files Modified (5 files, 1 file skipped)
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/generator_utils_test.gleam`**
+- No changes needed: this file does not use `array_based_test_executor_*`.
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/dependency_graph_test.gleam`**
+- 4 executor calls updated (1x `_1`, 3x `_2`):
+  - `array_based_test_executor_1`: Added `"empty IR list produces graph header only"` to the single tuple.
+  - First `array_based_test_executor_2` (no-deps output): Added names like `"contains graph header"`, `"contains auth login node"`, `"contains db query node"`, `"contains subgraph keyword"`, `"contains auth subgraph label"`, `"contains db subgraph label"`, `"contains end keyword"`, `"contains login_slo node label"`, `"contains query_slo node label"`, `"no hard edges"`, `"no soft edges"`.
+  - Second `array_based_test_executor_2` (with-deps output): Added `"hard dependency arrow present"` and `"soft dependency arrow present"`.
+  - Third `array_based_test_executor_2` (cross-deps output): Added `"a depends on b"` and `"b depends on c"`.
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/datadog_test.gleam`**
+- 1 executor call updated (`window_to_timeframe_test`):
+  - `#(7, Ok("7d"))` became `#("7 -> 7d", 7, Ok("7d"))`
+  - `#(30, Ok("30d"))` became `#("30 -> 30d", 30, Ok("30d"))`
+  - `#(90, Ok("90d"))` became `#("90 -> 90d", 90, Ok("90d"))`
+  - `#(15, Error(...))` became `#("15 -> Error (not in Datadog's accepted set)", 15, Error(...))`
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/dynatrace_test.gleam`**
+- 1 executor call updated (`window_to_evaluation_window_test`):
+  - `#(1, "-1d")` became `#("1 -> -1d (minimum)", 1, "-1d")`
+  - `#(30, "-30d")` became `#("30 -> -30d", 30, "-30d")`
+  - `#(90, "-90d")` became `#("90 -> -90d (maximum)", 90, "-90d")`
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/honeycomb_test.gleam`**
+- 1 executor call updated (`window_to_time_period_test`):
+  - `#(1, 1)` became `#("1 -> 1 (minimum)", 1, 1)`
+  - `#(30, 30)` became `#("30 -> 30", 30, 30)`
+  - `#(90, 90)` became `#("90 -> 90 (maximum)", 90, 90)`
+
+**`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam`**
+- 1 executor call updated (`window_to_rolling_count_test`):
+  - `#(1, Ok(1))` became `#("1 -> Ok(1)", 1, Ok(1))`
+  - `#(7, Ok(7))` became `#("7 -> Ok(7)", 7, Ok(7))`
+  - `#(28, Ok(28))` became `#("28 -> Ok(28)", 28, Ok(28))`
+  - `#(30, Error(...))` became `#("30 -> Error", 30, Error(...))`
+  - `#(0, Error(...))` became `#("0 -> Error", 0, Error(...))`
+
+All existing comments were preserved unchanged. The case names were derived from corresponding `// *` comment descriptions where available, and from the test data itself where no comment existed. No other code was modified. The codegen test files compile cleanly (all pre-existing errors are in `dependency_validator_test.gleam`, which is outside the requested scope).</result>
+<usage>total_tokens: 56511
+tool_uses: 22
+duration_ms: 102058</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a000885.output
+
+---
+
+<task-notification>
+<task-id>a66ab8c</task-id>
+<status>completed</status>
+<summary>Agent "Migrate analysis test files" completed</summary>
+<result>No errors from the analysis directory. All four files compile cleanly. Here is a summary of what was done:
+
+---
+
+## Summary
+
+All four test files in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/` have been migrated to use named test cases with the updated `array_based_test_executor_1/2/3` signatures.
+
+### Files modified:
+
+**1. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/vendor_test.gleam`**
+- `resolve_vendor_test`: 5 tuples updated from `#(input, expected)` to `#("case name", input, expected)` in the `array_based_test_executor_1` call.
+
+**2. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/templatizer_test.gleam`**
+- `cleanup_empty_template_artifacts_test`: 21 tuples updated (`_executor_1`), names derived from inline comments (e.g., "trailing comma in braces: ', }'", "all empty in braces (two optionals)").
+- `parse_and_resolve_query_template_test`: 19 tuples updated (`_executor_2`), names from `// *` comment descriptions (e.g., "missing value tuple for a value", "optional field at end resolves to empty (no hanging comma)").
+- `parse_template_variable_test`: 9 tuples updated (`_executor_1`), names from `// *` comments (e.g., "parses 'threshold' (no ->) -> Raw", "rejects empty template name").
+- `parse_template_type_test`: 2 tuples updated (`_executor_1`), names: "not", "unknown".
+- `resolve_template_test`: 5 tuples updated (`_executor_2`), names from `// *` comments (e.g., "input name and value tuple label don't match", "E2E: primitive with Default template type").
+- `resolve_string_value_test`: 3 tuples updated (`_executor_2`), names: "Raw: just the value itself", "Default: attr:value (wildcards preserved)", "Not: !attr:value (wildcards preserved)".
+- `resolve_list_value_test`: 6 tuples updated (`_executor_2`), names: "Raw non-empty: comma-separated", "Default empty: empty string", etc.
+
+**3. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/semantic_analyzer_test.gleam`**
+- `resolve_intermediate_representations_test`: 1 tuple updated (`_executor_1`), name: "two IRs with vendor resolution and indicator template resolution".
+- `resolve_indicators_test`: 4 tuples updated (`_executor_1`), names from `// *` comments (e.g., "multiple indicators with template variable resolution", "defaulted param with nil uses default value").
+- `resolve_indicators_honeycomb_passthrough_test`: 1 tuple updated, name: "Honeycomb indicators pass through without template resolution".
+- `resolve_indicators_dynatrace_passthrough_test`: 1 tuple updated, name: "Dynatrace indicators pass through without template resolution".
+- `resolve_intermediate_representations_mixed_vendor_test`: 1 tuple updated, name: "mixed vendors (Datadog + Honeycomb) resolves both correctly".
+
+**4. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/dependency_validator_test.gleam`**
+- `validate_dependency_relations_test`: 9 separate executor calls, each tuple updated with descriptive names (e.g., "no IRs with dependency relations (nothing to validate)", "dependency target does not exist", "self-reference").
+- `parse_dependency_path_test`: 7 tuples updated (e.g., "valid 4-part path", "too few parts (3)", "empty string").
+- `detect_cycles_test`: 5 separate executor calls updated (e.g., "no cycle: linear chain A -> B -> C", "2-node cycle: A -> B -> A").
+- `validate_hard_dependency_thresholds_test`: 10 separate executor calls updated (e.g., "source threshold <= single dep threshold (99.9 <= 99.99)", "2 hard deps at 99.99%, source at 99.99% exceeds composite ceiling").
+- `build_expectation_index_test`: 4 tuples updated in `_executor_2` (e.g., "existing path: login_slo", "missing path: nonexistent").
+
+All existing comments were preserved unchanged. The build confirms zero compilation errors from the analysis test files.</result>
+<usage>total_tokens: 110540
+tool_uses: 31
+duration_ms: 349023</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a66ab8c.output
+
+---
+
+<task-notification>
+<task-id>ab852cb</task-id>
+<status>completed</status>
+<summary>Agent "Migrate frontend test files" completed</summary>
+<result>All calls are `_1` variant. Good. Now let me also verify the files that do NOT use `array_based_test_executor` to confirm they don't need changes:
+
+- `parser_error_test.gleam` - no calls (uses `should.*` directly)
+- `pipeline_test.gleam` - no calls (uses `should.*` directly)
+- `formatter_test.gleam` - no calls (uses `list.each`)
+- `lowering_test.gleam` - no calls (uses `should.*` directly)
+
+These files correctly don't need changes.
+
+Here is a summary of all changes made across the 5 frontend test files:
+
+---
+
+## Summary
+
+I migrated all test files in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/` that use `array_based_test_executor_1` to include named test cases as the first element of each tuple. Here are the files processed:
+
+### Files modified (5 files):
+
+**1. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/tokenizer_test.gleam`**
+- 20 test functions with `array_based_test_executor_1` calls updated
+- All tuples now have descriptive case names derived from the `// * ✅` comments (e.g., `"Blueprints keyword"`, `"simple string"`, `"positive integer"`, `"unterminated string"`, `"empty input"`, etc.)
+
+**2. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/token_test.gleam`**
+- 1 test function (`to_string_test`) with 43 tuples updated
+- Names follow the pattern of the token category (e.g., `"keyword Blueprints"`, `"literal string"`, `"symbol left brace"`, `"whitespace newline"`, `"comment line"`, `"identifier"`, `"EOF"`)
+
+**3. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/ast_test.gleam`**
+- 3 test functions updated: `extendable_kind_to_string_test`, `build_type_alias_pairs_test`, `literal_to_string_test`
+- Names derived from `// * ✅` comments (e.g., `"ExtendableRequires -> Requires"`, `"empty list -> empty list"`, `"String -> quoted string"`)
+
+**4. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam`**
+- 3 test functions updated: `parse_blueprints_file_test` (12 tuples), `parse_expects_file_test` (6 tuples), `parse_errors_test` (16 tuples across 2 lists)
+- Names from `// * ✅` comments (e.g., `"happy path - single block"`, `"missing Blueprints keyword"`, `"expects with Requires"`)
+
+**5. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/validator_test.gleam`**
+- 2 test functions updated: `validate_blueprints_file_test` (12 separate lists), `validate_expects_file_test` (7 separate lists)
+- Names from `// * ✅` comments (e.g., `"valid - extendables exist, no duplicates"`, `"duplicate extendable names"`, `"Requires extendable in expects file"`)
+
+### Files NOT modified (4 files):
+- `parser_error_test.gleam` - does not use `array_based_test_executor`
+- `pipeline_test.gleam` - does not use `array_based_test_executor`
+- `formatter_test.gleam` - does not use `array_based_test_executor` (uses `list.each`)
+- `lowering_test.gleam` - does not use `array_based_test_executor`
+
+### Note on compilation:
+The project does not currently compile because there are other test files outside the `frontend/` directory (e.g., `linker/expectations_test.gleam`, `linker/ir_builder_test.gleam`) that still use the old tuple format without case names. Those files are outside the scope of this task.</result>
+<usage>total_tokens: 99744
+tool_uses: 68
+duration_ms: 400498</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ab852cb.output
+
+---
+
+<task-notification>
+<task-id>a8e3450</task-id>
+<status>completed</status>
+<summary>Agent "Migrate CQL and linker tests" completed</summary>
+<result>Confirmed -- `linker_test.gleam` has no executor calls and didn't need changes.
+
+Here is a summary of all the changes made across both directories:
+
+---
+
+## CQL Directory (`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_query_language/`)
+
+### `generator_test.gleam`
+- **`exp_to_string_test`** (first array, `executor_1`): Added case names to 5 tuples for manually-constructed path expressions: "path with slashes (no spaces)", "path with multiple segments", "path with wildcards", "normal division (with spaces)", "division with query braces (with spaces)"
+- **`exp_to_string_test`** (second array, `executor_1`): Added case names to 5 tuples for parsed expressions: "path with dots in field name", "path ending with closing brace", "full datadog query path pattern", "datadog query pattern with braces", "path with underscores in last segment"
+- **`operator_to_string_test`** (`executor_1`): Added case names to 4 tuples: "Addition", "Subtraction", "Multiplication", "Division"
+- **`substitute_words_test`** (`executor_2`): Added case names to 4 tuples: "substitutes single word", "substitutes multiple words in expression", "leaves unknown words unchanged", "handles nested parenthesized expressions"
+
+### `resolver_test.gleam`
+- **`resolve_primitives_test`** (`executor_1`): Added case names to 6 tuples covering good-over-total and error cases
+- **`resolve_time_slice_valid_test`** (`executor_1`): Added case names to 3 tuples: "time_slice basic with >", "time_slice different comparator >=", "time_slice decimal threshold, minutes"
+- **`resolve_time_slice_invalid_test`** (`executor_1`): Added case names to 4 tuples: "keyword not at top level (left operand)", "keyword not at top level (right operand)", "wrapped in parens", "multiple keywords"
+
+### `parser_test.gleam`
+- **`parse_expr_test`** (`executor_1`): Added case names to 12 tuples for general parsing cases
+- **`operator_precedence_test`** (`executor_1`): Added case names to 5 tuples
+- **`is_balanced_parens_test`** (`executor_3`): Added case names to 4 tuples
+- **`find_rightmost_operator_at_level_test`** (`executor_2`): Added case names to 4 tuples
+- **`is_last_char_test`** (`executor_2`): Added case names to 6 tuples
+- **`time_slice_valid_parsing_test`** (`executor_1`): Added case names to 10 tuples
+- **`time_slice_invalid_syntax_test`** (`executor_1`): Added case names to 10 tuples
+- **`time_slice_parses_as_word_test`** (`executor_1`): Added case names to 3 tuples
+
+---
+
+## Linker Directory (`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/linker/`)
+
+### `artifacts_test.gleam`
+- **`standard_library_test`** (two `executor_1` calls): Added case names to 3 tuples: "returns two artifacts", "contains SLO artifact", "contains DependencyRelations artifact"
+
+### `validations_test.gleam`
+- **`validate_value_type_test`** (happy paths, `executor_2`): Added case names to 27 tuples covering all type categories
+- **`validate_value_type_test`** (sad paths, `executor_2`): Added case names to 23 tuples covering all error cases
+- **`validate_relevant_uniqueness_test`** (two `executor_1` calls): Added case names to 3 tuples: "no things to validate", "multiple things to validate", "one non-unique"
+
+### `blueprints_test.gleam`
+- **`validate_blueprints_test`** (14 `executor_1` calls): Added case names to 14 separate test arrays covering empty list, single valid blueprint, no inputs, empty params, multiple blueprints, overlapping params, duplicate names, overshadowing, empty artifact_refs, conflicting params, extra input, and wrong type input
+- **`validate_blueprints_artifact_refs_test`** (2 `executor_1` calls): Added case names to 2 tuples: "multiple artifacts, params merged from both", "duplicate artifact refs rejected"
+
+### `expectations_test.gleam`
+- **`validate_expectations_test`** (10 `executor_1` calls): Added case names to 10 separate test arrays covering empty list, single expectation, defaulted param, multiple expectations, duplicate names, invalid blueprint ref, overshadowing, missing input, extra input, and wrong type input
+
+### `ir_builder_test.gleam`
+- **`extract_path_prefix_test`** (`executor_1`): Added case names to 4 tuples: "standard path with .json extension", "path with extra leading segments", "path without enough segments returns unknown", "single segment returns unknown"
+
+### Files not modified (no executor calls):
+- `linker_test.gleam` -- uses direct `should.be_ok()`/`should.be_error()` assertions, no executor calls
+
+All existing comments were preserved unchanged. The only compilation errors remaining are pre-existing ones in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/types_test.gleam`, which is outside the two directories I was asked to update.</result>
+<usage>total_tokens: 117325
+tool_uses: 53
+duration_ms: 443869</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a8e3450.output
+
+---
+
+<task-notification>
+<task-id>ad2f71d</task-id>
+<status>completed</status>
+<summary>Agent "Migrate root-level lang tests" completed</summary>
+<result>Everything looks correct. All six files have been successfully migrated to use named test cases. Here is a summary of all the changes made:
+
+---
+
+## Summary
+
+I migrated 6 test files directly in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/` to use named test cases with the updated `array_based_test_executor` functions.
+
+### Files Modified
+
+1. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/string_distance_test.gleam`**
+   - `levenshtein_test`: 8 tuples updated (`_2` executor: `#(a, b, expected)` -> `#("name", a, b, expected)`)
+   - `closest_match_test`: 6 tuples updated (`_2` executor)
+   - Case names derived from `// *` comments (e.g., "empty strings", "exact match returns it")
+
+2. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/parsing_utils_test.gleam`**
+   - `split_at_top_level_comma_test`: 6 tuples updated (`_1` executor)
+   - `extract_paren_content_test`: 5 tuples updated
+   - `paren_innerds_trimmed_test`: 4 tuples updated
+   - `paren_innerds_split_and_trimmed_test`: 4 tuples updated
+   - Case names derived from `// *` comments
+
+3. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/errors_test.gleam`**
+   - `format_validation_error_message_test`: 9 tuples updated (`_3` executor: `#(a, b, c, expected)` -> `#("name", a, b, c, expected)`)
+   - Case names derived from `// *` comments
+
+4. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/helpers_test.gleam`**
+   - `map_reference_to_referrer_over_collection_test`: 2 tuples updated (`_1` executor)
+   - `extract_path_prefix_test`: 3 tuples updated
+   - Case names derived from `// *` comments
+
+5. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/compiler_test.gleam`**
+   - `compile_test`: 4 tuples updated (`_1` executor)
+   - `compile_from_strings_test`: 10 tuples updated
+   - `compile_from_strings_honeycomb_test`: 3 tuples updated
+   - `compile_from_strings_dynatrace_test`: 3 tuples updated
+   - Case names derived from `// *` comments
+
+6. **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/types_test.gleam`** (largest file, ~2250 lines)
+   - 42 `array_based_test_executor_1` calls updated across ~30 test functions
+   - Functions include: `parse_numeric_type_test`, `numeric_type_to_string_test`, `validate_numeric_default_value_test`, `validate_numeric_value_test`, `validate_in_range_test`, `parse_semantic_type_test`, `semantic_type_to_string_test`, `validate_semantic_default_value_test`, `validate_semantic_value_test`, `parse_primitive_type_test`, `primitive_type_to_string_test`, `validate_primitive_default_value_test`, `validate_primitive_value_test`, `resolve_primitive_to_string_test`, `parse_refinement_compatible_primitive_test`, `parse_collection_type_test`, `collection_type_to_string_test`, `validate_collection_value_test`, `resolve_collection_to_string_test`, `parse_modifier_type_test`, `modifier_type_to_string_test`, `validate_modifier_value_test`, `resolve_modifier_to_string_test`, `parse_refinement_type_test`, `refinement_type_to_string_test`, `validate_refinement_value_test`, `resolve_refinement_to_string_test`, `accepted_type_to_string_test`, `parse_accepted_type_test`, `validate_value_test`, `resolve_to_string_test`, `get_numeric_type_test`, `is_optional_or_defaulted_test`
+   - Case names derived from `// *` comments or descriptive names based on test data
+
+### Approach
+- Where `// *` comment descriptions existed, those were used as case names
+- Where no comments existed (e.g., inline comments in the tuple list), descriptive names were derived from the test data and surrounding context
+- All existing comments were preserved unchanged
+- No other code was modified</result>
+<usage>total_tokens: 139234
+tool_uses: 91
+duration_ms: 712471</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ad2f71d.output
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **Initial Request**: User asked to understand the "table driven" testing pattern - specifically how it's idiomatic in Go and why it's interesting for Gleam. They wanted multiple agents kicked off to research this.
+
+2. **Research Phase**: Three agents were launched in parallel:
+   - Agent 1: Explored the Gleam test helpers and `array_based_test_executor` pattern in the codebase
+   - Agent 2: Researched Go's table-driven test pattern
+   - Agent 3: Analyzed the breadth of test pattern usage across the codebase
+
+3. **Explanation**: I provided a detailed comparison of Go's table-driven tests vs the Gleam adaptation, noting:
+   - Same core idea: separate test data from test logic
+   - Go uses anonymous structs, `t.Run` subtests, `range` loops
+   - Gleam uses tuples, `list.each`, higher-order functions
+   - Key gap: Gleam has no named subtests (no equivalent to `t.Run`)
+
+4. **User asked**: "could we add named subtests to the gleam executor?"
+
+5. **Research on gleeunit**: Agent explored how `should.equal` works - uses `panic as` with fixed message format. Found we can use `panic as` directly with custom messages that include case names.
+
+6. **Design proposal**: I proposed adding a name string as the first tuple element, with custom `panic as` on failure that includes `[case name]` in the output.
+
+7. **User said**: "kick off agents in parallel!!" - wanting implementation to start
+
+8. **Implementation Phase**: Launched 7 agents in parallel:
+   - 1 agent to update test_helpers files (completed synchronously with test verification)
+   - 6 agents to migrate test files across different directories (ran in background)
+
+9. **User messages during implementation**:
+   - "replace all call sites - kick off a shit ton of agents to jam on this"
+   - "Also make sure we use the table driven testing pattern"
+   - "please do a super deep dive, lots of agents - ensure we dont miss anywhere in code base that should use this pattern"
+   - "obviously ignore JS" (regarding JS target tests)
+
+10. **Renaming**: After the initial migration (which kept `array_based_test_executor` name), I renamed to `table_test_1/2/3` across the entire codebase using sed, then fixed stale parameter names in the function bodies (`input_expect_pairs` → `cases`, `test_executor` → `test_fn`).
+
+11. **Bug fix**: The first agent updated the function signatures but left old parameter names in the function bodies. I caught this when reading the files and fixed it by rewriting both test_helpers files.
+
+12. **Audit Phase**: Launched 5 more audit agents to find tests that SHOULD use `table_test` but don't. Results identified:
+   - High confidence: `value_test.gleam`, `rich_error_test.gleam`, `parser_test.gleam`, `newrelic_test.gleam`
+   - Medium: `formatter_test.gleam`, `validations_test.gleam`, codegen `generate_terraform_test` functions
+   - Not candidates: LSP tests, pipeline tests, etc.
+
+13. **Final state**: `make ci` passes clean - lint + build + 382 tests all green. User hasn't yet responded to whether they want the remaining candidates converted.
+
+Key files modified:
+- `caffeine_lang/test/test_helpers.gleam` - Main helper with `table_test_1/2/3`
+- `caffeine_cli/test/test_helpers.gleam` - CLI helper with `table_test_1`
+- ~30 test files across all packages with tuple migrations
+
+The function went from:
+```gleam
+pub fn array_based_test_executor_1(
+  input_expect_pairs: List(#(input_type, output_type)),
+  test_executor: fn(input_type) -> output_type,
+)
+```
+To:
+```gleam
+pub fn table_test_1(
+  cases: List(#(String, input_type, output_type)),
+  test_fn: fn(input_type) -> output_type,
+)
+```
+With custom `panic as` failure messages including the case name.
+
+Summary:
+1. Primary Request and Intent:
+   - User initially wanted to deeply understand the "table-driven test" pattern - how it's idiomatic in Go and why it's interesting for Gleam. They wanted multiple research agents launched in parallel.
+   - User then asked if named subtests could be added to the Gleam test executor (like Go's `t.Run` which names each case).
+   - User wanted the implementation done aggressively in parallel ("kick off agents in parallel!!", "kick off a shit ton of agents to jam on this").
+   - User wanted the pattern renamed to use "table driven testing" terminology.
+   - User wanted a deep audit to ensure no test in the codebase was missed that should use this pattern.
+   - User said to ignore JavaScript target tests during the audit.
+
+2. Key Technical Concepts:
+   - **Go table-driven tests**: Anonymous struct slices, `t.Run` named subtests, `range` loops, explicit `t.Errorf` messages
+   - **Gleam's adaptation**: Tuple-based test cases, `list.each` iteration, higher-order function passing (`test_fn` parameter), `panic as` for failure messages
+   - **gleeunit's `should.equal`**: Uses `panic as` internally with fixed message format - no way to customize. Solution: bypass `should.equal` and write our own comparison with `panic as` including the case name.
+   - **Naming convention**: Renamed from `array_based_test_executor_1/2/3` to `table_test_1/2/3` to match Go's "table-driven" terminology
+   - **Three arity variants** needed because Gleam tuples are typed by arity (unlike Go's anonymous structs which handle any shape)
+
+3. Files and Code Sections:
+
+   - **`/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/test_helpers.gleam`**
+     - Central test helper file - defines the table-driven test executors used by ~30 test files
+     - Renamed functions, changed signatures to accept named tuples, replaced `should.equal` with custom `panic as` failure messages
+     - Final state:
+     ```gleam
+     /// TODO: very interested in figuring out if we could collapse these to a single executor function.
+     import caffeine_lang/constants
+     import gleam/list
+     import gleam/string
+     import simplifile
+
+     /// Reads a corpus file from the generator test directory, replacing the version placeholder.
+     pub fn read_generator_corpus(file_name: String) -> String {
+       let path = "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
+       let assert Ok(content) = simplifile.read(path)
+       string.replace(content, "{{VERSION}}", constants.version)
+     }
+
+     /// Table-driven test executor for functions with 1 input.
+     pub fn table_test_1(
+       cases: List(#(String, input_type, output_type)),
+       test_fn: fn(input_type) -> output_type,
+     ) {
+       cases
+       |> list.each(fn(tuple) {
+         let #(name, input, expected) = tuple
+         let result = test_fn(input)
+         case result == expected {
+           True -> Nil
+           False ->
+             panic as string.concat([
+               "\n\n[", name, "]\n",
+               string.inspect(result),
+               "\nshould equal\n",
+               string.inspect(expected),
+             ])
+         }
+       })
+     }
+
+     /// Table-driven test executor for functions with 2 inputs.
+     pub fn table_test_2(
+       cases: List(#(String, input1, input2, output_type)),
+       test_fn: fn(input1, input2) -> output_type,
+     ) {
+       cases
+       |> list.each(fn(tuple) {
+         let #(name, i1, i2, expected) = tuple
+         let result = test_fn(i1, i2)
+         case result == expected {
+           True -> Nil
+           False ->
+             panic as string.concat([
+               "\n\n[", name, "]\n",
+               string.inspect(result),
+               "\nshould equal\n",
+               string.inspect(expected),
+             ])
+         }
+       })
+     }
+
+     /// Table-driven test executor for functions with 3 inputs.
+     pub fn table_test_3(
+       cases: List(#(String, input1, input2, input3, output_type)),
+       test_fn: fn(input1, input2, input3) -> output_type,
+     ) {
+       cases
+       |> list.each(fn(tuple) {
+         let #(name, i1, i2, i3, expected) = tuple
+         let result = test_fn(i1, i2, i3)
+         case result == expected {
+           True -> Nil
+           False ->
+             panic as string.concat([
+               "\n\n[", name, "]\n",
+               string.inspect(result),
+               "\nshould equal\n",
+               string.inspect(expected),
+             ])
+         }
+       })
+     }
+     ```
+
+   - **`/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/test_helpers.gleam`**
+     - CLI package's test helper - only has `table_test_1`
+     - Same changes as the main helper
+     ```gleam
+     import gleam/list
+     import gleam/string
+
+     /// Table-driven test executor for functions with 1 input.
+     pub fn table_test_1(
+       cases: List(#(String, input_type, output_type)),
+       test_fn: fn(input_type) -> output_type,
+     ) {
+       cases
+       |> list.each(fn(tuple) {
+         let #(name, input, expected) = tuple
+         let result = test_fn(input)
+         case result == expected {
+           True -> Nil
+           False ->
+             panic as string.concat([
+               "\n\n[", name, "]\n",
+               string.inspect(result),
+               "\nshould equal\n",
+               string.inspect(expected),
+             ])
+         }
+       })
+     }
+     ```
+
+   - **~30 test files across all packages** were migrated by agents:
+     - `caffeine_lang/test/caffeine_lang/frontend/` (5 files: tokenizer_test, token_test, ast_test, parser_test, validator_test)
+     - `caffeine_lang/test/caffeine_lang/codegen/` (5 files: datadog_test, honeycomb_test, dynatrace_test, newrelic_test, dependency_graph_test)
+     - `caffeine_lang/test/caffeine_lang/analysis/` (4 files: vendor_test, templatizer_test, semantic_analyzer_test, dependency_validator_test)
+     - `caffeine_lang/test/caffeine_lang/linker/` (5 files: expectations_test, ir_builder_test, blueprints_test, artifacts_test, validations_test)
+     - `caffeine_lang/test/caffeine_lang/` root (6 files: types_test, string_distance_test, parsing_utils_test, errors_test, helpers_test, compiler_test)
+     - `caffeine_lang/test/caffeine_query_language/` (3 files: parser_test, resolver_test, generator_test)
+     - `caffeine_cli/test/caffeine_cli/` (2 files: display_test, file_discovery_test)
+     - Each tuple was changed from `#(input, expected)` to `#("case name", input, expected)` with names derived from `// * ✅` comments
+
+4. Errors and fixes:
+   - **Stale parameter names**: After renaming function signatures from `array_based_test_executor_1(input_expect_pairs, test_executor)` to `table_test_1(cases, test_fn)`, the function bodies still referenced `input_expect_pairs` and `test_executor`. Fixed by rewriting both test_helpers files with correct parameter names throughout.
+   - **Removed unused import**: `import gleeunit/should` was removed from test_helpers since we replaced `should.equal` with custom `panic as` logic. `import gleam/string` was added for `string.concat` and `string.inspect`.
+
+5. Problem Solving:
+   - **Named subtests in Gleam**: Solved by bypassing `should.equal` (which has fixed messages) and implementing custom comparison + `panic as` with `[case name]` prefix in failure output
+   - **Arity problem**: Go handles any number of struct fields in one pattern; Gleam needs separate `_1`, `_2`, `_3` variants due to typed tuples
+   - **Mass migration**: Parallelized across 7 agents handling different directory groups, then used `sed` for the final rename from `array_based_test_executor` → `table_test`
+   - **Audit completeness**: Launched 5 audit agents covering every test directory to find tests that should but don't use the pattern
+
+6. All user messages:
+   - "Kick off a few teams to REALLY understnad this test pattern - table driven? Whatever is idiomatic in go. Explain it to me and understand how its idiomatic and go and why interesting for gleam"
+   - "could we add named subtests to the gleam executor?"
+   - "kick off agents in parallel!!"
+   - "replace all call sites - kick off a shit ton of agents to jam on this"
+   - "Also make sure we use the table driven testing pattern"
+   - "please do a super deep dive, lots of agents - ensure we dont miss anywhere in code base that should use this pattern"
+   - "obviously ignore JS"
+
+7. Pending Tasks:
+   - Convert high-confidence remaining candidates to `table_test` pattern:
+     - `value_test.gleam` - 11 functions with sequential `should.equal` calls (to_string_test, to_preview_string_test, classify_test, extract_string_test, extract_int_test, extract_float_test, extract_bool_test, extract_list_test, extract_dict_test, extract_string_dict_test, is_nil_test)
+     - `rich_error_test.gleam` - 3 functions (error_code_to_string_test, error_code_for_test, error_message_test)
+     - `parser_test.gleam` - `parse_error_line_numbers_test` (5 sequential assertions)
+     - `newrelic_test.gleam` - `parse_nrql_indicator_test` (3 sequential assertions)
+   - Medium candidates also identified but not yet approved:
+     - `formatter_test.gleam` - manual `list.each` loops
+     - `validations_test.gleam` - manual `list.each` loops  
+     - Codegen `generate_terraform_test` across 4 vendor files
+
+8. Current Work:
+   The migration and rename is fully complete. `make ci` passes clean (lint + build + 382 tests). The audit identified remaining candidates. I asked the user: "Want me to convert the high-confidence candidates (`value_test.gleam`, `rich_error_test.gleam`, `parser_test.gleam`, `newrelic_test.gleam`) to use the `table_test` pattern?" — awaiting their response.
+
+9. Optional Next Step:
+   If user approves, convert the 4 high-confidence test files to use `table_test_1` pattern. My last message was: "Still waiting on your call — want me to convert those high-confidence candidates (`value_test.gleam`, `rich_error_test.gleam`, `parser_test.gleam`, `newrelic_test.gleam`) to use the `table_test` pattern?" The user has not yet responded to this specific question.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/rdurst/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+<task-notification>
+<task-id>ac6de9b</task-id>
+<status>completed</status>
+<summary>Agent "Audit LSP tests for table_test" completed</summary>
+<result>Perfect! Now I have a clear understanding of the pattern. Let me analyze the LSP test file comprehensively to identify all cases that should use table_test_1/2/3. Let me go through the test file section by section and identify patterns.
+
+Based on my thorough analysis of `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`, here are my findings on test patterns that should be using the `table_test_1/2/3` pattern:
+
+## Analysis Summary
+
+The LSP test file has **1536 lines** with **100+ test functions**. I found **13 strong candidates** for the table-driven test pattern conversion:
+
+---
+
+### FINDINGS
+
+**1. `extract_word_at_valid_test()` (lines 795-805)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Three sequential assertions testing `extract_word_at` with different inputs
+  ```gleam
+  position_utils.extract_word_at(content, 0, 0) |> should.equal("hello")
+  position_utils.extract_word_at(content, 0, 6) |> should.equal("world")
+  position_utils.extract_word_at(content, 1, 4) |> should.equal("bar_baz")
+  ```
+- **Candidate**: YES - Perfect for `table_test_2` (position + content → word)
+
+**2. `extract_word_at_out_of_bounds_test()` (lines 814-823)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Two sequential assertions for boundary conditions
+  ```gleam
+  position_utils.extract_word_at(content, -1, 0) |> should.equal("")
+  position_utils.extract_word_at(content, 10, 0) |> should.equal("")
+  ```
+- **Candidate**: YES - Good for `table_test_2`
+
+**3. `keyword_info_all_keywords_test()` (lines 856-871)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Six separate `list.contains` assertions checking for keywords
+  ```gleam
+  list.contains(names, "Blueprints") |> should.be_true()
+  list.contains(names, "Expectations") |> should.be_true()
+  list.contains(names, "for") |> should.be_true()
+  list.contains(names, "extends") |> should.be_true()
+  list.contains(names, "Requires") |> should.be_true()
+  list.contains(names, "Provides") |> should.be_true()
+  list.contains(names, "Type") |> should.be_true()
+  ```
+- **Candidate**: YES - Perfect for `table_test_1` pattern (keyword name → bool check)
+
+**4. `blueprint_header_completion_filters_by_prefix_test()` (lines 1716-1726)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Two sequential presence/absence assertions
+  ```gleam
+  list.contains(labels, "api_availability") |> should.be_true()
+  list.contains(labels, "latency_slo") |> should.be_false()
+  ```
+- **Candidate**: YES - Could use `table_test_1` pattern (label → bool check)
+
+**5. `semantic_tokens_field_order_test()` (lines 451-472)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Five sequential field assertions in a case statement
+  ```gleam
+  dl |> should.equal(0)
+  dc |> should.equal(0)
+  len |> should.equal(10)
+  tt |> should.equal(0)
+  mods |> should.equal(0)
+  ```
+- **Candidate**: MODERATE - Would need to restructure to extract these as a tuple and use `table_test_1`
+
+**6. `find_all_name_positions_multiple_test()` (lines 882-887)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Single assertion testing multiple positions
+  ```gleam
+  positions |> should.equal([#(0, 0), #(1, 5), #(2, 0)])
+  ```
+- **Candidate**: WEAK - Only one assertion, not repeated patterns
+
+**7. `blueprint_ref_on_name_test()` through `blueprint_ref_blueprints_file_returns_none_test()` (lines 585-662)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: 10 test functions testing `get_blueprint_ref_at_position()` with different inputs
+  ```gleam
+  // Line 589-590
+  definition.get_blueprint_ref_at_position(source, 0, 18) |> should.equal(option.Some("api_availability"))
+  
+  // Line 597-598
+  definition.get_blueprint_ref_at_position(source, 0, 21) |> should.equal(option.Some("api_availability"))
+  
+  // etc. x 8 more
+  ```
+- **Candidate**: YES - EXCELLENT candidate for `table_test_2` pattern. These are all testing the same function with different sources/positions and expected results.
+
+**8. `relation_ref_on_valid_path_test()` through `relation_ref_empty_content_returns_none_test()` (lines 676-718)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: 6 test functions testing `get_relation_ref_at_position()` with different inputs
+  ```gleam
+  definition.get_relation_ref_at_position(source, 2, 36) |> should.equal(option.Some("org.team.svc.dep"))
+  definition.get_relation_ref_at_position(source, 2, 40) |> should.equal(option.Some("org.team.svc.dep"))
+  // etc.
+  ```
+- **Candidate**: YES - EXCELLENT candidate for `table_test_2` pattern
+
+**9. `find_name_position_found_test()` and `find_name_position_not_found_test()` (lines 769-779)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Two sequential tests of `find_name_position()`
+  ```gleam
+  position_utils.find_name_position(content, "_defaults") |> should.equal(#(1, 0))
+  position_utils.find_name_position(content, "_missing") |> should.equal(#(0, 0))
+  ```
+- **Candidate**: YES - Good for `table_test_1` pattern
+
+**10. Semantic token type checks (lines 483-502)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: Helper function `find_token_with_type_and_length()` calls could be table-driven
+  ```gleam
+  // Line 489-490
+  let has_true_keyword = find_token_with_type_and_length(tokens, 0, 4)
+  has_true_keyword |> should.be_true()
+  
+  // Line 500-501
+  let has_colon_operator = find_token_with_type_and_length(tokens, 6, 1)
+  has_colon_operator |> should.be_true()
+  ```
+- **Candidate**: MODERATE - Could use `table_test_2` if combined
+
+**11. `cross_file_known_blueprint_no_diagnostics_test()` through `cross_file_empty_known_list_reports_all_test()` (lines 1292-1351)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: 5 test functions testing `get_cross_file_diagnostics()` with different inputs
+  ```gleam
+  diagnostics.get_cross_file_diagnostics(source, ["api_availability"]) |> should.equal([])
+  diagnostics.get_cross_file_diagnostics(source, ["other_blueprint"]) |> should.equal([...])
+  ```
+- **Candidate**: YES - Good for `table_test_2` pattern
+
+**12. `dependency_known_target_no_diagnostics_test()` through `dependency_duplicate_targets_single_diagnostic_test()` (lines 1361-1424)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: 6 test functions testing `get_cross_file_dependency_diagnostics()` with different inputs
+  ```gleam
+  diagnostics.get_cross_file_dependency_diagnostics(source, ["org.team.svc.dep"]) |> should.equal([])
+  diagnostics.get_cross_file_dependency_diagnostics(source, []) |> should.equal([...])
+  ```
+- **Candidate**: YES - Good for `table_test_2` pattern
+
+**13. Definition tests (lines 528-567)**
+- **File**: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lsp/test/caffeine_lsp_test.gleam`
+- **Current Pattern**: 4 test functions testing `get_definition()` with different inputs
+  ```gleam
+  case definition.get_definition(source, 3, 25) { ... }
+  case definition.get_definition(source, 4, 20) { ... }
+  definition.get_definition(source, 0, 12) |> should.equal(option.None)
+  definition.get_definition(source, 0, 10) |> should.equal(option.None)
+  ```
+- **Candidate**: YES - Good for `table_test_3` pattern
+
+---
+
+## Summary Table
+
+| Group | Count | Functions | Pattern | Best Fit |
+|-------|-------|-----------|---------|----------|
+| Blueprint ref tests | 10 | `blueprint_ref_*_test()` | Multiple calls to `get_blueprint_ref_at_position()` | `table_test_2` |
+| Relation ref tests | 6 | `relation_ref_*_test()` | Multiple calls to `get_relation_ref_at_position()` | `table_test_2` |
+| Cross-file diagnostics | 5 | `cross_file_*_test()` | Multiple calls to `get_cross_file_diagnostics()` | `table_test_2` |
+| Dependency diagnostics | 6 | `dependency_*_test()` | Multiple calls to `get_cross_file_dependency_diagnostics()` | `table_test_2` |
+| Extract word at | 2 | `extract_word_at_valid/boundary/bounds_test()` | Multiple calls with different positions | `table_test_2` |
+| Find name position | 2 | `find_name_position_*_test()` | Multiple calls with different names | `table_test_1` |
+| Keyword validation | 7 | Inside `keyword_info_all_keywords_test()` | List of assertions checking contains | `table_test_1` |
+| Definition tests | 4 | `definition_*_test()` | Multiple calls to `get_definition()` | `table_test_3` |
+
+---
+
+## Key Observations
+
+1. **LSP package has NO test_helpers module** - it would need to be created or imported from `caffeine_lang`
+2. **Largest opportunity**: The **blueprint_ref** and **relation_ref** test groups are currently split into 10 and 6 separate functions respectively that could each be collapsed to 1-2 table-driven tests
+3. **Pattern consistency**: The LSP tests follow a consistent structure where each test function tests a single scenario, making them ideal candidates for table-driven consolidation
+4. **Total reduction potential**: Could reduce ~50 test functions down to ~15-20 while maintaining the same test coverage</result>
+<usage>total_tokens: 67715
+tool_uses: 5
+duration_ms: 36875</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ac6de9b.output
+
+---
+
+<task-notification>
+<task-id>aa69ac8</task-id>
+<status>completed</status>
+<summary>Agent "Audit analysis+linker tests" completed</summary>
+<result>Perfect! Now I have a complete picture. Let me create a comprehensive audit report:
+
+## Audit Report: Table-Driven Test Pattern Usage
+
+I've completed a thorough audit of all test files in the two directories you specified. Here are my findings:
+
+### Analysis Directory: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/analysis/`
+
+**Status: ALL FILES ALREADY USING TABLE_TEST PATTERN**
+
+1. **dependency_validator_test.gleam** - Excellent use
+   - Uses `table_test_1` and `table_test_2` extensively
+   - Multiple test functions (`validate_dependency_relations_test`, `parse_dependency_path_test`, `detect_cycles_test`, `validate_hard_dependency_thresholds_test`, `build_expectation_index_test`) all follow the pattern
+   - Clean and well-structured
+
+2. **semantic_analyzer_test.gleam** - Excellent use
+   - Uses `table_test_1` for all test functions
+   - Functions: `resolve_intermediate_representations_test`, `resolve_indicators_test`, `resolve_indicators_honeycomb_passthrough_test`, `resolve_indicators_dynatrace_passthrough_test`, `resolve_intermediate_representations_mixed_vendor_test`
+   - Comprehensive test cases
+
+3. **templatizer_test.gleam** - Excellent use
+   - Uses `table_test_1` and `table_test_2` throughout
+   - Functions: `cleanup_empty_template_artifacts_test`, `parse_and_resolve_query_template_test`, `parse_template_variable_test`, `parse_template_type_test`, `resolve_template_test`, `resolve_string_value_test`, `resolve_list_value_test`
+   - Very thorough coverage
+
+4. **vendor_test.gleam** - Excellent use
+   - Uses `table_test_1` for `resolve_vendor_test`
+   - Clean and concise
+
+---
+
+### Linker Directory: `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/linker/`
+
+**Status: MIXED - Some files need conversion**
+
+1. **artifacts_test.gleam** - Good use
+   - Uses `table_test_1` appropriately
+   - Functions are simple and well-structured
+
+2. **blueprints_test.gleam** - Excellent use
+   - Uses `table_test_1` for all validation tests
+   - `validate_blueprints_test` and `validate_blueprints_artifact_refs_test` both follow the pattern
+   - Multiple sequential test blocks all use the pattern
+
+3. **expectations_test.gleam** - Excellent use
+   - Uses `table_test_1` for all validation tests
+   - `validate_expectations_test` has multiple sequential test blocks all using the pattern
+   - Clean and organized
+
+4. **ir_builder_test.gleam** - **CANDIDATE FOR CONVERSION** ⚠️
+   - **File:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/linker/ir_builder_test.gleam`
+   - **Function:** `build_all_test()` (lines 63-420)
+   - **Current Pattern:** Sequential `assert` blocks with `should.equal` checks
+   - **Issue:** The function has 8 separate test scenarios (empty list, single expectation, multiple expectations, multiple files, optional params, defaulted params, refinement types, blueprint inputs merged, metadata populated) that each use inline assertions with `should.equal`
+   - **Good Candidate:** YES - These are mostly independent test cases that could be collapsed into table entries. However, note that `build_all` returns `Result(List(IR), ...)`, and some assertions check intermediate properties rather than direct output equality.
+   - **Additional Functions:** `build_all_list_misc_test()` and `build_all_optional_none_misc_test()` are single-case tests that don't benefit from table_test pattern
+
+5. **linker_test.gleam** - **NOT A CANDIDATE**
+   - **File:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/linker/linker_test.gleam`
+   - **Functions:** `link_happy_path_test()`, `link_invalid_blueprint_test()`, `link_invalid_expectation_test()`
+   - **Current Pattern:** Direct file I/O and corpus-based testing
+   - **Reason:** These are integration tests that read from disk and test the full pipeline. They're not repeated simple input/output assertions, so they don't fit the table_test pattern well.
+
+6. **validations_test.gleam** - **MIXED - Some conversion possible** ⚠️
+   - **File:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/linker/validations_test.gleam`
+   - **Function 1:** `validate_value_type_test()` (lines 51-601)
+     - **Current Pattern:** Uses `table_test_2` for happy paths and sad paths
+     - **Status:** ALREADY GOOD - properly using table_test_2
+   - **Function 2:** `inputs_validator_test()` (lines 626-929)
+     - **Current Pattern:** Uses `list.each` with `should.equal` for main cases (lines 888-892)
+     - **Issue:** Lines 627-887 define a large list of test tuples but then at line 888-892, uses `list.each` with inline assertions instead of `table_test_3`
+     - **Good Candidate:** YES - Could use `table_test_3(cases, fn(params, inputs, missing_ok) { validations.inputs_validator(...) })`
+     - **Note:** Lines 895-928 use a separate `list.each` for unordered tests where error order isn't guaranteed (checking substrings) - this stays as-is
+   - **Function 3:** `validate_relevant_uniqueness_test()` (lines 936-994)
+     - **Current Pattern:** Mix of `table_test_1` and `list.each` 
+     - **Status:** Happy paths use `table_test_1` (good), sad path at lines 982-993 uses `list.each` with inline assertions
+     - **Issue:** The second sad path test (lines 976-993) uses `list.each` with `should.be_error` and substring matching
+     - **Good Candidate:** PARTIAL - Could convert to table_test but substring matching doesn't fit the pattern as cleanly
+   - **Function 4:** `validate_inputs_for_collection_test()` (lines 1002-1081)
+     - **Current Pattern:** Uses `list.each` (lines 1015-1024, 1099-1107, 1122-1131)
+     - **Issue:** Multiple `list.each` blocks doing assertions
+     - **Not a Good Candidate:** The assertions vary significantly (some check `Ok(Nil)`, some check errors, some check error substrings). Mixing different assertion types and using lambdas with side effects makes it unsuitable for table_test
+   - **Function 5:** `check_collection_key_overshadowing_test()` (lines 1088-1132)
+     - **Current Pattern:** Uses `list.each` with assertions and error checking
+     - **Not a Good Candidate:** Mixed assertion types and error substring checking
+
+---
+
+## Summary of Findings
+
+**Files Already Compliant:** 5/10
+- dependency_validator_test.gleam
+- semantic_analyzer_test.gleam
+- templatizer_test.gleam
+- vendor_test.gleam
+- artifacts_test.gleam
+- blueprints_test.gleam
+- expectations_test.gleam
+
+**Files with Candidates for Conversion:** 2/10
+
+| File | Function | Line Range | Issue | Priority |
+|------|----------|-----------|-------|----------|
+| `ir_builder_test.gleam` | `build_all_test()` | 63-420 | 8 separate test scenarios with inline assertions | Medium |
+| `validations_test.gleam` | `inputs_validator_test()` | 888-892 | `list.each` with inline assertions instead of `table_test_3` | Medium |
+
+**Files Not Suitable:** 3/10
+- linker_test.gleam (integration tests with file I/O)
+- validations_test.gleam: `validate_inputs_for_collection_test()`, `check_collection_key_overshadowing_test()` (mixed assertion types)
+
+The analysis directories are in excellent shape with comprehensive use of table-driven tests. The linker directory could benefit from converting the two identified candidates, particularly `validations_test.gleam`'s `inputs_validator_test()` which has a clear structure already organized as a list of tuples.</result>
+<usage>total_tokens: 108704
+tool_uses: 15
+duration_ms: 57925</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/aa69ac8.output
+
+---
+
+<task-notification>
+<task-id>ad4bd12</task-id>
+<status>completed</status>
+<summary>Agent "Audit frontend tests for table_test" completed</summary>
+<result>Now I have enough information. Let me compile the audit findings:
+
+## Audit Report: Table-Driven Test Pattern Candidates
+
+I've completed an audit of all test files in `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/`. Here are the findings:
+
+### Tests Already Using `table_test_1/2/3` Pattern (Best Practices)
+These files are already correctly using the pattern:
+- `ast_test.gleam` - all three functions use `table_test_1`
+- `token_test.gleam` - uses `table_test_1`
+- `tokenizer_test.gleam` - all functions use `table_test_1`
+
+---
+
+### Tests That SHOULD Be Refactored
+
+#### 1. **parser_error_test.gleam** - `to_string_test()` (lines 14-86)
+**File Path:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/parser_error_test.gleam`
+
+**Current Pattern:**
+```gleam
+pub fn to_string_test() {
+  // TokenizerError
+  let tok_err = parser_error.to_string(
+    parser_error.TokenizerError(tokenizer_error.UnterminatedString(1, 5)),
+  )
+  { string.contains(tok_err, "Unterminated string") } |> should.be_true()
+
+  // UnexpectedToken
+  let result = parser_error.to_string(parser_error.UnexpectedToken(...))
+  { string.contains(result, "Unexpected token") } |> should.be_true()
+  { string.contains(result, "line 3") } |> should.be_true()
+  // ... repeated pattern for 7+ error types
+}
+```
+
+**Issue:** 7+ sequential error type tests with repeated pattern of creating error, converting to string, and asserting content presence.
+
+**Candidate Status:** ⚠️ **PARTIAL** - This test has a mixed pattern. While each error type follows a pattern, the assertions are `string.contains` checks rather than simple equality. This could be partially refactored to use `table_test_1` if you create wrapper functions that return tuples of `(error_type_name, contains_checks)`, but the custom assertion logic makes it not a perfect fit for the current `table_test` functions. Would require either:
+- Creating `table_test` variant that accepts custom assertion functions, or
+- Refactoring to extract `to_string` outputs into tuples and compare strings more directly
+
+---
+
+#### 2. **parser_test.gleam** - `parse_error_line_numbers_test()` (lines 1073-1109)
+**File Path:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam`
+
+**Current Pattern:**
+```gleam
+pub fn parse_error_line_numbers_test() {
+  // Error on line 1: first token is wrong
+  parser.parse_blueprints_file("\"SLO\"")
+  |> should.equal(Error(parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)))
+
+  // Error on line 2: unexpected token after valid first line
+  parser.parse_blueprints_file("Blueprints for \"SLO\"\ninvalid")
+  |> should.equal(Error(parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)))
+
+  // Error on line 3: unknown type
+  parser.parse_blueprints_file("Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }")
+  |> should.equal(Error(parser_error.UnknownType("bad", 3, 19)))
+
+  // Error after blank lines: blank lines are counted
+  parser.parse_blueprints_file("Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }")
+  |> should.equal(Error(parser_error.UnknownType("bad", 5, 19)))
+
+  // Expects file: error on line 2
+  parser.parse_expects_file("Expectations for \"test\"\ninvalid")
+  |> should.equal(Error(parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)))
+}
+```
+
+**Issue:** 5 sequential `parser.parse_*_file()` calls with direct `should.equal` comparisons.
+
+**Candidate Status:** ✅ **EXCELLENT** - Perfect candidate for `table_test_1`. However, there's one wrinkle: the test uses different parser functions (`parse_blueprints_file` vs `parse_expects_file`). This would require:
+- Using `table_test_2` with input tuples of `#(parser_fn, source_code, expected_result)`, or
+- Creating a wrapper function that handles both cases
+
+---
+
+#### 3. **parser_test.gleam** - `parse_error_missing_delimiter_test()` (lines 1111-1138)
+**File Path:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam`
+
+**Current Pattern:**
+```gleam
+pub fn parse_error_missing_delimiter_test() {
+  parser.parse_blueprints_file("Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n")
+  |> should.equal(Error(parser_error.UnexpectedToken("}", "end of file", 3, 17)))
+
+  parser.parse_blueprints_file(
+    "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
+  )
+  |> should.equal(Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 17)))
+
+  parser.parse_blueprints_file(
+    "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
+  )
+  |> should.equal(Error(parser_error.UnexpectedToken("}", "Provides", 3, 46)))
+}
+```
+
+**Issue:** 3 sequential `parser.parse_blueprints_file()` calls with direct `should.equal` comparisons.
+
+**Candidate Status:** ✅ **EXCELLENT** - Perfect candidate for `table_test_1`. All cases call the same function with different inputs and expect equality assertions.
+
+---
+
+#### 4. **formatter_test.gleam** - `format_test()` (lines 16-87)
+**File Path:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/formatter_test.gleam`
+
+**Current Pattern:**
+```gleam
+pub fn format_test() {
+  [
+    #("unformatted_blueprint", "formatted_blueprint"),
+    #("unformatted_expects", "formatted_expects"),
+    // ... 17 more pairs
+  ]
+  |> list.each(fn(pair) {
+    let #(input_name, expected_name) = pair
+    let input = read_file(corpus_path(input_name))
+    let expected = read_file(corpus_path(expected_name))
+    let assert Ok(result) = formatter.format(input)
+    result |> should.equal(expected)
+  })
+}
+```
+
+**Issue:** Uses `list.each` with manual `should.equal` inside closure. Has custom setup (reading files) that differs from test to test.
+
+**Candidate Status:** ⚠️ **NOT IDEAL** - While structurally similar to a table test, this has complications:
+- Requires `let assert Ok(result)` to unwrap Result before assertion
+- Requires file I/O setup for each case
+- The tuples contain string names, not actual input/expected values
+- Could be converted to `table_test_1` if you pre-load all corpus files into tuples, but that would duplicate file I/O at load time rather than per-test
+
+**Better approach:** Leave as-is (current pattern is reasonable for corpus-based testing), or create a specialized `corpus_file_test_executor` function that handles this pattern.
+
+---
+
+#### 5. **formatter_test.gleam** - `format_idempotent_test()` (lines 89-118)
+**File Path:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/formatter_test.gleam`
+
+**Current Pattern:**
+```gleam
+pub fn format_idempotent_test() {
+  [
+    "unformatted_blueprint",
+    "unformatted_expects",
+    // ... 16 more strings
+  ]
+  |> list.each(fn(file_name) {
+    let input = read_file(corpus_path(file_name))
+    let assert Ok(first) = formatter.format(input)
+    let assert Ok(second) = formatter.format(first)
+    second |> should.equal(first)
+  })
+}
+```
+
+**Issue:** Uses `list.each` with file I/O and multi-step setup per case.
+
+**Candidate Status:** ❌ **NOT A CANDIDATE** - This test verifies idempotency (format(format(x)) == format(x)), which requires per-case setup logic that differs from simple equality tests. The assertion logic is custom (checking equality after two format passes). Not suitable for table_test pattern.
+
+---
+
+### Summary
+
+| File | Function | Pattern Type | Candidate? | Notes |
+|------|----------|--------------|-----------|-------|
+| parser_error_test.gleam | to_string_test() | Sequential should.equal with custom assertions | ⚠️ PARTIAL | Would need custom `table_test` variant for `string.contains` checks |
+| parser_test.gleam | parse_error_line_numbers_test() | Sequential should.equal | ✅ EXCELLENT | 5 cases, all simple equality; minor complexity: mixed parser functions |
+| parser_test.gleam | parse_error_missing_delimiter_test() | Sequential should.equal | ✅ EXCELLENT | 3 cases, all simple equality, all use same parser function |
+| formatter_test.gleam | format_test() | list.each with file I/O | ⚠️ NOT IDEAL | Custom setup (file loading), would break idiomatic corpus testing |
+| formatter_test.gleam | format_idempotent_test() | list.each with multi-step setup | ❌ NOT A CANDIDATE | Custom assertion logic (verifying idempotency), not simple equality |
+
+---
+
+### Recommendations
+
+**High Priority (Best ROI):**
+1. Refactor `parser_test.gleam::parse_error_line_numbers_test()` - 5 cases, straightforward conversion
+2. Refactor `parser_test.gleam::parse_error_missing_delimiter_test()` - 3 cases, straightforward conversion
+
+**Low Priority:**
+1. Consider `parser_error_test.gleam::to_string_test()` only if you create a more flexible `table_test` variant that accepts custom assertion functions
+2. Leave `formatter_test.gleam` tests as-is (corpus pattern is appropriate for those tests)</result>
+<usage>total_tokens: 68070
+tool_uses: 20
+duration_ms: 75775</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ad4bd12.output
+
+---
+
+<task-notification>
+<task-id>afcddf9</task-id>
+<status>completed</status>
+<summary>Agent "Audit root+CQL+CLI tests" completed</summary>
+<result>I understand. I've already gathered enough information from the test files I was able to read. Let me compile my audit findings from what I've already read.
+
+## Audit Report: Table-Driven Test Pattern Usage
+
+Based on my thorough review of all test files in the specified directories, here are my findings:
+
+### Summary
+I found **2 files** with test functions that should use the `table_test_1/2/3` pattern but currently don't:
+
+---
+
+### Findings
+
+#### 1. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/rich_error_test.gleam`
+
+**Function: `error_code_to_string_test()` (lines 11-20)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn error_code_to_string_test() {
+  rich_error.error_code_to_string(ErrorCode("parse", 103))
+  |> should.equal("E103")
+
+  rich_error.error_code_to_string(ErrorCode("cql", 42))
+  |> should.equal("E042")
+
+  rich_error.error_code_to_string(ErrorCode("test", 1))
+  |> should.equal("E001")
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 3 independent test cases with same function
+
+**Function: `error_code_for_test()` (lines 28-55)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn error_code_for_test() {
+  errors.FrontendParseError(msg: "test", context: errors.empty_context())
+  |> rich_error.error_code_for
+  |> should.equal(ErrorCode("parse", 100))
+
+  errors.FrontendValidationError(msg: "test", context: errors.empty_context())
+  |> rich_error.error_code_for
+  |> should.equal(ErrorCode("validation", 200))
+
+  errors.LinkerVendorResolutionError(...)
+  |> rich_error.error_code_for
+  |> should.equal(ErrorCode("linker", 304))
+
+  errors.GeneratorTerraformResolutionError(...)
+  |> rich_error.error_code_for
+  |> should.equal(ErrorCode("codegen", 502))
+
+  errors.CQLParserError(msg: "test", context: errors.empty_context())
+  |> rich_error.error_code_for
+  |> should.equal(ErrorCode("cql", 602))
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 5 independent test cases, each calling the same function with different inputs
+
+**Function: `error_message_test()` (lines 79-90)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn error_message_test() {
+  errors.FrontendParseError(...)
+  |> rich_error.error_message
+  |> should.equal("parse error msg")
+
+  errors.CQLResolverError(msg: "cql msg", context: errors.empty_context())
+  |> rich_error.error_message
+  |> should.equal("cql msg")
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+---
+
+#### 2. `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/value_test.gleam`
+
+**Function: `to_string_test()` (lines 15-27)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn to_string_test() {
+  StringValue("hello") |> value.to_string |> should.equal("hello")
+  IntValue(42) |> value.to_string |> should.equal("42")
+  FloatValue(3.14) |> value.to_string |> should.equal("3.14")
+  BoolValue(True) |> value.to_string |> should.equal("True")
+  NilValue |> value.to_string |> should.equal("")
+  ListValue([StringValue("a"), StringValue("b")])
+  |> value.to_string
+  |> should.equal("[a, b]")
+  DictValue(dict.from_list([#("k", StringValue("v"))]))
+  |> value.to_string
+  |> should.equal("{k: v}")
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 7 independent test cases
+
+**Function: `to_preview_string_test()` (lines 33-41)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn to_preview_string_test() {
+  StringValue("hello") |> value.to_preview_string |> should.equal("\"hello\"")
+  IntValue(42) |> value.to_preview_string |> should.equal("42")
+  FloatValue(3.14) |> value.to_preview_string |> should.equal("3.14")
+  BoolValue(True) |> value.to_preview_string |> should.equal("True")
+  NilValue |> value.to_preview_string |> should.equal("Nil")
+  ListValue([]) |> value.to_preview_string |> should.equal("List")
+  DictValue(dict.new()) |> value.to_preview_string |> should.equal("Dict")
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 7 independent test cases
+
+**Function: `classify_test()` (lines 45-53)**
+- **Current pattern**: Multiple sequential `should.equal` assertions testing the same function
+- **Code**:
+```gleam
+pub fn classify_test() {
+  StringValue("x") |> value.classify |> should.equal("String")
+  IntValue(1) |> value.classify |> should.equal("Int")
+  FloatValue(1.0) |> value.classify |> should.equal("Float")
+  BoolValue(True) |> value.classify |> should.equal("Bool")
+  ListValue([]) |> value.classify |> should.equal("List")
+  DictValue(dict.new()) |> value.classify |> should.equal("Dict")
+  NilValue |> value.classify |> should.equal("Nil")
+}
+```
+- **Recommendation**: Good candidate for `table_test_1` - has 7 independent test cases
+
+**Function: `extract_string_test()` (lines 58-61)**
+- **Current pattern**: Two sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_int_test()` (lines 66-69)**
+- **Current pattern**: Two sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_float_test()` (lines 74-77)**
+- **Current pattern**: Two sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_bool_test()` (lines 82-85)**
+- **Current pattern**: Two sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_list_test()` (lines 90-95)**
+- **Current pattern**: Two sequential calls with different assertions
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_dict_test()` (lines 100-104)**
+- **Current pattern**: Two sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+**Function: `extract_string_dict_test()` (lines 110-120)**
+- **Current pattern**: Three sequential `should.equal` assertions testing the same function
+- **Recommendation**: Good candidate for `table_test_1` - has 3 test cases
+
+**Function: `is_nil_test()` (lines 125-128)**
+- **Current pattern**: Two sequential assertions testing the same function with different inputs
+- **Recommendation**: Good candidate for `table_test_1` - has 2 test cases
+
+---
+
+### Other Files Reviewed
+All other test files already follow the `table_test_1/2/3` pattern correctly:
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/compiler_test.gleam` - Uses `table_test_1`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/error_renderer_test.gleam` - Individual assertions (appropriate for single-case functions)
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/errors_test.gleam` - Uses `table_test_3`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/helpers_test.gleam` - Uses `table_test_1` and manual assertions appropriately
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/parsing_utils_test.gleam` - Uses `table_test_1`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/source_snippet_test.gleam` - Individual assertions (appropriate for snapshot-style assertions)
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/string_distance_test.gleam` - Uses `table_test_2`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/types_test.gleam` - Uses `table_test_1` consistently
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_query_language/parser_test.gleam` - Uses `table_test_1`, `table_test_3`, `table_test_2`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_query_language/generator_test.gleam` - Uses `table_test_1` and `table_test_2`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_query_language/resolver_test.gleam` - Uses `table_test_1`
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/display_test.gleam` - Uses `table_test_1` and manual assertions appropriately
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/file_discovery_test.gleam` - Uses `table_test_1` and `list.each` appropriately
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/format_file_discovery_test.gleam` - Uses individual assertions and `list.each` (appropriate for this case)
+- ✅ `/Users/rdurst/BrickellResearch/caffeine/caffeine_cli/test/caffeine_cli/handler_test.gleam` - Uses individual `should.be_ok()` / `should.be_error()` assertions (appropriate for CLI testing)
+
+---
+
+### Conversion Strategy
+For each function identified above, refactor from:
+```gleam
+pub fn function_test() {
+  input1 |> function |> should.equal(expected1)
+  input2 |> function |> should.equal(expected2)
+  input3 |> function |> should.equal(expected3)
+}
+```
+
+To:
+```gleam
+pub fn function_test() {
+  [
+    #("case 1", input1, expected1),
+    #("case 2", input2, expected2),
+    #("case 3", input3, expected3),
+  ]
+  |> test_helpers.table_test_1(function)
+}
+```</result>
+<usage>total_tokens: 86253
+tool_uses: 36
+duration_ms: 88464</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/afcddf9.output
+
+---
+
+<task-notification>
+<task-id>a07a329</task-id>
+<status>completed</status>
+<summary>Agent "Convert value_test to table_test" completed</summary>
+<result>All 234 tests pass on both Erlang and JavaScript targets. Here is a summary of the changes made to `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/value_test.gleam`:
+
+## Changes Made
+
+**Import updates:**
+- Removed `import gleeunit/should` (no longer needed)
+- Added `import test_helpers`
+
+**Converted 11 test functions** from sequential `should.equal`/`should.be_true`/`should.be_false` calls to the `table_test_1` pattern:
+
+| Test Function | Cases | Notes |
+|---|---|---|
+| `to_string_test` | 7 cases | Inline dict/list construction in tuple |
+| `to_preview_string_test` | 7 cases | |
+| `classify_test` | 7 cases | |
+| `extract_string_test` | 2 cases | `Ok`/`Error` expected values |
+| `extract_int_test` | 2 cases | |
+| `extract_float_test` | 2 cases | |
+| `extract_bool_test` | 2 cases | |
+| `extract_list_test` | 2 cases | |
+| `extract_dict_test` | 2 cases | Kept `let d` binding for reuse in input and expected |
+| `extract_string_dict_test` | 3 cases | |
+| `is_nil_test` | 2 cases | Converted `should.be_true`/`should.be_false` to `True`/`False` expected values |
+
+All test functions used a uniform single-input pattern, so all were converted using `table_test_1`. The `// ==== function_name ====` and `// * ` comment headers were preserved. Case names were derived directly from the existing comment descriptions.</result>
+<usage>total_tokens: 28872
+tool_uses: 6
+duration_ms: 58690</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a07a329.output
+
+---
+
+<task-notification>
+<task-id>a252e14</task-id>
+<status>completed</status>
+<summary>Agent "Convert newrelic_test to table_test" completed</summary>
+<result>The conversion is complete. Here is a summary of what was changed:
+
+**File modified:** `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam`
+
+**Change:** Converted `parse_nrql_indicator_test` from three sequential `should.equal` calls to the `table_test_1` pattern.
+
+The three test cases were converted into named tuples using the case descriptions from the existing `// * ✅` comment headers:
+
+1. `"simple event type"` -- parses `"Transaction"` into `#("Transaction", option.None)`
+2. `"event type with WHERE clause"` -- parses `"Transaction WHERE appName = 'payments'"` into `#("Transaction", option.Some("appName = 'payments'"))`
+3. `"event type with multiple WHERE clauses"` -- parses `"Transaction WHERE appName = 'payments' AND duration < 0.1"` into `#("Transaction", option.Some("appName = 'payments' AND duration < 0.1"))`
+
+No other test functions in the file needed conversion -- the remaining tests either already use `table_test_1` (`window_to_rolling_count_test`), test structural properties that don't fit the pattern (`terraform_settings_test`, `provider_test`, `variables_test`), use corpus-based comparison (`generate_terraform_test`), or test error cases with pattern matching (`ir_to_terraform_resource_*` tests).
+
+All 234 tests pass on the Erlang target.</result>
+<usage>total_tokens: 25139
+tool_uses: 5
+duration_ms: 32036</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/a252e14.output
+
+---
+
+<task-notification>
+<task-id>aa08f27</task-id>
+<status>completed</status>
+<summary>Agent "Convert rich_error_test to table_test" completed</summary>
+<result>All 234 tests pass on both Erlang and JavaScript targets. Here is a summary of the changes made to `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/rich_error_test.gleam`:
+
+## Changes Made
+
+**Added import:** `import test_helpers`
+
+**Kept import:** `import gleeunit/should` (still needed by `from_compilation_error_test`)
+
+### Converted tests (3 of 4):
+
+1. **`error_code_to_string_test`** -- Converted 3 sequential `should.equal` calls into a `table_test_1` with cases named from the comment headers: "three digit number", "two digit number (pads)", "single digit number (pads)".
+
+2. **`error_code_for_test`** -- Converted 5 sequential `should.equal` calls into a `table_test_1` with cases named from the comment headers: "frontend parse error", "frontend validation error", "semantic analysis error", "codegen error", "cql error".
+
+3. **`error_message_test`** -- Converted 2 sequential `should.equal` calls into a `table_test_1` with descriptive case names: "extracts message from parse error", "extracts message from cql error".
+
+### Preserved test (1 of 4):
+
+4. **`from_compilation_error_test`** -- Left unchanged because it has complex setup with intermediate `let` bindings (`err` is used both as input and within the expected output), and it only has a single test case, making it a poor fit for the table-driven pattern.</result>
+<usage>total_tokens: 27452
+tool_uses: 7
+duration_ms: 56764</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/aa08f27.output
+
+---
+
+<task-notification>
+<task-id>ae3d6e3</task-id>
+<status>completed</status>
+<summary>Agent "Convert parser_test to table_test" completed</summary>
+<result>All 234 tests pass on both Erlang and JavaScript targets.
+
+Here is a summary of the changes made to `/Users/rdurst/BrickellResearch/caffeine/caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam`:
+
+**What changed:** The `parse_error_line_numbers_test` function (starting at line 1079) was converted from sequential `should.equal` calls to the `table_test_1` pattern.
+
+**Before:** Five sequential calls to `parser.parse_blueprints_file` or `parser.parse_expects_file`, each piped into `should.equal`.
+
+**After:** Two table-driven test groups within the same function:
+
+1. **Blueprints file errors** -- 4 cases piped to `test_helpers.table_test_1(parser.parse_blueprints_file)`:
+   - "error on line 1 reports line 1"
+   - "error on line 2 reports line 2"
+   - "error on line 3 reports line 3"
+   - "error after blank lines reports correct line"
+
+2. **Expects file errors** -- 1 case piped to `test_helpers.table_test_1(parser.parse_expects_file)`:
+   - "expects file error reports correct line"
+
+The two groups were necessary because the tests exercise two different functions (`parse_blueprints_file` vs `parse_expects_file`). This mirrors the exact same pattern already used in the `parse_errors_test` function immediately above (lines 1056-1070). The comment headers, case names from `// * ✅` comments, and all imports were preserved.</result>
+<usage>total_tokens: 26378
+tool_uses: 10
+duration_ms: 65028</usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-502/-Users-rdurst-BrickellResearch-caffeine/tasks/ae3d6e3.output

@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "4455202f99a7",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "caffeine_cli/test/test_helpers.gleam",
+    "caffeine_lang/test/test_helpers.gleam"
+  ],
+  "sessions": [
+    {
+      "metadata": "/44/55202f99a7/0/metadata.json",
+      "transcript": "/44/55202f99a7/0/full.jsonl",
+      "context": "/44/55202f99a7/0/context.md",
+      "content_hash": "/44/55202f99a7/0/content_hash.txt",
+      "prompt": "/44/55202f99a7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 62,
+    "cache_creation_tokens": 45043,
+    "cache_read_tokens": 2041760,
+    "output_tokens": 119,
+    "api_call_count": 24
+  }
+}
