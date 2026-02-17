@@ -29,5 +29,5 @@ pub fn resolve_vendor_test() {
     ),
     #("unknown vendor returns Error", "unknown_vendor", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(vendor.resolve_vendor)
+  |> test_helpers.table_test_1(vendor.resolve_vendor)
 }

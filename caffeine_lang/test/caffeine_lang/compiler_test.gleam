@@ -87,7 +87,7 @@ pub fn compile_test() {
       Ok(read_corpus("happy_path_type_alias_output.tf")),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(input_blueprints_path, input_expectations_dir) = input
     compiler.compile(
       read_source_file(input_blueprints_path),
@@ -347,7 +347,7 @@ pub fn compile_from_strings_test() {
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(blueprints_src, expectations_src, path)
@@ -483,7 +483,7 @@ Expectations for \"hc_blueprint\"
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(blueprints_src, expectations_src, path)
@@ -617,7 +617,7 @@ Expectations for \"dt_blueprint\"
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(blueprints_src, expectations_src, path)

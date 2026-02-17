@@ -75,7 +75,7 @@ const source_path = "org/team/service.caffeine"
 pub fn validate_expectations_test() {
   // Happy path - empty list
   [#("empty expectations list", [], Ok([]))]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
@@ -112,7 +112,7 @@ pub fn validate_expectations_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
@@ -130,7 +130,7 @@ pub fn validate_expectations_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     case
       expectations.validate_expectations(
         exps,
@@ -162,7 +162,7 @@ pub fn validate_expectations_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     case
       expectations.validate_expectations(exps, blueprints(), from: source_path)
     {
@@ -193,7 +193,7 @@ pub fn validate_expectations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
@@ -211,7 +211,7 @@ pub fn validate_expectations_test() {
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     case
       expectations.validate_expectations(exps, blueprints(), from: source_path)
     {
@@ -240,7 +240,7 @@ pub fn validate_expectations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(
       exps,
       blueprints_with_inputs(),
@@ -265,7 +265,7 @@ pub fn validate_expectations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
@@ -289,7 +289,7 @@ pub fn validate_expectations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 
@@ -312,7 +312,7 @@ pub fn validate_expectations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(exps) {
+  |> test_helpers.table_test_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
 }

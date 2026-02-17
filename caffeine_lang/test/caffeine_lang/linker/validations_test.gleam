@@ -307,7 +307,7 @@ pub fn validate_value_type_test() {
       Ok(value.ListValue([dict_string_string])),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
+  |> test_helpers.table_test_2(fn(value, expected_type) {
     validations.validate_value_type(value, expected_type, "")
   })
 
@@ -595,7 +595,7 @@ pub fn validate_value_type_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(value, expected_type) {
+  |> test_helpers.table_test_2(fn(value, expected_type) {
     validations.validate_value_type(value, expected_type, "some_key")
   })
 }
@@ -945,7 +945,7 @@ pub fn validate_relevant_uniqueness_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(things) {
+  |> test_helpers.table_test_1(fn(things) {
     validations.validate_relevant_uniqueness(
       things,
       by: fetch_name,
@@ -964,7 +964,7 @@ pub fn validate_relevant_uniqueness_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(things) {
+  |> test_helpers.table_test_1(fn(things) {
     validations.validate_relevant_uniqueness(
       things,
       by: fetch_name,

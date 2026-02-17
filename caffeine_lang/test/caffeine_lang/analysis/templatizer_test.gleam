@@ -92,9 +92,7 @@ pub fn cleanup_empty_template_artifacts_test() {
       "avg:m{env:prod}.rollup(avg)",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    templatizer.cleanup_empty_template_artifacts,
-  )
+  |> test_helpers.table_test_1(templatizer.cleanup_empty_template_artifacts)
 }
 
 // ==== Parse and Resolve Query Template ====
@@ -536,7 +534,7 @@ pub fn parse_and_resolve_query_template_test() {
       Ok("time_slice(query <  per 10s)"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(query, value_tuples) {
+  |> test_helpers.table_test_2(fn(query, value_tuples) {
     templatizer.parse_and_resolve_query_template(
       query,
       value_tuples,
@@ -619,9 +617,7 @@ pub fn parse_template_variable_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    templatizer.parse_template_variable,
-  )
+  |> test_helpers.table_test_1(templatizer.parse_template_variable)
 }
 
 // ==== Parse Template Type ====
@@ -639,7 +635,7 @@ pub fn parse_template_type_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(templatizer.parse_template_type)
+  |> test_helpers.table_test_1(templatizer.parse_template_type)
 }
 
 // ==== Resolve Template ====
@@ -719,7 +715,7 @@ pub fn resolve_template_test() {
       Ok("42"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(templatizer.resolve_template)
+  |> test_helpers.table_test_2(templatizer.resolve_template)
 }
 
 // ==== Resolve String Value ====
@@ -748,7 +744,7 @@ pub fn resolve_string_value_test() {
       "!foo:bar",
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(templatizer.resolve_string_value)
+  |> test_helpers.table_test_2(templatizer.resolve_string_value)
 }
 
 // ==== Resolve List Value ====
@@ -799,5 +795,5 @@ pub fn resolve_list_value_test() {
       "",
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(templatizer.resolve_list_value)
+  |> test_helpers.table_test_2(templatizer.resolve_list_value)
 }

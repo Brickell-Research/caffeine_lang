@@ -223,7 +223,7 @@ pub fn exp_to_string_test() {
       "metric{a:b} / metric{c:d}",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(printer.exp_to_string)
+  |> test_helpers.table_test_1(printer.exp_to_string)
 
   // parsed expressions
   [
@@ -258,7 +258,7 @@ pub fn exp_to_string_test() {
       "http.url_details.path:/oauth/access_token",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let assert Ok(exp) = parser.parse_expr(input)
     printer.exp_to_string(exp)
   })
@@ -276,7 +276,7 @@ pub fn operator_to_string_test() {
     #("Multiplication", ast.Mul, "*"),
     #("Division", ast.Div, "/"),
   ]
-  |> test_helpers.array_based_test_executor_1(printer.operator_to_string)
+  |> test_helpers.table_test_1(printer.operator_to_string)
 }
 
 // ==== substitute_words ====
@@ -322,7 +322,7 @@ pub fn substitute_words_test() {
       "(sum:http.requests{status:2xx} + sum:http.requests{status:3xx}) / sum:http.requests{*}",
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(input, substitutions) {
+  |> test_helpers.table_test_2(fn(input, substitutions) {
     let assert Ok(exp) = parser.parse_expr(input)
     generator.substitute_words(exp, substitutions)
     |> printer.exp_to_string

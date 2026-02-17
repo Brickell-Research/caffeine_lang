@@ -763,7 +763,7 @@ pub fn parse_blueprints_file_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+  |> test_helpers.table_test_1(fn(file_path) {
     parser.parse_blueprints_file(read_file(file_path))
   })
 }
@@ -1008,7 +1008,7 @@ pub fn parse_expects_file_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+  |> test_helpers.table_test_1(fn(file_path) {
     parser.parse_expects_file(read_file(file_path))
   })
 }
@@ -1053,7 +1053,7 @@ pub fn parse_errors_test() {
     #("missing dict value type", errors_path("missing_dict_value_type"), True),
     #("refinement type mismatch", errors_path("refinement_type_mismatch"), True),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+  |> test_helpers.table_test_1(fn(file_path) {
     case parser.parse_blueprints_file(read_file(file_path)) {
       Error(_) -> True
       Ok(_) -> False
@@ -1062,7 +1062,7 @@ pub fn parse_errors_test() {
 
   // Expects with Requires - check that parsing expects file returns Error
   [#("expects with Requires", errors_path("expects_with_requires"), True)]
-  |> test_helpers.array_based_test_executor_1(fn(file_path) {
+  |> test_helpers.table_test_1(fn(file_path) {
     case parser.parse_expects_file(read_file(file_path)) {
       Error(_) -> True
       Ok(_) -> False
@@ -1077,35 +1077,40 @@ pub fn parse_errors_test() {
 // * ✅ error after blank lines reports correct line
 // * ✅ expects file error reports correct line
 pub fn parse_error_line_numbers_test() {
-  // Error on line 1: first token is wrong
-  parser.parse_blueprints_file("\"SLO\"")
-  |> should.equal(
-    Error(parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)),
-  )
+  // Blueprints file errors
+  [
+    #(
+      "error on line 1 reports line 1",
+      "\"SLO\"",
+      Error(parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)),
+    ),
+    #(
+      "error on line 2 reports line 2",
+      "Blueprints for \"SLO\"\ninvalid",
+      Error(parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)),
+    ),
+    #(
+      "error on line 3 reports line 3",
+      "Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }",
+      Error(parser_error.UnknownType("bad", 3, 19)),
+    ),
+    #(
+      "error after blank lines reports correct line",
+      "Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }",
+      Error(parser_error.UnknownType("bad", 5, 19)),
+    ),
+  ]
+  |> test_helpers.table_test_1(parser.parse_blueprints_file)
 
-  // Error on line 2: unexpected token after valid first line
-  parser.parse_blueprints_file("Blueprints for \"SLO\"\ninvalid")
-  |> should.equal(
-    Error(parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)),
-  )
-
-  // Error on line 3: unknown type
-  parser.parse_blueprints_file(
-    "Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }",
-  )
-  |> should.equal(Error(parser_error.UnknownType("bad", 3, 19)))
-
-  // Error after blank lines: blank lines are counted
-  parser.parse_blueprints_file(
-    "Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }",
-  )
-  |> should.equal(Error(parser_error.UnknownType("bad", 5, 19)))
-
-  // Expects file: error on line 2
-  parser.parse_expects_file("Expectations for \"test\"\ninvalid")
-  |> should.equal(
-    Error(parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)),
-  )
+  // Expects file errors
+  [
+    #(
+      "expects file error reports correct line",
+      "Expectations for \"test\"\ninvalid",
+      Error(parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)),
+    ),
+  ]
+  |> test_helpers.table_test_1(parser.parse_expects_file)
 }
 
 // ==== parse_error_missing_delimiter ====

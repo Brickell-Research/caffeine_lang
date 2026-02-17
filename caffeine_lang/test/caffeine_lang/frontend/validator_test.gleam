@@ -70,7 +70,7 @@ pub fn validate_blueprints_file_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     case validator.validate_blueprints_file(file) {
       Ok(_) -> Ok(Nil)
       Error(e) -> Error(e)
@@ -85,7 +85,7 @@ pub fn validate_blueprints_file_test() {
       Error([validator.DuplicateExtendable(name: "_base")]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -103,7 +103,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -121,7 +121,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -135,7 +135,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -147,7 +147,7 @@ pub fn validate_blueprints_file_test() {
       Error([validator.ExtendableTypeAliasNameCollision(name: "_env")]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -159,7 +159,7 @@ pub fn validate_blueprints_file_test() {
       Error([validator.DuplicateTypeAlias(name: "_env")]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -177,7 +177,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -195,7 +195,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -207,7 +207,7 @@ pub fn validate_blueprints_file_test() {
       Error([validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 
@@ -225,7 +225,7 @@ pub fn validate_blueprints_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_blueprints_file(file)
   })
 }
@@ -254,7 +254,7 @@ pub fn validate_expects_file_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     case validator.validate_expects_file(file) {
       Ok(_) -> Ok(Nil)
       Error(e) -> Error(e)
@@ -269,7 +269,7 @@ pub fn validate_expects_file_test() {
       Error([validator.DuplicateExtendable(name: "_defaults")]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_expects_file(file)
   })
 
@@ -287,7 +287,7 @@ pub fn validate_expects_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_expects_file(file)
   })
 
@@ -305,7 +305,7 @@ pub fn validate_expects_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_expects_file(file)
   })
 
@@ -322,7 +322,7 @@ pub fn validate_expects_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_expects_file(file)
   })
 
@@ -340,7 +340,7 @@ pub fn validate_expects_file_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(file) {
+  |> test_helpers.table_test_1(fn(file) {
     validator.validate_expects_file(file)
   })
 }

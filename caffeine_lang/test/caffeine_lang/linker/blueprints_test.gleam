@@ -91,7 +91,7 @@ fn multi_artifacts() -> List(Artifact) {
 pub fn validate_blueprints_test() {
   // Happy path - empty list
   [#("empty list", [], Ok([]))]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 
@@ -123,7 +123,7 @@ pub fn validate_blueprints_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 
@@ -142,7 +142,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, artifacts()) {
       Ok(_) -> True
       Error(_) -> False
@@ -164,7 +164,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, artifacts()) {
       Ok(_) -> True
       Error(_) -> False
@@ -192,7 +192,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, artifacts()) {
       Ok(result) -> list.length(result) == 2
       Error(_) -> False
@@ -214,7 +214,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, multi_artifacts()) {
       Ok(_) -> True
       Error(_) -> False
@@ -245,7 +245,7 @@ pub fn validate_blueprints_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 
@@ -269,7 +269,7 @@ pub fn validate_blueprints_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 
@@ -288,7 +288,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, artifacts()) {
       Ok(_) -> True
       Error(_) -> False
@@ -310,7 +310,7 @@ pub fn validate_blueprints_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     // Use custom artifacts with conflicting param types
     let conflicting_artifacts = [
       artifacts.Artifact(
@@ -364,7 +364,7 @@ pub fn validate_blueprints_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 
@@ -386,7 +386,7 @@ pub fn validate_blueprints_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
 }
@@ -413,7 +413,7 @@ pub fn validate_blueprints_artifact_refs_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     case blueprints.validate_blueprints(bps, multi_artifacts()) {
       Ok(_) -> True
       Error(_) -> False
@@ -438,7 +438,7 @@ pub fn validate_blueprints_artifact_refs_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(bps) {
+  |> test_helpers.table_test_1(fn(bps) {
     blueprints.validate_blueprints(bps, multi_artifacts())
   })
 }

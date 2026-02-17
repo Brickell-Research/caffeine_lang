@@ -43,7 +43,7 @@ pub fn tokenize_keywords_test() {
     #("in keyword", "in", Ok([token.KeywordIn, token.EOF])),
     #("x keyword", "x", Ok([token.KeywordX, token.EOF])),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_type_keywords ====
@@ -70,7 +70,7 @@ pub fn tokenize_type_keywords_test() {
     #("Defaulted type", "Defaulted", Ok([token.KeywordDefaulted, token.EOF])),
     #("Percentage type", "Percentage", Ok([token.KeywordPercentage, token.EOF])),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_string_literals ====
@@ -120,7 +120,7 @@ pub fn tokenize_string_literals_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_numeric_literals ====
@@ -159,7 +159,7 @@ pub fn tokenize_numeric_literals_test() {
     ),
     #("zero percentage", "0%", Ok([token.LiteralPercentage(0.0), token.EOF])),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_boolean_literals ====
@@ -170,7 +170,7 @@ pub fn tokenize_boolean_literals_test() {
     #("true literal", "true", Ok([token.LiteralTrue, token.EOF])),
     #("false literal", "false", Ok([token.LiteralFalse, token.EOF])),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_identifiers ====
@@ -203,7 +203,7 @@ pub fn tokenize_identifiers_test() {
       Ok([token.Identifier("window_in_days"), token.EOF]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_symbols ====
@@ -234,7 +234,7 @@ pub fn tokenize_symbols_test() {
     #("pipe", "|", Ok([token.SymbolPipe, token.EOF])),
     #("dot dot", "..", Ok([token.SymbolDotDot, token.EOF])),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_whitespace ====
@@ -261,7 +261,7 @@ pub fn tokenize_whitespace_test() {
       Ok([token.WhitespaceIndent(2), token.Identifier("env"), token.EOF]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_comments ====
@@ -286,7 +286,7 @@ pub fn tokenize_comments_test() {
       Ok([token.CommentLine(" comment"), token.WhitespaceNewline, token.EOF]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_blueprint_header ====
@@ -317,7 +317,7 @@ pub fn tokenize_blueprint_header_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_expects_header ====
@@ -335,7 +335,7 @@ pub fn tokenize_expects_header_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_extendable ====
@@ -378,7 +378,7 @@ pub fn tokenize_extendable_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_blueprint_item ====
@@ -411,7 +411,7 @@ pub fn tokenize_blueprint_item_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_requires_block ====
@@ -436,7 +436,7 @@ pub fn tokenize_requires_block_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_provides_block ====
@@ -461,7 +461,7 @@ pub fn tokenize_provides_block_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_refinement_oneof ====
@@ -488,7 +488,7 @@ pub fn tokenize_refinement_oneof_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_refinement_range ====
@@ -515,7 +515,7 @@ pub fn tokenize_refinement_range_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_errors ====
@@ -560,7 +560,7 @@ pub fn tokenize_errors_test() {
       Error(tokenizer_error.InvalidCharacter(2, 3, "@")),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_multiline ====
@@ -591,7 +591,7 @@ pub fn tokenize_multiline_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }
 
 // ==== tokenize_edge_cases ====
@@ -654,5 +654,5 @@ pub fn tokenize_edge_cases_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(tokenize_tokens)
+  |> test_helpers.table_test_1(tokenize_tokens)
 }

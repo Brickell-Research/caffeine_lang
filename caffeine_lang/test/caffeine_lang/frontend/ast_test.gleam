@@ -10,7 +10,7 @@ pub fn extendable_kind_to_string_test() {
     #("ExtendableRequires -> Requires", ast.ExtendableRequires, "Requires"),
     #("ExtendableProvides -> Provides", ast.ExtendableProvides, "Provides"),
   ]
-  |> test_helpers.array_based_test_executor_1(ast.extendable_kind_to_string)
+  |> test_helpers.table_test_1(ast.extendable_kind_to_string)
 }
 
 // ==== build_type_alias_pairs ====
@@ -39,7 +39,7 @@ pub fn build_type_alias_pairs_test() {
       ],
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(ast.build_type_alias_pairs)
+  |> test_helpers.table_test_1(ast.build_type_alias_pairs)
 }
 
 // ==== literal_to_string ====
@@ -60,5 +60,5 @@ pub fn literal_to_string_test() {
     #("List -> [...]", ast.LiteralList([]), "[...]"),
     #("Struct -> {...}", ast.LiteralStruct([], []), "{...}"),
   ]
-  |> test_helpers.array_based_test_executor_1(ast.literal_to_string)
+  |> test_helpers.table_test_1(ast.literal_to_string)
 }

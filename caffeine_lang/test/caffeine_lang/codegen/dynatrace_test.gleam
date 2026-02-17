@@ -143,9 +143,7 @@ pub fn window_to_evaluation_window_test() {
     #("30 -> -30d", 30, "-30d"),
     #("90 -> -90d (maximum)", 90, "-90d"),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    dynatrace.window_to_evaluation_window,
-  )
+  |> test_helpers.table_test_1(dynatrace.window_to_evaluation_window)
 }
 
 // ==== ir_to_terraform_resource ====

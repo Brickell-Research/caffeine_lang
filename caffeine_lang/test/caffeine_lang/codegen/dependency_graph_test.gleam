@@ -15,9 +15,7 @@ pub fn generate_test() {
   [
     #("empty IR list produces graph header only", [], "graph TD"),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
-    dependency_graph.generate(irs)
-  })
+  |> test_helpers.table_test_1(fn(irs) { dependency_graph.generate(irs) })
 
   // IRs with no DependencyRelations -> nodes in subgraphs, no edges
   let no_deps_output =
@@ -59,7 +57,7 @@ pub fn generate_test() {
     #("no hard edges", no_deps_output, "-->", False),
     #("no soft edges", no_deps_output, "-.->", False),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(output, substr) {
+  |> test_helpers.table_test_2(fn(output, substr) {
     string.contains(output, substr)
   })
 
@@ -105,7 +103,7 @@ pub fn generate_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(output, substr) {
+  |> test_helpers.table_test_2(fn(output, substr) {
     string.contains(output, substr)
   })
 
@@ -153,7 +151,7 @@ pub fn generate_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(output, substr) {
+  |> test_helpers.table_test_2(fn(output, substr) {
     string.contains(output, substr)
   })
 }

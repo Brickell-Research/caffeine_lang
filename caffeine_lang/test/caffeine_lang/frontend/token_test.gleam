@@ -61,5 +61,5 @@ pub fn to_string_test() {
     // EOF
     #("EOF", token.EOF, "end of file"),
   ]
-  |> test_helpers.array_based_test_executor_1(token.to_string)
+  |> test_helpers.table_test_1(token.to_string)
 }

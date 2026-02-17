@@ -35,7 +35,7 @@ pub fn parse_numeric_type_test() {
     #("lowercase float", "float", Error(Nil)),
     #("lowercase integer", "integer", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(types.parse_numeric_type)
+  |> test_helpers.table_test_1(types.parse_numeric_type)
 }
 
 // ==== numeric_type_to_string ====
@@ -48,7 +48,7 @@ pub fn numeric_type_to_string_test() {
     #("Integer -> Integer", Integer, "Integer"),
     #("Percentage -> Percentage", Percentage, "Percentage"),
   ]
-  |> test_helpers.array_based_test_executor_1(types.numeric_type_to_string)
+  |> test_helpers.table_test_1(types.numeric_type_to_string)
 }
 
 // ==== validate_numeric_default_value ====
@@ -84,7 +84,7 @@ pub fn validate_numeric_default_value_test() {
     #("Percentage invalid string", #(Percentage, "abc"), Error(Nil)),
     #("Percentage double % suffix", #(Percentage, "99.9%%"), Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_numeric_default_value(input.0, input.1)
   })
 }
@@ -115,7 +115,7 @@ pub fn validate_numeric_value_test() {
       Error([types.ValidationError(expected: "Int", found: "Float", path: [])]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_numeric_value(input.0, input.1)
   })
 
@@ -131,7 +131,7 @@ pub fn validate_numeric_value_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_numeric_value(input.0, input.1)
   })
 
@@ -188,7 +188,7 @@ pub fn validate_numeric_value_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_numeric_value(input.0, input.1)
   })
 }
@@ -213,7 +213,7 @@ pub fn validate_in_range_test() {
     #("Integer value at upper bound", #(Integer, "100", "0", "100"), Ok(Nil)),
     #("Integer negative value in range", #(Integer, "-5", "-10", "10"), Ok(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 
@@ -252,7 +252,7 @@ pub fn validate_in_range_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 
@@ -273,7 +273,7 @@ pub fn validate_in_range_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 
@@ -284,7 +284,7 @@ pub fn validate_in_range_test() {
     #("Float value at upper bound", #(Float, "1.0", "0.0", "1.0"), Ok(Nil)),
     #("Float negative value in range", #(Float, "-0.5", "-1.0", "1.0"), Ok(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 
@@ -313,7 +313,7 @@ pub fn validate_in_range_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 
@@ -325,7 +325,7 @@ pub fn validate_in_range_test() {
       Error([types.ValidationError(expected: "Float", found: "hello", path: [])]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
   })
 }
@@ -346,14 +346,14 @@ pub fn parse_semantic_type_test() {
     #("lowercase url", "url", Error(Nil)),
     #("Empty string", "", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(types.parse_semantic_type)
+  |> test_helpers.table_test_1(types.parse_semantic_type)
 }
 
 // ==== semantic_type_to_string ====
 // * ✅ URL -> "URL"
 pub fn semantic_type_to_string_test() {
   [#("URL -> URL", URL, "URL")]
-  |> test_helpers.array_based_test_executor_1(types.semantic_type_to_string)
+  |> test_helpers.table_test_1(types.semantic_type_to_string)
 }
 
 // ==== validate_semantic_default_value ====
@@ -376,7 +376,7 @@ pub fn validate_semantic_default_value_test() {
     #("Empty string", #(SemanticType(URL), ""), Error(Nil)),
     #("FTP URL rejected", #(SemanticType(URL), "ftp://example.com"), Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_primitive_default_value(input.0, input.1)
   })
 }
@@ -400,7 +400,7 @@ pub fn validate_semantic_value_test() {
       Ok(valid_url),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_value(input.0, input.1)
   })
 
@@ -418,7 +418,7 @@ pub fn validate_semantic_value_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_value(input.0, input.1)
   })
 
@@ -432,7 +432,7 @@ pub fn validate_semantic_value_test() {
       ]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_value(input.0, input.1)
   })
 }
@@ -460,7 +460,7 @@ pub fn parse_primitive_type_test() {
     // Sad path
     #("Unknown type returns Error", "Unknown", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(types.parse_primitive_type)
+  |> test_helpers.table_test_1(types.parse_primitive_type)
 }
 
 // ==== primitive_type_to_string ====
@@ -474,7 +474,7 @@ pub fn primitive_type_to_string_test() {
     // Integration: delegates to numeric_types
     #("delegates to numeric_types for NumericType", NumericType(Float), "Float"),
   ]
-  |> test_helpers.array_based_test_executor_1(types.primitive_type_to_string)
+  |> test_helpers.table_test_1(types.primitive_type_to_string)
 }
 
 // ==== validate_primitive_default_value ====
@@ -502,7 +502,7 @@ pub fn validate_primitive_default_value_test() {
       Error(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.validate_primitive_default_value(input.0, input.1)
   })
 }
@@ -545,7 +545,7 @@ pub fn validate_primitive_value_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     case types.validate_value(typ, value) {
       Ok(_) -> True
@@ -584,7 +584,7 @@ pub fn resolve_primitive_to_string_test() {
       "resolved:3.14",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     types.resolve_primitive_to_string(typ, value, resolver)
   })
@@ -616,9 +616,7 @@ pub fn parse_refinement_compatible_primitive_test() {
     #("URL -> Error (excluded from refinements)", "URL", Error(Nil)),
     #("Unknown -> Error", "Unknown", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    types.parse_refinement_compatible_primitive,
-  )
+  |> test_helpers.table_test_1(types.parse_refinement_compatible_primitive)
 }
 
 // ==== primitive_all_type_metas ====
@@ -711,7 +709,7 @@ pub fn parse_collection_type_test() {
     #("Dict with invalid key type", "Dict(Unknown, String)", Error(Nil)),
     #("Dict with invalid value type", "Dict(String, Unknown)", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.parse_collection_type(input, parse_inner)
   })
 }
@@ -745,7 +743,7 @@ pub fn collection_type_to_string_test() {
       "Dict(String, Integer)",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.accepted_type_to_string(input)
   })
 }
@@ -800,7 +798,7 @@ pub fn validate_collection_value_test() {
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     case types.validate_value(typ, value) {
       Ok(_) -> True
@@ -838,7 +836,7 @@ pub fn resolve_collection_to_string_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     types.resolve_to_string(typ, value, string_resolver, list_resolver)
   })
@@ -1043,7 +1041,7 @@ pub fn parse_modifier_type_test() {
       Error(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.parse_modifier_type(input, parse_inner, validate_default)
   })
 }
@@ -1074,7 +1072,7 @@ pub fn modifier_type_to_string_test() {
       "Defaulted(Integer, 10)",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.accepted_type_to_string(input)
   })
 }
@@ -1122,7 +1120,7 @@ pub fn validate_modifier_value_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     case types.validate_value(typ, value) {
       Ok(_) -> True
@@ -1177,7 +1175,7 @@ pub fn resolve_modifier_to_string_test() {
       Ok("resolved:default"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     types.resolve_to_string(typ, value, resolve_string, resolve_list)
     |> result_to_ok_string_from_string_error
@@ -1587,7 +1585,7 @@ pub fn parse_refinement_type_test() {
       Error(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.parse_refinement_type(
       input,
       parse_primitive_or_defaulted,
@@ -1680,7 +1678,7 @@ pub fn refinement_type_to_string_test() {
       "Float { x | x in ( -100.5..-50.5 ) }",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     types.accepted_type_to_string(input)
   })
 }
@@ -1789,7 +1787,7 @@ pub fn validate_refinement_value_test() {
       False,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     case types.validate_value(typ, value) {
       Ok(_) -> True
@@ -1867,7 +1865,7 @@ pub fn resolve_refinement_to_string_test() {
       Error("Unable to resolve InclusiveRange refinement type value."),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     types.resolve_to_string(typ, value, resolve_string, resolve_list)
   })
@@ -2016,7 +2014,7 @@ pub fn accepted_type_to_string_test() {
       "Optional(Dict(String, Integer))",
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(types.accepted_type_to_string)
+  |> test_helpers.table_test_1(types.accepted_type_to_string)
 }
 
 // ==== parse_accepted_type ====
@@ -2090,7 +2088,7 @@ pub fn parse_accepted_type_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(types.parse_accepted_type)
+  |> test_helpers.table_test_1(types.parse_accepted_type)
 }
 
 // ==== validate_value (integration) ====
@@ -2118,7 +2116,7 @@ pub fn validate_value_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     case types.validate_value(typ, value) {
       Ok(_) -> True
@@ -2200,7 +2198,7 @@ pub fn resolve_to_string_test() {
       Ok("resolved:production"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(typ, value) = input
     types.resolve_to_string(typ, value, string_resolver, list_resolver)
     |> result_to_ok_string_from_string_error
@@ -2228,7 +2226,7 @@ pub fn get_numeric_type_test() {
       Integer,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(types.get_numeric_type)
+  |> test_helpers.table_test_1(types.get_numeric_type)
 }
 
 // ==== is_optional_or_defaulted ====
@@ -2240,7 +2238,11 @@ pub fn get_numeric_type_test() {
 pub fn is_optional_or_defaulted_test() {
   [
     #("Optional -> True", ModifierType(Optional(PrimitiveType(String))), True),
-    #("Defaulted -> True", ModifierType(Defaulted(PrimitiveType(String), "hello")), True),
+    #(
+      "Defaulted -> True",
+      ModifierType(Defaulted(PrimitiveType(String), "hello")),
+      True,
+    ),
     #(
       "OneOf wrapping Optional -> True",
       RefinementType(OneOf(
@@ -2252,7 +2254,7 @@ pub fn is_optional_or_defaulted_test() {
     #("Plain primitive -> False", PrimitiveType(String), False),
     #("Collection -> False", CollectionType(List(PrimitiveType(String))), False),
   ]
-  |> test_helpers.array_based_test_executor_1(types.is_optional_or_defaulted)
+  |> test_helpers.table_test_1(types.is_optional_or_defaulted)
 }
 
 // ==== all_type_metas ====

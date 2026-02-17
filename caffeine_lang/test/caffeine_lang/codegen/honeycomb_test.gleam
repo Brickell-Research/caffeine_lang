@@ -147,7 +147,7 @@ pub fn window_to_time_period_test() {
     #("30 -> 30", 30, 30),
     #("90 -> 90 (maximum)", 90, 90),
   ]
-  |> test_helpers.array_based_test_executor_1(honeycomb.window_to_time_period)
+  |> test_helpers.table_test_1(honeycomb.window_to_time_period)
 }
 
 // ==== ir_to_terraform_resources ====

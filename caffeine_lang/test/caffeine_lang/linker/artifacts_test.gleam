@@ -12,7 +12,7 @@ pub fn standard_library_test() {
   [
     #("returns two artifacts", list.length(result), 2),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(expected) { expected })
+  |> test_helpers.table_test_1(fn(expected) { expected })
 
   let types =
     result
@@ -26,5 +26,5 @@ pub fn standard_library_test() {
       True,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(val) { val })
+  |> test_helpers.table_test_1(fn(val) { val })
 }

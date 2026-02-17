@@ -43,7 +43,7 @@ pub fn get_caffeine_files_test() {
       Ok([corpus_dir <> "/empty_subdirs/org1/team_with_files/test.caffeine"]),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(file_discovery.get_caffeine_files)
+  |> test_helpers.table_test_1(file_discovery.get_caffeine_files)
 }
 
 // ==== get_caffeine_files - multiple orgs/teams ====

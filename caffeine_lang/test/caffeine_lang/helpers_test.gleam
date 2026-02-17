@@ -24,7 +24,7 @@ pub fn map_reference_to_referrer_over_collection_test() {
       ],
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     let #(references, referrers) = input
     helpers.map_reference_to_referrer_over_collection(
       references:,
@@ -88,7 +88,7 @@ pub fn extract_path_prefix_test() {
     )),
     #("path ending in .caffeine", "a/b/c", #("a", "b", "c")),
   ]
-  |> test_helpers.array_based_test_executor_1(helpers.extract_path_prefix)
+  |> test_helpers.table_test_1(helpers.extract_path_prefix)
 }
 
 // ==== extract_threshold ====

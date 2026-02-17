@@ -52,7 +52,7 @@ pub fn validate_dependency_relations_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Happy path: valid dependency references
   [
@@ -79,7 +79,7 @@ pub fn validate_dependency_relations_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Happy path: multiple IRs with cross-references
   [
@@ -113,7 +113,7 @@ pub fn validate_dependency_relations_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Sad path: dependency target does not exist
   [
@@ -136,7 +136,7 @@ pub fn validate_dependency_relations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -161,7 +161,7 @@ pub fn validate_dependency_relations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -186,7 +186,7 @@ pub fn validate_dependency_relations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -211,7 +211,7 @@ pub fn validate_dependency_relations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -246,7 +246,7 @@ pub fn validate_dependency_relations_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -275,7 +275,7 @@ pub fn validate_dependency_relations_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 }
 
 // ==== parse_dependency_path ====
@@ -302,7 +302,7 @@ pub fn parse_dependency_path_test() {
     // Empty parts
     #("empty parts", "acme..auth.login", Error(Nil)),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(input) {
+  |> test_helpers.table_test_1(fn(input) {
     dependency_validator.parse_dependency_path(input)
   })
 }
@@ -350,7 +350,7 @@ pub fn detect_cycles_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // No cycle: diamond A -> B, A -> C, B -> D, C -> D
   // A's threshold must be below composite ceiling of B and C (~99.8001)
@@ -396,7 +396,7 @@ pub fn detect_cycles_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // 2-node cycle: A -> B -> A
   [
@@ -428,7 +428,7 @@ pub fn detect_cycles_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -471,7 +471,7 @@ pub fn detect_cycles_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -505,7 +505,7 @@ pub fn detect_cycles_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 }
@@ -547,7 +547,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Equal thresholds (99.9 == 99.9)
   [
@@ -574,7 +574,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Source threshold > target threshold (99.99 > 99.9) - ERROR
   [
@@ -604,7 +604,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -633,7 +633,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Skip when source has no SLO artifact
   [
@@ -659,7 +659,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // Skip when target has no SLO artifact
   [
@@ -687,7 +687,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // 2 hard deps, source below composite ceiling
   [
@@ -724,7 +724,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 
   // 2 hard deps at 99.99%, source at 99.99% exceeds composite ceiling (~99.98)
   [
@@ -764,7 +764,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -814,7 +814,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(irs) {
+  |> test_helpers.table_test_1(fn(irs) {
     dependency_validator.validate_dependency_relations(irs)
   })
 
@@ -854,7 +854,7 @@ pub fn validate_hard_dependency_thresholds_test() {
       Ok(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(validate_ok)
+  |> test_helpers.table_test_1(validate_ok)
 }
 
 // ==== build_expectation_index ====
@@ -887,7 +887,7 @@ pub fn build_expectation_index_test() {
     #("missing path: other_slo", "acme.platform.auth.other_slo", index, False),
     #("missing path: nonexistent", "nonexistent.path.here.slo", index, False),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(path, idx) {
+  |> test_helpers.table_test_2(fn(path, idx) {
     case dict.get(idx, path) {
       Ok(_) -> True
       Error(_) -> False

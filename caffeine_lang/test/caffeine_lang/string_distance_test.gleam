@@ -22,7 +22,7 @@ pub fn levenshtein_test() {
     #("completely different", "abc", "xyz", 3),
     #("case sensitive", "String", "string", 1),
   ]
-  |> test_helpers.array_based_test_executor_2(string_distance.levenshtein)
+  |> test_helpers.table_test_2(string_distance.levenshtein)
 }
 
 // ==== closest_match ====
@@ -72,5 +72,5 @@ pub fn closest_match_test() {
       option.Some("Boolean"),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(string_distance.closest_match)
+  |> test_helpers.table_test_2(string_distance.closest_match)
 }

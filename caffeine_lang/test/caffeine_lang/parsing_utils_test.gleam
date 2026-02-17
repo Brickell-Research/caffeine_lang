@@ -26,9 +26,7 @@ pub fn split_at_top_level_comma_test() {
     #("empty string", "", []),
     #("single item (no comma)", "String", ["String"]),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    parsing_utils.split_at_top_level_comma,
-  )
+  |> test_helpers.table_test_1(parsing_utils.split_at_top_level_comma)
 }
 
 // ==== extract_paren_content ====
@@ -48,9 +46,7 @@ pub fn extract_paren_content_test() {
       Error(Nil),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    parsing_utils.extract_paren_content,
-  )
+  |> test_helpers.table_test_1(parsing_utils.extract_paren_content)
 }
 
 // ==== paren_innerds_trimmed ====
@@ -64,9 +60,7 @@ pub fn paren_innerds_trimmed_test() {
     #("without parens -> raw string trimmed", "  hello  ", "hello"),
     #("nested parens", "(Dict(String, Integer))", "Dict(String, Integer)"),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    parsing_utils.paren_innerds_trimmed,
-  )
+  |> test_helpers.table_test_1(parsing_utils.paren_innerds_trimmed)
 }
 
 // ==== paren_innerds_split_and_trimmed ====
@@ -84,7 +78,5 @@ pub fn paren_innerds_split_and_trimmed_test() {
     ]),
     #("no parens -> empty list", "no parens", []),
   ]
-  |> test_helpers.array_based_test_executor_1(
-    parsing_utils.paren_innerds_split_and_trimmed,
-  )
+  |> test_helpers.table_test_1(parsing_utils.paren_innerds_split_and_trimmed)
 }

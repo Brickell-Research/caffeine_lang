@@ -97,7 +97,7 @@ pub fn resolve_primitives_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
+  |> test_helpers.table_test_1(parse_then_resolve_primitives)
 }
 
 // ==== time_slice valid (resolves to TimeSlice primitive) Tests ====
@@ -138,7 +138,7 @@ pub fn resolve_time_slice_valid_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
+  |> test_helpers.table_test_1(parse_then_resolve_primitives)
 }
 
 // ==== time_slice invalid (should error) Tests ====
@@ -181,5 +181,5 @@ pub fn resolve_time_slice_invalid_test() {
       time_slice_operand_error,
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_then_resolve_primitives)
+  |> test_helpers.table_test_1(parse_then_resolve_primitives)
 }

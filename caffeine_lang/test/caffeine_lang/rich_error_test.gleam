@@ -3,20 +3,19 @@ import caffeine_lang/errors
 import caffeine_lang/rich_error.{ErrorCode, RichError}
 import gleam/option
 import gleeunit/should
+import test_helpers
 
 // ==== error_code_to_string ====
 // * ✅ three digit number
 // * ✅ two digit number (pads)
 // * ✅ single digit number (pads)
 pub fn error_code_to_string_test() {
-  rich_error.error_code_to_string(ErrorCode("parse", 103))
-  |> should.equal("E103")
-
-  rich_error.error_code_to_string(ErrorCode("cql", 42))
-  |> should.equal("E042")
-
-  rich_error.error_code_to_string(ErrorCode("test", 1))
-  |> should.equal("E001")
+  [
+    #("three digit number", ErrorCode("parse", 103), "E103"),
+    #("two digit number (pads)", ErrorCode("cql", 42), "E042"),
+    #("single digit number (pads)", ErrorCode("test", 1), "E001"),
+  ]
+  |> test_helpers.table_test_1(rich_error.error_code_to_string)
 }
 
 // ==== error_code_for ====
@@ -26,32 +25,44 @@ pub fn error_code_to_string_test() {
 // * ✅ codegen error
 // * ✅ cql error
 pub fn error_code_for_test() {
-  errors.FrontendParseError(msg: "test", context: errors.empty_context())
-  |> rich_error.error_code_for
-  |> should.equal(ErrorCode("parse", 100))
-
-  errors.FrontendValidationError(msg: "test", context: errors.empty_context())
-  |> rich_error.error_code_for
-  |> should.equal(ErrorCode("validation", 200))
-
-  errors.LinkerVendorResolutionError(
-    msg: "test",
-    context: errors.empty_context(),
-  )
-  |> rich_error.error_code_for
-  |> should.equal(ErrorCode("linker", 304))
-
-  errors.GeneratorTerraformResolutionError(
-    vendor: constants.vendor_datadog,
-    msg: "test",
-    context: errors.empty_context(),
-  )
-  |> rich_error.error_code_for
-  |> should.equal(ErrorCode("codegen", 502))
-
-  errors.CQLParserError(msg: "test", context: errors.empty_context())
-  |> rich_error.error_code_for
-  |> should.equal(ErrorCode("cql", 602))
+  [
+    #(
+      "frontend parse error",
+      errors.FrontendParseError(msg: "test", context: errors.empty_context()),
+      ErrorCode("parse", 100),
+    ),
+    #(
+      "frontend validation error",
+      errors.FrontendValidationError(
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("validation", 200),
+    ),
+    #(
+      "semantic analysis error",
+      errors.LinkerVendorResolutionError(
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("linker", 304),
+    ),
+    #(
+      "codegen error",
+      errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_datadog,
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("codegen", 502),
+    ),
+    #(
+      "cql error",
+      errors.CQLParserError(msg: "test", context: errors.empty_context()),
+      ErrorCode("cql", 602),
+    ),
+  ]
+  |> test_helpers.table_test_1(rich_error.error_code_for)
 }
 
 // ==== from_compilation_error ====
@@ -77,14 +88,20 @@ pub fn from_compilation_error_test() {
 // ==== error_message ====
 // * ✅ extracts message from each variant
 pub fn error_message_test() {
-  errors.FrontendParseError(
-    msg: "parse error msg",
-    context: errors.empty_context(),
-  )
-  |> rich_error.error_message
-  |> should.equal("parse error msg")
-
-  errors.CQLResolverError(msg: "cql msg", context: errors.empty_context())
-  |> rich_error.error_message
-  |> should.equal("cql msg")
+  [
+    #(
+      "extracts message from parse error",
+      errors.FrontendParseError(
+        msg: "parse error msg",
+        context: errors.empty_context(),
+      ),
+      "parse error msg",
+    ),
+    #(
+      "extracts message from cql error",
+      errors.CQLResolverError(msg: "cql msg", context: errors.empty_context()),
+      "cql msg",
+    ),
+  ]
+  |> test_helpers.table_test_1(rich_error.error_message)
 }

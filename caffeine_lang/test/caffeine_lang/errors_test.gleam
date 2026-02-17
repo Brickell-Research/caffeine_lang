@@ -83,7 +83,5 @@ pub fn format_validation_error_message_test() {
       "expected (String) received (Bool) value (True) for (flag)",
     ),
   ]
-  |> test_helpers.array_based_test_executor_3(
-    errors.format_validation_error_message,
-  )
+  |> test_helpers.table_test_3(errors.format_validation_error_message)
 }

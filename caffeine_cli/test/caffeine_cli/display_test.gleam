@@ -39,7 +39,7 @@ pub fn pretty_print_artifact_test() {
     #("includes param types", "String", True),
     #("includes param status (required/optional/default)", "required", True),
   ]
-  |> test_helpers.array_based_test_executor_1(fn(substring) {
+  |> test_helpers.table_test_1(fn(substring) {
     string.contains(output, substring)
   })
 }

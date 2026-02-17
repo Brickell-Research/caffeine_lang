@@ -155,7 +155,7 @@ pub fn parse_expr_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_expr)
+  |> test_helpers.table_test_1(parse_expr)
 }
 
 // ==== Operator precedence Tests ====
@@ -202,7 +202,7 @@ pub fn operator_precedence_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_expr)
+  |> test_helpers.table_test_1(parse_expr)
 }
 
 // ==== is_balanced_parens Tests ====
@@ -222,7 +222,7 @@ pub fn is_balanced_parens_test() {
     // complex balanced parentheses
     #("complex balanced parentheses", "(a(b)(c)((())))", 11, 4, True),
   ]
-  |> test_helpers.array_based_test_executor_3(is_balanced_parens)
+  |> test_helpers.table_test_3(is_balanced_parens)
 }
 
 // ==== find_rightmost_operator_at_level Tests ====
@@ -265,7 +265,7 @@ pub fn find_rightmost_operator_at_level_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_2(fn(input, operator) {
+  |> test_helpers.table_test_2(fn(input, operator) {
     find_rightmost_operator_at_level(input, operator, 0, 0, -1)
   })
 }
@@ -293,7 +293,7 @@ pub fn is_last_char_test() {
     // index is the last character
     #("index is the last character", "(a(b)(c)((())))", 14, True),
   ]
-  |> test_helpers.array_based_test_executor_2(is_last_char)
+  |> test_helpers.table_test_2(is_last_char)
 }
 
 // ==== time_slice valid parsing Tests ====
@@ -430,7 +430,7 @@ pub fn time_slice_valid_parsing_test() {
       ),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_expr)
+  |> test_helpers.table_test_1(parse_expr)
 }
 
 // ==== time_slice invalid inner syntax Tests ====
@@ -494,7 +494,7 @@ pub fn time_slice_invalid_syntax_test() {
     // time_slice() - empty
     #("empty time_slice", "time_slice()", Error("Empty time_slice expression")),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_expr)
+  |> test_helpers.table_test_1(parse_expr)
 }
 
 // ==== time_slice parses as regular word Tests ====
@@ -520,7 +520,7 @@ pub fn time_slice_parses_as_word_test() {
       Ok(Primary(PrimaryWord(Word("time_slice Query > 100 per 10s")))),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(parse_expr)
+  |> test_helpers.table_test_1(parse_expr)
 }
 
 // ==== time_slice nested (parser succeeds, resolver rejects) Tests ====

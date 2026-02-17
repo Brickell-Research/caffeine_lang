@@ -1093,5 +1093,5 @@ pub fn window_to_timeframe_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(datadog.window_to_timeframe)
+  |> test_helpers.table_test_1(datadog.window_to_timeframe)
 }

@@ -47,7 +47,7 @@ pub fn extract_path_prefix_test() {
       "unknown",
     )),
   ]
-  |> test_helpers.array_based_test_executor_1(helpers.extract_path_prefix)
+  |> test_helpers.table_test_1(helpers.extract_path_prefix)
 }
 
 // ==== build_all ====

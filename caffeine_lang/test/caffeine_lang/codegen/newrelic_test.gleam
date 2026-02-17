@@ -149,7 +149,7 @@ pub fn window_to_rolling_count_test() {
       )),
     ),
   ]
-  |> test_helpers.array_based_test_executor_1(newrelic.window_to_rolling_count)
+  |> test_helpers.table_test_1(newrelic.window_to_rolling_count)
 }
 
 // ==== parse_nrql_indicator ====
@@ -157,19 +157,20 @@ pub fn window_to_rolling_count_test() {
 // * ✅ event type with WHERE clause
 // * ✅ event type with multiple WHERE clauses
 pub fn parse_nrql_indicator_test() {
-  newrelic.parse_nrql_indicator("Transaction")
-  |> should.equal(#("Transaction", option.None))
-
-  newrelic.parse_nrql_indicator("Transaction WHERE appName = 'payments'")
-  |> should.equal(#("Transaction", option.Some("appName = 'payments'")))
-
-  newrelic.parse_nrql_indicator(
-    "Transaction WHERE appName = 'payments' AND duration < 0.1",
-  )
-  |> should.equal(#(
-    "Transaction",
-    option.Some("appName = 'payments' AND duration < 0.1"),
-  ))
+  [
+    #("simple event type", "Transaction", #("Transaction", option.None)),
+    #(
+      "event type with WHERE clause",
+      "Transaction WHERE appName = 'payments'",
+      #("Transaction", option.Some("appName = 'payments'")),
+    ),
+    #(
+      "event type with multiple WHERE clauses",
+      "Transaction WHERE appName = 'payments' AND duration < 0.1",
+      #("Transaction", option.Some("appName = 'payments' AND duration < 0.1")),
+    ),
+  ]
+  |> test_helpers.table_test_1(newrelic.parse_nrql_indicator)
 }
 
 // ==== generate_terraform ====
