@@ -27,48 +27,70 @@ import test_helpers
 pub fn cleanup_empty_template_artifacts_test() {
   [
     // No artifacts - unchanged
-    #("metric{env:prod}", "metric{env:prod}"),
+    #("no artifacts - unchanged", "metric{env:prod}", "metric{env:prod}"),
     // Trailing comma in braces
-    #("metric{env:prod, }", "metric{env:prod}"),
-    #("metric{env:prod,}", "metric{env:prod}"),
-    // Leading comma in braces
-    #("metric{, env:prod}", "metric{env:prod}"),
-    #("metric{,env:prod}", "metric{env:prod}"),
-    // Trailing comma in parens
-    #("tag IN (a, b, )", "tag IN (a, b)"),
-    #("tag IN (a, b,)", "tag IN (a, b)"),
-    // Leading comma in parens
-    #("tag IN (, a, b)", "tag IN (a, b)"),
-    #("tag IN (,a, b)", "tag IN (a, b)"),
-    // Consecutive commas (middle empty)
-    #("metric{env:prod, , team:platform}", "metric{env:prod, team:platform}"),
-    #("metric{env:prod,,team:platform}", "metric{env:prod,team:platform}"),
-    // AND artifacts
-    #("metric{env:prod AND }", "metric{env:prod}"),
-    #("metric{ AND env:prod}", "metric{env:prod}"),
     #(
+      "trailing comma in braces: ', }'",
+      "metric{env:prod, }",
+      "metric{env:prod}",
+    ),
+    #("trailing comma in braces: ',}'", "metric{env:prod,}", "metric{env:prod}"),
+    // Leading comma in braces
+    #(
+      "leading comma in braces: '{, '",
+      "metric{, env:prod}",
+      "metric{env:prod}",
+    ),
+    #("leading comma in braces: '{,'", "metric{,env:prod}", "metric{env:prod}"),
+    // Trailing comma in parens
+    #("trailing comma in parens: ', )'", "tag IN (a, b, )", "tag IN (a, b)"),
+    #("trailing comma in parens: ',)'", "tag IN (a, b,)", "tag IN (a, b)"),
+    // Leading comma in parens
+    #("leading comma in parens: '(, '", "tag IN (, a, b)", "tag IN (a, b)"),
+    #("leading comma in parens: '(,'", "tag IN (,a, b)", "tag IN (a, b)"),
+    // Consecutive commas (middle empty)
+    #(
+      "consecutive commas: ', ,'",
+      "metric{env:prod, , team:platform}",
+      "metric{env:prod, team:platform}",
+    ),
+    #(
+      "consecutive commas: ',,'",
+      "metric{env:prod,,team:platform}",
+      "metric{env:prod,team:platform}",
+    ),
+    // AND artifacts
+    #("AND artifacts: ' AND }'", "metric{env:prod AND }", "metric{env:prod}"),
+    #("AND artifacts: '{ AND '", "metric{ AND env:prod}", "metric{env:prod}"),
+    #(
+      "AND artifacts: ' AND  AND '",
       "metric{env:prod AND  AND team:platform}",
       "metric{env:prod AND team:platform}",
     ),
     // All empty in braces (two optionals)
-    #("metric{, }", "metric{}"),
+    #("all empty in braces (two optionals)", "metric{, }", "metric{}"),
     // All empty in parens (two optionals)
-    #("tag IN (, )", "tag IN ()"),
+    #("all empty in parens (two optionals)", "tag IN (, )", "tag IN ()"),
     // Multiple artifacts in one query
     #(
+      "multiple artifacts in one query",
       "avg:my.metric{, env:prod, }.as_count()",
       "avg:my.metric{env:prod}.as_count()",
     ),
     // 3 consecutive empty optionals in braces
-    #("metric{, , }", "metric{}"),
+    #("3 consecutive empty optionals in braces", "metric{, , }", "metric{}"),
     // 4 consecutive empty optionals in braces
-    #("metric{, , , }", "metric{}"),
+    #("4 consecutive empty optionals in braces", "metric{, , , }", "metric{}"),
     // 3 consecutive empty optionals in parens
-    #("tag IN (, , )", "tag IN ()"),
+    #("3 consecutive empty optionals in parens", "tag IN (, , )", "tag IN ()"),
     // Multiple AND all empty
-    #("metric{ AND  AND  AND }", "metric{}"),
+    #("multiple AND all empty", "metric{ AND  AND  AND }", "metric{}"),
     // Mixed artifacts in complex query (multi-pass)
-    #("avg:m{, , env:prod, }.rollup(avg, )", "avg:m{env:prod}.rollup(avg)"),
+    #(
+      "mixed artifacts in complex query (multi-pass)",
+      "avg:m{, , env:prod, }.rollup(avg, )",
+      "avg:m{env:prod}.rollup(avg)",
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(
     templatizer.cleanup_empty_template_artifacts,
@@ -98,6 +120,7 @@ pub fn cleanup_empty_template_artifacts_test() {
 pub fn parse_and_resolve_query_template_test() {
   [
     #(
+      "missing value tuple for a value",
       "foo.sum$$baz->faz$$",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
@@ -109,6 +132,7 @@ pub fn parse_and_resolve_query_template_test() {
       )),
     ),
     #(
+      "query template var incomplete, missing ending $$",
       "foo.sum$$baz",
       [],
       Error(errors.SemanticAnalysisTemplateParseError(
@@ -119,8 +143,9 @@ pub fn parse_and_resolve_query_template_test() {
         ),
       )),
     ),
-    #("foo", [], Ok("foo")),
+    #("no template variables", "foo", [], Ok("foo")),
     #(
+      "multiple template variables (Datadog format)",
       "foo.sum{$$foo->bar:not$$ AND $$baz->faz$$}",
       [
         helpers.ValueTuple(
@@ -144,6 +169,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Raw value substitution - perfect for time_slice thresholds!
     #(
+      "raw value substitution (time_slice threshold)",
       "time_slice(query < $$threshold$$ per 10s)",
       [
         helpers.ValueTuple(
@@ -156,6 +182,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Raw value with Float
     #(
+      "mixed raw and Datadog format - float",
       "time_slice(query > $$threshold$$ per 5m)",
       [
         helpers.ValueTuple(
@@ -168,6 +195,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Raw value with String
     #(
+      "mixed raw and Datadog format - string",
       "some_metric{status:$$status$$}",
       [
         helpers.ValueTuple(
@@ -180,6 +208,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Mixed raw and Datadog format
     #(
+      "mixed raw and Datadog format",
       "time_slice(avg:system.cpu{$$env->environment$$} > $$threshold$$ per 300s)",
       [
         helpers.ValueTuple(
@@ -197,6 +226,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Refinement type with Defaulted inner - value provided
     #(
+      "refinement type with Defaulted inner (value provided)",
       "metric{$$env->environment$$}",
       [
         helpers.ValueTuple(
@@ -215,6 +245,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Refinement type with Defaulted inner - value NOT provided (uses default)
     #(
+      "refinement type with Defaulted inner (None uses default)",
       "metric{$$env->environment$$}",
       [
         helpers.ValueTuple(
@@ -233,6 +264,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional field at end resolves to empty - no hanging comma
     #(
+      "optional field at end resolves to empty (no hanging comma)",
       "metric{$$env->environment$$, $$region->region$$}",
       [
         helpers.ValueTuple(
@@ -252,6 +284,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional field at start resolves to empty - no hanging comma
     #(
+      "optional field at start resolves to empty (no hanging comma)",
       "metric{$$region->region$$, $$env->environment$$}",
       [
         helpers.ValueTuple(
@@ -271,6 +304,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional field in middle resolves to empty - no double comma
     #(
+      "optional field in middle resolves to empty (no double comma)",
       "metric{$$env->environment$$, $$region->region$$, $$team->team$$}",
       [
         helpers.ValueTuple(
@@ -295,6 +329,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // All optional fields empty - no dangling commas
     #(
+      "all optional fields empty (no dangling commas)",
       "metric{$$env->environment$$, $$region->region$$}",
       [
         helpers.ValueTuple(
@@ -316,6 +351,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional List field with None value - no hanging comma
     #(
+      "optional list field with None value (no hanging comma)",
       "metric{$$env->environment$$, $$tags->tag$$}",
       [
         helpers.ValueTuple(
@@ -339,6 +375,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional with AND operator - empty field at end
     #(
+      "optional with AND operator and empty field",
       "metric{$$env->environment$$ AND $$region->region$$}",
       [
         helpers.ValueTuple(
@@ -358,6 +395,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional with AND operator - empty field at start
     #(
+      "optional with AND operator and empty field at start",
       "metric{$$region->region$$ AND $$env->environment$$}",
       [
         helpers.ValueTuple(
@@ -377,6 +415,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // 3 optional fields all empty (multi-pass cleanup)
     #(
+      "3 optional fields all empty (multi-pass cleanup)",
       "metric{$$a->a$$, $$b->b$$, $$c->c$$}",
       [
         helpers.ValueTuple(
@@ -405,6 +444,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional with Not template type and None value
     #(
+      "optional with Not template type and None value",
       "metric{$$env->environment$$ AND $$region->region:not$$}",
       [
         helpers.ValueTuple(
@@ -424,6 +464,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional List with Not template type and None value
     #(
+      "optional list with Not template type and None value",
       "metric{$$env->environment$$, $$excluded->excluded:not$$}",
       [
         helpers.ValueTuple(
@@ -447,6 +488,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Mixed: some Optional fields empty, some provided, with AND operator
     #(
+      "mixed some empty some provided with AND operator",
       "metric{$$a->a$$ AND $$b->b$$ AND $$c->c$$ AND $$d->d$$}",
       [
         helpers.ValueTuple(
@@ -478,6 +520,7 @@ pub fn parse_and_resolve_query_template_test() {
     ),
     // Optional Raw value with None
     #(
+      "optional raw value with None",
       "time_slice(query < $$threshold$$ per 10s)",
       [
         helpers.ValueTuple(
@@ -514,24 +557,29 @@ pub fn parse_template_variable_test() {
   [
     // Raw format: just the input name, no "->"
     #(
+      "parses 'threshold' (no ->) -> Raw",
       "threshold",
       Ok(templatizer.TemplateVariable("threshold", "", templatizer.Raw)),
     ),
     #(
+      "parses 'my_value' (no ->) -> Raw",
       "my_value",
       Ok(templatizer.TemplateVariable("my_value", "", templatizer.Raw)),
     ),
     // Datadog format: input->attr
     #(
+      "parses 'environment->env' -> Default",
       "bar->foo",
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Default)),
     ),
     #(
+      "parses 'environment->env:not' -> Not",
       "bar->foo:not",
       Ok(templatizer.TemplateVariable("foo", "bar", templatizer.Not)),
     ),
     // Error cases
     #(
+      "rejects empty template name",
       "",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Empty template variable name: ",
@@ -539,6 +587,7 @@ pub fn parse_template_variable_test() {
       )),
     ),
     #(
+      "rejects whitespace-only template name",
       "  ",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Empty template variable name:   ",
@@ -546,6 +595,7 @@ pub fn parse_template_variable_test() {
       )),
     ),
     #(
+      "rejects empty input name (with ->)",
       "->foo",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Empty input name in template: ->foo",
@@ -553,6 +603,7 @@ pub fn parse_template_variable_test() {
       )),
     ),
     #(
+      "rejects empty label name (with ->)",
       "foo->",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Empty label name in template: foo->",
@@ -560,6 +611,7 @@ pub fn parse_template_variable_test() {
       )),
     ),
     #(
+      "rejects unknown template type",
       "foo->foo:unknown",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Unknown template type: unknown",
@@ -577,8 +629,9 @@ pub fn parse_template_variable_test() {
 // * ✅ unknown
 pub fn parse_template_type_test() {
   [
-    #("not", Ok(templatizer.Not)),
+    #("not", "not", Ok(templatizer.Not)),
     #(
+      "unknown",
       "unknown",
       Error(errors.SemanticAnalysisTemplateParseError(
         msg: "Unknown template type: unknown",
@@ -600,6 +653,7 @@ pub fn resolve_template_test() {
   [
     // Label mismatch error (templatizer-specific validation)
     #(
+      "input name and value tuple label don't match",
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "bar",
@@ -613,6 +667,7 @@ pub fn resolve_template_test() {
     ),
     // Dict unsupported error (error propagation from type module)
     #(
+      "unsupported type - dict (error propagation)",
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
@@ -629,6 +684,7 @@ pub fn resolve_template_test() {
     ),
     // E2E: Default template type with string -> "attr:value"
     #(
+      "E2E: primitive with Default template type",
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       helpers.ValueTuple(
         label: "foo",
@@ -639,6 +695,7 @@ pub fn resolve_template_test() {
     ),
     // E2E: Not template type with list -> "attr NOT IN (v1, v2)"
     #(
+      "E2E: list with Not template type",
       templatizer.TemplateVariable("env", "env", templatizer.Not),
       helpers.ValueTuple(
         label: "env",
@@ -652,6 +709,7 @@ pub fn resolve_template_test() {
     ),
     // E2E: Raw template type with integer -> just the value
     #(
+      "E2E: primitive with Raw template type",
       templatizer.TemplateVariable("count", "", templatizer.Raw),
       helpers.ValueTuple(
         label: "count",
@@ -672,16 +730,19 @@ pub fn resolve_string_value_test() {
   [
     // Raw: just returns the value
     #(
+      "Raw: just the value itself",
       templatizer.TemplateVariable("threshold", "", templatizer.Raw),
       "2500000",
       "2500000",
     ),
     #(
+      "Default: attr:value (wildcards preserved)",
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       "bar",
       "foo:bar",
     ),
     #(
+      "Not: !attr:value (wildcards preserved)",
       templatizer.TemplateVariable("foo", "foo", templatizer.Not),
       "bar",
       "!foo:bar",
@@ -702,23 +763,41 @@ pub fn resolve_string_value_test() {
 pub fn resolve_list_value_test() {
   [
     #(
+      "Raw non-empty: comma-separated",
       templatizer.TemplateVariable("values", "", templatizer.Raw),
       ["bar", "baz"],
       "bar, baz",
     ),
     #(
+      "Default non-empty: attr IN (v1, v2, v3)",
       templatizer.TemplateVariable("foo", "foo", templatizer.Default),
       ["bar", "baz"],
       "foo IN (bar, baz)",
     ),
     #(
+      "Not non-empty: attr NOT IN (v1, v2)",
       templatizer.TemplateVariable("foo", "foo", templatizer.Not),
       ["bar", "baz"],
       "foo NOT IN (bar, baz)",
     ),
-    #(templatizer.TemplateVariable("values", "", templatizer.Raw), [], ""),
-    #(templatizer.TemplateVariable("foo", "foo", templatizer.Default), [], ""),
-    #(templatizer.TemplateVariable("foo", "foo", templatizer.Not), [], ""),
+    #(
+      "Raw empty: empty string",
+      templatizer.TemplateVariable("values", "", templatizer.Raw),
+      [],
+      "",
+    ),
+    #(
+      "Default empty: empty string",
+      templatizer.TemplateVariable("foo", "foo", templatizer.Default),
+      [],
+      "",
+    ),
+    #(
+      "Not empty: empty string",
+      templatizer.TemplateVariable("foo", "foo", templatizer.Not),
+      [],
+      "",
+    ),
   ]
   |> test_helpers.array_based_test_executor_2(templatizer.resolve_list_value)
 }

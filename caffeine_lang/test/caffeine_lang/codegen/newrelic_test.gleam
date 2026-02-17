@@ -127,10 +127,11 @@ pub fn variables_test() {
 // * ❌ 0 -> Error
 pub fn window_to_rolling_count_test() {
   [
-    #(1, Ok(1)),
-    #(7, Ok(7)),
-    #(28, Ok(28)),
+    #("1 -> Ok(1)", 1, Ok(1)),
+    #("7 -> Ok(7)", 7, Ok(7)),
+    #("28 -> Ok(28)", 28, Ok(28)),
     #(
+      "30 -> Error",
       30,
       Error(errors.GeneratorTerraformResolutionError(
         vendor: constants.vendor_newrelic,
@@ -139,6 +140,7 @@ pub fn window_to_rolling_count_test() {
       )),
     ),
     #(
+      "0 -> Error",
       0,
       Error(errors.GeneratorTerraformResolutionError(
         vendor: constants.vendor_newrelic,

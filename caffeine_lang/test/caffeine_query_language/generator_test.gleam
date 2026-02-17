@@ -150,6 +150,7 @@ pub fn exp_to_string_test() {
   [
     // path with slashes (no spaces) - metric{path:/v1/users}
     #(
+      "path with slashes (no spaces)",
       ast.OperatorExpr(
         ast.Primary(ast.PrimaryWord(ast.Word("metric{path:"))),
         ast.OperatorExpr(
@@ -163,6 +164,7 @@ pub fn exp_to_string_test() {
     ),
     // path with multiple segments - path:/v1/users/passwords/reset
     #(
+      "path with multiple segments",
       ast.OperatorExpr(
         ast.Primary(ast.PrimaryWord(ast.Word("path:"))),
         ast.OperatorExpr(
@@ -184,6 +186,7 @@ pub fn exp_to_string_test() {
     ),
     // path with wildcards - path:/v1/users/forgot*
     #(
+      "path with wildcards",
       ast.OperatorExpr(
         ast.Primary(ast.PrimaryWord(ast.Word("path:"))),
         ast.OperatorExpr(
@@ -201,6 +204,7 @@ pub fn exp_to_string_test() {
     ),
     // normal division (with spaces)
     #(
+      "normal division (with spaces)",
       ast.OperatorExpr(
         ast.Primary(ast.PrimaryWord(ast.Word("metric_a"))),
         ast.Primary(ast.PrimaryWord(ast.Word("metric_b"))),
@@ -210,6 +214,7 @@ pub fn exp_to_string_test() {
     ),
     // division with query braces (with spaces)
     #(
+      "division with query braces (with spaces)",
       ast.OperatorExpr(
         ast.Primary(ast.PrimaryWord(ast.Word("metric{a:b}"))),
         ast.Primary(ast.PrimaryWord(ast.Word("metric{c:d}"))),
@@ -224,23 +229,31 @@ pub fn exp_to_string_test() {
   [
     // path with dots in field name
     #(
+      "path with dots in field name",
       "http.url_details.path:/v1/users/members",
       "http.url_details.path:/v1/users/members",
     ),
     // path ending with closing brace
-    #("path:/v1/users/passwords/reset}", "path:/v1/users/passwords/reset}"),
+    #(
+      "path ending with closing brace",
+      "path:/v1/users/passwords/reset}",
+      "path:/v1/users/passwords/reset}",
+    ),
     // full datadog query path pattern
     #(
+      "full datadog query path pattern",
       "http.url_details.path:/v1/users/passwords/reset",
       "http.url_details.path:/v1/users/passwords/reset",
     ),
     // datadog query pattern with braces
     #(
+      "datadog query pattern with braces",
       "{env:production AND http.method:POST AND http.url_details.path:/v1/users/passwords/reset}",
       "{env:production AND http.method:POST AND http.url_details.path:/v1/users/passwords/reset}",
     ),
     // path with underscores in last segment
     #(
+      "path with underscores in last segment",
       "http.url_details.path:/oauth/access_token",
       "http.url_details.path:/oauth/access_token",
     ),
@@ -258,10 +271,10 @@ pub fn exp_to_string_test() {
 // * ✅ Division
 pub fn operator_to_string_test() {
   [
-    #(ast.Add, "+"),
-    #(ast.Sub, "-"),
-    #(ast.Mul, "*"),
-    #(ast.Div, "/"),
+    #("Addition", ast.Add, "+"),
+    #("Subtraction", ast.Sub, "-"),
+    #("Multiplication", ast.Mul, "*"),
+    #("Division", ast.Div, "/"),
   ]
   |> test_helpers.array_based_test_executor_1(printer.operator_to_string)
 }
@@ -275,12 +288,14 @@ pub fn substitute_words_test() {
   [
     // substitutes single word
     #(
+      "substitutes single word",
       "numerator",
       dict.from_list([#("numerator", "sum:http.requests{status:2xx}")]),
       "sum:http.requests{status:2xx}",
     ),
     // substitutes multiple words in expression
     #(
+      "substitutes multiple words in expression",
       "good / total",
       dict.from_list([
         #("good", "sum:http.requests{status:2xx}"),
@@ -290,12 +305,14 @@ pub fn substitute_words_test() {
     ),
     // leaves unknown words unchanged
     #(
+      "leaves unknown words unchanged",
       "good / unknown",
       dict.from_list([#("good", "sum:http.requests{status:2xx}")]),
       "sum:http.requests{status:2xx} / unknown",
     ),
     // handles nested parenthesized expressions
     #(
+      "handles nested parenthesized expressions",
       "(good + partial) / total",
       dict.from_list([
         #("good", "sum:http.requests{status:2xx}"),

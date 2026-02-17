@@ -13,12 +13,16 @@ import test_helpers
 pub fn map_reference_to_referrer_over_collection_test() {
   [
     // empty collection
-    #(#([], []), []),
+    #("happy path - empty collection", #([], []), []),
     // matches references to referrers
-    #(#([#("alice", 1), #("bob", 2)], [#("bob", 100), #("alice", 200)]), [
-      #(#("bob", 100), #("bob", 2)),
-      #(#("alice", 200), #("alice", 1)),
-    ]),
+    #(
+      "happy path - matches references to referrers",
+      #([#("alice", 1), #("bob", 2)], [#("bob", 100), #("alice", 200)]),
+      [
+        #(#("bob", 100), #("bob", 2)),
+        #(#("alice", 200), #("alice", 1)),
+      ],
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(references, referrers) = input
@@ -72,13 +76,17 @@ pub fn extract_value_test() {
 // * ✅ path ending in .json
 pub fn extract_path_prefix_test() {
   [
-    #("examples/org/platform_team/authentication.caffeine", #(
+    #(
+      "standard path with 3+ segments",
+      "examples/org/platform_team/authentication.caffeine",
+      #("org", "platform_team", "authentication"),
+    ),
+    #("path ending in .json", "examples/org/platform_team/auth.json", #(
       "org",
       "platform_team",
-      "authentication",
+      "auth",
     )),
-    #("examples/org/platform_team/auth.json", #("org", "platform_team", "auth")),
-    #("a/b/c", #("a", "b", "c")),
+    #("path ending in .caffeine", "a/b/c", #("a", "b", "c")),
   ]
   |> test_helpers.array_based_test_executor_1(helpers.extract_path_prefix)
 }

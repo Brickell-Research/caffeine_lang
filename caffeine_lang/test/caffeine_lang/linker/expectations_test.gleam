@@ -74,7 +74,7 @@ const source_path = "org/team/service.caffeine"
 // * ✅ input validation - wrong type input value
 pub fn validate_expectations_test() {
   // Happy path - empty list
-  [#([], Ok([]))]
+  [#("empty expectations list", [], Ok([]))]
   |> test_helpers.array_based_test_executor_1(fn(exps) {
     expectations.validate_expectations(exps, blueprints(), from: source_path)
   })
@@ -82,6 +82,7 @@ pub fn validate_expectations_test() {
   // Happy path - single expectation paired with blueprint
   [
     #(
+      "single expectation paired with blueprint",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -118,6 +119,7 @@ pub fn validate_expectations_test() {
   // Happy path - expectation with defaulted param, input omitted is fine
   [
     #(
+      "expectation with defaulted param (input omitted is fine)",
       [
         expectations.Expectation(
           name: "my_expectation_with_defaulted",
@@ -144,6 +146,7 @@ pub fn validate_expectations_test() {
   // Happy path - multiple expectations
   [
     #(
+      "multiple expectations",
       [
         expectations.Expectation(
           name: "first_expectation",
@@ -171,6 +174,7 @@ pub fn validate_expectations_test() {
   // Duplicate names
   [
     #(
+      "duplicate expectation names within file",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -196,6 +200,7 @@ pub fn validate_expectations_test() {
   // Invalid blueprint ref - references non-existent blueprint
   [
     #(
+      "blueprint_ref references non-existent blueprint",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -218,6 +223,7 @@ pub fn validate_expectations_test() {
   // Overshadowing blueprint inputs
   [
     #(
+      "expectation inputs cannot overshadow blueprint inputs",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -245,6 +251,7 @@ pub fn validate_expectations_test() {
   // Missing required input
   [
     #(
+      "missing required input",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -265,6 +272,7 @@ pub fn validate_expectations_test() {
   // Extra input field
   [
     #(
+      "extra input field not in params",
       [
         expectations.Expectation(
           name: "my_expectation",
@@ -288,6 +296,7 @@ pub fn validate_expectations_test() {
   // Wrong type input value
   [
     #(
+      "wrong type input value",
       [
         expectations.Expectation(
           name: "my_expectation",

@@ -138,7 +138,11 @@ pub fn generate_terraform_test() {
 // * ✅ 90 -> "-90d" (maximum)
 // Range (1-90) enforced by standard library type constraint at linker level.
 pub fn window_to_evaluation_window_test() {
-  [#(1, "-1d"), #(30, "-30d"), #(90, "-90d")]
+  [
+    #("1 -> -1d (minimum)", 1, "-1d"),
+    #("30 -> -30d", 30, "-30d"),
+    #("90 -> -90d (maximum)", 90, "-90d"),
+  ]
   |> test_helpers.array_based_test_executor_1(
     dynatrace.window_to_evaluation_window,
   )

@@ -7,8 +7,8 @@ import test_helpers
 // * ✅ ExtendableProvides -> "Provides"
 pub fn extendable_kind_to_string_test() {
   [
-    #(ast.ExtendableRequires, "Requires"),
-    #(ast.ExtendableProvides, "Provides"),
+    #("ExtendableRequires -> Requires", ast.ExtendableRequires, "Requires"),
+    #("ExtendableProvides -> Provides", ast.ExtendableProvides, "Provides"),
   ]
   |> test_helpers.array_based_test_executor_1(ast.extendable_kind_to_string)
 }
@@ -19,14 +19,16 @@ pub fn extendable_kind_to_string_test() {
 // * ✅ multiple aliases -> multiple pairs
 pub fn build_type_alias_pairs_test() {
   [
-    #([], []),
+    #("empty list -> empty list", [], []),
     #(
+      "single alias -> single pair",
       [
         ast.TypeAlias("_env", types.ParsedPrimitive(types.String), []),
       ],
       [#("_env", types.ParsedPrimitive(types.String))],
     ),
     #(
+      "multiple aliases -> multiple pairs",
       [
         ast.TypeAlias("_env", types.ParsedPrimitive(types.String), []),
         ast.TypeAlias("_count", types.ParsedPrimitive(types.Boolean), []),
@@ -50,13 +52,13 @@ pub fn build_type_alias_pairs_test() {
 // * ✅ Struct -> "{...}"
 pub fn literal_to_string_test() {
   [
-    #(ast.LiteralString("hello"), "\"hello\""),
-    #(ast.LiteralInteger(42), "42"),
-    #(ast.LiteralFloat(3.14), "3.14"),
-    #(ast.LiteralTrue, "true"),
-    #(ast.LiteralFalse, "false"),
-    #(ast.LiteralList([]), "[...]"),
-    #(ast.LiteralStruct([], []), "{...}"),
+    #("String -> quoted string", ast.LiteralString("hello"), "\"hello\""),
+    #("Integer -> number string", ast.LiteralInteger(42), "42"),
+    #("Float -> number string", ast.LiteralFloat(3.14), "3.14"),
+    #("True -> true", ast.LiteralTrue, "true"),
+    #("False -> false", ast.LiteralFalse, "false"),
+    #("List -> [...]", ast.LiteralList([]), "[...]"),
+    #("Struct -> {...}", ast.LiteralStruct([], []), "{...}"),
   ]
   |> test_helpers.array_based_test_executor_1(ast.literal_to_string)
 }

@@ -13,7 +13,7 @@ import test_helpers
 pub fn generate_test() {
   // Empty IR list -> graph header only
   [
-    #([], "graph TD"),
+    #("empty IR list produces graph header only", [], "graph TD"),
   ]
   |> test_helpers.array_based_test_executor_1(fn(irs) {
     dependency_graph.generate(irs)
@@ -39,20 +39,25 @@ pub fn generate_test() {
     ])
 
   [
-    #(no_deps_output, "graph TD", True),
-    #(no_deps_output, "acme_platform_auth_login_slo", True),
-    #(no_deps_output, "acme_infra_db_query_slo", True),
+    #("contains graph header", no_deps_output, "graph TD", True),
+    #(
+      "contains auth login node",
+      no_deps_output,
+      "acme_platform_auth_login_slo",
+      True,
+    ),
+    #("contains db query node", no_deps_output, "acme_infra_db_query_slo", True),
     // Subgraph labels (grouped by service name)
-    #(no_deps_output, "subgraph", True),
-    #(no_deps_output, "\"auth\"", True),
-    #(no_deps_output, "\"db\"", True),
-    #(no_deps_output, "end", True),
+    #("contains subgraph keyword", no_deps_output, "subgraph", True),
+    #("contains auth subgraph label", no_deps_output, "\"auth\"", True),
+    #("contains db subgraph label", no_deps_output, "\"db\"", True),
+    #("contains end keyword", no_deps_output, "end", True),
     // Node labels are just the name
-    #(no_deps_output, "\"login_slo\"", True),
-    #(no_deps_output, "\"query_slo\"", True),
+    #("contains login_slo node label", no_deps_output, "\"login_slo\"", True),
+    #("contains query_slo node label", no_deps_output, "\"query_slo\"", True),
     // No edges
-    #(no_deps_output, "-->", False),
-    #(no_deps_output, "-.->", False),
+    #("no hard edges", no_deps_output, "-->", False),
+    #("no soft edges", no_deps_output, "-.->", False),
   ]
   |> test_helpers.array_based_test_executor_2(fn(output, substr) {
     string.contains(output, substr)
@@ -88,11 +93,13 @@ pub fn generate_test() {
 
   [
     #(
+      "hard dependency arrow present",
       with_deps_output,
       "acme_platform_auth_login_slo -->|hard| acme_infra_db_query_slo",
       True,
     ),
     #(
+      "soft dependency arrow present",
       with_deps_output,
       "acme_platform_auth_login_slo -.->|soft| acme_cache_redis_cache_slo",
       True,
@@ -134,11 +141,13 @@ pub fn generate_test() {
 
   [
     #(
+      "a depends on b",
       cross_deps_output,
       "acme_platform_a_slo -->|hard| acme_platform_b_slo",
       True,
     ),
     #(
+      "b depends on c",
       cross_deps_output,
       "acme_platform_b_slo -->|hard| acme_platform_c_slo",
       True,

@@ -49,10 +49,26 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile {
 pub fn validate_blueprints_file_test() {
   // Happy paths
   [
-    #(parse_blueprints("blueprints_valid"), Ok(Nil)),
-    #(parse_blueprints("blueprints_no_extendables"), Ok(Nil)),
-    #(parse_blueprints("blueprints_valid_type_alias"), Ok(Nil)),
-    #(parse_blueprints("blueprints_valid_record_type"), Ok(Nil)),
+    #(
+      "valid - extendables exist, no duplicates",
+      parse_blueprints("blueprints_valid"),
+      Ok(Nil),
+    ),
+    #(
+      "valid - no extendables at all",
+      parse_blueprints("blueprints_no_extendables"),
+      Ok(Nil),
+    ),
+    #(
+      "valid - type aliases with references in Requires",
+      parse_blueprints("blueprints_valid_type_alias"),
+      Ok(Nil),
+    ),
+    #(
+      "valid - record type with type alias",
+      parse_blueprints("blueprints_valid_record_type"),
+      Ok(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
     case validator.validate_blueprints_file(file) {
@@ -64,6 +80,7 @@ pub fn validate_blueprints_file_test() {
   // Duplicate extendable
   [
     #(
+      "duplicate extendable names",
       parse_blueprints("blueprints_duplicate_extendable"),
       Error([validator.DuplicateExtendable(name: "_base")]),
     ),
@@ -75,6 +92,7 @@ pub fn validate_blueprints_file_test() {
   // Missing extendable reference
   [
     #(
+      "extends references non-existent extendable",
       parse_blueprints("blueprints_missing_extendable"),
       Error([
         validator.UndefinedExtendable(
@@ -92,6 +110,7 @@ pub fn validate_blueprints_file_test() {
   // Multiple items, one with missing extendable
   [
     #(
+      "multiple items where one references non-existent extendable",
       parse_blueprints("blueprints_multiple_items_one_missing"),
       Error([
         validator.UndefinedExtendable(
@@ -109,6 +128,7 @@ pub fn validate_blueprints_file_test() {
   // Duplicate extendable reference in extends list
   [
     #(
+      "duplicate extendable reference in extends list",
       parse_blueprints("blueprints_duplicate_extends_ref"),
       Error([
         validator.DuplicateExtendsReference(name: "_base", referenced_by: "api"),
@@ -122,6 +142,7 @@ pub fn validate_blueprints_file_test() {
   // Extendable name collides with type alias name
   [
     #(
+      "extendable name collides with type alias name",
       parse_blueprints("blueprints_extendable_type_alias_collision"),
       Error([validator.ExtendableTypeAliasNameCollision(name: "_env")]),
     ),
@@ -133,6 +154,7 @@ pub fn validate_blueprints_file_test() {
   // Duplicate type alias
   [
     #(
+      "duplicate type alias names",
       parse_blueprints("blueprints_duplicate_type_alias"),
       Error([validator.DuplicateTypeAlias(name: "_env")]),
     ),
@@ -144,6 +166,7 @@ pub fn validate_blueprints_file_test() {
   // Undefined type alias reference
   [
     #(
+      "undefined type alias reference",
       parse_blueprints("blueprints_undefined_type_alias"),
       Error([
         validator.UndefinedTypeAlias(
@@ -161,6 +184,7 @@ pub fn validate_blueprints_file_test() {
   // Invalid Dict key type alias (non-String type)
   [
     #(
+      "invalid Dict key type alias",
       parse_blueprints("blueprints_invalid_dict_key_type_alias"),
       Error([
         validator.InvalidDictKeyTypeAlias(
@@ -178,6 +202,7 @@ pub fn validate_blueprints_file_test() {
   // Circular type alias in record field
   [
     #(
+      "circular type alias in record field",
       parse_blueprints("blueprints_circular_record_type_alias"),
       Error([validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])]),
     ),
@@ -189,6 +214,7 @@ pub fn validate_blueprints_file_test() {
   // Undefined type alias in record field
   [
     #(
+      "undefined type alias in record field",
       parse_blueprints("blueprints_undefined_record_type_alias"),
       Error([
         validator.UndefinedTypeAlias(
@@ -217,8 +243,16 @@ pub fn validate_blueprints_file_test() {
 pub fn validate_expects_file_test() {
   // Happy paths
   [
-    #(parse_expects("expects_valid"), Ok(Nil)),
-    #(parse_expects("expects_no_extendables"), Ok(Nil)),
+    #(
+      "valid - extendables exist, no duplicates",
+      parse_expects("expects_valid"),
+      Ok(Nil),
+    ),
+    #(
+      "valid - no extendables at all",
+      parse_expects("expects_no_extendables"),
+      Ok(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file) {
     case validator.validate_expects_file(file) {
@@ -230,6 +264,7 @@ pub fn validate_expects_file_test() {
   // Duplicate extendable
   [
     #(
+      "duplicate extendable names",
       parse_expects("expects_duplicate_extendable"),
       Error([validator.DuplicateExtendable(name: "_defaults")]),
     ),
@@ -241,6 +276,7 @@ pub fn validate_expects_file_test() {
   // Missing extendable reference
   [
     #(
+      "extends references non-existent extendable",
       parse_expects("expects_missing_extendable"),
       Error([
         validator.UndefinedExtendable(
@@ -258,6 +294,7 @@ pub fn validate_expects_file_test() {
   // Multiple items, one with missing extendable
   [
     #(
+      "multiple items where one references non-existent extendable",
       parse_expects("expects_multiple_items_one_missing"),
       Error([
         validator.UndefinedExtendable(
@@ -275,6 +312,7 @@ pub fn validate_expects_file_test() {
   // Duplicate extendable reference in extends list
   [
     #(
+      "duplicate extendable reference in extends list",
       parse_expects("expects_duplicate_extends_ref"),
       Error([
         validator.DuplicateExtendsReference(
@@ -291,6 +329,7 @@ pub fn validate_expects_file_test() {
   // Requires extendable in expects file (invalid per spec)
   [
     #(
+      "Requires extendable in expects file",
       parse_expects("expects_requires_extendable"),
       Error([
         validator.InvalidExtendableKind(

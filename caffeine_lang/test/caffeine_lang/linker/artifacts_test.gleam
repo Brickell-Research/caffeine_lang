@@ -10,7 +10,7 @@ pub fn standard_library_test() {
   let result = stdlib_artifacts.standard_library()
 
   [
-    #(list.length(result), 2),
+    #("returns two artifacts", list.length(result), 2),
   ]
   |> test_helpers.array_based_test_executor_1(fn(expected) { expected })
 
@@ -19,8 +19,12 @@ pub fn standard_library_test() {
     |> list.map(fn(a) { artifacts.artifact_type_to_string(a.type_) })
 
   [
-    #(list.contains(types, "SLO"), True),
-    #(list.contains(types, "DependencyRelations"), True),
+    #("contains SLO artifact", list.contains(types, "SLO"), True),
+    #(
+      "contains DependencyRelations artifact",
+      list.contains(types, "DependencyRelations"),
+      True,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(val) { val })
 }

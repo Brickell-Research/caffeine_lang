@@ -90,7 +90,7 @@ fn multi_artifacts() -> List(Artifact) {
 // * ✅ input validation - wrong type input value rejected
 pub fn validate_blueprints_test() {
   // Happy path - empty list
-  [#([], Ok([]))]
+  [#("empty list", [], Ok([]))]
   |> test_helpers.array_based_test_executor_1(fn(bps) {
     blueprints.validate_blueprints(bps, artifacts())
   })
@@ -98,6 +98,7 @@ pub fn validate_blueprints_test() {
   // Happy path - single valid blueprint, artifact params get merged in
   [
     #(
+      "single valid blueprint merges artifact params",
       [
         blueprints.Blueprint(
           name: "success_rate",
@@ -129,6 +130,7 @@ pub fn validate_blueprints_test() {
   // No inputs - allowed since blueprints can provide partial inputs
   [
     #(
+      "blueprint with no inputs (partial inputs allowed)",
       [
         blueprints.Blueprint(
           name: "minimal",
@@ -150,6 +152,7 @@ pub fn validate_blueprints_test() {
   // Happy path - empty params (no blueprint-specific params, only artifact params)
   [
     #(
+      "empty params",
       [
         blueprints.Blueprint(
           name: "minimal_params",
@@ -171,6 +174,7 @@ pub fn validate_blueprints_test() {
   // Happy path - multiple blueprints
   [
     #(
+      "multiple valid blueprints",
       [
         blueprints.Blueprint(
           name: "first",
@@ -198,6 +202,7 @@ pub fn validate_blueprints_test() {
   // Happy path - overlapping params with same type merge correctly
   [
     #(
+      "overlapping params with same type merge correctly",
       [
         blueprints.Blueprint(
           name: "tracked_slo",
@@ -219,6 +224,7 @@ pub fn validate_blueprints_test() {
   // Duplicate names
   [
     #(
+      "duplicate names rejected",
       [
         blueprints.Blueprint(
           name: "success_rate",
@@ -246,6 +252,7 @@ pub fn validate_blueprints_test() {
   // Overshadowing artifact params
   [
     #(
+      "cannot overshadow artifact params with blueprint params",
       [
         blueprints.Blueprint(
           name: "success_rate",
@@ -269,6 +276,7 @@ pub fn validate_blueprints_test() {
   // Empty artifact_refs list
   [
     #(
+      "artifact_refs is empty list",
       [
         blueprints.Blueprint(
           name: "no_artifacts",
@@ -290,6 +298,7 @@ pub fn validate_blueprints_test() {
   // Conflicting params - artifacts have same param name with different types
   [
     #(
+      "conflicting params - artifacts have same param name with different types",
       [
         blueprints.Blueprint(
           name: "conflicting",
@@ -337,6 +346,7 @@ pub fn validate_blueprints_test() {
   // Extra input field
   [
     #(
+      "extra input field rejected",
       [
         blueprints.Blueprint(
           name: "success_rate",
@@ -361,6 +371,7 @@ pub fn validate_blueprints_test() {
   // Wrong type input value
   [
     #(
+      "wrong type input value rejected",
       [
         blueprints.Blueprint(
           name: "success_rate",
@@ -387,6 +398,7 @@ pub fn validate_blueprints_artifact_refs_test() {
   // Happy path - multiple artifacts, params merged
   [
     #(
+      "multiple artifacts, params merged from both",
       [
         blueprints.Blueprint(
           name: "tracked_slo",
@@ -411,6 +423,7 @@ pub fn validate_blueprints_artifact_refs_test() {
   // Duplicate artifact refs
   [
     #(
+      "duplicate artifact refs rejected",
       [
         blueprints.Blueprint(
           name: "success_rate",

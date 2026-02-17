@@ -20,6 +20,7 @@ pub fn resolve_intermediate_representations_test() {
   [
     // happy path - two IRs with indicator template resolution
     #(
+      "two IRs with vendor resolution and indicator template resolution",
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
@@ -237,6 +238,7 @@ pub fn resolve_indicators_test() {
   [
     // happy path - multiple queries with template variable resolution
     #(
+      "multiple indicators with template variable resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "Foo SLO",
@@ -361,6 +363,7 @@ pub fn resolve_indicators_test() {
     ),
     // happy path - defaulted param with nil uses default value
     #(
+      "defaulted param with nil uses default value",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "LCP SLO",
@@ -488,6 +491,7 @@ pub fn resolve_indicators_test() {
     ),
     // happy path - refinement type with defaulted inner using nil gets default value
     #(
+      "refinement type with defaulted inner using nil gets default value",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "LCP SLO Refinement",
@@ -606,6 +610,7 @@ pub fn resolve_indicators_test() {
     // application_name not provided (uses default "member_portal"),
     // view_path provided explicitly
     #(
+      "lcp_p75_latency style with mix of defaulted, refinement, and provided values",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "LCP is Reasonable",
@@ -772,6 +777,7 @@ pub fn resolve_indicators_test() {
 pub fn resolve_indicators_honeycomb_passthrough_test() {
   [
     #(
+      "Honeycomb indicators pass through without template resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "HC SLO",
@@ -871,6 +877,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
 pub fn resolve_indicators_dynatrace_passthrough_test() {
   [
     #(
+      "Dynatrace indicators pass through without template resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
           friendly_label: "DT SLO",
@@ -1062,6 +1069,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
 
   [
     #(
+      "mixed vendors (Datadog + Honeycomb) resolves both correctly",
       [datadog_ir, honeycomb_ir],
       Ok([
         ir.IntermediateRepresentation(

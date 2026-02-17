@@ -13,14 +13,14 @@ import test_helpers
 // * ✅ case sensitive
 pub fn levenshtein_test() {
   [
-    #("", "", 0),
-    #("hello", "hello", 0),
-    #("cat", "cats", 1),
-    #("cats", "cat", 1),
-    #("cat", "car", 1),
-    #("kitten", "sitting", 3),
-    #("abc", "xyz", 3),
-    #("String", "string", 1),
+    #("empty strings", "", "", 0),
+    #("identical strings", "hello", "hello", 0),
+    #("single insertion", "cat", "cats", 1),
+    #("single deletion", "cats", "cat", 1),
+    #("single substitution", "cat", "car", 1),
+    #("multiple edits", "kitten", "sitting", 3),
+    #("completely different", "abc", "xyz", 3),
+    #("case sensitive", "String", "string", 1),
   ]
   |> test_helpers.array_based_test_executor_2(string_distance.levenshtein)
 }
@@ -35,17 +35,42 @@ pub fn levenshtein_test() {
 pub fn closest_match_test() {
   [
     // Exact match
-    #("String", ["String", "Integer", "Float"], option.Some("String")),
+    #(
+      "exact match returns it",
+      "String",
+      ["String", "Integer", "Float"],
+      option.Some("String"),
+    ),
     // Close match (1 edit: Strin -> String)
-    #("Strin", ["String", "Integer", "Float"], option.Some("String")),
+    #(
+      "close match within threshold",
+      "Strin",
+      ["String", "Integer", "Float"],
+      option.Some("String"),
+    ),
     // Too far (abc -> String is distance 6)
-    #("abc", ["String", "Integer", "Float"], option.None),
+    #(
+      "no match when too far",
+      "abc",
+      ["String", "Integer", "Float"],
+      option.None,
+    ),
     // Empty candidates
-    #("String", [], option.None),
+    #("empty candidates returns None", "String", [], option.None),
     // Picks closest
-    #("Integr", ["String", "Integer", "Float"], option.Some("Integer")),
+    #(
+      "picks closest among multiple candidates",
+      "Integr",
+      ["String", "Integer", "Float"],
+      option.Some("Integer"),
+    ),
     // Type name typo
-    #("Boolan", ["Boolean", "String", "Integer"], option.Some("Boolean")),
+    #(
+      "type name typo scenario",
+      "Boolan",
+      ["Boolean", "String", "Integer"],
+      option.Some("Boolean"),
+    ),
   ]
   |> test_helpers.array_based_test_executor_2(string_distance.closest_match)
 }

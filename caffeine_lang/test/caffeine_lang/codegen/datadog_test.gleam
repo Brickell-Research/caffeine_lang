@@ -1080,10 +1080,11 @@ pub fn generate_terraform_test() {
 // * ❌ 15 -> Error (in range 1-90 but not in Datadog's {7,30,90})
 pub fn window_to_timeframe_test() {
   [
-    #(7, Ok("7d")),
-    #(30, Ok("30d")),
-    #(90, Ok("90d")),
+    #("7 -> 7d", 7, Ok("7d")),
+    #("30 -> 30d", 30, Ok("30d")),
+    #("90 -> 90d", 90, Ok("90d")),
     #(
+      "15 -> Error (not in Datadog's accepted set)",
       15,
       Error(errors.GeneratorTerraformResolutionError(
         vendor: constants.vendor_datadog,

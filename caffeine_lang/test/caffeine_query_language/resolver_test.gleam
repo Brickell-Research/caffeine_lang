@@ -49,9 +49,14 @@ pub fn resolve_primitives_test() {
 
   [
     // simple good over total (A / B)
-    #("A / B", Ok(resolver.GoodOverTotal(prim_word("A"), prim_word("B")))),
+    #(
+      "simple good over total (A / B)",
+      "A / B",
+      Ok(resolver.GoodOverTotal(prim_word("A"), prim_word("B"))),
+    ),
     // moderately complex good over total ((A + B) / C)
     #(
+      "moderately complex good over total ((A + B) / C)",
       "(A + B) / C",
       Ok(resolver.GoodOverTotal(
         parens(simple_op_cont("A", "B", ast.Add)),
@@ -60,11 +65,13 @@ pub fn resolve_primitives_test() {
     ),
     // nested and complex good over total
     #(
+      "nested and complex good over total",
       "((A - G) + B) / (C + (D + E) * F)",
       Ok(resolver.GoodOverTotal(lhs_complex, rhs_complex)),
     ),
     // error for simple non-division expression
     #(
+      "error for simple non-division expression",
       "A + B",
       Error(errors.CQLResolverError(
         msg: "Invalid expression. Expected a top level division operator or time_slice.",
@@ -73,6 +80,7 @@ pub fn resolve_primitives_test() {
     ),
     // error for moderately complex non-division expression
     #(
+      "error for moderately complex non-division expression",
       "A + B / C + D",
       Error(errors.CQLResolverError(
         msg: "Invalid expression. Expected a top level division operator or time_slice.",
@@ -81,6 +89,7 @@ pub fn resolve_primitives_test() {
     ),
     // error for nested and complex non-division expression
     #(
+      "error for nested and complex non-division expression",
       "((A + B) - E) / C + D",
       Error(errors.CQLResolverError(
         msg: "Invalid expression. Expected a top level division operator or time_slice.",
@@ -97,6 +106,7 @@ pub fn resolve_time_slice_valid_test() {
   [
     // time_slice(Query > 1000000 per 10s) - basic
     #(
+      "time_slice basic with >",
       "time_slice(Query > 1000000 per 10s)",
       Ok(resolver.TimeSlice(
         comparator: ast.GreaterThan,
@@ -107,6 +117,7 @@ pub fn resolve_time_slice_valid_test() {
     ),
     // time_slice(Query >= 100 per 60s) - different comparator
     #(
+      "time_slice different comparator >=",
       "time_slice(Query >= 100 per 60s)",
       Ok(resolver.TimeSlice(
         comparator: ast.GreaterThanOrEqualTo,
@@ -117,6 +128,7 @@ pub fn resolve_time_slice_valid_test() {
     ),
     // time_slice(Query < 99.5 per 5m) - decimal threshold, minutes
     #(
+      "time_slice decimal threshold, minutes",
       "time_slice(Query < 99.5 per 5m)",
       Ok(resolver.TimeSlice(
         comparator: ast.LessThan,
@@ -145,13 +157,26 @@ pub fn resolve_time_slice_invalid_test() {
 
   [
     // time_slice(Query > 100 per 10s) + B - keyword not at top level
-    #("time_slice(Query > 100 per 10s) + B", not_division_or_time_slice_error),
+    #(
+      "keyword not at top level (left operand)",
+      "time_slice(Query > 100 per 10s) + B",
+      not_division_or_time_slice_error,
+    ),
     // A + time_slice(Query > 100 per 10s) - keyword not at top level
-    #("A + time_slice(Query > 100 per 10s)", not_division_or_time_slice_error),
+    #(
+      "keyword not at top level (right operand)",
+      "A + time_slice(Query > 100 per 10s)",
+      not_division_or_time_slice_error,
+    ),
     // (time_slice(Query > 100 per 10s)) - wrapped in parens
-    #("(time_slice(Query > 100 per 10s))", not_division_or_time_slice_error),
+    #(
+      "wrapped in parens",
+      "(time_slice(Query > 100 per 10s))",
+      not_division_or_time_slice_error,
+    ),
     // time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
     #(
+      "multiple keywords",
       "time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)",
       time_slice_operand_error,
     ),

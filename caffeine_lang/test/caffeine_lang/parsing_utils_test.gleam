@@ -10,18 +10,21 @@ import test_helpers
 // * ✅ single item (no comma)
 pub fn split_at_top_level_comma_test() {
   [
-    #("String, Integer", ["String", "Integer"]),
-    #("Dict(String, Integer), Float", ["Dict(String, Integer)", "Float"]),
-    #("String { x | x in { a, b } }, Integer", [
+    #("basic split", "String, Integer", ["String", "Integer"]),
+    #("commas inside parens ignored", "Dict(String, Integer), Float", [
+      "Dict(String, Integer)",
+      "Float",
+    ]),
+    #("commas inside braces ignored", "String { x | x in { a, b } }, Integer", [
       "String { x | x in { a, b } }",
       "Integer",
     ]),
-    #("Dict(String, List(Integer)), Boolean", [
+    #("nested parens and braces", "Dict(String, List(Integer)), Boolean", [
       "Dict(String, List(Integer))",
       "Boolean",
     ]),
-    #("", []),
-    #("String", ["String"]),
+    #("empty string", "", []),
+    #("single item (no comma)", "String", ["String"]),
   ]
   |> test_helpers.array_based_test_executor_1(
     parsing_utils.split_at_top_level_comma,
@@ -35,11 +38,15 @@ pub fn split_at_top_level_comma_test() {
 // * ✅ content after closing paren returns Error
 pub fn extract_paren_content_test() {
   [
-    #("(String)", Ok("String")),
-    #("(Dict(String, Integer))", Ok("Dict(String, Integer)")),
-    #("List(String)", Ok("String")),
-    #("no parens", Error(Nil)),
-    #("(String) { x | x in { a } }", Error(Nil)),
+    #("happy path - simple parens", "(String)", Ok("String")),
+    #("nested parens", "(Dict(String, Integer))", Ok("Dict(String, Integer)")),
+    #("prefix before parens", "List(String)", Ok("String")),
+    #("no parens returns Error", "no parens", Error(Nil)),
+    #(
+      "content after closing paren returns Error",
+      "(String) { x | x in { a } }",
+      Error(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(
     parsing_utils.extract_paren_content,
@@ -52,10 +59,10 @@ pub fn extract_paren_content_test() {
 // * ✅ nested parens
 pub fn paren_innerds_trimmed_test() {
   [
-    #("(String)", "String"),
-    #("( String )", "String"),
-    #("  hello  ", "hello"),
-    #("(Dict(String, Integer))", "Dict(String, Integer)"),
+    #("with parens -> inner content trimmed", "(String)", "String"),
+    #("with parens and spaces -> inner content trimmed", "( String )", "String"),
+    #("without parens -> raw string trimmed", "  hello  ", "hello"),
+    #("nested parens", "(Dict(String, Integer))", "Dict(String, Integer)"),
   ]
   |> test_helpers.array_based_test_executor_1(
     parsing_utils.paren_innerds_trimmed,
@@ -69,10 +76,13 @@ pub fn paren_innerds_trimmed_test() {
 // * ✅ no parens -> empty list
 pub fn paren_innerds_split_and_trimmed_test() {
   [
-    #("(String)", ["String"]),
-    #("(String, Integer)", ["String", "Integer"]),
-    #("(String, Dict(String, Integer))", ["String", "Dict(String, Integer)"]),
-    #("no parens", []),
+    #("single arg", "(String)", ["String"]),
+    #("multiple args", "(String, Integer)", ["String", "Integer"]),
+    #("nested types", "(String, Dict(String, Integer))", [
+      "String",
+      "Dict(String, Integer)",
+    ]),
+    #("no parens -> empty list", "no parens", []),
   ]
   |> test_helpers.array_based_test_executor_1(
     parsing_utils.paren_innerds_split_and_trimmed,

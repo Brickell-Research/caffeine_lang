@@ -73,20 +73,33 @@ pub fn validate_value_type_test() {
 
   [
     // Basic types
-    #(some_bool, types.PrimitiveType(types.Boolean), Ok(some_bool)),
     #(
+      "Boolean happy",
+      some_bool,
+      types.PrimitiveType(types.Boolean),
+      Ok(some_bool),
+    ),
+    #(
+      "Integer happy",
       some_int,
       types.PrimitiveType(types.NumericType(types.Integer)),
       Ok(some_int),
     ),
     #(
+      "Float happy",
       some_float,
       types.PrimitiveType(types.NumericType(types.Float)),
       Ok(some_float),
     ),
-    #(some_string, types.PrimitiveType(types.String), Ok(some_string)),
+    #(
+      "String happy",
+      some_string,
+      types.PrimitiveType(types.String),
+      Ok(some_string),
+    ),
     // Dict types
     #(
+      "Dict(String, String) happy",
       dict_string_string,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -95,6 +108,7 @@ pub fn validate_value_type_test() {
       Ok(dict_string_string),
     ),
     #(
+      "Dict(String, Integer) happy",
       dict_string_int,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -103,6 +117,7 @@ pub fn validate_value_type_test() {
       Ok(dict_string_int),
     ),
     #(
+      "Dict(String, Float) happy",
       dict_string_float,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -111,6 +126,7 @@ pub fn validate_value_type_test() {
       Ok(dict_string_float),
     ),
     #(
+      "Dict(String, Boolean) happy",
       dict_string_bool,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -120,11 +136,13 @@ pub fn validate_value_type_test() {
     ),
     // List types
     #(
+      "List(String) happy",
       list_string,
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       Ok(list_string),
     ),
     #(
+      "List(Integer) happy",
       list_int,
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Integer))),
@@ -132,11 +150,13 @@ pub fn validate_value_type_test() {
       Ok(list_int),
     ),
     #(
+      "List(Boolean) happy",
       list_bool,
       types.CollectionType(types.List(types.PrimitiveType(types.Boolean))),
       Ok(list_bool),
     ),
     #(
+      "List(Float) happy",
       list_float,
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Float))),
@@ -145,11 +165,13 @@ pub fn validate_value_type_test() {
     ),
     // Empty collections
     #(
+      "Empty List happy",
       empty_list,
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       Ok(empty_list),
     ),
     #(
+      "Empty Dict happy",
       empty_dict,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -159,11 +181,13 @@ pub fn validate_value_type_test() {
     ),
     // Optional types with values
     #(
+      "Optional(String) with value",
       some_string,
       types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
       Ok(some_string),
     ),
     #(
+      "Optional(Integer) with value",
       some_int,
       types.ModifierType(
         types.Optional(types.PrimitiveType(types.NumericType(types.Integer))),
@@ -171,6 +195,7 @@ pub fn validate_value_type_test() {
       Ok(some_int),
     ),
     #(
+      "Optional(Float) with value",
       some_float,
       types.ModifierType(
         types.Optional(types.PrimitiveType(types.NumericType(types.Float))),
@@ -178,12 +203,14 @@ pub fn validate_value_type_test() {
       Ok(some_float),
     ),
     #(
+      "Optional(Boolean) with value",
       some_bool,
       types.ModifierType(types.Optional(types.PrimitiveType(types.Boolean))),
       Ok(some_bool),
     ),
     // Optional List types
     #(
+      "Optional(List(String)) with value",
       list_string,
       types.ModifierType(
         types.Optional(
@@ -194,6 +221,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional Dict types
     #(
+      "Optional(Dict(String, String)) with value",
       dict_string_string,
       types.ModifierType(
         types.Optional(
@@ -207,6 +235,7 @@ pub fn validate_value_type_test() {
     ),
     // Defaulted types with values
     #(
+      "Defaulted(String, default) with value",
       some_string,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.String),
@@ -215,6 +244,7 @@ pub fn validate_value_type_test() {
       Ok(some_string),
     ),
     #(
+      "Defaulted(Integer, default) with value",
       some_int,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.NumericType(types.Integer)),
@@ -223,6 +253,7 @@ pub fn validate_value_type_test() {
       Ok(some_int),
     ),
     #(
+      "Defaulted(Float, default) with value",
       some_float,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.NumericType(types.Float)),
@@ -231,6 +262,7 @@ pub fn validate_value_type_test() {
       Ok(some_float),
     ),
     #(
+      "Defaulted(Boolean, default) with value",
       some_bool,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.Boolean),
@@ -240,6 +272,7 @@ pub fn validate_value_type_test() {
     ),
     // Nested types
     #(
+      "List(List(String)) happy",
       value.ListValue([list_string, list_string]),
       types.CollectionType(
         types.List(
@@ -249,6 +282,7 @@ pub fn validate_value_type_test() {
       Ok(value.ListValue([list_string, list_string])),
     ),
     #(
+      "Dict(String, Dict(String, Integer)) happy",
       value.DictValue(dict.from_list([#("a", dict_string_int)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -260,6 +294,7 @@ pub fn validate_value_type_test() {
       Ok(value.DictValue(dict.from_list([#("a", dict_string_int)]))),
     ),
     #(
+      "List(Dict(String, String)) happy",
       value.ListValue([dict_string_string]),
       types.CollectionType(
         types.List(
@@ -287,6 +322,7 @@ pub fn validate_value_type_test() {
   [
     // Basic types
     #(
+      "Boolean sad",
       some_string,
       types.PrimitiveType(types.Boolean),
       json_error(
@@ -294,6 +330,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Integer sad",
       some_string,
       types.PrimitiveType(types.NumericType(types.Integer)),
       json_error(
@@ -301,6 +338,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Float sad",
       some_string,
       types.PrimitiveType(types.NumericType(types.Float)),
       json_error(
@@ -308,6 +346,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "String sad",
       some_bool,
       types.PrimitiveType(types.String),
       json_error(
@@ -316,6 +355,7 @@ pub fn validate_value_type_test() {
     ),
     // Dict types
     #(
+      "Dict(String, String) sad",
       value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -326,6 +366,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Dict(String, Integer) sad",
       value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -334,6 +375,7 @@ pub fn validate_value_type_test() {
       json_error("expected (Int) received (Bool) value (Dict) for (some_key.a)"),
     ),
     #(
+      "Dict(String, Float) sad",
       value.DictValue(dict.from_list([#("a", some_bool)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -344,6 +386,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Dict(String, Boolean) sad",
       value.DictValue(dict.from_list([#("a", some_string)])),
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -355,6 +398,7 @@ pub fn validate_value_type_test() {
     ),
     // List types
     #(
+      "List(String) sad",
       value.ListValue([some_string, some_bool]),
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       json_error(
@@ -362,6 +406,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "List(Integer) sad",
       value.ListValue([value.IntValue(1), some_bool]),
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Integer))),
@@ -369,6 +414,7 @@ pub fn validate_value_type_test() {
       json_error("expected (Int) received (Bool) value (List) for (some_key.1)"),
     ),
     #(
+      "List(Boolean) sad",
       value.ListValue([some_bool, some_string]),
       types.CollectionType(types.List(types.PrimitiveType(types.Boolean))),
       json_error(
@@ -376,6 +422,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "List(Float) sad",
       value.ListValue([value.FloatValue(1.1), some_bool]),
       types.CollectionType(
         types.List(types.PrimitiveType(types.NumericType(types.Float))),
@@ -386,6 +433,7 @@ pub fn validate_value_type_test() {
     ),
     // Wrong structure types
     #(
+      "wrong structure - string for List",
       some_string,
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       json_error(
@@ -393,6 +441,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "wrong structure - string for Dict",
       some_string,
       types.CollectionType(types.Dict(
         types.PrimitiveType(types.String),
@@ -404,6 +453,7 @@ pub fn validate_value_type_test() {
     ),
     // Multi-entry collection with one bad value
     #(
+      "multi-entry collection with one bad value",
       value.DictValue(
         dict.from_list([
           #("a", other_string),
@@ -420,6 +470,7 @@ pub fn validate_value_type_test() {
     ),
     // List with first element wrong
     #(
+      "list with first element wrong",
       value.ListValue([some_bool, some_string]),
       types.CollectionType(types.List(types.PrimitiveType(types.String))),
       json_error(
@@ -428,6 +479,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional types with wrong inner type
     #(
+      "Optional(String) sad",
       some_bool,
       types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
       json_error(
@@ -435,6 +487,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Optional(Integer) sad",
       some_string,
       types.ModifierType(
         types.Optional(types.PrimitiveType(types.NumericType(types.Integer))),
@@ -445,6 +498,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional List with wrong inner type
     #(
+      "Optional(List(String)) sad",
       value.ListValue([some_bool]),
       types.ModifierType(
         types.Optional(
@@ -457,6 +511,7 @@ pub fn validate_value_type_test() {
     ),
     // Optional Dict with wrong value type
     #(
+      "Optional(Dict(String, String)) sad",
       value.DictValue(dict.from_list([#("a", some_bool)])),
       types.ModifierType(
         types.Optional(
@@ -472,6 +527,7 @@ pub fn validate_value_type_test() {
     ),
     // Defaulted types with wrong inner type
     #(
+      "Defaulted(String, default) sad",
       some_bool,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.String),
@@ -482,6 +538,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Defaulted(Integer, default) sad",
       some_string,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.NumericType(types.Integer)),
@@ -493,6 +550,7 @@ pub fn validate_value_type_test() {
     ),
     // Nested types with wrong inner type
     #(
+      "List(List(String)) sad",
       value.ListValue([value.ListValue([some_bool])]),
       types.CollectionType(
         types.List(
@@ -504,6 +562,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "Dict(String, Dict(String, String)) sad",
       value.DictValue(
         dict.from_list([
           #("a", value.DictValue(dict.from_list([#("a", some_bool)]))),
@@ -521,6 +580,7 @@ pub fn validate_value_type_test() {
       ),
     ),
     #(
+      "List(Dict(String, String)) sad",
       value.ListValue([value.DictValue(dict.from_list([#("a", some_bool)]))]),
       types.CollectionType(
         types.List(
@@ -878,8 +938,12 @@ pub fn validate_relevant_uniqueness_test() {
 
   // happy paths
   [
-    #([], Ok(Nil)),
-    #([#("alice", 1), #("bob", 2), #("charlie", 3)], Ok(Nil)),
+    #("no things to validate", [], Ok(Nil)),
+    #(
+      "multiple things to validate",
+      [#("alice", 1), #("bob", 2), #("charlie", 3)],
+      Ok(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(things) {
     validations.validate_relevant_uniqueness(
@@ -892,6 +956,7 @@ pub fn validate_relevant_uniqueness_test() {
   // sad paths - exact match
   [
     #(
+      "one non-unique",
       [#("alice", 1), #("alice", 2)],
       Error(errors.LinkerDuplicateError(
         msg: "Duplicate names: alice",

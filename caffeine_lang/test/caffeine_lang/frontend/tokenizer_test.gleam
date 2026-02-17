@@ -25,15 +25,23 @@ fn tokenize_tokens(
 // * ✅ x keyword
 pub fn tokenize_keywords_test() {
   [
-    #("Blueprints", Ok([token.KeywordBlueprints, token.EOF])),
-    #("Expectations", Ok([token.KeywordExpectations, token.EOF])),
-    #("for", Ok([token.KeywordFor, token.EOF])),
-    #("extends", Ok([token.KeywordExtends, token.EOF])),
-    #("Requires", Ok([token.KeywordRequires, token.EOF])),
-    #("Provides", Ok([token.KeywordProvides, token.EOF])),
-    #("Type", Ok([token.KeywordType, token.EOF])),
-    #("in", Ok([token.KeywordIn, token.EOF])),
-    #("x", Ok([token.KeywordX, token.EOF])),
+    #(
+      "Blueprints keyword",
+      "Blueprints",
+      Ok([token.KeywordBlueprints, token.EOF]),
+    ),
+    #(
+      "Expects keyword",
+      "Expectations",
+      Ok([token.KeywordExpectations, token.EOF]),
+    ),
+    #("for keyword", "for", Ok([token.KeywordFor, token.EOF])),
+    #("extends keyword", "extends", Ok([token.KeywordExtends, token.EOF])),
+    #("Requires keyword", "Requires", Ok([token.KeywordRequires, token.EOF])),
+    #("Provides keyword", "Provides", Ok([token.KeywordProvides, token.EOF])),
+    #("Type keyword", "Type", Ok([token.KeywordType, token.EOF])),
+    #("in keyword", "in", Ok([token.KeywordIn, token.EOF])),
+    #("x keyword", "x", Ok([token.KeywordX, token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -51,16 +59,16 @@ pub fn tokenize_keywords_test() {
 // * ✅ Percentage type
 pub fn tokenize_type_keywords_test() {
   [
-    #("String", Ok([token.KeywordString, token.EOF])),
-    #("Integer", Ok([token.KeywordInteger, token.EOF])),
-    #("Float", Ok([token.KeywordFloat, token.EOF])),
-    #("Boolean", Ok([token.KeywordBoolean, token.EOF])),
-    #("URL", Ok([token.KeywordURL, token.EOF])),
-    #("List", Ok([token.KeywordList, token.EOF])),
-    #("Dict", Ok([token.KeywordDict, token.EOF])),
-    #("Optional", Ok([token.KeywordOptional, token.EOF])),
-    #("Defaulted", Ok([token.KeywordDefaulted, token.EOF])),
-    #("Percentage", Ok([token.KeywordPercentage, token.EOF])),
+    #("String type", "String", Ok([token.KeywordString, token.EOF])),
+    #("Integer type", "Integer", Ok([token.KeywordInteger, token.EOF])),
+    #("Float type", "Float", Ok([token.KeywordFloat, token.EOF])),
+    #("Boolean type", "Boolean", Ok([token.KeywordBoolean, token.EOF])),
+    #("URL type", "URL", Ok([token.KeywordURL, token.EOF])),
+    #("List type", "List", Ok([token.KeywordList, token.EOF])),
+    #("Dict type", "Dict", Ok([token.KeywordDict, token.EOF])),
+    #("Optional type", "Optional", Ok([token.KeywordOptional, token.EOF])),
+    #("Defaulted type", "Defaulted", Ok([token.KeywordDefaulted, token.EOF])),
+    #("Percentage type", "Percentage", Ok([token.KeywordPercentage, token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -75,16 +83,34 @@ pub fn tokenize_type_keywords_test() {
 // * ✅ complex query string
 pub fn tokenize_string_literals_test() {
   [
-    #("\"hello\"", Ok([token.LiteralString("hello"), token.EOF])),
-    #("\"hello world\"", Ok([token.LiteralString("hello world"), token.EOF])),
-    #("\"\"", Ok([token.LiteralString(""), token.EOF])),
-    #("\"${env}\"", Ok([token.LiteralString("${env}"), token.EOF])),
-    #("\"${env->env}\"", Ok([token.LiteralString("${env->env}"), token.EOF])),
     #(
+      "simple string",
+      "\"hello\"",
+      Ok([token.LiteralString("hello"), token.EOF]),
+    ),
+    #(
+      "string with spaces",
+      "\"hello world\"",
+      Ok([token.LiteralString("hello world"), token.EOF]),
+    ),
+    #("empty string", "\"\"", Ok([token.LiteralString(""), token.EOF])),
+    #(
+      "string with template variable",
+      "\"${env}\"",
+      Ok([token.LiteralString("${env}"), token.EOF]),
+    ),
+    #(
+      "string with key-value template",
+      "\"${env->env}\"",
+      Ok([token.LiteralString("${env->env}"), token.EOF]),
+    ),
+    #(
+      "string with negated template",
       "\"${status->status.not}\"",
       Ok([token.LiteralString("${status->status.not}"), token.EOF]),
     ),
     #(
+      "complex query string",
       "\"sum:http.requests{${env->env}, ${status->status.not}}\"",
       Ok([
         token.LiteralString(
@@ -110,16 +136,28 @@ pub fn tokenize_string_literals_test() {
 // * ✅ zero percentage
 pub fn tokenize_numeric_literals_test() {
   [
-    #("42", Ok([token.LiteralInteger(42), token.EOF])),
-    #("-42", Ok([token.LiteralInteger(-42), token.EOF])),
-    #("0", Ok([token.LiteralInteger(0), token.EOF])),
-    #("3.14", Ok([token.LiteralFloat(3.14), token.EOF])),
-    #("-3.14", Ok([token.LiteralFloat(-3.14), token.EOF])),
-    #("0.0", Ok([token.LiteralFloat(0.0), token.EOF])),
-    #("99.95", Ok([token.LiteralFloat(99.95), token.EOF])),
-    #("99.9%", Ok([token.LiteralPercentage(99.9), token.EOF])),
-    #("100%", Ok([token.LiteralPercentage(100.0), token.EOF])),
-    #("0%", Ok([token.LiteralPercentage(0.0), token.EOF])),
+    #("positive integer", "42", Ok([token.LiteralInteger(42), token.EOF])),
+    #("negative integer", "-42", Ok([token.LiteralInteger(-42), token.EOF])),
+    #("zero integer", "0", Ok([token.LiteralInteger(0), token.EOF])),
+    #("positive float", "3.14", Ok([token.LiteralFloat(3.14), token.EOF])),
+    #("negative float", "-3.14", Ok([token.LiteralFloat(-3.14), token.EOF])),
+    #("zero float", "0.0", Ok([token.LiteralFloat(0.0), token.EOF])),
+    #(
+      "float with decimals",
+      "99.95",
+      Ok([token.LiteralFloat(99.95), token.EOF]),
+    ),
+    #(
+      "percentage from float",
+      "99.9%",
+      Ok([token.LiteralPercentage(99.9), token.EOF]),
+    ),
+    #(
+      "percentage from integer",
+      "100%",
+      Ok([token.LiteralPercentage(100.0), token.EOF]),
+    ),
+    #("zero percentage", "0%", Ok([token.LiteralPercentage(0.0), token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -129,8 +167,8 @@ pub fn tokenize_numeric_literals_test() {
 // * ✅ false literal
 pub fn tokenize_boolean_literals_test() {
   [
-    #("true", Ok([token.LiteralTrue, token.EOF])),
-    #("false", Ok([token.LiteralFalse, token.EOF])),
+    #("true literal", "true", Ok([token.LiteralTrue, token.EOF])),
+    #("false literal", "false", Ok([token.LiteralFalse, token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -143,11 +181,27 @@ pub fn tokenize_boolean_literals_test() {
 // * ✅ mixed case identifier
 pub fn tokenize_identifiers_test() {
   [
-    #("env", Ok([token.Identifier("env"), token.EOF])),
-    #("_common", Ok([token.Identifier("_common"), token.EOF])),
-    #("p99", Ok([token.Identifier("p99"), token.EOF])),
-    #("api_availability", Ok([token.Identifier("api_availability"), token.EOF])),
-    #("window_in_days", Ok([token.Identifier("window_in_days"), token.EOF])),
+    #("simple identifier", "env", Ok([token.Identifier("env"), token.EOF])),
+    #(
+      "underscore prefix",
+      "_common",
+      Ok([token.Identifier("_common"), token.EOF]),
+    ),
+    #(
+      "identifier with numbers",
+      "p99",
+      Ok([token.Identifier("p99"), token.EOF]),
+    ),
+    #(
+      "identifier with underscores",
+      "api_availability",
+      Ok([token.Identifier("api_availability"), token.EOF]),
+    ),
+    #(
+      "mixed case identifier",
+      "window_in_days",
+      Ok([token.Identifier("window_in_days"), token.EOF]),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -167,18 +221,18 @@ pub fn tokenize_identifiers_test() {
 // * ✅ dot dot
 pub fn tokenize_symbols_test() {
   [
-    #("{", Ok([token.SymbolLeftBrace, token.EOF])),
-    #("}", Ok([token.SymbolRightBrace, token.EOF])),
-    #("(", Ok([token.SymbolLeftParen, token.EOF])),
-    #(")", Ok([token.SymbolRightParen, token.EOF])),
-    #("[", Ok([token.SymbolLeftBracket, token.EOF])),
-    #("]", Ok([token.SymbolRightBracket, token.EOF])),
-    #(":", Ok([token.SymbolColon, token.EOF])),
-    #(",", Ok([token.SymbolComma, token.EOF])),
-    #("*", Ok([token.SymbolStar, token.EOF])),
-    #("+", Ok([token.SymbolPlus, token.EOF])),
-    #("|", Ok([token.SymbolPipe, token.EOF])),
-    #("..", Ok([token.SymbolDotDot, token.EOF])),
+    #("left brace", "{", Ok([token.SymbolLeftBrace, token.EOF])),
+    #("right brace", "}", Ok([token.SymbolRightBrace, token.EOF])),
+    #("left paren", "(", Ok([token.SymbolLeftParen, token.EOF])),
+    #("right paren", ")", Ok([token.SymbolRightParen, token.EOF])),
+    #("left bracket", "[", Ok([token.SymbolLeftBracket, token.EOF])),
+    #("right bracket", "]", Ok([token.SymbolRightBracket, token.EOF])),
+    #("colon", ":", Ok([token.SymbolColon, token.EOF])),
+    #("comma", ",", Ok([token.SymbolComma, token.EOF])),
+    #("star", "*", Ok([token.SymbolStar, token.EOF])),
+    #("plus", "+", Ok([token.SymbolPlus, token.EOF])),
+    #("pipe", "|", Ok([token.SymbolPipe, token.EOF])),
+    #("dot dot", "..", Ok([token.SymbolDotDot, token.EOF])),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -192,12 +246,17 @@ pub fn tokenize_symbols_test() {
 // * ✅ trailing spaces ignored
 pub fn tokenize_whitespace_test() {
   [
-    #("\n", Ok([token.WhitespaceNewline, token.EOF])),
-    #("\n\n\n", Ok([token.WhitespaceNewline, token.EOF])),
-    #("  ", Ok([token.WhitespaceIndent(2), token.EOF])),
-    #("    ", Ok([token.WhitespaceIndent(4), token.EOF])),
-    #("\t", Ok([token.WhitespaceIndent(2), token.EOF])),
+    #("single newline", "\n", Ok([token.WhitespaceNewline, token.EOF])),
     #(
+      "multiple newlines collapse",
+      "\n\n\n",
+      Ok([token.WhitespaceNewline, token.EOF]),
+    ),
+    #("two space indent", "  ", Ok([token.WhitespaceIndent(2), token.EOF])),
+    #("four space indent", "    ", Ok([token.WhitespaceIndent(4), token.EOF])),
+    #("tab indent", "\t", Ok([token.WhitespaceIndent(2), token.EOF])),
+    #(
+      "trailing spaces ignored",
       "  env  ",
       Ok([token.WhitespaceIndent(2), token.Identifier("env"), token.EOF]),
     ),
@@ -212,14 +271,17 @@ pub fn tokenize_whitespace_test() {
 pub fn tokenize_comments_test() {
   [
     #(
+      "line comment",
       "# This is a comment",
       Ok([token.CommentLine(" This is a comment"), token.EOF]),
     ),
     #(
+      "section comment",
       "## API Availability",
       Ok([token.CommentSection(" API Availability"), token.EOF]),
     ),
     #(
+      "comment with newline",
       "# comment\n",
       Ok([token.CommentLine(" comment"), token.WhitespaceNewline, token.EOF]),
     ),
@@ -233,6 +295,7 @@ pub fn tokenize_comments_test() {
 pub fn tokenize_blueprint_header_test() {
   [
     #(
+      "single artifact header",
       "Blueprints for \"SLO\"",
       Ok([
         token.KeywordBlueprints,
@@ -242,6 +305,7 @@ pub fn tokenize_blueprint_header_test() {
       ]),
     ),
     #(
+      "multi-artifact header",
       "Blueprints for \"SLO\" + \"DependencyRelation\"",
       Ok([
         token.KeywordBlueprints,
@@ -261,6 +325,7 @@ pub fn tokenize_blueprint_header_test() {
 pub fn tokenize_expects_header_test() {
   [
     #(
+      "expects header line",
       "Expectations for \"api_availability\"",
       Ok([
         token.KeywordExpectations,
@@ -279,6 +344,7 @@ pub fn tokenize_expects_header_test() {
 pub fn tokenize_extendable_test() {
   [
     #(
+      "requires extendable",
       "_common (Requires): { env: String }",
       Ok([
         token.Identifier("_common"),
@@ -295,6 +361,7 @@ pub fn tokenize_extendable_test() {
       ]),
     ),
     #(
+      "provides extendable",
       "_base (Provides): { vendor: \"datadog\" }",
       Ok([
         token.Identifier("_base"),
@@ -320,6 +387,7 @@ pub fn tokenize_extendable_test() {
 pub fn tokenize_blueprint_item_test() {
   [
     #(
+      "item with extends",
       "* \"api_availability\" extends [_base]:",
       Ok([
         token.SymbolStar,
@@ -333,6 +401,7 @@ pub fn tokenize_blueprint_item_test() {
       ]),
     ),
     #(
+      "item without extends",
       "* \"latency\":",
       Ok([
         token.SymbolStar,
@@ -350,6 +419,7 @@ pub fn tokenize_blueprint_item_test() {
 pub fn tokenize_requires_block_test() {
   [
     #(
+      "multiple fields",
       "Requires { env: String, threshold: Float }",
       Ok([
         token.KeywordRequires,
@@ -374,6 +444,7 @@ pub fn tokenize_requires_block_test() {
 pub fn tokenize_provides_block_test() {
   [
     #(
+      "string and float values",
       "Provides { vendor: \"datadog\", threshold: 99.95 }",
       Ok([
         token.KeywordProvides,
@@ -398,6 +469,7 @@ pub fn tokenize_provides_block_test() {
 pub fn tokenize_refinement_oneof_test() {
   [
     #(
+      "oneof with strings",
       "String { x | x in { \"production\", \"staging\" } }",
       Ok([
         token.KeywordString,
@@ -424,6 +496,7 @@ pub fn tokenize_refinement_oneof_test() {
 pub fn tokenize_refinement_range_test() {
   [
     #(
+      "range with float bounds",
       "Float { x | x in ( 0.0 .. 100.0 ) }",
       Ok([
         token.KeywordFloat,
@@ -455,13 +528,37 @@ pub fn tokenize_refinement_range_test() {
 // * ✅ error with indent
 pub fn tokenize_errors_test() {
   [
-    #("\"unterminated", Error(tokenizer_error.UnterminatedString(1, 1))),
-    #("\"hello\nworld\"", Error(tokenizer_error.UnterminatedString(1, 1))),
-    #("@", Error(tokenizer_error.InvalidCharacter(1, 1, "@"))),
-    #("$", Error(tokenizer_error.InvalidCharacter(1, 1, "$"))),
-    #(".", Error(tokenizer_error.InvalidCharacter(1, 1, "."))),
-    #("env\n@", Error(tokenizer_error.InvalidCharacter(2, 1, "@"))),
-    #("env\n  @", Error(tokenizer_error.InvalidCharacter(2, 3, "@"))),
+    #(
+      "unterminated string",
+      "\"unterminated",
+      Error(tokenizer_error.UnterminatedString(1, 1)),
+    ),
+    #(
+      "string with newline",
+      "\"hello\nworld\"",
+      Error(tokenizer_error.UnterminatedString(1, 1)),
+    ),
+    #(
+      "invalid character @",
+      "@",
+      Error(tokenizer_error.InvalidCharacter(1, 1, "@")),
+    ),
+    #(
+      "invalid character $",
+      "$",
+      Error(tokenizer_error.InvalidCharacter(1, 1, "$")),
+    ),
+    #("single dot", ".", Error(tokenizer_error.InvalidCharacter(1, 1, "."))),
+    #(
+      "error on line 2",
+      "env\n@",
+      Error(tokenizer_error.InvalidCharacter(2, 1, "@")),
+    ),
+    #(
+      "error with indent",
+      "env\n  @",
+      Error(tokenizer_error.InvalidCharacter(2, 3, "@")),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(tokenize_tokens)
 }
@@ -471,6 +568,7 @@ pub fn tokenize_errors_test() {
 pub fn tokenize_multiline_test() {
   [
     #(
+      "full blueprint structure",
       "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }",
       Ok([
         token.KeywordBlueprints,
@@ -506,8 +604,9 @@ pub fn tokenize_multiline_test() {
 // * ✅ integer-only range
 pub fn tokenize_edge_cases_test() {
   [
-    #("", Ok([token.EOF])),
+    #("empty input", "", Ok([token.EOF])),
     #(
+      "integer range",
       "1..10",
       Ok([
         token.LiteralInteger(1),
@@ -516,16 +615,23 @@ pub fn tokenize_edge_cases_test() {
         token.EOF,
       ]),
     ),
-    #("\t  x", Ok([token.WhitespaceIndent(4), token.KeywordX, token.EOF])),
     #(
+      "mixed indent",
+      "\t  x",
+      Ok([token.WhitespaceIndent(4), token.KeywordX, token.EOF]),
+    ),
+    #(
+      "tab mid-line",
       "env\tString",
       Ok([token.Identifier("env"), token.KeywordString, token.EOF]),
     ),
     #(
+      "comment at EOF",
       "env # comment",
       Ok([token.Identifier("env"), token.CommentLine(" comment"), token.EOF]),
     ),
     #(
+      "multiple extends",
       "extends [_a, _b]",
       Ok([
         token.KeywordExtends,
@@ -538,6 +644,7 @@ pub fn tokenize_edge_cases_test() {
       ]),
     ),
     #(
+      "integer-only range",
       "0..100",
       Ok([
         token.LiteralInteger(0),

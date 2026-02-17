@@ -142,7 +142,11 @@ pub fn generate_terraform_test() {
 // * ✅ 90 -> 90 (maximum)
 // Range (1-90) enforced by standard library type constraint at linker level.
 pub fn window_to_time_period_test() {
-  [#(1, 1), #(30, 30), #(90, 90)]
+  [
+    #("1 -> 1 (minimum)", 1, 1),
+    #("30 -> 30", 30, 30),
+    #("90 -> 90 (maximum)", 90, 90),
+  ]
   |> test_helpers.array_based_test_executor_1(honeycomb.window_to_time_period)
 }
 

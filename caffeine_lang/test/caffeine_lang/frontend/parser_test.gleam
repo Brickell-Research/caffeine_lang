@@ -120,6 +120,7 @@ pub fn parse_blueprints_file_test() {
   [
     // single block
     #(
+      "happy path - single block",
       blueprints_path("happy_path_single_block"),
       Ok(
         ast.BlueprintsFile(
@@ -158,6 +159,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // multiple blocks
     #(
+      "happy path - multiple blocks",
       blueprints_path("happy_path_multiple_blocks"),
       Ok(
         ast.BlueprintsFile(
@@ -226,6 +228,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // multi artifact
     #(
+      "happy path - multi artifact",
       blueprints_path("happy_path_multi_artifact"),
       Ok(
         ast.BlueprintsFile(
@@ -274,6 +277,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // with extendable
     #(
+      "happy path - with Provides extendable",
       blueprints_path("happy_path_with_extendable"),
       Ok(
         ast.BlueprintsFile(
@@ -325,6 +329,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // with Requires extendable
     #(
+      "happy path - with Requires extendable",
       blueprints_path("happy_path_requires_extendable"),
       Ok(
         ast.BlueprintsFile(
@@ -381,6 +386,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // with extends
     #(
+      "happy path - with extends",
       blueprints_path("happy_path_with_extends"),
       Ok(
         ast.BlueprintsFile(
@@ -419,6 +425,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // multiple extends
     #(
+      "happy path - multiple extends",
       blueprints_path("happy_path_multiple_extends"),
       Ok(
         ast.BlueprintsFile(
@@ -457,6 +464,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
     #(
+      "happy path - advanced types",
       blueprints_path("happy_path_advanced_types"),
       Ok(
         ast.BlueprintsFile(
@@ -532,6 +540,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
     #(
+      "happy path - nested collections",
       blueprints_path("happy_path_nested_collections"),
       Ok(
         ast.BlueprintsFile(
@@ -608,6 +617,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // type alias
     #(
+      "happy path - type alias",
       blueprints_path("happy_path_type_alias"),
       Ok(
         ast.BlueprintsFile(
@@ -655,6 +665,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // record type
     #(
+      "happy path - record type",
       blueprints_path("happy_path_record_type"),
       Ok(
         ast.BlueprintsFile(
@@ -700,6 +711,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // percentage types (plain, refined, defaulted)
     #(
+      "happy path - percentage types",
       blueprints_path("happy_path_percentage_types"),
       Ok(
         ast.BlueprintsFile(
@@ -767,6 +779,7 @@ pub fn parse_expects_file_test() {
   [
     // single block
     #(
+      "happy path - single block",
       expects_path("happy_path_single_block"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
@@ -798,6 +811,7 @@ pub fn parse_expects_file_test() {
     ),
     // multiple blocks
     #(
+      "happy path - multiple blocks",
       expects_path("happy_path_multiple_blocks"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
@@ -838,6 +852,7 @@ pub fn parse_expects_file_test() {
     ),
     // with extendable
     #(
+      "happy path - with extendable",
       expects_path("happy_path_with_extendable"),
       Ok(
         ast.ExpectsFile(
@@ -886,6 +901,7 @@ pub fn parse_expects_file_test() {
     ),
     // with extends
     #(
+      "happy path - with extends",
       expects_path("happy_path_with_extends"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
@@ -917,6 +933,7 @@ pub fn parse_expects_file_test() {
     ),
     // list and struct literals
     #(
+      "happy path - list and struct literals",
       expects_path("happy_path_complex_literals"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
@@ -965,6 +982,7 @@ pub fn parse_expects_file_test() {
     ),
     // percentage literal
     #(
+      "happy path - percentage literal",
       expects_path("happy_path_percentage_literal"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
@@ -1015,21 +1033,25 @@ pub fn parse_expects_file_test() {
 pub fn parse_errors_test() {
   // Blueprints file errors - check that parsing returns Error
   [
-    #(errors_path("missing_blueprints_keyword"), True),
-    #(errors_path("missing_for_keyword"), True),
-    #(errors_path("missing_artifact_name"), True),
-    #(errors_path("missing_blueprint_name"), True),
-    #(errors_path("unknown_type"), True),
-    #(errors_path("unclosed_type_paren"), True),
-    #(errors_path("refinement_missing_x"), True),
-    #(errors_path("refinement_missing_in"), True),
-    #(errors_path("unclosed_struct_brace"), True),
-    #(errors_path("unclosed_extends_bracket"), True),
-    #(errors_path("missing_provides"), True),
-    #(errors_path("missing_item_colon"), True),
-    #(errors_path("invalid_extendable_kind"), True),
-    #(errors_path("missing_dict_value_type"), True),
-    #(errors_path("refinement_type_mismatch"), True),
+    #(
+      "missing Blueprints keyword",
+      errors_path("missing_blueprints_keyword"),
+      True,
+    ),
+    #("missing for keyword", errors_path("missing_for_keyword"), True),
+    #("missing artifact name", errors_path("missing_artifact_name"), True),
+    #("missing blueprint name", errors_path("missing_blueprint_name"), True),
+    #("unknown type", errors_path("unknown_type"), True),
+    #("unclosed type paren", errors_path("unclosed_type_paren"), True),
+    #("refinement missing x", errors_path("refinement_missing_x"), True),
+    #("refinement missing in", errors_path("refinement_missing_in"), True),
+    #("unclosed struct brace", errors_path("unclosed_struct_brace"), True),
+    #("unclosed extends bracket", errors_path("unclosed_extends_bracket"), True),
+    #("missing provides", errors_path("missing_provides"), True),
+    #("missing item colon", errors_path("missing_item_colon"), True),
+    #("invalid extendable kind", errors_path("invalid_extendable_kind"), True),
+    #("missing dict value type", errors_path("missing_dict_value_type"), True),
+    #("refinement type mismatch", errors_path("refinement_type_mismatch"), True),
   ]
   |> test_helpers.array_based_test_executor_1(fn(file_path) {
     case parser.parse_blueprints_file(read_file(file_path)) {
@@ -1039,7 +1061,7 @@ pub fn parse_errors_test() {
   })
 
   // Expects with Requires - check that parsing expects file returns Error
-  [#(errors_path("expects_with_requires"), True)]
+  [#("expects with Requires", errors_path("expects_with_requires"), True)]
   |> test_helpers.array_based_test_executor_1(fn(file_path) {
     case parser.parse_expects_file(read_file(file_path)) {
       Error(_) -> True

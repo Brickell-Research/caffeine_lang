@@ -27,13 +27,13 @@ import test_helpers
 // * ✅ Empty string
 pub fn parse_numeric_type_test() {
   [
-    #("Float", Ok(Float)),
-    #("Integer", Ok(Integer)),
-    #("Percentage", Ok(Percentage)),
-    #("Unknown", Error(Nil)),
-    #("", Error(Nil)),
-    #("float", Error(Nil)),
-    #("integer", Error(Nil)),
+    #("Float", "Float", Ok(Float)),
+    #("Integer", "Integer", Ok(Integer)),
+    #("Percentage", "Percentage", Ok(Percentage)),
+    #("Unknown type", "Unknown", Error(Nil)),
+    #("Empty string", "", Error(Nil)),
+    #("lowercase float", "float", Error(Nil)),
+    #("lowercase integer", "integer", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(types.parse_numeric_type)
 }
@@ -43,7 +43,11 @@ pub fn parse_numeric_type_test() {
 // * ✅ Integer -> "Integer"
 // * ✅ Percentage -> "Percentage"
 pub fn numeric_type_to_string_test() {
-  [#(Float, "Float"), #(Integer, "Integer"), #(Percentage, "Percentage")]
+  [
+    #("Float -> Float", Float, "Float"),
+    #("Integer -> Integer", Integer, "Integer"),
+    #("Percentage -> Percentage", Percentage, "Percentage"),
+  ]
   |> test_helpers.array_based_test_executor_1(types.numeric_type_to_string)
 }
 
@@ -61,24 +65,24 @@ pub fn numeric_type_to_string_test() {
 pub fn validate_numeric_default_value_test() {
   [
     // Integer
-    #(#(Integer, "42"), Ok(Nil)),
-    #(#(Integer, "-10"), Ok(Nil)),
-    #(#(Integer, "0"), Ok(Nil)),
-    #(#(Integer, "hello"), Error(Nil)),
-    #(#(Integer, "3.14"), Error(Nil)),
+    #("Integer with valid int string 42", #(Integer, "42"), Ok(Nil)),
+    #("Integer with valid int string -10", #(Integer, "-10"), Ok(Nil)),
+    #("Integer with valid int string 0", #(Integer, "0"), Ok(Nil)),
+    #("Integer with non-integer string", #(Integer, "hello"), Error(Nil)),
+    #("Integer with float string", #(Integer, "3.14"), Error(Nil)),
     // Float
-    #(#(Float, "3.14"), Ok(Nil)),
-    #(#(Float, "-1.5"), Ok(Nil)),
-    #(#(Float, "hello"), Error(Nil)),
+    #("Float with valid float string 3.14", #(Float, "3.14"), Ok(Nil)),
+    #("Float with valid float string -1.5", #(Float, "-1.5"), Ok(Nil)),
+    #("Float with non-float string", #(Float, "hello"), Error(Nil)),
     // Percentage
-    #(#(Percentage, "99.9%"), Ok(Nil)),
-    #(#(Percentage, "99.9"), Ok(Nil)),
-    #(#(Percentage, "0.0"), Ok(Nil)),
-    #(#(Percentage, "100.0"), Ok(Nil)),
-    #(#(Percentage, "101.0"), Error(Nil)),
-    #(#(Percentage, "-1.0"), Error(Nil)),
-    #(#(Percentage, "abc"), Error(Nil)),
-    #(#(Percentage, "99.9%%"), Error(Nil)),
+    #("Percentage with % suffix", #(Percentage, "99.9%"), Ok(Nil)),
+    #("Percentage with valid float string", #(Percentage, "99.9"), Ok(Nil)),
+    #("Percentage at lower bound", #(Percentage, "0.0"), Ok(Nil)),
+    #("Percentage at upper bound", #(Percentage, "100.0"), Ok(Nil)),
+    #("Percentage out of range high", #(Percentage, "101.0"), Error(Nil)),
+    #("Percentage out of range low", #(Percentage, "-1.0"), Error(Nil)),
+    #("Percentage invalid string", #(Percentage, "abc"), Error(Nil)),
+    #("Percentage double % suffix", #(Percentage, "99.9%%"), Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_numeric_default_value(input.0, input.1)
@@ -99,12 +103,14 @@ pub fn validate_numeric_value_test() {
 
   // Integer validation
   [
-    #(#(Integer, int_val), Ok(int_val)),
+    #("Integer with valid int value", #(Integer, int_val), Ok(int_val)),
     #(
+      "Integer with string value",
       #(Integer, string_val),
       Error([types.ValidationError(expected: "Int", found: "String", path: [])]),
     ),
     #(
+      "Integer with float value",
       #(Integer, float_val),
       Error([types.ValidationError(expected: "Int", found: "Float", path: [])]),
     ),
@@ -116,8 +122,9 @@ pub fn validate_numeric_value_test() {
   // Float validation
   // Note: Int -> Float validation is platform-specific (JS doesn't distinguish Int/Float)
   [
-    #(#(Float, float_val), Ok(float_val)),
+    #("Float with valid float value", #(Float, float_val), Ok(float_val)),
     #(
+      "Float with string value",
       #(Float, string_val),
       Error([
         types.ValidationError(expected: "Float", found: "String", path: []),
@@ -133,10 +140,19 @@ pub fn validate_numeric_value_test() {
   let pct_too_high = value.FloatValue(101.0)
   let pct_too_low = value.FloatValue(-1.0)
   [
-    #(#(Percentage, pct_ok), Ok(pct_ok)),
-    #(#(Percentage, value.FloatValue(0.0)), Ok(value.FloatValue(0.0))),
-    #(#(Percentage, value.FloatValue(100.0)), Ok(value.FloatValue(100.0))),
+    #("Percentage with valid float", #(Percentage, pct_ok), Ok(pct_ok)),
     #(
+      "Percentage at lower bound 0.0",
+      #(Percentage, value.FloatValue(0.0)),
+      Ok(value.FloatValue(0.0)),
+    ),
+    #(
+      "Percentage at upper bound 100.0",
+      #(Percentage, value.FloatValue(100.0)),
+      Ok(value.FloatValue(100.0)),
+    ),
+    #(
+      "Percentage too high",
       #(Percentage, pct_too_high),
       Error([
         types.ValidationError(
@@ -147,6 +163,7 @@ pub fn validate_numeric_value_test() {
       ]),
     ),
     #(
+      "Percentage too low",
       #(Percentage, pct_too_low),
       Error([
         types.ValidationError(
@@ -157,12 +174,14 @@ pub fn validate_numeric_value_test() {
       ]),
     ),
     #(
+      "Percentage with string value",
       #(Percentage, string_val),
       Error([
         types.ValidationError(expected: "Percentage", found: "String", path: []),
       ]),
     ),
     #(
+      "Percentage with int value",
       #(Percentage, int_val),
       Error([
         types.ValidationError(expected: "Percentage", found: "Int", path: []),
@@ -189,10 +208,10 @@ pub fn validate_numeric_value_test() {
 pub fn validate_in_range_test() {
   // Integer - happy path
   [
-    #(#(Integer, "50", "0", "100"), Ok(Nil)),
-    #(#(Integer, "0", "0", "100"), Ok(Nil)),
-    #(#(Integer, "100", "0", "100"), Ok(Nil)),
-    #(#(Integer, "-5", "-10", "10"), Ok(Nil)),
+    #("Integer value within range", #(Integer, "50", "0", "100"), Ok(Nil)),
+    #("Integer value at lower bound", #(Integer, "0", "0", "100"), Ok(Nil)),
+    #("Integer value at upper bound", #(Integer, "100", "0", "100"), Ok(Nil)),
+    #("Integer negative value in range", #(Integer, "-5", "-10", "10"), Ok(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
@@ -201,12 +220,14 @@ pub fn validate_in_range_test() {
   // Integer - sad path (out of range)
   [
     #(
+      "Integer below range -1 in 0..100",
       #(Integer, "-1", "0", "100"),
       Error([
         types.ValidationError(expected: "0 <= x <= 100", found: "-1", path: []),
       ]),
     ),
     #(
+      "Integer below range -20 in -10..10",
       #(Integer, "-20", "-10", "10"),
       Error([
         types.ValidationError(
@@ -217,12 +238,14 @@ pub fn validate_in_range_test() {
       ]),
     ),
     #(
+      "Integer above range 101 in 0..100",
       #(Integer, "101", "0", "100"),
       Error([
         types.ValidationError(expected: "0 <= x <= 100", found: "101", path: []),
       ]),
     ),
     #(
+      "Integer above range 15 in -10..10",
       #(Integer, "15", "-10", "10"),
       Error([
         types.ValidationError(expected: "-10 <= x <= 10", found: "15", path: []),
@@ -236,12 +259,14 @@ pub fn validate_in_range_test() {
   // Integer - sad path (invalid value)
   [
     #(
+      "Integer invalid value hello",
       #(Integer, "hello", "0", "100"),
       Error([
         types.ValidationError(expected: "Integer", found: "hello", path: []),
       ]),
     ),
     #(
+      "Integer invalid value 3.14",
       #(Integer, "3.14", "0", "100"),
       Error([
         types.ValidationError(expected: "Integer", found: "3.14", path: []),
@@ -254,10 +279,10 @@ pub fn validate_in_range_test() {
 
   // Float - happy path
   [
-    #(#(Float, "0.5", "0.0", "1.0"), Ok(Nil)),
-    #(#(Float, "0.0", "0.0", "1.0"), Ok(Nil)),
-    #(#(Float, "1.0", "0.0", "1.0"), Ok(Nil)),
-    #(#(Float, "-0.5", "-1.0", "1.0"), Ok(Nil)),
+    #("Float value within range", #(Float, "0.5", "0.0", "1.0"), Ok(Nil)),
+    #("Float value at lower bound", #(Float, "0.0", "0.0", "1.0"), Ok(Nil)),
+    #("Float value at upper bound", #(Float, "1.0", "0.0", "1.0"), Ok(Nil)),
+    #("Float negative value in range", #(Float, "-0.5", "-1.0", "1.0"), Ok(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_in_range(input.0, input.1, input.2, input.3)
@@ -266,6 +291,7 @@ pub fn validate_in_range_test() {
   // Float - sad path (out of range)
   [
     #(
+      "Float below range -0.1 in 0.0..1.0",
       #(Float, "-0.1", "0.0", "1.0"),
       Error([
         types.ValidationError(
@@ -276,6 +302,7 @@ pub fn validate_in_range_test() {
       ]),
     ),
     #(
+      "Float above range 1.1 in 0.0..1.0",
       #(Float, "1.1", "0.0", "1.0"),
       Error([
         types.ValidationError(
@@ -293,6 +320,7 @@ pub fn validate_in_range_test() {
   // Float - sad path (invalid value)
   [
     #(
+      "Float invalid value hello",
       #(Float, "hello", "0.0", "1.0"),
       Error([types.ValidationError(expected: "Float", found: "hello", path: [])]),
     ),
@@ -313,14 +341,18 @@ pub fn validate_in_range_test() {
 // * ✅ lowercase url
 // * ✅ Empty string
 pub fn parse_semantic_type_test() {
-  [#("URL", Ok(URL)), #("url", Error(Nil)), #("", Error(Nil))]
+  [
+    #("URL", "URL", Ok(URL)),
+    #("lowercase url", "url", Error(Nil)),
+    #("Empty string", "", Error(Nil)),
+  ]
   |> test_helpers.array_based_test_executor_1(types.parse_semantic_type)
 }
 
 // ==== semantic_type_to_string ====
 // * ✅ URL -> "URL"
 pub fn semantic_type_to_string_test() {
-  [#(URL, "URL")]
+  [#("URL -> URL", URL, "URL")]
   |> test_helpers.array_based_test_executor_1(types.semantic_type_to_string)
 }
 
@@ -333,15 +365,16 @@ pub fn semantic_type_to_string_test() {
 // * ✅ Empty string
 pub fn validate_semantic_default_value_test() {
   [
-    #(#(SemanticType(URL), "https://example.com"), Ok(Nil)),
-    #(#(SemanticType(URL), "http://example.com"), Ok(Nil)),
+    #("Valid https URL", #(SemanticType(URL), "https://example.com"), Ok(Nil)),
+    #("Valid http URL", #(SemanticType(URL), "http://example.com"), Ok(Nil)),
     #(
+      "Valid https URL with path",
       #(SemanticType(URL), "https://wiki.example.com/runbook/auth-latency"),
       Ok(Nil),
     ),
-    #(#(SemanticType(URL), "not-a-url"), Error(Nil)),
-    #(#(SemanticType(URL), ""), Error(Nil)),
-    #(#(SemanticType(URL), "ftp://example.com"), Error(Nil)),
+    #("Non-URL string", #(SemanticType(URL), "not-a-url"), Error(Nil)),
+    #("Empty string", #(SemanticType(URL), ""), Error(Nil)),
+    #("FTP URL rejected", #(SemanticType(URL), "ftp://example.com"), Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_primitive_default_value(input.0, input.1)
@@ -360,7 +393,13 @@ pub fn validate_semantic_value_test() {
   let int_val = value.IntValue(42)
 
   // Valid URL
-  [#(#(PrimitiveType(SemanticType(URL)), valid_url), Ok(valid_url))]
+  [
+    #(
+      "String value with valid URL",
+      #(PrimitiveType(SemanticType(URL)), valid_url),
+      Ok(valid_url),
+    ),
+  ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_value(input.0, input.1)
   })
@@ -368,6 +407,7 @@ pub fn validate_semantic_value_test() {
   // Invalid URL string
   [
     #(
+      "String value with invalid URL",
       #(PrimitiveType(SemanticType(URL)), invalid_url),
       Error([
         types.ValidationError(
@@ -385,6 +425,7 @@ pub fn validate_semantic_value_test() {
   // Non-string value
   [
     #(
+      "Non-string value",
       #(PrimitiveType(SemanticType(URL)), int_val),
       Error([
         types.ValidationError(expected: "String", found: "Int", path: []),
@@ -407,13 +448,17 @@ pub fn validate_semantic_value_test() {
 // * ✅ Unknown type returns Error
 pub fn parse_primitive_type_test() {
   [
-    #("Boolean", Ok(Boolean)),
-    #("String", Ok(String)),
+    #("Boolean", "Boolean", Ok(Boolean)),
+    #("String", "String", Ok(String)),
     // Integration: delegates to numeric_types
-    #("Float", Ok(NumericType(Float))),
-    #("Integer", Ok(NumericType(Integer))),
+    #("delegates to numeric_types for Float", "Float", Ok(NumericType(Float))),
+    #(
+      "delegates to numeric_types for Integer",
+      "Integer",
+      Ok(NumericType(Integer)),
+    ),
     // Sad path
-    #("Unknown", Error(Nil)),
+    #("Unknown type returns Error", "Unknown", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(types.parse_primitive_type)
 }
@@ -424,10 +469,10 @@ pub fn parse_primitive_type_test() {
 // * ✅ delegates to numeric_types for NumericType
 pub fn primitive_type_to_string_test() {
   [
-    #(Boolean, "Boolean"),
-    #(String, "String"),
+    #("Boolean -> Boolean", Boolean, "Boolean"),
+    #("String -> String", String, "String"),
     // Integration: delegates to numeric_types
-    #(NumericType(Float), "Float"),
+    #("delegates to numeric_types for NumericType", NumericType(Float), "Float"),
   ]
   |> test_helpers.array_based_test_executor_1(types.primitive_type_to_string)
 }
@@ -440,14 +485,22 @@ pub fn primitive_type_to_string_test() {
 pub fn validate_primitive_default_value_test() {
   [
     // Boolean
-    #(#(Boolean, "True"), Ok(Nil)),
-    #(#(Boolean, "False"), Ok(Nil)),
-    #(#(Boolean, "invalid"), Error(Nil)),
+    #("Boolean with True", #(Boolean, "True"), Ok(Nil)),
+    #("Boolean with False", #(Boolean, "False"), Ok(Nil)),
+    #("Boolean with invalid value", #(Boolean, "invalid"), Error(Nil)),
     // String
-    #(#(String, "anything"), Ok(Nil)),
+    #("String accepts any value", #(String, "anything"), Ok(Nil)),
     // Integration: delegates to numeric_types
-    #(#(NumericType(Integer), "42"), Ok(Nil)),
-    #(#(NumericType(Integer), "bad"), Error(Nil)),
+    #(
+      "delegates to numeric_types for valid Integer",
+      #(NumericType(Integer), "42"),
+      Ok(Nil),
+    ),
+    #(
+      "delegates to numeric_types for invalid Integer",
+      #(NumericType(Integer), "bad"),
+      Error(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.validate_primitive_default_value(input.0, input.1)
@@ -460,13 +513,37 @@ pub fn validate_primitive_default_value_test() {
 // * ✅ delegates to numeric_types for NumericType
 pub fn validate_primitive_value_test() {
   [
-    #(#(PrimitiveType(Boolean), value.BoolValue(True)), True),
-    #(#(PrimitiveType(Boolean), value.StringValue("not bool")), False),
-    #(#(PrimitiveType(String), value.StringValue("hello")), True),
-    #(#(PrimitiveType(String), value.IntValue(42)), False),
+    #(
+      "Boolean validates bool",
+      #(PrimitiveType(Boolean), value.BoolValue(True)),
+      True,
+    ),
+    #(
+      "Boolean rejects non-bool",
+      #(PrimitiveType(Boolean), value.StringValue("not bool")),
+      False,
+    ),
+    #(
+      "String validates string",
+      #(PrimitiveType(String), value.StringValue("hello")),
+      True,
+    ),
+    #(
+      "String rejects non-string",
+      #(PrimitiveType(String), value.IntValue(42)),
+      False,
+    ),
     // Integration: delegates to numeric_types
-    #(#(PrimitiveType(NumericType(Integer)), value.IntValue(42)), True),
-    #(#(PrimitiveType(NumericType(Float)), value.FloatValue(3.14)), True),
+    #(
+      "delegates to numeric_types for Integer",
+      #(PrimitiveType(NumericType(Integer)), value.IntValue(42)),
+      True,
+    ),
+    #(
+      "delegates to numeric_types for Float",
+      #(PrimitiveType(NumericType(Float)), value.FloatValue(3.14)),
+      True,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -485,11 +562,27 @@ pub fn resolve_primitive_to_string_test() {
   let resolver = fn(s) { "resolved:" <> s }
 
   [
-    #(#(Boolean, value.BoolValue(True)), "resolved:True"),
-    #(#(String, value.StringValue("hello")), "resolved:hello"),
+    #(
+      "Boolean resolves with resolver",
+      #(Boolean, value.BoolValue(True)),
+      "resolved:True",
+    ),
+    #(
+      "String resolves with resolver",
+      #(String, value.StringValue("hello")),
+      "resolved:hello",
+    ),
     // Integration: delegates to numeric_types
-    #(#(NumericType(Integer), value.IntValue(42)), "resolved:42"),
-    #(#(NumericType(Float), value.FloatValue(3.14)), "resolved:3.14"),
+    #(
+      "delegates to numeric_types for Integer",
+      #(NumericType(Integer), value.IntValue(42)),
+      "resolved:42",
+    ),
+    #(
+      "delegates to numeric_types for Float",
+      #(NumericType(Float), value.FloatValue(3.14)),
+      "resolved:3.14",
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -507,13 +600,21 @@ pub fn resolve_primitive_to_string_test() {
 // * ✅ Unknown -> Error(Nil)
 pub fn parse_refinement_compatible_primitive_test() {
   [
-    #("String", Ok(String)),
-    #("Integer", Ok(NumericType(Integer))),
-    #("Float", Ok(NumericType(Float))),
-    #("Percentage", Ok(NumericType(Percentage))),
-    #("Boolean", Error(Nil)),
-    #("URL", Error(Nil)),
-    #("Unknown", Error(Nil)),
+    #("String -> Ok(String)", "String", Ok(String)),
+    #(
+      "Integer -> Ok(NumericType(Integer))",
+      "Integer",
+      Ok(NumericType(Integer)),
+    ),
+    #("Float -> Ok(NumericType(Float))", "Float", Ok(NumericType(Float))),
+    #(
+      "Percentage -> Ok(NumericType(Percentage))",
+      "Percentage",
+      Ok(NumericType(Percentage)),
+    ),
+    #("Boolean -> Error (excluded from refinements)", "Boolean", Error(Nil)),
+    #("URL -> Error (excluded from refinements)", "URL", Error(Nil)),
+    #("Unknown -> Error", "Unknown", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(
     types.parse_refinement_compatible_primitive,
@@ -567,27 +668,48 @@ pub fn parse_collection_type_test() {
   }
 
   [
-    #("List(String)", Ok(List("String"))),
-    #("List(Integer)", Ok(List("Integer"))),
-    #("List(Float)", Ok(List("Float"))),
-    #("List(Boolean)", Ok(List("Boolean"))),
-    #("Dict(String, String)", Ok(Dict("String", "String"))),
-    #("Dict(String, Integer)", Ok(Dict("String", "Integer"))),
-    #("Dict(Integer, String)", Ok(Dict("Integer", "String"))),
-    // Nested collections
-    #("Dict(String, List(Integer))", Ok(Dict("String", "List(Integer)"))),
+    #("List(String)", "List(String)", Ok(List("String"))),
+    #("List(Integer)", "List(Integer)", Ok(List("Integer"))),
+    #("List(Float)", "List(Float)", Ok(List("Float"))),
+    #("List(Boolean)", "List(Boolean)", Ok(List("Boolean"))),
     #(
+      "Dict(String, String)",
+      "Dict(String, String)",
+      Ok(Dict("String", "String")),
+    ),
+    #(
+      "Dict(String, Integer)",
+      "Dict(String, Integer)",
+      Ok(Dict("String", "Integer")),
+    ),
+    #(
+      "Dict(Integer, String)",
+      "Dict(Integer, String)",
+      Ok(Dict("Integer", "String")),
+    ),
+    // Nested collections
+    #(
+      "Dict(String, List(Integer)) - nested collection",
+      "Dict(String, List(Integer))",
+      Ok(Dict("String", "List(Integer)")),
+    ),
+    #(
+      "Dict(String, Dict(String, Integer)) - deeply nested",
       "Dict(String, Dict(String, Integer))",
       Ok(Dict("String", "Dict(String, Integer)")),
     ),
-    #("List(List(String))", Ok(List("List(String)"))),
+    #(
+      "List(List(String)) - nested list",
+      "List(List(String))",
+      Ok(List("List(String)")),
+    ),
     // Sad paths
-    #("Unknown", Error(Nil)),
-    #("", Error(Nil)),
-    #("List", Error(Nil)),
-    #("List(Unknown)", Error(Nil)),
-    #("Dict(Unknown, String)", Error(Nil)),
-    #("Dict(String, Unknown)", Error(Nil)),
+    #("Unknown type", "Unknown", Error(Nil)),
+    #("Empty string", "", Error(Nil)),
+    #("List without parens", "List", Error(Nil)),
+    #("List with invalid inner type", "List(Unknown)", Error(Nil)),
+    #("Dict with invalid key type", "Dict(Unknown, String)", Error(Nil)),
+    #("Dict with invalid value type", "Dict(String, Unknown)", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.parse_collection_type(input, parse_inner)
@@ -599,16 +721,23 @@ pub fn parse_collection_type_test() {
 // * ✅ Dict(K, V) -> "Dict(K, V)"
 pub fn collection_type_to_string_test() {
   [
-    #(CollectionType(List(PrimitiveType(String))), "List(String)"),
     #(
+      "List(String)",
+      CollectionType(List(PrimitiveType(String))),
+      "List(String)",
+    ),
+    #(
+      "List(Integer)",
       CollectionType(List(PrimitiveType(NumericType(Integer)))),
       "List(Integer)",
     ),
     #(
+      "Dict(String, String)",
       CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
       "Dict(String, String)",
     ),
     #(
+      "Dict(String, Integer)",
       CollectionType(Dict(
         PrimitiveType(String),
         PrimitiveType(NumericType(Integer)),
@@ -630,6 +759,7 @@ pub fn validate_collection_value_test() {
   [
     // List happy path
     #(
+      "List validates list of inner type",
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
         value.ListValue([value.IntValue(1), value.IntValue(2)]),
@@ -638,6 +768,7 @@ pub fn validate_collection_value_test() {
     ),
     // List sad path - not a list
     #(
+      "List rejects non-list",
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
         value.StringValue("not a list"),
@@ -646,6 +777,7 @@ pub fn validate_collection_value_test() {
     ),
     // Dict happy path
     #(
+      "Dict validates dict with inner types",
       #(
         CollectionType(Dict(
           PrimitiveType(String),
@@ -657,6 +789,7 @@ pub fn validate_collection_value_test() {
     ),
     // Dict sad path - not a dict
     #(
+      "Dict rejects non-dict",
       #(
         CollectionType(Dict(
           PrimitiveType(String),
@@ -686,6 +819,7 @@ pub fn resolve_collection_to_string_test() {
   [
     // List happy path
     #(
+      "List resolves with list resolver",
       #(
         CollectionType(List(PrimitiveType(String))),
         value.ListValue([value.StringValue("a"), value.StringValue("b")]),
@@ -694,6 +828,7 @@ pub fn resolve_collection_to_string_test() {
     ),
     // Dict returns error
     #(
+      "Dict returns error (unsupported)",
       #(
         CollectionType(Dict(PrimitiveType(String), PrimitiveType(String))),
         value.ListValue([]),
@@ -810,33 +945,61 @@ pub fn parse_modifier_type_test() {
 
   [
     // Optional
-    #("Optional(String)", Ok(Optional("String"))),
-    #("Optional(Integer)", Ok(Optional("Integer"))),
-    #("Optional(Float)", Ok(Optional("Float"))),
-    #("Optional(Boolean)", Ok(Optional("Boolean"))),
+    #("Optional(String)", "Optional(String)", Ok(Optional("String"))),
+    #("Optional(Integer)", "Optional(Integer)", Ok(Optional("Integer"))),
+    #("Optional(Float)", "Optional(Float)", Ok(Optional("Float"))),
+    #("Optional(Boolean)", "Optional(Boolean)", Ok(Optional("Boolean"))),
     // Optional with nested collections
-    #("Optional(Dict(String, String))", Ok(Optional("Dict(String, String)"))),
     #(
+      "Optional(Dict(String, String))",
+      "Optional(Dict(String, String))",
+      Ok(Optional("Dict(String, String)")),
+    ),
+    #(
+      "Optional with nested Dict(String, List(Integer))",
       "Optional(Dict(String, List(Integer)))",
       Ok(Optional("Dict(String, List(Integer))")),
     ),
-    #("Optional(List(List(String)))", Ok(Optional("List(List(String))"))),
+    #(
+      "Optional(List(List(String)))",
+      "Optional(List(List(String)))",
+      Ok(Optional("List(List(String))")),
+    ),
     // Defaulted
-    #("Defaulted(String, hello)", Ok(Defaulted("String", "hello"))),
-    #("Defaulted(Integer, 10)", Ok(Defaulted("Integer", "10"))),
-    #("Defaulted(Boolean, True)", Ok(Defaulted("Boolean", "True"))),
-    #("Defaulted(Float, 3.14)", Ok(Defaulted("Float", "3.14"))),
+    #(
+      "Defaulted(String, hello)",
+      "Defaulted(String, hello)",
+      Ok(Defaulted("String", "hello")),
+    ),
+    #(
+      "Defaulted(Integer, 10)",
+      "Defaulted(Integer, 10)",
+      Ok(Defaulted("Integer", "10")),
+    ),
+    #(
+      "Defaulted(Boolean, True)",
+      "Defaulted(Boolean, True)",
+      Ok(Defaulted("Boolean", "True")),
+    ),
+    #(
+      "Defaulted(Float, 3.14)",
+      "Defaulted(Float, 3.14)",
+      Ok(Defaulted("Float", "3.14")),
+    ),
     // Defaulted with nested collections - tests the top-level comma split fix
     #(
+      "Defaulted with nested Dict(String, String)",
       "Defaulted(Dict(String, String), {})",
       Ok(Defaulted("Dict(String, String)", "{}")),
     ),
     #(
+      "Defaulted with nested Dict(String, List(Integer))",
       "Defaulted(Dict(String, List(Integer)), {})",
       Ok(Defaulted("Dict(String, List(Integer))", "{}")),
     ),
     // Defaulted with refinement types - tests brace tracking in top-level comma split
     #(
+      "Defaulted with refinement inner type (String OneOf)",
       "Defaulted(String { x | x in { demo, development, pre-production, production } }, production)",
       Ok(Defaulted(
         "String { x | x in { demo, development, pre-production, production } }",
@@ -844,23 +1007,41 @@ pub fn parse_modifier_type_test() {
       )),
     ),
     #(
+      "Defaulted with refinement inner type (Integer OneOf)",
       "Defaulted(Integer { x | x in { 1, 2, 3 } }, 1)",
       Ok(Defaulted("Integer { x | x in { 1, 2, 3 } }", "1")),
     ),
     #(
+      "Defaulted with refinement inner type (String OneOf abc)",
       "Defaulted(String { x | x in { a, b, c } }, a)",
       Ok(Defaulted("String { x | x in { a, b, c } }", "a")),
     ),
     // Invalid
-    #("Unknown", Error(Nil)),
-    #("", Error(Nil)),
-    #("Optional", Error(Nil)),
-    #("Optional(Unknown)", Error(Nil)),
-    #("Defaulted(Integer, hello)", Error(Nil)),
-    #("Defaulted(Boolean, maybe)", Error(Nil)),
+    #("Unknown type", "Unknown", Error(Nil)),
+    #("Empty string", "", Error(Nil)),
+    #("Optional without parens", "Optional", Error(Nil)),
+    #("Optional with invalid inner type", "Optional(Unknown)", Error(Nil)),
+    #(
+      "Defaulted with invalid default value (Integer hello)",
+      "Defaulted(Integer, hello)",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted with invalid default value (Boolean maybe)",
+      "Defaulted(Boolean, maybe)",
+      Error(Nil),
+    ),
     // Modifier with refinement suffix should fail - let refinement parser handle it
-    #("Defaulted(String, production) { x | x in { production } }", Error(Nil)),
-    #("Optional(String) { x | x in { foo } }", Error(Nil)),
+    #(
+      "Defaulted with refinement suffix should fail",
+      "Defaulted(String, production) { x | x in { production } }",
+      Error(Nil),
+    ),
+    #(
+      "Optional with refinement suffix should fail",
+      "Optional(String) { x | x in { foo } }",
+      Error(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.parse_modifier_type(input, parse_inner, validate_default)
@@ -872,16 +1053,23 @@ pub fn parse_modifier_type_test() {
 // * ✅ Defaulted(T, val) -> "Defaulted(T, val)"
 pub fn modifier_type_to_string_test() {
   [
-    #(ModifierType(Optional(PrimitiveType(String))), "Optional(String)"),
     #(
+      "Optional(String)",
+      ModifierType(Optional(PrimitiveType(String))),
+      "Optional(String)",
+    ),
+    #(
+      "Optional(Integer)",
       ModifierType(Optional(PrimitiveType(NumericType(Integer)))),
       "Optional(Integer)",
     ),
     #(
+      "Defaulted(String, hello)",
       ModifierType(Defaulted(PrimitiveType(String), "hello")),
       "Defaulted(String, hello)",
     ),
     #(
+      "Defaulted(Integer, 10)",
       ModifierType(Defaulted(PrimitiveType(NumericType(Integer)), "10")),
       "Defaulted(Integer, 10)",
     ),
@@ -902,6 +1090,7 @@ pub fn validate_modifier_value_test() {
   [
     // Optional with value present
     #(
+      "Optional with value present validates inner type",
       #(
         ModifierType(Optional(PrimitiveType(String))),
         value.StringValue("hello"),
@@ -909,9 +1098,14 @@ pub fn validate_modifier_value_test() {
       True,
     ),
     // Optional with None
-    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), True),
+    #(
+      "Optional with value absent (None) succeeds",
+      #(ModifierType(Optional(PrimitiveType(String))), value.NilValue),
+      True,
+    ),
     // Defaulted with value present
     #(
+      "Defaulted with value present validates inner type",
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
         value.StringValue("custom"),
@@ -920,6 +1114,7 @@ pub fn validate_modifier_value_test() {
     ),
     // Defaulted with None
     #(
+      "Defaulted with value absent (None) succeeds",
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
         value.NilValue,
@@ -950,6 +1145,7 @@ pub fn resolve_modifier_to_string_test() {
   [
     // Optional with value present
     #(
+      "Optional with value present resolves inner value",
       #(
         ModifierType(Optional(PrimitiveType(String))),
         value.StringValue("hello"),
@@ -957,9 +1153,14 @@ pub fn resolve_modifier_to_string_test() {
       Ok("resolved:hello"),
     ),
     // Optional with None returns empty string
-    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), Ok("")),
+    #(
+      "Optional with None returns empty string",
+      #(ModifierType(Optional(PrimitiveType(String))), value.NilValue),
+      Ok(""),
+    ),
     // Defaulted with value present
     #(
+      "Defaulted with value present resolves inner value",
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
         value.StringValue("custom"),
@@ -968,6 +1169,7 @@ pub fn resolve_modifier_to_string_test() {
     ),
     // Defaulted with None uses default
     #(
+      "Defaulted with None uses default value",
       #(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
         value.NilValue,
@@ -1062,6 +1264,7 @@ pub fn parse_refinement_type_test() {
   [
     // ==== Happy Path (OneOf) ====
     #(
+      "OneOf Integer set",
       "Integer { x | x in { 10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1069,6 +1272,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf Float set",
       "Float { x | x in { 10.0, 20.0, 30.0 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Float)),
@@ -1076,6 +1280,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf String set with hyphens",
       "String { x | x in { pizza, pasta, salad, tasty-food } }",
       Ok(OneOf(
         PrimitiveType(String),
@@ -1083,10 +1288,12 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf String single element",
       "String { x | x in { 10 } }",
       Ok(OneOf(PrimitiveType(String), set.from_list(["10"]))),
     ),
     #(
+      "OneOf Defaulted(String) set",
       "Defaulted(String, default) { x | x in { a, b, c } }",
       Ok(OneOf(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
@@ -1094,6 +1301,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf Defaulted(Integer) set",
       "Defaulted(Integer, 10) { x | x in { 10, 20, 30 } }",
       Ok(OneOf(
         ModifierType(Defaulted(PrimitiveType(NumericType(Integer)), "10")),
@@ -1101,6 +1309,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf Defaulted(Float) set",
       "Defaulted(Float, 1.5) { x | x in { 1.5, 2.5, 3.5 } }",
       Ok(OneOf(
         ModifierType(Defaulted(PrimitiveType(NumericType(Float)), "1.5")),
@@ -1109,6 +1318,7 @@ pub fn parse_refinement_type_test() {
     ),
     // OneOf flexible spacing
     #(
+      "OneOf no space after inner brace",
       "Integer { x | x in {10, 20, 30} }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1116,6 +1326,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf space only after inner brace",
       "Integer { x | x in {10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1123,6 +1334,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf space only before inner brace",
       "Integer { x | x in { 10, 20, 30} }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1130,11 +1342,13 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf String no space in inner braces",
       "String { x | x in {pizza, pasta} }",
       Ok(OneOf(PrimitiveType(String), set.from_list(["pizza", "pasta"]))),
     ),
     // OneOf flexible spacing - around outer brace and pipe
     #(
+      "OneOf no space after outer brace",
       "Integer {x | x in { 10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1142,6 +1356,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf no space before pipe",
       "Integer { x| x in { 10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1149,6 +1364,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf no space after pipe",
       "Integer { x |x in { 10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1156,6 +1372,7 @@ pub fn parse_refinement_type_test() {
       )),
     ),
     #(
+      "OneOf no space before in brace",
       "Integer { x | x in{ 10, 20, 30 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Integer)),
@@ -1164,96 +1381,165 @@ pub fn parse_refinement_type_test() {
     ),
     // ==== Happy Path (InclusiveRange) ====
     #(
+      "InclusiveRange Integer 0..100",
       "Integer { x | x in ( 0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange Integer negative range",
       "Integer { x | x in ( -100..-50 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "-100", "-50")),
     ),
     #(
+      "InclusiveRange Integer mixed sign",
       "Integer { x | x in ( -10..10 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "-10", "10")),
     ),
     #(
+      "InclusiveRange Float 0.0..100.0",
       "Float { x | x in ( 0.0..100.0 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Float)), "0.0", "100.0")),
     ),
     #(
+      "InclusiveRange Float negative range",
       "Float { x | x in ( -100.5..-50.5 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Float)), "-100.5", "-50.5")),
     ),
     #(
+      "InclusiveRange Float mixed sign",
       "Float { x | x in ( -10.5..10.5 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Float)), "-10.5", "10.5")),
     ),
     // InclusiveRange flexible spacing
     #(
+      "InclusiveRange no space in parens",
       "Integer { x | x in (0..100) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange space only after paren",
       "Integer { x | x in (0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange space only before paren",
       "Integer { x | x in ( 0..100) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange Float no space in parens",
       "Float { x | x in (0.0..100.0) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Float)), "0.0", "100.0")),
     ),
     // InclusiveRange flexible spacing - around outer brace and pipe
     #(
+      "InclusiveRange no space after outer brace",
       "Integer {x | x in ( 0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange no space before pipe",
       "Integer { x| x in ( 0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange no space after pipe",
       "Integer { x |x in ( 0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     #(
+      "InclusiveRange no space before in paren",
       "Integer { x | x in( 0..100 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Integer)), "0", "100")),
     ),
     // ==== Sad Path (OneOf) ====
-    #("Boolean { x | x in { True, False } }", Error(Nil)),
-    #("Integer { x | x in {  } }", Error(Nil)),
-    #("Float { x | x in {  } }", Error(Nil)),
-    #("String { x | x in {  } }", Error(Nil)),
-    #("Integer { x | x in { 10.0 } }", Error(Nil)),
-    #("Float { x | x in { pizza } }", Error(Nil)),
-    #("Unknown { x | x in { 1, 2, 3 } }", Error(Nil)),
-    #("List(String) { x | x in { a, b, c } }", Error(Nil)),
-    #("Dict(String, String) { x | x in { a, b, c } }", Error(Nil)),
-    #("Optional(String) { x | x in { a, b, c } }", Error(Nil)),
-    #("Defaulted(Boolean, True) { x | x in { True, False } }", Error(Nil)),
-    #("Defaulted(List(String), a) { x | x in { a, b, c } }", Error(Nil)),
-    #("Defaulted(Dict(String, String), a) { x | x in { a, b } }", Error(Nil)),
-    #("Defaulted(Optional(String), a) { x | x in { a, b, c } }", Error(Nil)),
-    #("Integer { x | x in { 10, 20, 30 }", Error(Nil)),
-    #("Integer { x | x in 10, 20, 30 } }", Error(Nil)),
-    #("Integer x | x in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { y | y in { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | x IN { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | xin { 10, 20, 30 } }", Error(Nil)),
-    #("Integer { x | x in { 10, 10, 20 } }", Error(Nil)),
-    #("String { x | x in { pizza, pizza, pasta } }", Error(Nil)),
+    #(
+      "Boolean excluded from refinements",
+      "Boolean { x | x in { True, False } }",
+      Error(Nil),
+    ),
+    #("Integer empty set", "Integer { x | x in {  } }", Error(Nil)),
+    #("Float empty set", "Float { x | x in {  } }", Error(Nil)),
+    #("String empty set", "String { x | x in {  } }", Error(Nil)),
+    #("Integer with float values", "Integer { x | x in { 10.0 } }", Error(Nil)),
+    #("Float with string values", "Float { x | x in { pizza } }", Error(Nil)),
+    #("Unknown base type", "Unknown { x | x in { 1, 2, 3 } }", Error(Nil)),
+    #("List not refinable", "List(String) { x | x in { a, b, c } }", Error(Nil)),
+    #(
+      "Dict not refinable",
+      "Dict(String, String) { x | x in { a, b, c } }",
+      Error(Nil),
+    ),
+    #(
+      "Optional not refinable",
+      "Optional(String) { x | x in { a, b, c } }",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted Boolean excluded",
+      "Defaulted(Boolean, True) { x | x in { True, False } }",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted List not refinable",
+      "Defaulted(List(String), a) { x | x in { a, b, c } }",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted Dict not refinable",
+      "Defaulted(Dict(String, String), a) { x | x in { a, b } }",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted Optional not refinable",
+      "Defaulted(Optional(String), a) { x | x in { a, b, c } }",
+      Error(Nil),
+    ),
+    #(
+      "Missing closing outer brace",
+      "Integer { x | x in { 10, 20, 30 }",
+      Error(Nil),
+    ),
+    #("Missing inner braces", "Integer { x | x in 10, 20, 30 } }", Error(Nil)),
+    #(
+      "Missing outer opening brace",
+      "Integer x | x in { 10, 20, 30 } }",
+      Error(Nil),
+    ),
+    #(
+      "Wrong variable name y",
+      "Integer { y | y in { 10, 20, 30 } }",
+      Error(Nil),
+    ),
+    #("Uppercase IN keyword", "Integer { x | x IN { 10, 20, 30 } }", Error(Nil)),
+    #(
+      "Missing space before in",
+      "Integer { x | xin { 10, 20, 30 } }",
+      Error(Nil),
+    ),
+    #(
+      "Duplicate values in Integer set",
+      "Integer { x | x in { 10, 10, 20 } }",
+      Error(Nil),
+    ),
+    #(
+      "Duplicate values in String set",
+      "String { x | x in { pizza, pizza, pasta } }",
+      Error(Nil),
+    ),
     // ==== Happy Path (Percentage) ====
     #(
+      "Percentage InclusiveRange 99.0..100.0",
       "Percentage { x | x in ( 99.0..100.0 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Percentage)), "99.0", "100.0")),
     ),
     #(
+      "Percentage InclusiveRange full range",
       "Percentage { x | x in ( 0.0..100.0 ) }",
       Ok(InclusiveRange(PrimitiveType(NumericType(Percentage)), "0.0", "100.0")),
     ),
     #(
+      "Percentage OneOf set",
       "Percentage { x | x in { 99.0, 99.5, 99.9 } }",
       Ok(OneOf(
         PrimitiveType(NumericType(Percentage)),
@@ -1262,20 +1548,44 @@ pub fn parse_refinement_type_test() {
     ),
     // ==== Sad Path (Percentage) ====
     // Bounds outside [0, 100]
-    #("Percentage { x | x in ( -1.0..100.0 ) }", Error(Nil)),
-    #("Percentage { x | x in ( 0.0..200.0 ) }", Error(Nil)),
+    #(
+      "Percentage lower bound below 0",
+      "Percentage { x | x in ( -1.0..100.0 ) }",
+      Error(Nil),
+    ),
+    #(
+      "Percentage upper bound above 100",
+      "Percentage { x | x in ( 0.0..200.0 ) }",
+      Error(Nil),
+    ),
     // ==== Sad Path (InclusiveRange) ====
-    #("String { x | x in ( a..z ) }", Error(Nil)),
-    #("Integer { x | x in ( 0.5..100.5 ) }", Error(Nil)),
-    #("Float { x | x in ( a..z ) }", Error(Nil)),
-    #("Integer { x | x in ( ..100 ) }", Error(Nil)),
-    #("Integer { x | x in ( 0.. ) }", Error(Nil)),
-    #("Integer { x | x in ( 0..50..100 ) }", Error(Nil)),
-    #("Integer { x | x in { 0..100 } }", Error(Nil)),
-    #("Integer { x | x in ( 100..0 ) }", Error(Nil)),
-    #("Float { x | x in ( 100.0..0.0 ) }", Error(Nil)),
-    #("Defaulted(Integer, 50) { x | x in ( 0..100 ) }", Error(Nil)),
-    #("Defaulted(Float, 1.5) { x | x in ( 0.0..100.0 ) }", Error(Nil)),
+    #("String not range-refinable", "String { x | x in ( a..z ) }", Error(Nil)),
+    #(
+      "Integer with float bounds",
+      "Integer { x | x in ( 0.5..100.5 ) }",
+      Error(Nil),
+    ),
+    #("Float with string bounds", "Float { x | x in ( a..z ) }", Error(Nil)),
+    #("Missing lower bound", "Integer { x | x in ( ..100 ) }", Error(Nil)),
+    #("Missing upper bound", "Integer { x | x in ( 0.. ) }", Error(Nil)),
+    #("Triple dot range", "Integer { x | x in ( 0..50..100 ) }", Error(Nil)),
+    #(
+      "Range in braces instead of parens",
+      "Integer { x | x in { 0..100 } }",
+      Error(Nil),
+    ),
+    #("Reversed range Integer", "Integer { x | x in ( 100..0 ) }", Error(Nil)),
+    #("Reversed range Float", "Float { x | x in ( 100.0..0.0 ) }", Error(Nil)),
+    #(
+      "Defaulted Integer with range not allowed",
+      "Defaulted(Integer, 50) { x | x in ( 0..100 ) }",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted Float with range not allowed",
+      "Defaulted(Float, 1.5) { x | x in ( 0.0..100.0 ) }",
+      Error(Nil),
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     types.parse_refinement_type(
@@ -1290,6 +1600,7 @@ pub fn parse_refinement_type_test() {
 pub fn refinement_type_to_string_test() {
   [
     #(
+      "OneOf Integer set",
       RefinementType(OneOf(
         PrimitiveType(NumericType(Integer)),
         set.from_list(["10", "20", "30"]),
@@ -1297,6 +1608,7 @@ pub fn refinement_type_to_string_test() {
       "Integer { x | x in { 10, 20, 30 } }",
     ),
     #(
+      "OneOf Float set",
       RefinementType(OneOf(
         PrimitiveType(NumericType(Float)),
         set.from_list(["10.0", "20.0", "30.0"]),
@@ -1304,6 +1616,7 @@ pub fn refinement_type_to_string_test() {
       "Float { x | x in { 10.0, 20.0, 30.0 } }",
     ),
     #(
+      "OneOf String set",
       RefinementType(OneOf(
         PrimitiveType(String),
         set.from_list(["pasta", "pizza", "salad"]),
@@ -1311,6 +1624,7 @@ pub fn refinement_type_to_string_test() {
       "String { x | x in { pasta, pizza, salad } }",
     ),
     #(
+      "OneOf Defaulted(String) set",
       RefinementType(OneOf(
         ModifierType(Defaulted(PrimitiveType(String), "default")),
         set.from_list(["a", "b", "c"]),
@@ -1318,6 +1632,7 @@ pub fn refinement_type_to_string_test() {
       "Defaulted(String, default) { x | x in { a, b, c } }",
     ),
     #(
+      "OneOf Defaulted(Integer) set",
       RefinementType(OneOf(
         ModifierType(Defaulted(PrimitiveType(NumericType(Integer)), "10")),
         set.from_list(["10", "20", "30"]),
@@ -1326,6 +1641,7 @@ pub fn refinement_type_to_string_test() {
     ),
     // InclusiveRange(Integer) - basic range
     #(
+      "InclusiveRange Integer basic range",
       RefinementType(InclusiveRange(
         PrimitiveType(NumericType(Integer)),
         "0",
@@ -1335,6 +1651,7 @@ pub fn refinement_type_to_string_test() {
     ),
     // InclusiveRange(Integer) - negative range
     #(
+      "InclusiveRange Integer negative range",
       RefinementType(InclusiveRange(
         PrimitiveType(NumericType(Integer)),
         "-100",
@@ -1344,6 +1661,7 @@ pub fn refinement_type_to_string_test() {
     ),
     // InclusiveRange(Float) - basic range
     #(
+      "InclusiveRange Float basic range",
       RefinementType(InclusiveRange(
         PrimitiveType(NumericType(Float)),
         "0.0",
@@ -1353,6 +1671,7 @@ pub fn refinement_type_to_string_test() {
     ),
     // InclusiveRange(Float) - negative range
     #(
+      "InclusiveRange Float negative range",
       RefinementType(InclusiveRange(
         PrimitiveType(NumericType(Float)),
         "-100.5",
@@ -1371,6 +1690,7 @@ pub fn validate_refinement_value_test() {
   [
     // Integer happy path - value in set
     #(
+      "Integer value in set",
       #(
         RefinementType(OneOf(
           PrimitiveType(NumericType(Integer)),
@@ -1382,6 +1702,7 @@ pub fn validate_refinement_value_test() {
     ),
     // Integer sad path - value not in set
     #(
+      "Integer value not in set",
       #(
         RefinementType(OneOf(
           PrimitiveType(NumericType(Integer)),
@@ -1393,6 +1714,7 @@ pub fn validate_refinement_value_test() {
     ),
     // String happy path - value in set
     #(
+      "String value in set",
       #(
         RefinementType(OneOf(
           PrimitiveType(String),
@@ -1404,6 +1726,7 @@ pub fn validate_refinement_value_test() {
     ),
     // String sad path - value not in set
     #(
+      "String value not in set",
       #(
         RefinementType(OneOf(
           PrimitiveType(String),
@@ -1415,6 +1738,7 @@ pub fn validate_refinement_value_test() {
     ),
     // InclusiveRange(Integer) happy path - value in range
     #(
+      "InclusiveRange Integer value in range",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Integer)),
@@ -1427,6 +1751,7 @@ pub fn validate_refinement_value_test() {
     ),
     // InclusiveRange(Integer) sad path - value below range
     #(
+      "InclusiveRange Integer value below range",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Integer)),
@@ -1439,6 +1764,7 @@ pub fn validate_refinement_value_test() {
     ),
     // InclusiveRange(Float) happy path - value in range
     #(
+      "InclusiveRange Float value in range",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Float)),
@@ -1451,6 +1777,7 @@ pub fn validate_refinement_value_test() {
     ),
     // InclusiveRange(Float) sad path - value above range
     #(
+      "InclusiveRange Float value above range",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Float)),
@@ -1479,6 +1806,7 @@ pub fn resolve_refinement_to_string_test() {
   [
     // Integer happy path
     #(
+      "Integer OneOf resolves value",
       #(
         RefinementType(OneOf(
           PrimitiveType(NumericType(Integer)),
@@ -1490,6 +1818,7 @@ pub fn resolve_refinement_to_string_test() {
     ),
     // String happy path
     #(
+      "String OneOf resolves value",
       #(
         RefinementType(OneOf(
           PrimitiveType(String),
@@ -1501,6 +1830,7 @@ pub fn resolve_refinement_to_string_test() {
     ),
     // Decode error - wrong type
     #(
+      "OneOf decode error - wrong type",
       #(
         RefinementType(OneOf(
           PrimitiveType(NumericType(Integer)),
@@ -1512,6 +1842,7 @@ pub fn resolve_refinement_to_string_test() {
     ),
     // InclusiveRange(Integer) happy path
     #(
+      "InclusiveRange Integer resolves value",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Integer)),
@@ -1524,6 +1855,7 @@ pub fn resolve_refinement_to_string_test() {
     ),
     // InclusiveRange(Integer) decode error
     #(
+      "InclusiveRange decode error - wrong type",
       #(
         RefinementType(InclusiveRange(
           PrimitiveType(NumericType(Integer)),
@@ -1663,11 +1995,16 @@ pub fn validate_refinement_default_value_test() {
 pub fn accepted_type_to_string_test() {
   [
     // Primitive dispatch
-    #(PrimitiveType(String), "String"),
+    #("Primitive delegates to primitive_types", PrimitiveType(String), "String"),
     // Collection dispatch
-    #(CollectionType(List(PrimitiveType(String))), "List(String)"),
+    #(
+      "Collection delegates to collection_types",
+      CollectionType(List(PrimitiveType(String))),
+      "List(String)",
+    ),
     // Modifier wrapping Collection - nested dispatch
     #(
+      "Modifier wrapping Collection - nested delegation",
       ModifierType(
         Optional(
           CollectionType(Dict(
@@ -1688,15 +2025,18 @@ pub fn parse_accepted_type_test() {
   [
     // Composite type - modifier wrapping collection
     #(
+      "modifier wrapping collection",
       "Optional(List(String))",
       Ok(ModifierType(Optional(CollectionType(List(PrimitiveType(String)))))),
     ),
     // Nested collections - now allowed
     #(
+      "nested List(List(String))",
       "List(List(String))",
       Ok(CollectionType(List(CollectionType(List(PrimitiveType(String)))))),
     ),
     #(
+      "nested Dict(String, List(String))",
       "Dict(String, List(String))",
       Ok(
         CollectionType(Dict(
@@ -1706,12 +2046,21 @@ pub fn parse_accepted_type_test() {
       ),
     ),
     // Invalid - nested modifiers not allowed
-    #("Optional(Optional(String))", Error(Nil)),
-    #("Defaulted(Optional(String), default)", Error(Nil)),
+    #("nested Optional not allowed", "Optional(Optional(String))", Error(Nil)),
+    #(
+      "Defaulted wrapping Optional not allowed",
+      "Defaulted(Optional(String), default)",
+      Error(Nil),
+    ),
     // Invalid - Defaulted only allows primitives, refinements, or collections
-    #("Defaulted(List(String), default)", Error(Nil)),
+    #(
+      "Defaulted wrapping List not allowed",
+      "Defaulted(List(String), default)",
+      Error(Nil),
+    ),
     // Defaulted with refinement inner type (what happens after type alias resolution)
     #(
+      "Defaulted with refinement inner type",
       "Defaulted(String { x | x in { demo, development, production } }, production)",
       Ok(
         ModifierType(Defaulted(
@@ -1725,11 +2074,13 @@ pub fn parse_accepted_type_test() {
     ),
     // Invalid - Defaulted with refinement but default not in set
     #(
+      "Defaulted with refinement but default not in set",
       "Defaulted(String { x | x in { demo, production } }, invalid)",
       Error(Nil),
     ),
     // Refinement type with Defaulted inner type
     #(
+      "Refinement type with Defaulted inner type",
       "Defaulted(String, production) { x | x in { production } }",
       Ok(
         RefinementType(OneOf(
@@ -1746,9 +2097,14 @@ pub fn parse_accepted_type_test() {
 pub fn validate_value_test() {
   [
     // Primitive dispatch
-    #(#(PrimitiveType(String), value.StringValue("hello")), True),
+    #(
+      "Primitive dispatch",
+      #(PrimitiveType(String), value.StringValue("hello")),
+      True,
+    ),
     // Collection dispatch
     #(
+      "Collection dispatch",
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
         value.ListValue([value.IntValue(1), value.IntValue(2)]),
@@ -1756,7 +2112,11 @@ pub fn validate_value_test() {
       True,
     ),
     // Modifier dispatch
-    #(#(ModifierType(Optional(PrimitiveType(String))), value.NilValue), True),
+    #(
+      "Modifier dispatch",
+      #(ModifierType(Optional(PrimitiveType(String))), value.NilValue),
+      True,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     let #(typ, value) = input
@@ -1784,11 +2144,13 @@ pub fn resolve_to_string_test() {
   [
     // Primitive dispatch
     #(
+      "Primitive dispatch",
       #(PrimitiveType(String), value.StringValue("hello")),
       Ok("resolved:hello"),
     ),
     // Collection dispatch
     #(
+      "Collection dispatch",
       #(
         CollectionType(List(PrimitiveType(NumericType(Integer)))),
         value.ListValue([value.IntValue(1), value.IntValue(2)]),
@@ -1797,6 +2159,7 @@ pub fn resolve_to_string_test() {
     ),
     // Modifier dispatch - Optional with value
     #(
+      "Modifier dispatch - Optional with value",
       #(
         ModifierType(Optional(PrimitiveType(String))),
         value.StringValue("present"),
@@ -1805,6 +2168,7 @@ pub fn resolve_to_string_test() {
     ),
     // Modifier dispatch - Defaulted with None uses default
     #(
+      "Modifier dispatch - Defaulted with None uses default",
       #(
         ModifierType(Defaulted(PrimitiveType(NumericType(Integer)), "99")),
         value.NilValue,
@@ -1813,6 +2177,7 @@ pub fn resolve_to_string_test() {
     ),
     // Refinement dispatch - OneOf(Defaulted(String)) with value provided
     #(
+      "Refinement dispatch - OneOf(Defaulted(String)) with value",
       #(
         RefinementType(OneOf(
           ModifierType(Defaulted(PrimitiveType(String), "production")),
@@ -1824,6 +2189,7 @@ pub fn resolve_to_string_test() {
     ),
     // Refinement dispatch - OneOf(Defaulted(String)) with None uses default
     #(
+      "Refinement dispatch - OneOf(Defaulted(String)) with None uses default",
       #(
         RefinementType(OneOf(
           ModifierType(Defaulted(PrimitiveType(String), "production")),
@@ -1847,12 +2213,20 @@ pub fn resolve_to_string_test() {
 // * ✅ Non-numeric types fall back to Integer
 pub fn get_numeric_type_test() {
   [
-    #(PrimitiveType(NumericType(Integer)), Integer),
-    #(PrimitiveType(NumericType(Float)), Float),
+    #(
+      "Integer primitive -> Integer",
+      PrimitiveType(NumericType(Integer)),
+      Integer,
+    ),
+    #("Float primitive -> Float", PrimitiveType(NumericType(Float)), Float),
     // Fallback cases
-    #(PrimitiveType(String), Integer),
-    #(PrimitiveType(Boolean), Integer),
-    #(CollectionType(List(PrimitiveType(String))), Integer),
+    #("String falls back to Integer", PrimitiveType(String), Integer),
+    #("Boolean falls back to Integer", PrimitiveType(Boolean), Integer),
+    #(
+      "Collection falls back to Integer",
+      CollectionType(List(PrimitiveType(String))),
+      Integer,
+    ),
   ]
   |> test_helpers.array_based_test_executor_1(types.get_numeric_type)
 }
@@ -1865,17 +2239,18 @@ pub fn get_numeric_type_test() {
 // * ✅ Collection -> False
 pub fn is_optional_or_defaulted_test() {
   [
-    #(ModifierType(Optional(PrimitiveType(String))), True),
-    #(ModifierType(Defaulted(PrimitiveType(String), "hello")), True),
+    #("Optional -> True", ModifierType(Optional(PrimitiveType(String))), True),
+    #("Defaulted -> True", ModifierType(Defaulted(PrimitiveType(String), "hello")), True),
     #(
+      "OneOf wrapping Optional -> True",
       RefinementType(OneOf(
         ModifierType(Optional(PrimitiveType(String))),
         set.from_list(["a", "b"]),
       )),
       True,
     ),
-    #(PrimitiveType(String), False),
-    #(CollectionType(List(PrimitiveType(String))), False),
+    #("Plain primitive -> False", PrimitiveType(String), False),
+    #("Collection -> False", CollectionType(List(PrimitiveType(String))), False),
   ]
   |> test_helpers.array_based_test_executor_1(types.is_optional_or_defaulted)
 }

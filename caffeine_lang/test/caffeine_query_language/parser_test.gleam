@@ -82,29 +82,32 @@ pub fn parse_expr_test() {
 
   [
     // simple parenthesized word
-    #("(A)", Ok(parens(prim_word("A")))),
+    #("simple parenthesized word", "(A)", Ok(parens(prim_word("A")))),
     // double parenthesized word
-    #("((A))", Ok(parens(parens(prim_word("A"))))),
+    #("double parenthesized word", "((A))", Ok(parens(parens(prim_word("A"))))),
     // simple addition
-    #("A + B", Ok(simple_exp_op("A", "B", Add))),
+    #("simple addition", "A + B", Ok(simple_exp_op("A", "B", Add))),
     // simple subtraction
-    #("A - B", Ok(simple_exp_op("A", "B", Sub))),
+    #("simple subtraction", "A - B", Ok(simple_exp_op("A", "B", Sub))),
     // simple multiplication
-    #("A * B", Ok(simple_exp_op("A", "B", Mul))),
+    #("simple multiplication", "A * B", Ok(simple_exp_op("A", "B", Mul))),
     // simple division
-    #("A / B", Ok(simple_exp_op("A", "B", Div))),
+    #("simple division", "A / B", Ok(simple_exp_op("A", "B", Div))),
     // order of precedence with parentheses
     #(
+      "order of precedence with parentheses",
       "(A + B) / C",
       Ok(exp_op(parens(simple_op_cont("A", "B", Add)), prim_word("C"), Div)),
     ),
     // complex nested parentheses
     #(
+      "complex nested parentheses",
       "((A + B) * C) / (D - (E + F))",
       Ok(exp_op(lhs_complex, rhs_complex, Div)),
     ),
     // mixed operators precedence
     #(
+      "mixed operators precedence",
       "A * B + C / D - E",
       Ok(OperatorExpr(
         simple_op_cont("A", "B", Mul),
@@ -114,6 +117,7 @@ pub fn parse_expr_test() {
     ),
     // deeply nested expression
     #(
+      "deeply nested expression",
       "(A + (B * (C - D)))",
       Ok(
         parens(OperatorExpr(
@@ -129,6 +133,7 @@ pub fn parse_expr_test() {
     ),
     // complex division expression
     #(
+      "complex division expression",
       "(X + Y * Z) / (A - B + C)",
       Ok(exp_op(
         parens(OperatorExpr(prim_word("X"), simple_op_cont("Y", "Z", Mul), Add)),
@@ -138,6 +143,7 @@ pub fn parse_expr_test() {
     ),
     // time_slice with basic expression
     #(
+      "time_slice with basic expression",
       "time_slice(Query > 1000000 per 10s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -162,27 +168,32 @@ pub fn operator_precedence_test() {
   [
     // a + b * c → Add(a, Mul(b, c)) — multiply binds tighter
     #(
+      "multiply binds tighter than add: a + b * c",
       "a + b * c",
       Ok(OperatorExpr(prim_word("a"), simple_op_cont("b", "c", Mul), Add)),
     ),
     // a * b + c → Add(Mul(a, b), c) — multiply binds tighter
     #(
+      "multiply binds tighter than add: a * b + c",
       "a * b + c",
       Ok(OperatorExpr(simple_op_cont("a", "b", Mul), prim_word("c"), Add)),
     ),
     // a / b / c — the parser finds the rightmost "/" at paren-level 0,
     // splitting into "a / b" and "c", then recursively parses "a / b".
     #(
+      "division left-associative: a / b / c",
       "a / b / c",
       Ok(OperatorExpr(simple_op_cont("a", "b", Div), prim_word("c"), Div)),
     ),
     // a - b - c — same strategy: rightmost "-" splits into "a - b" and "c"
     #(
+      "subtraction left-associative: a - b - c",
       "a - b - c",
       Ok(OperatorExpr(simple_op_cont("a", "b", Sub), prim_word("c"), Sub)),
     ),
     // a + b * c - d → Add(a, Sub(Mul(b, c), d))
     #(
+      "mixed add/sub with multiply: a + b * c - d",
       "a + b * c - d",
       Ok(OperatorExpr(
         prim_word("a"),
@@ -203,13 +214,13 @@ pub fn operator_precedence_test() {
 pub fn is_balanced_parens_test() {
   [
     // empty string
-    #("", 0, 0, True),
+    #("empty string", "", 0, 0, True),
     // balanced parentheses
-    #("()", 0, 0, True),
+    #("balanced parentheses", "()", 0, 0, True),
     // unbalanced parentheses
-    #("(()))", 0, 0, False),
+    #("unbalanced parentheses", "(()))", 0, 0, False),
     // complex balanced parentheses
-    #("(a(b)(c)((())))", 11, 4, True),
+    #("complex balanced parentheses", "(a(b)(c)((())))", 11, 4, True),
   ]
   |> test_helpers.array_based_test_executor_3(is_balanced_parens)
 }
@@ -223,13 +234,29 @@ pub fn is_balanced_parens_test() {
 pub fn find_rightmost_operator_at_level_test() {
   [
     // find rightmost division operator
-    #("(A + B) / C", "/", Ok(#("(A + B)", "C"))),
+    #(
+      "find rightmost division operator",
+      "(A + B) / C",
+      "/",
+      Ok(#("(A + B)", "C")),
+    ),
     // find rightmost multiplication operator
-    #("(A - B) / D * C", "*", Ok(#("(A - B) / D", "C"))),
+    #(
+      "find rightmost multiplication operator",
+      "(A - B) / D * C",
+      "*",
+      Ok(#("(A - B) / D", "C")),
+    ),
     // find rightmost subtraction operator
-    #("A - B / (D * C)", "-", Ok(#("A", "B / (D * C)"))),
+    #(
+      "find rightmost subtraction operator",
+      "A - B / (D * C)",
+      "-",
+      Ok(#("A", "B / (D * C)")),
+    ),
     // error when operator not found at top level
     #(
+      "error when operator not found at top level",
       "(A + B) / C",
       "+",
       Error(errors.CQLParserError(
@@ -254,17 +281,17 @@ pub fn find_rightmost_operator_at_level_test() {
 pub fn is_last_char_test() {
   [
     // empty string at index 0
-    #("", 0, True),
+    #("empty string at index 0", "", 0, True),
     // single character at index 0
-    #("a", 0, True),
+    #("single character at index 0", "a", 0, True),
     // index not the last character
-    #("()", 0, False),
+    #("index not the last character", "()", 0, False),
     // negative index
-    #("(()))", -1, False),
+    #("negative index", "(()))", -1, False),
     // index beyond string length
-    #("(()))", 100, False),
+    #("index beyond string length", "(()))", 100, False),
     // index is the last character
-    #("(a(b)(c)((())))", 14, True),
+    #("index is the last character", "(a(b)(c)((())))", 14, True),
   ]
   |> test_helpers.array_based_test_executor_2(is_last_char)
 }
@@ -274,6 +301,7 @@ pub fn time_slice_valid_parsing_test() {
   [
     // time_slice(Query > 1000000 per 10s) - basic with >
     #(
+      "basic with >",
       "time_slice(Query > 1000000 per 10s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -286,6 +314,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query < 500 per 30s) - with <
     #(
+      "with <",
       "time_slice(Query < 500 per 30s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -298,6 +327,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query >= 100 per 60s) - with >=
     #(
+      "with >=",
       "time_slice(Query >= 100 per 60s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -310,6 +340,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query <= 999 per 5s) - with <=
     #(
+      "with <=",
       "time_slice(Query <= 999 per 5s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -322,6 +353,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(avg:system.cpu > 80 per 300s) - realistic metric query
     #(
+      "realistic metric query",
       "time_slice(avg:system.cpu > 80 per 300s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -334,6 +366,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice( Query > 100 per 10s ) - whitespace handling
     #(
+      "whitespace handling",
       "time_slice( Query > 100 per 10s )",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -346,6 +379,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query > 99.5 per 10s) - decimal threshold
     #(
+      "decimal threshold",
       "time_slice(Query > 99.5 per 10s)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -358,6 +392,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query > 100 per 10m) - minutes interval
     #(
+      "minutes interval",
       "time_slice(Query > 100 per 10m)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -370,6 +405,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query > 100 per 1h) - hours interval
     #(
+      "hours interval",
       "time_slice(Query > 100 per 1h)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -382,6 +418,7 @@ pub fn time_slice_valid_parsing_test() {
     ),
     // time_slice(Query > 100 per 1.5h) - decimal interval
     #(
+      "decimal interval",
       "time_slice(Query > 100 per 1.5h)",
       Ok(
         TimeSliceExpr(TimeSliceExp(
@@ -402,48 +439,60 @@ pub fn time_slice_invalid_syntax_test() {
   [
     // time_slice(Query > 100) - missing per <interval>
     #(
+      "missing per interval",
       "time_slice(Query > 100)",
       Error("Missing 'per' keyword in time_slice expression"),
     ),
     // time_slice(Query 100 per 10s) - missing comparator
     #(
+      "missing comparator",
       "time_slice(Query 100 per 10s)",
       Error("No comparator found in time_slice expression"),
     ),
     // time_slice(> 100 per 10s) - missing query
     #(
+      "missing query",
       "time_slice(> 100 per 10s)",
       Error("Missing query in time_slice expression"),
     ),
     // time_slice(Query > per 10s) - missing threshold
     #(
+      "missing threshold",
       "time_slice(Query > per 10s)",
       Error("Missing threshold in time_slice expression"),
     ),
     // time_slice(Query > 100 per) - missing interval
     #(
+      "missing interval",
       "time_slice(Query > 100 per)",
       Error("Missing interval in time_slice expression"),
     ),
     // time_slice(Query > 100 per s) - invalid interval (no number)
-    #("time_slice(Query > 100 per s)", Error("Invalid interval number ''")),
+    #(
+      "invalid interval (no number)",
+      "time_slice(Query > 100 per s)",
+      Error("Invalid interval number ''"),
+    ),
     // time_slice(Query > 100 per 10) - invalid interval (no unit)
     #(
+      "invalid interval (no unit)",
       "time_slice(Query > 100 per 10)",
       Error("Invalid interval unit '0' (expected s, m, or h)"),
     ),
     // time_slice(Query > 100 per 10x) - invalid unit
     #(
+      "invalid unit",
       "time_slice(Query > 100 per 10x)",
       Error("Invalid interval unit 'x' (expected s, m, or h)"),
     ),
     // time_slice(Query > abc per 10s) - non-numeric threshold
     #(
+      "non-numeric threshold",
       "time_slice(Query > abc per 10s)",
       Error("Invalid threshold 'abc' in time_slice expression"),
     ),
     // time_slice() - empty
-    #("time_slice()", Error("Empty time_slice expression")),
+    #("empty time_slice", "time_slice()", Error("Empty time_slice expression")),
   ]
   |> test_helpers.array_based_test_executor_1(parse_expr)
 }
@@ -454,16 +503,19 @@ pub fn time_slice_parses_as_word_test() {
   [
     // TIME_SLICE(Query > 100 per 10s) - wrong case
     #(
+      "wrong case",
       "TIME_SLICE(Query > 100 per 10s)",
       Ok(Primary(PrimaryWord(Word("TIME_SLICE(Query > 100 per 10s)")))),
     ),
     // timeslice(Query > 100 per 10s) - no underscore
     #(
+      "no underscore",
       "timeslice(Query > 100 per 10s)",
       Ok(Primary(PrimaryWord(Word("timeslice(Query > 100 per 10s)")))),
     ),
     // time_slice Query > 100 per 10s - no parens (parses as word)
     #(
+      "no parens",
       "time_slice Query > 100 per 10s",
       Ok(Primary(PrimaryWord(Word("time_slice Query > 100 per 10s")))),
     ),

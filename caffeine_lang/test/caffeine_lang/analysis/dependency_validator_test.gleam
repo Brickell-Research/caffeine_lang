@@ -32,6 +32,7 @@ pub fn validate_dependency_relations_test() {
   // Happy path: no IRs with dependency relations
   [
     #(
+      "no dependency relations",
       [
         ir_test_helpers.make_slo_ir(
           "acme",
@@ -56,6 +57,7 @@ pub fn validate_dependency_relations_test() {
   // Happy path: valid dependency references
   [
     #(
+      "valid dependency references",
       [
         ir_test_helpers.make_slo_ir(
           "acme",
@@ -82,6 +84,7 @@ pub fn validate_dependency_relations_test() {
   // Happy path: multiple IRs with cross-references
   [
     #(
+      "multiple IRs with cross-references",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -115,6 +118,7 @@ pub fn validate_dependency_relations_test() {
   // Sad path: dependency target does not exist
   [
     #(
+      "dependency target does not exist",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -139,6 +143,7 @@ pub fn validate_dependency_relations_test() {
   // Sad path: invalid format (not 4 parts)
   [
     #(
+      "invalid format (not 4 parts)",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -163,6 +168,7 @@ pub fn validate_dependency_relations_test() {
   // Sad path: self-reference
   [
     #(
+      "self-reference",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -187,6 +193,7 @@ pub fn validate_dependency_relations_test() {
   // Sad path: multiple invalid dependencies (first error reported)
   [
     #(
+      "multiple invalid dependencies",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -211,6 +218,7 @@ pub fn validate_dependency_relations_test() {
   // Sad path: duplicate dependency within same relation type
   [
     #(
+      "duplicate dependency within same relation type",
       [
         ir_test_helpers.make_slo_ir(
           "acme",
@@ -245,6 +253,7 @@ pub fn validate_dependency_relations_test() {
   // Happy path: same dependency in both hard and soft (allowed)
   [
     #(
+      "same dependency in both hard and soft",
       [
         ir_test_helpers.make_slo_ir(
           "acme",
@@ -278,19 +287,20 @@ pub fn parse_dependency_path_test() {
   [
     // Valid 4-part path
     #(
+      "valid 4-part path",
       "acme.platform.auth.login_slo",
       Ok(#("acme", "platform", "auth", "login_slo")),
     ),
     // Too few parts
-    #("acme.platform.auth", Error(Nil)),
-    #("acme.platform", Error(Nil)),
-    #("acme", Error(Nil)),
+    #("too few parts (3)", "acme.platform.auth", Error(Nil)),
+    #("too few parts (2)", "acme.platform", Error(Nil)),
+    #("too few parts (1)", "acme", Error(Nil)),
     // Too many parts
-    #("acme.platform.auth.login.extra", Error(Nil)),
+    #("too many parts", "acme.platform.auth.login.extra", Error(Nil)),
     // Empty string
-    #("", Error(Nil)),
+    #("empty string", "", Error(Nil)),
     // Empty parts
-    #("acme..auth.login", Error(Nil)),
+    #("empty parts", "acme..auth.login", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(fn(input) {
     dependency_validator.parse_dependency_path(input)
@@ -309,6 +319,7 @@ pub fn detect_cycles_test() {
   // No cycle: linear chain A -> B -> C
   [
     #(
+      "no cycle: linear chain A -> B -> C",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -345,6 +356,7 @@ pub fn detect_cycles_test() {
   // A's threshold must be below composite ceiling of B and C (~99.8001)
   [
     #(
+      "no cycle: diamond",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -389,6 +401,7 @@ pub fn detect_cycles_test() {
   // 2-node cycle: A -> B -> A
   [
     #(
+      "2-node cycle: A -> B -> A",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -422,6 +435,7 @@ pub fn detect_cycles_test() {
   // 3-node cycle: A -> B -> C -> A
   [
     #(
+      "3-node cycle: A -> B -> C -> A",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -464,6 +478,7 @@ pub fn detect_cycles_test() {
   // Cycle across relation types: A ->hard B, B ->soft A
   [
     #(
+      "cycle across relation types",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -510,6 +525,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Source threshold <= target threshold (99.9 <= 99.99)
   [
     #(
+      "source threshold <= target threshold",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -536,6 +552,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Equal thresholds (99.9 == 99.9)
   [
     #(
+      "equal thresholds",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -562,6 +579,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Source threshold > target threshold (99.99 > 99.9) - ERROR
   [
     #(
+      "source threshold > target threshold",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -593,6 +611,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Soft dependencies skip threshold check
   [
     #(
+      "soft deps skip threshold check",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -619,6 +638,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Skip when source has no SLO artifact
   [
     #(
+      "skip when source has no SLO artifact",
       [
         ir_test_helpers.make_deps_only_ir(
           "acme",
@@ -644,6 +664,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Skip when target has no SLO artifact
   [
     #(
+      "skip when target has no SLO artifact",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -671,6 +692,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // 2 hard deps, source below composite ceiling
   [
     #(
+      "2 hard deps, source below composite ceiling",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -707,6 +729,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // 2 hard deps at 99.99%, source at 99.99% exceeds composite ceiling (~99.98)
   [
     #(
+      "2 hard deps exceeds composite ceiling",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -748,6 +771,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // 3 hard deps at 99.99%, source at 99.98% exceeds composite ceiling (~99.97)
   [
     #(
+      "3 hard deps exceeds composite ceiling",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -797,6 +821,7 @@ pub fn validate_hard_dependency_thresholds_test() {
   // Mix of hard deps with and without SLO (only SLO deps count in composite)
   [
     #(
+      "mix of hard deps with and without SLO",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -857,10 +882,10 @@ pub fn build_expectation_index_test() {
 
   // Test that expected paths exist - use executor_2 for path + index
   [
-    #("acme.platform.auth.login_slo", index, True),
-    #("acme.infra.db.query_slo", index, True),
-    #("acme.platform.auth.other_slo", index, False),
-    #("nonexistent.path.here.slo", index, False),
+    #("existing path: login_slo", "acme.platform.auth.login_slo", index, True),
+    #("existing path: query_slo", "acme.infra.db.query_slo", index, True),
+    #("missing path: other_slo", "acme.platform.auth.other_slo", index, False),
+    #("missing path: nonexistent", "nonexistent.path.here.slo", index, False),
   ]
   |> test_helpers.array_based_test_executor_2(fn(path, idx) {
     case dict.get(idx, path) {

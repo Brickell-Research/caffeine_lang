@@ -15,6 +15,7 @@ const corpus_dir = "test/caffeine_cli/corpus/linker"
 pub fn get_caffeine_files_test() {
   [
     #(
+      "directory doesn't exist",
       "non_existent_directory",
       Error(errors.LinkerParseError(
         msg: "No such file or directory (non_existent_directory)",
@@ -22,18 +23,22 @@ pub fn get_caffeine_files_test() {
       )),
     ),
     #(
+      "nested directory structure",
       corpus_dir <> "/nested_structure",
       Ok([corpus_dir <> "/nested_structure/org1/team1/expectation.caffeine"]),
     ),
     #(
+      "mixed content - only caffeine files collected",
       corpus_dir <> "/mixed_content",
       Ok([corpus_dir <> "/mixed_content/org1/team1/valid.caffeine"]),
     ),
     #(
+      "files at top level are skipped",
       corpus_dir <> "/top_level_skipped",
       Ok([corpus_dir <> "/top_level_skipped/org1/team1/nested.caffeine"]),
     ),
     #(
+      "empty subdirectories",
       corpus_dir <> "/empty_subdirs",
       Ok([corpus_dir <> "/empty_subdirs/org1/team_with_files/test.caffeine"]),
     ),

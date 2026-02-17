@@ -52,6 +52,7 @@ pub fn compile_test() {
   [
     // happy path - none
     #(
+      "happy path - none",
       #(
         corpus_path("happy_path_no_expectations_blueprints.caffeine"),
         corpus_path("happy_path_no_expectations"),
@@ -60,6 +61,7 @@ pub fn compile_test() {
     ),
     // happy path - single
     #(
+      "happy path - single",
       #(
         corpus_path("happy_path_single_blueprints.caffeine"),
         corpus_path("happy_path_single_expectations"),
@@ -68,6 +70,7 @@ pub fn compile_test() {
     ),
     // happy path - multiple (3 SLOs across 2 teams)
     #(
+      "happy path - multiple (3 SLOs across 2 teams)",
       #(
         corpus_path("happy_path_multiple_blueprints.caffeine"),
         corpus_path("happy_path_multiple_expectations"),
@@ -76,6 +79,7 @@ pub fn compile_test() {
     ),
     // happy path - type alias (E2E test with type alias in Requires)
     #(
+      "happy path - type alias (E2E test with type alias in Requires)",
       #(
         corpus_path("happy_path_type_alias_blueprints.caffeine"),
         corpus_path("happy_path_type_alias_expectations"),
@@ -116,6 +120,7 @@ pub fn compile_from_strings_test() {
   [
     // single expectation with templated queries
     #(
+      "happy path - single expectation with templated queries",
       #(
         "Blueprints for \"SLO\"
   * \"api_availability\":
@@ -149,6 +154,7 @@ pub fn compile_from_strings_test() {
     ),
     // path extraction (org/team/service from file path)
     #(
+      "happy path - path extraction (org/team/service from file path)",
       #(
         "Blueprints for \"SLO\"
   * \"simple_slo\":
@@ -173,6 +179,7 @@ pub fn compile_from_strings_test() {
     ),
     // time_slice SLO expression
     #(
+      "happy path - time_slice SLO expression",
       #(
         "Blueprints for \"SLO\"
   * \"cpu_slo\":
@@ -208,6 +215,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - invalid blueprint DSL
     #(
+      "sad path - invalid blueprint DSL",
       #(
         "this is not valid caffeine syntax !!!",
         "Expectations for \"x\"
@@ -221,6 +229,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - invalid expectations DSL
     #(
+      "sad path - invalid expectations DSL",
       #(
         "Blueprints for \"SLO\"
   * \"api_availability\":
@@ -239,6 +248,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - missing blueprint reference
     #(
+      "sad path - missing blueprint reference",
       #(
         "Blueprints for \"SLO\"
   * \"some_blueprint\":
@@ -260,6 +270,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - invalid dependency reference (target does not exist)
     #(
+      "sad path - invalid dependency reference (target does not exist)",
       #(
         "Blueprints for \"SLO\" + \"DependencyRelations\"
   * \"slo_with_deps\":
@@ -285,6 +296,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - invalid dependency format (not 4 parts)
     #(
+      "sad path - invalid dependency format (not 4 parts)",
       #(
         "Blueprints for \"SLO\" + \"DependencyRelations\"
   * \"slo_with_deps\":
@@ -310,6 +322,7 @@ pub fn compile_from_strings_test() {
     ),
     // sad path - self-reference in dependency
     #(
+      "sad path - self-reference in dependency",
       #(
         "Blueprints for \"SLO\" + \"DependencyRelations\"
   * \"slo_with_deps\":
@@ -357,6 +370,7 @@ pub fn compile_from_strings_honeycomb_test() {
   [
     // happy path - single Honeycomb SLO
     #(
+      "happy path - single Honeycomb SLO",
       #(
         "Blueprints for \"SLO\"
   * \"honeycomb_availability\":
@@ -392,6 +406,7 @@ pub fn compile_from_strings_honeycomb_test() {
     ),
     // happy path - mixed vendors (Datadog + Honeycomb)
     #(
+      "happy path - mixed vendors (Datadog + Honeycomb)",
       #(
         "Blueprints for \"SLO\"
   * \"dd_blueprint\":
@@ -442,6 +457,7 @@ Expectations for \"hc_blueprint\"
     ),
     // sad path - Honeycomb with invalid window (out of 1-90 range)
     #(
+      "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
         "Blueprints for \"SLO\"
   * \"hc_blueprint\":
@@ -490,6 +506,7 @@ pub fn compile_from_strings_dynatrace_test() {
   [
     // happy path - single Dynatrace SLO
     #(
+      "happy path - single Dynatrace SLO",
       #(
         "Blueprints for \"SLO\"
   * \"dynatrace_availability\":
@@ -524,6 +541,7 @@ pub fn compile_from_strings_dynatrace_test() {
     ),
     // happy path - mixed vendors (Datadog + Dynatrace)
     #(
+      "happy path - mixed vendors (Datadog + Dynatrace)",
       #(
         "Blueprints for \"SLO\"
   * \"dd_blueprint\":
@@ -573,6 +591,7 @@ Expectations for \"dt_blueprint\"
     ),
     // sad path - Dynatrace with invalid window (out of 1-90 range)
     #(
+      "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
         "Blueprints for \"SLO\"
   * \"dt_blueprint\":

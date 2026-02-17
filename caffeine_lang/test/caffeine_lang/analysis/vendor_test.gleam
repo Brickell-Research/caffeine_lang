@@ -7,11 +7,27 @@ import test_helpers
 // * ✅ unknown vendor returns Error
 pub fn resolve_vendor_test() {
   [
-    #(constants.vendor_datadog, Ok(vendor.Datadog)),
-    #(constants.vendor_honeycomb, Ok(vendor.Honeycomb)),
-    #(constants.vendor_dynatrace, Ok(vendor.Dynatrace)),
-    #(constants.vendor_newrelic, Ok(vendor.NewRelic)),
-    #("unknown_vendor", Error(Nil)),
+    #(
+      "known vendors resolve to Ok - datadog",
+      constants.vendor_datadog,
+      Ok(vendor.Datadog),
+    ),
+    #(
+      "known vendors resolve to Ok - honeycomb",
+      constants.vendor_honeycomb,
+      Ok(vendor.Honeycomb),
+    ),
+    #(
+      "known vendors resolve to Ok - dynatrace",
+      constants.vendor_dynatrace,
+      Ok(vendor.Dynatrace),
+    ),
+    #(
+      "known vendors resolve to Ok - newrelic",
+      constants.vendor_newrelic,
+      Ok(vendor.NewRelic),
+    ),
+    #("unknown vendor returns Error", "unknown_vendor", Error(Nil)),
   ]
   |> test_helpers.array_based_test_executor_1(vendor.resolve_vendor)
 }

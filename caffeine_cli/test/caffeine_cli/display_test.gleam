@@ -32,12 +32,12 @@ pub fn pretty_print_artifact_test() {
 
   // Verify all expected content is present in the output
   [
-    #("SLO", True),
-    #("Test artifact description", True),
-    #("my_param", True),
-    #("My param description", True),
-    #("String", True),
-    #("required", True),
+    #("includes artifact name", "SLO", True),
+    #("includes artifact description", "Test artifact description", True),
+    #("includes param names", "my_param", True),
+    #("includes param descriptions", "My param description", True),
+    #("includes param types", "String", True),
+    #("includes param status (required/optional/default)", "required", True),
   ]
   |> test_helpers.array_based_test_executor_1(fn(substring) {
     string.contains(output, substring)
