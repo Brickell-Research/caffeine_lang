@@ -364,50 +364,62 @@ pub fn extract_words_test() {
 // * ❌ partially undefined indicators returns error listing missing
 // * ❌ time_slice returns error
 pub fn resolve_slo_to_expression_test() {
-  // single word identity substitutes indicator value
-  generator.resolve_slo_to_expression(
-    "sli",
-    dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
-  )
-  |> should.equal(Ok("LT($\"status_code\", 500)"))
-
-  // division substitutes and renders as division
-  generator.resolve_slo_to_expression(
-    "good / total",
-    dict.from_list([#("good", "query1"), #("total", "query2")]),
-  )
-  |> should.equal(Ok("query1 / query2"))
-
-  // addition substitutes and renders as addition
-  generator.resolve_slo_to_expression(
-    "a + b",
-    dict.from_list([#("a", "val1"), #("b", "val2")]),
-  )
-  |> should.equal(Ok("val1 + val2"))
-
-  // multi-indicator composition substitutes all words
-  generator.resolve_slo_to_expression(
-    "(latency + errors) / total",
-    dict.from_list([
-      #("latency", "lat_query"),
-      #("errors", "err_query"),
-      #("total", "total_query"),
-    ]),
-  )
-  |> should.equal(Ok("(lat_query + err_query) / total_query"))
-
-  // undefined indicator returns error
-  generator.resolve_slo_to_expression("sli", dict.new())
-  |> should.equal(Error("evaluation references undefined indicators: sli"))
-
-  // partially undefined indicators returns error listing missing
-  generator.resolve_slo_to_expression(
-    "(a + b) / c",
-    dict.from_list([#("a", "val1")]),
-  )
-  |> should.equal(Error("evaluation references undefined indicators: b, c"))
-
-  // time_slice returns error
-  generator.resolve_slo_to_expression("time_slice(Q > 1 per 1s)", dict.new())
-  |> should.be_error
+  [
+    // single word identity substitutes indicator value
+    #(
+      "single word identity substitutes indicator value",
+      "sli",
+      dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
+      Ok("LT($\"status_code\", 500)"),
+    ),
+    // division substitutes and renders as division
+    #(
+      "division substitutes and renders as division",
+      "good / total",
+      dict.from_list([#("good", "query1"), #("total", "query2")]),
+      Ok("query1 / query2"),
+    ),
+    // addition substitutes and renders as addition
+    #(
+      "addition substitutes and renders as addition",
+      "a + b",
+      dict.from_list([#("a", "val1"), #("b", "val2")]),
+      Ok("val1 + val2"),
+    ),
+    // multi-indicator composition substitutes all words
+    #(
+      "multi-indicator composition substitutes all words",
+      "(latency + errors) / total",
+      dict.from_list([
+        #("latency", "lat_query"),
+        #("errors", "err_query"),
+        #("total", "total_query"),
+      ]),
+      Ok("(lat_query + err_query) / total_query"),
+    ),
+    // undefined indicator returns error
+    #(
+      "undefined indicator returns error",
+      "sli",
+      dict.new(),
+      Error("evaluation references undefined indicators: sli"),
+    ),
+    // partially undefined indicators returns error listing missing
+    #(
+      "partially undefined indicators returns error listing missing",
+      "(a + b) / c",
+      dict.from_list([#("a", "val1")]),
+      Error("evaluation references undefined indicators: b, c"),
+    ),
+    // time_slice returns error
+    #(
+      "time_slice returns error",
+      "time_slice(Q > 1 per 1s)",
+      dict.new(),
+      Error(
+        "time_slice expressions are not supported for expression resolution",
+      ),
+    ),
+  ]
+  |> test_helpers.table_test_2(generator.resolve_slo_to_expression)
 }

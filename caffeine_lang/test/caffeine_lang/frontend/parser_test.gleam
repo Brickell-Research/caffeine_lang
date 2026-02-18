@@ -4,7 +4,6 @@ import caffeine_lang/frontend/parser_error
 import caffeine_lang/types
 import gleam/dict
 import gleam/set
-import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -1118,26 +1117,22 @@ pub fn parse_error_line_numbers_test() {
 // * ✅ missing } in middle of file points to correct line (not far-away next token)
 // * ✅ missing } in refinement points to last token on same line
 pub fn parse_error_missing_delimiter_test() {
-  // Missing } at end of file with trailing newline:
-  // Error should point to line 3 (where } belongs), not line 4 (EOF)
-  parser.parse_blueprints_file(
-    "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n",
-  )
-  |> should.equal(
-    Error(parser_error.UnexpectedToken("}", "end of file", 3, 17)),
-  )
-
-  // Missing } in middle of file:
-  // Error should point to line 3 (last consumed token), not line 6 (next Blueprints keyword)
-  parser.parse_blueprints_file(
-    "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
-  )
-  |> should.equal(Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 17)))
-
-  // Missing outer } in refinement:
-  // Error should point to line 1 (position of inner }), not wherever next token is
-  parser.parse_blueprints_file(
-    "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
-  )
-  |> should.equal(Error(parser_error.UnexpectedToken("}", "Provides", 3, 46)))
+  [
+    #(
+      "missing } at end of file points to correct line (not EOF line)",
+      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n",
+      Error(parser_error.UnexpectedToken("}", "end of file", 3, 17)),
+    ),
+    #(
+      "missing } in middle of file points to correct line (not far-away next token)",
+      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
+      Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 17)),
+    ),
+    #(
+      "missing } in refinement points to last token on same line",
+      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
+      Error(parser_error.UnexpectedToken("}", "Provides", 3, 46)),
+    ),
+  ]
+  |> test_helpers.table_test_1(parser.parse_blueprints_file)
 }
