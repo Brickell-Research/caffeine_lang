@@ -1,0 +1,34 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "a017688f0bd80c4420ba7af5f55908839733130e",
+  "prompts": {
+    "103dd5b6e49768c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d57eae37-94fe-440e-8066-001e44666203",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 3596,
+      "total_deletions": 1036,
+      "accepted_lines": 2560,
+      "overriden_lines": 0
+    },
+    "760fe52187b951df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7ceef29-b469-4dd6-83be-29ee6a885f63",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 77,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
