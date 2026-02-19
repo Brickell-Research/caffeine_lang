@@ -1,0 +1,33 @@
+caffeine_lsp/src/caffeine_lsp/diagnostics.gleam
+  eb60722330020b03 383-406
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_percentage_bounds.caffeine
+  eb60722330020b03 1-4
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  eb60722330020b03 8-10,15-16,20,50-55,97,100-104,451-461,512,548-549,622-658,660-730
+caffeine_lang/test/caffeine_lang/frontend/validator_test.gleam
+  eb60722330020b03 347-375,377-383
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_refinement_type_mismatch.caffeine
+  eb60722330020b03 1-6
+caffeine_lang/src/caffeine_lang/frontend/pipeline.gleam
+  eb60722330020b03 144-157,328-329
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "da06c805e4a46890a857472e8bc76378e59d7db2",
+  "prompts": {
+    "eb60722330020b03": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9d2cf58-085b-4e6c-bbd7-94ebb19f78f8",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 256,
+      "total_deletions": 170,
+      "accepted_lines": 237,
+      "overriden_lines": 2
+    }
+  }
+}
