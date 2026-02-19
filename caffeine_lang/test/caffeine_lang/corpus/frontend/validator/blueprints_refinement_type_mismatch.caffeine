@@ -1,0 +1,6 @@
+_bad_type (Type): Integer { x | x in { "hello" } }
+
+Blueprints for "SLO"
+  * "test":
+    Requires { env: _bad_type }
+    Provides { value: "x" }

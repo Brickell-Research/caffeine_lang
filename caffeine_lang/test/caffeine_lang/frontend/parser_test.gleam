@@ -1027,7 +1027,6 @@ pub fn parse_expects_file_test() {
 // * ✅ missing item colon
 // * ✅ invalid extendable kind
 // * ✅ missing dict value type
-// * ✅ refinement type mismatch (e.g. Integer in String OneOf)
 // * ✅ expects with Requires
 pub fn parse_errors_test() {
   // Blueprints file errors - check that parsing returns Error
@@ -1050,7 +1049,6 @@ pub fn parse_errors_test() {
     #("missing item colon", errors_path("missing_item_colon"), True),
     #("invalid extendable kind", errors_path("invalid_extendable_kind"), True),
     #("missing dict value type", errors_path("missing_dict_value_type"), True),
-    #("refinement type mismatch", errors_path("refinement_type_mismatch"), True),
   ]
   |> test_helpers.table_test_1(fn(file_path) {
     case parser.parse_blueprints_file(read_file(file_path)) {

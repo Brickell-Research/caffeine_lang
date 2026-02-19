@@ -380,6 +380,30 @@ fn validator_error_to_diagnostic(
         lsp_types.diagnostic_severity_to_int(DsError),
         "Name '" <> name <> "' is used as both an extendable and a type alias",
       )
+    validator.InvalidRefinementValue(value, expected_type, referenced_by) ->
+      name_diagnostic(
+        content,
+        value,
+        lsp_types.diagnostic_severity_to_int(DsError),
+        "Refinement value '"
+          <> value
+          <> "' is not a valid "
+          <> expected_type
+          <> " literal, in '"
+          <> referenced_by
+          <> "'",
+      )
+    validator.InvalidPercentageBounds(value, referenced_by) ->
+      name_diagnostic(
+        content,
+        value,
+        lsp_types.diagnostic_severity_to_int(DsError),
+        "Percentage value '"
+          <> value
+          <> "' must be between 0.0 and 100.0, in '"
+          <> referenced_by
+          <> "'",
+      )
   }
 }
 

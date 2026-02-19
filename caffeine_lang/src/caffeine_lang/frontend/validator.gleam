@@ -5,14 +5,19 @@ import caffeine_lang/frontend/ast.{
   type Extendable, type Field, type TypeAlias,
 }
 import caffeine_lang/types.{
-  type ParsedType, Dict, OneOf, ParsedCollection, ParsedPrimitive,
-  ParsedRefinement, ParsedTypeAliasRef, String as StringType,
+  type ParsedType, type PrimitiveTypes, Boolean, Defaulted, Dict, InclusiveRange,
+  NumericType, OneOf, ParsedCollection, ParsedModifier, ParsedPrimitive,
+  ParsedRefinement, ParsedTypeAliasRef, Percentage, SemanticType,
+  String as StringType,
 }
 import gleam/bool
 import gleam/dict
+import gleam/float
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set
+import gleam/string
 
 /// Errors that can occur during validation.
 pub type ValidatorError {
@@ -42,6 +47,12 @@ pub type ValidatorError {
     extendable_name: String,
   )
   ExtendableTypeAliasNameCollision(name: String)
+  InvalidRefinementValue(
+    value: String,
+    expected_type: String,
+    referenced_by: String,
+  )
+  InvalidPercentageBounds(value: String, referenced_by: String)
 }
 
 /// Validates a blueprints file.
@@ -83,9 +94,14 @@ pub fn validate_blueprints_file(
     |> set.from_list
   let type_alias_map = build_type_alias_map(type_aliases)
 
-  // Group B: type alias reference checks (independent of each other)
+  // Group B: type alias reference checks and refinement value checks
   let type_ref_errors =
     collect_errors([
+      validate_type_aliases_type_refs(
+        type_aliases,
+        type_alias_names,
+        type_alias_map,
+      ),
       validate_extendables_type_refs(
         extendables,
         type_alias_names,
@@ -432,6 +448,17 @@ fn validate_type_alias_not_circular(
   }
 }
 
+/// Validates type alias definitions for type refs and refinement values.
+fn validate_type_aliases_type_refs(
+  type_aliases: List(TypeAlias),
+  type_alias_names: set.Set(String),
+  type_alias_map: List(#(String, ParsedType)),
+) -> Result(Nil, ValidatorError) {
+  list.try_each(type_aliases, fn(ta) {
+    validate_type_refs(ta.type_, ta.name, type_alias_names, type_alias_map)
+  })
+}
+
 /// Validates type alias references in extendables.
 fn validate_extendables_type_refs(
   extendables: List(Extendable),
@@ -482,7 +509,7 @@ fn validate_fields_type_refs(
 
 /// Validates that all ParsedTypeAliasRef in a type are defined.
 /// Uses try_each_inner_parsed to handle the structural decomposition of compound types.
-/// Adds special Dict key validation for collection types.
+/// Adds special Dict key validation and refinement value validation.
 fn validate_type_refs(
   typ: ParsedType,
   context_name: String,
@@ -509,6 +536,18 @@ fn validate_type_refs(
         context_name,
         type_alias_map,
       ))
+      types.try_each_inner_parsed(typ, fn(inner) {
+        validate_type_refs(
+          inner,
+          context_name,
+          type_alias_names,
+          type_alias_map,
+        )
+      })
+    }
+    // For refinements, validate values match the declared primitive type
+    ParsedRefinement(refinement) -> {
+      use _ <- result.try(validate_refinement_values(refinement, context_name))
       types.try_each_inner_parsed(typ, fn(inner) {
         validate_type_refs(
           inner,
@@ -576,6 +615,116 @@ fn is_string_based_parsed_type(typ: ParsedType) -> Bool {
     ParsedPrimitive(StringType) -> True
     ParsedRefinement(OneOf(ParsedPrimitive(StringType), _)) -> True
     _ -> False
+  }
+}
+
+// =============================================================================
+// REFINEMENT VALUE VALIDATION
+// =============================================================================
+
+/// Validates that refinement string values match the declared primitive type.
+fn validate_refinement_values(
+  refinement: types.RefinementTypes(ParsedType),
+  context_name: String,
+) -> Result(Nil, ValidatorError) {
+  case refinement {
+    OneOf(inner, values) -> {
+      case extract_primitive_from_parsed(inner) {
+        Ok(primitive) ->
+          values
+          |> set.to_list
+          |> list.try_each(fn(value) {
+            validate_string_matches_primitive(value, primitive, context_name)
+          })
+        Error(_) -> Ok(Nil)
+      }
+    }
+    InclusiveRange(inner, low, high) -> {
+      case extract_primitive_from_parsed(inner) {
+        Ok(primitive) -> {
+          use _ <- result.try(validate_string_matches_primitive(
+            low,
+            primitive,
+            context_name,
+          ))
+          validate_string_matches_primitive(high, primitive, context_name)
+        }
+        Error(_) -> Ok(Nil)
+      }
+    }
+  }
+}
+
+/// Extracts the primitive type from a ParsedType, unwrapping Defaulted modifiers.
+fn extract_primitive_from_parsed(typ: ParsedType) -> Result(PrimitiveTypes, Nil) {
+  case typ {
+    ParsedPrimitive(primitive) -> Ok(primitive)
+    ParsedModifier(Defaulted(inner, _)) -> extract_primitive_from_parsed(inner)
+    _ -> Error(Nil)
+  }
+}
+
+/// Validates that a string value is valid for the given primitive type.
+fn validate_string_matches_primitive(
+  value: String,
+  primitive: PrimitiveTypes,
+  context_name: String,
+) -> Result(Nil, ValidatorError) {
+  let is_valid = case primitive {
+    types.String -> True
+    SemanticType(_) -> True
+    Boolean -> value == "True" || value == "False"
+    NumericType(types.Integer) -> result.is_ok(int.parse(value))
+    NumericType(types.Float) -> result.is_ok(float.parse(value))
+    NumericType(Percentage) -> {
+      // Strip trailing % if present for parsing
+      let raw = case string.ends_with(value, "%") {
+        True -> string.drop_end(value, 1)
+        False -> value
+      }
+      case float.parse(raw) {
+        Ok(f) -> {
+          use <- bool.guard(when: f <. 0.0 || f >. 100.0, return: {
+            // Value parses but is out of range — percentage bounds error
+            False
+          })
+          True
+        }
+        Error(_) -> False
+      }
+    }
+  }
+  case is_valid {
+    True -> Ok(Nil)
+    False ->
+      case primitive {
+        NumericType(Percentage) -> {
+          // Distinguish parse failure from out-of-range
+          let raw = case string.ends_with(value, "%") {
+            True -> string.drop_end(value, 1)
+            False -> value
+          }
+          case float.parse(raw) {
+            Ok(_) ->
+              Error(InvalidPercentageBounds(
+                value: value,
+                referenced_by: context_name,
+              ))
+            Error(_) ->
+              Error(InvalidRefinementValue(
+                value: value,
+                expected_type: types.primitive_type_to_string(primitive),
+                referenced_by: context_name,
+              ))
+          }
+        }
+        _ ->
+          Error(InvalidRefinementValue(
+            value: value,
+            expected_type: types.primitive_type_to_string(primitive),
+            referenced_by: context_name,
+          ))
+      }
   }
 }
 

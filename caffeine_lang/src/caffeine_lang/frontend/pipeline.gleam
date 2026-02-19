@@ -141,6 +141,20 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> "'"
     validator.ExtendableTypeAliasNameCollision(name) ->
       "Name '" <> name <> "' is used as both an extendable and a type alias"
+    validator.InvalidRefinementValue(value, expected_type, referenced_by) ->
+      "Refinement value '"
+      <> value
+      <> "' is not a valid "
+      <> expected_type
+      <> " literal, in '"
+      <> referenced_by
+      <> "'"
+    validator.InvalidPercentageBounds(value, referenced_by) ->
+      "Percentage value '"
+      <> value
+      <> "' must be between 0.0 and 100.0, in '"
+      <> referenced_by
+      <> "'"
   }
 }
 
@@ -311,6 +325,8 @@ fn validator_error_to_rich_error(
       option.None,
     )
     validator.ExtendableTypeAliasNameCollision(name) -> #(name, option.None)
+    validator.InvalidRefinementValue(value, _, _) -> #(value, option.None)
+    validator.InvalidPercentageBounds(value, _) -> #(value, option.None)
   }
   // Look up position of the name in source
   let #(line, column) = position_utils.find_name_position(source.content, name)

@@ -1013,17 +1013,12 @@ fn parse_defaulted_refinement_body(
   state: ParserState,
   defaulted: ParsedType,
 ) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
-  let primitive = extract_primitive_from_parsed(defaulted)
   case peek(state) {
     // OneOf: { value1, value2, ... }
     token.SymbolLeftBrace -> {
       let state = advance(state)
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-      use _ <- result.try(case primitive {
-        Ok(prim) -> validate_oneof_literals(values, prim, state)
-        Error(_) -> Ok(Nil)
-      })
       let string_values = list.map(values, literal_to_string)
       Ok(#(OneOf(defaulted, set.from_list(string_values)), state))
     }
@@ -1034,10 +1029,6 @@ fn parse_defaulted_refinement_body(
       use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-      use _ <- result.try(case primitive {
-        Ok(prim) -> validate_oneof_literals([min, max], prim, state)
-        Error(_) -> Ok(Nil)
-      })
       Ok(#(
         InclusiveRange(
           defaulted,
@@ -1097,9 +1088,6 @@ fn parse_refinement_body(
       let state = advance(state)
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-      use _ <- result.try(validate_oneof_literals(values, primitive, state))
-      // For Percentage OneOf, validate all values are within [0.0, 100.0]
-      use _ <- result.try(validate_percentage_oneof(values, primitive, state))
       let string_values = list.map(values, literal_to_string)
       Ok(#(
         OneOf(ParsedPrimitive(primitive), set.from_list(string_values)),
@@ -1113,9 +1101,6 @@ fn parse_refinement_body(
       use state <- result.try(expect(state, token.SymbolDotDot, ".."))
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-      use _ <- result.try(validate_oneof_literals([min, max], primitive, state))
-      // For Percentage ranges, validate bounds are within [0.0, 100.0]
-      use _ <- result.try(validate_percentage_range(min, max, primitive, state))
       Ok(#(
         InclusiveRange(
           ParsedPrimitive(primitive),
@@ -1132,95 +1117,6 @@ fn parse_refinement_body(
         state.line,
         state.column,
       ))
-  }
-}
-
-/// Validates that Percentage InclusiveRange bounds are within [0.0, 100.0].
-fn validate_percentage_range(
-  min: Literal,
-  max: Literal,
-  primitive: PrimitiveTypes,
-  state: ParserState,
-) -> Result(Nil, ParserError) {
-  case primitive {
-    NumericType(Percentage) -> {
-      let min_f = literal_to_float(min)
-      let max_f = literal_to_float(max)
-      case min_f, max_f {
-        Ok(lo), Ok(hi) ->
-          case lo >=. 0.0 && hi <=. 100.0 {
-            True -> Ok(Nil)
-            False ->
-              Error(parser_error.InvalidRefinement(
-                "Percentage range bounds must be within 0.0 and 100.0, got "
-                  <> literal_to_string(min)
-                  <> ".."
-                  <> literal_to_string(max),
-                state.line,
-                state.column,
-              ))
-          }
-        _, _ ->
-          Error(parser_error.InvalidRefinement(
-            "Percentage range bounds must be numeric",
-            state.line,
-            state.column,
-          ))
-      }
-    }
-    _ -> Ok(Nil)
-  }
-}
-
-/// Validates that Percentage OneOf values are within [0.0, 100.0].
-fn validate_percentage_oneof(
-  values: List(Literal),
-  primitive: PrimitiveTypes,
-  state: ParserState,
-) -> Result(Nil, ParserError) {
-  case primitive {
-    NumericType(Percentage) -> validate_percentage_oneof_loop(values, state)
-    _ -> Ok(Nil)
-  }
-}
-
-fn validate_percentage_oneof_loop(
-  values: List(Literal),
-  state: ParserState,
-) -> Result(Nil, ParserError) {
-  case values {
-    [] -> Ok(Nil)
-    [first, ..rest] -> {
-      case literal_to_float(first) {
-        Ok(f) ->
-          case f >=. 0.0 && f <=. 100.0 {
-            True -> validate_percentage_oneof_loop(rest, state)
-            False ->
-              Error(parser_error.InvalidRefinement(
-                "Percentage value must be between 0.0 and 100.0, got "
-                  <> literal_to_string(first),
-                state.line,
-                state.column,
-              ))
-          }
-        Error(_) ->
-          Error(parser_error.InvalidRefinement(
-            "Percentage value must be numeric, got " <> literal_to_string(first),
-            state.line,
-            state.column,
-          ))
-      }
-    }
-  }
-}
-
-/// Extracts the float value from a numeric literal.
-fn literal_to_float(literal: Literal) -> Result(Float, Nil) {
-  case literal {
-    ast.LiteralFloat(f) -> Ok(f)
-    ast.LiteralPercentage(f) -> Ok(f)
-    ast.LiteralInteger(n) -> Ok(int.to_float(n))
-    _ -> Error(Nil)
   }
 }
 
@@ -1315,58 +1211,5 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralFalse -> "False"
     ast.LiteralList(_) -> "[]"
     ast.LiteralStruct(_, _) -> "{}"
-  }
-}
-
-/// Validates that all literals in a OneOf set match the declared primitive type.
-fn validate_oneof_literals(
-  literals: List(Literal),
-  primitive: PrimitiveTypes,
-  state: ParserState,
-) -> Result(Nil, ParserError) {
-  case literals {
-    [] -> Ok(Nil)
-    [first, ..rest] -> {
-      case literal_matches_primitive(first, primitive) {
-        True -> validate_oneof_literals(rest, primitive, state)
-        False ->
-          Error(parser_error.InvalidRefinement(
-            "value '"
-              <> literal_to_string(first)
-              <> "' is not a valid "
-              <> types.primitive_type_to_string(primitive)
-              <> " literal",
-            state.line,
-            state.column,
-          ))
-      }
-    }
-  }
-}
-
-/// Checks if a literal value is compatible with the declared primitive type.
-fn literal_matches_primitive(
-  literal: Literal,
-  primitive: PrimitiveTypes,
-) -> Bool {
-  case primitive, literal {
-    StringType, ast.LiteralString(_) -> True
-    NumericType(Integer), ast.LiteralInteger(_) -> True
-    NumericType(Float), ast.LiteralFloat(_) -> True
-    NumericType(Percentage), ast.LiteralFloat(_) -> True
-    NumericType(Percentage), ast.LiteralPercentage(_) -> True
-    Boolean, ast.LiteralTrue -> True
-    Boolean, ast.LiteralFalse -> True
-    SemanticType(_), ast.LiteralString(_) -> True
-    _, _ -> False
-  }
-}
-
-/// Extracts the primitive type from a ParsedType, unwrapping Defaulted modifiers.
-fn extract_primitive_from_parsed(typ: ParsedType) -> Result(PrimitiveTypes, Nil) {
-  case typ {
-    ParsedPrimitive(primitive) -> Ok(primitive)
-    ParsedModifier(Defaulted(inner, _)) -> extract_primitive_from_parsed(inner)
-    _ -> Error(Nil)
   }
 }

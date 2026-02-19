@@ -344,3 +344,40 @@ pub fn validate_expects_file_test() {
     validator.validate_expects_file(file)
   })
 }
+
+// ==== Refinement Value Validation ====
+// * ❌ refinement type mismatch (e.g. string literal in Integer OneOf)
+// * ❌ percentage bounds out of range
+pub fn validate_refinement_values_test() {
+  // Refinement type mismatch - string "hello" in Integer OneOf
+  [
+    #(
+      "refinement type mismatch",
+      parse_blueprints("blueprints_refinement_type_mismatch"),
+      Error([
+        validator.InvalidRefinementValue(
+          value: "hello",
+          expected_type: "Integer",
+          referenced_by: "_bad_type",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Percentage bounds out of range
+  [
+    #(
+      "percentage bounds out of range",
+      parse_blueprints("blueprints_percentage_bounds"),
+      Error([
+        validator.InvalidPercentageBounds(value: "200.0", referenced_by: "test"),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+}
