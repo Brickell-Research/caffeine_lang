@@ -41,6 +41,17 @@ export class WorkspaceIndex {
     }
   }
 
+  /** Directories to skip during workspace scanning. */
+  private static readonly SKIP_DIRS = new Set([
+    "node_modules",
+    ".git",
+    "build",
+    ".claude",
+    "dist",
+    "vendor",
+    ".deno",
+  ]);
+
   /** Recursively find all .caffeine files under a directory. */
   async scanCaffeineFiles(dir: string): Promise<void> {
     let entries: fs.Dirent[];
@@ -50,11 +61,12 @@ export class WorkspaceIndex {
       return;
     }
     for (const entry of entries) {
-      const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        await this.scanCaffeineFiles(full);
+        if (!WorkspaceIndex.SKIP_DIRS.has(entry.name)) {
+          await this.scanCaffeineFiles(path.join(dir, entry.name));
+        }
       } else if (entry.isFile() && entry.name.endsWith(".caffeine")) {
-        this.files.add(pathToFileURL(full).toString());
+        this.files.add(pathToFileURL(path.join(dir, entry.name)).toString());
       }
     }
   }
