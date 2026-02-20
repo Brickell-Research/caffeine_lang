@@ -1,0 +1,23 @@
+.github/workflows/test_caffeine.yml
+  5f8f84751e19880f 19-21,31,69-71,81,86,124-126,141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "4689163def707c8bd62a3503a8c7b8a67a7a6ae4",
+  "prompts": {
+    "5f8f84751e19880f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "673ad5c1-8c1e-4f66-877f-334b7c7d3d23",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 7,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    }
+  }
+}
