@@ -11,12 +11,15 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Build and Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
 
     steps:
     - name: Checkout code
@@ -24,16 +27,17 @@ jobs:
       with:
         ref: ${{ inputs.tag || github.ref }}
         fetch-depth: 0
+        persist-credentials: false
 
     - name: Setup BEAM (Erlang + Gleam)
-      uses: erlef/setup-beam@v1
+      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
       with:
         otp-version: '27'
         gleam-version: '1.14.0'
         rebar3-version: '3.25.0'
 
     - name: Setup Deno
-      uses: denoland/setup-deno@v2
+      uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
       with:
         deno-version: "2.5.6"
 
@@ -59,19 +63,20 @@ jobs:
       id: version
       run: |
         VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Extracted version: $VERSION"
 
     - name: Generate release notes
       id: release_notes
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        TAG="${{ inputs.tag || github.ref_name }}"
         mkdir -p dist
         # Find the previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
         if [ -z "$PREV_TAG" ]; then
           echo "No previous tag found, using basic release notes"
-          echo "## What's New in Caffeine v${{ steps.version.outputs.version }}" > dist/release-notes.md
+          echo "## What's New in Caffeine v${VERSION}" > dist/release-notes.md
         else
           echo "Generating release notes: ${TAG} <- ${PREV_TAG}"
           ./scripts/generate-release-notes.sh "$TAG" "$PREV_TAG" > dist/release-notes.md
@@ -80,9 +85,10 @@ jobs:
         cat dist/release-notes.md
 
     - name: Compile binaries for all platforms
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
         mkdir -p dist
-        VERSION=${{ steps.version.outputs.version }}
         DIST_DIR="$(pwd)/dist"
 
         echo "Deno version: $(deno --version)"
@@ -122,15 +128,16 @@ jobs:
         ls -la dist/
 
     - name: Smoke test Linux x64 binary
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        VERSION=${{ steps.version.outputs.version }}
         ./dist/caffeine-${VERSION}-linux-x64 --help | head -5
 
     - name: Create archives
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
         cd dist
-        VERSION=${{ steps.version.outputs.version }}
-
         # Linux archives
         tar -czvf caffeine-${VERSION}-linux-x64.tar.gz caffeine-${VERSION}-linux-x64
         tar -czvf caffeine-${VERSION}-linux-arm64.tar.gz caffeine-${VERSION}-linux-arm64
@@ -143,10 +150,10 @@ jobs:
         zip caffeine-${VERSION}-windows-x64.zip caffeine-${VERSION}-windows-x64.exe
 
     - name: Generate SHA256 checksums
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
         cd dist
-        VERSION=${{ steps.version.outputs.version }}
-
         sha256sum \
           caffeine-${VERSION}-linux-x64.tar.gz \
           caffeine-${VERSION}-linux-arm64.tar.gz \
@@ -163,20 +170,19 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        TAG="${{ inputs.tag || github.ref_name }}"
         if gh release view "$TAG" &>/dev/null; then
-          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "exists=true" >> "$GITHUB_OUTPUT"
           echo "Release $TAG already exists - skipping"
         else
-          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "exists=false" >> "$GITHUB_OUTPUT"
           echo "Release $TAG does not exist - will create"
         fi
 
     - name: Create Release
       if: steps.check_release.outputs.exists == 'false'
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
       with:
-        tag_name: ${{ inputs.tag || github.ref_name }}
+        tag_name: ${{ env.TAG }}
         body_path: dist/release-notes.md
         files: |
           dist/caffeine-${{ steps.version.outputs.version }}-linux-x64.tar.gz
@@ -193,7 +199,6 @@ jobs:
         NOTIFICATIONS_API_KEY: ${{ secrets.NOTIFICATIONS_API_KEY }}
         NOTIFICATIONS_URL: ${{ secrets.NOTIFICATIONS_URL }}
       run: |
-        TAG="${{ inputs.tag || github.ref_name }}"
         VERSION="${TAG#v}"
         BODY=$(cat dist/release-notes.md)
         curl -s -X POST "${NOTIFICATIONS_URL}/send-blast" \
@@ -205,8 +210,8 @@ jobs:
     - name: Publish to Hex
       env:
         HEXPM_API_KEY: ${{ secrets.HEX_RELEASE_KEY }}
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        VERSION=${{ steps.version.outputs.version }}
         echo "Publishing caffeine_lang v${VERSION} to Hex..."
         cd caffeine_lang
         gleam publish --yes
@@ -214,9 +219,8 @@ jobs:
     - name: Update Homebrew formula
       env:
         HOMEBREW_TAP_TOKEN: ${{ secrets.GH_TOKEN }}
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        VERSION=${{ steps.version.outputs.version }}
-
         # Calculate SHA256 for each platform from the archives we just created
         SHA_MACOS_X64=$(sha256sum dist/caffeine-${VERSION}-macos-x64.tar.gz | cut -d' ' -f1)
         SHA_MACOS_ARM64=$(sha256sum dist/caffeine-${VERSION}-macos-arm64.tar.gz | cut -d' ' -f1)
@@ -228,7 +232,7 @@ jobs:
         echo "  linux-x64:   $SHA_LINUX_X64"
 
         # Clone the tap repository
-        git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/brickell-research/homebrew-caffeine.git tap
+        git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/brickell-research/homebrew-caffeine.git" tap
         cd tap
 
         # Generate the formula file matching existing style
@@ -297,11 +301,10 @@ jobs:
     - name: Update website compiler
       env:
         WEBSITE_TOKEN: ${{ secrets.GH_TOKEN }}
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        VERSION=${{ steps.version.outputs.version }}
-
         # Clone the website repository
-        git clone https://x-access-token:${WEBSITE_TOKEN}@github.com/Brickell-Research/caffeine_lang_website.git website
+        git clone "https://x-access-token:${WEBSITE_TOKEN}@github.com/Brickell-Research/caffeine_lang_website.git" website
         cd website
 
         # Copy the browser bundle

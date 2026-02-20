@@ -16,12 +16,6 @@ import {
 } from "npm:vscode-languageserver/node.js";
 import { TextDocument } from "npm:vscode-languageserver-textdocument";
 
-// Ensure --stdio is in process.argv so vscode-languageserver detects stdio transport.
-// Deno's compiled binary may not pass this flag through to process.argv.
-if (!process.argv.includes("--stdio")) {
-  process.argv.push("--stdio");
-}
-
 // Gleam-compiled intelligence modules
 import { get_all_diagnostics, diagnostic_code_to_string, QuotedFieldName, BlueprintNotFound, DependencyNotFound, NoDiagnosticCode } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 import { get_hover } from "./caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
