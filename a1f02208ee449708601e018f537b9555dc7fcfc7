@@ -1,0 +1,45 @@
+lsp_server.ts
+  760fe52187b951df 16-19
+  9f1110ad6d5d3097 13-14,24,26
+lsp/helpers.ts
+  9f1110ad6d5d3097 1-67
+lsp/handlers.ts
+  9f1110ad6d5d3097 1-768
+lsp/workspace.ts
+  9f1110ad6d5d3097 1-228
+lsp/gleam_imports.ts
+  9f1110ad6d5d3097 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "a1f02208ee449708601e018f537b9555dc7fcfc7",
+  "prompts": {
+    "760fe52187b951df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7ceef29-b469-4dd6-83be-29ee6a885f63",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 0,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "9f1110ad6d5d3097": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca540c58-5a92-4cf6-90b5-4d0347068cad",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 1133,
+      "total_deletions": 1040,
+      "accepted_lines": 1133,
+      "overriden_lines": 0
+    }
+  }
+}
