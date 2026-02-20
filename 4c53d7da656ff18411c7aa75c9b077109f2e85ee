@@ -1,0 +1,25 @@
+lsp/handlers.ts
+  5f8f84751e19880f 63-68,70,72-77,79-81,83,85-86,89,111,115-116,120-121,168,172-177,194,219-222,230,237,241-243,245-247,249-250,414-419,424,440-443,462,537-543,547,551-552,556,559,722,724-731,737,741,754,756-757,785
+.github/workflows/release.yml
+  5f8f84751e19880f 26,45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "4c53d7da656ff18411c7aa75c9b077109f2e85ee",
+  "prompts": {
+    "5f8f84751e19880f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "673ad5c1-8c1e-4f66-877f-334b7c7d3d23",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 217,
+      "total_deletions": 197,
+      "accepted_lines": 100,
+      "overriden_lines": 0
+    }
+  }
+}
