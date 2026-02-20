@@ -1,0 +1,23 @@
+.github/workflows/release.yml
+  5f8f84751e19880f 99,105,111,117,123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "8b3221ab7b259168e5e10cb7f59c2247e9e4bc3a",
+  "prompts": {
+    "5f8f84751e19880f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "673ad5c1-8c1e-4f66-877f-334b7c7d3d23",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 5,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
