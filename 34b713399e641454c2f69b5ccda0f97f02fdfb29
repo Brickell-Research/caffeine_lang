@@ -1,0 +1,44 @@
+caffeine_cli/caffeine-dev.sh
+  bccd2ad51e40c36c 5
+.github/workflows/test_caffeine.yml
+  bccd2ad51e40c36c 9-11,19-21,24,30-31,52-61,69-71,74,81,85-86,107-116,124-126,129,136,140-141,154-163
+.github/workflows/release.yml
+  bccd2ad51e40c36c 14-16,21-22,26,30,33,40,45,66,71-72,79,88-89,131-132,137-138,153-154,174,177,183,185,213,222,235,304,307
+scripts/bundle-browser.sh
+  bccd2ad51e40c36c 15,24
+watch.sh
+  bccd2ad51e40c36c 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "34b713399e641454c2f69b5ccda0f97f02fdfb29",
+  "prompts": {
+    "760fe52187b951df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7ceef29-b469-4dd6-83be-29ee6a885f63",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 24,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "bccd2ad51e40c36c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c566c8d8-c902-4827-b266-c34540dbc0f4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 90,
+      "total_deletions": 46,
+      "accepted_lines": 90,
+      "overriden_lines": 0
+    }
+  }
+}
