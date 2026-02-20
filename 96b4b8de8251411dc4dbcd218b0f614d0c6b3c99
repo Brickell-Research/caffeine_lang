@@ -1,0 +1,23 @@
+test/lsp_e2e/stability_test.ts
+  5f8f84751e19880f 71-74,99-100,102-104,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "96b4b8de8251411dc4dbcd218b0f614d0c6b3c99",
+  "prompts": {
+    "5f8f84751e19880f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "673ad5c1-8c1e-4f66-877f-334b7c7d3d23",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 12,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
