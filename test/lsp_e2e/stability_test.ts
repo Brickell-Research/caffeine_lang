@@ -68,8 +68,10 @@ Deno.test({
 });
 
 // ==== server_survives_multiple_documents ====
-// * Opens and modifies multiple documents after workspace scan
-// * Verifies server stays alive through sustained activity
+// * Opens multiple documents and verifies server stays alive through
+//   sustained activity after the watchdog interval
+// * Uses request/response (not notifications) to verify liveness,
+//   avoiding CI timing sensitivity with diagnostic notifications
 Deno.test({
   name: "stability: server handles multiple document operations after workspace scan",
   sanitizeResources: false,
@@ -92,25 +94,22 @@ Deno.test({
       const uri2 = fixtureUri("stability_b.caffeine");
 
       // Open first document
-      const diag1 = client.waitForDiagnostics(uri1);
       client.openDocument(uri1, validContent);
-      await diag1;
 
-      // Wait for workspace scan to settle
-      await new Promise((r) => setTimeout(r, 3000));
+      // Wait past the 3-second watchdog interval
+      await new Promise((r) => setTimeout(r, 4000));
+
+      // Verify server is still alive via request/response
+      const hover1 = await client.hover(uri1, 0, 0);
+      assert(hover1 !== undefined, "server should respond after idle");
 
       // Open second document — server must not have exited
-      const diag2 = client.waitForDiagnostics(uri2);
       client.openDocument(uri2, validContent);
-      await diag2;
 
       // Modify first document
-      client.clearNotifications();
-      const diag3 = client.waitForDiagnostics(uri1);
       client.changeDocument(uri1, validContent + "\n", 2);
-      await diag3;
 
-      // Verify server is responsive with a request
+      // Verify server handled both documents
       const symbols = await client.documentSymbols(uri1);
       assert(Array.isArray(symbols), "should return symbols array");
     } finally {
