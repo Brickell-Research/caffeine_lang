@@ -1,0 +1,29 @@
+test/lsp_e2e/stability_test.ts
+  5f8f84751e19880f 121-152
+lsp_server.ts
+  5f8f84751e19880f 6,17-21
+test/lsp_e2e/client.ts
+  5f8f84751e19880f 77,79,81,86-91
+.github/workflows/release.yml
+  5f8f84751e19880f 99,105,111,117,123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "07045387c7f0d51d1351b0eb86ba6abd91250c63",
+  "prompts": {
+    "5f8f84751e19880f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "673ad5c1-8c1e-4f66-877f-334b7c7d3d23",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 48,
+      "total_deletions": 16,
+      "accepted_lines": 52,
+      "overriden_lines": 0
+    }
+  }
+}
