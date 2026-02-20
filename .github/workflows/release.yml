@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
         ref: ${{ inputs.tag || github.ref }}
         fetch-depth: 0
@@ -42,7 +42,7 @@ jobs:
         deno-version: "2.5.6"
 
     - name: Cache Gleam dependencies
-      uses: actions/cache@v5
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
       with:
         path: |
           ~/.cache/gleam

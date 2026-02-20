@@ -60,15 +60,33 @@ interface HandlerContext {
   workspace: WorkspaceIndex;
 }
 
+/** Shared diagnostic scheduling state used across handler groups. */
+interface DiagnosticScheduler {
+  revalidateAll: () => void;
+  scheduleRevalidation: () => void;
+}
+
 export function registerHandlers(ctx: HandlerContext): void {
+  const scheduler = createDiagnosticScheduler(ctx);
+
+  registerInitializeHandler(ctx);
+  registerDiagnosticsHandlers(ctx, scheduler);
+  registerNavigationHandlers(ctx);
+  registerEditHandlers(ctx);
+  registerStructureHandlers(ctx);
+  registerWorkspaceHandlers(ctx, scheduler);
+
+  ctx.documents.listen(ctx.connection);
+  ctx.connection.listen();
+}
+
+// --- Diagnostic Scheduling ---
+
+function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
   const { connection, documents, workspace } = ctx;
-
-  // --- Diagnostic helpers (closure-scoped state) ---
-
   let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
-  const diagnosticTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  function revalidateCrossFileDiagnostics() {
+  function revalidateAll() {
     const knownBlueprints = toList(workspace.allKnownBlueprints());
     const knownExpectations = toList(workspace.allKnownExpectationIdentifiers());
     for (const doc of documents.all()) {
@@ -90,11 +108,17 @@ export function registerHandlers(ctx: HandlerContext): void {
     if (revalidateTimer) clearTimeout(revalidateTimer);
     revalidateTimer = setTimeout(() => {
       revalidateTimer = null;
-      revalidateCrossFileDiagnostics();
+      revalidateAll();
     }, 50);
   }
 
-  // --- Initialize ---
+  return { revalidateAll, scheduleRevalidation };
+}
+
+// --- Initialize ---
+
+function registerInitializeHandler(ctx: HandlerContext): void {
+  const { connection, workspace } = ctx;
 
   // deno-lint-ignore no-explicit-any
   connection.onInitialize(async (params: any) => {
@@ -141,8 +165,16 @@ export function registerHandlers(ctx: HandlerContext): void {
       },
     };
   });
+}
 
-  // --- Diagnostics ---
+// --- Diagnostics ---
+
+function registerDiagnosticsHandlers(
+  ctx: HandlerContext,
+  scheduler: DiagnosticScheduler,
+): void {
+  const { connection, documents, workspace } = ctx;
+  const diagnosticTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   documents.onDidChangeContent((change) => {
     const uri = change.document.uri;
@@ -159,7 +191,7 @@ export function registerHandlers(ctx: HandlerContext): void {
         const text = doc.getText();
 
         if (workspace.updateIndicesForFile(uri, text)) {
-          scheduleRevalidation();
+          scheduler.scheduleRevalidation();
         } else {
           try {
             const allDiags = gleamArray(
@@ -181,7 +213,41 @@ export function registerHandlers(ctx: HandlerContext): void {
     );
   });
 
-  // --- Hover ---
+  documents.onDidClose((event) => {
+    const uri = event.document.uri;
+    connection.sendDiagnostics({ uri, diagnostics: [] });
+
+    const hadBlueprintsBefore = workspace.blueprintIndex.has(uri);
+    const hadExpectationsBefore = workspace.expectationIndex.has(uri);
+
+    (async () => {
+      let diskText: string | null = null;
+      try {
+        diskText = await fs.promises.readFile(fileURLToPath(uri), "utf-8");
+      } catch {
+        // File may have been deleted
+      }
+
+      if (diskText) {
+        workspace.updateIndicesForFile(uri, diskText);
+      } else {
+        workspace.blueprintIndex.delete(uri);
+        workspace.expectationIndex.delete(uri);
+      }
+
+      const hasBlueprintsAfter = workspace.blueprintIndex.has(uri);
+      const hasExpectationsAfter = workspace.expectationIndex.has(uri);
+      if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
+        scheduler.scheduleRevalidation();
+      }
+    })().catch(() => { /* async close handler — errors are non-fatal */ });
+  });
+}
+
+// --- Navigation (hover, completion, definition, highlights, references) ---
+
+function registerNavigationHandlers(ctx: HandlerContext): void {
+  const { connection, documents, workspace } = ctx;
 
   connection.onHover((params) => {
     const doc = documents.get(params.textDocument.uri);
@@ -202,8 +268,6 @@ export function registerHandlers(ctx: HandlerContext): void {
     return null;
   });
 
-  // --- Completion ---
-
   connection.onCompletion((params) => {
     const doc = documents.get(params.textDocument.uri);
     const text = doc ? doc.getText() : "";
@@ -222,44 +286,6 @@ export function registerHandlers(ctx: HandlerContext): void {
       return [];
     }
   });
-
-  // --- Formatting ---
-
-  connection.onDocumentFormatting((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return [];
-
-    const text = doc.getText();
-    try {
-      const result = format(text);
-      if (result instanceof Ok) {
-        const lineCount = text.split("\n").length;
-        return [
-          {
-            range: range(0, 0, lineCount, 0),
-            newText: result[0],
-          },
-        ];
-      }
-    } catch { /* ignore */ }
-    return [];
-  });
-
-  // --- Document Symbols ---
-
-  connection.onDocumentSymbol((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return [];
-
-    try {
-      const symbols = gleamArray(get_symbols(doc.getText()) as GleamList);
-      return symbols.map(gleamSymbolToLsp);
-    } catch {
-      return [];
-    }
-  });
-
-  // --- Go to Definition ---
 
   // deno-lint-ignore no-explicit-any
   async function resolveDefinitionOrDeclaration(params: any) {
@@ -324,8 +350,6 @@ export function registerHandlers(ctx: HandlerContext): void {
   connection.onDefinition(resolveDefinitionOrDeclaration);
   connection.onDeclaration(resolveDefinitionOrDeclaration);
 
-  // --- Document Highlight ---
-
   connection.onDocumentHighlight((params) => {
     const doc = documents.get(params.textDocument.uri);
     if (!doc) return [];
@@ -342,8 +366,6 @@ export function registerHandlers(ctx: HandlerContext): void {
       return [];
     }
   });
-
-  // --- Find All References ---
 
   connection.onReferences(async (params) => {
     const doc = documents.get(params.textDocument.uri);
@@ -389,124 +411,32 @@ export function registerHandlers(ctx: HandlerContext): void {
       return [];
     }
   });
+}
 
-  // --- Rename ---
+// --- Editing (formatting, code actions, rename) ---
 
-  connection.onPrepareRename((params) => {
+function registerEditHandlers(ctx: HandlerContext): void {
+  const { connection, documents } = ctx;
+
+  connection.onDocumentFormatting((params) => {
     const doc = documents.get(params.textDocument.uri);
-    if (!doc) return null;
+    if (!doc) return [];
 
+    const text = doc.getText();
     try {
-      const result = prepare_rename(
-        doc.getText(),
-        params.position.line,
-        params.position.character,
-      );
-      if (result instanceof Some) {
-        const [rLine, rCol, rLen] = [result[0][0], result[0][1], result[0][2]];
-        return {
-          range: range(rLine, rCol, rLine, rCol + rLen),
-          placeholder: doc.getText().substring(
-            doc.offsetAt({ line: rLine, character: rCol }),
-            doc.offsetAt({ line: rLine, character: rCol + rLen }),
-          ),
-        };
+      const result = format(text);
+      if (result instanceof Ok) {
+        const lineCount = text.split("\n").length;
+        return [
+          {
+            range: range(0, 0, lineCount, 0),
+            newText: result[0],
+          },
+        ];
       }
     } catch { /* ignore */ }
-    return null;
+    return [];
   });
-
-  // deno-lint-ignore no-explicit-any
-  connection.onRenameRequest((params: any) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return null;
-
-    try {
-      const edits = gleamArray(
-        get_rename_edits(doc.getText(), params.position.line, params.position.character) as GleamList,
-      );
-      if (edits.length === 0) return null;
-      return {
-        changes: {
-          [params.textDocument.uri]: edits.map((e) => ({
-            range: range(e[0], e[1], e[0], e[1] + e[2]),
-            newText: params.newName,
-          })),
-        },
-      };
-    } catch {
-      return null;
-    }
-  });
-
-  // --- Folding Ranges ---
-
-  connection.onFoldingRanges((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return [];
-
-    try {
-      const ranges = gleamArray(get_folding_ranges(doc.getText()) as GleamList);
-      return ranges.map((r) => ({
-        startLine: r.start_line,
-        endLine: r.end_line,
-        kind: "region" as const,
-      }));
-    } catch {
-      return [];
-    }
-  });
-
-  // --- Selection Ranges ---
-
-  connection.onSelectionRanges((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return [];
-
-    try {
-      return params.positions.map((pos) => {
-        const sr = get_selection_range(doc.getText(), pos.line, pos.character);
-        return gleamSelectionRangeToLsp(sr);
-      });
-    } catch {
-      return [];
-    }
-  });
-
-  // --- Linked Editing Ranges ---
-
-  connection.languages.onLinkedEditingRange((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return null;
-
-    try {
-      const ranges = gleamArray(
-        get_linked_editing_ranges(doc.getText(), params.position.line, params.position.character) as GleamList,
-      );
-      if (ranges.length === 0) return null;
-      return {
-        ranges: ranges.map((r) => range(r[0], r[1], r[0], r[1] + r[2])),
-      };
-    } catch {
-      return null;
-    }
-  });
-
-  // --- Semantic Tokens ---
-
-  connection.languages.semanticTokens.on((params) => {
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) return { data: [] };
-
-    try {
-      const data = gleamArray(get_semantic_tokens(doc.getText()) as GleamList);
-      return { data };
-    } catch {
-      return { data: [] };
-    }
-  });
-
-  // --- Code Actions ---
 
   connection.onCodeAction((params) => {
     const uri = params.textDocument.uri;
@@ -558,36 +488,129 @@ export function registerHandlers(ctx: HandlerContext): void {
     }
   });
 
-  // --- Workspace Symbols ---
+  connection.onPrepareRename((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return null;
 
-  // deno-lint-ignore no-explicit-any
-  connection.onWorkspaceSymbol(async (params: any) => {
-    const query = (params.query ?? "").toLowerCase();
-    // deno-lint-ignore no-explicit-any
-    const results: any[] = [];
-
-    for (const uri of workspace.files) {
-      const text = await workspace.getFileContentAsync(uri);
-      if (!text) continue;
-
-      try {
-        const symbols = gleamArray(get_workspace_symbols(text) as GleamList);
-        for (const sym of symbols) {
-          if (query && !(sym.name as string).toLowerCase().includes(query)) continue;
-          const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
-          results.push({
-            name: sym.name,
-            kind: sym.kind,
-            location: { uri, range: r },
-          });
-        }
-      } catch { /* ignore */ }
-    }
-
-    return results;
+    try {
+      const result = prepare_rename(
+        doc.getText(),
+        params.position.line,
+        params.position.character,
+      );
+      if (result instanceof Some) {
+        const [rLine, rCol, rLen] = [result[0][0], result[0][1], result[0][2]];
+        return {
+          range: range(rLine, rCol, rLine, rCol + rLen),
+          placeholder: doc.getText().substring(
+            doc.offsetAt({ line: rLine, character: rCol }),
+            doc.offsetAt({ line: rLine, character: rCol + rLen }),
+          ),
+        };
+      }
+    } catch { /* ignore */ }
+    return null;
   });
 
-  // --- Type Hierarchy ---
+  // deno-lint-ignore no-explicit-any
+  connection.onRenameRequest((params: any) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return null;
+
+    try {
+      const edits = gleamArray(
+        get_rename_edits(doc.getText(), params.position.line, params.position.character) as GleamList,
+      );
+      if (edits.length === 0) return null;
+      return {
+        changes: {
+          [params.textDocument.uri]: edits.map((e) => ({
+            range: range(e[0], e[1], e[0], e[1] + e[2]),
+            newText: params.newName,
+          })),
+        },
+      };
+    } catch {
+      return null;
+    }
+  });
+}
+
+// --- Structure (symbols, tokens, folding, selection, linked editing, type hierarchy) ---
+
+function registerStructureHandlers(ctx: HandlerContext): void {
+  const { connection, documents, workspace } = ctx;
+
+  connection.onDocumentSymbol((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return [];
+
+    try {
+      const symbols = gleamArray(get_symbols(doc.getText()) as GleamList);
+      return symbols.map(gleamSymbolToLsp);
+    } catch {
+      return [];
+    }
+  });
+
+  connection.languages.semanticTokens.on((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return { data: [] };
+
+    try {
+      const data = gleamArray(get_semantic_tokens(doc.getText()) as GleamList);
+      return { data };
+    } catch {
+      return { data: [] };
+    }
+  });
+
+  connection.onFoldingRanges((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return [];
+
+    try {
+      const ranges = gleamArray(get_folding_ranges(doc.getText()) as GleamList);
+      return ranges.map((r) => ({
+        startLine: r.start_line,
+        endLine: r.end_line,
+        kind: "region" as const,
+      }));
+    } catch {
+      return [];
+    }
+  });
+
+  connection.onSelectionRanges((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return [];
+
+    try {
+      return params.positions.map((pos) => {
+        const sr = get_selection_range(doc.getText(), pos.line, pos.character);
+        return gleamSelectionRangeToLsp(sr);
+      });
+    } catch {
+      return [];
+    }
+  });
+
+  connection.languages.onLinkedEditingRange((params) => {
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) return null;
+
+    try {
+      const ranges = gleamArray(
+        get_linked_editing_ranges(doc.getText(), params.position.line, params.position.character) as GleamList,
+      );
+      if (ranges.length === 0) return null;
+      return {
+        ranges: ranges.map((r) => range(r[0], r[1], r[0], r[1] + r[2])),
+      };
+    } catch {
+      return null;
+    }
+  });
 
   connection.languages.typeHierarchy.onPrepare((params) => {
     const doc = documents.get(params.textDocument.uri);
@@ -696,8 +719,42 @@ export function registerHandlers(ctx: HandlerContext): void {
 
     return results;
   });
+}
 
-  // --- Watched Files ---
+// --- Workspace (workspace symbols, watched files) ---
+
+function registerWorkspaceHandlers(
+  ctx: HandlerContext,
+  scheduler: DiagnosticScheduler,
+): void {
+  const { connection, workspace } = ctx;
+
+  // deno-lint-ignore no-explicit-any
+  connection.onWorkspaceSymbol(async (params: any) => {
+    const query = (params.query ?? "").toLowerCase();
+    // deno-lint-ignore no-explicit-any
+    const results: any[] = [];
+
+    for (const uri of workspace.files) {
+      const text = await workspace.getFileContentAsync(uri);
+      if (!text) continue;
+
+      try {
+        const symbols = gleamArray(get_workspace_symbols(text) as GleamList);
+        for (const sym of symbols) {
+          if (query && !(sym.name as string).toLowerCase().includes(query)) continue;
+          const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
+          results.push({
+            name: sym.name,
+            kind: sym.kind,
+            location: { uri, range: r },
+          });
+        }
+      } catch { /* ignore */ }
+    }
+
+    return results;
+  });
 
   connection.onDidChangeWatchedFiles(async (params) => {
     let indicesChanged = false;
@@ -725,44 +782,7 @@ export function registerHandlers(ctx: HandlerContext): void {
     }
 
     if (indicesChanged) {
-      scheduleRevalidation();
+      scheduler.scheduleRevalidation();
     }
   });
-
-  // --- Document Close ---
-
-  documents.onDidClose((event) => {
-    const uri = event.document.uri;
-    connection.sendDiagnostics({ uri, diagnostics: [] });
-
-    const hadBlueprintsBefore = workspace.blueprintIndex.has(uri);
-    const hadExpectationsBefore = workspace.expectationIndex.has(uri);
-
-    (async () => {
-      let diskText: string | null = null;
-      try {
-        diskText = await fs.promises.readFile(fileURLToPath(uri), "utf-8");
-      } catch {
-        // File may have been deleted
-      }
-
-      if (diskText) {
-        workspace.updateIndicesForFile(uri, diskText);
-      } else {
-        workspace.blueprintIndex.delete(uri);
-        workspace.expectationIndex.delete(uri);
-      }
-
-      const hasBlueprintsAfter = workspace.blueprintIndex.has(uri);
-      const hasExpectationsAfter = workspace.expectationIndex.has(uri);
-      if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
-        scheduleRevalidation();
-      }
-    })().catch(() => { /* async close handler — errors are non-fatal */ });
-  });
-
-  // --- Start listening ---
-
-  documents.listen(connection);
-  connection.listen();
 }
