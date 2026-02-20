@@ -237,3 +237,41 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
     _ -> should.fail()
   }
 }
+
+// ==== sanitize_honeycomb_tag_key ====
+// * ✅ removes underscores
+// * ✅ removes digits
+// * ✅ lowercases letters
+// * ✅ truncates to 32 chars
+pub fn sanitize_honeycomb_tag_key_test() {
+  [
+    #("removes underscores", "managed_by", "managedby"),
+    #("removes underscores and digits", "caffeine_version", "caffeineversion"),
+    #("already valid", "org", "org"),
+    #("lowercases", "MyKey", "mykey"),
+    #("removes digits", "key123", "key"),
+    #("removes hyphens", "my-key", "mykey"),
+  ]
+  |> test_helpers.table_test_1(honeycomb.sanitize_honeycomb_tag_key)
+}
+
+// ==== sanitize_honeycomb_tag_value ====
+// * ✅ lowercases and replaces spaces with hyphens
+// * ✅ prefixes digit-leading values with "v"
+// * ✅ replaces underscores with hyphens
+// * ✅ strips invalid characters
+pub fn sanitize_honeycomb_tag_value_test() {
+  [
+    #("already valid", "caffeine", "caffeine"),
+    #("lowercases and replaces spaces", "API Success Rate", "api-success-rate"),
+    #("prefixes digit-leading values", "4.4.4", "v444"),
+    #("replaces underscores", "trace_availability", "trace-availability"),
+    #("uppercased value", "Uptime", "uptime"),
+    #(
+      "spaces and mixed case",
+      "Caffeine Lang Main Website is Up",
+      "caffeine-lang-main-website-is-up",
+    ),
+  ]
+  |> test_helpers.table_test_1(honeycomb.sanitize_honeycomb_tag_value)
+}

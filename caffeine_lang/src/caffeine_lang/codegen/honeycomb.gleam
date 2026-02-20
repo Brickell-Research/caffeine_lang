@@ -7,6 +7,7 @@ import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/result
+import gleam/string
 import terra_madre/common
 import terra_madre/hcl
 import terra_madre/terraform
@@ -159,6 +160,9 @@ pub fn ir_to_terraform_resources(
 
 /// Build tags as a map expression for Honeycomb.
 /// Honeycomb uses a map of string to string for tags.
+/// Tag keys must be lowercase letters only (1-32 chars).
+/// Tag values must start with a lowercase letter and contain only
+/// lowercase alphanumeric characters, hyphens, or forward slashes (1-128 chars).
 fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
   // Build system tags from shared helper. For Honeycomb, misc tags with multiple
   // values are joined with commas since the tag format is a flat map.
@@ -182,9 +186,90 @@ fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
 
   let all_tags =
     list.append(system_tag_pairs, user_tag_pairs)
-    |> list.map(fn(pair) { #(hcl.IdentKey(pair.0), hcl.StringLiteral(pair.1)) })
+    |> list.map(fn(pair) {
+      #(
+        hcl.IdentKey(sanitize_honeycomb_tag_key(pair.0)),
+        hcl.StringLiteral(sanitize_honeycomb_tag_value(pair.1)),
+      )
+    })
 
   hcl.MapExpr(all_tags)
+}
+
+/// Sanitize a tag key for Honeycomb: lowercase letters only, 1-32 chars.
+/// Removes underscores, hyphens, digits, and any non-letter characters.
+@internal
+pub fn sanitize_honeycomb_tag_key(key: String) -> String {
+  key
+  |> string.lowercase
+  |> string.to_graphemes
+  |> list.filter(is_lowercase_letter)
+  |> string.concat
+  |> string.slice(0, 32)
+}
+
+/// Sanitize a tag value for Honeycomb: must start with a lowercase letter,
+/// 1-128 chars, only lowercase alphanumeric, hyphens, or forward slashes.
+/// Spaces and underscores become hyphens; uppercase becomes lowercase;
+/// values starting with a non-letter get a "v" prefix.
+@internal
+pub fn sanitize_honeycomb_tag_value(value: String) -> String {
+  let sanitized =
+    value
+    |> string.lowercase
+    |> string.to_graphemes
+    |> list.map(fn(char) {
+      case char {
+        " " | "_" -> "-"
+        _ ->
+          case is_valid_tag_value_char(char) {
+            True -> char
+            False -> ""
+          }
+      }
+    })
+    |> string.concat
+
+  // Ensure value starts with a lowercase letter.
+  let sanitized = case string.first(sanitized) {
+    Ok(c) ->
+      case is_lowercase_letter(c) {
+        True -> sanitized
+        False -> "v" <> sanitized
+      }
+    _ -> sanitized
+  }
+
+  sanitized
+  |> string.slice(0, 128)
+}
+
+fn is_lowercase_letter(char: String) -> Bool {
+  case char {
+    "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
+    | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+    | "y" | "z"
+    -> True
+    _ -> False
+  }
+}
+
+fn is_valid_tag_value_char(char: String) -> Bool {
+  case char {
+    "-" | "/" -> True
+    _ ->
+      case is_lowercase_letter(char) {
+        True -> True
+        False -> is_digit(char)
+      }
+  }
+}
+
+fn is_digit(char: String) -> Bool {
+  case char {
+    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
+    _ -> False
+  }
 }
 
 /// Collapse tag pairs that share the same key by joining values with commas.

@@ -34,13 +34,13 @@ resource "honeycombio_slo" "acme_payments_api_success_rate" {
   name = "API Success Rate"
   sli = honeycombio_derived_column.acme_payments_api_success_rate_sli.alias
   tags = {
-    managed_by = "caffeine"
-    caffeine_version = "{{VERSION}}"
+    managedby = "caffeine"
+    caffeineversion = "v444"
     org = "acme"
     team = "platform"
     service = "payments"
-    blueprint = "trace_availability"
-    expectation = "API Success Rate"
+    blueprint = "trace-availability"
+    expectation = "api-success-rate"
   }
   target_percentage = 99.5
   time_period = 14
