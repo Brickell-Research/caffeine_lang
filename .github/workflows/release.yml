@@ -38,7 +38,7 @@ jobs:
         deno-version: "2.5.6"
 
     - name: Cache Gleam dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cache/gleam
