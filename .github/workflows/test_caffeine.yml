@@ -28,14 +28,18 @@ jobs:
         path: |
           ~/.cache/gleam
           caffeine_lang/build
+          caffeine_lsp/build
           caffeine_cli/build
-        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
+        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-erlang-
           ${{ runner.os }}-gleam-
 
     - name: Test caffeine_lang
       run: cd caffeine_lang && gleam test
+
+    - name: Test caffeine_lsp
+      run: cd caffeine_lsp && gleam test
 
     - name: Test caffeine_cli
       run: cd caffeine_cli && gleam test
@@ -66,8 +70,9 @@ jobs:
         path: |
           ~/.cache/gleam
           caffeine_lang/build
+          caffeine_lsp/build
           caffeine_cli/build
-        key: ${{ runner.os }}-gleam-js-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_cli/manifest.toml') }}
+        key: ${{ runner.os }}-gleam-js-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
         restore-keys: |
           ${{ runner.os }}-gleam-js-
           ${{ runner.os }}-gleam-
@@ -77,6 +82,9 @@ jobs:
 
     - name: Test caffeine_lang (JavaScript)
       run: cd caffeine_lang && gleam test --target javascript
+
+    - name: Test caffeine_lsp (JavaScript)
+      run: cd caffeine_lsp && gleam test --target javascript
 
     - name: Test caffeine_cli (JavaScript)
       run: cd caffeine_cli && gleam test --target javascript

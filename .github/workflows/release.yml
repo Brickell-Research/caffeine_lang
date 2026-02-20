@@ -79,9 +79,6 @@ jobs:
         echo "Release notes:"
         cat dist/release-notes.md
 
-    - name: Check disk space
-      run: df -h
-
     - name: Compile binaries for all platforms
       run: |
         mkdir -p dist
@@ -93,36 +90,41 @@ jobs:
 
         # Linux x64
         echo "Building Linux x64..."
-        deno compile --no-check --allow-read --allow-write --allow-env --include lsp_server.ts \
+        deno compile --allow-read --allow-write --allow-env --include lsp_server.ts \
           --target x86_64-unknown-linux-gnu \
           --output "$DIST_DIR/caffeine-${VERSION}-linux-x64" main.mjs
 
         # Linux ARM64
         echo "Building Linux ARM64..."
-        deno compile --no-check --allow-read --allow-write --allow-env --include lsp_server.ts \
+        deno compile --allow-read --allow-write --allow-env --include lsp_server.ts \
           --target aarch64-unknown-linux-gnu \
           --output "$DIST_DIR/caffeine-${VERSION}-linux-arm64" main.mjs
 
         # macOS x64
         echo "Building macOS x64..."
-        deno compile --no-check --allow-read --allow-write --allow-env --include lsp_server.ts \
+        deno compile --allow-read --allow-write --allow-env --include lsp_server.ts \
           --target x86_64-apple-darwin \
           --output "$DIST_DIR/caffeine-${VERSION}-macos-x64" main.mjs
 
         # macOS ARM64 (Apple Silicon)
         echo "Building macOS ARM64..."
-        deno compile --no-check --allow-read --allow-write --allow-env --include lsp_server.ts \
+        deno compile --allow-read --allow-write --allow-env --include lsp_server.ts \
           --target aarch64-apple-darwin \
           --output "$DIST_DIR/caffeine-${VERSION}-macos-arm64" main.mjs
 
         # Windows x64
         echo "Building Windows x64..."
-        deno compile --no-check --allow-read --allow-write --allow-env --include lsp_server.ts \
+        deno compile --allow-read --allow-write --allow-env --include lsp_server.ts \
           --target x86_64-pc-windows-msvc \
           --output "$DIST_DIR/caffeine-${VERSION}-windows-x64.exe" main.mjs
 
         echo "All binaries built successfully"
         ls -la dist/
+
+    - name: Smoke test Linux x64 binary
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        ./dist/caffeine-${VERSION}-linux-x64 --help | head -5
 
     - name: Create archives
       run: |
