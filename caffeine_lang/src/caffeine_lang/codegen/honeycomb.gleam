@@ -159,13 +159,11 @@ pub fn ir_to_terraform_resources(
 }
 
 /// Build tags as a map expression for Honeycomb.
-/// Honeycomb uses a map of string to string for tags.
-/// Tag keys must be lowercase letters only (1-32 chars).
-/// Tag values must start with a lowercase letter and contain only
-/// lowercase alphanumeric characters, hyphens, or forward slashes (1-128 chars).
+/// Honeycomb tags: keys ^[a-z]{1,32}$, values ^[a-z][a-z0-9/-]{1,128}$.
+/// Max 10 tags per resource.
 fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
   // Build system tags from shared helper. For Honeycomb, misc tags with multiple
-  // values are joined with commas since the tag format is a flat map.
+  // values are joined with forward slashes since commas are not valid in tag values.
   let system_tag_pairs =
     helpers.build_system_tag_pairs(
       org_name: ir.metadata.org_name,
@@ -192,11 +190,14 @@ fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
         hcl.StringLiteral(sanitize_honeycomb_tag_value(pair.1)),
       )
     })
+    |> list.take(max_tags_per_resource)
 
   hcl.MapExpr(all_tags)
 }
 
-/// Sanitize a tag key for Honeycomb: lowercase letters only, 1-32 chars.
+const max_tags_per_resource = 10
+
+/// Sanitize a tag key for Honeycomb: must match ^[a-z]{1,32}$.
 /// Removes underscores, hyphens, digits, and any non-letter characters.
 @internal
 pub fn sanitize_honeycomb_tag_key(key: String) -> String {
@@ -208,9 +209,8 @@ pub fn sanitize_honeycomb_tag_key(key: String) -> String {
   |> string.slice(0, 32)
 }
 
-/// Sanitize a tag value for Honeycomb: must start with a lowercase letter,
-/// 1-128 chars, only lowercase alphanumeric, hyphens, or forward slashes.
-/// Spaces and underscores become hyphens; uppercase becomes lowercase;
+/// Sanitize a tag value for Honeycomb: must match ^[a-z][a-z0-9/-]{1,128}$.
+/// Spaces, underscores, and commas become hyphens; uppercase becomes lowercase;
 /// values starting with a non-letter get a "v" prefix.
 @internal
 pub fn sanitize_honeycomb_tag_value(value: String) -> String {
@@ -220,7 +220,7 @@ pub fn sanitize_honeycomb_tag_value(value: String) -> String {
     |> string.to_graphemes
     |> list.map(fn(char) {
       case char {
-        " " | "_" -> "-"
+        " " | "_" | "," -> "-"
         _ ->
           case is_valid_tag_value_char(char) {
             True -> char
@@ -241,7 +241,7 @@ pub fn sanitize_honeycomb_tag_value(value: String) -> String {
   }
 
   sanitized
-  |> string.slice(0, 128)
+  |> string.slice(0, 129)
 }
 
 fn is_lowercase_letter(char: String) -> Bool {
@@ -272,7 +272,7 @@ fn is_digit(char: String) -> Bool {
   }
 }
 
-/// Collapse tag pairs that share the same key by joining values with commas.
+/// Collapse tag pairs that share the same key by joining values with forward slashes.
 /// The shared helper produces one pair per misc value, but Honeycomb needs a
 /// single key-value entry per tag key. Preserves insertion order of first occurrence.
 fn collapse_multi_value_tags(
@@ -286,7 +286,7 @@ fn collapse_multi_value_tags(
       case dict.get(seen, key) {
         Ok(existing) -> #(
           keys,
-          dict.insert(seen, key, existing <> "," <> value),
+          dict.insert(seen, key, existing <> "/" <> value),
         )
         Error(_) -> #([key, ..keys], dict.insert(seen, key, value))
       }
