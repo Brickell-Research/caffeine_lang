@@ -1,0 +1,29 @@
+caffeine_cli/src/caffeine_cli_ffi.mjs
+  760fe52187b951df 1,3,6
+scripts/bundle-browser.sh
+  760fe52187b951df 21-22
+lsp_server.ts
+  760fe52187b951df 99,991,1010
+.github/dependabot.yml
+  760fe52187b951df 3-4,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.4",
+  "base_commit_sha": "19c12c3f22c0b4fd43afdd085f0f2cfdf1760a06",
+  "prompts": {
+    "760fe52187b951df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7ceef29-b469-4dd6-83be-29ee6a885f63",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 39,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
