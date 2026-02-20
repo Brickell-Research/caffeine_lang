@@ -96,19 +96,7 @@ async function scanCaffeineFiles(dir: string): Promise<void> {
   }
 }
 
-/** Read file content: prefer open document, fall back to disk. */
-function getFileContent(uri: string): string | null {
-  const doc = documents.get(uri);
-  if (doc) return doc.getText();
-  try {
-    const filePath = fileURLToPath(uri);
-    return fs.readFileSync(filePath, "utf-8");
-  } catch {
-    return null;
-  }
-}
-
-/** Async version: prefer open document, fall back to async disk read. */
+/** Read file content: prefer open document, fall back to async disk read. */
 async function getFileContentAsync(uri: string): Promise<string | null> {
   const doc = documents.get(uri);
   if (doc) return doc.getText();
@@ -1000,7 +988,7 @@ connection.languages.typeHierarchy.onSubtypes(async (params: any) => {
 
 // --- Watched Files ---
 
-connection.onDidChangeWatchedFiles((params) => {
+connection.onDidChangeWatchedFiles(async (params) => {
   let indicesChanged = false;
   for (const change of params.changes) {
     const uri = change.uri;
@@ -1019,7 +1007,7 @@ connection.onDidChangeWatchedFiles((params) => {
     } else {
       // Created or Changed — update workspace tracking and indices
       workspaceFiles.add(uri);
-      const text = getFileContent(uri);
+      const text = await getFileContentAsync(uri);
       if (text && updateIndicesForFile(uri, text)) {
         indicesChanged = true;
       }

@@ -11,22 +11,20 @@ BUILD_DIR="$PROJECT_DIR/caffeine_lang/build/dev/javascript/caffeine_lang/caffein
 
 echo "Building Caffeine for browser..."
 
-# Ensure JavaScript build is up to date (clean first to remove stale artifacts from removed deps)
+# Ensure JavaScript build is up to date
 cd "$PROJECT_DIR/caffeine_lang"
-gleam clean
 gleam build --target=javascript
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-# Bundle with esbuild — platform=browser tree-shakes all unused node: imports
-# (simplifile is a dev-dependency never imported by compile_from_strings)
+# Bundle with esbuild — simplifile (dev-dependency) is never in the import
+# graph from compile_from_strings, so no node: shims are needed.
 echo "Bundling with esbuild..."
 cd "$PROJECT_DIR"
 deno run -A npm:esbuild "$BUILD_DIR/compiler.mjs" \
   --bundle \
   --format=esm \
-  --platform=browser \
   --outfile="$OUTPUT_DIR/caffeine-browser.js" \
   --minify
 

@@ -77,9 +77,6 @@ jobs:
           ${{ runner.os }}-gleam-js-
           ${{ runner.os }}-gleam-
 
-    - name: Install npm dependencies
-      run: npm install
-
     - name: Test caffeine_lang (JavaScript)
       run: cd caffeine_lang && gleam test --target javascript
 

@@ -1,12 +1,7 @@
-// js equivalent for erlang's halt. See: https://www.erlang.org/doc/apps/erts/erlang.html#halt/0
+// JS equivalent for erlang's halt/1. See: https://www.erlang.org/doc/apps/erts/erlang.html#halt/1
 export function halt(code) {
-  if (typeof process !== "undefined" && process.exit) {
-    // Node.js / Deno
-    process.exit(code);
-  } else if (typeof Deno !== "undefined") {
-    // Deno alternative
+  if (typeof Deno !== "undefined") {
     Deno.exit(code);
   }
-  // Browser or other environments - can't really exit
-  return undefined;
+  process.exit(code);
 }
