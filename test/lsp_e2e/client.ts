@@ -74,22 +74,23 @@ export class LspTestClient {
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private closed = false;
   private rootDir: string;
+  private entrypoint: "dev" | "production";
 
-  constructor(rootDir: string) {
+  constructor(rootDir: string, entrypoint: "dev" | "production" = "dev") {
     this.rootDir = rootDir;
+    this.entrypoint = entrypoint;
   }
 
   /** Start the LSP server subprocess and begin reading responses. */
   async start(): Promise<void> {
+    // Production entrypoint mirrors the deno compile permissions from release.yml.
+    // Dev entrypoint additionally needs --allow-run for the parent-process watchdog.
+    const args = this.entrypoint === "production"
+      ? ["run", "--no-check", "--allow-read", "--allow-write", "--allow-env", "--allow-run", "main.mjs", "lsp"]
+      : ["run", "--no-check", "--allow-read", "--allow-write", "--allow-env", "--allow-run", "lsp_server.ts"];
+
     const command = new Deno.Command("deno", {
-      args: [
-        "run",
-        "--no-check",
-        "--allow-read",
-        "--allow-write",
-        "--allow-env",
-        "lsp_server.ts",
-      ],
+      args,
       cwd: this.rootDir,
       stdin: "piped",
       stdout: "piped",
