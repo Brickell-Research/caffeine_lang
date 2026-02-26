@@ -264,7 +264,7 @@ pub fn sanitize_honeycomb_tag_value_test() {
   [
     #("already valid", "caffeine", "caffeine"),
     #("lowercases and replaces spaces", "API Success Rate", "api-success-rate"),
-    #("prefixes digit-leading values", "4.5.0", "v450"),
+    #("prefixes digit-leading values", "4.5.1", "v451"),
     #("replaces underscores", "trace_availability", "trace-availability"),
     #("uppercased value", "Uptime", "uptime"),
     #(
