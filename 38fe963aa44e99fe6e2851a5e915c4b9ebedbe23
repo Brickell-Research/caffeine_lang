@@ -1,0 +1,27 @@
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  bfdb223caa9a5282 199-200,202-205,286-287,289-292,351-352,355-358,414-415,417-420,467-468,470-473,516-517,520-523,565-566,568-571,762-763,765-768,1192-1196
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  bfdb223caa9a5282 175-177,184,301-302,308-309,330-331,335-336,342
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  bfdb223caa9a5282 122-125,127-134,136-139,141-148,150-151,153-157,159-166,168-171,173-176,178-181,183-186,188-191,193-196,200-207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.5",
+  "base_commit_sha": "38fe963aa44e99fe6e2851a5e915c4b9ebedbe23",
+  "prompts": {
+    "bfdb223caa9a5282": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ee35b74-b8fc-43a9-820c-62212f98d51a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 740,
+      "total_deletions": 111,
+      "accepted_lines": 698,
+      "overriden_lines": 0
+    }
+  }
+}
