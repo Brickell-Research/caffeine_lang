@@ -1,0 +1,23 @@
+caffeine_lang/test/caffeine_lang/corpus/generator/honeycomb_simple_slo.tf
+  647869a937cb05e9 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.5",
+  "base_commit_sha": "b23ef41b09b93e63c99feb0d656d093f289082da",
+  "prompts": {
+    "647869a937cb05e9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374cb153-fb40-4fbc-9b69-8b0a223fa0d7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
