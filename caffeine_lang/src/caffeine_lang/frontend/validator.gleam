@@ -172,16 +172,16 @@ fn validate_no_duplicates_loop(
     [] -> Ok(Nil)
     [first, ..rest] -> {
       let name = get_name(first)
-      case set.contains(seen, name) {
-        True -> Error(make_error(name))
-        False ->
-          validate_no_duplicates_loop(
-            rest,
-            get_name,
-            make_error,
-            set.insert(seen, name),
-          )
-      }
+      use <- bool.guard(
+        when: set.contains(seen, name),
+        return: Error(make_error(name)),
+      )
+      validate_no_duplicates_loop(
+        rest,
+        get_name,
+        make_error,
+        set.insert(seen, name),
+      )
     }
   }
 }
@@ -298,15 +298,15 @@ fn validate_extends_exist(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(extendable_names, first) {
-        False ->
-          Error(UndefinedExtendable(
-            name: first,
-            referenced_by: item_name,
-            candidates: set.to_list(extendable_names),
-          ))
-        True -> validate_extends_exist(rest, item_name, extendable_names)
-      }
+      use <- bool.guard(
+        when: !set.contains(extendable_names, first),
+        return: Error(UndefinedExtendable(
+          name: first,
+          referenced_by: item_name,
+          candidates: set.to_list(extendable_names),
+        )),
+      )
+      validate_extends_exist(rest, item_name, extendable_names)
     }
   }
 }
@@ -327,19 +327,18 @@ fn validate_no_duplicate_extends_loop(
   case extends {
     [] -> Ok(Nil)
     [first, ..rest] -> {
-      case set.contains(seen, first) {
-        True ->
-          Error(DuplicateExtendsReference(
-            name: first,
-            referenced_by: item_name,
-          ))
-        False ->
-          validate_no_duplicate_extends_loop(
-            rest,
-            item_name,
-            set.insert(seen, first),
-          )
-      }
+      use <- bool.guard(
+        when: set.contains(seen, first),
+        return: Error(DuplicateExtendsReference(
+          name: first,
+          referenced_by: item_name,
+        )),
+      )
+      validate_no_duplicate_extends_loop(
+        rest,
+        item_name,
+        set.insert(seen, first),
+      )
     }
   }
 }

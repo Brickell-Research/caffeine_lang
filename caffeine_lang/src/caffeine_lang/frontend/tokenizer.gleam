@@ -118,93 +118,22 @@ fn tokenize_loop(
           }
         }
 
-        "{" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolLeftBrace, state.line, state.column),
-            ..acc
-          ])
-        "}" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(
-              token.SymbolRightBrace,
-              state.line,
-              state.column,
-            ),
-            ..acc
-          ])
-        "(" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolLeftParen, state.line, state.column),
-            ..acc
-          ])
-        ")" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(
-              token.SymbolRightParen,
-              state.line,
-              state.column,
-            ),
-            ..acc
-          ])
-        "[" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(
-              token.SymbolLeftBracket,
-              state.line,
-              state.column,
-            ),
-            ..acc
-          ])
-        "]" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(
-              token.SymbolRightBracket,
-              state.line,
-              state.column,
-            ),
-            ..acc
-          ])
-        ":" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolColon, state.line, state.column),
-            ..acc
-          ])
-        "," ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolComma, state.line, state.column),
-            ..acc
-          ])
-        "*" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolStar, state.line, state.column),
-            ..acc
-          ])
-        "+" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolPlus, state.line, state.column),
-            ..acc
-          ])
-        "|" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolPipe, state.line, state.column),
-            ..acc
-          ])
-        "=" ->
-          tokenize_loop(advance(state, rest, 1), [
-            token.PositionedToken(token.SymbolEquals, state.line, state.column),
-            ..acc
-          ])
+        "{" -> emit_token(state, rest, token.SymbolLeftBrace, acc)
+        "}" -> emit_token(state, rest, token.SymbolRightBrace, acc)
+        "(" -> emit_token(state, rest, token.SymbolLeftParen, acc)
+        ")" -> emit_token(state, rest, token.SymbolRightParen, acc)
+        "[" -> emit_token(state, rest, token.SymbolLeftBracket, acc)
+        "]" -> emit_token(state, rest, token.SymbolRightBracket, acc)
+        ":" -> emit_token(state, rest, token.SymbolColon, acc)
+        "," -> emit_token(state, rest, token.SymbolComma, acc)
+        "*" -> emit_token(state, rest, token.SymbolStar, acc)
+        "+" -> emit_token(state, rest, token.SymbolPlus, acc)
+        "|" -> emit_token(state, rest, token.SymbolPipe, acc)
+        "=" -> emit_token(state, rest, token.SymbolEquals, acc)
         "." -> {
           case string.pop_grapheme(rest) {
             Ok(#(".", after_dot)) ->
-              tokenize_loop(advance(state, after_dot, 2), [
-                token.PositionedToken(
-                  token.SymbolDotDot,
-                  state.line,
-                  state.column,
-                ),
-                ..acc
-              ])
+              emit_token_n(state, after_dot, 2, token.SymbolDotDot, acc)
             _ ->
               Error(tokenizer_error.InvalidCharacter(
                 state.line,
@@ -287,6 +216,27 @@ fn advance(state: TokenizerState, source: String, len: Int) -> TokenizerState {
   )
 }
 
+fn emit_token(
+  state: TokenizerState,
+  rest: String,
+  tok: Token,
+  acc: List(PositionedToken),
+) -> Result(List(PositionedToken), TokenizerError) {
+  emit_token_n(state, rest, 1, tok, acc)
+}
+
+fn emit_token_n(
+  state: TokenizerState,
+  rest: String,
+  len: Int,
+  tok: Token,
+  acc: List(PositionedToken),
+) -> Result(List(PositionedToken), TokenizerError) {
+  tokenize_loop(advance(state, rest, len), [
+    token.PositionedToken(tok, state.line, state.column),
+    ..acc
+  ])
+}
 
 fn skip_empty_lines(source: String, count: Int) -> #(String, Int) {
   case string.pop_grapheme(source) {
