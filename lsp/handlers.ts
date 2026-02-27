@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 import {
   TextDocumentSyncKind,
   FileChangeType,
-} from "npm:vscode-languageserver/node.js";
-import type { Connection, TextDocuments } from "npm:vscode-languageserver/node.js";
-import type { TextDocument } from "npm:vscode-languageserver-textdocument";
+} from "vscode-languageserver/node.js";
+import type { Connection, TextDocuments } from "vscode-languageserver/node.js";
+import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   get_all_diagnostics,

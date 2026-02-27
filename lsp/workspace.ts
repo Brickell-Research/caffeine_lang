@@ -4,8 +4,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { TextDocuments } from "npm:vscode-languageserver/node.js";
-import type { TextDocument } from "npm:vscode-languageserver-textdocument";
+import type { TextDocuments } from "vscode-languageserver/node.js";
+import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   extractBlueprintNames,

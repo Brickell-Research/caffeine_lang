@@ -5,8 +5,6 @@
  * and provides convenience methods for all LSP operations.
  */
 
-// deno-lint-ignore-file no-explicit-any
-
 const CONTENT_LENGTH_HEADER = "Content-Length: ";
 const HEADER_DELIMITER = "\r\n\r\n";
 
@@ -60,7 +58,7 @@ export interface DiagnosticsNotification {
 }
 
 export class LspTestClient {
-  private process: Deno.ChildProcess | null = null;
+  private process: ReturnType<typeof Bun.spawn> | null = null;
   private nextId = 1;
   private pending = new Map<number, PendingRequest>();
   private notifications: { method: string; params: any }[] = [];
@@ -71,7 +69,6 @@ export class LspTestClient {
   }[] = [];
   private readBuffer: Uint8Array = new Uint8Array(0);
   private readLoopPromise: Promise<void> | null = null;
-  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private closed = false;
   private rootDir: string;
   private entrypoint: "dev" | "production";
@@ -83,34 +80,28 @@ export class LspTestClient {
 
   /** Start the LSP server subprocess and begin reading responses. */
   async start(): Promise<void> {
-    // Production entrypoint mirrors the deno compile permissions from release.yml.
-    // Dev entrypoint additionally needs --allow-run for the parent-process watchdog.
     const args = this.entrypoint === "production"
-      ? ["run", "--no-check", "--allow-read", "--allow-write", "--allow-env", "--allow-run", "main.mjs", "lsp"]
-      : ["run", "--no-check", "--allow-read", "--allow-write", "--allow-env", "--allow-run", "lsp_server.ts"];
+      ? ["run", "main.mjs", "lsp"]
+      : ["run", "lsp_server.ts"];
 
-    const command = new Deno.Command("deno", {
-      args,
+    this.process = Bun.spawn(["bun", ...args], {
       cwd: this.rootDir,
-      stdin: "piped",
-      stdout: "piped",
-      stderr: "piped",
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    this.process = command.spawn();
-    this.writer = this.process.stdin.getWriter();
-
     // Start the async read loop
-    this.readLoopPromise = this.readLoop(this.process.stdout);
+    this.readLoopPromise = this.readLoop(this.process.stdout as ReadableStream<Uint8Array>);
 
     // Drain stderr to prevent blocking
-    this.drainStderr(this.process.stderr);
+    this.drainStderr(this.process.stderr as ReadableStream<Uint8Array>);
   }
 
   /** Full LSP initialize handshake. */
   async initialize(rootUri?: string): Promise<any> {
     const result = await this.sendRequest("initialize", {
-      processId: Deno.pid,
+      processId: process.pid,
       rootUri: rootUri ?? `file://${this.rootDir}`,
       capabilities: {
         textDocument: {
@@ -335,13 +326,13 @@ export class LspTestClient {
     await delay(100);
 
     try {
-      this.writer?.close().catch(() => {});
+      this.process?.stdin?.end();
     } catch {
       // Ignore
     }
 
     try {
-      this.process?.kill("SIGTERM");
+      this.process?.kill();
     } catch {
       // Process may have already exited
     }
@@ -406,7 +397,8 @@ export class LspTestClient {
     combined.set(header);
     combined.set(encoded, header.length);
 
-    await this.writer?.write(combined);
+    this.process?.stdin?.write(combined);
+    await this.process?.stdin?.flush();
   }
 
   private async readLoop(stdout: ReadableStream<Uint8Array>): Promise<void> {

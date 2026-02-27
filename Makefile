@@ -28,7 +28,7 @@ test:
 test-e2e:
 	cd caffeine_lang && gleam build --target javascript
 	cd caffeine_lsp && gleam build --target javascript
-	deno test --allow-read --allow-write --allow-env --allow-run test/lsp_e2e/
+	bun test test/lsp_e2e/
 
 # Run CI pipeline: format check, build, then test
 ci: lint build test

@@ -1,8 +1,8 @@
-// Entry point for Deno compilation
+// Entry point for Bun compilation
 // Intercepts "lsp" arg to launch TypeScript LSP server,
 // otherwise runs the Gleam-compiled CLI.
 
-const args = typeof Deno !== "undefined" ? Deno.args : [];
+const args = process.argv.slice(2);
 
 if (args.includes("lsp")) {
   await import("./lsp_server.ts");

@@ -5,8 +5,9 @@
  * document changes, document close, and error recovery.
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
-import { LspTestClient, withTimeout } from "./client.ts";
+import { expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
+import { LspTestClient } from "./client.ts";
 
 const ROOT_DIR = new URL("../../", import.meta.url).pathname.replace(
   /\/$/,
@@ -18,297 +19,216 @@ function fixtureUri(name: string): string {
 }
 
 async function readFixture(name: string): Promise<string> {
-  return await Deno.readTextFile(
+  return await readFile(
     `${ROOT_DIR}/test/lsp_e2e/fixtures/${name}`,
+    "utf-8",
   );
 }
 
 // ==== single_file_valid ====
 // * Opens a valid blueprint file and verifies zero diagnostics
-Deno.test({
-  name: "diagnostics: valid blueprint produces zero diagnostics",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: valid blueprint produces zero diagnostics", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = fixtureUri("valid_blueprint.caffeine");
-      const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_blueprint.caffeine");
+    const text = await readFixture("valid_blueprint.caffeine");
 
-      const diagPromise = client.waitForDiagnostics(uri);
-      client.openDocument(uri, text);
+    const diagPromise = client.waitForDiagnostics(uri);
+    client.openDocument(uri, text);
 
-      const diag = await diagPromise;
-      assertEquals(diag.uri, uri);
-      assertEquals(
-        diag.diagnostics.length,
-        0,
-        "valid blueprint should have zero diagnostics",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    const diag = await diagPromise;
+    expect(diag.uri).toBe(uri);
+    expect(diag.diagnostics.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== single_file_valid_expects ====
 // * Opens a valid expects file and verifies diagnostics (may have cross-file warning)
-Deno.test({
-  name: "diagnostics: valid expects file produces diagnostics response",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: valid expects file produces diagnostics response", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = fixtureUri("valid_expects.caffeine");
-      const text = await readFixture("valid_expects.caffeine");
+    const uri = fixtureUri("valid_expects.caffeine");
+    const text = await readFixture("valid_expects.caffeine");
 
-      const diagPromise = client.waitForDiagnostics(uri);
-      client.openDocument(uri, text);
+    const diagPromise = client.waitForDiagnostics(uri);
+    client.openDocument(uri, text);
 
-      const diag = await diagPromise;
-      assertEquals(diag.uri, uri);
-      // Expects file references "test_blueprint" — without the blueprint file
-      // being in the workspace, this may produce a "Blueprint not found" diagnostic
-      assert(
-        diag.diagnostics !== undefined,
-        "should receive a diagnostics array",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    const diag = await diagPromise;
+    expect(diag.uri).toBe(uri);
+    // Expects file references "test_blueprint" — without the blueprint file
+    // being in the workspace, this may produce a "Blueprint not found" diagnostic
+    expect(diag.diagnostics !== undefined).toBeTruthy();
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== single_file_syntax_error ====
 // * Opens a file with a syntax error and verifies diagnostic message
-Deno.test({
-  name: "diagnostics: syntax error produces meaningful diagnostic",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: syntax error produces meaningful diagnostic", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = fixtureUri("invalid_syntax.caffeine");
-      const text = await readFixture("invalid_syntax.caffeine");
+    const uri = fixtureUri("invalid_syntax.caffeine");
+    const text = await readFixture("invalid_syntax.caffeine");
 
-      const diagPromise = client.waitForDiagnostics(uri);
-      client.openDocument(uri, text);
+    const diagPromise = client.waitForDiagnostics(uri);
+    client.openDocument(uri, text);
 
-      const diag = await diagPromise;
-      assertEquals(diag.uri, uri);
-      assert(
-        diag.diagnostics.length > 0,
-        "syntax error should produce at least one diagnostic",
-      );
+    const diag = await diagPromise;
+    expect(diag.uri).toBe(uri);
+    expect(diag.diagnostics.length > 0).toBeTruthy();
 
-      // Verify the diagnostic has a meaningful message
-      const firstDiag = diag.diagnostics[0];
-      assert(
-        firstDiag.message.length > 0,
-        "diagnostic should have a non-empty message",
-      );
-      // Severity 1 = Error
-      assertEquals(firstDiag.severity, 1, "syntax errors should be severity Error");
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    // Verify the diagnostic has a meaningful message
+    const firstDiag = diag.diagnostics[0];
+    expect(firstDiag.message.length > 0).toBeTruthy();
+    // Severity 1 = Error
+    expect(firstDiag.severity).toBe(1);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== cross_file_blueprint_found ====
 // * Opens a blueprint and an expects file, verifies no "blueprint not found" error
-Deno.test({
-  name: "diagnostics: cross-file blueprint reference resolves when blueprint is open",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: cross-file blueprint reference resolves when blueprint is open", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      // Open the blueprint file first so its names are indexed
-      const bpUri = fixtureUri("valid_blueprint.caffeine");
-      const bpText = await readFixture("valid_blueprint.caffeine");
-      const bpDiagPromise = client.waitForDiagnostics(bpUri);
-      client.openDocument(bpUri, bpText);
-      await bpDiagPromise;
+    // Open the blueprint file first so its names are indexed
+    const bpUri = fixtureUri("valid_blueprint.caffeine");
+    const bpText = await readFixture("valid_blueprint.caffeine");
+    const bpDiagPromise = client.waitForDiagnostics(bpUri);
+    client.openDocument(bpUri, bpText);
+    await bpDiagPromise;
 
-      // Now open the expects file that references "test_blueprint"
-      const exUri = fixtureUri("valid_expects.caffeine");
-      const exText = await readFixture("valid_expects.caffeine");
-      const exDiagPromise = client.waitForDiagnostics(exUri);
-      client.openDocument(exUri, exText);
-      const exDiag = await exDiagPromise;
+    // Now open the expects file that references "test_blueprint"
+    const exUri = fixtureUri("valid_expects.caffeine");
+    const exText = await readFixture("valid_expects.caffeine");
+    const exDiagPromise = client.waitForDiagnostics(exUri);
+    client.openDocument(exUri, exText);
+    const exDiag = await exDiagPromise;
 
-      // Should have no "blueprint not found" diagnostics since the blueprint is open
-      const bpNotFoundDiags = exDiag.diagnostics.filter((d) =>
-        d.message.includes("not found")
-      );
-      assertEquals(
-        bpNotFoundDiags.length,
-        0,
-        "should not have 'blueprint not found' errors when blueprint is open",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    // Should have no "blueprint not found" diagnostics since the blueprint is open
+    const bpNotFoundDiags = exDiag.diagnostics.filter((d) =>
+      d.message.includes("not found")
+    );
+    expect(bpNotFoundDiags.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== document_change_updates_diagnostics ====
 // * Opens a file with errors, fixes the error, verifies diagnostics clear
-Deno.test({
-  name: "diagnostics: document change updates diagnostics",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: document change updates diagnostics", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = fixtureUri("invalid_syntax.caffeine");
-      const invalidText = await readFixture("invalid_syntax.caffeine");
+    const uri = fixtureUri("invalid_syntax.caffeine");
+    const invalidText = await readFixture("invalid_syntax.caffeine");
 
-      // Open with invalid content — should produce diagnostics
-      const diagPromise1 = client.waitForDiagnostics(uri);
-      client.openDocument(uri, invalidText);
-      const diag1 = await diagPromise1;
-      assert(
-        diag1.diagnostics.length > 0,
-        "invalid content should produce diagnostics",
-      );
+    // Open with invalid content — should produce diagnostics
+    const diagPromise1 = client.waitForDiagnostics(uri);
+    client.openDocument(uri, invalidText);
+    const diag1 = await diagPromise1;
+    expect(diag1.diagnostics.length > 0).toBeTruthy();
 
-      // Change to valid content
-      const validText = await readFixture("valid_blueprint.caffeine");
-      const diagPromise2 = client.waitForDiagnostics(uri);
-      client.changeDocument(uri, validText, 2);
-      const diag2 = await diagPromise2;
-      assertEquals(
-        diag2.diagnostics.length,
-        0,
-        "fixing the error should clear diagnostics",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    // Change to valid content
+    const validText = await readFixture("valid_blueprint.caffeine");
+    const diagPromise2 = client.waitForDiagnostics(uri);
+    client.changeDocument(uri, validText, 2);
+    const diag2 = await diagPromise2;
+    expect(diag2.diagnostics.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== document_close_clears_diagnostics ====
 // * Opens a file with errors, closes it, verifies diagnostics are cleared
-Deno.test({
-  name: "diagnostics: document close clears diagnostics",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: document close clears diagnostics", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = fixtureUri("invalid_syntax.caffeine");
-      const text = await readFixture("invalid_syntax.caffeine");
+    const uri = fixtureUri("invalid_syntax.caffeine");
+    const text = await readFixture("invalid_syntax.caffeine");
 
-      // Open with invalid content — wait for diagnostics
-      const diagPromise1 = client.waitForDiagnostics(uri);
-      client.openDocument(uri, text);
-      const diag1 = await diagPromise1;
-      assert(
-        diag1.diagnostics.length > 0,
-        "invalid content should produce diagnostics",
-      );
+    // Open with invalid content — wait for diagnostics
+    const diagPromise1 = client.waitForDiagnostics(uri);
+    client.openDocument(uri, text);
+    const diag1 = await diagPromise1;
+    expect(diag1.diagnostics.length > 0).toBeTruthy();
 
-      // Close the document — server sends empty diagnostics
-      const diagPromise2 = client.waitForDiagnostics(uri);
-      client.closeDocument(uri);
-      const diag2 = await diagPromise2;
-      assertEquals(
-        diag2.diagnostics.length,
-        0,
-        "closing a document should clear its diagnostics",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    // Close the document — server sends empty diagnostics
+    const diagPromise2 = client.waitForDiagnostics(uri);
+    client.closeDocument(uri);
+    const diag2 = await diagPromise2;
+    expect(diag2.diagnostics.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== error_recovery ====
 // * Opens a file with syntax errors, fixes them incrementally, verifies diagnostics clear
-Deno.test({
-  name: "diagnostics: error recovery clears diagnostics after fix",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: error recovery clears diagnostics after fix", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      // Use a synthetic URI for a virtual document
-      const uri = "file:///tmp/test_recovery.caffeine";
+    // Use a synthetic URI for a virtual document
+    const uri = "file:///tmp/test_recovery.caffeine";
 
-      // Start with broken content (missing colon after blueprint name)
-      const broken = `Blueprints for "SLO"\n  * "test"\n    Requires { v: String }\n    Provides { v: "x" }\n`;
-      const diagPromise1 = client.waitForDiagnostics(uri);
-      client.openDocument(uri, broken);
-      const diag1 = await diagPromise1;
-      assert(
-        diag1.diagnostics.length > 0,
-        "broken content should produce diagnostics",
-      );
+    // Start with broken content (missing colon after blueprint name)
+    const broken = `Blueprints for "SLO"\n  * "test"\n    Requires { v: String }\n    Provides { v: "x" }\n`;
+    const diagPromise1 = client.waitForDiagnostics(uri);
+    client.openDocument(uri, broken);
+    const diag1 = await diagPromise1;
+    expect(diag1.diagnostics.length > 0).toBeTruthy();
 
-      // Fix: add the missing colon
-      const fixed = `Blueprints for "SLO"\n  * "test":\n    Requires { v: String }\n    Provides { v: "x" }\n`;
-      const diagPromise2 = client.waitForDiagnostics(uri);
-      client.changeDocument(uri, fixed, 2);
-      const diag2 = await diagPromise2;
-      assertEquals(
-        diag2.diagnostics.length,
-        0,
-        "fixed content should have zero diagnostics",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    // Fix: add the missing colon
+    const fixed = `Blueprints for "SLO"\n  * "test":\n    Requires { v: String }\n    Provides { v: "x" }\n`;
+    const diagPromise2 = client.waitForDiagnostics(uri);
+    client.changeDocument(uri, fixed, 2);
+    const diag2 = await diagPromise2;
+    expect(diag2.diagnostics.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
 
 // ==== empty_document ====
 // * Opens an empty document, verifies no diagnostics
-Deno.test({
-  name: "diagnostics: empty document produces zero diagnostics",
-  sanitizeResources: false,
-  sanitizeOps: false,
-  fn: withTimeout(async () => {
-    const client = new LspTestClient(ROOT_DIR);
-    try {
-      await client.start();
-      await client.initialize();
+test("diagnostics: empty document produces zero diagnostics", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
 
-      const uri = "file:///tmp/test_empty.caffeine";
-      const diagPromise = client.waitForDiagnostics(uri);
-      client.openDocument(uri, "");
-      const diag = await diagPromise;
-      assertEquals(
-        diag.diagnostics.length,
-        0,
-        "empty document should have zero diagnostics",
-      );
-    } finally {
-      await client.shutdown();
-    }
-  }),
-});
+    const uri = "file:///tmp/test_empty.caffeine";
+    const diagPromise = client.waitForDiagnostics(uri);
+    client.openDocument(uri, "");
+    const diag = await diagPromise;
+    expect(diag.diagnostics.length).toBe(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);

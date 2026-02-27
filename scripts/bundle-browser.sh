@@ -1,6 +1,6 @@
 #!/bin/bash
 # Bundle the Caffeine compiler for browser use
-# Requires: deno (for esbuild via deno task)
+# Requires: bun (for esbuild via bunx)
 
 set -e
 
@@ -22,7 +22,7 @@ mkdir -p "$OUTPUT_DIR"
 # graph from compile_from_strings, so no node: shims are needed.
 echo "Bundling with esbuild..."
 cd "$PROJECT_DIR" || exit 1
-deno run -A npm:esbuild "$BUILD_DIR/compiler.mjs" \
+bunx esbuild "$BUILD_DIR/compiler.mjs" \
   --bundle \
   --format=esm \
   --outfile="$OUTPUT_DIR/caffeine-browser.js" \

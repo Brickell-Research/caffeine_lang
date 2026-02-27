@@ -1,6 +1,6 @@
 // Pure LSP conversion utilities — no side effects, no connection state.
 
-import { DiagnosticSeverity } from "npm:vscode-languageserver/node.js";
+import { DiagnosticSeverity } from "vscode-languageserver/node.js";
 import { diagnostic_code_to_string, Some } from "./gleam_imports.ts";
 
 // deno-lint-ignore no-explicit-any
