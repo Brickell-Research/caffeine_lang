@@ -485,8 +485,8 @@ pub fn primitive_type_to_string_test() {
 pub fn validate_primitive_default_value_test() {
   [
     // Boolean
-    #("Boolean with True", #(Boolean, "True"), Ok(Nil)),
-    #("Boolean with False", #(Boolean, "False"), Ok(Nil)),
+    #("Boolean with true", #(Boolean, "true"), Ok(Nil)),
+    #("Boolean with false", #(Boolean, "false"), Ok(Nil)),
     #("Boolean with invalid value", #(Boolean, "invalid"), Error(Nil)),
     // String
     #("String accepts any value", #(String, "anything"), Ok(Nil)),
@@ -565,7 +565,7 @@ pub fn resolve_primitive_to_string_test() {
     #(
       "Boolean resolves with resolver",
       #(Boolean, value.BoolValue(True)),
-      "resolved:True",
+      "resolved:true",
     ),
     #(
       "String resolves with resolver",
@@ -905,7 +905,7 @@ pub fn parse_modifier_type_test() {
         }
       "Boolean" ->
         case default_val {
-          "True" | "False" -> Ok(Nil)
+          "true" | "false" -> Ok(Nil)
           _ -> Error(Nil)
         }
       "Float" ->
@@ -975,9 +975,9 @@ pub fn parse_modifier_type_test() {
       Ok(Defaulted("Integer", "10")),
     ),
     #(
-      "Defaulted(Boolean, True)",
-      "Defaulted(Boolean, True)",
-      Ok(Defaulted("Boolean", "True")),
+      "Defaulted(Boolean, true)",
+      "Defaulted(Boolean, true)",
+      Ok(Defaulted("Boolean", "true")),
     ),
     #(
       "Defaulted(Float, 3.14)",
@@ -1453,7 +1453,7 @@ pub fn parse_refinement_type_test() {
     // ==== Sad Path (OneOf) ====
     #(
       "Boolean excluded from refinements",
-      "Boolean { x | x in { True, False } }",
+      "Boolean { x | x in { true, false } }",
       Error(Nil),
     ),
     #("Integer empty set", "Integer { x | x in {  } }", Error(Nil)),
@@ -1475,7 +1475,7 @@ pub fn parse_refinement_type_test() {
     ),
     #(
       "Defaulted Boolean excluded",
-      "Defaulted(Boolean, True) { x | x in { True, False } }",
+      "Defaulted(Boolean, true) { x | x in { true, false } }",
       Error(Nil),
     ),
     #(

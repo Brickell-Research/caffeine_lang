@@ -340,7 +340,7 @@ pub fn resolve_indicators_test() {
                 #(
                   "numerator",
                   value.StringValue(
-                    "avg:system.cpu{env:production AND !status:True}",
+                    "avg:system.cpu{env:production AND !status:true}",
                   ),
                 ),
               ]),
@@ -351,7 +351,7 @@ pub fn resolve_indicators_test() {
           threshold: 0.0,
           indicators: dict.from_list([
             #("denominator", "avg:system.cpu{env:production}"),
-            #("numerator", "avg:system.cpu{env:production AND !status:True}"),
+            #("numerator", "avg:system.cpu{env:production AND !status:true}"),
           ]),
           window_in_days: 30,
           evaluation: option.None,

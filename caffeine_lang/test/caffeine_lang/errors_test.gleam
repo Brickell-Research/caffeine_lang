@@ -80,7 +80,7 @@ pub fn format_validation_error_message_test() {
       [types.ValidationError("String", "Bool", [])],
       option.Some("flag"),
       option.Some(value.BoolValue(True)),
-      "expected (String) received (Bool) value (True) for (flag)",
+      "expected (String) received (Bool) value (true) for (flag)",
     ),
   ]
   |> test_helpers.table_test_3(errors.format_validation_error_message)

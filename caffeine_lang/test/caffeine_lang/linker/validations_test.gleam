@@ -266,7 +266,7 @@ pub fn validate_value_type_test() {
       some_bool,
       types.ModifierType(types.Defaulted(
         types.PrimitiveType(types.Boolean),
-        "False",
+        "false",
       )),
       Ok(some_bool),
     ),
@@ -350,7 +350,7 @@ pub fn validate_value_type_test() {
       some_bool,
       types.PrimitiveType(types.String),
       json_error(
-        "expected (String) received (Bool) value (True) for (some_key)",
+        "expected (String) received (Bool) value (true) for (some_key)",
       ),
     ),
     // Dict types
@@ -483,7 +483,7 @@ pub fn validate_value_type_test() {
       some_bool,
       types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
       json_error(
-        "expected (String) received (Bool) value (True) for (some_key)",
+        "expected (String) received (Bool) value (true) for (some_key)",
       ),
     ),
     #(
@@ -534,7 +534,7 @@ pub fn validate_value_type_test() {
         "default",
       )),
       json_error(
-        "expected (String) received (Bool) value (True) for (some_key)",
+        "expected (String) received (Bool) value (true) for (some_key)",
       ),
     ),
     #(

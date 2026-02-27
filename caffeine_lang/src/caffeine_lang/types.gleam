@@ -1240,7 +1240,8 @@ fn value_to_type_string(
   val: Value,
 ) -> Result(String, List(ValidationError)) {
   case typ, val {
-    PrimitiveType(Boolean), value.BoolValue(b) -> Ok(bool.to_string(b))
+    PrimitiveType(Boolean), value.BoolValue(True) -> Ok("true")
+    PrimitiveType(Boolean), value.BoolValue(False) -> Ok("false")
     PrimitiveType(String), value.StringValue(s) -> Ok(s)
     PrimitiveType(NumericType(Integer)), value.IntValue(i) ->
       Ok(int.to_string(i))
@@ -1275,7 +1276,7 @@ pub fn validate_primitive_default_value(
   default_val: String,
 ) -> Result(Nil, Nil) {
   case primitive {
-    Boolean if default_val == "True" || default_val == "False" -> Ok(Nil)
+    Boolean if default_val == "true" || default_val == "false" -> Ok(Nil)
     Boolean -> Error(Nil)
     String -> Ok(Nil)
     NumericType(numeric_type) ->
@@ -1432,7 +1433,8 @@ pub fn resolve_primitive_to_string(
   resolve_string: fn(String) -> String,
 ) -> String {
   let str = case primitive, val {
-    Boolean, value.BoolValue(b) -> bool.to_string(b)
+    Boolean, value.BoolValue(True) -> "true"
+    Boolean, value.BoolValue(False) -> "false"
     String, value.StringValue(s) -> s
     NumericType(Integer), value.IntValue(i) -> int.to_string(i)
     NumericType(Float), value.FloatValue(f) -> float.to_string(f)

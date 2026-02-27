@@ -370,7 +370,7 @@ fn needs_string_quoting(t: ParsedType) -> Bool {
 /// A default value needs quoting if it isn't a number, boolean, or percentage literal.
 fn value_needs_quoting(val: String) -> Bool {
   case val {
-    "True" | "False" -> False
+    "true" | "false" -> False
     _ -> {
       // Strip % suffix for percentage literals
       let cleaned = case string.ends_with(val, "%") {

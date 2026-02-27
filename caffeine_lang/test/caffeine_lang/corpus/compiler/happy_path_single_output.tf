@@ -37,14 +37,14 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
     "expectation:checkout_availability",
     "artifact:SLO",
     "env:production",
-    "status:True",
+    "status:true",
     "vendor:datadog",
   ]
   type = "metric"
 
   query {
     denominator = "sum:http.requests{env:production}"
-    numerator = "sum:http.requests{env:production AND !status:True}"
+    numerator = "sum:http.requests{env:production AND !status:true}"
   }
   thresholds {
     target = 99.95

@@ -1207,8 +1207,8 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralInteger(n) -> int.to_string(n)
     ast.LiteralFloat(f) -> float.to_string(f)
     ast.LiteralPercentage(f) -> float.to_string(f) <> "%"
-    ast.LiteralTrue -> "True"
-    ast.LiteralFalse -> "False"
+    ast.LiteralTrue -> "true"
+    ast.LiteralFalse -> "false"
     ast.LiteralList(_) -> "[]"
     ast.LiteralStruct(_, _) -> "{}"
   }

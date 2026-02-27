@@ -17,7 +17,7 @@ pub fn to_string_test() {
     #("converts string value", StringValue("hello"), "hello"),
     #("converts int value", IntValue(42), "42"),
     #("converts float value", FloatValue(3.14), "3.14"),
-    #("converts bool value", BoolValue(True), "True"),
+    #("converts bool value", BoolValue(True), "true"),
     #("converts nil value", NilValue, ""),
     #(
       "converts list value",
@@ -42,7 +42,7 @@ pub fn to_preview_string_test() {
     #("quotes strings", StringValue("hello"), "\"hello\""),
     #("shows int directly", IntValue(42), "42"),
     #("shows float directly", FloatValue(3.14), "3.14"),
-    #("shows bool directly", BoolValue(True), "True"),
+    #("shows bool directly", BoolValue(True), "true"),
     #("shows Nil for nil", NilValue, "Nil"),
     #("shows List for list", ListValue([]), "List"),
     #("shows Dict for dict", DictValue(dict.new()), "Dict"),

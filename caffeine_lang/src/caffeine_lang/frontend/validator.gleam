@@ -673,7 +673,7 @@ fn validate_string_matches_primitive(
   let is_valid = case primitive {
     types.String -> True
     SemanticType(_) -> True
-    Boolean -> value == "True" || value == "False"
+    Boolean -> value == "true" || value == "false"
     NumericType(types.Integer) -> result.is_ok(int.parse(value))
     NumericType(types.Float) -> result.is_ok(float.parse(value))
     NumericType(Percentage) -> {

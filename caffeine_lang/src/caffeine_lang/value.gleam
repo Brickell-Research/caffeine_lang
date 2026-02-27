@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
@@ -26,7 +25,8 @@ pub fn to_string(value: Value) -> String {
     StringValue(s) -> s
     IntValue(i) -> int.to_string(i)
     FloatValue(f) -> float.to_string(f)
-    BoolValue(b) -> bool.to_string(b)
+    BoolValue(True) -> "true"
+    BoolValue(False) -> "false"
     ListValue(items) ->
       "[" <> items |> list.map(to_string) |> string.join(", ") <> "]"
     DictValue(d) ->
@@ -47,7 +47,8 @@ pub fn to_preview_string(value: Value) -> String {
     StringValue(s) -> "\"" <> s <> "\""
     IntValue(i) -> int.to_string(i)
     FloatValue(f) -> float.to_string(f)
-    BoolValue(b) -> bool.to_string(b)
+    BoolValue(True) -> "true"
+    BoolValue(False) -> "false"
     ListValue(_) -> "List"
     DictValue(_) -> "Dict"
     NilValue -> "Nil"
