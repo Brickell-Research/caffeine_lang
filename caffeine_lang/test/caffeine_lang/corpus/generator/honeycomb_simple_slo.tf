@@ -35,7 +35,7 @@ resource "honeycombio_slo" "acme_payments_api_success_rate" {
   sli = honeycombio_derived_column.acme_payments_api_success_rate_sli.alias
   tags = {
     managedby = "caffeine"
-    caffeineversion = "v451"
+    caffeineversion = "v460"
     org = "acme"
     team = "platform"
     service = "payments"
