@@ -1,7 +1,7 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO}
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, ir_to_identifier,
+  type IntermediateRepresentation, IntermediateRepresentation, ir_to_identifier,
 }
 import gleam/bool
 import gleam/dict.{type Dict}
@@ -23,8 +23,11 @@ import gleam/string
 /// - Satisfy composite hard dependency threshold constraints
 @internal
 pub fn validate_dependency_relations(
-  irs: List(IntermediateRepresentation),
-) -> Result(List(IntermediateRepresentation), CompilationError) {
+  irs: List(IntermediateRepresentation(ir.Linked)),
+) -> Result(
+  List(IntermediateRepresentation(ir.DepsValidated)),
+  CompilationError,
+) {
   // Build an index of all valid expectation paths
   let expectation_index = build_expectation_index(irs)
 
@@ -53,15 +56,16 @@ pub fn validate_dependency_relations(
     |> result.map(fn(_) { Nil }),
   )
 
-  Ok(irs)
+  // Promote phantom type from Linked to DepsValidated
+  Ok(list.map(irs, fn(ir) { IntermediateRepresentation(..ir) }))
 }
 
 /// Builds an index of all expectation paths for quick lookup.
 /// The path format is "org.team.service.name".
 @internal
 pub fn build_expectation_index(
-  irs: List(IntermediateRepresentation),
-) -> Dict(String, IntermediateRepresentation) {
+  irs: List(IntermediateRepresentation(phase)),
+) -> Dict(String, IntermediateRepresentation(phase)) {
   irs
   |> list.map(fn(ir) {
     let path = ir_to_identifier(ir)
@@ -71,8 +75,8 @@ pub fn build_expectation_index(
 }
 
 fn validate_ir_dependencies(
-  ir: IntermediateRepresentation,
-  expectation_index: Dict(String, IntermediateRepresentation),
+  ir: IntermediateRepresentation(phase),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   // Skip IRs that don't have DependencyRelations
   use <- bool.guard(
@@ -150,7 +154,7 @@ fn do_check_for_duplicates(
 fn validate_dependency_target(
   target: String,
   self_path: String,
-  expectation_index: Dict(String, IntermediateRepresentation),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   // First, validate the format
   case parse_dependency_path(target) {
@@ -214,7 +218,7 @@ fn dependency_ref_error(
 
 /// Builds a directed adjacency list from all IRs with DependencyRelations.
 fn build_adjacency_list(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(phase)),
 ) -> Dict(String, List(String)) {
   irs
   |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
@@ -233,7 +237,7 @@ fn build_adjacency_list(
 
 /// Detects circular dependencies in the dependency graph.
 fn detect_cycles(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   let adjacency = build_adjacency_list(irs)
   let nodes =
@@ -338,8 +342,8 @@ fn explore_neighbors(
 /// The composite ceiling is the product of all hard dependency thresholds,
 /// representing the maximum achievable availability given those dependencies.
 fn validate_single_ir_hard_thresholds(
-  ir: IntermediateRepresentation,
-  expectation_index: Dict(String, IntermediateRepresentation),
+  ir: IntermediateRepresentation(phase),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   let self_path = ir_to_identifier(ir)
   use #(slo, dep) <- result.try(
@@ -398,7 +402,7 @@ fn validate_single_ir_hard_thresholds(
 /// because the linker guarantees consistency between artifact_refs and artifact_data.
 fn collect_hard_dep_thresholds(
   targets: List(String),
-  expectation_index: Dict(String, IntermediateRepresentation),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> List(#(String, Float)) {
   targets
   |> list.filter_map(fn(target_path) {

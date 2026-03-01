@@ -2,7 +2,7 @@ import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
 import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
-import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/blueprints.{type Blueprint, type Raw}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types.{RecordType}
 import caffeine_lang/value
@@ -22,7 +22,7 @@ fn read_file(path: String) -> String {
   content
 }
 
-fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint) {
+fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint(Raw)) {
   let content = lowering_path(file_name <> ".caffeine") |> read_file
   let assert Ok(file) = parser.parse_blueprints_file(content)
   let assert Ok(validated) = validator.validate_blueprints_file(file)

@@ -1,3 +1,9 @@
+/// Marker type for parsed CQL expressions (pre-substitution).
+pub type CqlParsed
+
+/// Marker type for substituted CQL expressions (post-substitution).
+pub type Substituted
+
 /// Arithmetic operators supported in CQL expressions.
 pub type Operator {
   Add
@@ -25,16 +31,22 @@ pub type TimeSliceExp {
 }
 
 /// An expression in the CQL AST, either an operator expression or a primary.
-pub type Exp {
+/// The phantom `state` parameter tracks whether words have been substituted.
+pub type Exp(state) {
   TimeSliceExpr(spec: TimeSliceExp)
-  OperatorExpr(numerator: Exp, denominator: Exp, operator: Operator)
-  Primary(primary: Primary)
+  OperatorExpr(
+    numerator: Exp(state),
+    denominator: Exp(state),
+    operator: Operator,
+  )
+  Primary(primary: Primary(state))
 }
 
 /// A primary expression, either a word (identifier) or a parenthesized expression.
-pub type Primary {
+/// The phantom `state` parameter mirrors the parent Exp's state.
+pub type Primary(state) {
   PrimaryWord(word: Word)
-  PrimaryExp(exp: Exp)
+  PrimaryExp(exp: Exp(state))
 }
 
 /// A word (identifier) in the expression.

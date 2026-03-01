@@ -7,22 +7,24 @@ import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error
 import caffeine_lang/frontend/validator
-import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/blueprints.{type Blueprint, type Raw}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/position_utils
 import caffeine_lang/rich_error.{type RichError, ErrorCode, RichError}
-import caffeine_lang/source_file.{type SourceFile}
+import caffeine_lang/source_file.{
+  type BlueprintSource, type ExpectationSource, type SourceFile,
+}
 import caffeine_lang/string_distance
 import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
 
-/// Compiles a blueprints .caffeine source to a list of blueprints.
+/// Compiles a blueprints .caffeine source to a list of raw (unvalidated) blueprints.
 @internal
 pub fn compile_blueprints(
-  source: SourceFile,
-) -> Result(List(Blueprint), CompilationError) {
+  source: SourceFile(BlueprintSource),
+) -> Result(List(Blueprint(Raw)), CompilationError) {
   use ast <- result.try(
     parser.parse_blueprints_file(source.content)
     |> result.map_error(fn(err) {
@@ -41,7 +43,7 @@ pub fn compile_blueprints(
 /// Compiles an expects .caffeine source to a list of expectations.
 @internal
 pub fn compile_expects(
-  source: SourceFile,
+  source: SourceFile(ExpectationSource),
 ) -> Result(List(Expectation), CompilationError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
@@ -165,8 +167,8 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
 /// Compiles blueprints with rich error information including source locations.
 @internal
 pub fn compile_blueprints_rich(
-  source: SourceFile,
-) -> Result(List(Blueprint), RichError) {
+  source: SourceFile(BlueprintSource),
+) -> Result(List(Blueprint(Raw)), RichError) {
   use ast <- result.try(
     parser.parse_blueprints_file(source.content)
     |> result.map_error(fn(err) { parser_error_to_rich_error(err, source) }),
@@ -183,7 +185,7 @@ pub fn compile_blueprints_rich(
 /// Compiles expects with rich error information including source locations.
 @internal
 pub fn compile_expects_rich(
-  source: SourceFile,
+  source: SourceFile(ExpectationSource),
 ) -> Result(List(Expectation), RichError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
@@ -199,7 +201,10 @@ pub fn compile_expects_rich(
 }
 
 /// Converts a ParserError to a RichError with location info.
-fn parser_error_to_rich_error(err: ParserError, source: SourceFile) -> RichError {
+fn parser_error_to_rich_error(
+  err: ParserError,
+  source: SourceFile(a),
+) -> RichError {
   let compilation_error = parser_error_to_compilation_error(err, source.path)
   let #(location, suggestion) = case err {
     parser_error.TokenizerError(tok_err) -> {
@@ -269,7 +274,7 @@ fn parser_error_to_rich_error(err: ParserError, source: SourceFile) -> RichError
 /// Uses the first error for the primary rich error since RichError is a single error.
 fn validator_errors_to_rich_error(
   errs: List(validator.ValidatorError),
-  source: SourceFile,
+  source: SourceFile(a),
 ) -> RichError {
   case errs {
     // Single error gets full rich error treatment
@@ -299,7 +304,7 @@ fn validator_errors_to_rich_error(
 /// Converts a ValidatorError to a RichError with location info.
 fn validator_error_to_rich_error(
   err: validator.ValidatorError,
-  source: SourceFile,
+  source: SourceFile(a),
 ) -> RichError {
   let compilation_error = validator_error_to_compilation_error(err, source.path)
   let #(name, suggestion) = case err {

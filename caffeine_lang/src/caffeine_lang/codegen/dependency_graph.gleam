@@ -1,6 +1,6 @@
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, Soft}
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, ir_to_identifier,
+  type IntermediateRepresentation, type Resolved, ir_to_identifier,
 }
 import gleam/dict
 import gleam/list
@@ -10,7 +10,7 @@ import gleam/string
 
 /// Generates a Mermaid flowchart string from dependency relations in IRs.
 /// Nodes are grouped into subgraphs by service.
-pub fn generate(irs: List(IntermediateRepresentation)) -> String {
+pub fn generate(irs: List(IntermediateRepresentation(Resolved))) -> String {
   let subgraphs = build_subgraphs(irs)
   let edges = build_edges(irs)
 
@@ -20,7 +20,9 @@ pub fn generate(irs: List(IntermediateRepresentation)) -> String {
 }
 
 /// Groups IRs by service and generates Mermaid subgraph blocks.
-fn build_subgraphs(irs: List(IntermediateRepresentation)) -> List(String) {
+fn build_subgraphs(
+  irs: List(IntermediateRepresentation(Resolved)),
+) -> List(String) {
   irs
   |> list.group(fn(ir) { service_key(ir) })
   |> dict.to_list
@@ -39,20 +41,20 @@ fn build_subgraphs(irs: List(IntermediateRepresentation)) -> List(String) {
 }
 
 /// Builds the service grouping key from IR metadata.
-fn service_key(ir: IntermediateRepresentation) -> String {
-  ir.metadata.service_name
+fn service_key(ir: IntermediateRepresentation(Resolved)) -> String {
+  ir.metadata.service_name.value
 }
 
 /// Generates a single Mermaid node declaration with just the expectation name.
-fn build_node(ir: IntermediateRepresentation) -> String {
+fn build_node(ir: IntermediateRepresentation(Resolved)) -> String {
   let path = ir_to_identifier(ir)
   let id = sanitize_id(path)
-  let safe_name = escape_label(ir.metadata.friendly_label)
+  let safe_name = escape_label(ir.metadata.friendly_label.value)
   "        " <> id <> "[\"" <> safe_name <> "\"]"
 }
 
 /// Generates Mermaid edge declarations for hard and soft dependencies.
-fn build_edges(irs: List(IntermediateRepresentation)) -> List(String) {
+fn build_edges(irs: List(IntermediateRepresentation(Resolved))) -> List(String) {
   irs
   |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.flat_map(fn(ir) {

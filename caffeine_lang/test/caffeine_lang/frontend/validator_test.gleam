@@ -14,13 +14,13 @@ fn read_file(path: String) -> String {
   content
 }
 
-fn parse_blueprints(file_name: String) -> ast.BlueprintsFile {
+fn parse_blueprints(file_name: String) -> ast.BlueprintsFile(ast.Parsed) {
   let assert Ok(file) =
     validator_path(file_name) |> read_file |> parser.parse_blueprints_file
   file
 }
 
-fn parse_expects(file_name: String) -> ast.ExpectsFile {
+fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
   let assert Ok(file) =
     validator_path(file_name) |> read_file |> parser.parse_expects_file
   file

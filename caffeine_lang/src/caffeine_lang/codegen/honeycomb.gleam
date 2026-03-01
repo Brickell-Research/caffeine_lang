@@ -2,7 +2,7 @@ import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Resolved}
 import gleam/dict
 import gleam/list
 import gleam/option
@@ -14,7 +14,7 @@ import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Honeycomb IntermediateRepresentations.
 pub fn generate_terraform(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(String, CompilationError) {
   generator_utils.generate_terraform(
     irs,
@@ -28,7 +28,7 @@ pub fn generate_terraform(
 /// Generate only the Terraform resources for Honeycomb IRs (no config/provider).
 @internal
 pub fn generate_resources(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   generator_utils.generate_resources_multi(
     irs,
@@ -84,7 +84,7 @@ pub fn variables() -> List(terraform.Variable) {
 /// Produces a derived_column for the SLI and an SLO that references it.
 @internal
 pub fn ir_to_terraform_resources(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(Resolved),
 ) -> Result(List(terraform.Resource), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
@@ -133,7 +133,7 @@ pub fn ir_to_terraform_resources(
   // Resource 2: honeycombio_slo.
   let slo_description = generator_utils.build_description(ir, with: slo)
   let slo_attributes = [
-    #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+    #("name", hcl.StringLiteral(ir.metadata.friendly_label.value)),
     #("description", hcl.StringLiteral(slo_description)),
     #("dataset", hcl.ref("var.honeycomb_dataset")),
     #(
@@ -161,7 +161,7 @@ pub fn ir_to_terraform_resources(
 /// Build tags as a map expression for Honeycomb.
 /// Honeycomb tags: keys ^[a-z]{1,32}$, values ^[a-z][a-z0-9/-]{1,128}$.
 /// Max 10 tags per resource.
-fn build_tags(ir: IntermediateRepresentation) -> hcl.Expr {
+fn build_tags(ir: IntermediateRepresentation(Resolved)) -> hcl.Expr {
   // Build system tags from shared helper. For Honeycomb, misc tags with multiple
   // values are joined with forward slashes since commas are not valid in tag values.
   let system_tag_pairs =
@@ -246,10 +246,32 @@ pub fn sanitize_honeycomb_tag_value(value: String) -> String {
 
 fn is_lowercase_letter(char: String) -> Bool {
   case char {
-    "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
-    | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
-    | "y" | "z"
-    -> True
+    "a"
+    | "b"
+    | "c"
+    | "d"
+    | "e"
+    | "f"
+    | "g"
+    | "h"
+    | "i"
+    | "j"
+    | "k"
+    | "l"
+    | "m"
+    | "n"
+    | "o"
+    | "p"
+    | "q"
+    | "r"
+    | "s"
+    | "t"
+    | "u"
+    | "v"
+    | "w"
+    | "x"
+    | "y"
+    | "z" -> True
     _ -> False
   }
 }

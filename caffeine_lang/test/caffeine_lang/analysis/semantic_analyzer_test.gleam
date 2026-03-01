@@ -5,6 +5,7 @@ import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
@@ -24,11 +25,11 @@ pub fn resolve_intermediate_representations_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "SLO One",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("SLO One"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
@@ -69,11 +70,11 @@ pub fn resolve_intermediate_representations_test() {
         ),
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "SLO Two",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("SLO Two"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
@@ -119,11 +120,11 @@ pub fn resolve_intermediate_representations_test() {
       Ok([
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "SLO One",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("SLO One"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
@@ -166,11 +167,11 @@ pub fn resolve_intermediate_representations_test() {
         ),
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "SLO Two",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("SLO Two"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
@@ -241,11 +242,11 @@ pub fn resolve_indicators_test() {
       "multiple indicators with template variable resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "Foo SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("Foo SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "foo",
@@ -300,11 +301,11 @@ pub fn resolve_indicators_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "Foo SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("Foo SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "foo",
@@ -366,11 +367,11 @@ pub fn resolve_indicators_test() {
       "defaulted param with nil uses default value",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("LCP SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
@@ -427,11 +428,11 @@ pub fn resolve_indicators_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("LCP SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
@@ -494,11 +495,11 @@ pub fn resolve_indicators_test() {
       "refinement type with defaulted inner using nil gets default value",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP SLO Refinement",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("LCP SLO Refinement"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
@@ -550,11 +551,11 @@ pub fn resolve_indicators_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP SLO Refinement",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("LCP SLO Refinement"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
@@ -613,11 +614,11 @@ pub fn resolve_indicators_test() {
       "lcp_p75_latency style with mix of defaulted, refinement, and provided values",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP is Reasonable",
-          org_name: "member_growth",
-          service_name: "member_portal",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "member",
+          friendly_label: identifiers.ExpectationLabel("LCP is Reasonable"),
+          org_name: identifiers.OrgName("member_growth"),
+          service_name: identifiers.ServiceName("member_portal"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("member"),
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
@@ -685,11 +686,11 @@ pub fn resolve_indicators_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "LCP is Reasonable",
-          org_name: "member_growth",
-          service_name: "member_portal",
-          blueprint_name: "lcp_p75_latency",
-          team_name: "member",
+          friendly_label: identifiers.ExpectationLabel("LCP is Reasonable"),
+          org_name: identifiers.OrgName("member_growth"),
+          service_name: identifiers.ServiceName("member_portal"),
+          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          team_name: identifiers.TeamName("member"),
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
@@ -778,11 +779,11 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
       "Honeycomb indicators pass through without template resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "HC SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("HC SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
@@ -818,11 +819,11 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "HC SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("HC SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
@@ -876,11 +877,11 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
       "Dynatrace indicators pass through without template resolution",
       ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "DT SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("DT SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "dt_slo",
@@ -921,11 +922,11 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
       ),
       Ok(ir.IntermediateRepresentation(
         metadata: ir.IntermediateRepresentationMetaData(
-          friendly_label: "DT SLO",
-          org_name: "test",
-          service_name: "service",
-          blueprint_name: "test_blueprint",
-          team_name: "test_team",
+          friendly_label: identifiers.ExpectationLabel("DT SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
         unique_identifier: "dt_slo",
@@ -975,11 +976,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
   let datadog_ir =
     ir.IntermediateRepresentation(
       metadata: ir.IntermediateRepresentationMetaData(
-        friendly_label: "DD SLO",
-        org_name: "test",
-        service_name: "service",
-        blueprint_name: "test_blueprint",
-        team_name: "test_team",
+        friendly_label: identifiers.ExpectationLabel("DD SLO"),
+        org_name: identifiers.OrgName("test"),
+        service_name: identifiers.ServiceName("service"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
       unique_identifier: "dd_slo",
@@ -1022,11 +1023,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
   let honeycomb_ir =
     ir.IntermediateRepresentation(
       metadata: ir.IntermediateRepresentationMetaData(
-        friendly_label: "HC SLO",
-        org_name: "test",
-        service_name: "service",
-        blueprint_name: "test_blueprint",
-        team_name: "test_team",
+        friendly_label: identifiers.ExpectationLabel("HC SLO"),
+        org_name: identifiers.OrgName("test"),
+        service_name: identifiers.ServiceName("service"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
       unique_identifier: "hc_slo",
@@ -1068,11 +1069,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
       Ok([
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "DD SLO",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("DD SLO"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "dd_slo",
@@ -1115,11 +1116,11 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         ),
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "HC SLO",
-            org_name: "test",
-            service_name: "service",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("HC SLO"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "hc_slo",

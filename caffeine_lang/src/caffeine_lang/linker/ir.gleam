@@ -1,12 +1,26 @@
 /// Core IR types for the Caffeine compiler pipeline.
 /// These types represent the intermediate representation between linking and code generation.
+/// The phantom type parameter `phase` tracks pipeline progress at the type level.
 import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/helpers.{type ValueTuple}
+import caffeine_lang/identifiers.{
+  type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
+  type TeamName,
+}
 import caffeine_lang/linker/artifacts.{
   type ArtifactType, type DependencyRelationType, DependencyRelations, SLO,
 }
 import gleam/dict
 import gleam/option.{type Option}
+
+/// Marker type for IRs freshly built by the linker.
+pub type Linked
+
+/// Marker type for IRs with validated dependencies.
+pub type DepsValidated
+
+/// Marker type for IRs with resolved indicators.
+pub type Resolved
 
 /// Structured SLO artifact fields extracted from raw values.
 pub type SloFields {
@@ -40,7 +54,11 @@ pub type ArtifactFields {
 }
 
 /// Internal representation of a parsed expectation with metadata and values.
-pub type IntermediateRepresentation {
+/// The phantom type parameter `phase` tracks pipeline progress:
+/// - `Linked`: freshly built by the linker
+/// - `DepsValidated`: dependencies have been validated
+/// - `Resolved`: indicators have been resolved by semantic analysis
+pub type IntermediateRepresentation(phase) {
   IntermediateRepresentation(
     metadata: IntermediateRepresentationMetaData,
     unique_identifier: String,
@@ -52,28 +70,29 @@ pub type IntermediateRepresentation {
 }
 
 /// Metadata associated with an intermediate representation including organization and service identifiers.
+/// Fields use newtype wrappers to prevent accidental mixing of identifier kinds.
 pub type IntermediateRepresentationMetaData {
   IntermediateRepresentationMetaData(
-    friendly_label: String,
-    org_name: String,
-    service_name: String,
-    blueprint_name: String,
-    team_name: String,
+    friendly_label: ExpectationLabel,
+    org_name: OrgName,
+    service_name: ServiceName,
+    blueprint_name: BlueprintName,
+    team_name: TeamName,
     /// Metadata specific to any given expectation.
     misc: dict.Dict(String, List(String)),
   )
 }
 
-/// Build a dotted identifier from IR metadata: org.team.service.name
+/// Build a dotted identifier from IR metadata: org.team.service.name.
 @internal
-pub fn ir_to_identifier(ir: IntermediateRepresentation) -> String {
-  ir.metadata.org_name
+pub fn ir_to_identifier(ir: IntermediateRepresentation(phase)) -> String {
+  ir.metadata.org_name.value
   <> "."
-  <> ir.metadata.team_name
+  <> ir.metadata.team_name.value
   <> "."
-  <> ir.metadata.service_name
+  <> ir.metadata.service_name.value
   <> "."
-  <> ir.metadata.friendly_label
+  <> ir.metadata.friendly_label.value
 }
 
 /// Extract SloFields from ArtifactData, if present.

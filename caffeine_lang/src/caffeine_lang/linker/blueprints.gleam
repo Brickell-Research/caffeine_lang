@@ -9,9 +9,16 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+/// Marker type for blueprints that have not yet been validated.
+pub type Raw
+
+/// Marker type for blueprints that have passed validation.
+pub type BlueprintValidated
+
 /// A Blueprint that references one or more Artifacts with parameters and inputs. It provides further params
 /// for the Expectation to satisfy while providing a partial set of inputs for the Artifact's params.
-pub type Blueprint {
+/// The phantom type parameter `state` tracks whether the blueprint is `Raw` or `BlueprintValidated`.
+pub type Blueprint(state) {
   Blueprint(
     name: String,
     artifact_refs: List(ArtifactType),
@@ -21,11 +28,12 @@ pub type Blueprint {
 }
 
 /// Validates blueprints against artifacts and merges artifact params.
+/// Upgrades the phantom type from `Raw` to `BlueprintValidated` on success.
 @internal
 pub fn validate_blueprints(
-  blueprints: List(Blueprint),
+  blueprints: List(Blueprint(Raw)),
   artifacts: List(Artifact),
-) -> Result(List(Blueprint), CompilationError) {
+) -> Result(List(Blueprint(BlueprintValidated)), CompilationError) {
   // Validate all names are unique.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     blueprints,
@@ -98,9 +106,9 @@ pub fn validate_blueprints(
 
 /// Map each blueprint to its list of referenced artifacts.
 fn map_blueprints_to_artifacts(
-  blueprints: List(Blueprint),
+  blueprints: List(Blueprint(state)),
   artifacts: List(Artifact),
-) -> List(#(Blueprint, List(Artifact))) {
+) -> List(#(Blueprint(state), List(Artifact))) {
   let artifact_map =
     artifacts
     |> list.map(fn(a) { #(a.type_, a) })
@@ -128,7 +136,7 @@ fn merge_artifact_params(
 
 /// Validate that no blueprint has duplicate artifact refs.
 fn validate_no_duplicate_artifact_refs(
-  blueprints: List(Blueprint),
+  blueprints: List(Blueprint(state)),
 ) -> Result(Nil, CompilationError) {
   let duplicates =
     blueprints
@@ -163,7 +171,7 @@ fn validate_no_duplicate_artifact_refs(
 
 /// Validate that artifacts referenced by a blueprint don't have conflicting param types.
 fn validate_no_conflicting_params(
-  blueprint_artifacts_collection: List(#(Blueprint, List(Artifact))),
+  blueprint_artifacts_collection: List(#(Blueprint(state), List(Artifact))),
 ) -> Result(Nil, CompilationError) {
   let conflicts =
     blueprint_artifacts_collection

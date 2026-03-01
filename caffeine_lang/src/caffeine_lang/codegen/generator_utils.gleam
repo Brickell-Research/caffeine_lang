@@ -44,15 +44,15 @@ pub fn build_source_comment(
   metadata: IntermediateRepresentationMetaData,
 ) -> String {
   "# Caffeine: "
-  <> metadata.org_name
+  <> metadata.org_name.value
   <> "."
-  <> metadata.team_name
+  <> metadata.team_name.value
   <> "."
-  <> metadata.service_name
+  <> metadata.service_name.value
   <> "."
-  <> metadata.friendly_label
+  <> metadata.friendly_label.value
   <> " (blueprint: "
-  <> metadata.blueprint_name
+  <> metadata.blueprint_name.value
   <> ")"
 }
 
@@ -78,18 +78,18 @@ pub fn render_resource_to_string(resource: Resource) -> String {
 /// Uses the runbook URL if present, otherwise a standard "Managed by Caffeine" message.
 @internal
 pub fn build_description(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(phase),
   with slo: SloFields,
 ) -> String {
   case slo.runbook {
     option.Some(url) -> "[Runbook](" <> url <> ")"
     option.None ->
       "Managed by Caffeine ("
-      <> ir.metadata.org_name
+      <> ir.metadata.org_name.value
       <> "/"
-      <> ir.metadata.team_name
+      <> ir.metadata.team_name.value
       <> "/"
-      <> ir.metadata.service_name
+      <> ir.metadata.service_name.value
       <> ")"
   }
 }
@@ -97,7 +97,7 @@ pub fn build_description(
 /// Extract SLO fields from IR, returning a codegen error if missing.
 @internal
 pub fn require_slo_fields(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(phase),
   vendor vendor_name: String,
 ) -> Result(SloFields, CompilationError) {
   ir.get_slo_fields(ir.artifact_data)
@@ -113,7 +113,7 @@ pub fn require_slo_fields(
 @internal
 pub fn require_evaluation(
   slo: SloFields,
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(phase),
   vendor vendor_name: String,
 ) -> Result(String, CompilationError) {
   slo.evaluation
@@ -143,7 +143,7 @@ fn vendor_display_name(vendor: String) -> String {
 pub fn resolve_cql_expression(
   evaluation_expr: String,
   indicators: dict.Dict(String, String),
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(phase),
   vendor vendor_name: String,
 ) -> Result(String, CompilationError) {
   cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
@@ -202,8 +202,8 @@ pub fn build_provider(
 /// Returns an empty warnings list. Suitable for vendors without per-resource warnings.
 @internal
 pub fn generate_resources_simple(
-  irs: List(IntermediateRepresentation),
-  mapper mapper: fn(IntermediateRepresentation) ->
+  irs: List(IntermediateRepresentation(phase)),
+  mapper mapper: fn(IntermediateRepresentation(phase)) ->
     Result(Resource, CompilationError),
 ) -> Result(#(List(Resource), List(String)), CompilationError) {
   irs
@@ -215,8 +215,8 @@ pub fn generate_resources_simple(
 /// Returns an empty warnings list. Suitable for vendors that produce multiple resources per IR.
 @internal
 pub fn generate_resources_multi(
-  irs: List(IntermediateRepresentation),
-  mapper mapper: fn(IntermediateRepresentation) ->
+  irs: List(IntermediateRepresentation(phase)),
+  mapper mapper: fn(IntermediateRepresentation(phase)) ->
     Result(List(Resource), CompilationError),
 ) -> Result(#(List(Resource), List(String)), CompilationError) {
   irs
@@ -229,11 +229,13 @@ pub fn generate_resources_multi(
 /// `generate_terraform` returns `Result(String, CompilationError)`.
 @internal
 pub fn generate_terraform(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(phase)),
   settings settings: TerraformSettings,
   provider provider: Provider,
   variables variables: List(Variable),
-  generate_resources generate_resources: fn(List(IntermediateRepresentation)) ->
+  generate_resources generate_resources: fn(
+    List(IntermediateRepresentation(phase)),
+  ) ->
     Result(#(List(Resource), List(String)), CompilationError),
 ) -> Result(String, CompilationError) {
   use #(resources, _warnings) <- result.try(generate_resources(irs))

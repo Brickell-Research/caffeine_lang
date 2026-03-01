@@ -3,10 +3,10 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type Literal, type ParsedArtifactRef, type Struct,
-  type TypeAlias,
+  type TypeAlias, type Validated,
 }
 import caffeine_lang/linker/artifacts.{type ArtifactType}
-import caffeine_lang/linker/blueprints.{type Blueprint, Blueprint}
+import caffeine_lang/linker/blueprints.{type Blueprint, type Raw, Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation, Expectation}
 import caffeine_lang/types.{
   type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
@@ -21,7 +21,7 @@ import gleam/string
 
 /// Lowers blueprints from a validated blueprints AST.
 @internal
-pub fn lower_blueprints(file: BlueprintsFile) -> List(Blueprint) {
+pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw)) {
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
@@ -36,7 +36,7 @@ pub fn lower_blueprints(file: BlueprintsFile) -> List(Blueprint) {
 
 /// Lowers expectations from a validated expects AST.
 @internal
-pub fn lower_expectations(file: ExpectsFile) -> List(Expectation) {
+pub fn lower_expectations(file: ExpectsFile(Validated)) -> List(Expectation) {
   let extendables = build_extendable_map(file.extendables)
 
   file.blocks
@@ -71,7 +71,7 @@ fn generate_blueprint_item(
   parsed_artifacts: List(ParsedArtifactRef),
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, ParsedType),
-) -> Blueprint {
+) -> Blueprint(Raw) {
   let artifact_refs = list.map(parsed_artifacts, lower_artifact_ref)
 
   let #(merged_requires, merged_provides) =

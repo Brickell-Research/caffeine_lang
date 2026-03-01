@@ -12,10 +12,14 @@ import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, type Linked, type Resolved,
+}
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
-import caffeine_lang/source_file.{type SourceFile, SourceFile}
+import caffeine_lang/source_file.{
+  type BlueprintSource, type ExpectationSource, type SourceFile, SourceFile,
+}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
 import gleam/list
@@ -38,8 +42,8 @@ pub type CompilationOutput {
 /// Compiles a blueprint and expectation sources into Terraform configuration.
 /// Pure function — all file reading happens before this function is called.
 pub fn compile(
-  blueprint: SourceFile,
-  expectations: List(SourceFile),
+  blueprint: SourceFile(BlueprintSource),
+  expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
   use irs <- result.try(run_parse_and_link(blueprint, expectations))
   use resolved_irs <- result.try(run_semantic_analysis(irs))
@@ -65,15 +69,15 @@ pub fn compile_from_strings(
 // ==== Pipeline stages ====
 
 fn run_parse_and_link(
-  blueprint: SourceFile,
-  expectations: List(SourceFile),
-) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+  blueprint: SourceFile(BlueprintSource),
+  expectations: List(SourceFile(ExpectationSource)),
+) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   linker.link(blueprint, expectations)
 }
 
 fn run_semantic_analysis(
-  irs: List(IntermediateRepresentation),
-) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+  irs: List(IntermediateRepresentation(Linked)),
+) -> Result(List(IntermediateRepresentation(Resolved)), errors.CompilationError) {
   use validated_irs <- result.try(
     dependency_validator.validate_dependency_relations(irs),
   )
@@ -85,7 +89,7 @@ fn run_semantic_analysis(
 type VendorPlatform {
   VendorPlatform(
     vendor: vendor.Vendor,
-    generate_resources: fn(List(IntermediateRepresentation)) ->
+    generate_resources: fn(List(IntermediateRepresentation(Resolved))) ->
       Result(#(List(terraform.Resource), List(String)), errors.CompilationError),
     terraform_settings: terraform.TerraformSettings,
     provider: terraform.Provider,
@@ -132,7 +136,7 @@ fn platform_for(v: vendor.Vendor) -> VendorPlatform {
 }
 
 fn run_code_generation(
-  resolved_irs: List(IntermediateRepresentation),
+  resolved_irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
   let grouped = group_by_vendor(resolved_irs)
 
@@ -242,8 +246,8 @@ fn run_code_generation(
 
 /// Groups IRs by their resolved vendor, sorted by unique_identifier within each group.
 fn group_by_vendor(
-  irs: List(IntermediateRepresentation),
-) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation)) {
+  irs: List(IntermediateRepresentation(Resolved)),
+) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation(Resolved))) {
   list.group(irs, fn(ir) {
     case ir.vendor {
       option.Some(v) -> v
@@ -262,7 +266,7 @@ fn parse_from_strings(
   blueprints_source: String,
   expectations_source: String,
   expectations_path: String,
-) -> Result(List(IntermediateRepresentation), errors.CompilationError) {
+) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
   let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
 

@@ -3,6 +3,7 @@ import caffeine_lang/codegen/honeycomb
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
@@ -29,7 +30,7 @@ fn make_honeycomb_ir(
   window_in_days: Int,
   evaluation: String,
   indicators: List(#(String, String)),
-) -> ir.IntermediateRepresentation {
+) {
   ir_test_helpers.make_vendor_slo_ir(
     friendly_label,
     unique_identifier,
@@ -181,11 +182,11 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
   let ir =
     ir.IntermediateRepresentation(
       metadata: ir.IntermediateRepresentationMetaData(
-        friendly_label: "No Eval SLO",
-        org_name: "acme",
-        service_name: "payments",
-        blueprint_name: "test_blueprint",
-        team_name: "platform",
+        friendly_label: identifiers.ExpectationLabel("No Eval SLO"),
+        org_name: identifiers.OrgName("acme"),
+        service_name: identifiers.ServiceName("payments"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("platform"),
         misc: dict.new(),
       ),
       unique_identifier: "acme_payments_no_eval",

@@ -1,12 +1,14 @@
-import caffeine_lang/frontend/ast.{type BlueprintsFile, type ExpectsFile}
+import caffeine_lang/frontend/ast.{
+  type BlueprintsFile, type ExpectsFile, type Parsed,
+}
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import gleam/string
 
 /// Result of detecting and parsing a caffeine file.
 pub type ParsedFile {
-  Blueprints(BlueprintsFile)
-  Expects(ExpectsFile)
+  Blueprints(BlueprintsFile(Parsed))
+  Expects(ExpectsFile(Parsed))
 }
 
 /// Check whether a name is likely a user-defined symbol using a fast text scan.

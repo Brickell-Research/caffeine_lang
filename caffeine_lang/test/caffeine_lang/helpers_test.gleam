@@ -1,4 +1,5 @@
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/types
 import caffeine_lang/value
@@ -155,11 +156,11 @@ pub fn extract_tags_test() {
 pub fn build_system_tag_pairs_test() {
   let result =
     helpers.build_system_tag_pairs(
-      org_name: "my_org",
-      team_name: "my_team",
-      service_name: "my_service",
-      blueprint_name: "my_bp",
-      friendly_label: "my_label",
+      org_name: identifiers.OrgName("my_org"),
+      team_name: identifiers.TeamName("my_team"),
+      service_name: identifiers.ServiceName("my_service"),
+      blueprint_name: identifiers.BlueprintName("my_bp"),
+      friendly_label: identifiers.ExpectationLabel("my_label"),
       artifact_refs: [SLO],
       misc: dict.from_list([#("env", ["prod", "dev"])]),
     )

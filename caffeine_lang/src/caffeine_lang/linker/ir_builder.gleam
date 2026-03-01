@@ -1,8 +1,9 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{type Artifact, DependencyRelations, SLO}
-import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
 import caffeine_lang/types.{
@@ -33,9 +34,11 @@ pub fn reserved_labels_from_artifacts(artifacts: List(Artifact)) -> Set(String) 
 /// Build intermediate representations from validated expectations across multiple files.
 @internal
 pub fn build_all(
-  expectations_with_paths: List(#(List(#(Expectation, Blueprint)), String)),
+  expectations_with_paths: List(
+    #(List(#(Expectation, Blueprint(BlueprintValidated))), String),
+  ),
   reserved_labels reserved_labels: Set(String),
-) -> Result(List(ir.IntermediateRepresentation), CompilationError) {
+) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
   expectations_with_paths
   |> list.map(fn(pair) {
     let #(expectations_blueprint_collection, file_path) = pair
@@ -47,10 +50,12 @@ pub fn build_all(
 
 /// Build intermediate representations from validated expectations for a single file.
 fn build(
-  expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+  expectations_blueprint_collection: List(
+    #(Expectation, Blueprint(BlueprintValidated)),
+  ),
   file_path: String,
   reserved_labels: Set(String),
-) -> Result(List(ir.IntermediateRepresentation), CompilationError) {
+) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
   let #(org, team, service) = helpers.extract_path_prefix(file_path)
 
   expectations_blueprint_collection
@@ -76,11 +81,11 @@ fn build(
 
     Ok(ir.IntermediateRepresentation(
       metadata: ir.IntermediateRepresentationMetaData(
-        friendly_label: expectation.name,
-        org_name: org,
-        service_name: service,
-        blueprint_name: blueprint.name,
-        team_name: team,
+        friendly_label: identifiers.ExpectationLabel(expectation.name),
+        org_name: identifiers.OrgName(org),
+        service_name: identifiers.ServiceName(service),
+        blueprint_name: identifiers.BlueprintName(blueprint.name),
+        team_name: identifiers.TeamName(team),
         misc: misc_metadata,
       ),
       unique_identifier: unique_name,

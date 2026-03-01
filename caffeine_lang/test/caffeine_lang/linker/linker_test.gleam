@@ -5,7 +5,7 @@ import simplifile
 
 const corpus_dir = "test/caffeine_lang/corpus/compiler"
 
-fn read_source_file(path: String) -> source_file.SourceFile {
+fn read_source_file(path: String) -> source_file.SourceFile(a) {
   let assert Ok(content) = simplifile.read(path)
   SourceFile(path: path, content: content)
 }

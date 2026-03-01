@@ -1,6 +1,6 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/blueprints.{type Blueprint}
+import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/linker/validations
 import caffeine_lang/string_distance
 import caffeine_lang/value.{type Value}
@@ -22,9 +22,12 @@ pub type Expectation {
 @internal
 pub fn validate_expectations(
   expectations: List(Expectation),
-  blueprints: List(Blueprint),
+  blueprints: List(Blueprint(BlueprintValidated)),
   from source_path: String,
-) -> Result(List(#(Expectation, Blueprint)), CompilationError) {
+) -> Result(
+  List(#(Expectation, Blueprint(BlueprintValidated))),
+  CompilationError,
+) {
   // Validate that all blueprint_refs exist before mapping.
   use _ <- result.try(validate_blueprint_refs(expectations, blueprints))
 
@@ -75,7 +78,7 @@ pub fn validate_expectations(
 /// Includes Levenshtein-based "did you mean?" suggestions for unknown refs.
 fn validate_blueprint_refs(
   expectations: List(Expectation),
-  blueprints: List(Blueprint),
+  blueprints: List(Blueprint(BlueprintValidated)),
 ) -> Result(Nil, CompilationError) {
   let blueprint_names = list.map(blueprints, fn(b) { b.name })
   let missing =
@@ -101,7 +104,9 @@ fn validate_blueprint_refs(
 }
 
 fn check_input_overshadowing(
-  expectations_blueprint_collection: List(#(Expectation, Blueprint)),
+  expectations_blueprint_collection: List(
+    #(Expectation, Blueprint(BlueprintValidated)),
+  ),
   path_prefix: String,
 ) -> Result(Nil, CompilationError) {
   validations.validate_no_overshadowing(

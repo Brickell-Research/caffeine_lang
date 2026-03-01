@@ -1,6 +1,8 @@
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/errors
-import caffeine_lang/source_file.{type SourceFile}
+import caffeine_lang/source_file.{
+  type BlueprintSource, type ExpectationSource, type SourceFile,
+}
 import gleam/io
 import gleam/list
 import gleam/result
@@ -14,8 +16,8 @@ pub type LogLevel {
 
 /// Compiles with ANSI progress output around the pure compiler call.
 pub fn compile_with_output(
-  blueprint: SourceFile,
-  expectations: List(SourceFile),
+  blueprint: SourceFile(BlueprintSource),
+  expectations: List(SourceFile(ExpectationSource)),
   target: String,
   log_level: LogLevel,
 ) -> Result(CompilationOutput, errors.CompilationError) {

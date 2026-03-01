@@ -1,6 +1,7 @@
 /// Shared test helpers for constructing IntermediateRepresentation values.
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
@@ -16,7 +17,7 @@ pub fn make_slo_ir(
   service: String,
   name: String,
   threshold threshold: Float,
-) -> ir.IntermediateRepresentation {
+) {
   let values = [
     helpers.ValueTuple(
       "vendor",
@@ -48,7 +49,7 @@ pub fn make_ir_with_deps(
   hard_deps hard_deps: List(String),
   soft_deps soft_deps: List(String),
   threshold threshold: Float,
-) -> ir.IntermediateRepresentation {
+) {
   let values = [
     helpers.ValueTuple(
       "vendor",
@@ -83,7 +84,7 @@ pub fn make_deps_only_ir(
   name: String,
   hard_deps hard_deps: List(String),
   soft_deps soft_deps: List(String),
-) -> ir.IntermediateRepresentation {
+) {
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
@@ -107,11 +108,11 @@ fn make_test_metadata(
   name: String,
 ) -> ir.IntermediateRepresentationMetaData {
   ir.IntermediateRepresentationMetaData(
-    friendly_label: name,
-    org_name: org,
-    service_name: service,
-    blueprint_name: "test_blueprint",
-    team_name: team,
+    friendly_label: identifiers.ExpectationLabel(name),
+    org_name: identifiers.OrgName(org),
+    service_name: identifiers.ServiceName(service),
+    blueprint_name: identifiers.BlueprintName("test_blueprint"),
+    team_name: identifiers.TeamName(team),
     misc: dict.new(),
   )
 }
@@ -158,14 +159,14 @@ pub fn make_vendor_slo_ir(
   indicators: List(#(String, String)),
   vendor_string: String,
   vendor_enum: vendor.Vendor,
-) -> ir.IntermediateRepresentation {
+) {
   ir.IntermediateRepresentation(
     metadata: ir.IntermediateRepresentationMetaData(
-      friendly_label: friendly_label,
-      org_name: org,
-      service_name: service,
-      blueprint_name: blueprint,
-      team_name: team,
+      friendly_label: identifiers.ExpectationLabel(friendly_label),
+      org_name: identifiers.OrgName(org),
+      service_name: identifiers.ServiceName(service),
+      blueprint_name: identifiers.BlueprintName(blueprint),
+      team_name: identifiers.TeamName(team),
       misc: dict.new(),
     ),
     unique_identifier: unique_identifier,

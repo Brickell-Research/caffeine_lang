@@ -1,8 +1,8 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type ExtendableKind, type Field, type Literal, type ParsedArtifactRef,
-  type Struct, type TypeAlias,
+  type ExtendableKind, type Field, type Literal, type Parsed,
+  type ParsedArtifactRef, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -36,7 +36,7 @@ type ParserState {
 /// Parses a blueprints file from source text.
 pub fn parse_blueprints_file(
   source: String,
-) -> Result(BlueprintsFile, ParserError) {
+) -> Result(BlueprintsFile(Parsed), ParserError) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),
@@ -65,7 +65,9 @@ pub fn parse_blueprints_file(
 }
 
 /// Parses an expects file from source text.
-pub fn parse_expects_file(source: String) -> Result(ExpectsFile, ParserError) {
+pub fn parse_expects_file(
+  source: String,
+) -> Result(ExpectsFile(Parsed), ParserError) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
     |> result.map_error(parser_error.TokenizerError),

@@ -1,6 +1,8 @@
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
-import caffeine_lang/source_file.{type SourceFile, SourceFile}
+import caffeine_lang/source_file.{
+  type ExpectationSource, type SourceFile, SourceFile,
+}
 import gleam/list
 import gleam/result
 import gleam/string
@@ -17,7 +19,7 @@ fn read_corpus(file_name: String) -> String {
   string.replace(content, "{{VERSION}}", constants.version)
 }
 
-fn read_source_file(path: String) -> SourceFile {
+fn read_source_file(path: String) -> SourceFile(a) {
   let assert Ok(content) = simplifile.read(path)
   SourceFile(path: path, content: content)
 }
@@ -38,7 +40,7 @@ fn find_caffeine_files(dir: String) -> List(String) {
   })
 }
 
-fn read_expectations_dir(dir: String) -> List(SourceFile) {
+fn read_expectations_dir(dir: String) -> List(SourceFile(ExpectationSource)) {
   find_caffeine_files(dir)
   |> list.map(read_source_file)
 }

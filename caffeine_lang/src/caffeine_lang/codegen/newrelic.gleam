@@ -2,7 +2,7 @@ import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, ir_to_identifier,
+  type IntermediateRepresentation, type Resolved, ir_to_identifier,
 }
 import gleam/dict
 import gleam/int
@@ -16,7 +16,7 @@ import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of New Relic IntermediateRepresentations.
 pub fn generate_terraform(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(String, CompilationError) {
   generator_utils.generate_terraform(
     irs,
@@ -30,7 +30,7 @@ pub fn generate_terraform(
 /// Generate only the Terraform resources for New Relic IRs (no config/provider).
 @internal
 pub fn generate_resources(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   generator_utils.generate_resources_simple(
     irs,
@@ -105,7 +105,7 @@ pub fn variables() -> List(terraform.Variable) {
 /// Produces a single `newrelic_service_level` resource.
 @internal
 pub fn ir_to_terraform_resource(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(Resolved),
 ) -> Result(terraform.Resource, CompilationError) {
   let identifier = ir_to_identifier(ir)
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
@@ -149,7 +149,7 @@ pub fn ir_to_terraform_resource(
       name: resource_name,
       attributes: dict.from_list([
         #("guid", hcl.ref("var.newrelic_entity_guid")),
-        #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+        #("name", hcl.StringLiteral(ir.metadata.friendly_label.value)),
         #("description", hcl.StringLiteral(description)),
       ]),
       blocks: [

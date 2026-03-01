@@ -3,10 +3,10 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type Field, type Literal, type Struct, type TypeAlias, ExtendableProvides,
-  ExtendableRequires, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
-  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
-  Struct, TypeValue,
+  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
+  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
+  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
+  LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -71,7 +71,7 @@ pub fn format(source: String) -> Result(String, String) {
   }
 }
 
-fn format_blueprints_file(file: BlueprintsFile) -> String {
+fn format_blueprints_file(file: BlueprintsFile(Parsed)) -> String {
   let sections: List(String) = []
 
   let sections = case file.type_aliases {
@@ -100,7 +100,7 @@ fn format_blueprints_file(file: BlueprintsFile) -> String {
   string.join(sections, "\n\n") <> "\n" <> trailing
 }
 
-fn format_expects_file(file: ExpectsFile) -> String {
+fn format_expects_file(file: ExpectsFile(Parsed)) -> String {
   let sections: List(String) = []
 
   let sections = case file.extendables {

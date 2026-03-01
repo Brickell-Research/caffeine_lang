@@ -32,7 +32,7 @@ fn find_definition(content: String, name: String) -> Option(#(Int, Int, Int)) {
 }
 
 fn find_in_blueprints(
-  file: ast.BlueprintsFile,
+  file: ast.BlueprintsFile(ast.Parsed),
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
@@ -52,7 +52,7 @@ fn find_in_blueprints(
 }
 
 fn find_in_expects(
-  file: ast.ExpectsFile,
+  file: ast.ExpectsFile(ast.Parsed),
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {

@@ -10,7 +10,7 @@ import gleam/list
 import test_helpers
 
 // ==== Helpers ====
-fn blueprints() -> List(blueprints.Blueprint) {
+fn blueprints() -> List(blueprints.Blueprint(blueprints.BlueprintValidated)) {
   [
     blueprints.Blueprint(
       name: "success_rate",
@@ -23,7 +23,9 @@ fn blueprints() -> List(blueprints.Blueprint) {
   ]
 }
 
-fn blueprints_with_inputs() -> List(blueprints.Blueprint) {
+fn blueprints_with_inputs() -> List(
+  blueprints.Blueprint(blueprints.BlueprintValidated),
+) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaults",
@@ -39,7 +41,9 @@ fn blueprints_with_inputs() -> List(blueprints.Blueprint) {
   ]
 }
 
-fn blueprints_with_defaulted() -> List(blueprints.Blueprint) {
+fn blueprints_with_defaulted() -> List(
+  blueprints.Blueprint(blueprints.BlueprintValidated),
+) {
   [
     blueprints.Blueprint(
       name: "success_rate_with_defaulted",

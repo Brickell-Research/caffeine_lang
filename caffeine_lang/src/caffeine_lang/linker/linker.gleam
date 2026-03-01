@@ -2,9 +2,11 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import caffeine_lang/linker/ir_builder
-import caffeine_lang/source_file.{type SourceFile}
+import caffeine_lang/source_file.{
+  type BlueprintSource, type ExpectationSource, type SourceFile,
+}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/list
 import gleam/result
@@ -14,9 +16,9 @@ import gleam/result
 /// on in-memory source content.
 @internal
 pub fn link(
-  blueprint: SourceFile,
-  expectation_sources: List(SourceFile),
-) -> Result(List(IntermediateRepresentation), CompilationError) {
+  blueprint: SourceFile(BlueprintSource),
+  expectation_sources: List(SourceFile(ExpectationSource)),
+) -> Result(List(IntermediateRepresentation(Linked)), CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
   let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
 
@@ -36,8 +38,10 @@ pub fn link(
 }
 
 fn parse_expectation_sources(
-  sources: List(SourceFile),
-  validated_blueprints: List(blueprints.Blueprint),
+  sources: List(SourceFile(ExpectationSource)),
+  validated_blueprints: List(
+    blueprints.Blueprint(blueprints.BlueprintValidated),
+  ),
 ) {
   sources
   |> list.map(fn(source) {

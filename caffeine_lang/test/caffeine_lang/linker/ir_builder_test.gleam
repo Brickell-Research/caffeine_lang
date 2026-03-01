@@ -1,6 +1,7 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
@@ -77,11 +78,13 @@ pub fn build_all_test() {
         [#([#(expectation, blueprint)], "org/team/service.json")],
         reserved_labels: test_reserved_labels(),
       )
-    ir.metadata.friendly_label |> should.equal("my_test")
-    ir.metadata.org_name |> should.equal("org")
-    ir.metadata.team_name |> should.equal("team")
-    ir.metadata.service_name |> should.equal("service")
-    ir.metadata.blueprint_name |> should.equal("test_blueprint")
+    ir.metadata.friendly_label
+    |> should.equal(identifiers.ExpectationLabel("my_test"))
+    ir.metadata.org_name |> should.equal(identifiers.OrgName("org"))
+    ir.metadata.team_name |> should.equal(identifiers.TeamName("team"))
+    ir.metadata.service_name |> should.equal(identifiers.ServiceName("service"))
+    ir.metadata.blueprint_name
+    |> should.equal(identifiers.BlueprintName("test_blueprint"))
     ir.unique_identifier |> should.equal("org_service_my_test")
     ir.artifact_refs |> should.equal([SLO])
     ir.vendor |> should.equal(option.Some(vendor.Datadog))
@@ -128,8 +131,10 @@ pub fn build_all_test() {
 
     result |> list.length |> should.equal(2)
     let assert [ir1, ir2] = result
-    ir1.metadata.friendly_label |> should.equal("first")
-    ir2.metadata.friendly_label |> should.equal("second")
+    ir1.metadata.friendly_label
+    |> should.equal(identifiers.ExpectationLabel("first"))
+    ir2.metadata.friendly_label
+    |> should.equal(identifiers.ExpectationLabel("second"))
   }
 
   // multiple files flattened into single list
@@ -161,8 +166,8 @@ pub fn build_all_test() {
 
     result |> list.length |> should.equal(2)
     let assert [ir1, ir2] = result
-    ir1.metadata.service_name |> should.equal("file1")
-    ir2.metadata.service_name |> should.equal("file2")
+    ir1.metadata.service_name |> should.equal(identifiers.ServiceName("file1"))
+    ir2.metadata.service_name |> should.equal(identifiers.ServiceName("file2"))
   }
 
   // optional params not provided get nil value
@@ -510,7 +515,7 @@ type PrimitiveShorthand {
 fn make_blueprint(
   name: String,
   params: List(#(String, PrimitiveShorthand)),
-) -> blueprints.Blueprint {
+) -> blueprints.Blueprint(blueprints.BlueprintValidated) {
   blueprints.Blueprint(
     name: name,
     artifact_refs: [SLO],

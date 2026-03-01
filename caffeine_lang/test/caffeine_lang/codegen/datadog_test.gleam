@@ -3,6 +3,7 @@ import caffeine_lang/codegen/datadog
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
+import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
@@ -88,11 +89,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -151,11 +152,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -219,11 +220,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -276,11 +277,11 @@ pub fn generate_terraform_test() {
         ),
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "API Availability SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("API Availability SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/api/availability_slo",
@@ -339,11 +340,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Composite SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Composite SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/composite_slo",
@@ -409,11 +410,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Time Slice SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Time Slice SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/time_slice_slo",
@@ -462,11 +463,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -561,11 +562,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -652,11 +653,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -745,11 +746,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -820,11 +821,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -900,11 +901,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
@@ -979,11 +980,11 @@ pub fn generate_terraform_test() {
       [
         ir.IntermediateRepresentation(
           metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: "Auth Latency SLO",
-            org_name: "org",
-            service_name: "team",
-            blueprint_name: "test_blueprint",
-            team_name: "test_team",
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",

@@ -1,6 +1,7 @@
 import caffeine_lang/errors
 import caffeine_query_language/ast.{
-  type Exp, OperatorExpr, Primary, PrimaryExp, PrimaryWord, TimeSliceExp, Word,
+  type Exp, type Substituted, OperatorExpr, Primary, PrimaryExp, PrimaryWord,
+  TimeSliceExp, Word,
 }
 import caffeine_query_language/parser
 import caffeine_query_language/printer
@@ -46,9 +47,9 @@ pub type ResolvedSloHcl {
 /// Words not found in the dictionary are left unchanged.
 @internal
 pub fn substitute_words(
-  exp: Exp,
+  exp: Exp(a),
   substitutions: dict.Dict(String, String),
-) -> Exp {
+) -> Exp(Substituted) {
   case exp {
     Primary(PrimaryWord(Word(name))) -> {
       let value = dict.get(substitutions, name) |> result.unwrap(name)
@@ -73,7 +74,7 @@ pub fn substitute_words(
 /// Extracts all word names from an expression AST.
 /// Returns a list of unique word strings found in the expression.
 @internal
-pub fn extract_words(exp: Exp) -> List(String) {
+pub fn extract_words(exp: Exp(a)) -> List(String) {
   case exp {
     Primary(PrimaryWord(Word(name))) -> [name]
     Primary(PrimaryExp(inner)) -> extract_words(inner)
@@ -195,7 +196,7 @@ pub fn resolve_slo_to_expression(
 /// Validate that all words in an expression exist in the substitutions dict.
 /// Returns an error listing any missing indicator names.
 fn validate_words_exist(
-  exp: Exp,
+  exp: Exp(a),
   substitutions: dict.Dict(String, String),
   next: fn() -> Result(String, String),
 ) -> Result(String, String) {

@@ -4,7 +4,7 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, ir_to_identifier,
+  type IntermediateRepresentation, type Resolved, ir_to_identifier,
 }
 import caffeine_query_language/generator as cql_generator
 import gleam/dict
@@ -26,7 +26,7 @@ const default_evaluation = "numerator / denominator"
 /// Note: Datadog does not use generator_utils.generate_terraform because it
 /// returns warnings alongside the HCL string.
 pub fn generate_terraform(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(String, List(String)), CompilationError) {
   use #(resources, warnings) <- result.try(generate_resources(irs))
   Ok(#(
@@ -43,7 +43,7 @@ pub fn generate_terraform(
 /// Generate only the Terraform resources for Datadog IRs (no config/provider).
 @internal
 pub fn generate_resources(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   irs
   |> list.try_fold(#([], []), fn(acc, ir) {
@@ -102,7 +102,7 @@ pub fn variables() -> List(terraform.Variable) {
 /// Uses CQL to parse the value expression and generate HCL blocks.
 @internal
 pub fn ir_to_terraform_resource(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(Resolved),
 ) -> Result(#(terraform.Resource, List(String)), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
@@ -209,7 +209,7 @@ pub fn ir_to_terraform_resource(
   }
 
   let base_attributes = [
-    #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+    #("name", hcl.StringLiteral(ir.metadata.friendly_label.value)),
     #("type", hcl.StringLiteral(type_str)),
     #("tags", tags),
   ]

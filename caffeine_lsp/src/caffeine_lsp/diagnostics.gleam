@@ -1,5 +1,6 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Struct,
+  type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Parsed,
+  type Struct,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
@@ -185,7 +186,7 @@ fn extract_relation_targets(parsed: file_utils.ParsedFile) -> List(String) {
 }
 
 fn extract_relation_targets_from_blueprints(
-  file: BlueprintsFile,
+  file: BlueprintsFile(Parsed),
 ) -> List(String) {
   file.blocks
   |> list.flat_map(fn(block) {
@@ -196,7 +197,9 @@ fn extract_relation_targets_from_blueprints(
   })
 }
 
-fn extract_relation_targets_from_expects(file: ExpectsFile) -> List(String) {
+fn extract_relation_targets_from_expects(
+  file: ExpectsFile(Parsed),
+) -> List(String) {
   file.blocks
   |> list.flat_map(fn(block) {
     block.items

@@ -2,7 +2,8 @@
 /// Handles extendable-related validation that must occur before JSON generation.
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type TypeAlias,
+  type Extendable, type Field, type Parsed, type TypeAlias, type Validated,
+  BlueprintsFile, ExpectsFile,
 }
 import caffeine_lang/types.{
   type ParsedType, type PrimitiveTypes, Boolean, Defaulted, Dict, InclusiveRange,
@@ -62,8 +63,8 @@ pub type ValidatorError {
 /// Returns all independent validation errors instead of stopping at the first.
 @internal
 pub fn validate_blueprints_file(
-  file: BlueprintsFile,
-) -> Result(BlueprintsFile, List(ValidatorError)) {
+  file: BlueprintsFile(Parsed),
+) -> Result(BlueprintsFile(Validated), List(ValidatorError)) {
   let type_aliases = file.type_aliases
   let extendables = file.extendables
   let items =
@@ -121,7 +122,7 @@ pub fn validate_blueprints_file(
   let dependent_errors = list.append(type_ref_errors, extends_errors)
   use <- guard_errors(dependent_errors)
 
-  Ok(file)
+  Ok(BlueprintsFile(..file))
 }
 
 /// Validates an expects file.
@@ -130,8 +131,8 @@ pub fn validate_blueprints_file(
 /// Returns all independent validation errors instead of stopping at the first.
 @internal
 pub fn validate_expects_file(
-  file: ExpectsFile,
-) -> Result(ExpectsFile, List(ValidatorError)) {
+  file: ExpectsFile(Parsed),
+) -> Result(ExpectsFile(Validated), List(ValidatorError)) {
   let extendables = file.extendables
   let items =
     file.blocks
@@ -150,7 +151,7 @@ pub fn validate_expects_file(
     validate_expect_items_extends(items, extendables) |> errors_to_list
   use <- guard_errors(extends_errors)
 
-  Ok(file)
+  Ok(ExpectsFile(..file))
 }
 
 /// Validates that no two items in a list share the same name.

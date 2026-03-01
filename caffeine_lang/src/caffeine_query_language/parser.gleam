@@ -1,7 +1,7 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_query_language/ast.{
-  type Comparator, type Exp, type Operator, type TimeSliceExp, Add, Div,
-  GreaterThan, GreaterThanOrEqualTo, LessThan, LessThanOrEqualTo, Mul,
+  type Comparator, type CqlParsed, type Exp, type Operator, type TimeSliceExp,
+  Add, Div, GreaterThan, GreaterThanOrEqualTo, LessThan, LessThanOrEqualTo, Mul,
   OperatorExpr, Primary, PrimaryExp, PrimaryWord, Sub, TimeSliceExp,
   TimeSliceExpr, Word,
 }
@@ -14,7 +14,7 @@ import gleam/string
 /// Parses a CQL expression string into an Exp AST node.
 /// Returns an error if the input cannot be parsed.
 @internal
-pub fn parse_expr(input: String) -> Result(Exp, String) {
+pub fn parse_expr(input: String) -> Result(Exp(CqlParsed), String) {
   let trimmed = string.trim(input)
 
   case is_fully_parenthesized(trimmed) {
@@ -39,7 +39,7 @@ fn is_fully_parenthesized(input: String) -> Bool {
 fn try_operators(
   input: String,
   operators: List(#(String, Operator)),
-) -> Result(Exp, String) {
+) -> Result(Exp(CqlParsed), String) {
   case operators {
     [] -> {
       case try_parse_keyword_expr(input) {
@@ -70,7 +70,7 @@ fn try_operators(
 
 /// Attempts to parse a keyword expression like "time_slice(...)".
 /// Returns Error if the input is not a keyword expression.
-fn try_parse_keyword_expr(input: String) -> Result(Exp, String) {
+fn try_parse_keyword_expr(input: String) -> Result(Exp(CqlParsed), String) {
   use <- bool.guard(
     when: !{
       string.starts_with(input, "time_slice(") && string.ends_with(input, ")")

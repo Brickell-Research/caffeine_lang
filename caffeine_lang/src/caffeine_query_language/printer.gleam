@@ -8,7 +8,7 @@ import gleam/string
 
 /// Converts an expression AST node to its string representation.
 @internal
-pub fn exp_to_string(exp: Exp) -> String {
+pub fn exp_to_string(exp: Exp(a)) -> String {
   case exp {
     ast.Primary(primary:) -> primary_to_string(primary, option.None)
     ast.TimeSliceExpr(spec) ->
@@ -73,7 +73,7 @@ fn float_to_string(f: Float) -> String {
   }
 }
 
-fn is_path_expression(exp: Exp) -> Bool {
+fn is_path_expression(exp: Exp(a)) -> Bool {
   case get_leftmost_word(exp) {
     option.Some(w) -> {
       case string.ends_with(w, ":") {
@@ -85,7 +85,7 @@ fn is_path_expression(exp: Exp) -> Bool {
   }
 }
 
-fn get_leftmost_word(exp: Exp) -> Option(String) {
+fn get_leftmost_word(exp: Exp(a)) -> Option(String) {
   case exp {
     ast.Primary(ast.PrimaryWord(ast.Word(w))) -> option.Some(w)
     ast.Primary(ast.PrimaryExp(inner_exp)) -> get_leftmost_word(inner_exp)
@@ -94,7 +94,7 @@ fn get_leftmost_word(exp: Exp) -> Option(String) {
   }
 }
 
-fn all_divisions(exp: Exp) -> Bool {
+fn all_divisions(exp: Exp(a)) -> Bool {
   case exp {
     ast.Primary(_) -> True
     ast.OperatorExpr(left, right, ast.Div) ->
@@ -103,7 +103,7 @@ fn all_divisions(exp: Exp) -> Bool {
   }
 }
 
-fn exp_to_string_no_spaces(exp: Exp) -> String {
+fn exp_to_string_no_spaces(exp: Exp(a)) -> String {
   case exp {
     ast.Primary(ast.PrimaryWord(ast.Word(w))) -> w
     ast.OperatorExpr(left, right, ast.Div) ->
@@ -113,7 +113,7 @@ fn exp_to_string_no_spaces(exp: Exp) -> String {
 }
 
 fn exp_to_string_with_context(
-  exp: Exp,
+  exp: Exp(a),
   parent_op: Option(Operator),
   _is_left: Bool,
 ) -> String {
@@ -140,7 +140,10 @@ fn exp_to_string_with_context(
   }
 }
 
-fn primary_to_string(primary: Primary, _parent_op: Option(Operator)) -> String {
+fn primary_to_string(
+  primary: Primary(a),
+  _parent_op: Option(Operator),
+) -> String {
   case primary {
     ast.PrimaryWord(word:) -> word.value
     ast.PrimaryExp(exp:) -> {

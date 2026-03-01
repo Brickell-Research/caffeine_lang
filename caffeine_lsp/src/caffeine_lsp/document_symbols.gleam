@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type TypeAlias,
+  type Extendable, type Field, type Parsed, type TypeAlias,
 }
 import caffeine_lang/types
 import caffeine_lsp/file_utils
@@ -35,7 +35,7 @@ pub fn get_symbols(content: String) -> List(DocumentSymbol) {
 }
 
 fn blueprints_file_symbols(
-  file: BlueprintsFile,
+  file: BlueprintsFile(Parsed),
   lines: List(String),
 ) -> List(DocumentSymbol) {
   let alias_syms =
@@ -57,7 +57,7 @@ fn blueprints_file_symbols(
 }
 
 fn expects_file_symbols(
-  file: ExpectsFile,
+  file: ExpectsFile(Parsed),
   lines: List(String),
 ) -> List(DocumentSymbol) {
   let ext_syms =

@@ -1,7 +1,7 @@
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Resolved}
 import gleam/dict
 import gleam/int
 import gleam/option
@@ -12,7 +12,7 @@ import terra_madre/terraform
 
 /// Generate Terraform HCL from a list of Dynatrace IntermediateRepresentations.
 pub fn generate_terraform(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(String, CompilationError) {
   generator_utils.generate_terraform(
     irs,
@@ -26,7 +26,7 @@ pub fn generate_terraform(
 /// Generate only the Terraform resources for Dynatrace IRs (no config/provider).
 @internal
 pub fn generate_resources(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   generator_utils.generate_resources_simple(
     irs,
@@ -85,7 +85,7 @@ pub fn variables() -> List(terraform.Variable) {
 /// Produces a single `dynatrace_slo_v2` resource.
 @internal
 pub fn ir_to_terraform_resource(
-  ir: IntermediateRepresentation,
+  ir: IntermediateRepresentation(Resolved),
 ) -> Result(terraform.Resource, CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
@@ -117,7 +117,7 @@ pub fn ir_to_terraform_resource(
       type_: "dynatrace_slo_v2",
       name: resource_name,
       attributes: dict.from_list([
-        #("name", hcl.StringLiteral(ir.metadata.friendly_label)),
+        #("name", hcl.StringLiteral(ir.metadata.friendly_label.value)),
         #("enabled", hcl.BoolLiteral(True)),
         #("custom_description", hcl.StringLiteral(description)),
         #("evaluation_type", hcl.StringLiteral("AGGREGATE")),

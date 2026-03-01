@@ -1,4 +1,8 @@
 import caffeine_lang/constants
+import caffeine_lang/identifiers.{
+  type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
+  type TeamName,
+}
 import caffeine_lang/linker/artifacts.{
   type ArtifactType, type DependencyRelationType,
 }
@@ -164,22 +168,22 @@ pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
 /// Build system tag key-value pairs from IR metadata fields and artifact refs.
 /// Returns a sorted, deterministic list of tag pairs shared across all generators.
 pub fn build_system_tag_pairs(
-  org_name org_name: String,
-  team_name team_name: String,
-  service_name service_name: String,
-  blueprint_name blueprint_name: String,
-  friendly_label friendly_label: String,
+  org_name org_name: OrgName,
+  team_name team_name: TeamName,
+  service_name service_name: ServiceName,
+  blueprint_name blueprint_name: BlueprintName,
+  friendly_label friendly_label: ExpectationLabel,
   artifact_refs artifact_refs: List(ArtifactType),
   misc misc: dict.Dict(String, List(String)),
 ) -> List(#(String, String)) {
   [
     #("managed_by", "caffeine"),
     #("caffeine_version", constants.version),
-    #("org", org_name),
-    #("team", team_name),
-    #("service", service_name),
-    #("blueprint", blueprint_name),
-    #("expectation", friendly_label),
+    #("org", org_name.value),
+    #("team", team_name.value),
+    #("service", service_name.value),
+    #("blueprint", blueprint_name.value),
+    #("expectation", friendly_label.value),
   ]
   |> list.append(
     artifact_refs

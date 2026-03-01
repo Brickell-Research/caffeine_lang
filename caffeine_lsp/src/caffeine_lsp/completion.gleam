@@ -165,7 +165,7 @@ fn extract_item_name(trimmed: String) -> option.Option(String) {
 
 /// Collect available fields from extended extendables for a blueprint item.
 fn blueprint_field_context(
-  file: ast.BlueprintsFile,
+  file: ast.BlueprintsFile(ast.Parsed),
   item_name: String,
   lines: List(String),
   line: Int,
@@ -191,7 +191,7 @@ fn blueprint_field_context(
 
 /// Collect available fields from extended extendables for an expects item.
 fn expects_field_context(
-  file: ast.ExpectsFile,
+  file: ast.ExpectsFile(ast.Parsed),
   item_name: String,
   _lines: List(String),
   _line: Int,

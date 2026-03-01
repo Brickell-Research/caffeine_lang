@@ -5,7 +5,8 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, IntermediateRepresentation, SloFields,
+  type DepsValidated, type IntermediateRepresentation, type Resolved,
+  IntermediateRepresentation, SloFields,
 }
 import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
@@ -21,13 +22,13 @@ import gleam/result
 /// Accumulates errors from all IRs instead of stopping at the first failure.
 @internal
 pub fn resolve_intermediate_representations(
-  irs: List(IntermediateRepresentation),
-) -> Result(List(IntermediateRepresentation), CompilationError) {
+  irs: List(IntermediateRepresentation(DepsValidated)),
+) -> Result(List(IntermediateRepresentation(Resolved)), CompilationError) {
   irs
   |> list.map(fn(ir) {
     use <- bool.guard(
       when: !list.contains(ir.artifact_refs, SLO),
-      return: Ok(ir),
+      return: Ok(IntermediateRepresentation(..ir)),
     )
     resolve_indicators(ir)
   })
@@ -37,8 +38,8 @@ pub fn resolve_intermediate_representations(
 /// Resolves indicator templates in an intermediate representation.
 @internal
 pub fn resolve_indicators(
-  ir: IntermediateRepresentation,
-) -> Result(IntermediateRepresentation, CompilationError) {
+  ir: IntermediateRepresentation(DepsValidated),
+) -> Result(IntermediateRepresentation(Resolved), CompilationError) {
   case ir.vendor {
     option.Some(vendor.Datadog) -> {
       use indicators_value_tuple <- result.try(
@@ -177,15 +178,15 @@ pub fn resolve_indicators(
     }
     option.Some(vendor.Honeycomb) -> {
       // Honeycomb does not use template resolution — indicators are passed through as-is.
-      Ok(ir)
+      Ok(IntermediateRepresentation(..ir))
     }
     option.Some(vendor.Dynatrace) -> {
       // Dynatrace does not use template resolution — indicators are passed through as-is.
-      Ok(ir)
+      Ok(IntermediateRepresentation(..ir))
     }
     option.Some(vendor.NewRelic) -> {
       // New Relic does not use template resolution — indicators are passed through as-is.
-      Ok(ir)
+      Ok(IntermediateRepresentation(..ir))
     }
     option.None ->
       Error(errors.semantic_analysis_template_resolution_error(

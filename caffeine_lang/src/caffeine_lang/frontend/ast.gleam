@@ -17,9 +17,16 @@ pub type Comment {
 // FILE-LEVEL NODES
 // =============================================================================
 
+/// Marker type for parsed (not yet validated) AST.
+pub type Parsed
+
+/// Marker type for validated AST.
+pub type Validated
+
 /// A blueprints file containing type aliases, extendables, and blueprint blocks.
 /// Type aliases must come before extendables, which must come before blocks.
-pub type BlueprintsFile {
+/// The phantom `phase` parameter tracks whether the file has been validated.
+pub type BlueprintsFile(phase) {
   BlueprintsFile(
     type_aliases: List(TypeAlias),
     extendables: List(Extendable),
@@ -39,7 +46,8 @@ pub type TypeAlias {
 }
 
 /// An expects file containing extendables and expects blocks.
-pub type ExpectsFile {
+/// The phantom `phase` parameter tracks whether the file has been validated.
+pub type ExpectsFile(phase) {
   ExpectsFile(
     extendables: List(Extendable),
     blocks: List(ExpectsBlock),

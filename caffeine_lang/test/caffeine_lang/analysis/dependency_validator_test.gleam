@@ -1,14 +1,14 @@
 import caffeine_lang/analysis/dependency_validator
 import caffeine_lang/errors
 import caffeine_lang/helpers
-import caffeine_lang/linker/ir.{type IntermediateRepresentation}
+import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import gleam/dict
 import ir_test_helpers
 import test_helpers
 
 /// Wraps validate_dependency_relations to map Ok(irs) to Ok(Nil) for test assertions.
 fn validate_ok(
-  irs: List(IntermediateRepresentation),
+  irs: List(IntermediateRepresentation(Linked)),
 ) -> Result(Nil, errors.CompilationError) {
   case dependency_validator.validate_dependency_relations(irs) {
     Ok(_) -> Ok(Nil)

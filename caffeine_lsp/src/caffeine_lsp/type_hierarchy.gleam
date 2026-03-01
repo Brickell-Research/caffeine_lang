@@ -1,5 +1,6 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
+  type Parsed,
 }
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
@@ -54,7 +55,7 @@ fn find_hierarchy_item(content: String, name: String) -> List(TypeHierarchyItem)
 
 /// Search blueprint items for a matching name.
 fn find_in_blueprints(
-  file: BlueprintsFile,
+  file: BlueprintsFile(Parsed),
   lines: List(String),
   name: String,
 ) -> List(TypeHierarchyItem) {
@@ -90,7 +91,7 @@ fn match_blueprint_item(
 
 /// Search expect items for a matching name.
 fn find_in_expects(
-  file: ExpectsFile,
+  file: ExpectsFile(Parsed),
   lines: List(String),
   name: String,
 ) -> List(TypeHierarchyItem) {

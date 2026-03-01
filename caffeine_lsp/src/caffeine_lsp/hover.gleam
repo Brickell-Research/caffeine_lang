@@ -116,7 +116,7 @@ fn lookup_type_alias(
 
 fn lookup_blueprint_item(
   word: String,
-  file: ast.BlueprintsFile,
+  file: ast.BlueprintsFile(ast.Parsed),
 ) -> Option(String) {
   let items = list.flat_map(file.blocks, fn(b) { b.items })
   case list.find(items, fn(i) { i.name == word }) {
@@ -143,7 +143,10 @@ fn lookup_blueprint_item(
   }
 }
 
-fn lookup_expect_item(word: String, file: ast.ExpectsFile) -> Option(String) {
+fn lookup_expect_item(
+  word: String,
+  file: ast.ExpectsFile(ast.Parsed),
+) -> Option(String) {
   let items = list.flat_map(file.blocks, fn(b) { b.items })
   case list.find(items, fn(i) { i.name == word }) {
     Ok(item) -> {
@@ -168,7 +171,7 @@ fn lookup_expect_item(word: String, file: ast.ExpectsFile) -> Option(String) {
 
 fn lookup_blueprint_field(
   word: String,
-  file: ast.BlueprintsFile,
+  file: ast.BlueprintsFile(ast.Parsed),
 ) -> Option(String) {
   let all_fields =
     list.flat_map(file.blocks, fn(b) {
@@ -179,7 +182,10 @@ fn lookup_blueprint_field(
   lookup_field_in_list(word, all_fields)
 }
 
-fn lookup_expect_field(word: String, file: ast.ExpectsFile) -> Option(String) {
+fn lookup_expect_field(
+  word: String,
+  file: ast.ExpectsFile(ast.Parsed),
+) -> Option(String) {
   let all_fields =
     list.flat_map(file.blocks, fn(b) {
       list.flat_map(b.items, fn(item) { item.provides.fields })

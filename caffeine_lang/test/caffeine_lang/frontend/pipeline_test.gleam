@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/artifacts.{SLO}
-import caffeine_lang/source_file.{type SourceFile, SourceFile}
+import caffeine_lang/source_file.{SourceFile}
 import gleam/dict
 import gleam/list
 import gleeunit/should
@@ -8,7 +8,7 @@ import simplifile
 
 const corpus_dir = "test/caffeine_lang/corpus/frontend/pipeline"
 
-fn read_source_file(path: String) -> SourceFile {
+fn read_source_file(path: String) -> source_file.SourceFile(a) {
   let assert Ok(content) = simplifile.read(path)
   SourceFile(path: path, content: content)
 }

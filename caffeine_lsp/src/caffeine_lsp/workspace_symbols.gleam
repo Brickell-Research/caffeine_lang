@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type TypeAlias,
+  type Extendable, type Parsed, type TypeAlias,
 }
 import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{SkClass, SkTypeParameter, SkVariable}
@@ -26,7 +26,7 @@ pub fn get_workspace_symbols(content: String) -> List(WorkspaceSymbol) {
 }
 
 fn blueprints_symbols(
-  file: BlueprintsFile,
+  file: BlueprintsFile(Parsed),
   lines: List(String),
 ) -> List(WorkspaceSymbol) {
   let alias_syms =
@@ -41,7 +41,7 @@ fn blueprints_symbols(
 }
 
 fn expects_symbols(
-  file: ExpectsFile,
+  file: ExpectsFile(Parsed),
   lines: List(String),
 ) -> List(WorkspaceSymbol) {
   let ext_syms =

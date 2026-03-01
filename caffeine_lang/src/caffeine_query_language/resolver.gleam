@@ -1,5 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_query_language/ast.{type Comparator, type Exp}
+import caffeine_query_language/ast.{type Comparator, type CqlParsed, type Exp}
 import gleam/bool
 import gleam/float
 
@@ -9,7 +9,7 @@ pub type Primitives {
   /// Good over total requires a top level division operator.
   /// Represents an SLO where the numerator is the "good" events
   /// and the denominator is the "total" events.
-  GoodOverTotal(numerator: Exp, denominator: Exp)
+  GoodOverTotal(numerator: Exp(CqlParsed), denominator: Exp(CqlParsed))
   TimeSlice(
     comparator: Comparator,
     interval_in_seconds: Int,
@@ -33,7 +33,9 @@ pub fn comparator_to_string(comparator: Comparator) {
 /// Supports GoodOverTotal (division at the top level) and TimeSlice.
 /// Returns an error if the expression doesn't match a known primitive pattern.
 @internal
-pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
+pub fn resolve_primitives(
+  exp: Exp(CqlParsed),
+) -> Result(Primitives, CompilationError) {
   case exp {
     ast.OperatorExpr(left, right, ast.Div) -> {
       // Check that neither operand contains a time_slice expression
@@ -60,7 +62,7 @@ pub fn resolve_primitives(exp: Exp) -> Result(Primitives, CompilationError) {
 }
 
 /// Checks if an expression contains a time_slice expression anywhere.
-fn contains_time_slice(exp: Exp) -> Bool {
+fn contains_time_slice(exp: Exp(a)) -> Bool {
   case exp {
     ast.TimeSliceExpr(_) -> True
     ast.OperatorExpr(left, right, _) ->

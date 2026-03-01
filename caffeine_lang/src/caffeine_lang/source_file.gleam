@@ -1,6 +1,13 @@
+/// Marker type for blueprint source files.
+pub type BlueprintSource
+
+/// Marker type for expectation source files.
+pub type ExpectationSource
+
 /// A source file with its path and content.
-/// The path is retained for error messages and metadata extraction
-/// (org/team/service from directory structure).
-pub type SourceFile {
+/// The phantom `kind` parameter distinguishes blueprint from expectation sources
+/// at the type level. The path is retained for error messages and metadata
+/// extraction (org/team/service from directory structure).
+pub type SourceFile(kind) {
   SourceFile(path: String, content: String)
 }
