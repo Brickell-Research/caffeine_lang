@@ -28,7 +28,7 @@ pub fn resolve_intermediate_representations(
   |> list.map(fn(ir) {
     use <- bool.guard(
       when: !list.contains(ir.artifact_refs, SLO),
-      return: Ok(IntermediateRepresentation(..ir)),
+      return: Ok(ir.promote(ir)),
     )
     resolve_indicators(ir)
   })
@@ -178,15 +178,15 @@ pub fn resolve_indicators(
     }
     option.Some(vendor.Honeycomb) -> {
       // Honeycomb does not use template resolution — indicators are passed through as-is.
-      Ok(IntermediateRepresentation(..ir))
+      Ok(ir.promote(ir))
     }
     option.Some(vendor.Dynatrace) -> {
       // Dynatrace does not use template resolution — indicators are passed through as-is.
-      Ok(IntermediateRepresentation(..ir))
+      Ok(ir.promote(ir))
     }
     option.Some(vendor.NewRelic) -> {
       // New Relic does not use template resolution — indicators are passed through as-is.
-      Ok(IntermediateRepresentation(..ir))
+      Ok(ir.promote(ir))
     }
     option.None ->
       Error(errors.semantic_analysis_template_resolution_error(

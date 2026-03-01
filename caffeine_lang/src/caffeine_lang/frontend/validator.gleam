@@ -3,7 +3,6 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
   type Extendable, type Field, type Parsed, type TypeAlias, type Validated,
-  BlueprintsFile, ExpectsFile,
 }
 import caffeine_lang/types.{
   type ParsedType, type PrimitiveTypes, Boolean, Defaulted, Dict, InclusiveRange,
@@ -122,7 +121,7 @@ pub fn validate_blueprints_file(
   let dependent_errors = list.append(type_ref_errors, extends_errors)
   use <- guard_errors(dependent_errors)
 
-  Ok(BlueprintsFile(..file))
+  Ok(ast.promote_blueprints_file(file))
 }
 
 /// Validates an expects file.
@@ -151,7 +150,7 @@ pub fn validate_expects_file(
     validate_expect_items_extends(items, extendables) |> errors_to_list
   use <- guard_errors(extends_errors)
 
-  Ok(ExpectsFile(..file))
+  Ok(ast.promote_expects_file(file))
 }
 
 /// Validates that no two items in a list share the same name.

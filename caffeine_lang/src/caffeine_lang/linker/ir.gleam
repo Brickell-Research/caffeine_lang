@@ -83,6 +83,19 @@ pub type IntermediateRepresentationMetaData {
   )
 }
 
+/// Promotes an IR to a new phantom phase by reconstructing all fields.
+@internal
+pub fn promote(ir: IntermediateRepresentation(a)) -> IntermediateRepresentation(b) {
+  IntermediateRepresentation(
+    metadata: ir.metadata,
+    unique_identifier: ir.unique_identifier,
+    artifact_refs: ir.artifact_refs,
+    values: ir.values,
+    artifact_data: ir.artifact_data,
+    vendor: ir.vendor,
+  )
+}
+
 /// Build a dotted identifier from IR metadata: org.team.service.name.
 @internal
 pub fn ir_to_identifier(ir: IntermediateRepresentation(phase)) -> String {
