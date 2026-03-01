@@ -49,11 +49,6 @@ watch:
 watch-js:
 	@./watch.sh --target=javascript
 
-# Generate a report of the codebase (per module)
+# Generate a report of the codebase (per module, cloc-style)
 lines-of-code:
-	@for mod in caffeine_lang caffeine_lsp caffeine_cli; do \
-		src=$$(find $$mod/src -name '*.gleam' 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $$1}'); \
-		test=$$(find $$mod/test -name '*.gleam' 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $$1}'); \
-		src=$${src:-0}; test=$${test:-0}; \
-		printf "%-16s src: %5s  test: %5s  total: %5s\n" "$$mod" "$$src" "$$test" "$$((src + test))"; \
-	done
+	@./scripts/loc.sh
