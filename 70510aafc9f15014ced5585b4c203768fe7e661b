@@ -1,0 +1,25 @@
+Makefile
+  9f08e83a4fd1a9bc 52,54
+scripts/loc.sh
+  9f08e83a4fd1a9bc 1-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.7",
+  "base_commit_sha": "70510aafc9f15014ced5585b4c203768fe7e661b",
+  "prompts": {
+    "9f08e83a4fd1a9bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "694b3697-5956-470f-b4d3-a7350c40e099",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 105,
+      "total_deletions": 39,
+      "accepted_lines": 73,
+      "overriden_lines": 0
+    }
+  }
+}
