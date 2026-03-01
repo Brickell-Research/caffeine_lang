@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.7",
+  "base_commit_sha": "3139c12256141a8f2cc5b0448be663dbcebf0822",
+  "prompts": {
+    "5c26d0165763fbc1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0e038893-a8a9-478d-804b-b299e102b42a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 16,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
