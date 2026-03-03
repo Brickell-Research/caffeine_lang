@@ -7,30 +7,31 @@ import gleam/option.{type Option}
 import gleam/string
 
 /// Converts an interval in seconds to the most natural unit string.
-/// Picks ms, d, h, m, or s in order of preference.
+/// Tries d, h, m, s, ms in descending order, picking the largest clean fit.
 fn interval_to_string(seconds: Float) -> String {
-  case seconds <. 1.0 && is_clean_division(seconds *. 1000.0) {
-    True -> float_to_string(seconds *. 1000.0) <> "ms"
-    False ->
-      case is_clean_division(seconds /. 86_400.0) {
-        True -> float_to_string(seconds /. 86_400.0) <> "d"
-        False ->
-          case is_clean_division(seconds /. 3600.0) {
-            True -> float_to_string(seconds /. 3600.0) <> "h"
-            False ->
-              case is_clean_division(seconds /. 60.0) {
-                True -> float_to_string(seconds /. 60.0) <> "m"
-                False -> float_to_string(seconds) <> "s"
-              }
-          }
-      }
-  }
+  let units = [
+    #("d", 86_400.0),
+    #("h", 3600.0),
+    #("m", 60.0),
+    #("s", 1.0),
+    #("ms", 0.001),
+  ]
+  find_best_unit(seconds, units)
 }
 
-/// Checks if a float value is a clean whole number.
-fn is_clean_division(value: Float) -> Bool {
-  let truncated = float.truncate(value)
-  int.to_float(truncated) == value && truncated > 0
+/// Walks the unit list and returns the first where seconds/divisor is a positive integer.
+fn find_best_unit(seconds: Float, units: List(#(String, Float))) -> String {
+  case units {
+    [] -> float_to_string(seconds) <> "s"
+    [#(label, divisor), ..rest] -> {
+      let value = seconds /. divisor
+      let truncated = float.truncate(value)
+      case int.to_float(truncated) == value && truncated > 0 {
+        True -> float_to_string(value) <> label
+        False -> find_best_unit(seconds, rest)
+      }
+    }
+  }
 }
 
 /// Converts an expression AST node to its string representation.
