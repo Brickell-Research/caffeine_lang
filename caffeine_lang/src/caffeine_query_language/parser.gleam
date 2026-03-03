@@ -215,22 +215,35 @@ fn parse_int_as_float(input: String) -> Result(Float, String) {
   |> result.map_error(fn(_) { "Invalid number" })
 }
 
-/// Parses an interval like "10s", "5m", "1h", "1.5h" into seconds.
+/// Parses an interval like "500ms", "10s", "5m", "1h", "1.5h", "7d" into seconds.
 fn parse_interval(input: String) -> Result(Float, String) {
   let trimmed = string.trim(input)
   case trimmed {
     "" -> Error("Missing interval in time_slice expression")
     _ -> {
       let len = string.length(trimmed)
-      let unit = string.slice(trimmed, len - 1, 1)
-      let number_part = string.slice(trimmed, 0, len - 1)
+      let #(unit, number_part) = case
+        len >= 3 && string.slice(trimmed, len - 2, 2) == "ms"
+      {
+        True -> #("ms", string.slice(trimmed, 0, len - 2))
+        False -> #(
+          string.slice(trimmed, len - 1, 1),
+          string.slice(trimmed, 0, len - 1),
+        )
+      }
 
       use multiplier <- result.try(case unit {
+        "ms" -> Ok(0.001)
         "s" -> Ok(1.0)
         "m" -> Ok(60.0)
         "h" -> Ok(3600.0)
+        "d" -> Ok(86_400.0)
         _ ->
-          Error("Invalid interval unit '" <> unit <> "' (expected s, m, or h)")
+          Error(
+            "Invalid interval unit '"
+            <> unit
+            <> "' (expected ms, s, m, h, or d)",
+          )
       })
 
       use number <- result.try(case float.parse(number_part) {

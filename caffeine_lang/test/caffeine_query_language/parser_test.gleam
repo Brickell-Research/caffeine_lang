@@ -45,6 +45,8 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ time_slice(Query > 100 per 10m) - minutes interval
 // * ✅ time_slice(Query > 100 per 1h) - hours interval
 // * ✅ time_slice(Query > 100 per 1.5h) - decimal interval
+// * ✅ time_slice(Query > 100 per 500ms) - milliseconds interval
+// * ✅ time_slice(Query > 100 per 7d) - days interval
 // time_slice invalid inner syntax (see time_slice_invalid_syntax_test):
 // * ✅ time_slice(Query > 100) - missing per <interval>
 // * ✅ time_slice(Query 100 per 10s) - missing comparator
@@ -429,6 +431,32 @@ pub fn time_slice_valid_parsing_test() {
         )),
       ),
     ),
+    // time_slice(Query > 100 per 500ms) - milliseconds interval
+    #(
+      "milliseconds interval",
+      "time_slice(Query > 100 per 500ms)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 0.5,
+        )),
+      ),
+    ),
+    // time_slice(Query > 100 per 7d) - days interval
+    #(
+      "days interval",
+      "time_slice(Query > 100 per 7d)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 604_800.0,
+        )),
+      ),
+    ),
   ]
   |> test_helpers.table_test_1(parse_expr)
 }
@@ -477,13 +505,13 @@ pub fn time_slice_invalid_syntax_test() {
     #(
       "invalid interval (no unit)",
       "time_slice(Query > 100 per 10)",
-      Error("Invalid interval unit '0' (expected s, m, or h)"),
+      Error("Invalid interval unit '0' (expected ms, s, m, h, or d)"),
     ),
     // time_slice(Query > 100 per 10x) - invalid unit
     #(
       "invalid unit",
       "time_slice(Query > 100 per 10x)",
-      Error("Invalid interval unit 'x' (expected s, m, or h)"),
+      Error("Invalid interval unit 'x' (expected ms, s, m, h, or d)"),
     ),
     // time_slice(Query > abc per 10s) - non-numeric threshold
     #(

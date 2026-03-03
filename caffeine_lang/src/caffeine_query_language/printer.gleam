@@ -6,6 +6,33 @@ import gleam/int
 import gleam/option.{type Option}
 import gleam/string
 
+/// Converts an interval in seconds to the most natural unit string.
+/// Picks ms, d, h, m, or s in order of preference.
+fn interval_to_string(seconds: Float) -> String {
+  case seconds <. 1.0 && is_clean_division(seconds *. 1000.0) {
+    True -> float_to_string(seconds *. 1000.0) <> "ms"
+    False ->
+      case is_clean_division(seconds /. 86_400.0) {
+        True -> float_to_string(seconds /. 86_400.0) <> "d"
+        False ->
+          case is_clean_division(seconds /. 3600.0) {
+            True -> float_to_string(seconds /. 3600.0) <> "h"
+            False ->
+              case is_clean_division(seconds /. 60.0) {
+                True -> float_to_string(seconds /. 60.0) <> "m"
+                False -> float_to_string(seconds) <> "s"
+              }
+          }
+      }
+  }
+}
+
+/// Checks if a float value is a clean whole number.
+fn is_clean_division(value: Float) -> Bool {
+  let truncated = float.truncate(value)
+  int.to_float(truncated) == value && truncated > 0
+}
+
 /// Converts an expression AST node to its string representation.
 @internal
 pub fn exp_to_string(exp: Exp(a)) -> String {
@@ -19,8 +46,8 @@ pub fn exp_to_string(exp: Exp(a)) -> String {
       <> " "
       <> float_to_string(spec.threshold)
       <> " per "
-      <> float_to_string(spec.interval_seconds)
-      <> "s)"
+      <> interval_to_string(spec.interval_seconds)
+      <> ")"
     ast.OperatorExpr(numerator:, denominator:, operator:) -> {
       case operator, is_path_expression(exp) {
         ast.Div, True -> {
