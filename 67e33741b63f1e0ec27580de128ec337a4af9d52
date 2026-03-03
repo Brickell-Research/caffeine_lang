@@ -1,0 +1,173 @@
+caffeine_lang/src/caffeine_lang/compiler.gleam
+  d0c59ec574a45e81 58-72,78,282,286
+caffeine_lsp/src/caffeine_lsp/folding_range.gleam
+  d0c59ec574a45e81 57
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_extends_override.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/refinement_missing_in.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/refinement_type_mismatch.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine
+  d0c59ec574a45e81 1-7
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_valid.caffeine
+  d0c59ec574a45e81 5,7
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  d0c59ec574a45e81 93-98,104,108,111
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_duplicate_type_alias.caffeine
+  d0c59ec574a45e81 5,7
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/invalid_extendable_kind.caffeine
+  d0c59ec574a45e81 1,4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_extendable_type_alias_collision.caffeine
+  d0c59ec574a45e81 5,7
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_multi_blueprint_blocks.caffeine
+  d0c59ec574a45e81 5,7,11,13,18,20,24,26
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_between_blueprint_blocks.caffeine
+  d0c59ec574a45e81 4,6,11,13
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_template_vars.caffeine
+  d0c59ec574a45e81 2,4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/complex_types.caffeine
+  d0c59ec574a45e81 2,11
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/type_alias_blueprint.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_type_alias.caffeine
+  d0c59ec574a45e81 5,12
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/missing_blueprints_keyword.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_blueprints/datadog.caffeine
+  d0c59ec574a45e81 1-13
+caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam
+  d0c59ec574a45e81 95,154-156
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_duplicate_extendable.caffeine
+  d0c59ec574a45e81 5,7
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_percentage_types.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_multiple_items_one_missing.caffeine
+  d0c59ec574a45e81 4,6,8,10
+caffeine_lang/src/caffeine_lang/frontend/lowering.gleam
+  d0c59ec574a45e81 22,25-26,30,36,69-70,75,78-89,91-102,104-109,114-128
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  d0c59ec574a45e81 644,1053,1058,1083,1088,1093-1094
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  d0c59ec574a45e81 38,42,70,72,91,93,111,113,133,135,152,154,173,175,194,196,242,253,264,283,311,313,329,346,353,361,412,419,429,450,471,517,530,538,633,805,832,840-842,903,911,935,943,954,978,994,1049,1063,1079,1140,1152,1183,1198,1226,1245,1291,1496,1498,1533,1535,1554,1556,1584,1586,1621,1623,1632,1634,1643,1645
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_undefined_record_type_alias.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/src/caffeine_lang/frontend/pipeline.gleam
+  d0c59ec574a45e81 40,175
+caffeine_lsp/src/caffeine_lsp/diagnostics.gleam
+  d0c59ec574a45e81 195
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_refinement_type_mismatch.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_valid_record_type.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/already_formatted.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_advanced_types.caffeine
+  d0c59ec574a45e81 2,11
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  d0c59ec574a45e81 226
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_undefined_type_alias.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/missing_blueprint_name.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_valid_type_alias.caffeine
+  d0c59ec574a45e81 5,11
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  d0c59ec574a45e81 6,178,182-183,187-192,194-195,197-202
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_defaulted_type_alias.caffeine
+  d0c59ec574a45e81 8,12
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_no_expectations_blueprints/datadog.caffeine
+  d0c59ec574a45e81 1-7
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/record_type_blueprint.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/unclosed_type_paren.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_type_alias_blueprints/datadog.caffeine
+  d0c59ec574a45e81 1-9
+caffeine_lang/test/caffeine_lang/corpus/frontend/pipeline/simple_blueprints.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lsp/src/caffeine_lsp/keyword_info.gleam
+  d0c59ec574a45e81 27-39
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_invalid_dict_key_type_alias.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_percentage_bounds.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/missing_dict_value_type.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lsp/src/caffeine_lsp/references.gleam
+  d0c59ec574a45e81 74-79
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  d0c59ec574a45e81 133-134,411
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_blueprint.caffeine
+  d0c59ec574a45e81 5,7,11,13
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_record_type.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_all_section_types_blueprint.caffeine
+  d0c59ec574a45e81 11,13,17,19
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/refinement_missing_x.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lsp/src/caffeine_lsp/document_symbols.gleam
+  d0c59ec574a45e81 129-131
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_with_extends.caffeine
+  d0c59ec574a45e81 5,7
+caffeine_lsp/src/caffeine_lsp/selection_range.gleam
+  d0c59ec574a45e81 200
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/unknown_type.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_no_extendables.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/provides_extendable.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/percentage_types.caffeine
+  d0c59ec574a45e81 2,8
+caffeine_cli/test/caffeine_cli/handler_test.gleam
+  d0c59ec574a45e81 18,31,49,58,67,84,97,106,115,124
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_simple.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_duplicate_extends_ref.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_circular_record_type_alias.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lsp/src/caffeine_lsp/completion.gleam
+  d0c59ec574a45e81 242,261-262
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_blueprint.caffeine
+  d0c59ec574a45e81 4,6,8
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_blueprint.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  d0c59ec574a45e81 59,68,77,86,128-132,158-160,179-181,225-227,240-242,258-260,279-281,300-302,342-345,374-377,396,399-400,423-426,454-457,476,479-480
+caffeine_lsp/src/caffeine_lsp/hover.gleam
+  d0c59ec574a45e81 126,134-135,176
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/unclosed_extends_bracket.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/test/caffeine_lang/frontend/lowering_test.gleam
+  d0c59ec574a45e81 25-26,29,53-54,63-64,67-74,182-185,187-190
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/blueprints_missing_extendable.caffeine
+  d0c59ec574a45e81 4,6
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/blueprints_multi_artifact.caffeine
+  d0c59ec574a45e81 2,4
+caffeine_lang/src/caffeine_lang/frontend/token.gleam
+  d0c59ec574a45e81 14,47-48,66,99-100
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  d0c59ec574a45e81 4,402,405-407,411,414-415,421-473,475-499
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.7",
+  "base_commit_sha": "67e33741b63f1e0ec27580de128ec337a4af9d52",
+  "prompts": {
+    "d0c59ec574a45e81": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "032ad681-a84c-4c23-905d-7fe140d9f5e7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 653,
+      "total_deletions": 556,
+      "accepted_lines": 574,
+      "overriden_lines": 6
+    }
+  }
+}
