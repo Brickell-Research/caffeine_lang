@@ -1,4 +1,4 @@
 Blueprints
   * :
-    Requires { env: String }
+    Requiring { env: String }
     Provides { value: "x" }

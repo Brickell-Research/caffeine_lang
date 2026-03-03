@@ -90,7 +90,7 @@ fn classify_token(
     token.KeywordExpectations -> Ok(#(keyword, 12))
     token.KeywordFor -> Ok(#(keyword, 3))
     token.KeywordExtends -> Ok(#(keyword, 7))
-    token.KeywordRequires -> Ok(#(keyword, 8))
+    token.KeywordRequiring -> Ok(#(keyword, 9))
     token.KeywordProvides -> Ok(#(keyword, 8))
     token.KeywordIn -> Ok(#(keyword, 2))
     token.KeywordType -> Ok(#(keyword, 4))

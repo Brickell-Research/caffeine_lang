@@ -84,7 +84,7 @@ fn type_alias_symbol(ta: TypeAlias, lines: List(String)) -> DocumentSymbol {
 
 fn extendable_symbol(ext: Extendable, lines: List(String)) -> DocumentSymbol {
   let #(line, col) = position_utils.find_name_position_in_lines(lines, ext.name)
-  let detail = ast.extendable_kind_to_string(ext.kind)
+  let detail = "Requiring"
   DocumentSymbol(
     ext.name,
     detail,

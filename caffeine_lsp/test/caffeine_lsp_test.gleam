@@ -35,8 +35,8 @@ pub fn empty_file_no_diagnostics_test() {
 pub fn valid_blueprints_no_diagnostics_test() {
   let source =
     "Blueprints
-  * \"my_slo\":
-    Requires {
+  \"my_slo\":
+    Requiring {
       env: String
     }
     Provides {
@@ -63,12 +63,12 @@ pub fn invalid_syntax_produces_diagnostic_test() {
 
 pub fn duplicate_extendable_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
-_base (Requires): { env: String }
+    "_base (Requiring): { vendor: String }
+_base (Requiring): { env: String }
 
 Blueprints
-  * \"api\":
-    Requires { threshold: Float }
+  \"api\":
+    Requiring { threshold: Float }
     Provides { value: \"test\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -85,11 +85,11 @@ Blueprints
 
 pub fn undefined_extendable_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
+    "_base (Requiring): { vendor: String }
 
 Blueprints
-  * \"api\" extends [_base, _nonexistent]:
-    Requires { env: String }
+  \"api\" extends [_base, _nonexistent]:
+    Requiring { env: String }
     Provides { value: \"test\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -105,11 +105,11 @@ Blueprints
 
 pub fn duplicate_extends_reference_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
+    "_base (Requiring): { vendor: String }
 
 Blueprints
-  * \"api\" extends [_base, _base]:
-    Requires { env: String }
+  \"api\" extends [_base, _base]:
+    Requiring { env: String }
     Provides { value: \"test\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -130,8 +130,8 @@ pub fn duplicate_type_alias_diagnostic_test() {
 _env (Type): String { x | x in { \"dev\", \"test\" } }
 
 Blueprints
-  * \"test\":
-    Requires { env: _env }
+  \"test\":
+    Requiring { env: _env }
     Provides { value: \"x\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -149,8 +149,8 @@ Blueprints
 pub fn undefined_type_alias_diagnostic_test() {
   let source =
     "Blueprints
-  * \"test\":
-    Requires { env: _undefined }
+  \"test\":
+    Requiring { env: _undefined }
     Provides { value: \"x\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -170,8 +170,8 @@ pub fn circular_type_alias_diagnostic_test() {
 _b (Type): _a
 
 Blueprints
-  * \"test\":
-    Requires { env: String }
+  \"test\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -191,8 +191,8 @@ pub fn invalid_dict_key_type_alias_diagnostic_test() {
     "_count (Type): Integer { x | x in ( 1..100 ) }
 
 Blueprints
-  * \"test\":
-    Requires { config: Dict(_count, String) }
+  \"test\":
+    Requiring { config: Dict(_count, String) }
     Provides { value: \"x\" }
 "
   let diags = diagnostics.get_diagnostics(source)
@@ -207,31 +207,12 @@ Blueprints
   }
 }
 
-pub fn invalid_extendable_kind_expects_diagnostic_test() {
-  let source =
-    "_base (Requires): { env: String }
-
-Expectations for \"api_availability\"
-  * \"checkout\":
-    Provides { status: true }
-"
-  let diags = diagnostics.get_diagnostics(source)
-  case diags {
-    [diag] -> {
-      diag.severity |> should.equal(1)
-      diag.message
-      |> should.equal("Extendable '_base' must be Provides, got Requires")
-    }
-    _ -> should.fail()
-  }
-}
-
 pub fn valid_expects_no_diagnostics_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }
+    "_defaults (Requiring): { env: String }
 
 Expectations for \"api_availability\"
-  * \"checkout\" extends [_defaults]:
+  \"checkout\" extends [_defaults]:
     Provides { status: true }
 "
   diagnostics.get_diagnostics(source)
@@ -239,24 +220,17 @@ Expectations for \"api_availability\"
 }
 
 pub fn extendable_overshadowing_diagnostic_test() {
+  // Requiring extendables define types; Provides supplies values.
+  // No overshadowing diagnostic for expect items.
   let source =
-    "_defaults (Provides): { env: \"production\", threshold: 99.0 }
+    "_defaults (Requiring): { env: String, threshold: Float }
 
 Expectations for \"api_availability\"
-  * \"checkout\" extends [_defaults]:
+  \"checkout\" extends [_defaults]:
     Provides { env: \"staging\", status: true }
 "
   let diags = diagnostics.get_diagnostics(source)
-  case diags {
-    [diag] -> {
-      diag.severity |> should.equal(1)
-      diag.message
-      |> should.equal(
-        "Field 'env' in 'checkout' overshadows field from extendable '_defaults'",
-      )
-    }
-    _ -> should.fail()
-  }
+  list.length(diags) |> should.equal(0)
 }
 
 // ==========================================================================
@@ -265,8 +239,8 @@ Expectations for \"api_availability\"
 
 pub fn hover_builtin_type_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  case hover.get_hover(source, 2, 20) {
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
+  case hover.get_hover(source, 2, 21) {
     option.Some(markdown) -> {
       { string.contains(markdown, "String") } |> should.be_true()
     }
@@ -276,7 +250,7 @@ pub fn hover_builtin_type_test() {
 
 pub fn hover_keyword_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 0, 3) {
     option.Some(markdown) -> {
       { string.contains(markdown, "Blueprints") } |> should.be_true()
@@ -287,18 +261,18 @@ pub fn hover_keyword_test() {
 
 pub fn hover_empty_space_returns_none_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   hover.get_hover(source, 1, 0)
   |> should.equal(option.None)
 }
 
 pub fn hover_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case hover.get_hover(source, 0, 2) {
     option.Some(markdown) -> {
       { string.contains(markdown, "_defaults") } |> should.be_true()
-      { string.contains(markdown, "Provides") } |> should.be_true()
+      { string.contains(markdown, "Requiring") } |> should.be_true()
     }
     option.None -> should.fail()
   }
@@ -306,7 +280,7 @@ pub fn hover_extendable_test() {
 
 pub fn hover_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  \"api\":\n    Requiring { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in the definition
   case hover.get_hover(source, 0, 1) {
     option.Some(markdown) -> {
@@ -334,7 +308,7 @@ pub fn completion_includes_keywords_test() {
 
 pub fn completion_extends_context_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nBlueprints\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_defaults (Requiring): { env: String }\n\nBlueprints\n  \"api\" extends [_defaults]:\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
   let items = completion.get_completions(source, 3, 22, [])
   let has_defaults = list.any(items, fn(item) { item.label == "_defaults" })
@@ -342,7 +316,7 @@ pub fn completion_extends_context_test() {
 }
 
 pub fn completion_type_context_test() {
-  let source = "Blueprints\n  * \"api\":\n    Requires { env: "
+  let source = "Blueprints\n  \"api\":\n    Requiring { env: "
   // After the colon
   let items = completion.get_completions(source, 2, 21, [])
   // Should include type names but not keywords like "Blueprints"
@@ -352,7 +326,7 @@ pub fn completion_type_context_test() {
 
 pub fn completion_includes_extendables_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Requiring): { vendor: String }\n\nBlueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let items = completion.get_completions(source, 4, 0, [])
   let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
@@ -369,14 +343,14 @@ pub fn document_symbols_empty_test() {
 
 pub fn document_symbols_blueprints_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
 
 pub fn document_symbols_with_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_defaults (Requiring): { env: String }\n\nBlueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   let has_defaults = list.any(symbols, fn(s) { s.name == "_defaults" })
   has_defaults |> should.be_true()
@@ -384,7 +358,7 @@ pub fn document_symbols_with_extendable_test() {
 
 pub fn document_symbols_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  \"api\":\n    Requiring { env: _env }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   let has_env = list.any(symbols, fn(s) { s.name == "_env" })
   has_env |> should.be_true()
@@ -392,7 +366,7 @@ pub fn document_symbols_type_alias_test() {
 
 pub fn document_symbols_expects_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
@@ -435,14 +409,14 @@ pub fn semantic_tokens_empty_test() {
 
 pub fn semantic_tokens_produces_output_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
 
 pub fn semantic_tokens_multiple_of_five_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Each token is 5 integers: deltaLine, deltaStartChar, length, tokenType, modifiers
   { list.length(tokens) % 5 == 0 } |> should.be_true()
@@ -452,7 +426,7 @@ pub fn semantic_tokens_field_order_test() {
   // "Blueprints" is at line 0, col 0, length 10, type 0 (keyword), mods 0
   // The first 5 values should be: [0, 0, 10, 0, 0]
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   case tokens {
     [dl, dc, len, tt, mods, ..] -> {
@@ -473,7 +447,7 @@ pub fn semantic_tokens_field_order_test() {
 
 pub fn semantic_tokens_with_comment_test() {
   let source =
-    "# This is a comment\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "# This is a comment\nBlueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
@@ -483,7 +457,7 @@ pub fn semantic_tokens_with_comment_test() {
 pub fn semantic_tokens_boolean_as_keyword_test() {
   // "true" appears as a literal in Provides
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api\"\n  \"checkout\":\n    Provides { status: true }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Find a token with length 4 (true) and type 0 (keyword)
   let has_true_keyword = find_token_with_type_and_length(tokens, 0, 4)
@@ -494,7 +468,7 @@ pub fn semantic_tokens_boolean_as_keyword_test() {
 // * colon tokenized as operator (type index 6)
 pub fn semantic_tokens_colon_as_operator_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Find a token with length 1 and type 6 (operator)
   let has_colon_operator = find_token_with_type_and_length(tokens, 6, 1)
@@ -527,7 +501,7 @@ fn find_token_loop(tokens: List(Int), token_type: Int, length: Int) -> Bool {
 
 pub fn definition_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   // Hover on _defaults in extends list (line 3)
   case definition.get_definition(source, 3, 25) {
     option.Some(#(line, _col, _len)) -> {
@@ -540,9 +514,9 @@ pub fn definition_extendable_test() {
 
 pub fn definition_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
-  // Hover on _env in Requires (line 4)
-  case definition.get_definition(source, 4, 20) {
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  \"api\":\n    Requiring { env: _env }\n    Provides { value: \"x\" }\n"
+  // Hover on _env in Requiring (line 4)
+  case definition.get_definition(source, 4, 21) {
     option.Some(#(line, _col, _len)) -> {
       // Should point to line 0 where _env is defined
       line |> should.equal(0)
@@ -553,7 +527,7 @@ pub fn definition_type_alias_test() {
 
 pub fn definition_not_found_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // "for" is a keyword, not a definition
   definition.get_definition(source, 0, 12)
   |> should.equal(option.None)
@@ -561,7 +535,7 @@ pub fn definition_not_found_test() {
 
 pub fn definition_empty_space_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_definition(source, 0, 10)
   |> should.equal(option.None)
 }
@@ -584,7 +558,7 @@ pub fn definition_empty_space_test() {
 
 pub fn blueprint_ref_on_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on 'a' of api_availability (col 18)
   definition.get_blueprint_ref_at_position(source, 0, 18)
   |> should.equal(option.Some("api_availability"))
@@ -592,7 +566,7 @@ pub fn blueprint_ref_on_name_test() {
 
 pub fn blueprint_ref_middle_of_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on '_' between api and availability (col 21)
   definition.get_blueprint_ref_at_position(source, 0, 21)
   |> should.equal(option.Some("api_availability"))
@@ -600,7 +574,7 @@ pub fn blueprint_ref_middle_of_name_test() {
 
 pub fn blueprint_ref_last_char_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on last 'y' of api_availability (col 33)
   definition.get_blueprint_ref_at_position(source, 0, 33)
   |> should.equal(option.Some("api_availability"))
@@ -608,7 +582,7 @@ pub fn blueprint_ref_last_char_test() {
 
 pub fn blueprint_ref_on_keyword_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "Expectations" (col 5)
   definition.get_blueprint_ref_at_position(source, 0, 5)
   |> should.equal(option.None)
@@ -616,7 +590,7 @@ pub fn blueprint_ref_on_keyword_returns_none_test() {
 
 pub fn blueprint_ref_on_for_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "for" (col 14)
   definition.get_blueprint_ref_at_position(source, 0, 14)
   |> should.equal(option.None)
@@ -624,7 +598,7 @@ pub fn blueprint_ref_on_for_returns_none_test() {
 
 pub fn blueprint_ref_on_quote_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on opening quote (col 17)
   definition.get_blueprint_ref_at_position(source, 0, 17)
   |> should.equal(option.None)
@@ -632,7 +606,7 @@ pub fn blueprint_ref_on_quote_returns_none_test() {
 
 pub fn blueprint_ref_past_closing_quote_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on closing quote (col 34)
   definition.get_blueprint_ref_at_position(source, 0, 34)
   |> should.equal(option.None)
@@ -640,7 +614,7 @@ pub fn blueprint_ref_past_closing_quote_returns_none_test() {
 
 pub fn blueprint_ref_on_item_line_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on item line (line 1)
   definition.get_blueprint_ref_at_position(source, 1, 7)
   |> should.equal(option.None)
@@ -648,7 +622,7 @@ pub fn blueprint_ref_on_item_line_returns_none_test() {
 
 pub fn blueprint_ref_multiple_blocks_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { threshold: 99.95 }\n\nExpectations for \"latency\"\n  * \"checkout_p99\":\n    Provides { threshold_ms: 500 }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { threshold: 99.95 }\n\nExpectations for \"latency\"\n  \"checkout_p99\":\n    Provides { threshold_ms: 500 }\n"
   // Cursor on "latency" in second block (line 4, col 18)
   definition.get_blueprint_ref_at_position(source, 4, 18)
   |> should.equal(option.Some("latency"))
@@ -656,7 +630,7 @@ pub fn blueprint_ref_multiple_blocks_test() {
 
 pub fn blueprint_ref_blueprints_file_returns_none_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_blueprint_ref_at_position(source, 0, 16)
   |> should.equal(option.None)
 }
@@ -675,7 +649,7 @@ pub fn blueprint_ref_blueprints_file_returns_none_test() {
 
 pub fn relation_ref_on_valid_path_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on 'o' of org.team.svc.dep (col 36)
   definition.get_relation_ref_at_position(source, 2, 36)
   |> should.equal(option.Some("org.team.svc.dep"))
@@ -683,7 +657,7 @@ pub fn relation_ref_on_valid_path_test() {
 
 pub fn relation_ref_middle_of_path_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on 't' of team (col 40)
   definition.get_relation_ref_at_position(source, 2, 40)
   |> should.equal(option.Some("org.team.svc.dep"))
@@ -691,7 +665,7 @@ pub fn relation_ref_middle_of_path_test() {
 
 pub fn relation_ref_outside_quotes_returns_none_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on '[' (col 34) — outside quotes
   definition.get_relation_ref_at_position(source, 2, 34)
   |> should.equal(option.None)
@@ -699,7 +673,7 @@ pub fn relation_ref_outside_quotes_returns_none_test() {
 
 pub fn relation_ref_non_dependency_string_returns_none_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
   // Cursor inside "not_a_path" — not a 4-segment dotted path
   definition.get_relation_ref_at_position(source, 2, 23)
   |> should.equal(option.None)
@@ -779,7 +753,7 @@ pub fn find_name_position_not_found_test() {
 }
 
 pub fn find_name_position_empty_name_test() {
-  let content = "Expectations for \"\"\n  * \"slo\":\n    Provides { x: true }"
+  let content = "Expectations for \"\"\n  \"slo\":\n    Provides { x: true }"
   // Empty name must not hang (JS target: split_once matches empty string at pos 0)
   position_utils.find_name_position(content, "")
   |> should.equal(#(0, 0))
@@ -828,7 +802,7 @@ pub fn extract_word_at_out_of_bounds_test() {
 
 pub fn file_utils_parse_blueprints_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   case file_utils.parse(source) {
     Ok(file_utils.Blueprints(_)) -> should.be_true(True)
     _ -> should.fail()
@@ -837,7 +811,7 @@ pub fn file_utils_parse_blueprints_test() {
 
 pub fn file_utils_parse_expectations_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api\"\n  \"checkout\":\n    Provides { status: true }\n"
   case file_utils.parse(source) {
     Ok(file_utils.Expects(_)) -> should.be_true(True)
     _ -> should.fail()
@@ -861,7 +835,7 @@ pub fn keyword_info_all_keywords_test() {
   list.contains(names, "Blueprints") |> should.be_true()
   list.contains(names, "Expectations") |> should.be_true()
   list.contains(names, "extends") |> should.be_true()
-  list.contains(names, "Requires") |> should.be_true()
+  list.contains(names, "Requiring") |> should.be_true()
   list.contains(names, "Provides") |> should.be_true()
   list.contains(names, "Type") |> should.be_true()
 
@@ -910,7 +884,7 @@ pub fn find_all_name_positions_skips_partial_test() {
 
 pub fn highlight_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let highlights = highlight.get_highlights(source, 0, 2)
   // Should find _defaults at definition (line 0) and usage (line 3)
   { list.length(highlights) >= 2 } |> should.be_true()
@@ -923,7 +897,7 @@ pub fn highlight_extendable_test() {
 
 pub fn highlight_keyword_returns_empty_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // "Blueprints" is a keyword, not a defined symbol
   highlight.get_highlights(source, 0, 3)
   |> should.equal([])
@@ -931,7 +905,7 @@ pub fn highlight_keyword_returns_empty_test() {
 
 pub fn highlight_empty_space_returns_empty_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Space between words
   highlight.get_highlights(source, 0, 10)
   |> should.equal([])
@@ -948,14 +922,14 @@ pub fn highlight_empty_space_returns_empty_test() {
 
 pub fn references_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let refs = references.get_references(source, 0, 2)
   { list.length(refs) >= 2 } |> should.be_true()
 }
 
 pub fn references_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  \"api\":\n    Requiring { env: _env }\n    Provides { value: \"x\" }\n"
   let refs = references.get_references(source, 0, 1)
   // Should find _env at definition and usage
   { list.length(refs) >= 2 } |> should.be_true()
@@ -963,7 +937,7 @@ pub fn references_type_alias_test() {
 
 pub fn references_non_symbol_returns_empty_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   references.get_references(source, 0, 3)
   |> should.equal([])
 }
@@ -974,7 +948,7 @@ pub fn references_non_symbol_returns_empty_test() {
 
 pub fn references_blueprint_item_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "api" (line 1, col 5 is the 'a' in api)
   let refs = references.get_references(source, 1, 5)
   { list.length(refs) >= 1 }
@@ -983,7 +957,7 @@ pub fn references_blueprint_item_test() {
 
 pub fn references_expects_blueprint_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "api_availability" (line 0, col 18)
   let refs = references.get_references(source, 0, 18)
   { list.length(refs) >= 1 }
@@ -998,7 +972,7 @@ pub fn references_expects_blueprint_name_test() {
 
 pub fn get_blueprint_name_at_item_name_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "api" (line 1, col 5)
   references.get_blueprint_name_at(source, 1, 5)
   |> should.equal("api")
@@ -1006,7 +980,7 @@ pub fn get_blueprint_name_at_item_name_test() {
 
 pub fn get_blueprint_name_at_expects_header_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "api_availability" (line 0, col 18)
   references.get_blueprint_name_at(source, 0, 18)
   |> should.equal("api_availability")
@@ -1014,7 +988,7 @@ pub fn get_blueprint_name_at_expects_header_test() {
 
 pub fn get_blueprint_name_at_keyword_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "Blueprints" keyword (line 0, col 3)
   references.get_blueprint_name_at(source, 0, 3)
   |> should.equal("")
@@ -1022,7 +996,7 @@ pub fn get_blueprint_name_at_keyword_test() {
 
 pub fn get_blueprint_name_at_field_value_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { vendor: \"datadog\" }\n"
+    "Expectations for \"api\"\n  \"checkout\":\n    Provides { vendor: \"datadog\" }\n"
   // Cursor on "datadog" -- this is a field value, not a blueprint name
   references.get_blueprint_name_at(source, 2, 26)
   |> should.equal("")
@@ -1034,7 +1008,7 @@ pub fn get_blueprint_name_at_field_value_test() {
 
 pub fn find_references_to_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   let refs = references.find_references_to_name(source, "api_availability")
   refs
   |> should.equal([#(0, 18, 16)])
@@ -1042,7 +1016,7 @@ pub fn find_references_to_name_test() {
 
 pub fn find_references_to_name_not_found_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api\"\n  \"checkout\":\n    Provides { status: true }\n"
   references.find_references_to_name(source, "missing")
   |> should.equal([])
 }
@@ -1060,7 +1034,7 @@ pub fn find_references_to_name_not_found_test() {
 
 pub fn prepare_rename_valid_symbol_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case rename.prepare_rename(source, 0, 2) {
     option.Some(#(0, 0, 9)) -> should.be_true(True)
     _ -> should.fail()
@@ -1069,21 +1043,21 @@ pub fn prepare_rename_valid_symbol_test() {
 
 pub fn prepare_rename_keyword_returns_none_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   rename.prepare_rename(source, 0, 3)
   |> should.equal(option.None)
 }
 
 pub fn get_rename_edits_all_locations_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let edits = rename.get_rename_edits(source, 0, 2)
   { list.length(edits) >= 2 } |> should.be_true()
 }
 
 pub fn get_rename_edits_keyword_returns_empty_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   rename.get_rename_edits(source, 0, 3)
   |> should.equal([])
 }
@@ -1099,14 +1073,14 @@ pub fn get_rename_edits_keyword_returns_empty_test() {
 
 pub fn folding_ranges_blueprints_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   let ranges = folding_range.get_folding_ranges(source)
   { ranges != [] } |> should.be_true()
 }
 
 pub fn folding_ranges_expects_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let ranges = folding_range.get_folding_ranges(source)
   { ranges != [] } |> should.be_true()
 }
@@ -1126,7 +1100,7 @@ pub fn folding_ranges_empty_test() {
 
 pub fn field_completion_suggests_extended_fields_test() {
   let source =
-    "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      status: true\n      \n    }\n"
+    "_defaults (Requiring): { env: String, threshold: Float }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides {\n      status: true\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
   let items = completion.get_completions(source, 6, 6, [])
   // Should suggest env and threshold from _defaults (minus any already defined)
@@ -1139,7 +1113,7 @@ pub fn field_completion_suggests_extended_fields_test() {
 
 pub fn field_completion_excludes_defined_fields_test() {
   let source =
-    "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      env: \"staging\"\n      \n    }\n"
+    "_defaults (Requiring): { env: String, threshold: Float }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides {\n      env: \"staging\"\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
   let items = completion.get_completions(source, 6, 6, [])
   let labels = list.map(items, fn(i) { i.label })
@@ -1160,8 +1134,8 @@ pub fn field_completion_excludes_defined_fields_test() {
 
 pub fn selection_range_nested_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  // Cursor on the Requires line (line 2)
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
+  // Cursor on the Requiring line (line 2)
   let sr = selection_range.get_selection_range(source, 2, 10)
   // Should have at least one parent
   case sr.parent {
@@ -1171,7 +1145,7 @@ pub fn selection_range_nested_test() {
 }
 
 pub fn selection_range_file_scope_test() {
-  let source = "Blueprints\n  * \"api\":\n    Provides { value: \"x\" }\n"
+  let source = "Blueprints\n  \"api\":\n    Provides { value: \"x\" }\n"
   let sr = selection_range.get_selection_range(source, 0, 0)
   // Walk up to find the outermost range
   let outermost = find_outermost(sr)
@@ -1195,14 +1169,14 @@ fn find_outermost(sr: SelectionRange) -> SelectionRange {
 
 pub fn linked_editing_range_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"api\"\n  \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let ranges = linked_editing_range.get_linked_editing_ranges(source, 0, 2)
   { list.length(ranges) >= 2 } |> should.be_true()
 }
 
 pub fn linked_editing_range_non_symbol_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   linked_editing_range.get_linked_editing_ranges(source, 0, 3)
   |> should.equal([])
 }
@@ -1217,11 +1191,9 @@ pub fn linked_editing_range_non_symbol_test() {
 
 pub fn hover_blueprint_item_test() {
   let source =
-    "_base (Requires): { env: String }\n\nBlueprints\n  * \"api\" extends [_base]:\n    Requires { threshold: Float }\n    Provides { value: \"x\" }\n"
-  // Hover on "api" — it's at col ~5 on line 3 (inside quotes so extract_word_at hits it)
-  // Actually, "api" is inside quotes, so we need to place cursor on "api" without quotes
-  // Let's use a simpler test — hover on item name found after parsing
-  case hover.get_hover(source, 3, 7) {
+    "_base (Requiring): { env: String }\n\nBlueprints\n  \"api\" extends [_base]:\n    Requiring { threshold: Float }\n    Provides { value: \"x\" }\n"
+  // Hover on "api" — col 3 is 'a' in "api" (line 3, 0-indexed)
+  case hover.get_hover(source, 3, 3) {
     option.Some(md) -> {
       { string.contains(md, "api") } |> should.be_true()
       { string.contains(md, "Blueprint item") } |> should.be_true()
@@ -1232,7 +1204,7 @@ pub fn hover_blueprint_item_test() {
 
 pub fn hover_expect_item_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api\"\n  \"checkout\":\n    Provides { status: true }\n"
   case hover.get_hover(source, 1, 7) {
     option.Some(md) -> {
       { string.contains(md, "checkout") } |> should.be_true()
@@ -1247,7 +1219,7 @@ pub fn hover_expect_item_test() {
 
 pub fn hover_field_name_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 2, 16) {
     option.Some(md) -> {
       { string.contains(md, "env") } |> should.be_true()
@@ -1266,9 +1238,9 @@ pub fn hover_field_name_test() {
 
 pub fn extends_completion_filters_used_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n_auth (Provides): { token: \"x\" }\n\nBlueprints\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Requiring): { vendor: String }\n_auth (Requiring): { token: String }\n\nBlueprints\n  \"api\" extends [_base, _auth]:\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor inside "extends [_base, _auth]" at position after "_base, "
-  // Line 4: "  * "api" extends [_base, _auth]:"
+  // Line 4: "  "api" extends [_base, _auth]:"
   // Position 28 is right after the comma+space, before _auth
   let items = completion.get_completions(source, 4, 28, [])
   let labels = list.map(items, fn(i) { i.label })
@@ -1289,14 +1261,14 @@ pub fn extends_completion_filters_used_test() {
 
 pub fn cross_file_known_blueprint_no_diagnostics_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   diagnostics.get_cross_file_diagnostics(source, ["api_availability"])
   |> should.equal([])
 }
 
 pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   let diags =
     diagnostics.get_cross_file_diagnostics(source, ["other_blueprint"])
   case diags {
@@ -1312,7 +1284,7 @@ pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
 
 pub fn cross_file_blueprints_file_returns_empty_test() {
   let source =
-    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  \"api\":\n    Requiring { env: String }\n    Provides { value: \"x\" }\n"
   diagnostics.get_cross_file_diagnostics(source, [])
   |> should.equal([])
 }
@@ -1324,7 +1296,7 @@ pub fn cross_file_empty_content_returns_empty_test() {
 
 pub fn cross_file_multiple_blocks_mixed_test() {
   let source =
-    "Expectations for \"known_bp\"\n  * \"item1\":\n    Provides { a: true }\n\nExpectations for \"unknown_bp\"\n  * \"item2\":\n    Provides { b: false }\n"
+    "Expectations for \"known_bp\"\n  \"item1\":\n    Provides { a: true }\n\nExpectations for \"unknown_bp\"\n  \"item2\":\n    Provides { b: false }\n"
   let diags = diagnostics.get_cross_file_diagnostics(source, ["known_bp"])
   case diags {
     [diag] -> {
@@ -1337,7 +1309,7 @@ pub fn cross_file_multiple_blocks_mixed_test() {
 
 pub fn cross_file_empty_known_list_reports_all_test() {
   let source =
-    "Expectations for \"my_blueprint\"\n  * \"item\":\n    Provides { status: true }\n"
+    "Expectations for \"my_blueprint\"\n  \"item\":\n    Provides { status: true }\n"
   let diags = diagnostics.get_cross_file_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1358,7 +1330,7 @@ pub fn cross_file_empty_known_list_reports_all_test() {
 
 pub fn dependency_known_target_no_diagnostics_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   diagnostics.get_cross_file_dependency_diagnostics(source, [
     "org.team.svc.dep",
   ])
@@ -1367,7 +1339,7 @@ pub fn dependency_known_target_no_diagnostics_test() {
 
 pub fn dependency_unknown_target_returns_diagnostic_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1387,14 +1359,14 @@ pub fn dependency_empty_content_returns_empty_test() {
 
 pub fn dependency_no_relations_returns_empty_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { status: true }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { status: true }\n"
   diagnostics.get_cross_file_dependency_diagnostics(source, [])
   |> should.equal([])
 }
 
 pub fn dependency_multiple_mixed_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"known.t.s.dep\", \"unknown.t.s.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"known.t.s.dep\", \"unknown.t.s.dep\"] } }\n"
   let diags =
     diagnostics.get_cross_file_dependency_diagnostics(source, [
       "known.t.s.dep",
@@ -1410,7 +1382,7 @@ pub fn dependency_multiple_mixed_test() {
 
 pub fn dependency_duplicate_targets_single_diagnostic_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.t.s.dep\"], soft: [\"org.t.s.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.t.s.dep\"], soft: [\"org.t.s.dep\"] } }\n"
   let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1440,14 +1412,14 @@ pub fn all_diagnostics_empty_content_test() {
 
 pub fn all_diagnostics_valid_expects_known_blueprint_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   diagnostics.get_all_diagnostics(source, ["api_availability"], [])
   |> should.equal([])
 }
 
 pub fn all_diagnostics_unknown_blueprint_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations for \"api_availability\"\n  \"checkout\":\n    Provides { status: true }\n"
   let diags = diagnostics.get_all_diagnostics(source, [], [])
   let has_bp_not_found =
     list.any(diags, fn(d) {
@@ -1459,7 +1431,7 @@ pub fn all_diagnostics_unknown_blueprint_test() {
 
 pub fn all_diagnostics_unknown_dependency_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations for \"bp\"\n  \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   let diags = diagnostics.get_all_diagnostics(source, ["bp"], [])
   let has_dep_not_found =
     list.any(diags, fn(d) {
@@ -1470,18 +1442,15 @@ pub fn all_diagnostics_unknown_dependency_test() {
 }
 
 pub fn all_diagnostics_combines_all_checks_test() {
-  // Expects file with validation error (overshadowing), unknown blueprint, and unknown dep
+  // Expects file with unknown blueprint and unknown dep (no overshadowing for Requiring extendables)
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"unknown_bp\"\n  * \"item\" extends [_defaults]:\n    Provides { env: \"staging\", relations: { hard: [\"org.t.s.dep\"] } }\n"
+    "_defaults (Requiring): { env: String }\n\nExpectations for \"unknown_bp\"\n  \"item\" extends [_defaults]:\n    Provides { env: \"staging\", relations: { hard: [\"org.t.s.dep\"] } }\n"
   let diags = diagnostics.get_all_diagnostics(source, [], [])
-  // Should have validation error (overshadowing), blueprint not found, and dependency not found
-  let has_overshadow =
-    list.any(diags, fn(d) { string.contains(d.message, "overshadows") })
+  // Should have blueprint not found and dependency not found
   let has_bp =
     list.any(diags, fn(d) { d.code == diagnostics.BlueprintNotFound })
   let has_dep =
     list.any(diags, fn(d) { d.code == diagnostics.DependencyNotFound })
-  has_overshadow |> should.be_true()
   has_bp |> should.be_true()
   has_dep |> should.be_true()
 }
@@ -1517,11 +1486,11 @@ pub fn workspace_symbols_empty_test() {
 pub fn workspace_symbols_blueprints_test() {
   let source =
     "_env (Type): String { x | x in { \"prod\", \"staging\" } }
-_base (Requires): { env: String }
+_base (Requiring): { env: String }
 
 Blueprints
-  * \"api\":
-    Requires { threshold: Float }
+  \"api\":
+    Requiring { threshold: Float }
     Provides { value: \"x\" }
 "
   let symbols = workspace_symbols.get_workspace_symbols(source)
@@ -1536,12 +1505,12 @@ Blueprints
 
 pub fn workspace_symbols_expects_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }
+    "_defaults (Requiring): { env: String }
 
 Expectations for \"api_availability\"
-  * \"checkout\":
+  \"checkout\":
     Provides { status: true }
-  * \"payments\":
+  \"payments\":
     Provides { status: true }
 "
   let symbols = workspace_symbols.get_workspace_symbols(source)
@@ -1557,8 +1526,8 @@ Expectations for \"api_availability\"
 pub fn workspace_symbols_no_fields_test() {
   let source =
     "Blueprints
-  * \"api\":
-    Requires { env: String, threshold: Float }
+  \"api\":
+    Requiring { env: String, threshold: Float }
     Provides { value: \"x\", vendor: \"datadog\" }
 "
   let symbols = workspace_symbols.get_workspace_symbols(source)
@@ -1575,11 +1544,11 @@ pub fn workspace_symbols_invalid_source_test() {
 pub fn workspace_symbols_kind_values_test() {
   let source =
     "_env (Type): String { x | x in { \"prod\" } }
-_base (Provides): { vendor: \"datadog\" }
+_base (Requiring): { vendor: String }
 
 Blueprints
-  * \"api\":
-    Requires { env: String }
+  \"api\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
   let symbols = workspace_symbols.get_workspace_symbols(source)
@@ -1608,11 +1577,11 @@ Blueprints
 pub fn type_hierarchy_blueprint_item_test() {
   let source =
     "Blueprints
-  * \"api\":
-    Requires { env: String }
+  \"api\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
-  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 7)
+  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 3)
   case items {
     [item] -> {
       item.name |> should.equal("api")
@@ -1627,10 +1596,10 @@ pub fn type_hierarchy_blueprint_item_test() {
 pub fn type_hierarchy_expect_item_test() {
   let source =
     "Expectations for \"api_availability\"
-  * \"checkout\":
+  \"checkout\":
     Provides { status: true }
 "
-  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 7)
+  let items = type_hierarchy.prepare_type_hierarchy(source, 1, 3)
   case items {
     [item] -> {
       item.name |> should.equal("checkout")
@@ -1645,8 +1614,8 @@ pub fn type_hierarchy_expect_item_test() {
 pub fn type_hierarchy_keyword_returns_empty_test() {
   let source =
     "Blueprints
-  * \"api\":
-    Requires { env: String }
+  \"api\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
   type_hierarchy.prepare_type_hierarchy(source, 0, 3)
@@ -1656,8 +1625,8 @@ pub fn type_hierarchy_keyword_returns_empty_test() {
 pub fn type_hierarchy_empty_space_returns_empty_test() {
   let source =
     "Blueprints
-  * \"api\":
-    Requires { env: String }
+  \"api\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
   type_hierarchy.prepare_type_hierarchy(source, 0, 10)
@@ -1667,8 +1636,8 @@ pub fn type_hierarchy_empty_space_returns_empty_test() {
 pub fn type_hierarchy_field_name_returns_empty_test() {
   let source =
     "Blueprints
-  * \"api\":
-    Requires { env: String }
+  \"api\":
+    Requiring { env: String }
     Provides { value: \"x\" }
 "
   // "env" is a field name, not an item name
@@ -1678,7 +1647,7 @@ pub fn type_hierarchy_field_name_returns_empty_test() {
 
 pub fn type_hierarchy_multiple_expects_blocks_test() {
   let source =
-    "Expectations for \"bp_one\"\n  * \"item_a\":\n    Provides { status: true }\n\nExpectations for \"bp_two\"\n  * \"item_b\":\n    Provides { active: false }\n"
+    "Expectations for \"bp_one\"\n  \"item_a\":\n    Provides { status: true }\n\nExpectations for \"bp_two\"\n  \"item_b\":\n    Provides { active: false }\n"
   let items = type_hierarchy.prepare_type_hierarchy(source, 5, 7)
   case items {
     [item] -> {

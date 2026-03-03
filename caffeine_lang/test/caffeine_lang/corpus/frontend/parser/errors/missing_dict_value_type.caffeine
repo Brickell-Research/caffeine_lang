@@ -1,4 +1,4 @@
 Blueprints
-  * "test":
-    Requires { counts: Dict(String) }
+  "test":
+    Requiring { counts: Dict(String) }
     Provides { value: "x" }

@@ -81,28 +81,9 @@ pub fn promote_expects_file(file: ExpectsFile(a)) -> ExpectsFile(b) {
 // =============================================================================
 
 /// An extendable block that can be inherited by blueprints or expectations.
+/// Extendables are always Requiring-kind, containing typed fields.
 pub type Extendable {
-  Extendable(
-    name: String,
-    kind: ExtendableKind,
-    body: Struct,
-    leading_comments: List(Comment),
-  )
-}
-
-/// The kind of extendable (Requires for types, Provides for values).
-pub type ExtendableKind {
-  ExtendableRequires
-  ExtendableProvides
-}
-
-/// Converts an extendable kind to its display string.
-@internal
-pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
-  case kind {
-    ExtendableRequires -> "Requires"
-    ExtendableProvides -> "Provides"
-  }
+  Extendable(name: String, body: Struct, leading_comments: List(Comment))
 }
 
 // =============================================================================
@@ -162,7 +143,7 @@ pub type Field {
   Field(name: String, value: Value, leading_comments: List(Comment))
 }
 
-/// A value in a field - either a type (in Requires) or a literal (in Provides).
+/// A value in a field - either a type (in Requiring) or a literal (in Provides).
 pub type Value {
   TypeValue(type_: ParsedType)
   LiteralValue(literal: Literal)

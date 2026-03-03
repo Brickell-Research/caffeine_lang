@@ -1,4 +1,4 @@
 Blueprints
-  * "test" extends [_base:
-    Requires { env: String }
+  "test" extends [_base:
+    Requiring { env: String }
     Provides { value: "x" }

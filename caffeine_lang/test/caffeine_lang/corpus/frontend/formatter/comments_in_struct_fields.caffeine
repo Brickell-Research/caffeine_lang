@@ -1,5 +1,5 @@
 Expectations for "slo"
-  * "item":
+  "item":
     Provides {
       # The threshold
       threshold: 99.9,

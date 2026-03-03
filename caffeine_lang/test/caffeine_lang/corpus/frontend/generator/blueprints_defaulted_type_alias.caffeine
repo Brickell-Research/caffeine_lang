@@ -1,12 +1,12 @@
 _env (Type): String { x | x in { "production", "staging", "development" } }
 
-_env_requires (Requires): {
+_env_requires (Requiring): {
   environment: Defaulted(_env, "production")
 }
 
 Blueprints
-  * "test" extends [_env_requires]:
-    Requires {
+  "test" extends [_env_requires]:
+    Requiring {
       threshold: Integer
     }
     Provides { value: "x" }

@@ -1,6 +1,6 @@
-_base (Provides): { vendor: "datadog" }
+_base (Requiring): { vendor: String }
 
 Blueprints
-  * "api" extends [_base, _nonexistent]:
-    Requires { env: String }
+  "api" extends [_base, _nonexistent]:
+    Requiring { env: String }
     Provides { value: "test" }

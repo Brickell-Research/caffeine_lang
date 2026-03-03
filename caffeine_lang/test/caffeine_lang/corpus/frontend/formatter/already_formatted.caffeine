@@ -1,4 +1,4 @@
 Blueprints
-  * "api":
-    Requires { env: String }
+  "api":
+    Requiring { env: String }
     Provides { vendor: "datadog" }

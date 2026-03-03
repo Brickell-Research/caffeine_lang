@@ -1,4 +1,4 @@
 Blueprints
-  * "test_blueprint" :
-    Requires   {   vendor:  String,    threshold:  Float   }
+  "test_blueprint" :
+    Requiring   {   vendor:  String,    threshold:  Float   }
     Provides   {   vendor:  "datadog",   threshold:  99.9   }

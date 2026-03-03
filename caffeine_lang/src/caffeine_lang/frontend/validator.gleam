@@ -28,7 +28,6 @@ pub type ValidatorError {
     candidates: List(String),
   )
   DuplicateExtendsReference(name: String, referenced_by: String)
-  InvalidExtendableKind(name: String, expected: String, got: String)
   UndefinedTypeAlias(
     name: String,
     referenced_by: String,
@@ -137,11 +136,10 @@ pub fn validate_expects_file(
     file.blocks
     |> list.flat_map(fn(block) { block.items })
 
-  // Structural checks (independent of each other)
+  // Structural checks
   let structural_errors =
     collect_errors([
       validate_no_duplicates(extendables, fn(e) { e.name }, DuplicateExtendable),
-      validate_extendables_are_provides(extendables),
     ])
   use <- guard_errors(structural_errors)
 
@@ -205,26 +203,6 @@ fn validate_no_extendable_type_alias_collision(
   })
 }
 
-/// Validates that all extendables in an expects file are Provides kind.
-fn validate_extendables_are_provides(
-  extendables: List(Extendable),
-) -> Result(Nil, ValidatorError) {
-  case extendables {
-    [] -> Ok(Nil)
-    [first, ..rest] -> {
-      case first.kind {
-        ast.ExtendableProvides -> validate_extendables_are_provides(rest)
-        ast.ExtendableRequires ->
-          Error(InvalidExtendableKind(
-            name: first.name,
-            expected: "Provides",
-            got: "Requires",
-          ))
-      }
-    }
-  }
-}
-
 /// Validates extends references for blueprint items.
 fn validate_blueprint_items_extends(
   items: List(BlueprintItem),
@@ -244,15 +222,14 @@ fn validate_blueprint_items_extends(
       extendable_names,
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
-    // Check that item's requires/provides don't overshadow extended fields
+    // Check that item's requires don't overshadow extended fields.
+    // Provides fields may overlap with Requiring extendable types (they supply values).
     let requires_fields =
       item.requires.fields |> list.map(fn(f) { f.name }) |> set.from_list
-    let provides_fields =
-      item.provides.fields |> list.map(fn(f) { f.name }) |> set.from_list
     validate_no_overshadowing(
       item.name,
       item.extends,
-      [requires_fields, provides_fields],
+      [requires_fields],
       extendable_map,
     )
   })
@@ -277,15 +254,9 @@ fn validate_expect_items_extends(
       extendable_names,
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
-    // Check that item's provides don't overshadow extended fields
-    let provides_fields =
-      item.provides.fields |> list.map(fn(f) { f.name }) |> set.from_list
-    validate_no_overshadowing(
-      item.name,
-      item.extends,
-      [provides_fields],
-      extendable_map,
-    )
+    // Requiring extendables define types; Provides supplies values for them.
+    // No overshadowing check needed for expect items.
+    Ok(Nil)
   })
 }
 

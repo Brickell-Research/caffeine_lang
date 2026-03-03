@@ -2,17 +2,6 @@ import caffeine_lang/frontend/ast
 import caffeine_lang/types
 import test_helpers
 
-// ==== extendable_kind_to_string ====
-// * ✅ ExtendableRequires -> "Requires"
-// * ✅ ExtendableProvides -> "Provides"
-pub fn extendable_kind_to_string_test() {
-  [
-    #("ExtendableRequires -> Requires", ast.ExtendableRequires, "Requires"),
-    #("ExtendableProvides -> Provides", ast.ExtendableProvides, "Provides"),
-  ]
-  |> test_helpers.table_test_1(ast.extendable_kind_to_string)
-}
-
 // ==== build_type_alias_pairs ====
 // * ✅ empty list -> empty list
 // * ✅ single alias -> single pair

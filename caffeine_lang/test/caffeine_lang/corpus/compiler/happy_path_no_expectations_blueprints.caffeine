@@ -1,6 +1,6 @@
 Blueprints
-  * "api_availability":
-    Requires { env: String, status: Boolean, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+  "api_availability":
+    Requiring { env: String, status: Boolean, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: "datadog",
       evaluation: "numerator / denominator",

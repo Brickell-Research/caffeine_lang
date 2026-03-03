@@ -19,7 +19,7 @@ pub fn all_keywords() -> List(KeywordMeta) {
       description: "Inherits fields from one or more extendable blocks.",
     ),
     KeywordMeta(
-      name: "Requires",
+      name: "Requiring",
       description: "Defines the typed parameters a blueprint requires as input.",
     ),
     KeywordMeta(

@@ -1,4 +1,4 @@
-_base (Invalid): { vendor: "datadog" }
+_base (Provides): { vendor: String }
 
 Blueprints
   "test":

@@ -1,4 +1,4 @@
 Expectations for "test"
-  * "item":
-    Requires { env: String }
+  "item":
+    Requiring { env: String }
     Provides { value: "x" }

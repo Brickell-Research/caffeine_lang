@@ -1,7 +1,7 @@
 Expectations for "api_availability"
-  * "checkout":
+  "checkout":
     Provides { threshold: 99.95 }
 
 Expectations for "latency"
-  * "checkout_p99":
+  "checkout_p99":
     Provides { threshold_ms: 500 }

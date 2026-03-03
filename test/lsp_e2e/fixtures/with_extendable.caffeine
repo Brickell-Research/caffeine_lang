@@ -1,5 +1,5 @@
-_defaults (Provides): { vendor: "datadog" }
+_defaults (Requiring): { vendor: String }
 
 Expectations for "test_blueprint"
-  * "checkout" extends [_defaults]:
+  "checkout" extends [_defaults]:
     Provides { threshold: 99.9 }

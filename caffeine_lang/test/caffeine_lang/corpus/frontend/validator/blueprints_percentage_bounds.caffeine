@@ -1,4 +1,4 @@
 Blueprints
-  * "test":
-    Requires { rate: Percentage { x | x in ( 0.0..200.0 ) } }
+  "test":
+    Requiring { rate: Percentage { x | x in ( 0.0..200.0 ) } }
     Provides { value: "x" }

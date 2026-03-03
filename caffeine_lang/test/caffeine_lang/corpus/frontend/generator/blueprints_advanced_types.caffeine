@@ -1,6 +1,6 @@
 Blueprints
-  * "test":
-    Requires {
+  "test":
+    Requiring {
       tags: List(String),
       counts: Dict(String, Integer),
       name: Optional(String),

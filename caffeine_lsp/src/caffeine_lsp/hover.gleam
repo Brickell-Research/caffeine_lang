@@ -73,7 +73,6 @@ fn lookup_extendable(
 ) -> Option(String) {
   case list.find(extendables, fn(e) { e.name == word }) {
     Ok(ext) -> {
-      let kind = ast.extendable_kind_to_string(ext.kind)
       let fields =
         list.map(ext.body.fields, fn(f) {
           "  - `" <> f.name <> "`: " <> ast.value_to_string(f.value)
@@ -82,9 +81,7 @@ fn lookup_extendable(
       let md =
         "**"
         <> ext.name
-        <> "** — "
-        <> kind
-        <> " extendable"
+        <> "** — Requiring extendable"
         <> case fields {
           "" -> ""
           f -> "\n\n**Fields:**\n" <> f
@@ -132,7 +129,7 @@ fn lookup_blueprint_item(
         <> item.name
         <> "** — Blueprint item"
         <> extends_info
-        <> "\n\nRequires: "
+        <> "\n\nRequiring: "
         <> int.to_string(req_count)
         <> " fields | Provides: "
         <> int.to_string(prov_count)

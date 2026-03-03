@@ -16,7 +16,7 @@ pub fn to_string_test() {
     #("keyword Expectations", token.KeywordExpectations, "Expectations"),
     #("keyword for", token.KeywordFor, "for"),
     #("keyword extends", token.KeywordExtends, "extends"),
-    #("keyword Requires", token.KeywordRequires, "Requires"),
+    #("keyword Requiring", token.KeywordRequiring, "Requiring"),
     #("keyword Provides", token.KeywordProvides, "Provides"),
     #("keyword in", token.KeywordIn, "in"),
     #("keyword x", token.KeywordX, "x"),

@@ -1,4 +1,4 @@
 Blueprints
-  * "test_blueprint":
-    Requires { "env": String }
+  "test_blueprint":
+    Requiring { "env": String }
     Provides { vendor: "datadog" }

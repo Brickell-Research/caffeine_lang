@@ -1,6 +1,6 @@
 Blueprints
-  * "api":
-    Requires { env: String, status: Boolean }
+  "api":
+    Requiring { env: String, status: Boolean }
     Provides {
       value: "numerator / denominator",
       queries: {

@@ -1,6 +1,6 @@
 Blueprints
-  * "test":
-    Requires {
+  "test":
+    Requiring {
       threshold: Percentage,
       target: Percentage { x | x in ( 99.0..100.0 ) },
       level: Defaulted(Percentage, 99.9%)

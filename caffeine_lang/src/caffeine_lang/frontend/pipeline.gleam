@@ -109,13 +109,6 @@ fn validator_error_to_string(err: validator.ValidatorError) -> String {
       <> "' in '"
       <> referenced_by
       <> "'"
-    validator.InvalidExtendableKind(name, expected, got) ->
-      "Invalid extendable kind for '"
-      <> name
-      <> "': expected "
-      <> expected
-      <> ", got "
-      <> got
     validator.UndefinedTypeAlias(name, referenced_by, _candidates) ->
       "Undefined type alias '"
       <> name
@@ -318,7 +311,6 @@ fn validator_error_to_rich_error(
     )
     validator.DuplicateExtendable(name) -> #(name, option.None)
     validator.DuplicateExtendsReference(name, _) -> #(name, option.None)
-    validator.InvalidExtendableKind(name, _, _) -> #(name, option.None)
     validator.DuplicateTypeAlias(name) -> #(name, option.None)
     validator.CircularTypeAlias(name, _) -> #(name, option.None)
     validator.InvalidDictKeyTypeAlias(alias_name, _, _) -> #(

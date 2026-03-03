@@ -37,10 +37,10 @@ pub fn get_selection_range(
   // Find enclosing block (Blueprints/Expectations or extendable)
   let block_range = find_enclosing_block(lines, line, total, file_range)
 
-  // Find enclosing item (* "name":)
+  // Find enclosing item ("name":)
   let item_range = find_enclosing_item(lines, line, total, block_range)
 
-  // Find enclosing section (Requires/Provides)
+  // Find enclosing section (Requiring/Provides)
   let section_range = find_enclosing_section(lines, line, total, item_range)
 
   // Innermost: the current line
@@ -132,7 +132,7 @@ fn find_item_start_loop(reversed: List(String), idx: Int) -> Int {
     [] -> -1
     [line, ..rest] -> {
       let trimmed = string.trim(line)
-      use <- bool.guard(string.starts_with(trimmed, "* \""), idx)
+      use <- bool.guard(string.starts_with(trimmed, "\""), idx)
       find_item_start_loop(rest, idx - 1)
     }
   }
@@ -163,7 +163,7 @@ fn find_item_end_loop(
   }
 }
 
-/// Find the enclosing Requires/Provides section.
+/// Find the enclosing Requiring/Provides section.
 fn find_enclosing_section(
   lines: List(String),
   cursor_line: Int,
@@ -195,11 +195,11 @@ fn find_section_start_loop(reversed: List(String), idx: Int) -> Int {
     [line, ..rest] -> {
       let trimmed = string.trim(line)
       use <- bool.guard(
-        string.starts_with(trimmed, "Requires")
+        string.starts_with(trimmed, "Requiring")
           || string.starts_with(trimmed, "Provides"),
         idx,
       )
-      use <- bool.guard(string.starts_with(trimmed, "* \""), -1)
+      use <- bool.guard(string.starts_with(trimmed, "\""), -1)
       find_section_start_loop(rest, idx - 1)
     }
   }

@@ -2,25 +2,25 @@
 # SLO blueprints for availability
 Blueprints
   # API SLO
-  * "api":
-    Requires { env: String }
+  "api":
+    Requiring { env: String }
     Provides { vendor: "datadog" }
 
   ## Database SLOs
   # DB availability
-  * "db":
-    Requires { env: String }
+  "db":
+    Requiring { env: String }
     Provides { vendor: "datadog" }
 
 ## Latency
 # SLO blueprints for latency
 Blueprints
-  * "api_latency":
-    Requires { env: String }
+  "api_latency":
+    Requiring { env: String }
     Provides { vendor: "datadog" }
 
 ## Throughput
 Blueprints
-  * "api_throughput":
-    Requires { env: String }
+  "api_throughput":
+    Requiring { env: String }
     Provides { vendor: "datadog" }

@@ -2,8 +2,8 @@ _env (Type): String { x | x in { "production", "staging" } }
 _relation (Type): String { x | x in { "friend", "colleague" } }
 
 Blueprints
-  * "test":
-    Requires {
+  "test":
+    Requiring {
       env: _env,
       config: Dict(_relation, String),
       items: List(_env),

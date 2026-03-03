@@ -404,7 +404,7 @@ fn keyword_or_identifier(word: String) -> Token {
     "Expectations" -> token.KeywordExpectations
     "for" -> token.KeywordFor
     "extends" -> token.KeywordExtends
-    "Requires" -> token.KeywordRequires
+    "Requiring" -> token.KeywordRequiring
     "Provides" -> token.KeywordProvides
     "in" -> token.KeywordIn
     "x" -> token.KeywordX

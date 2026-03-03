@@ -1,7 +1,7 @@
 _env (Type): String { x | x in { "production", "staging" } }
-_env (Provides): { vendor: "datadog" }
+_env (Requiring): { vendor: String }
 
 Blueprints
-  * "api":
-    Requires { threshold: Float }
+  "api":
+    Requiring { threshold: Float }
     Provides { value: "test" }

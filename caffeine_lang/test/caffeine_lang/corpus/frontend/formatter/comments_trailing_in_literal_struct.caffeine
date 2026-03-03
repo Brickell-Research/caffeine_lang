@@ -1,5 +1,5 @@
 Expectations for "slo"
-  * "item":
+  "item":
     Provides {
       config: {
         key: "value"
