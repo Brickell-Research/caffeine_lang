@@ -1,4 +1,4 @@
 Blueprints
-  * "api" extends [_base, _common]:
-    Requires { threshold: Float }
+  "api" extends [_base, _common]:
+    Requiring { threshold: Float }
     Provides { value: "test" }

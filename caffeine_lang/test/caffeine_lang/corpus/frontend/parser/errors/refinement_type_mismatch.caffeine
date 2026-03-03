@@ -1,6 +1,6 @@
 _bad_type (Type): String { x | x in { "valid", 10 } }
 
 Blueprints
-  * "test":
-    Requires { env: _bad_type }
+  "test":
+    Requiring { env: _bad_type }
     Provides { value: "x" }

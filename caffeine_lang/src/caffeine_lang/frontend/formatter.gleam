@@ -4,9 +4,8 @@ import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
   type Field, type Literal, type Parsed, type Struct, type TypeAlias,
-  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
-  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
-  LiteralTrue, LiteralValue, Struct, TypeValue,
+  LiteralFalse, LiteralFloat, LiteralInteger, LiteralList, LiteralPercentage,
+  LiteralString, LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -144,20 +143,10 @@ fn format_type_alias(alias: TypeAlias) -> String {
 }
 
 fn format_extendable(ext: Extendable) -> String {
-  let kind_str = case ext.kind {
-    ExtendableRequires -> "Requires"
-    ExtendableProvides -> "Provides"
-  }
-  let context = case ext.kind {
-    ExtendableRequires -> TypeFields
-    ExtendableProvides -> LiteralFields
-  }
   format_comments(ext.leading_comments, "")
   <> ext.name
-  <> " ("
-  <> kind_str
-  <> "): "
-  <> format_struct(ext.body, 0, context)
+  <> " (Requiring): "
+  <> format_struct(ext.body, 0, TypeFields)
 }
 
 fn format_blueprints_block(block: BlueprintsBlock) -> String {
@@ -186,9 +175,9 @@ fn format_expects_block(block: ExpectsBlock) -> String {
 fn format_blueprint_item(item: BlueprintItem) -> String {
   let comments = format_comments(item.leading_comments, "  ")
   let name_line =
-    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "  \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
-  let requires = "    Requires " <> format_struct(item.requires, 4, TypeFields)
+  let requires = "    Requiring " <> format_struct(item.requires, 4, TypeFields)
   let provides =
     "    Provides " <> format_struct(item.provides, 4, LiteralFields)
 
@@ -198,7 +187,7 @@ fn format_blueprint_item(item: BlueprintItem) -> String {
 fn format_expect_item(item: ExpectItem) -> String {
   let comments = format_comments(item.leading_comments, "  ")
   let name_line =
-    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "  \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
   let provides =
     "    Provides " <> format_struct(item.provides, 4, LiteralFields)

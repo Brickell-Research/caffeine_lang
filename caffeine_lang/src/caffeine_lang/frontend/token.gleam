@@ -9,7 +9,7 @@ pub type Token {
   KeywordExpectations
   KeywordFor
   KeywordExtends
-  KeywordRequires
+  KeywordRequiring
   KeywordProvides
   KeywordIn
   KeywordX
@@ -58,7 +58,7 @@ pub fn to_string(tok: Token) -> String {
     KeywordExpectations -> "Expectations"
     KeywordFor -> "for"
     KeywordExtends -> "extends"
-    KeywordRequires -> "Requires"
+    KeywordRequiring -> "Requiring"
     KeywordProvides -> "Provides"
     KeywordIn -> "in"
     KeywordX -> "x"

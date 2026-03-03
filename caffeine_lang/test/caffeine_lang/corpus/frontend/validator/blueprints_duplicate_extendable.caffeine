@@ -1,7 +1,7 @@
-_base (Provides): { vendor: "datadog" }
-_base (Requires): { env: String }
+_base (Requiring): { vendor: String }
+_base (Requiring): { env: String }
 
 Blueprints
-  * "api":
-    Requires { threshold: Float }
+  "api":
+    Requiring { threshold: Float }
     Provides { value: "test" }

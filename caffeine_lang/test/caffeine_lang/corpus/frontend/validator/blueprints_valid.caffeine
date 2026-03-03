@@ -1,7 +1,7 @@
-_base (Provides): { vendor: "datadog" }
-_common (Requires): { env: String }
+_base (Requiring): { vendor: String }
+_common (Requiring): { env: String }
 
 Blueprints
-  * "api" extends [_base, _common]:
-    Requires { threshold: Float }
+  "api" extends [_base, _common]:
+    Requiring { threshold: Float }
     Provides { value: "test" }

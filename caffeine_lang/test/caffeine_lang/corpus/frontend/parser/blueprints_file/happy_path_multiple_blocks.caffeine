@@ -1,9 +1,9 @@
 Blueprints
-  * "availability":
-    Requires { env: String }
+  "availability":
+    Requiring { env: String }
     Provides { vendor: "datadog" }
 
 Blueprints
-  * "hard_dep":
-    Requires { from: String, to: String }
+  "hard_dep":
+    Requiring { from: String, to: String }
     Provides { type: "hard" }

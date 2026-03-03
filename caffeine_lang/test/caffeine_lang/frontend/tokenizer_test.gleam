@@ -18,7 +18,7 @@ fn tokenize_tokens(
 // * ✅ Expects keyword
 // * ✅ for keyword
 // * ✅ extends keyword
-// * ✅ Requires keyword
+// * ✅ Requiring keyword
 // * ✅ Provides keyword
 // * ✅ Type keyword
 // * ✅ in keyword
@@ -37,7 +37,7 @@ pub fn tokenize_keywords_test() {
     ),
     #("for keyword", "for", Ok([token.KeywordFor, token.EOF])),
     #("extends keyword", "extends", Ok([token.KeywordExtends, token.EOF])),
-    #("Requires keyword", "Requires", Ok([token.KeywordRequires, token.EOF])),
+    #("Requiring keyword", "Requiring", Ok([token.KeywordRequiring, token.EOF])),
     #("Provides keyword", "Provides", Ok([token.KeywordProvides, token.EOF])),
     #("Type keyword", "Type", Ok([token.KeywordType, token.EOF])),
     #("in keyword", "in", Ok([token.KeywordIn, token.EOF])),
@@ -345,11 +345,11 @@ pub fn tokenize_extendable_test() {
   [
     #(
       "requires extendable",
-      "_common (Requires): { env: String }",
+      "_common (Requiring): { env: String }",
       Ok([
         token.Identifier("_common"),
         token.SymbolLeftParen,
-        token.KeywordRequires,
+        token.KeywordRequiring,
         token.SymbolRightParen,
         token.SymbolColon,
         token.SymbolLeftBrace,
@@ -388,9 +388,8 @@ pub fn tokenize_blueprint_item_test() {
   [
     #(
       "item with extends",
-      "* \"api_availability\" extends [_base]:",
+      "\"api_availability\" extends [_base]:",
       Ok([
-        token.SymbolStar,
         token.LiteralString("api_availability"),
         token.KeywordExtends,
         token.SymbolLeftBracket,
@@ -402,9 +401,8 @@ pub fn tokenize_blueprint_item_test() {
     ),
     #(
       "item without extends",
-      "* \"latency\":",
+      "\"latency\":",
       Ok([
-        token.SymbolStar,
         token.LiteralString("latency"),
         token.SymbolColon,
         token.EOF,
@@ -420,9 +418,9 @@ pub fn tokenize_requires_block_test() {
   [
     #(
       "multiple fields",
-      "Requires { env: String, threshold: Float }",
+      "Requiring { env: String, threshold: Float }",
       Ok([
-        token.KeywordRequires,
+        token.KeywordRequiring,
         token.SymbolLeftBrace,
         token.Identifier("env"),
         token.SymbolColon,
@@ -569,19 +567,18 @@ pub fn tokenize_multiline_test() {
   [
     #(
       "full blueprint structure",
-      "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }",
+      "Blueprints for \"SLO\"\n  \"api\":\n    Requiring { env: String }",
       Ok([
         token.KeywordBlueprints,
         token.KeywordFor,
         token.LiteralString("SLO"),
         token.WhitespaceNewline,
         token.WhitespaceIndent(2),
-        token.SymbolStar,
         token.LiteralString("api"),
         token.SymbolColon,
         token.WhitespaceNewline,
         token.WhitespaceIndent(4),
-        token.KeywordRequires,
+        token.KeywordRequiring,
         token.SymbolLeftBrace,
         token.Identifier("env"),
         token.SymbolColon,

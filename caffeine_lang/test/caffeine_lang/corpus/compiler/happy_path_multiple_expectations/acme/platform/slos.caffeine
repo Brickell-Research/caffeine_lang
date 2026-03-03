@@ -1,5 +1,5 @@
 Expectations for "api_availability"
-  * "auth_service_availability":
+  "auth_service_availability":
     Provides {
       env: "production",
       service: "auth-service",

@@ -316,13 +316,6 @@ fn validator_error_to_diagnostic(
           <> referenced_by
           <> "'",
       )
-    validator.InvalidExtendableKind(name, expected, got) ->
-      name_diagnostic(
-        content,
-        name,
-        lsp_types.diagnostic_severity_to_int(DsError),
-        "Extendable '" <> name <> "' must be " <> expected <> ", got " <> got,
-      )
     validator.UndefinedTypeAlias(name, referenced_by, _candidates) ->
       name_diagnostic(
         content,

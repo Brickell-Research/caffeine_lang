@@ -198,14 +198,14 @@ test("diagnostics: error recovery clears diagnostics after fix", async () => {
     const uri = "file:///tmp/test_recovery.caffeine";
 
     // Start with broken content (missing colon after blueprint name)
-    const broken = `Blueprints for "SLO"\n  * "test"\n    Requires { v: String }\n    Provides { v: "x" }\n`;
+    const broken = `Blueprints for "SLO"\n  "test"\n    Requiring { v: String }\n    Provides { v: "x" }\n`;
     const diagPromise1 = client.waitForDiagnostics(uri);
     client.openDocument(uri, broken);
     const diag1 = await diagPromise1;
     expect(diag1.diagnostics.length > 0).toBeTruthy();
 
     // Fix: add the missing colon
-    const fixed = `Blueprints for "SLO"\n  * "test":\n    Requires { v: String }\n    Provides { v: "x" }\n`;
+    const fixed = `Blueprints for "SLO"\n  "test":\n    Requiring { v: String }\n    Provides { v: "x" }\n`;
     const diagPromise2 = client.waitForDiagnostics(uri);
     client.changeDocument(uri, fixed, 2);
     const diag2 = await diagPromise2;

@@ -1,5 +1,5 @@
-_common (Requires): { env: String }
+_common (Requiring): { env: String }
 
 Expectations for "api_availability"
-  * "checkout":
+  "checkout":
     Provides { threshold: 99.95 }

@@ -1,4 +1,4 @@
 Blueprints
-  * "api":
-    Requires { data: { name: _nope } }
+  "api":
+    Requiring { data: { name: _nope } }
     Provides { value: "x" }

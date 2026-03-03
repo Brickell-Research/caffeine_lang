@@ -49,10 +49,10 @@ fn is_foldable_start(trimmed: String, indent: Int) -> Bool {
       || string.starts_with(trimmed, "##")
     2 ->
       // Item lines
-      string.starts_with(trimmed, "* ")
+      string.starts_with(trimmed, "\"")
     4 ->
-      // Requires/Provides sections
-      string.starts_with(trimmed, "Requires")
+      // Requiring/Provides sections
+      string.starts_with(trimmed, "Requiring")
       || string.starts_with(trimmed, "Provides")
     _ -> False
   }

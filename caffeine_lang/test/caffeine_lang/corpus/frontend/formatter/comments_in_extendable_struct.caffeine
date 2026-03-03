@@ -1,10 +1,10 @@
-_defaults (Provides): {
+_defaults (Requiring): {
   # The threshold
-  threshold: 99.9,
+  threshold: Float,
   # The window
-  window_in_days: 7
+  window_in_days: Integer
 }
 
 Expectations for "slo"
-  * "item" extends [_defaults]:
+  "item" extends [_defaults]:
     Provides { service: "api" }

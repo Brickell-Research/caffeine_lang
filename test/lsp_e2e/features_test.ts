@@ -39,7 +39,7 @@ test("hover on type keyword returns markdown content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { vendor: String, threshold: Float }"
+    // Line 2: "    Requiring { vendor: String, threshold: Float }"
     // "String" starts at character 23
     const result = await client.hover(uri, 2, 23);
 
@@ -105,8 +105,8 @@ test("hover on whitespace returns null", async () => {
 }, 30_000);
 
 // ==== completion_type_keywords ====
-// * Completion after ":" in Requires block returns type keywords
-test("completion in Requires block returns type keywords", async () => {
+// * Completion after ":" in Requiring block returns type keywords
+test("completion in Requiring block returns type keywords", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
@@ -119,7 +119,7 @@ test("completion in Requires block returns type keywords", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { vendor: String, threshold: Float }"
+    // Line 2: "    Requiring { vendor: String, threshold: Float }"
     // Character 22 is the space after ":", should trigger type completions
     const items = await client.completion(uri, 2, 22);
 
@@ -187,9 +187,9 @@ test("go-to-definition on extendable navigates to definition", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 3: '  * "checkout" extends [_defaults]:'
-    // "_defaults" starts at character 24
-    const result = await client.definition(uri, 3, 24);
+    // Line 3: '  "checkout" extends [_defaults]:'
+    // "_defaults" starts at character 22
+    const result = await client.definition(uri, 3, 22);
 
     expect(result !== null).toBeTruthy();
     expect(result.uri).toBe(uri);

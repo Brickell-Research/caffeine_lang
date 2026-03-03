@@ -36,14 +36,10 @@ pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw))
 /// Lowers expectations from a validated expects AST.
 @internal
 pub fn lower_expectations(file: ExpectsFile(Validated)) -> List(Expectation) {
-  let extendables = build_extendable_map(file.extendables)
-
   file.blocks
   |> list.flat_map(fn(block) {
     block.items
-    |> list.map(fn(item) {
-      generate_expect_item(item, block.blueprint, extendables)
-    })
+    |> list.map(fn(item) { generate_expect_item(item, block.blueprint) })
   })
 }
 
@@ -80,66 +76,45 @@ fn generate_blueprint_item(
 }
 
 /// Generates a single expectation from an AST item.
-fn generate_expect_item(
-  item: ExpectItem,
-  blueprint: String,
-  extendables: Dict(String, Extendable),
-) -> Expectation {
-  let merged_provides = merge_expect_extends(item, extendables)
+fn generate_expect_item(item: ExpectItem, blueprint: String) -> Expectation {
+  let merged_provides = merge_expect_extends(item)
   let inputs = struct_to_inputs(merged_provides)
 
   Expectation(name: item.name, blueprint_ref: blueprint, inputs: inputs)
 }
 
-/// Collects fields from extended extendables matching a given kind.
+/// Collects fields from extended extendables.
 fn collect_extended_fields(
   extends: List(String),
   extendables: Dict(String, Extendable),
-  kind: ast.ExtendableKind,
 ) -> List(Field) {
   extends
   |> list.flat_map(fn(name) {
     case dict.get(extendables, name) {
-      Ok(ext) if ext.kind == kind -> ext.body.fields
+      Ok(ext) -> ext.body.fields
       _ -> []
     }
   })
 }
 
-/// Merges extended fields into a blueprint item's requires and provides.
+/// Merges extended fields into a blueprint item's requires.
 /// Order: extended extendables left-to-right, then item's own fields (can override).
 fn merge_blueprint_extends(
   item: BlueprintItem,
   extendables: Dict(String, Extendable),
 ) -> #(Struct, Struct) {
   let requires_fields =
-    collect_extended_fields(item.extends, extendables, ast.ExtendableRequires)
+    collect_extended_fields(item.extends, extendables)
     |> list.append(item.requires.fields)
     |> dedupe_fields
 
-  let provides_fields =
-    collect_extended_fields(item.extends, extendables, ast.ExtendableProvides)
-    |> list.append(item.provides.fields)
-    |> dedupe_fields
-
-  #(
-    ast.Struct(requires_fields, trailing_comments: []),
-    ast.Struct(provides_fields, trailing_comments: []),
-  )
+  #(ast.Struct(requires_fields, trailing_comments: []), item.provides)
 }
 
-/// Merges extended fields into an expect item's provides.
-/// Order: extended extendables left-to-right, then item's own fields (can override).
-fn merge_expect_extends(
-  item: ExpectItem,
-  extendables: Dict(String, Extendable),
-) -> Struct {
-  let provides_fields =
-    collect_extended_fields(item.extends, extendables, ast.ExtendableProvides)
-    |> list.append(item.provides.fields)
-    |> dedupe_fields
-
-  ast.Struct(provides_fields, trailing_comments: [])
+/// Returns an expect item's provides.
+/// Extendables are Requiring-kind only, so they do not contribute to Provides.
+fn merge_expect_extends(item: ExpectItem) -> Struct {
+  item.provides
 }
 
 /// Removes duplicate field names, keeping the last occurrence (allows overrides).

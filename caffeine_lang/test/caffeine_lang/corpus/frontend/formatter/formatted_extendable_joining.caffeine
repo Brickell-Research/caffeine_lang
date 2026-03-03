@@ -1,9 +1,9 @@
 # Shared defaults
-_defaults (Provides): { window_in_days: 30 }
+_defaults (Requiring): { window_in_days: Integer }
 # Service-specific
-_service (Provides): { service_name: "api" }
+_service (Requiring): { service_name: String }
 
 ## SLO Expectations
 Expectations for "availability"
-  * "api" extends [_defaults, _service]:
+  "api" extends [_defaults, _service]:
     Provides { threshold: 99.95 }

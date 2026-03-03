@@ -1,4 +1,4 @@
 Blueprints
-  * "test":
-    Requires { field: Unknown }
+  "test":
+    Requiring { field: Unknown }
     Provides { value: "x" }

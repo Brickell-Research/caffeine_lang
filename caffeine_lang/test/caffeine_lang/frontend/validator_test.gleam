@@ -30,7 +30,7 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
 // ==== Happy Paths ====
 // * ✅ valid - extendables exist, no duplicates
 // * ✅ valid - no extendables at all
-// * ✅ valid - type aliases with references in Requires
+// * ✅ valid - type aliases with references in Requiring
 // * ✅ valid - record type with type alias
 // ==== Error Cases - Extendables ====
 // * ❌ duplicate extendable names
@@ -60,7 +60,7 @@ pub fn validate_blueprints_file_test() {
       Ok(Nil),
     ),
     #(
-      "valid - type aliases with references in Requires",
+      "valid - type aliases with references in Requiring",
       parse_blueprints("blueprints_valid_type_alias"),
       Ok(Nil),
     ),
@@ -239,7 +239,6 @@ pub fn validate_blueprints_file_test() {
 // * ❌ extends references non-existent extendable
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
-// * ❌ Requires extendable in expects file (only Provides allowed)
 pub fn validate_expects_file_test() {
   // Happy paths
   [
@@ -318,24 +317,6 @@ pub fn validate_expects_file_test() {
         validator.DuplicateExtendsReference(
           name: "_defaults",
           referenced_by: "checkout",
-        ),
-      ]),
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(file) {
-    validator.validate_expects_file(file)
-  })
-
-  // Requires extendable in expects file (invalid per spec)
-  [
-    #(
-      "Requires extendable in expects file",
-      parse_expects("expects_requires_extendable"),
-      Error([
-        validator.InvalidExtendableKind(
-          name: "_common",
-          expected: "Provides",
-          got: "Requires",
         ),
       ]),
     ),

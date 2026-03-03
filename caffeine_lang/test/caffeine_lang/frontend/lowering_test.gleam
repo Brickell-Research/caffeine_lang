@@ -81,14 +81,11 @@ pub fn lower_blueprints_with_extends_test() {
 
   bp.name |> should.equal("api")
 
-  // Should have merged requires from _common extendable + own requires
+  // Should have merged requires from _base + _common extendables + own requires
+  let assert Ok(vendor_type) = dict.get(bp.params, "vendor")
+  vendor_type |> should.equal(types.PrimitiveType(types.String))
   let assert Ok(_) = dict.get(bp.params, "env")
   let assert Ok(_) = dict.get(bp.params, "threshold")
-
-  // Should have merged provides from _base extendable + own provides
-  let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
-  let assert Ok(vendor_str) = value.extract_string(vendor_val)
-  vendor_str |> should.equal("datadog")
 }
 
 pub fn lower_blueprints_advanced_types_test() {
@@ -303,7 +300,7 @@ pub fn lower_expectations_with_extends_test() {
   exp.name |> should.equal("checkout")
   exp.blueprint_ref |> should.equal("api_availability")
 
-  // Should have merged fields from _defaults extendable + own provides
+  // All fields come from the item's own provides (extendables are Requiring-kind only)
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
   let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
@@ -321,17 +318,15 @@ pub fn lower_expectations_multiple_extends_test() {
   let expectations = parse_and_lower_expects("expects_multiple_extends")
   let assert Ok(exp) = list.first(expectations)
 
-  // From _defaults: env: "production"
+  // All fields come from the item's own provides (extendables are Requiring-kind only)
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
   let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
-  // From _strict: threshold: 99.99, window_in_days: 7
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
   let assert Ok(threshold_float) = value.extract_float(threshold_val)
   threshold_float |> should.equal(99.99)
 
-  // From item's own provides: status: true
   let assert Ok(status_val) = dict.get(exp.inputs, "status")
   let assert Ok(status_bool) = value.extract_bool(status_val)
   status_bool |> should.be_true

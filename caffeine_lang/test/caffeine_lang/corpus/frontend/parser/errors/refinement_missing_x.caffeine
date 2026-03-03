@@ -1,4 +1,4 @@
 Blueprints
-  * "test":
-    Requires { env: String { | x in { "a" } } }
+  "test":
+    Requiring { env: String { | x in { "a" } } }
     Provides { value: "x" }

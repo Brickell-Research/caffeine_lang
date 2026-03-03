@@ -1,5 +1,5 @@
 Expectations for "api_availability"
-  * "checkout_availability":
+  "checkout_availability":
     Provides {
       env: "production",
       threshold: 99.95

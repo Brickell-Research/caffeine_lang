@@ -1,9 +1,9 @@
-_base_slo (Provides): { vendor: "datadog" }
+_base_slo (Requiring): { vendor: String }
 
 Blueprints
   ## API Availability
-  * "api_availability" extends [_base_slo]:
-    Requires {
+  "api_availability" extends [_base_slo]:
+    Requiring {
       env: String,
       status: Boolean,
       threshold: Float { x | x in ( 0.0 .. 100.0 ) },

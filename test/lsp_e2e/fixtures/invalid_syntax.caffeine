@@ -1,4 +1,4 @@
 Blueprints
-  * "bad_blueprint"
-    Requires { vendor: String }
+  "bad_blueprint"
+    Requiring { vendor: String }
     Provides { vendor: "datadog" }

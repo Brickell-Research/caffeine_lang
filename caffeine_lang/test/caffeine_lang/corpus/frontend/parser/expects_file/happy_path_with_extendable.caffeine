@@ -1,5 +1,5 @@
-_defaults (Provides): { env: "production", window_in_days: 30 }
+_defaults (Requiring): { env: String, window_in_days: Integer }
 
 Expectations for "api_availability"
-  * "checkout":
+  "checkout":
     Provides { threshold: 99.95 }

@@ -113,7 +113,7 @@ fn extract_used_extends(before: String) -> List(String) {
   }
 }
 
-/// Detect if we're inside a Requires/Provides block and suggest fields
+/// Detect if we're inside a Requiring/Provides block and suggest fields
 /// from extendables that haven't been defined yet.
 fn get_field_context(
   parsed: Result(file_utils.ParsedFile, a),
@@ -145,7 +145,7 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
     [] -> option.None
     [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
-      case string.starts_with(trimmed, "* \"") {
+      case string.starts_with(trimmed, "\"") {
         True -> extract_item_name(trimmed)
         False -> find_enclosing_item_loop(rest)
       }
@@ -153,10 +153,10 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
   }
 }
 
-/// Extract the item name from a line like `* "my_slo" extends [...]:` or `* "my_slo":`.
+/// Extract the item name from a line like `"my_slo" extends [...]:` or `"my_slo":`.
 fn extract_item_name(trimmed: String) -> option.Option(String) {
-  // Drop `* "` prefix
-  let after = string.drop_start(trimmed, 3)
+  // Drop `"` prefix
+  let after = string.drop_start(trimmed, 1)
   case string.split_once(after, "\"") {
     Ok(#(name, _)) -> option.Some(name)
     Error(_) -> option.None
@@ -231,7 +231,7 @@ fn collect_extended_fields(
   })
 }
 
-/// Get existing field names based on whether cursor is in Requires or Provides.
+/// Get existing field names based on whether cursor is in Requiring or Provides.
 fn existing_field_names_for_section(
   lines: List(String),
   line: Int,
@@ -243,7 +243,7 @@ fn existing_field_names_for_section(
   }
 }
 
-/// Check if the cursor line is inside a Requires section by walking backwards.
+/// Check if the cursor line is inside a Requiring section by walking backwards.
 fn is_in_requires_section(lines: List(String), line: Int) -> Bool {
   // Take lines up to and including the cursor line, then reverse to walk backwards.
   let prefix = list.take(lines, line + 1) |> list.reverse
@@ -255,9 +255,9 @@ fn is_in_requires_loop(lines: List(String)) -> Bool {
     [] -> False
     [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
-      use <- bool.guard(string.starts_with(trimmed, "Requires"), True)
+      use <- bool.guard(string.starts_with(trimmed, "Requiring"), True)
       use <- bool.guard(string.starts_with(trimmed, "Provides"), False)
-      use <- bool.guard(string.starts_with(trimmed, "* \""), False)
+      use <- bool.guard(string.starts_with(trimmed, "\""), False)
       is_in_requires_loop(rest)
     }
   }
@@ -376,7 +376,7 @@ fn extendable_items(
 }
 
 /// Extract extendable names from raw text when parsing fails.
-/// Scans for lines matching `_name (Provides|Requires):` at indent 0.
+/// Scans for lines matching `_name (Provides|Requiring):` at indent 0.
 fn extract_extendable_names_from_text(content: String) -> List(CompletionItem) {
   string.split(content, "\n")
   |> list.filter_map(fn(line) {
@@ -390,7 +390,7 @@ fn extract_extendable_names_from_text(content: String) -> List(CompletionItem) {
           Ok(#(name, rest)) ->
             case
               string.starts_with(rest, "Provides)")
-              || string.starts_with(rest, "Requires)")
+              || string.starts_with(rest, "Requiring)")
             {
               False -> Error(Nil)
               True ->
@@ -409,7 +409,7 @@ fn extendable_items_from_list(
   extendables: List(ast.Extendable),
 ) -> List(CompletionItem) {
   list.map(extendables, fn(e) {
-    let detail = ast.extendable_kind_to_string(e.kind) <> " extendable"
+    let detail = "Requiring extendable"
     CompletionItem(
       e.name,
       lsp_types.completion_item_kind_to_int(CikVariable),

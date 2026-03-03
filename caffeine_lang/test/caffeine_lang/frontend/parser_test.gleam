@@ -107,8 +107,8 @@ fn range_type(
 // * ✅ happy path - single block
 // * ✅ happy path - multiple blocks
 // * ✅ happy path - multi artifact
-// * ✅ happy path - with Provides extendable
-// * ✅ happy path - with Requires extendable
+// * ✅ happy path - with Requiring extendable
+// * ✅ happy path - with Requiring extendable and extends
 // * ✅ happy path - with extends
 // * ✅ happy path - multiple extends
 // * ✅ happy path - advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
@@ -260,7 +260,7 @@ pub fn parse_blueprints_file_test() {
     ),
     // with extendable
     #(
-      "happy path - with Provides extendable",
+      "happy path - with Requiring extendable",
       blueprints_path("happy_path_with_extendable"),
       Ok(
         ast.BlueprintsFile(
@@ -270,11 +270,10 @@ pub fn parse_blueprints_file_test() {
             ast.Extendable(
               leading_comments: [],
               name: "_base",
-              kind: ast.ExtendableProvides,
               body: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
-                  "vendor",
-                  ast.LiteralValue(ast.LiteralString("datadog")),
+                  "env",
+                  ast.TypeValue(string_type()),
                   leading_comments: [],
                 ),
               ]),
@@ -288,8 +287,8 @@ pub fn parse_blueprints_file_test() {
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
+                    "threshold",
+                    ast.TypeValue(float_type()),
                     leading_comments: [],
                   ),
                 ]),
@@ -306,9 +305,9 @@ pub fn parse_blueprints_file_test() {
         ),
       ),
     ),
-    // with Requires extendable
+    // with multiple-field Requiring extendable and extends
     #(
-      "happy path - with Requires extendable",
+      "happy path - with Requiring extendable and extends",
       blueprints_path("happy_path_requires_extendable"),
       Ok(
         ast.BlueprintsFile(
@@ -318,7 +317,6 @@ pub fn parse_blueprints_file_test() {
             ast.Extendable(
               leading_comments: [],
               name: "_common",
-              kind: ast.ExtendableRequires,
               body: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
                   "env",
@@ -808,16 +806,17 @@ pub fn parse_expects_file_test() {
             ast.Extendable(
               leading_comments: [],
               name: "_defaults",
-              kind: ast.ExtendableProvides,
               body: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
                   "env",
-                  ast.LiteralValue(ast.LiteralString("production")),
+                  ast.TypeValue(string_type()),
                   leading_comments: [],
                 ),
                 ast.Field(
                   "window_in_days",
-                  ast.LiteralValue(ast.LiteralInteger(30)),
+                  ast.TypeValue(
+                    types.ParsedPrimitive(types.NumericType(types.Integer)),
+                  ),
                   leading_comments: [],
                 ),
               ]),
@@ -972,8 +971,9 @@ pub fn parse_expects_file_test() {
 // * ✅ missing provides
 // * ✅ missing item colon
 // * ✅ invalid extendable kind
+// * ✅ Provides extendable (no longer allowed)
 // * ✅ missing dict value type
-// * ✅ expects with Requires
+// * ✅ expects with Requiring
 pub fn parse_errors_test() {
   // Blueprints file errors - check that parsing returns Error
   [
@@ -992,6 +992,11 @@ pub fn parse_errors_test() {
     #("missing provides", errors_path("missing_provides"), True),
     #("missing item colon", errors_path("missing_item_colon"), True),
     #("invalid extendable kind", errors_path("invalid_extendable_kind"), True),
+    #(
+      "Provides extendable (no longer allowed)",
+      errors_path("provides_extendable"),
+      True,
+    ),
     #("missing dict value type", errors_path("missing_dict_value_type"), True),
   ]
   |> test_helpers.table_test_1(fn(file_path) {
@@ -1001,8 +1006,8 @@ pub fn parse_errors_test() {
     }
   })
 
-  // Expects with Requires - check that parsing expects file returns Error
-  [#("expects with Requires", errors_path("expects_with_requires"), True)]
+  // Expects with Requiring - check that parsing expects file returns Error
+  [#("expects with Requiring", errors_path("expects_with_requires"), True)]
   |> test_helpers.table_test_1(fn(file_path) {
     case parser.parse_expects_file(read_file(file_path)) {
       Error(_) -> True
@@ -1032,13 +1037,13 @@ pub fn parse_error_line_numbers_test() {
     ),
     #(
       "error on line 3 reports line 3",
-      "Blueprints\n* \"test\":\nRequires { field: bad }",
-      Error(parser_error.UnknownType("bad", 3, 19)),
+      "Blueprints\n\"test\":\nRequiring { field: bad }",
+      Error(parser_error.UnknownType("bad", 3, 20)),
     ),
     #(
       "error after blank lines reports correct line",
-      "Blueprints\n\n\n* \"test\":\nRequires { field: bad }",
-      Error(parser_error.UnknownType("bad", 5, 19)),
+      "Blueprints\n\n\n\"test\":\nRequiring { field: bad }",
+      Error(parser_error.UnknownType("bad", 5, 20)),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)
@@ -1062,18 +1067,18 @@ pub fn parse_error_missing_delimiter_test() {
   [
     #(
       "missing } at end of file points to correct line (not EOF line)",
-      "Blueprints\n* \"test\":\nRequires { env: String\n",
-      Error(parser_error.UnexpectedToken("}", "end of file", 3, 17)),
+      "Blueprints\n\"test\":\nRequiring { env: String\n",
+      Error(parser_error.UnexpectedToken("}", "end of file", 3, 18)),
     ),
     #(
       "missing } in middle of file points to correct line (not far-away next token)",
-      "Blueprints\n* \"test\":\nRequires { env: String\n\n\nBlueprints",
-      Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 17)),
+      "Blueprints\n\"test\":\nRequiring { env: String\n\n\nBlueprints",
+      Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 18)),
     ),
     #(
       "missing } in refinement points to last token on same line",
-      "Blueprints\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
-      Error(parser_error.UnexpectedToken("}", "Provides", 3, 46)),
+      "Blueprints\n\"test\":\nRequiring { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
+      Error(parser_error.UnexpectedToken("}", "Provides", 3, 47)),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)

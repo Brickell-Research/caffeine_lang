@@ -1,5 +1,5 @@
 Expectations for "api_availability"
-  * "checkout_availability":
+  "checkout_availability":
     Provides {
       env: "production",
       service: "checkout-api",
@@ -8,7 +8,7 @@ Expectations for "api_availability"
     }
 
 Expectations for "api_latency_p99"
-  * "checkout_latency_p99":
+  "checkout_latency_p99":
     Provides {
       env: "production",
       service: "checkout-api",

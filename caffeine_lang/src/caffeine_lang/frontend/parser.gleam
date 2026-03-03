@@ -1,8 +1,7 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type ExtendableKind, type Field, type Literal, type Parsed, type Struct,
-  type TypeAlias,
+  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -304,26 +303,20 @@ fn parse_extendable(
 ) -> Result(#(Extendable, ParserState), ParserError) {
   let state = advance(state)
   use state <- result.try(expect(state, token.SymbolLeftParen, "("))
-  use #(kind, state) <- result.try(parse_extendable_kind(state))
+  use state <- result.try(expect_requiring_kind(state))
   use state <- result.try(expect(state, token.SymbolRightParen, ")"))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  // Parse body based on kind: Requires has types, Provides has literals.
-  use #(body, state) <- result.try(case kind {
-    ast.ExtendableRequires -> parse_type_struct(state)
-    ast.ExtendableProvides -> parse_literal_struct(state)
-  })
-  Ok(#(ast.Extendable(name:, kind:, body:, leading_comments:), state))
+  use #(body, state) <- result.try(parse_type_struct(state))
+  Ok(#(ast.Extendable(name:, body:, leading_comments:), state))
 }
 
-fn parse_extendable_kind(
-  state: ParserState,
-) -> Result(#(ExtendableKind, ParserState), ParserError) {
+/// Expects the Requiring keyword for an extendable kind.
+fn expect_requiring_kind(state: ParserState) -> Result(ParserState, ParserError) {
   case peek(state) {
-    token.KeywordRequires -> Ok(#(ast.ExtendableRequires, advance(state)))
-    token.KeywordProvides -> Ok(#(ast.ExtendableProvides, advance(state)))
+    token.KeywordRequiring -> Ok(advance(state))
     tok ->
       Error(parser_error.UnexpectedToken(
-        "Type, Requires, or Provides",
+        "Type or Requiring",
         token.to_string(tok),
         state.line,
         state.column,
@@ -391,7 +384,7 @@ fn parse_blueprint_items_loop(
   pending: List(Comment),
 ) -> Result(#(List(BlueprintItem), List(Comment), ParserState), ParserError) {
   case peek(state) {
-    token.SymbolStar -> {
+    token.LiteralString(_) -> {
       use #(item, state) <- result.try(parse_blueprint_item(state, pending))
       let #(next_pending, state) = consume_comments(state)
       parse_blueprint_items_loop(state, [item, ..acc], next_pending)
@@ -404,11 +397,10 @@ fn parse_blueprint_item(
   state: ParserState,
   leading_comments: List(Comment),
 ) -> Result(#(BlueprintItem, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.SymbolStar, "*"))
   use #(name, state) <- result.try(parse_string_literal(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  use state <- result.try(expect(state, token.KeywordRequires, "Requires"))
+  use state <- result.try(expect(state, token.KeywordRequiring, "Requiring"))
   use #(requires, state) <- result.try(parse_type_struct(state))
   use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
   use #(provides, state) <- result.try(parse_literal_struct(state))
@@ -484,7 +476,7 @@ fn parse_expect_items_loop(
   pending: List(Comment),
 ) -> Result(#(List(ExpectItem), List(Comment), ParserState), ParserError) {
   case peek(state) {
-    token.SymbolStar -> {
+    token.LiteralString(_) -> {
       use #(item, state) <- result.try(parse_expect_item(state, pending))
       let #(next_pending, state) = consume_comments(state)
       parse_expect_items_loop(state, [item, ..acc], next_pending)
@@ -497,15 +489,14 @@ fn parse_expect_item(
   state: ParserState,
   leading_comments: List(Comment),
 ) -> Result(#(ExpectItem, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.SymbolStar, "*"))
   use #(name, state) <- result.try(parse_string_literal(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
   case peek(state) {
-    token.KeywordRequires ->
+    token.KeywordRequiring ->
       Error(parser_error.UnexpectedToken(
         "Provides",
-        "Requires",
+        "Requiring",
         state.line,
         state.column,
       ))
@@ -596,14 +587,14 @@ fn parse_extends_list_loop(
 }
 
 // =============================================================================
-// STRUCT PARSING (shared by Requires and Provides)
+// STRUCT PARSING (shared by Requiring and Provides)
 // =============================================================================
 
 /// Type alias for a field value parser function.
 type FieldValueParser(a) =
   fn(ParserState) -> Result(#(a, ParserState), ParserError)
 
-/// Parses a struct with typed fields (for Requires blocks).
+/// Parses a struct with typed fields (for Requiring blocks).
 fn parse_type_struct(
   state: ParserState,
 ) -> Result(#(Struct, ParserState), ParserError) {

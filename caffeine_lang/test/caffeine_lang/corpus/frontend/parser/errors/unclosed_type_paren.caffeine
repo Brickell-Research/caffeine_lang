@@ -1,4 +1,4 @@
 Blueprints
-  * "test":
-    Requires { field: List(String }
+  "test":
+    Requiring { field: List(String }
     Provides { value: "x" }

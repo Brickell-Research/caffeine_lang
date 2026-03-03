@@ -1,9 +1,9 @@
-_defaults (Provides): { env: "production", window_in_days: 30 }
-_strict (Provides): { threshold: 99.99 }
+_defaults (Requiring): { env: String, window_in_days: Integer }
+_strict (Requiring): { threshold: Float }
 
 Expectations for "api_availability"
-  * "checkout" extends [_defaults]:
+  "checkout" extends [_defaults]:
     Provides { threshold: 99.95, status: true }
 
-  * "payment" extends [_defaults, _strict]:
+  "payment" extends [_defaults, _strict]:
     Provides { status: true }
