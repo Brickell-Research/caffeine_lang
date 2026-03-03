@@ -34,8 +34,6 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "service:team",
     "blueprint:test_blueprint",
     "expectation:Auth Latency SLO",
-    "artifact:SLO",
-    "artifact:DependencyRelations",
     "hard_dependency:db_slo",
     "soft_dependency:cache_slo,logging_slo",
   ]

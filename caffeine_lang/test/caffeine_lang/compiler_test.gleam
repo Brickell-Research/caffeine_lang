@@ -124,9 +124,9 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - single expectation with templated queries",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"api_availability\":
-    Requires { env: String, status: Boolean }
+    Requires { env: String, status: Boolean, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -158,9 +158,9 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - path extraction (org/team/service from file path)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"simple_slo\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -183,9 +183,9 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - time_slice SLO expression",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"cpu_slo\":
-    Requires { env: String }
+    Requires { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
@@ -233,9 +233,9 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid expectations DSL",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"api_availability\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"1\",
@@ -252,9 +252,9 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - missing blueprint reference",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"some_blueprint\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"1\",
@@ -274,9 +274,9 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency reference (target does not exist)",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints
   * \"slo_with_deps\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -300,9 +300,9 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency format (not 4 parts)",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints
   * \"slo_with_deps\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -326,9 +326,9 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - self-reference in dependency",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints
   * \"slo_with_deps\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -374,9 +374,9 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "happy path - single Honeycomb SLO",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"honeycomb_availability\":
-    Requires { env: String }
+    Requires { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"honeycomb\",
       evaluation: \"sli\",
@@ -410,9 +410,9 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "happy path - mixed vendors (Datadog + Honeycomb)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dd_blueprint\":
-    Requires { env: String }
+    Requires { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -422,7 +422,7 @@ pub fn compile_from_strings_honeycomb_test() {
       }
     }
   * \"hc_blueprint\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"honeycomb\",
       evaluation: \"sli\",
@@ -461,9 +461,9 @@ Expectations for \"hc_blueprint\"
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"hc_blueprint\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"honeycomb\",
       evaluation: \"sli\",
@@ -510,9 +510,9 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "happy path - single Dynatrace SLO",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dynatrace_availability\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"dynatrace\",
       evaluation: \"sli\",
@@ -545,9 +545,9 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "happy path - mixed vendors (Datadog + Dynatrace)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dd_blueprint\":
-    Requires { env: String }
+    Requires { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
@@ -557,7 +557,7 @@ pub fn compile_from_strings_dynatrace_test() {
       }
     }
   * \"dt_blueprint\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"dynatrace\",
       evaluation: \"sli\",
@@ -595,9 +595,9 @@ Expectations for \"dt_blueprint\"
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dt_blueprint\":
-    Requires {}
+    Requires { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: \"dynatrace\",
       evaluation: \"sli\",

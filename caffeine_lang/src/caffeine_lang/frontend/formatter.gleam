@@ -162,18 +162,13 @@ fn format_extendable(ext: Extendable) -> String {
 
 fn format_blueprints_block(block: BlueprintsBlock) -> String {
   let comments = format_comments(block.leading_comments, "")
-  let header =
-    "Blueprints for "
-    <> block.artifacts
-    |> list.map(fn(a) { "\"" <> ast.parsed_artifact_ref_to_string(a) <> "\"" })
-    |> string.join(" + ")
 
   let items =
     block.items
     |> list.map(format_blueprint_item)
     |> string.join("\n\n")
 
-  comments <> header <> "\n" <> items
+  comments <> "Blueprints" <> "\n" <> items
 }
 
 fn format_expects_block(block: ExpectsBlock) -> String {

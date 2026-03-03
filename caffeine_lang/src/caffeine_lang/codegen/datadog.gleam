@@ -130,8 +130,8 @@ pub fn ir_to_terraform_resource(
     }),
   )
 
-  // Build dependency relation tags if artifact refs include DependencyRelations.
-  let dependency_tags = case ir.get_dependency_fields(ir.artifact_data) {
+  // Build dependency relation tags if dependency fields are present.
+  let dependency_tags = case ir.dependency_fields {
     option.Some(dep) -> build_dependency_tags(dep.relations)
     option.None -> []
   }
@@ -147,7 +147,6 @@ pub fn ir_to_terraform_resource(
       service_name: ir.metadata.service_name,
       blueprint_name: ir.metadata.blueprint_name,
       friendly_label: ir.metadata.friendly_label,
-      artifact_refs: ir.artifact_refs,
       misc: ir.metadata.misc,
     )
     |> list.append(dependency_tags)

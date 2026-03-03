@@ -1,6 +1,6 @@
-Blueprints for "SLO"
+Blueprints
   * "api_availability":
-    Requires { env: String, service: String }
+    Requires { env: String, service: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: "datadog",
       evaluation: "numerator / denominator",
@@ -10,7 +10,7 @@ Blueprints for "SLO"
       }
     }
   * "api_latency_p99":
-    Requires { env: String { x | x in { "staging", "production" } }, service: String }
+    Requires { env: String { x | x in { "staging", "production" } }, service: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: "datadog",
       evaluation: "numerator / denominator",

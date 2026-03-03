@@ -2,7 +2,6 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{type Artifact, DependencyRelations, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
@@ -19,14 +18,17 @@ import gleam/option
 import gleam/result
 import gleam/set.{type Set}
 
-/// Derives the set of reserved labels from standard library artifacts.
-/// Reserved labels are artifact param keys that are consumed into structured
-/// fields and should not appear in misc metadata tags. The "vendor" param is
-/// excluded because it is intentionally surfaced as a tag.
+/// Returns the hardcoded set of reserved labels.
+/// Reserved labels are param keys consumed into structured fields that should
+/// not appear in misc metadata tags. The "vendor" param is excluded because
+/// it is intentionally surfaced as a tag.
 @internal
-pub fn reserved_labels_from_artifacts(artifacts: List(Artifact)) -> Set(String) {
-  artifacts
-  |> list.flat_map(fn(artifact) { dict.keys(artifact.params) })
+pub fn reserved_labels() -> Set(String) {
+  // SLO params + Dependency params
+  [
+    "threshold", "window_in_days", "indicators", "evaluation", "vendor", "tags",
+    "runbook", "relations",
+  ]
   |> set.from_list
   |> set.delete("vendor")
 }
@@ -37,12 +39,12 @@ pub fn build_all(
   expectations_with_paths: List(
     #(List(#(Expectation, Blueprint(BlueprintValidated))), String),
   ),
-  reserved_labels reserved_labels: Set(String),
 ) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
+  let reserved = reserved_labels()
   expectations_with_paths
   |> list.map(fn(pair) {
     let #(expectations_blueprint_collection, file_path) = pair
-    build(expectations_blueprint_collection, file_path, reserved_labels)
+    build(expectations_blueprint_collection, file_path, reserved)
   })
   |> errors.from_results()
   |> result.map(list.flatten)
@@ -69,14 +71,23 @@ fn build(
     let value_tuples = build_value_tuples(merged_inputs, blueprint.params)
     let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
     let unique_name = org <> "_" <> service <> "_" <> expectation.name
-    let artifact_data =
-      build_artifact_data(blueprint.artifact_refs, value_tuples)
 
-    // Resolve vendor from value tuples: required for SLO artifacts, None for dependency-only.
+    // Detect SLO and dependency fields from value tuples.
+    let slo_fields = detect_slo_fields(value_tuples)
+    let dependency_fields = detect_dependency_fields(value_tuples)
+    let has_slo = option.is_some(slo_fields)
+
+    // Resolve vendor from value tuples: required for SLO, None for dependency-only.
     use resolved_vendor <- result.try(resolve_vendor_from_values(
       value_tuples,
-      blueprint.artifact_refs,
-      org <> "." <> team <> "." <> service <> "." <> expectation.name,
+      has_slo:,
+      identifier: org
+        <> "."
+        <> team
+        <> "."
+        <> service
+        <> "."
+        <> expectation.name,
     ))
 
     Ok(ir.IntermediateRepresentation(
@@ -89,22 +100,52 @@ fn build(
         misc: misc_metadata,
       ),
       unique_identifier: unique_name,
-      artifact_refs: blueprint.artifact_refs,
       values: value_tuples,
-      artifact_data: artifact_data,
+      slo_fields: slo_fields,
+      dependency_fields: dependency_fields,
       vendor: resolved_vendor,
     ))
   })
+}
+
+/// Detect SLO fields from value tuples.
+/// Returns Some(SloFields) if SLO-related params are present, None otherwise.
+fn detect_slo_fields(
+  value_tuples: List(helpers.ValueTuple),
+) -> option.Option(ir.SloFields) {
+  let has_slo_params =
+    list.any(value_tuples, fn(vt) {
+      vt.label == "threshold"
+      || vt.label == "evaluation"
+      || vt.label == "indicators"
+    })
+
+  case has_slo_params {
+    True -> option.Some(build_slo_fields(value_tuples))
+    False -> option.None
+  }
+}
+
+/// Detect dependency fields from value tuples.
+/// Returns Some(DependencyFields) if relations param is present, None otherwise.
+fn detect_dependency_fields(
+  value_tuples: List(helpers.ValueTuple),
+) -> option.Option(ir.DependencyFields) {
+  let has_relations = list.any(value_tuples, fn(vt) { vt.label == "relations" })
+
+  case has_relations {
+    True -> option.Some(build_dependency_fields(value_tuples))
+    False -> option.None
+  }
 }
 
 /// Resolves the vendor from value tuples at IR construction time.
 /// SLO artifacts require a vendor; dependency-only artifacts get None.
 fn resolve_vendor_from_values(
   value_tuples: List(helpers.ValueTuple),
-  artifact_refs: List(artifacts.ArtifactType),
-  identifier: String,
+  has_slo has_slo: Bool,
+  identifier identifier: String,
 ) -> Result(option.Option(vendor.Vendor), CompilationError) {
-  let has_slo = list.contains(artifact_refs, SLO)
   use <- bool.guard(when: !has_slo, return: Ok(option.None))
 
   let vendor_value =
@@ -256,36 +297,6 @@ fn resolve_values_for_tag(
       }
     }
   }
-}
-
-/// Build structured artifact data from artifact refs and value tuples.
-fn build_artifact_data(
-  artifact_refs: List(artifacts.ArtifactType),
-  value_tuples: List(helpers.ValueTuple),
-) -> ir.ArtifactData {
-  let fields =
-    artifact_refs
-    |> list.map(fn(ref) {
-      case ref {
-        SLO -> #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples)))
-        DependencyRelations -> #(
-          DependencyRelations,
-          ir.DependencyArtifactFields(build_dependency_fields(value_tuples)),
-        )
-      }
-    })
-    |> dict.from_list
-
-  // Fallback: default to SLO if no artifacts matched.
-  let fields = case dict.is_empty(fields) {
-    True ->
-      dict.from_list([
-        #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples))),
-      ])
-    False -> fields
-  }
-
-  ir.ArtifactData(fields:)
 }
 
 /// Extract SLO-specific fields from value tuples.

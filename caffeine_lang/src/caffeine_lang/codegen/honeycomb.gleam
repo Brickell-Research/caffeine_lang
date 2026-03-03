@@ -171,13 +171,12 @@ fn build_tags(ir: IntermediateRepresentation(Resolved)) -> hcl.Expr {
       service_name: ir.metadata.service_name,
       blueprint_name: ir.metadata.blueprint_name,
       friendly_label: ir.metadata.friendly_label,
-      artifact_refs: [],
       misc: ir.metadata.misc,
     )
     |> collapse_multi_value_tags
 
-  // Build user-provided tags from structured artifact data.
-  let user_tag_pairs = case ir.get_slo_fields(ir.artifact_data) {
+  // Build user-provided tags from structured SLO fields.
+  let user_tag_pairs = case ir.slo_fields {
     option.Some(slo) -> slo.tags
     option.None -> []
   }

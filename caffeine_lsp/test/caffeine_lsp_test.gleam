@@ -34,7 +34,7 @@ pub fn empty_file_no_diagnostics_test() {
 
 pub fn valid_blueprints_no_diagnostics_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"my_slo\":
     Requires {
       env: String
@@ -48,7 +48,7 @@ pub fn valid_blueprints_no_diagnostics_test() {
 }
 
 pub fn invalid_syntax_produces_diagnostic_test() {
-  let source = "Blueprints for"
+  let source = "Blueprints {"
   let diags = diagnostics.get_diagnostics(source)
   // Should produce at least one diagnostic
   case diags {
@@ -66,7 +66,7 @@ pub fn duplicate_extendable_diagnostic_test() {
     "_base (Provides): { vendor: \"datadog\" }
 _base (Requires): { env: String }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"api\":
     Requires { threshold: Float }
     Provides { value: \"test\" }
@@ -87,7 +87,7 @@ pub fn undefined_extendable_diagnostic_test() {
   let source =
     "_base (Provides): { vendor: \"datadog\" }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"api\" extends [_base, _nonexistent]:
     Requires { env: String }
     Provides { value: \"test\" }
@@ -107,7 +107,7 @@ pub fn duplicate_extends_reference_diagnostic_test() {
   let source =
     "_base (Provides): { vendor: \"datadog\" }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"api\" extends [_base, _base]:
     Requires { env: String }
     Provides { value: \"test\" }
@@ -129,7 +129,7 @@ pub fn duplicate_type_alias_diagnostic_test() {
     "_env (Type): String { x | x in { \"production\", \"staging\" } }
 _env (Type): String { x | x in { \"dev\", \"test\" } }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"test\":
     Requires { env: _env }
     Provides { value: \"x\" }
@@ -148,7 +148,7 @@ Blueprints for \"SLO\"
 
 pub fn undefined_type_alias_diagnostic_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"test\":
     Requires { env: _undefined }
     Provides { value: \"x\" }
@@ -169,7 +169,7 @@ pub fn circular_type_alias_diagnostic_test() {
     "_a (Type): _b
 _b (Type): _a
 
-Blueprints for \"SLO\"
+Blueprints
   * \"test\":
     Requires { env: String }
     Provides { value: \"x\" }
@@ -190,7 +190,7 @@ pub fn invalid_dict_key_type_alias_diagnostic_test() {
   let source =
     "_count (Type): Integer { x | x in ( 1..100 ) }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"test\":
     Requires { config: Dict(_count, String) }
     Provides { value: \"x\" }
@@ -265,7 +265,7 @@ Expectations for \"api_availability\"
 
 pub fn hover_builtin_type_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 2, 20) {
     option.Some(markdown) -> {
       { string.contains(markdown, "String") } |> should.be_true()
@@ -276,7 +276,7 @@ pub fn hover_builtin_type_test() {
 
 pub fn hover_keyword_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 0, 3) {
     option.Some(markdown) -> {
       { string.contains(markdown, "Blueprints") } |> should.be_true()
@@ -287,8 +287,8 @@ pub fn hover_keyword_test() {
 
 pub fn hover_empty_space_returns_none_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  hover.get_hover(source, 0, 10)
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+  hover.get_hover(source, 1, 0)
   |> should.equal(option.None)
 }
 
@@ -306,7 +306,7 @@ pub fn hover_extendable_test() {
 
 pub fn hover_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in the definition
   case hover.get_hover(source, 0, 1) {
     option.Some(markdown) -> {
@@ -334,7 +334,7 @@ pub fn completion_includes_keywords_test() {
 
 pub fn completion_extends_context_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nBlueprints\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
   let items = completion.get_completions(source, 3, 22, [])
   let has_defaults = list.any(items, fn(item) { item.label == "_defaults" })
@@ -342,7 +342,7 @@ pub fn completion_extends_context_test() {
 }
 
 pub fn completion_type_context_test() {
-  let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
+  let source = "Blueprints\n  * \"api\":\n    Requires { env: "
   // After the colon
   let items = completion.get_completions(source, 2, 21, [])
   // Should include type names but not keywords like "Blueprints"
@@ -352,7 +352,7 @@ pub fn completion_type_context_test() {
 
 pub fn completion_includes_extendables_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let items = completion.get_completions(source, 4, 0, [])
   let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
@@ -369,14 +369,14 @@ pub fn document_symbols_empty_test() {
 
 pub fn document_symbols_blueprints_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
 
 pub fn document_symbols_with_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   let has_defaults = list.any(symbols, fn(s) { s.name == "_defaults" })
   has_defaults |> should.be_true()
@@ -384,7 +384,7 @@ pub fn document_symbols_with_extendable_test() {
 
 pub fn document_symbols_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   let symbols = document_symbols.get_symbols(source)
   let has_env = list.any(symbols, fn(s) { s.name == "_env" })
   has_env |> should.be_true()
@@ -435,14 +435,14 @@ pub fn semantic_tokens_empty_test() {
 
 pub fn semantic_tokens_produces_output_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
 
 pub fn semantic_tokens_multiple_of_five_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Each token is 5 integers: deltaLine, deltaStartChar, length, tokenType, modifiers
   { list.length(tokens) % 5 == 0 } |> should.be_true()
@@ -452,7 +452,7 @@ pub fn semantic_tokens_field_order_test() {
   // "Blueprints" is at line 0, col 0, length 10, type 0 (keyword), mods 0
   // The first 5 values should be: [0, 0, 10, 0, 0]
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   case tokens {
     [dl, dc, len, tt, mods, ..] -> {
@@ -473,7 +473,7 @@ pub fn semantic_tokens_field_order_test() {
 
 pub fn semantic_tokens_with_comment_test() {
   let source =
-    "# This is a comment\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "# This is a comment\nBlueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   { tokens != [] } |> should.be_true()
 }
@@ -494,7 +494,7 @@ pub fn semantic_tokens_boolean_as_keyword_test() {
 // * colon tokenized as operator (type index 6)
 pub fn semantic_tokens_colon_as_operator_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Find a token with length 1 and type 6 (operator)
   let has_colon_operator = find_token_with_type_and_length(tokens, 6, 1)
@@ -540,7 +540,7 @@ pub fn definition_extendable_test() {
 
 pub fn definition_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in Requires (line 4)
   case definition.get_definition(source, 4, 20) {
     option.Some(#(line, _col, _len)) -> {
@@ -553,7 +553,7 @@ pub fn definition_type_alias_test() {
 
 pub fn definition_not_found_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // "for" is a keyword, not a definition
   definition.get_definition(source, 0, 12)
   |> should.equal(option.None)
@@ -561,7 +561,7 @@ pub fn definition_not_found_test() {
 
 pub fn definition_empty_space_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_definition(source, 0, 10)
   |> should.equal(option.None)
 }
@@ -656,7 +656,7 @@ pub fn blueprint_ref_multiple_blocks_test() {
 
 pub fn blueprint_ref_blueprints_file_returns_none_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   definition.get_blueprint_ref_at_position(source, 0, 16)
   |> should.equal(option.None)
 }
@@ -828,7 +828,7 @@ pub fn extract_word_at_out_of_bounds_test() {
 
 pub fn file_utils_parse_blueprints_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case file_utils.parse(source) {
     Ok(file_utils.Blueprints(_)) -> should.be_true(True)
     _ -> should.fail()
@@ -855,12 +855,11 @@ pub fn file_utils_parse_invalid_test() {
 
 pub fn keyword_info_all_keywords_test() {
   let keywords = keyword_info.all_keywords()
-  list.length(keywords) |> should.equal(7)
+  list.length(keywords) |> should.equal(6)
 
   let names = list.map(keywords, fn(k) { k.name })
   list.contains(names, "Blueprints") |> should.be_true()
   list.contains(names, "Expectations") |> should.be_true()
-  list.contains(names, "for") |> should.be_true()
   list.contains(names, "extends") |> should.be_true()
   list.contains(names, "Requires") |> should.be_true()
   list.contains(names, "Provides") |> should.be_true()
@@ -924,7 +923,7 @@ pub fn highlight_extendable_test() {
 
 pub fn highlight_keyword_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // "Blueprints" is a keyword, not a defined symbol
   highlight.get_highlights(source, 0, 3)
   |> should.equal([])
@@ -932,7 +931,7 @@ pub fn highlight_keyword_returns_empty_test() {
 
 pub fn highlight_empty_space_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Space between words
   highlight.get_highlights(source, 0, 10)
   |> should.equal([])
@@ -956,7 +955,7 @@ pub fn references_extendable_test() {
 
 pub fn references_type_alias_test() {
   let source =
-    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   let refs = references.get_references(source, 0, 1)
   // Should find _env at definition and usage
   { list.length(refs) >= 2 } |> should.be_true()
@@ -964,7 +963,7 @@ pub fn references_type_alias_test() {
 
 pub fn references_non_symbol_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   references.get_references(source, 0, 3)
   |> should.equal([])
 }
@@ -975,7 +974,7 @@ pub fn references_non_symbol_returns_empty_test() {
 
 pub fn references_blueprint_item_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "api" (line 1, col 5 is the 'a' in api)
   let refs = references.get_references(source, 1, 5)
   { list.length(refs) >= 1 }
@@ -999,7 +998,7 @@ pub fn references_expects_blueprint_name_test() {
 
 pub fn get_blueprint_name_at_item_name_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "api" (line 1, col 5)
   references.get_blueprint_name_at(source, 1, 5)
   |> should.equal("api")
@@ -1015,7 +1014,7 @@ pub fn get_blueprint_name_at_expects_header_test() {
 
 pub fn get_blueprint_name_at_keyword_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on "Blueprints" keyword (line 0, col 3)
   references.get_blueprint_name_at(source, 0, 3)
   |> should.equal("")
@@ -1070,7 +1069,7 @@ pub fn prepare_rename_valid_symbol_test() {
 
 pub fn prepare_rename_keyword_returns_none_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   rename.prepare_rename(source, 0, 3)
   |> should.equal(option.None)
 }
@@ -1084,7 +1083,7 @@ pub fn get_rename_edits_all_locations_test() {
 
 pub fn get_rename_edits_keyword_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   rename.get_rename_edits(source, 0, 3)
   |> should.equal([])
 }
@@ -1100,7 +1099,7 @@ pub fn get_rename_edits_keyword_returns_empty_test() {
 
 pub fn folding_ranges_blueprints_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let ranges = folding_range.get_folding_ranges(source)
   { ranges != [] } |> should.be_true()
 }
@@ -1161,7 +1160,7 @@ pub fn field_completion_excludes_defined_fields_test() {
 
 pub fn selection_range_nested_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor on the Requires line (line 2)
   let sr = selection_range.get_selection_range(source, 2, 10)
   // Should have at least one parent
@@ -1172,8 +1171,7 @@ pub fn selection_range_nested_test() {
 }
 
 pub fn selection_range_file_scope_test() {
-  let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Provides { value: \"x\" }\n"
+  let source = "Blueprints\n  * \"api\":\n    Provides { value: \"x\" }\n"
   let sr = selection_range.get_selection_range(source, 0, 0)
   // Walk up to find the outermost range
   let outermost = find_outermost(sr)
@@ -1204,7 +1202,7 @@ pub fn linked_editing_range_extendable_test() {
 
 pub fn linked_editing_range_non_symbol_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   linked_editing_range.get_linked_editing_ranges(source, 0, 3)
   |> should.equal([])
 }
@@ -1219,7 +1217,7 @@ pub fn linked_editing_range_non_symbol_test() {
 
 pub fn hover_blueprint_item_test() {
   let source =
-    "_base (Requires): { env: String }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base]:\n    Requires { threshold: Float }\n    Provides { value: \"x\" }\n"
+    "_base (Requires): { env: String }\n\nBlueprints\n  * \"api\" extends [_base]:\n    Requires { threshold: Float }\n    Provides { value: \"x\" }\n"
   // Hover on "api" — it's at col ~5 on line 3 (inside quotes so extract_word_at hits it)
   // Actually, "api" is inside quotes, so we need to place cursor on "api" without quotes
   // Let's use a simpler test — hover on item name found after parsing
@@ -1249,7 +1247,7 @@ pub fn hover_expect_item_test() {
 
 pub fn hover_field_name_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   case hover.get_hover(source, 2, 16) {
     option.Some(md) -> {
       { string.contains(md, "env") } |> should.be_true()
@@ -1268,7 +1266,7 @@ pub fn hover_field_name_test() {
 
 pub fn extends_completion_filters_used_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n_auth (Provides): { token: \"x\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Provides): { vendor: \"datadog\" }\n_auth (Provides): { token: \"x\" }\n\nBlueprints\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor inside "extends [_base, _auth]" at position after "_base, "
   // Line 4: "  * "api" extends [_base, _auth]:"
   // Position 28 is right after the comma+space, before _auth
@@ -1314,7 +1312,7 @@ pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
 
 pub fn cross_file_blueprints_file_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "Blueprints\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   diagnostics.get_cross_file_diagnostics(source, [])
   |> should.equal([])
 }
@@ -1489,7 +1487,7 @@ pub fn all_diagnostics_combines_all_checks_test() {
 }
 
 pub fn all_diagnostics_parse_error_test() {
-  let source = "Blueprints for"
+  let source = "Blueprints {"
   let diags = diagnostics.get_all_diagnostics(source, [], [])
   // Should produce at least one diagnostic (parse error)
   case diags {
@@ -1521,7 +1519,7 @@ pub fn workspace_symbols_blueprints_test() {
     "_env (Type): String { x | x in { \"prod\", \"staging\" } }
 _base (Requires): { env: String }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"api\":
     Requires { threshold: Float }
     Provides { value: \"x\" }
@@ -1558,7 +1556,7 @@ Expectations for \"api_availability\"
 
 pub fn workspace_symbols_no_fields_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"api\":
     Requires { env: String, threshold: Float }
     Provides { value: \"x\", vendor: \"datadog\" }
@@ -1579,7 +1577,7 @@ pub fn workspace_symbols_kind_values_test() {
     "_env (Type): String { x | x in { \"prod\" } }
 _base (Provides): { vendor: \"datadog\" }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"api\":
     Requires { env: String }
     Provides { value: \"x\" }
@@ -1609,7 +1607,7 @@ Blueprints for \"SLO\"
 
 pub fn type_hierarchy_blueprint_item_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"api\":
     Requires { env: String }
     Provides { value: \"x\" }
@@ -1646,7 +1644,7 @@ pub fn type_hierarchy_expect_item_test() {
 
 pub fn type_hierarchy_keyword_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"api\":
     Requires { env: String }
     Provides { value: \"x\" }
@@ -1657,7 +1655,7 @@ pub fn type_hierarchy_keyword_returns_empty_test() {
 
 pub fn type_hierarchy_empty_space_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"api\":
     Requires { env: String }
     Provides { value: \"x\" }
@@ -1668,7 +1666,7 @@ pub fn type_hierarchy_empty_space_returns_empty_test() {
 
 pub fn type_hierarchy_field_name_returns_empty_test() {
   let source =
-    "Blueprints for \"SLO\"
+    "Blueprints
   * \"api\":
     Requires { env: String }
     Provides { value: \"x\" }

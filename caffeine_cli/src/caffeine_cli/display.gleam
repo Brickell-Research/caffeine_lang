@@ -1,9 +1,4 @@
-import caffeine_lang/linker/artifacts.{type Artifact}
-import caffeine_lang/types.{
-  type AcceptedTypes, type TypeMeta, Defaulted, ModifierType, OneOf, Optional,
-  RefinementType,
-}
-import gleam/dict
+import caffeine_lang/types.{type TypeMeta}
 import gleam/list
 import gleam/string
 import gleam_community/ansi
@@ -22,42 +17,6 @@ pub fn pretty_print_category(
     |> string.join("\n")
 
   header <> "\n\n" <> type_entries
-}
-
-/// Pretty-prints an artifact showing its type, description, and parameters.
-pub fn pretty_print_artifact(artifact: Artifact) -> String {
-  let header =
-    ansi.bold(ansi.cyan(artifacts.artifact_type_to_string(artifact.type_)))
-    <> ": "
-    <> ansi.dim("\"" <> artifact.description <> "\"")
-  let params =
-    artifact.params
-    |> dict.to_list
-    |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
-    |> list.map(fn(pair) {
-      let #(name, param_info) = pair
-      "  "
-      <> ansi.yellow(name)
-      <> ": "
-      <> ansi.dim("\"" <> param_info.description <> "\"")
-      <> "\n    type: "
-      <> ansi.green(types.accepted_type_to_string(param_info.type_))
-      <> "\n    "
-      <> param_status(param_info.type_)
-    })
-    |> string.join("\n")
-
-  header <> "\n\n" <> params
-}
-
-/// Returns the status of a parameter: "required", "optional", or "default: <value>".
-fn param_status(typ: AcceptedTypes) -> String {
-  case typ {
-    ModifierType(Optional(_)) -> ansi.dim("optional")
-    ModifierType(Defaulted(_, default)) -> ansi.blue("default: " <> default)
-    RefinementType(OneOf(inner, _)) -> param_status(inner)
-    _ -> ansi.magenta("required")
-  }
 }
 
 /// Pretty-prints a single type entry.

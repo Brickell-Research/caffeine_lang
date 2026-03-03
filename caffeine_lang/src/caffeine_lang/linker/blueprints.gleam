@@ -1,13 +1,10 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{type Artifact, type ArtifactType}
 import caffeine_lang/linker/validations
 import caffeine_lang/types.{type AcceptedTypes}
 import caffeine_lang/value.{type Value}
-import gleam/bool
 import gleam/dict
 import gleam/list
 import gleam/result
-import gleam/string
 
 /// Marker type for blueprints that have not yet been validated.
 pub type Raw
@@ -15,24 +12,21 @@ pub type Raw
 /// Marker type for blueprints that have passed validation.
 pub type BlueprintValidated
 
-/// A Blueprint that references one or more Artifacts with parameters and inputs. It provides further params
-/// for the Expectation to satisfy while providing a partial set of inputs for the Artifact's params.
+/// A Blueprint with parameters and inputs.
 /// The phantom type parameter `state` tracks whether the blueprint is `Raw` or `BlueprintValidated`.
 pub type Blueprint(state) {
   Blueprint(
     name: String,
-    artifact_refs: List(ArtifactType),
     params: dict.Dict(String, AcceptedTypes),
     inputs: dict.Dict(String, Value),
   )
 }
 
-/// Validates blueprints against artifacts and merges artifact params.
+/// Validates blueprints: checks name uniqueness and input correctness.
 /// Upgrades the phantom type from `Raw` to `BlueprintValidated` on success.
 @internal
 pub fn validate_blueprints(
   blueprints: List(Blueprint(Raw)),
-  artifacts: List(Artifact),
 ) -> Result(List(Blueprint(BlueprintValidated)), CompilationError) {
   // Validate all names are unique.
   use _ <- result.try(validations.validate_relevant_uniqueness(
@@ -41,192 +35,26 @@ pub fn validate_blueprints(
     label: "blueprint names",
   ))
 
-  // Check for duplicate artifact refs within each blueprint.
-  use _ <- result.try(validate_no_duplicate_artifact_refs(blueprints))
-
-  // Map each blueprint to its list of artifacts.
-  let blueprint_artifacts_collection =
-    map_blueprints_to_artifacts(blueprints, artifacts)
-
-  // Check for conflicting param types across artifacts in each blueprint.
-  use _ <- result.try(validate_no_conflicting_params(
-    blueprint_artifacts_collection,
-  ))
-
-  // Create merged params for each blueprint for input validation.
-  let blueprint_merged_params_collection =
-    blueprint_artifacts_collection
-    |> list.map(fn(pair) {
-      let #(blueprint, artifact_list) = pair
-      let merged_params = merge_artifact_params(artifact_list)
-      #(blueprint, merged_params)
-    })
-
-  // Validate exactly the right number of inputs and each input is the
-  // correct type as per the param. A blueprint needs to specify inputs for
-  // all required_params from the artifacts.
+  // Validate inputs match the blueprint's own params.
   use _ <- result.try(validations.validate_inputs_for_collection(
-    input_param_collections: blueprint_merged_params_collection,
+    input_param_collections: blueprints
+      |> list.map(fn(blueprint) { #(blueprint, blueprint.params) }),
     get_inputs: fn(blueprint) { blueprint.inputs },
-    get_params: fn(merged_params) { merged_params },
+    get_params: fn(params) { params },
     with: fn(blueprint) { "blueprint '" <> blueprint.name <> "'" },
     missing_inputs_ok: True,
   ))
 
-  // Ensure no param name overshadowing by the blueprint against any artifact.
-  use _ <- result.try(
-    validations.validate_no_overshadowing(
-      blueprint_merged_params_collection,
-      get_check_collection: fn(blueprint) { blueprint.params },
-      get_against_collection: fn(merged_params) { merged_params },
-      get_error_label: fn(blueprint) {
-        "blueprint '"
-        <> blueprint.name
-        <> "' - overshadowing inherited_params from artifact: "
-      },
-    ),
-  )
-
-  // At this point everything is validated, so we can merge params from all artifacts + blueprint params.
-  let merged_param_blueprints =
-    blueprint_artifacts_collection
-    |> list.map(fn(blueprint_artifacts_pair) {
-      let #(blueprint, artifact_list) = blueprint_artifacts_pair
-
-      // Merge all params from all artifacts, then add blueprint params.
-      let all_params =
-        merge_artifact_params(artifact_list)
-        |> dict.merge(blueprint.params)
-
-      Blueprint(..blueprint, params: all_params)
-    })
-
-  Ok(merged_param_blueprints)
-}
-
-/// Map each blueprint to its list of referenced artifacts.
-fn map_blueprints_to_artifacts(
-  blueprints: List(Blueprint(state)),
-  artifacts: List(Artifact),
-) -> List(#(Blueprint(state), List(Artifact))) {
-  let artifact_map =
-    artifacts
-    |> list.map(fn(a) { #(a.type_, a) })
-    |> dict.from_list
-
-  blueprints
-  |> list.map(fn(blueprint) {
-    let artifact_list =
-      blueprint.artifact_refs
-      |> list.filter_map(fn(ref) { dict.get(artifact_map, ref) })
-    #(blueprint, artifact_list)
-  })
-}
-
-/// Merge params from multiple artifacts into a single dict.
-/// Extracts just the types from ParamInfo since blueprints work with types only.
-fn merge_artifact_params(
-  artifact_list: List(Artifact),
-) -> dict.Dict(String, AcceptedTypes) {
-  artifact_list
-  |> list.fold(dict.new(), fn(acc, artifact) {
-    dict.merge(acc, artifacts.params_to_types(artifact.params))
-  })
-}
-
-/// Validate that no blueprint has duplicate artifact refs.
-fn validate_no_duplicate_artifact_refs(
-  blueprints: List(Blueprint(state)),
-) -> Result(Nil, CompilationError) {
-  let duplicates =
+  // Promote to BlueprintValidated.
+  let validated =
     blueprints
-    |> list.filter_map(fn(blueprint) {
-      let refs = blueprint.artifact_refs
-      let unique_refs = refs |> list.unique
-      use <- bool.guard(
-        when: list.length(refs) == list.length(unique_refs),
-        return: Error(Nil),
-      )
-      // Find the duplicate(s)
-      let duplicate_refs =
-        refs
-        |> list.group(fn(r) { r })
-        |> dict.filter(fn(_, v) { list.length(v) > 1 })
-        |> dict.keys
-        |> list.map(artifacts.artifact_type_to_string)
-        |> string.join(", ")
-      Ok(
-        "blueprint '"
-        <> blueprint.name
-        <> "' - duplicate artifact references: "
-        <> duplicate_refs,
+    |> list.map(fn(blueprint) {
+      Blueprint(
+        name: blueprint.name,
+        params: blueprint.params,
+        inputs: blueprint.inputs,
       )
     })
 
-  case duplicates {
-    [] -> Ok(Nil)
-    [first, ..] -> Error(errors.linker_duplicate_error(msg: first))
-  }
-}
-
-/// Validate that artifacts referenced by a blueprint don't have conflicting param types.
-fn validate_no_conflicting_params(
-  blueprint_artifacts_collection: List(#(Blueprint(state), List(Artifact))),
-) -> Result(Nil, CompilationError) {
-  let conflicts =
-    blueprint_artifacts_collection
-    |> list.filter_map(fn(pair) {
-      let #(blueprint, artifact_list) = pair
-      case find_conflicting_params(artifact_list) {
-        Ok(conflict) ->
-          Ok(
-            "blueprint '"
-            <> blueprint.name
-            <> "' - conflicting param types across artifacts: "
-            <> conflict,
-          )
-        Error(Nil) -> Error(Nil)
-      }
-    })
-
-  case conflicts {
-    [] -> Ok(Nil)
-    [first, ..] -> Error(errors.linker_duplicate_error(msg: first))
-  }
-}
-
-/// Find param names that have different types across artifacts.
-fn find_conflicting_params(artifact_list: List(Artifact)) -> Result(String, Nil) {
-  // Collect all param name -> type mappings (extract types from ParamInfo)
-  let all_params =
-    artifact_list
-    |> list.flat_map(fn(a) {
-      a.params
-      |> dict.to_list
-      |> list.map(fn(pair) { #(pair.0, { pair.1 }.type_) })
-    })
-
-  // Group by param name
-  let grouped =
-    all_params
-    |> list.group(fn(pair) { pair.0 })
-
-  // Find conflicts (same name, different types)
-  let conflicting_names =
-    grouped
-    |> dict.to_list
-    |> list.filter_map(fn(group) {
-      let #(name, pairs) = group
-      let types = pairs |> list.map(fn(p) { p.1 })
-      let unique_types = types |> list.unique
-      case list.length(unique_types) > 1 {
-        True -> Ok(name)
-        False -> Error(Nil)
-      }
-    })
-
-  case conflicting_names {
-    [] -> Error(Nil)
-    [first, ..] -> Ok(first)
-  }
+  Ok(validated)
 }

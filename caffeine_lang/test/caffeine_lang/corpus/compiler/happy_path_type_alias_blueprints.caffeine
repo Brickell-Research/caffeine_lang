@@ -1,8 +1,8 @@
 _env (Type): String { x | x in { "production", "staging" } }
 
-Blueprints for "SLO"
+Blueprints
   * "api_availability_with_type_alias":
-    Requires { env: _env, status: Boolean }
+    Requires { env: _env, status: Boolean, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
     Provides {
       vendor: "datadog",
       evaluation: "numerator / denominator",

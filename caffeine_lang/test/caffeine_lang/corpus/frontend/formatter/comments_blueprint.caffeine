@@ -1,6 +1,6 @@
 ## SLO Blueprints
 # This file defines SLO blueprints
-Blueprints for "SLO"
+Blueprints
   # The main API availability SLO
   * "api_availability":
     Requires { env: String }

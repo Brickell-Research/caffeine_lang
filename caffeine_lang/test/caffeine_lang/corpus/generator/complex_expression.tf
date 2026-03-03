@@ -34,7 +34,6 @@ resource "datadog_service_level_objective" "org_team_auth_composite_slo" {
     "service:team",
     "blueprint:test_blueprint",
     "expectation:Composite SLO",
-    "artifact:SLO",
   ]
   type = "metric"
 

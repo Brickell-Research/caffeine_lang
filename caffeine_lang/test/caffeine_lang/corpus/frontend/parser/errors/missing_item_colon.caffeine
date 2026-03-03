@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "test"
     Requires { env: String }
     Provides { value: "x" }

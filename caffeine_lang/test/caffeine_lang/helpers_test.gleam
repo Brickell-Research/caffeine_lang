@@ -1,6 +1,5 @@
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -151,7 +150,6 @@ pub fn extract_tags_test() {
 
 // ==== build_system_tag_pairs ====
 // * ✅ includes all required system tags
-// * ✅ includes artifact refs
 // * ✅ includes misc tags sorted
 pub fn build_system_tag_pairs_test() {
   let result =
@@ -161,7 +159,6 @@ pub fn build_system_tag_pairs_test() {
       service_name: identifiers.ServiceName("my_service"),
       blueprint_name: identifiers.BlueprintName("my_bp"),
       friendly_label: identifiers.ExpectationLabel("my_label"),
-      artifact_refs: [SLO],
       misc: dict.from_list([#("env", ["prod", "dev"])]),
     )
 
@@ -172,8 +169,6 @@ pub fn build_system_tag_pairs_test() {
   list.contains(result, #("service", "my_service")) |> should.be_true()
   list.contains(result, #("blueprint", "my_bp")) |> should.be_true()
   list.contains(result, #("expectation", "my_label")) |> should.be_true()
-  // Artifact refs
-  list.contains(result, #("artifact", "SLO")) |> should.be_true()
   // Misc tags (sorted)
   list.contains(result, #("env", "dev")) |> should.be_true()
   list.contains(result, #("env", "prod")) |> should.be_true()

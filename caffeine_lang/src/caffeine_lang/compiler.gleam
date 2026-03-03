@@ -9,7 +9,6 @@ import caffeine_lang/codegen/honeycomb
 import caffeine_lang/codegen/newrelic
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{
@@ -20,7 +19,6 @@ import caffeine_lang/linker/linker
 import caffeine_lang/source_file.{
   type BlueprintSource, type ExpectationSource, type SourceFile, SourceFile,
 }
-import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
 import gleam/list
 import gleam/option.{type Option}
@@ -228,9 +226,7 @@ fn run_code_generation(
   // Dependency graph is only useful when relations exist.
   let has_deps =
     resolved_irs
-    |> list.any(fn(ir) {
-      list.contains(ir.artifact_refs, artifacts.DependencyRelations)
-    })
+    |> list.any(fn(ir) { option.is_some(ir.dependency_fields) })
 
   let graph = case has_deps {
     True -> option.Some(dependency_graph.generate(resolved_irs))
@@ -267,9 +263,6 @@ fn parse_from_strings(
   expectations_source: String,
   expectations_path: String,
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
-  let artifacts = stdlib_artifacts.standard_library()
-  let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
-
   use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
       path: "browser/blueprints.caffeine",
@@ -286,7 +279,6 @@ fn parse_from_strings(
 
   use validated_blueprints <- result.try(blueprints.validate_blueprints(
     raw_blueprints,
-    artifacts,
   ))
 
   use expectations_blueprint_collection <- result.try(
@@ -297,8 +289,5 @@ fn parse_from_strings(
     ),
   )
 
-  ir_builder.build_all(
-    [#(expectations_blueprint_collection, expectations_path)],
-    reserved_labels:,
-  )
+  ir_builder.build_all([#(expectations_blueprint_collection, expectations_path)])
 }

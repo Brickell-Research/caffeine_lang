@@ -1,4 +1,0 @@
-Blueprints for
-  * "test":
-    Requires { env: String }
-    Provides { value: "x" }

@@ -1,6 +1,6 @@
 _base_slo (Provides): { vendor: "datadog" }
 
-Blueprints for "SLO"
+Blueprints
   ## API Availability
   * "api_availability" extends [_base_slo]:
     Requires {
