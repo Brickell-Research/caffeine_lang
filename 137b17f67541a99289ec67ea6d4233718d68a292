@@ -1,0 +1,23 @@
+caffeine_lang/src/caffeine_query_language/printer.gleam
+  14e87897670176cc 10,12-19,22-27,29-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.7",
+  "base_commit_sha": "137b17f67541a99289ec67ea6d4233718d68a292",
+  "prompts": {
+    "14e87897670176cc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce06c440-db17-4d09-a4ca-c481d5c0d02a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 21,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    }
+  }
+}
