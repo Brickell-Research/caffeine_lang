@@ -54,6 +54,7 @@ fn is_foldable_start(trimmed: String, indent: Int) -> Bool {
       // Requiring/Provides sections
       string.starts_with(trimmed, "Requiring")
       || string.starts_with(trimmed, "Provides")
+      || string.starts_with(trimmed, "signals")
     _ -> False
   }
 }

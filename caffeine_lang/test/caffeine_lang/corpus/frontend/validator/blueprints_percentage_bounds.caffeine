@@ -1,4 +1,4 @@
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring { rate: Percentage { x | x in ( 0.0..200.0 ) } }
-    Provides { value: "x" }
+    signals { }

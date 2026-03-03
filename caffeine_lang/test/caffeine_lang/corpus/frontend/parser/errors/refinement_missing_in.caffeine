@@ -1,4 +1,4 @@
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring { env: String { x | x { "a" } } }
-    Provides { value: "x" }
+    signals { value: "x" }

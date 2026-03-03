@@ -1,4 +1,4 @@
 Blueprints
-  "api":
+  "api" success_rate(x):
     Requiring { indicators: { denominator: String, numerator: String } }
-    Provides { value: "x" }
+    signals { value: "x" }

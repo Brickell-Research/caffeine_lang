@@ -24,7 +24,19 @@ pub fn all_keywords() -> List(KeywordMeta) {
     ),
     KeywordMeta(
       name: "Provides",
-      description: "Defines the values a blueprint or expectation provides as output.",
+      description: "Defines the values an expectation provides as output.",
+    ),
+    KeywordMeta(
+      name: "signals",
+      description: "Defines the signal queries a blueprint provides for monitoring.",
+    ),
+    KeywordMeta(
+      name: "success_rate",
+      description: "Declares a success rate evaluation type (numerator/denominator ratio).",
+    ),
+    KeywordMeta(
+      name: "time_slice",
+      description: "Declares a time slice evaluation type (threshold-based query).",
     ),
     KeywordMeta(
       name: "Type",

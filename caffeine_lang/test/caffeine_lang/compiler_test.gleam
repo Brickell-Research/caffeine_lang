@@ -56,7 +56,7 @@ pub fn compile_test() {
     #(
       "happy path - none",
       #(
-        corpus_path("happy_path_no_expectations_blueprints.caffeine"),
+        corpus_path("happy_path_no_expectations_blueprints/datadog.caffeine"),
         corpus_path("happy_path_no_expectations"),
       ),
       Ok(read_corpus("happy_path_no_expectations_output.tf")),
@@ -65,7 +65,7 @@ pub fn compile_test() {
     #(
       "happy path - single",
       #(
-        corpus_path("happy_path_single_blueprints.caffeine"),
+        corpus_path("happy_path_single_blueprints/datadog.caffeine"),
         corpus_path("happy_path_single_expectations"),
       ),
       Ok(read_corpus("happy_path_single_output.tf")),
@@ -74,7 +74,7 @@ pub fn compile_test() {
     #(
       "happy path - multiple (3 SLOs across 2 teams)",
       #(
-        corpus_path("happy_path_multiple_blueprints.caffeine"),
+        corpus_path("happy_path_multiple_blueprints/datadog.caffeine"),
         corpus_path("happy_path_multiple_expectations"),
       ),
       Ok(read_corpus("happy_path_multiple_output.tf")),
@@ -83,7 +83,7 @@ pub fn compile_test() {
     #(
       "happy path - type alias (E2E test with type alias in Requiring)",
       #(
-        corpus_path("happy_path_type_alias_blueprints.caffeine"),
+        corpus_path("happy_path_type_alias_blueprints/datadog.caffeine"),
         corpus_path("happy_path_type_alias_expectations"),
       ),
       Ok(read_corpus("happy_path_type_alias_output.tf")),
@@ -125,15 +125,11 @@ pub fn compile_from_strings_test() {
       "happy path - single expectation with templated queries",
       #(
         "Blueprints
-  \"api_availability\":
-    Requiring { env: String, status: Boolean, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
+  \"api_availability\" success_rate(numerator / denominator):
+    Requiring { env: String, status: Boolean, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
+      denominator: \"sum:http.requests{$env->env$}\"
     }
 ",
         "Expectations for \"api_availability\"
@@ -159,13 +155,9 @@ pub fn compile_from_strings_test() {
       "happy path - path extraction (org/team/service from file path)",
       #(
         "Blueprints
-  \"simple_slo\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" }
-    }
+  \"simple_slo\" success_rate(numerator / denominator):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals { numerator: \"count:test\", denominator: \"count:test\" }
 ",
         "Expectations for \"simple_slo\"
   \"my_slo\":
@@ -184,13 +176,9 @@ pub fn compile_from_strings_test() {
       "happy path - time_slice SLO expression",
       #(
         "Blueprints
-  \"cpu_slo\":
-    Requiring { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
-      indicators: {}
-    }
+  \"cpu_slo\" time_slice(\"avg:system.cpu.user{$env->env$} > 99.5 per 300s\"):
+    Requiring { env: String, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals { }
 ",
         "Expectations for \"cpu_slo\"
   \"cpu_availability\":
@@ -234,13 +222,9 @@ pub fn compile_from_strings_test() {
       "sad path - invalid expectations DSL",
       #(
         "Blueprints
-  \"api_availability\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"1\",
-      indicators: { numerator: \"1\", denominator: \"1\" }
-    }
+  \"api_availability\" success_rate(1):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals { numerator: \"1\", denominator: \"1\" }
 ",
         "not valid caffeine syntax !!!",
         "playground/demo/service.caffeine",
@@ -253,13 +237,9 @@ pub fn compile_from_strings_test() {
       "sad path - missing blueprint reference",
       #(
         "Blueprints
-  \"some_blueprint\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"1\",
-      indicators: { numerator: \"1\", denominator: \"1\" }
-    }
+  \"some_blueprint\" success_rate(1):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals { numerator: \"1\", denominator: \"1\" }
 ",
         "Expectations for \"nonexistent_blueprint\"
   \"my_slo\":
@@ -275,14 +255,9 @@ pub fn compile_from_strings_test() {
       "sad path - invalid dependency reference (target does not exist)",
       #(
         "Blueprints
-  \"slo_with_deps\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"nonexistent.org.team.slo\"] }
-    }
+  \"slo_with_deps\" success_rate(numerator / denominator):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
+    signals { numerator: \"count:test\", denominator: \"count:test\", relations: { hard: [\"nonexistent.org.team.slo\"] } }
 ",
         "Expectations for \"slo_with_deps\"
   \"my_slo\":
@@ -301,14 +276,9 @@ pub fn compile_from_strings_test() {
       "sad path - invalid dependency format (not 4 parts)",
       #(
         "Blueprints
-  \"slo_with_deps\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"invalid_format\"] }
-    }
+  \"slo_with_deps\" success_rate(numerator / denominator):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
+    signals { numerator: \"count:test\", denominator: \"count:test\", relations: { hard: [\"invalid_format\"] } }
 ",
         "Expectations for \"slo_with_deps\"
   \"my_slo\":
@@ -327,14 +297,9 @@ pub fn compile_from_strings_test() {
       "sad path - self-reference in dependency",
       #(
         "Blueprints
-  \"slo_with_deps\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"myorg.myteam.myservice.my_slo\"] }
-    }
+  \"slo_with_deps\" success_rate(numerator / denominator):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) }, relations: { hard: List(String), soft: List(String) } }
+    signals { numerator: \"count:test\", denominator: \"count:test\", relations: { hard: [\"myorg.myteam.myservice.my_slo\"] } }
 ",
         "Expectations for \"slo_with_deps\"
   \"my_slo\":
@@ -366,7 +331,6 @@ pub fn compile_from_strings_test() {
 
 // ==== compile_from_strings (Honeycomb) ====
 // * ✅ happy path - single Honeycomb SLO
-// * ✅ happy path - mixed vendors (Datadog + Honeycomb)
 // * ✅ sad path   - Honeycomb with invalid window (out of 1-90 range)
 pub fn compile_from_strings_honeycomb_test() {
   [
@@ -375,14 +339,10 @@ pub fn compile_from_strings_honeycomb_test() {
       "happy path - single Honeycomb SLO",
       #(
         "Blueprints
-  \"honeycomb_availability\":
-    Requiring { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"honeycomb\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
+  \"honeycomb_availability\" success_rate(sli):
+    Requiring { env: String, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      sli: \"HEATMAP(duration_ms)\"
     }
 ",
         "Expectations for \"honeycomb_availability\"
@@ -406,70 +366,15 @@ pub fn compile_from_strings_honeycomb_test() {
       ),
       True,
     ),
-    // happy path - mixed vendors (Datadog + Honeycomb)
-    #(
-      "happy path - mixed vendors (Datadog + Honeycomb)",
-      #(
-        "Blueprints
-  \"dd_blueprint\":
-    Requiring { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
-    }
-  \"hc_blueprint\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"honeycomb\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
-    }
-",
-        "Expectations for \"dd_blueprint\"
-  \"dd_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9,
-      window_in_days: 30
-    }
-
-Expectations for \"hc_blueprint\"
-  \"hc_slo\":
-    Provides {
-      threshold: 99.5,
-      window_in_days: 14
-    }
-",
-        "acme/platform/payments.caffeine",
-        [
-          "datadog_service_level_objective",
-          "honeycombio_slo",
-          "honeycombio_derived_column",
-          "var.datadog_api_key",
-          "var.honeycomb_api_key",
-        ],
-      ),
-      True,
-    ),
     // sad path - Honeycomb with invalid window (out of 1-90 range)
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
         "Blueprints
-  \"hc_blueprint\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"honeycomb\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
+  \"hc_blueprint\" success_rate(sli):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      sli: \"HEATMAP(duration_ms)\"
     }
 ",
         "Expectations for \"hc_blueprint\"
@@ -488,7 +393,12 @@ Expectations for \"hc_blueprint\"
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings_with_blueprint_path(
+        blueprints_src,
+        expectations_src,
+        path,
+        "vendor/honeycomb.caffeine",
+      )
     case expected_substrings {
       [] ->
         case result {
@@ -502,7 +412,6 @@ Expectations for \"hc_blueprint\"
 
 // ==== compile_from_strings (Dynatrace) ====
 // * ✅ happy path - single Dynatrace SLO
-// * ✅ happy path - mixed vendors (Datadog + Dynatrace)
 // * ✅ sad path   - Dynatrace with invalid window (out of 1-90 range)
 pub fn compile_from_strings_dynatrace_test() {
   [
@@ -511,14 +420,10 @@ pub fn compile_from_strings_dynatrace_test() {
       "happy path - single Dynatrace SLO",
       #(
         "Blueprints
-  \"dynatrace_availability\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"dynatrace\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
+  \"dynatrace_availability\" success_rate(sli):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      sli: \"builtin:service.requestCount.server:splitBy()\"
     }
 ",
         "Expectations for \"dynatrace_availability\"
@@ -541,69 +446,15 @@ pub fn compile_from_strings_dynatrace_test() {
       ),
       True,
     ),
-    // happy path - mixed vendors (Datadog + Dynatrace)
-    #(
-      "happy path - mixed vendors (Datadog + Dynatrace)",
-      #(
-        "Blueprints
-  \"dd_blueprint\":
-    Requiring { env: String, vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
-    }
-  \"dt_blueprint\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"dynatrace\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
-    }
-",
-        "Expectations for \"dd_blueprint\"
-  \"dd_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9,
-      window_in_days: 30
-    }
-
-Expectations for \"dt_blueprint\"
-  \"dt_slo\":
-    Provides {
-      threshold: 99.5,
-      window_in_days: 14
-    }
-",
-        "acme/platform/payments.caffeine",
-        [
-          "datadog_service_level_objective",
-          "dynatrace_slo_v2",
-          "var.datadog_api_key",
-          "var.dynatrace_api_token",
-        ],
-      ),
-      True,
-    ),
     // sad path - Dynatrace with invalid window (out of 1-90 range)
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
         "Blueprints
-  \"dt_blueprint\":
-    Requiring { vendor: String, evaluation: String, indicators: Dict(String, String), threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
-    Provides {
-      vendor: \"dynatrace\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
+  \"dt_blueprint\" success_rate(sli):
+    Requiring { threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      sli: \"builtin:service.requestCount.server:splitBy()\"
     }
 ",
         "Expectations for \"dt_blueprint\"
@@ -622,7 +473,12 @@ Expectations for \"dt_blueprint\"
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings_with_blueprint_path(
+        blueprints_src,
+        expectations_src,
+        path,
+        "vendor/dynatrace.caffeine",
+      )
     case expected_substrings {
       [] ->
         case result {

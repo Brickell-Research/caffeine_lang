@@ -37,7 +37,7 @@ pub fn compile_blueprints(
       validator_errors_to_compilation_error(errs, source.path)
     }),
   )
-  Ok(lowering.lower_blueprints(validated))
+  Ok(lowering.lower_blueprints(validated, from: source.path))
 }
 
 /// Compiles an expects .caffeine source to a list of expectations.
@@ -172,7 +172,7 @@ pub fn compile_blueprints_rich(
       validator_errors_to_rich_error(errs, source)
     }),
   )
-  Ok(lowering.lower_blueprints(validated))
+  Ok(lowering.lower_blueprints(validated, from: source.path))
 }
 
 /// Compiles expects with rich error information including source locations.

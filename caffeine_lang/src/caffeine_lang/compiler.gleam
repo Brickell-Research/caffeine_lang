@@ -55,10 +55,27 @@ pub fn compile_from_strings(
   expectations_source: String,
   expectations_path: String,
 ) -> Result(CompilationOutput, errors.CompilationError) {
+  compile_from_strings_with_blueprint_path(
+    blueprints_source,
+    expectations_source,
+    expectations_path,
+    "browser/datadog.caffeine",
+  )
+}
+
+/// Compiles from source strings with an explicit blueprint path.
+/// The blueprint path is used to extract the vendor name from the filename.
+pub fn compile_from_strings_with_blueprint_path(
+  blueprints_source: String,
+  expectations_source: String,
+  expectations_path: String,
+  blueprints_path: String,
+) -> Result(CompilationOutput, errors.CompilationError) {
   use irs <- result.try(parse_from_strings(
     blueprints_source,
     expectations_source,
     expectations_path,
+    blueprints_path,
   ))
   use resolved_irs <- result.try(run_semantic_analysis(irs))
   run_code_generation(resolved_irs)
@@ -262,10 +279,11 @@ fn parse_from_strings(
   blueprints_source: String,
   expectations_source: String,
   expectations_path: String,
+  blueprints_path: String,
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
-      path: "browser/blueprints.caffeine",
+      path: blueprints_path,
       content: blueprints_source,
     )),
   )

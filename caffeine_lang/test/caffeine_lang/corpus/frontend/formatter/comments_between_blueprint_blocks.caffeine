@@ -1,13 +1,13 @@
 ## Availability Blueprints
 Blueprints
   # The main API availability SLO
-  "api_availability":
+  "api_availability" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }
 
 ##  === Latency Blueprints ===
 # These blueprints track latency
 Blueprints
-  "api_latency":
+  "api_latency" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }

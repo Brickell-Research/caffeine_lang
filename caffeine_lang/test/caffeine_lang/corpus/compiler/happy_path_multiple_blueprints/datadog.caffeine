@@ -1,0 +1,13 @@
+Blueprints
+  "api_availability" success_rate(numerator / denominator):
+    Requiring { env: String, service: String, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      numerator: "sum:http.requests{$env->env$,$service->service$,!status:5xx}",
+      denominator: "sum:http.requests{$env->env$,$service->service$}"
+    }
+  "api_latency_p99" success_rate(numerator / denominator):
+    Requiring { env: String { x | x in { "staging", "production" } }, service: String, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      numerator: "sum:http.latency.p99{$env->env$,$service->service$,le:500}",
+      denominator: "sum:http.latency.p99{$env->env$,$service->service$}"
+    }

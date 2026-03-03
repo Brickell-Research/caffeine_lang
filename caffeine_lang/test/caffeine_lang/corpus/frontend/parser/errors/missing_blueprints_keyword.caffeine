@@ -1,4 +1,4 @@
 for "SLO"
-  "test":
+  "test" success_rate(x):
     Requiring { env: String }
-    Provides { value: "x" }
+    signals { value: "x" }

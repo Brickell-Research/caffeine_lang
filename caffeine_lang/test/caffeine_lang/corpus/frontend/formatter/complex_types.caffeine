@@ -1,5 +1,5 @@
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring {
       tags: List(String),
       counts: Dict(String, Integer),
@@ -8,4 +8,4 @@ Blueprints
       status: String { x | x in { "active", "inactive" } },
       threshold: Float { x | x in ( 0.0..100.0 ) }
     }
-    Provides { value: "x" }
+    signals { value: "x" }

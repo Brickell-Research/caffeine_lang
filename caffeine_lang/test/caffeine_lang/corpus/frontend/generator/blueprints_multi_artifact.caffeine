@@ -1,4 +1,4 @@
 Blueprints
-  "tracked_slo":
+  "tracked_slo" success_rate(test):
     Requiring { env: String, upstream: String }
-    Provides { vendor: "datadog", type: "hard" }
+    signals { }

@@ -123,7 +123,7 @@ fn lookup_blueprint_item(
         exts -> "\n\nExtends: " <> string.join(exts, ", ")
       }
       let req_count = list.length(item.requires.fields)
-      let prov_count = list.length(item.provides.fields)
+      let sig_count = list.length(item.signals.fields)
       option.Some(
         "**"
         <> item.name
@@ -131,8 +131,8 @@ fn lookup_blueprint_item(
         <> extends_info
         <> "\n\nRequiring: "
         <> int.to_string(req_count)
-        <> " fields | Provides: "
-        <> int.to_string(prov_count)
+        <> " fields | signals: "
+        <> int.to_string(sig_count)
         <> " fields",
       )
     }
@@ -173,7 +173,7 @@ fn lookup_blueprint_field(
   let all_fields =
     list.flat_map(file.blocks, fn(b) {
       list.flat_map(b.items, fn(item) {
-        list.flatten([item.requires.fields, item.provides.fields])
+        list.flatten([item.requires.fields, item.signals.fields])
       })
     })
   lookup_field_in_list(word, all_fields)

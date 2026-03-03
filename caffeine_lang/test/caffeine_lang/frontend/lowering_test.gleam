@@ -22,10 +22,11 @@ fn read_file(path: String) -> String {
 }
 
 fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint(Raw)) {
-  let content = lowering_path(file_name <> ".caffeine") |> read_file
+  let path = lowering_path(file_name <> ".caffeine")
+  let content = read_file(path)
   let assert Ok(file) = parser.parse_blueprints_file(content)
   let assert Ok(validated) = validator.validate_blueprints_file(file)
-  lowering.lower_blueprints(validated)
+  lowering.lower_blueprints(validated, from: path)
 }
 
 fn parse_and_lower_expects(file_name: String) -> List(Expectation) {
@@ -49,7 +50,8 @@ pub fn lower_blueprints_simple_test() {
 
   let assert Ok(bp) = list.first(blueprints)
   bp.name |> should.equal("api_availability")
-  dict.size(bp.params) |> should.equal(2)
+  // 2 user params + 3 synthesized (vendor, evaluation, indicators)
+  dict.size(bp.params) |> should.equal(5)
 
   let assert Ok(env_type) = dict.get(bp.params, "env")
   env_type |> should.equal(types.PrimitiveType(types.String))
@@ -58,11 +60,18 @@ pub fn lower_blueprints_simple_test() {
   threshold_type
   |> should.equal(types.PrimitiveType(types.NumericType(types.Float)))
 
-  // Check inputs
-  dict.size(bp.inputs) |> should.equal(2)
+  // Check synthesized inputs (vendor from filename, evaluation from expectation type)
+  dict.size(bp.inputs) |> should.equal(3)
   let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
   let assert Ok(vendor_str) = value.extract_string(vendor_val)
-  vendor_str |> should.equal("datadog")
+  vendor_str |> should.equal("blueprints_simple")
+
+  let assert Ok(eval_val) = dict.get(bp.inputs, "evaluation")
+  let assert Ok(eval_str) = value.extract_string(eval_val)
+  eval_str |> should.equal("test")
+
+  let assert Ok(indicators_val) = dict.get(bp.inputs, "indicators")
+  let assert Ok(_) = value.extract_dict(indicators_val)
 }
 
 pub fn lower_blueprints_multi_artifact_test() {
@@ -170,14 +179,15 @@ pub fn lower_blueprints_template_vars_test() {
   let blueprints = parse_and_lower_blueprints("blueprints_template_vars")
   let assert Ok(bp) = list.first(blueprints)
 
-  // Template vars should be transformed: $env->env$ -> $$env->env$$
-  let assert Ok(value_val) = dict.get(bp.inputs, "value")
-  let assert Ok(value_str) = value.extract_string(value_val)
-  value_str |> should.equal("numerator / denominator")
+  // Evaluation expression comes from expectation type
+  let assert Ok(eval_val) = dict.get(bp.inputs, "evaluation")
+  let assert Ok(eval_str) = value.extract_string(eval_val)
+  eval_str |> should.equal("numerator / denominator")
 
-  let assert Ok(queries_val) = dict.get(bp.inputs, "queries")
-  let assert Ok(queries_dict) = value.extract_dict(queries_val)
-  let assert Ok(num_val) = dict.get(queries_dict, "numerator")
+  // Template vars in signals should be transformed: $env->env$ -> $$env->env$$
+  let assert Ok(indicators_val) = dict.get(bp.inputs, "indicators")
+  let assert Ok(indicators_dict) = value.extract_dict(indicators_val)
+  let assert Ok(num_val) = dict.get(indicators_dict, "numerator")
   let assert Ok(num_str) = value.extract_string(num_val)
   num_str
   |> should.equal("sum:http.requests{$$env->env$$, $$status->status:not$$}")

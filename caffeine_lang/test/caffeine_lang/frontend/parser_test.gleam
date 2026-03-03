@@ -131,6 +131,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api_availability",
+                expectation_type: ast.SuccessRate("test"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -139,7 +140,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "vendor",
                     ast.LiteralValue(ast.LiteralString("datadog")),
@@ -166,6 +167,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "availability",
+                expectation_type: ast.SuccessRate("test"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -174,7 +176,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "vendor",
                     ast.LiteralValue(ast.LiteralString("datadog")),
@@ -187,6 +189,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "hard_dep",
+                expectation_type: ast.SuccessRate("test"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -200,7 +203,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "type",
                     ast.LiteralValue(ast.LiteralString("hard")),
@@ -227,6 +230,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "tracked_slo",
+                expectation_type: ast.SuccessRate("test"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -240,7 +244,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "vendor",
                     ast.LiteralValue(ast.LiteralString("datadog")),
@@ -284,6 +288,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api",
+                expectation_type: ast.SuccessRate("test"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -292,7 +297,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("test")),
@@ -336,6 +341,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api",
+                expectation_type: ast.SuccessRate("test"),
                 extends: ["_common"],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -344,7 +350,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "vendor",
                     ast.LiteralValue(ast.LiteralString("datadog")),
@@ -371,6 +377,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api",
+                expectation_type: ast.SuccessRate("test"),
                 extends: ["_base"],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -379,7 +386,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("test")),
@@ -406,6 +413,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api",
+                expectation_type: ast.SuccessRate("test"),
                 extends: ["_base", "_common"],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -414,7 +422,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("test")),
@@ -441,6 +449,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "test",
+                expectation_type: ast.SuccessRate("x"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -486,7 +495,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("x")),
@@ -513,6 +522,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "test_nested",
+                expectation_type: ast.SuccessRate("x"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   // Order must match corpus file
@@ -559,7 +569,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("x")),
@@ -595,6 +605,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "test",
+                expectation_type: ast.SuccessRate("x"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -603,7 +614,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("x")),
@@ -630,6 +641,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "api",
+                expectation_type: ast.SuccessRate("x"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -645,7 +657,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("x")),
@@ -672,6 +684,7 @@ pub fn parse_blueprints_file_test() {
               ast.BlueprintItem(
                 leading_comments: [],
                 name: "test",
+                expectation_type: ast.SuccessRate("x"),
                 extends: [],
                 requires: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
@@ -694,7 +707,7 @@ pub fn parse_blueprints_file_test() {
                     leading_comments: [],
                   ),
                 ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
+                signals: ast.Struct(trailing_comments: [], fields: [
                   ast.Field(
                     "value",
                     ast.LiteralValue(ast.LiteralString("x")),
@@ -1037,12 +1050,12 @@ pub fn parse_error_line_numbers_test() {
     ),
     #(
       "error on line 3 reports line 3",
-      "Blueprints\n\"test\":\nRequiring { field: bad }",
+      "Blueprints\n\"test\" success_rate(x):\nRequiring { field: bad }",
       Error(parser_error.UnknownType("bad", 3, 20)),
     ),
     #(
       "error after blank lines reports correct line",
-      "Blueprints\n\n\n\"test\":\nRequiring { field: bad }",
+      "Blueprints\n\n\n\"test\" success_rate(x):\nRequiring { field: bad }",
       Error(parser_error.UnknownType("bad", 5, 20)),
     ),
   ]
@@ -1067,18 +1080,18 @@ pub fn parse_error_missing_delimiter_test() {
   [
     #(
       "missing } at end of file points to correct line (not EOF line)",
-      "Blueprints\n\"test\":\nRequiring { env: String\n",
+      "Blueprints\n\"test\" success_rate(x):\nRequiring { env: String\n",
       Error(parser_error.UnexpectedToken("}", "end of file", 3, 18)),
     ),
     #(
       "missing } in middle of file points to correct line (not far-away next token)",
-      "Blueprints\n\"test\":\nRequiring { env: String\n\n\nBlueprints",
+      "Blueprints\n\"test\" success_rate(x):\nRequiring { env: String\n\n\nBlueprints",
       Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 18)),
     ),
     #(
       "missing } in refinement points to last token on same line",
-      "Blueprints\n\"test\":\nRequiring { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
-      Error(parser_error.UnexpectedToken("}", "Provides", 3, 47)),
+      "Blueprints\n\"test\" success_rate(x):\nRequiring { env: String { x | x in { \"a\", \"b\" }\n\nsignals { v: \"y\" }",
+      Error(parser_error.UnexpectedToken("}", "signals", 3, 47)),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)

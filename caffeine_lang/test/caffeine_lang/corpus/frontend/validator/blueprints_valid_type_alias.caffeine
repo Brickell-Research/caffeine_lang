@@ -2,10 +2,10 @@ _env (Type): String { x | x in { "production", "staging" } }
 _relation (Type): String { x | x in { "friend", "colleague" } }
 
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring {
       env: _env,
       config: Dict(_relation, String),
       items: List(_env)
     }
-    Provides { value: "x" }
+    signals { }

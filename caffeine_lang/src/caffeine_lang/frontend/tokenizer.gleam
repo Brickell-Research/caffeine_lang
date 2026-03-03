@@ -130,6 +130,8 @@ fn tokenize_loop(
         "+" -> emit_token(state, rest, token.SymbolPlus, acc)
         "|" -> emit_token(state, rest, token.SymbolPipe, acc)
         "=" -> emit_token(state, rest, token.SymbolEquals, acc)
+        "/" -> emit_token(state, rest, token.SymbolSlash, acc)
+        ">" -> emit_token(state, rest, token.SymbolGreaterThan, acc)
         "." -> {
           case string.pop_grapheme(rest) {
             Ok(#(".", after_dot)) ->
@@ -406,6 +408,7 @@ fn keyword_or_identifier(word: String) -> Token {
     "extends" -> token.KeywordExtends
     "Requiring" -> token.KeywordRequiring
     "Provides" -> token.KeywordProvides
+    "signals" -> token.KeywordSignals
     "in" -> token.KeywordIn
     "x" -> token.KeywordX
     "String" -> token.KeywordString

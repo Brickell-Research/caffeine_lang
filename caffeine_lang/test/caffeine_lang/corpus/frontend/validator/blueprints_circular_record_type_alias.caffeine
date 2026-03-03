@@ -1,6 +1,6 @@
 _rec (Type): { a: _rec }
 
 Blueprints
-  "api":
+  "api" success_rate(x):
     Requiring { data: _rec }
-    Provides { value: "x" }
+    signals { }

@@ -15,7 +15,7 @@ pub fn cli_exit_code_test() {
   caffeine_cli.run([
     "compile",
     "--quiet",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -28,7 +28,7 @@ pub fn cli_exit_code_test() {
   caffeine_cli.run([
     "compile",
     "--quiet",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "/nonexistent/expectations",
   ])
   |> should.be_error()
@@ -46,7 +46,7 @@ pub fn cli_exit_code_test() {
     "compile",
     "--quiet",
     "--target=terraform",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -55,7 +55,7 @@ pub fn cli_exit_code_test() {
     "compile",
     "--quiet",
     "--target=opentofu",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -64,7 +64,7 @@ pub fn cli_exit_code_test() {
     "compile",
     "--quiet",
     "--target=invalid",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_error()
@@ -81,7 +81,7 @@ pub fn validate_exit_code_test() {
   caffeine_cli.run([
     "validate",
     "--quiet",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -94,7 +94,7 @@ pub fn validate_exit_code_test() {
   caffeine_cli.run([
     "validate",
     "--quiet",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "/nonexistent/expectations",
   ])
   |> should.be_error()
@@ -103,7 +103,7 @@ pub fn validate_exit_code_test() {
     "validate",
     "--quiet",
     "--target=terraform",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -112,7 +112,7 @@ pub fn validate_exit_code_test() {
     "validate",
     "--quiet",
     "--target=opentofu",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_ok()
@@ -121,7 +121,7 @@ pub fn validate_exit_code_test() {
     "validate",
     "--quiet",
     "--target=invalid",
-    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints.caffeine",
+    "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_blueprints/datadog.caffeine",
     "../caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations",
   ])
   |> should.be_error()

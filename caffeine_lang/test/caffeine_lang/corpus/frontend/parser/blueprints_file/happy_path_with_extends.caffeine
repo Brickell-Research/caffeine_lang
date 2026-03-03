@@ -1,4 +1,4 @@
 Blueprints
-  "api" extends [_base]:
+  "api" success_rate(test) extends [_base]:
     Requiring { env: String }
-    Provides { value: "test" }
+    signals { value: "test" }

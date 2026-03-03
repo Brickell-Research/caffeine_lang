@@ -11,6 +11,7 @@ pub type Token {
   KeywordExtends
   KeywordRequiring
   KeywordProvides
+  KeywordSignals
   KeywordIn
   KeywordX
   KeywordString
@@ -43,6 +44,8 @@ pub type Token {
   SymbolPipe
   SymbolEquals
   SymbolDotDot
+  SymbolSlash
+  SymbolGreaterThan
   WhitespaceNewline
   WhitespaceIndent(Int)
   CommentLine(String)
@@ -60,6 +63,7 @@ pub fn to_string(tok: Token) -> String {
     KeywordExtends -> "extends"
     KeywordRequiring -> "Requiring"
     KeywordProvides -> "Provides"
+    KeywordSignals -> "signals"
     KeywordIn -> "in"
     KeywordX -> "x"
     KeywordString -> "String"
@@ -92,6 +96,8 @@ pub fn to_string(tok: Token) -> String {
     SymbolPipe -> "|"
     SymbolEquals -> "="
     SymbolDotDot -> ".."
+    SymbolSlash -> "/"
+    SymbolGreaterThan -> ">"
     WhitespaceNewline -> "newline"
     WhitespaceIndent(_) -> "indent"
     CommentLine(_) -> "comment"

@@ -1,4 +1,4 @@
 Blueprints
-  "test_nested":
+  "test_nested" success_rate(x):
     Requiring { nested_list: List(List(String)), nested_dict: Dict(String, Dict(String, Integer)), dict_of_list: Dict(String, List(Integer)), list_of_dict: List(Dict(String, Boolean)) }
-    Provides { value: "x" }
+    signals { value: "x" }

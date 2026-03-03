@@ -1,4 +1,4 @@
 Blueprints
-  "api_availability":
+  "api_availability" success_rate(test):
     Requiring { env: String, threshold: Float }
-    Provides { vendor: "datadog", value: "test" }
+    signals { }

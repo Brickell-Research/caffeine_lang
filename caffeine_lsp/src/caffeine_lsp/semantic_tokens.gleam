@@ -92,6 +92,7 @@ fn classify_token(
     token.KeywordExtends -> Ok(#(keyword, 7))
     token.KeywordRequiring -> Ok(#(keyword, 9))
     token.KeywordProvides -> Ok(#(keyword, 8))
+    token.KeywordSignals -> Ok(#(keyword, 7))
     token.KeywordIn -> Ok(#(keyword, 2))
     token.KeywordType -> Ok(#(keyword, 4))
 
@@ -150,6 +151,9 @@ fn classify_token(
     token.SymbolDotDot -> Ok(#(operator, 2))
     token.SymbolEquals -> Ok(#(operator, 1))
     token.SymbolPlus -> Ok(#(operator, 1))
+    token.SymbolSlash -> Ok(#(operator, 1))
+    token.SymbolGreaterThan -> Ok(#(operator, 1))
+    token.SymbolStar -> Ok(#(operator, 1))
 
     // Colon — type annotation operator
     token.SymbolColon -> Ok(#(operator, 1))

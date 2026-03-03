@@ -126,9 +126,9 @@ fn blueprint_item_symbol(
     position_utils.find_name_position_in_lines(lines, item.name)
   let req_fields =
     list.map(item.requires.fields, fn(f) { field_symbol(f, lines) })
-  let prov_fields =
-    list.map(item.provides.fields, fn(f) { field_symbol(f, lines) })
-  let children = list.flatten([req_fields, prov_fields])
+  let sig_fields =
+    list.map(item.signals.fields, fn(f) { field_symbol(f, lines) })
+  let children = list.flatten([req_fields, sig_fields])
   DocumentSymbol(
     item.name,
     "",

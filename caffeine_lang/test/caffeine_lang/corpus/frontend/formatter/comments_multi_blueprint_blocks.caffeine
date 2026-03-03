@@ -2,25 +2,25 @@
 # SLO blueprints for availability
 Blueprints
   # API SLO
-  "api":
+  "api" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }
 
   ## Database SLOs
   # DB availability
-  "db":
+  "db" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }
 
 ## Latency
 # SLO blueprints for latency
 Blueprints
-  "api_latency":
+  "api_latency" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }
 
 ## Throughput
 Blueprints
-  "api_throughput":
+  "api_throughput" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }

@@ -2,6 +2,6 @@ _env (Type): String { x | x in { "production", "staging" } }
 _env (Requiring): { vendor: String }
 
 Blueprints
-  "api":
+  "api" success_rate(test):
     Requiring { threshold: Float }
-    Provides { value: "test" }
+    signals { }

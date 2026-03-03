@@ -1,4 +1,4 @@
 Blueprints
-  "api" extends [_base, _common]:
+  "api" success_rate(test) extends [_base, _common]:
     Requiring { threshold: Float }
-    Provides { value: "test" }
+    signals { value: "test" }

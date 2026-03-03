@@ -1,10 +1,7 @@
 Blueprints
-  "api":
+  "api" success_rate(numerator / denominator):
     Requiring { env: String, status: Boolean }
-    Provides {
-      value: "numerator / denominator",
-      queries: {
-        numerator: "sum:http.requests{$env->env$, $status->status.not$}",
-        denominator: "sum:http.requests{$env->env$}"
-      }
+    signals {
+      numerator: "sum:http.requests{$env->env$, $status->status.not$}",
+      denominator: "sum:http.requests{$env->env$}"
     }

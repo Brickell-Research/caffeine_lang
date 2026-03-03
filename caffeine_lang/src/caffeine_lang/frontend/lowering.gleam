@@ -19,16 +19,21 @@ import gleam/list
 import gleam/string
 
 /// Lowers blueprints from a validated blueprints AST.
+/// The path is used to extract the vendor name from the filename.
 @internal
-pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw)) {
+pub fn lower_blueprints(
+  file: BlueprintsFile(Validated),
+  from path: String,
+) -> List(Blueprint(Raw)) {
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
+  let vendor_name = extract_vendor_from_path(path)
 
   file.blocks
   |> list.flat_map(fn(block) {
     block.items
     |> list.map(fn(item) {
-      generate_blueprint_item(item, extendables, type_aliases)
+      generate_blueprint_item(item, extendables, type_aliases, vendor_name)
     })
   })
 }
@@ -61,18 +66,66 @@ fn build_type_alias_map(
 }
 
 /// Generates a single blueprint from an AST item.
+/// Synthesizes vendor, evaluation, and indicators inputs from the new AST
+/// to maintain compatibility with the linker's expected Blueprint structure.
 fn generate_blueprint_item(
   item: BlueprintItem,
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, ParsedType),
+  vendor_name: String,
 ) -> Blueprint(Raw) {
-  let #(merged_requires, merged_provides) =
-    merge_blueprint_extends(item, extendables)
+  let merged_requires = merge_blueprint_extends(item, extendables)
+  let user_params = struct_to_params(merged_requires, type_aliases)
 
-  let params = struct_to_params(merged_requires, type_aliases)
-  let inputs = struct_to_inputs(merged_provides)
+  // Bridge: synthesize vendor/evaluation/indicators params and inputs
+  // to maintain compatibility with the linker's expected Blueprint structure.
+  let synthesized_params =
+    dict.from_list([
+      #("vendor", PrimitiveType(types.String)),
+      #("evaluation", PrimitiveType(types.String)),
+      #(
+        "indicators",
+        CollectionType(Dict(
+          PrimitiveType(types.String),
+          PrimitiveType(types.String),
+        )),
+      ),
+    ])
+  let params = dict.merge(synthesized_params, user_params)
+
+  let signal_inputs = struct_to_inputs(item.signals)
+  let indicators_value = value.DictValue(signal_inputs)
+  let evaluation_expr = case item.expectation_type {
+    ast.SuccessRate(expr) -> expr
+    ast.TimeSlice(query) ->
+      "time_slice(" <> transform_template_vars(query) <> ")"
+  }
+
+  let inputs =
+    dict.from_list([
+      #("vendor", value.StringValue(vendor_name)),
+      #("evaluation", value.StringValue(evaluation_expr)),
+      #("indicators", indicators_value),
+    ])
 
   Blueprint(name: item.name, params: params, inputs: inputs)
+}
+
+/// Extracts the vendor name from a file path.
+/// Example: "path/to/datadog.caffeine" -> "datadog"
+@internal
+pub fn extract_vendor_from_path(path: String) -> String {
+  path
+  |> string.split("/")
+  |> list.last
+  |> fn(result) {
+    case result {
+      Ok(filename) ->
+        filename
+        |> string.replace(".caffeine", "")
+      Error(_) -> path
+    }
+  }
 }
 
 /// Generates a single expectation from an AST item.
@@ -102,13 +155,13 @@ fn collect_extended_fields(
 fn merge_blueprint_extends(
   item: BlueprintItem,
   extendables: Dict(String, Extendable),
-) -> #(Struct, Struct) {
+) -> Struct {
   let requires_fields =
     collect_extended_fields(item.extends, extendables)
     |> list.append(item.requires.fields)
     |> dedupe_fields
 
-  #(ast.Struct(requires_fields, trailing_comments: []), item.provides)
+  ast.Struct(requires_fields, trailing_comments: [])
 }
 
 /// Returns an expect item's provides.

@@ -90,18 +90,25 @@ pub type Extendable {
 // BLUEPRINT NODES
 // =============================================================================
 
+/// The expectation type declared inline after a blueprint name.
+pub type ExpectationType {
+  SuccessRate(evaluation: String)
+  TimeSlice(query: String)
+}
+
 /// A block of blueprints.
 pub type BlueprintsBlock {
   BlueprintsBlock(items: List(BlueprintItem), leading_comments: List(Comment))
 }
 
-/// A single blueprint item with name, extends, requires, and provides.
+/// A single blueprint item with name, expectation type, extends, requires, and signals.
 pub type BlueprintItem {
   BlueprintItem(
     name: String,
+    expectation_type: ExpectationType,
     extends: List(String),
     requires: Struct,
-    provides: Struct,
+    signals: Struct,
     leading_comments: List(Comment),
   )
 }

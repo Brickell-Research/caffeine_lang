@@ -1,6 +1,6 @@
 _base (Requiring): { vendor: String, value: String }
 
 Blueprints
-  "api" extends [_base]:
+  "api" success_rate(overridden) extends [_base]:
     Requiring { env: String }
-    Provides { vendor: "datadog", value: "overridden" }
+    signals { }

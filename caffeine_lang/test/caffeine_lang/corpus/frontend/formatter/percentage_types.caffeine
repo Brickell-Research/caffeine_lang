@@ -1,8 +1,8 @@
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring {
       threshold: Percentage,
       target: Percentage { x | x in ( 99.0..100.0 ) },
       level: Defaulted(Percentage, 99.9%)
     }
-    Provides { value: "x" }
+    signals { value: "x" }

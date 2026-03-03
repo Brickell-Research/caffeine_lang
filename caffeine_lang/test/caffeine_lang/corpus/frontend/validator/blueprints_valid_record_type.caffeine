@@ -1,6 +1,6 @@
 _indicators (Type): { numerator: String, denominator: String }
 
 Blueprints
-  "api":
+  "api" success_rate(x):
     Requiring { indicators: _indicators }
-    Provides { value: "x" }
+    signals { }

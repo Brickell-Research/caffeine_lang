@@ -223,7 +223,7 @@ fn validate_blueprint_items_extends(
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
     // Check that item's requires don't overshadow extended fields.
-    // Provides fields may overlap with Requiring extendable types (they supply values).
+    // Signals fields are values, not types, so they don't overshadow.
     let requires_fields =
       item.requires.fields |> list.map(fn(f) { f.name }) |> set.from_list
     validate_no_overshadowing(
@@ -244,8 +244,6 @@ fn validate_expect_items_extends(
     extendables
     |> list.map(fn(e) { e.name })
     |> set.from_list
-
-  let extendable_map = build_extendable_field_map(extendables)
 
   list.try_each(items, fn(item) {
     use _ <- result.try(validate_extends_exist(

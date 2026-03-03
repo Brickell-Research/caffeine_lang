@@ -239,7 +239,7 @@ fn existing_field_names_for_section(
 ) -> List(String) {
   case is_in_requires_section(lines, line) {
     True -> list.map(item.requires.fields, fn(f) { f.name })
-    False -> list.map(item.provides.fields, fn(f) { f.name })
+    False -> list.map(item.signals.fields, fn(f) { f.name })
   }
 }
 
@@ -256,7 +256,11 @@ fn is_in_requires_loop(lines: List(String)) -> Bool {
     [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
       use <- bool.guard(string.starts_with(trimmed, "Requiring"), True)
-      use <- bool.guard(string.starts_with(trimmed, "Provides"), False)
+      use <- bool.guard(
+        string.starts_with(trimmed, "Provides")
+          || string.starts_with(trimmed, "signals"),
+        False,
+      )
       use <- bool.guard(string.starts_with(trimmed, "\""), False)
       is_in_requires_loop(rest)
     }

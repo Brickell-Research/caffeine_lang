@@ -2,10 +2,11 @@
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
-  type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
-  LiteralFalse, LiteralFloat, LiteralInteger, LiteralList, LiteralPercentage,
-  LiteralString, LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
+  type ExpectItem, type ExpectationType, type ExpectsBlock, type ExpectsFile,
+  type Extendable, type Field, type Literal, type Parsed, type Struct,
+  type TypeAlias, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
+  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
+  Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -174,14 +175,31 @@ fn format_expects_block(block: ExpectsBlock) -> String {
 
 fn format_blueprint_item(item: BlueprintItem) -> String {
   let comments = format_comments(item.leading_comments, "  ")
+  let type_str = format_expectation_type(item.expectation_type)
   let name_line =
-    "  \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "  \""
+    <> item.name
+    <> "\" "
+    <> type_str
+    <> format_extends(item.extends)
+    <> ":"
 
-  let requires = "    Requiring " <> format_struct(item.requires, 4, TypeFields)
-  let provides =
-    "    Provides " <> format_struct(item.provides, 4, LiteralFields)
+  let requires_section = case item.requires.fields {
+    [] -> ""
+    _ -> "\n    Requiring " <> format_struct(item.requires, 4, TypeFields)
+  }
+  let signals =
+    "\n    signals " <> format_struct(item.signals, 4, LiteralFields)
 
-  comments <> name_line <> "\n" <> requires <> "\n" <> provides
+  comments <> name_line <> requires_section <> signals
+}
+
+/// Formats an expectation type to its string representation.
+fn format_expectation_type(et: ExpectationType) -> String {
+  case et {
+    ast.SuccessRate(expr) -> "success_rate(" <> expr <> ")"
+    ast.TimeSlice(query) -> "time_slice(\"" <> query <> "\")"
+  }
 }
 
 fn format_expect_item(item: ExpectItem) -> String {

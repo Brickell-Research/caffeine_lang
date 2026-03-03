@@ -1,6 +1,6 @@
 _bad_type (Type): Integer { x | x in { "hello" } }
 
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring { env: _bad_type }
-    Provides { value: "x" }
+    signals { }

@@ -5,8 +5,8 @@ _env_requires (Requiring): {
 }
 
 Blueprints
-  "test" extends [_env_requires]:
+  "test" success_rate(x) extends [_env_requires]:
     Requiring {
       threshold: Integer
     }
-    Provides { value: "x" }
+    signals { }

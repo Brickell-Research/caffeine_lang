@@ -71,6 +71,10 @@ pub fn find_references_to_name(
 /// Check whether a name appears in a blueprint-relevant quoted context.
 /// Matches item headers ("name":) and expectation headers (for "name").
 fn is_blueprint_name(content: String, name: String) -> Bool {
-  string.contains(content, "\"" <> name <> "\":")
-  || string.contains(content, "for \"" <> name <> "\"")
+  let quoted = "\"" <> name <> "\""
+  string.contains(content, quoted <> ":")
+  || string.contains(content, quoted <> " success_rate")
+  || string.contains(content, quoted <> " time_slice")
+  || string.contains(content, quoted <> " extends")
+  || string.contains(content, "for " <> quoted)
 }

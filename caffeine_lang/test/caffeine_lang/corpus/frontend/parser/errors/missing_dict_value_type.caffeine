@@ -1,4 +1,4 @@
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring { counts: Dict(String) }
-    Provides { value: "x" }
+    signals { value: "x" }

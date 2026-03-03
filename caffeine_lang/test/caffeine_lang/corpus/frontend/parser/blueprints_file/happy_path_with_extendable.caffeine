@@ -1,6 +1,6 @@
 _base (Requiring): { env: String }
 
 Blueprints
-  "api":
+  "api" success_rate(test):
     Requiring { threshold: Float }
-    Provides { value: "test" }
+    signals { value: "test" }

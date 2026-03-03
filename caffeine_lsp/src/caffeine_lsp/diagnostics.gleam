@@ -192,7 +192,7 @@ fn extract_relation_targets_from_blueprints(
   |> list.flat_map(fn(block) {
     block.items
     |> list.flat_map(fn(item) {
-      extract_relation_targets_from_struct(item.provides)
+      extract_relation_targets_from_struct(item.signals)
     })
   })
 }

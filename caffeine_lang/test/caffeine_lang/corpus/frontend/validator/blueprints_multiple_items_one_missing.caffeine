@@ -1,10 +1,10 @@
 _base (Requiring): { vendor: String }
 
 Blueprints
-  "api" extends [_base]:
+  "api" success_rate(test) extends [_base]:
     Requiring { env: String }
-    Provides { value: "test" }
+    signals { }
 
-  "latency" extends [_nonexistent]:
+  "latency" success_rate(latency) extends [_nonexistent]:
     Requiring { threshold_ms: Integer }
-    Provides { value: "latency" }
+    signals { }

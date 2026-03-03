@@ -196,7 +196,8 @@ fn find_section_start_loop(reversed: List(String), idx: Int) -> Int {
       let trimmed = string.trim(line)
       use <- bool.guard(
         string.starts_with(trimmed, "Requiring")
-          || string.starts_with(trimmed, "Provides"),
+          || string.starts_with(trimmed, "Provides")
+          || string.starts_with(trimmed, "signals"),
         idx,
       )
       use <- bool.guard(string.starts_with(trimmed, "\""), -1)

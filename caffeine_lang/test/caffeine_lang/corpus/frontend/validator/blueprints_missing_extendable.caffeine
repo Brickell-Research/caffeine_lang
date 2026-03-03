@@ -1,6 +1,6 @@
 _base (Requiring): { vendor: String }
 
 Blueprints
-  "api" extends [_base, _nonexistent]:
+  "api" success_rate(test) extends [_base, _nonexistent]:
     Requiring { env: String }
-    Provides { value: "test" }
+    signals { }

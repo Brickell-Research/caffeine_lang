@@ -1,7 +1,8 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
-  type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
+  type ExpectItem, type ExpectationType, type ExpectsBlock, type ExpectsFile,
+  type Extendable, type Field, type Literal, type Parsed, type Struct,
+  type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -398,16 +399,104 @@ fn parse_blueprint_item(
   leading_comments: List(Comment),
 ) -> Result(#(BlueprintItem, ParserState), ParserError) {
   use #(name, state) <- result.try(parse_string_literal(state))
+  use #(expectation_type, state) <- result.try(parse_expectation_type(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  use state <- result.try(expect(state, token.KeywordRequiring, "Requiring"))
-  use #(requires, state) <- result.try(parse_type_struct(state))
-  use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
-  use #(provides, state) <- result.try(parse_literal_struct(state))
+  use #(requires, state) <- result.try(parse_optional_requiring(state))
+  use state <- result.try(expect(state, token.KeywordSignals, "signals"))
+  use #(signals, state) <- result.try(parse_literal_struct(state))
   Ok(#(
-    ast.BlueprintItem(name:, extends:, requires:, provides:, leading_comments:),
+    ast.BlueprintItem(
+      name:,
+      expectation_type:,
+      extends:,
+      requires:,
+      signals:,
+      leading_comments:,
+    ),
     state,
   ))
+}
+
+/// Parses the expectation type after a blueprint name.
+/// Expects either `success_rate(expr)` or `time_slice(expr)`.
+fn parse_expectation_type(
+  state: ParserState,
+) -> Result(#(ExpectationType, ParserState), ParserError) {
+  case peek(state) {
+    token.Identifier("success_rate") -> {
+      let state = advance(state)
+      use #(expr, state) <- result.try(parse_parenthesized_expression(state))
+      Ok(#(ast.SuccessRate(expr), state))
+    }
+    token.Identifier("time_slice") -> {
+      let state = advance(state)
+      use state <- result.try(expect(state, token.SymbolLeftParen, "("))
+      use #(query, state) <- result.try(parse_string_literal(state))
+      use state <- result.try(expect(state, token.SymbolRightParen, ")"))
+      Ok(#(ast.TimeSlice(query), state))
+    }
+    tok ->
+      Error(parser_error.UnexpectedToken(
+        "success_rate or time_slice",
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
+}
+
+/// Collects tokens between `(` and `)` as a raw expression string.
+fn parse_parenthesized_expression(
+  state: ParserState,
+) -> Result(#(String, ParserState), ParserError) {
+  use state <- result.try(expect(state, token.SymbolLeftParen, "("))
+  collect_expression_tokens(state, "", 0)
+}
+
+/// Collects tokens until the matching `)`, handling nested parens.
+fn collect_expression_tokens(
+  state: ParserState,
+  acc: String,
+  depth: Int,
+) -> Result(#(String, ParserState), ParserError) {
+  case peek(state) {
+    token.SymbolRightParen if depth == 0 -> {
+      Ok(#(string.trim(acc), advance(state)))
+    }
+    token.SymbolRightParen -> {
+      collect_expression_tokens(advance(state), acc <> ")", depth - 1)
+    }
+    token.SymbolLeftParen -> {
+      collect_expression_tokens(advance(state), acc <> "(", depth + 1)
+    }
+    token.EOF ->
+      Error(parser_error.UnexpectedEOF(")", state.line, state.column))
+    tok -> {
+      let sep = case acc {
+        "" -> ""
+        _ -> " "
+      }
+      collect_expression_tokens(
+        advance(state),
+        acc <> sep <> token.to_string(tok),
+        depth,
+      )
+    }
+  }
+}
+
+/// Parses an optional Requiring block. Returns empty struct if not present.
+fn parse_optional_requiring(
+  state: ParserState,
+) -> Result(#(Struct, ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordRequiring -> {
+      let state = advance(state)
+      parse_type_struct(state)
+    }
+    _ -> Ok(#(ast.Struct(fields: [], trailing_comments: []), state))
+  }
 }
 
 // =============================================================================

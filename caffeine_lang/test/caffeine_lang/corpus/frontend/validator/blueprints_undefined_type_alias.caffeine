@@ -1,6 +1,6 @@
 _env (Type): String { x | x in { "production", "staging" } }
 
 Blueprints
-  "test":
+  "test" success_rate(x):
     Requiring { env: _undefined }
-    Provides { value: "x" }
+    signals { }

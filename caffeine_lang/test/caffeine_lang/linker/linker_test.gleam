@@ -17,7 +17,9 @@ fn read_source_file(path: String) -> source_file.SourceFile(a) {
 
 pub fn link_happy_path_test() {
   let blueprint =
-    read_source_file(corpus_dir <> "/happy_path_single_blueprints.caffeine")
+    read_source_file(
+      corpus_dir <> "/happy_path_single_blueprints/datadog.caffeine",
+    )
   let expectations = [
     read_source_file(
       corpus_dir
@@ -40,7 +42,9 @@ pub fn link_invalid_blueprint_test() {
 
 pub fn link_invalid_expectation_test() {
   let blueprint =
-    read_source_file(corpus_dir <> "/happy_path_single_blueprints.caffeine")
+    read_source_file(
+      corpus_dir <> "/happy_path_single_blueprints/datadog.caffeine",
+    )
   let bad_expectation =
     SourceFile(
       path: "acme/payments/bad.caffeine",

@@ -1,0 +1,9 @@
+_env (Type): String { x | x in { "production", "staging" } }
+
+Blueprints
+  "api_availability_with_type_alias" success_rate(numerator / denominator):
+    Requiring { env: _env, status: Boolean, threshold: Float, window_in_days: Integer { x | x in ( 1..90 ) } }
+    signals {
+      numerator: "sum:http.requests{$env->env$ AND $status->status.not$}",
+      denominator: "sum:http.requests{$env->env$}"
+    }

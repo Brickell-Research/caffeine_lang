@@ -1,9 +1,9 @@
 Blueprints
-  "availability":
+  "availability" success_rate(test):
     Requiring { env: String }
-    Provides { vendor: "datadog" }
+    signals { vendor: "datadog" }
 
 Blueprints
-  "hard_dep":
+  "hard_dep" success_rate(test):
     Requiring { from: String, to: String }
-    Provides { type: "hard" }
+    signals { type: "hard" }
