@@ -1,30 +1,26 @@
 import caffeine_lang/linker/artifacts
-import caffeine_lang/standard_library/artifacts as stdlib_artifacts
-import gleam/list
 import test_helpers
 
-// ==== standard_library ====
-// * ✅ returns two artifacts (SLO and DependencyRelations)
-// * ✅ artifact types match expected
-pub fn standard_library_test() {
-  let result = stdlib_artifacts.standard_library()
-
+// ==== parse_relation_type ====
+// * ✅ parses "hard" to Hard
+// * ✅ parses "soft" to Soft
+// * ✅ unknown string returns Error
+pub fn parse_relation_type_test() {
   [
-    #("returns two artifacts", list.length(result), 2),
+    #("parses hard", "hard", Ok(artifacts.Hard)),
+    #("parses soft", "soft", Ok(artifacts.Soft)),
+    #("unknown returns error", "unknown", Error(Nil)),
   ]
-  |> test_helpers.table_test_1(fn(expected) { expected })
+  |> test_helpers.table_test_1(artifacts.parse_relation_type)
+}
 
-  let types =
-    result
-    |> list.map(fn(a) { artifacts.artifact_type_to_string(a.type_) })
-
+// ==== relation_type_to_string ====
+// * ✅ Hard to "hard"
+// * ✅ Soft to "soft"
+pub fn relation_type_to_string_test() {
   [
-    #("contains SLO artifact", list.contains(types, "SLO"), True),
-    #(
-      "contains DependencyRelations artifact",
-      list.contains(types, "DependencyRelations"),
-      True,
-    ),
+    #("Hard to hard", artifacts.Hard, "hard"),
+    #("Soft to soft", artifacts.Soft, "soft"),
   ]
-  |> test_helpers.table_test_1(fn(val) { val })
+  |> test_helpers.table_test_1(artifacts.relation_type_to_string)
 }

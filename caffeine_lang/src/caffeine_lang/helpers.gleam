@@ -3,9 +3,7 @@ import caffeine_lang/identifiers.{
   type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
   type TeamName,
 }
-import caffeine_lang/linker/artifacts.{
-  type ArtifactType, type DependencyRelationType,
-}
+import caffeine_lang/linker/artifacts.{type DependencyRelationType}
 import caffeine_lang/types
 import caffeine_lang/value.{type Value}
 import gleam/dict
@@ -165,7 +163,7 @@ pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
   |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
 }
 
-/// Build system tag key-value pairs from IR metadata fields and artifact refs.
+/// Build system tag key-value pairs from IR metadata fields.
 /// Returns a sorted, deterministic list of tag pairs shared across all generators.
 pub fn build_system_tag_pairs(
   org_name org_name: OrgName,
@@ -173,7 +171,6 @@ pub fn build_system_tag_pairs(
   service_name service_name: ServiceName,
   blueprint_name blueprint_name: BlueprintName,
   friendly_label friendly_label: ExpectationLabel,
-  artifact_refs artifact_refs: List(ArtifactType),
   misc misc: dict.Dict(String, List(String)),
 ) -> List(#(String, String)) {
   [
@@ -185,12 +182,6 @@ pub fn build_system_tag_pairs(
     #("blueprint", blueprint_name.value),
     #("expectation", friendly_label.value),
   ]
-  |> list.append(
-    artifact_refs
-    |> list.map(fn(ref) {
-      #("artifact", artifacts.artifact_type_to_string(ref))
-    }),
-  )
   |> list.append(
     misc
     |> dict.to_list

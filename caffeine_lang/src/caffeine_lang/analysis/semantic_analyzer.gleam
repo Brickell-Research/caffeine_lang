@@ -3,7 +3,6 @@ import caffeine_lang/analysis/templatizer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir.{
   type DepsValidated, type IntermediateRepresentation, type Resolved,
   IntermediateRepresentation, SloFields,
@@ -27,7 +26,7 @@ pub fn resolve_intermediate_representations(
   irs
   |> list.map(fn(ir) {
     use <- bool.guard(
-      when: !list.contains(ir.artifact_refs, SLO),
+      when: option.is_none(ir.slo_fields),
       return: Ok(ir.promote(ir)),
     )
     resolve_indicators(ir)
@@ -150,17 +149,17 @@ pub fn resolve_indicators(
           }
         })
 
-      // Also update the structured artifact_data with resolved values.
+      // Also update the structured SLO fields with resolved values.
       let resolved_indicators_dict = resolved_indicators |> dict.from_list
       let resolved_eval = case resolved_evaluation_tuple {
         option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
         option.None ->
-          ir.get_slo_fields(ir.artifact_data)
+          ir.slo_fields
           |> option.map(fn(slo) { slo.evaluation })
           |> option.unwrap(option.None)
       }
-      let new_artifact_data =
-        ir.update_slo_fields(ir.artifact_data, fn(slo) {
+      let updated_ir =
+        ir.update_slo_fields(ir, fn(slo) {
           SloFields(
             ..slo,
             indicators: resolved_indicators_dict,
@@ -168,13 +167,7 @@ pub fn resolve_indicators(
           )
         })
 
-      Ok(
-        IntermediateRepresentation(
-          ..ir,
-          values: new_values,
-          artifact_data: new_artifact_data,
-        ),
-      )
+      Ok(IntermediateRepresentation(..updated_ir, values: new_values))
     }
     option.Some(vendor.Honeycomb) -> {
       // Honeycomb does not use template resolution — indicators are passed through as-is.

@@ -2,7 +2,7 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
+import caffeine_lang/linker/artifacts.{Hard, Soft}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -33,9 +33,9 @@ pub fn make_slo_ir(
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: [SLO],
     values: values,
-    artifact_data: ir.slo_only(make_test_slo_fields(threshold, dict.new())),
+    slo_fields: option.Some(make_test_slo_fields(threshold, dict.new())),
+    dependency_fields: option.None,
     vendor: option.Some(vendor.Datadog),
   )
 }
@@ -66,12 +66,12 @@ pub fn make_ir_with_deps(
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: [SLO, DependencyRelations],
     values: values,
-    artifact_data: ir.slo_with_dependency(
-      slo: make_test_slo_fields(threshold, dict.new()),
-      dependency: make_test_dependency_fields(hard_deps, soft_deps),
-    ),
+    slo_fields: option.Some(make_test_slo_fields(threshold, dict.new())),
+    dependency_fields: option.Some(make_test_dependency_fields(
+      hard_deps,
+      soft_deps,
+    )),
     vendor: option.Some(vendor.Datadog),
   )
 }
@@ -88,11 +88,11 @@ pub fn make_deps_only_ir(
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: [DependencyRelations],
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
-    artifact_data: ir.dependency_only(make_test_dependency_fields(
+    slo_fields: option.None,
+    dependency_fields: option.Some(make_test_dependency_fields(
       hard_deps,
       soft_deps,
     )),
@@ -170,7 +170,6 @@ pub fn make_vendor_slo_ir(
       misc: dict.new(),
     ),
     unique_identifier: unique_identifier,
-    artifact_refs: [SLO],
     values: [
       helpers.ValueTuple(
         "vendor",
@@ -205,7 +204,7 @@ pub fn make_vendor_slo_ir(
         ),
       ),
     ],
-    artifact_data: ir.slo_only(ir.SloFields(
+    slo_fields: option.Some(ir.SloFields(
       threshold: threshold,
       indicators: indicators |> dict.from_list,
       window_in_days: window_in_days,
@@ -213,6 +212,7 @@ pub fn make_vendor_slo_ir(
       tags: [],
       runbook: option.None,
     )),
+    dependency_fields: option.None,
     vendor: option.Some(vendor_enum),
   )
 }

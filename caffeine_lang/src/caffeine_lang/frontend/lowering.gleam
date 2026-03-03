@@ -2,10 +2,9 @@
 /// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Literal, type ParsedArtifactRef, type Struct,
-  type TypeAlias, type Validated,
+  type Extendable, type Field, type Literal, type Struct, type TypeAlias,
+  type Validated,
 }
-import caffeine_lang/linker/artifacts.{type ArtifactType}
 import caffeine_lang/linker/blueprints.{type Blueprint, type Raw, Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation, Expectation}
 import caffeine_lang/types.{
@@ -29,7 +28,7 @@ pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw))
   |> list.flat_map(fn(block) {
     block.items
     |> list.map(fn(item) {
-      generate_blueprint_item(item, block.artifacts, extendables, type_aliases)
+      generate_blueprint_item(item, extendables, type_aliases)
     })
   })
 }
@@ -68,32 +67,16 @@ fn build_type_alias_map(
 /// Generates a single blueprint from an AST item.
 fn generate_blueprint_item(
   item: BlueprintItem,
-  parsed_artifacts: List(ParsedArtifactRef),
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, ParsedType),
 ) -> Blueprint(Raw) {
-  let artifact_refs = list.map(parsed_artifacts, lower_artifact_ref)
-
   let #(merged_requires, merged_provides) =
     merge_blueprint_extends(item, extendables)
 
   let params = struct_to_params(merged_requires, type_aliases)
   let inputs = struct_to_inputs(merged_provides)
 
-  Blueprint(
-    name: item.name,
-    artifact_refs: artifact_refs,
-    params: params,
-    inputs: inputs,
-  )
-}
-
-/// Converts a ParsedArtifactRef to an ArtifactType (infallible).
-fn lower_artifact_ref(ref: ParsedArtifactRef) -> ArtifactType {
-  case ref {
-    ast.ParsedSLO -> artifacts.SLO
-    ast.ParsedDependencyRelations -> artifacts.DependencyRelations
-  }
+  Blueprint(name: item.name, params: params, inputs: inputs)
 }
 
 /// Generates a single expectation from an AST item.

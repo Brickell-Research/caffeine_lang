@@ -44,11 +44,7 @@ fn blueprints_file_symbols(
     list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let block_syms =
     list.map(file.blocks, fn(b) {
-      let name =
-        "Blueprints for "
-        <> b.artifacts
-        |> list.map(ast.parsed_artifact_ref_to_string)
-        |> string.join(", ")
+      let name = "Blueprints"
       let children =
         list.map(b.items, fn(item) { blueprint_item_symbol(item, lines) })
       block_symbol(name, lines, children)

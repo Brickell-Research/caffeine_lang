@@ -100,12 +100,10 @@ pub fn require_slo_fields(
   ir: IntermediateRepresentation(phase),
   vendor vendor_name: String,
 ) -> Result(SloFields, CompilationError) {
-  ir.get_slo_fields(ir.artifact_data)
+  ir.slo_fields
   |> option.to_result(resolution_error(
     vendor: vendor_name,
-    msg: "expectation '"
-      <> ir_to_identifier(ir)
-      <> "' - missing SLO artifact data",
+    msg: "expectation '" <> ir_to_identifier(ir) <> "' - missing SLO fields",
   ))
 }
 

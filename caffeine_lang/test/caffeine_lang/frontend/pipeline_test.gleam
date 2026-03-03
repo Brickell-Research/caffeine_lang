@@ -1,5 +1,4 @@
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/source_file.{SourceFile}
 import gleam/dict
 import gleam/list
@@ -22,7 +21,6 @@ pub fn compile_blueprints_test() {
   list.length(blueprints) |> should.equal(1)
   let assert Ok(bp) = list.first(blueprints)
   bp.name |> should.equal("api_availability")
-  bp.artifact_refs |> should.equal([SLO])
   { dict.size(bp.params) > 0 } |> should.be_true
   { dict.size(bp.inputs) > 0 } |> should.be_true
 }

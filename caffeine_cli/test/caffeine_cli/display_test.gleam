@@ -1,48 +1,7 @@
 import caffeine_cli/display
-import caffeine_lang/linker/artifacts.{Artifact, ParamInfo}
 import caffeine_lang/types.{TypeMeta}
-import gleam/dict
 import gleam/string
 import gleeunit/should
-import test_helpers
-
-// ==== pretty_print_artifact ====
-// * ✅ includes artifact name
-// * ✅ includes artifact description
-// * ✅ includes param names
-// * ✅ includes param descriptions
-// * ✅ includes param types
-// * ✅ includes param status (required/optional/default)
-pub fn pretty_print_artifact_test() {
-  let artifact =
-    Artifact(
-      type_: artifacts.SLO,
-      description: "Test artifact description",
-      params: dict.from_list([
-        #(
-          "my_param",
-          ParamInfo(
-            type_: types.PrimitiveType(types.String),
-            description: "My param description",
-          ),
-        ),
-      ]),
-    )
-  let output = display.pretty_print_artifact(artifact)
-
-  // Verify all expected content is present in the output
-  [
-    #("includes artifact name", "SLO", True),
-    #("includes artifact description", "Test artifact description", True),
-    #("includes param names", "my_param", True),
-    #("includes param descriptions", "My param description", True),
-    #("includes param types", "String", True),
-    #("includes param status (required/optional/default)", "required", True),
-  ]
-  |> test_helpers.table_test_1(fn(substring) {
-    string.contains(output, substring)
-  })
-}
 
 // ==== pretty_print_category ====
 // * ✅ empty types list -> header only

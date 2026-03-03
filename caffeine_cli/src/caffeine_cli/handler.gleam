@@ -9,7 +9,6 @@ import caffeine_lang/errors
 import caffeine_lang/frontend/formatter
 import caffeine_lang/rich_error
 import caffeine_lang/source_file.{SourceFile}
-import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
 import filepath
 import gleam/list
@@ -99,19 +98,6 @@ pub fn format_command_builder() -> glint.Command(Result(Nil, String)) {
   let log_level = log_level_from_quiet(is_quiet)
 
   format_command(path(named), check_only, log_level)
-}
-
-/// Builds the artifacts subcommand.
-@internal
-pub fn artifacts_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "List available artifacts from the standard library",
-  )
-  use quiet <- glint.flag(quiet_flag())
-  use _, _, flags <- glint.command()
-
-  let assert Ok(is_quiet) = quiet(flags)
-  artifacts_catalog(log_level_from_quiet(is_quiet))
 }
 
 /// Builds the types subcommand.
@@ -376,20 +362,6 @@ fn write_file(path: String, content: String) -> Result(Nil, String) {
     <> path
     <> ")"
   })
-}
-
-fn artifacts_catalog(log_level: LogLevel) -> Result(Nil, String) {
-  compile_presenter.log(log_level, "Artifact Catalog")
-  compile_presenter.log(log_level, string.repeat("=", 16))
-  compile_presenter.log(log_level, "")
-
-  stdlib_artifacts.standard_library()
-  |> list.map(display.pretty_print_artifact)
-  |> string.join("\n\n")
-  |> compile_presenter.log(log_level, _)
-
-  compile_presenter.log(log_level, "")
-  Ok(Nil)
 }
 
 fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {

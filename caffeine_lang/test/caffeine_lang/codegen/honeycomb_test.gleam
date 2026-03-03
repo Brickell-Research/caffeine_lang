@@ -4,7 +4,6 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -190,7 +189,6 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         misc: dict.new(),
       ),
       unique_identifier: "acme_payments_no_eval",
-      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -220,7 +218,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: ir.slo_only(ir.SloFields(
+      slo_fields: option.Some(ir.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 30,
@@ -228,6 +226,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         tags: [],
         runbook: option.None,
       )),
+      dependency_fields: option.None,
       vendor: option.Some(vendor.Honeycomb),
     )
 

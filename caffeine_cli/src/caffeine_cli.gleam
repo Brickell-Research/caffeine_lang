@@ -19,7 +19,6 @@ pub fn build_app() -> glint.Glint(Result(Nil, String)) {
   |> glint.add(at: ["compile"], do: handler.compile_command())
   |> glint.add(at: ["validate"], do: handler.validate_command())
   |> glint.add(at: ["format"], do: handler.format_command_builder())
-  |> glint.add(at: ["artifacts"], do: handler.artifacts_command())
   |> glint.add(at: ["types"], do: handler.types_command())
   |> glint.add(at: ["lsp"], do: handler.lsp_command())
 }

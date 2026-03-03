@@ -6,7 +6,6 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -33,7 +32,6 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -58,7 +56,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,
@@ -66,6 +64,7 @@ pub fn resolve_intermediate_representations_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Datadog),
         ),
         ir.IntermediateRepresentation(
@@ -78,7 +77,6 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -106,7 +104,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,
@@ -114,6 +112,7 @@ pub fn resolve_intermediate_representations_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -128,7 +127,6 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_one",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -153,7 +151,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_a", "avg:memory{env:staging}"),
@@ -163,6 +161,7 @@ pub fn resolve_intermediate_representations_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Datadog),
         ),
         ir.IntermediateRepresentation(
@@ -175,7 +174,6 @@ pub fn resolve_intermediate_representations_test() {
             misc: dict.new(),
           ),
           unique_identifier: "slo_two",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -203,7 +201,7 @@ pub fn resolve_intermediate_representations_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_b", "sum:requests{region:us-east}"),
@@ -213,6 +211,7 @@ pub fn resolve_intermediate_representations_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Datadog),
         ),
       ]),
@@ -250,7 +249,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -289,7 +287,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -297,6 +295,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -309,7 +308,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "foo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -348,7 +346,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("denominator", "avg:system.cpu{env:production}"),
@@ -359,6 +357,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       )),
     ),
@@ -375,7 +374,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -416,7 +414,7 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > $$threshold_in_ms$$ per 5m)"),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -424,6 +422,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -436,7 +435,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -477,7 +475,7 @@ pub fn resolve_indicators_test() {
             value.StringValue("time_slice(query > 2500000000 per 5m)"),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("query", "p75:rum.lcp.duration{env:production}"),
@@ -487,6 +485,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       )),
     ),
@@ -503,7 +502,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -539,7 +537,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -547,6 +545,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -559,7 +558,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "lcp_slo_refinement",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -593,7 +591,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #("query", "p75:rum.lcp.duration{env:production}"),
@@ -603,6 +601,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       )),
     ),
@@ -622,7 +621,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -674,7 +672,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -682,6 +680,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -694,7 +693,6 @@ pub fn resolve_indicators_test() {
           misc: dict.new(),
         ),
         unique_identifier: "member_growth_member_portal_lcp_is_reasonable",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -744,7 +742,7 @@ pub fn resolve_indicators_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.from_list([
             #(
@@ -757,6 +755,7 @@ pub fn resolve_indicators_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Datadog),
       )),
     ),
@@ -787,7 +786,6 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -807,7 +805,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -815,6 +813,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Honeycomb),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -827,7 +826,6 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "hc_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -847,7 +845,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -855,6 +853,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Honeycomb),
       )),
     ),
@@ -885,7 +884,6 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "dt_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -910,7 +908,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -918,6 +916,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Dynatrace),
       ),
       Ok(ir.IntermediateRepresentation(
@@ -930,7 +929,6 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           misc: dict.new(),
         ),
         unique_identifier: "dt_slo",
-        artifact_refs: [SLO],
         values: [
           helpers.ValueTuple(
             "vendor",
@@ -955,7 +953,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
             ),
           ),
         ],
-        artifact_data: ir.slo_only(ir.SloFields(
+        slo_fields: option.Some(ir.SloFields(
           threshold: 0.0,
           indicators: dict.new(),
           window_in_days: 30,
@@ -963,6 +961,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           tags: [],
           runbook: option.None,
         )),
+        dependency_fields: option.None,
         vendor: option.Some(vendor.Dynatrace),
       )),
     ),
@@ -984,7 +983,6 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         misc: dict.new(),
       ),
       unique_identifier: "dd_slo",
-      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -1009,7 +1007,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      artifact_data: ir.slo_only(ir.SloFields(
+      slo_fields: option.Some(ir.SloFields(
         threshold: 0.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1017,6 +1015,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         tags: [],
         runbook: option.None,
       )),
+      dependency_fields: option.None,
       vendor: option.Some(vendor.Datadog),
     )
 
@@ -1031,7 +1030,6 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         misc: dict.new(),
       ),
       unique_identifier: "hc_slo",
-      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -1051,7 +1049,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
           ),
         ),
       ],
-      artifact_data: ir.slo_only(ir.SloFields(
+      slo_fields: option.Some(ir.SloFields(
         threshold: 0.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1059,6 +1057,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         tags: [],
         runbook: option.None,
       )),
+      dependency_fields: option.None,
       vendor: option.Some(vendor.Honeycomb),
     )
 
@@ -1077,7 +1076,6 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             misc: dict.new(),
           ),
           unique_identifier: "dd_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -1102,7 +1100,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.from_list([
               #("query_a", "avg:memory{env:staging}"),
@@ -1112,6 +1110,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Datadog),
         ),
         ir.IntermediateRepresentation(
@@ -1124,7 +1123,6 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             misc: dict.new(),
           ),
           unique_identifier: "hc_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -1144,7 +1142,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo_fields: option.Some(ir.SloFields(
             threshold: 0.0,
             indicators: dict.new(),
             window_in_days: 30,
@@ -1152,6 +1150,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             tags: [],
             runbook: option.None,
           )),
+          dependency_fields: option.None,
           vendor: option.Some(vendor.Honeycomb),
         ),
       ]),

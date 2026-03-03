@@ -6,14 +6,14 @@ _env (Type): String { x | x in { "prod", "staging" } }
 _base (Provides): { vendor: "datadog" }
 
 ## First blueprint section
-Blueprints for "SLO"
+Blueprints
   # API SLO
   * "api" extends [_base]:
     Requires { env: _env }
     Provides { threshold: 99.9 }
 
 ## Second blueprint section
-Blueprints for "SLO"
+Blueprints
   * "api_latency" extends [_base]:
     Requires { env: _env }
     Provides { threshold_ms: 500 }

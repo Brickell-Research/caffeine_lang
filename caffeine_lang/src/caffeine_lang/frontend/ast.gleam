@@ -57,9 +57,7 @@ pub type ExpectsFile(phase) {
 
 /// Promotes a BlueprintsFile to a new phantom phase by reconstructing all fields.
 @internal
-pub fn promote_blueprints_file(
-  file: BlueprintsFile(a),
-) -> BlueprintsFile(b) {
+pub fn promote_blueprints_file(file: BlueprintsFile(a)) -> BlueprintsFile(b) {
   BlueprintsFile(
     type_aliases: file.type_aliases,
     extendables: file.extendables,
@@ -108,35 +106,12 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 }
 
 // =============================================================================
-// ARTIFACT REFS
-// =============================================================================
-
-/// A parsed artifact reference — the closed set of valid artifact types.
-pub type ParsedArtifactRef {
-  ParsedSLO
-  ParsedDependencyRelations
-}
-
-/// Converts a ParsedArtifactRef to its canonical string representation.
-@internal
-pub fn parsed_artifact_ref_to_string(ref: ParsedArtifactRef) -> String {
-  case ref {
-    ParsedSLO -> "SLO"
-    ParsedDependencyRelations -> "DependencyRelations"
-  }
-}
-
-// =============================================================================
 // BLUEPRINT NODES
 // =============================================================================
 
-/// A block of blueprints for one or more artifacts.
+/// A block of blueprints.
 pub type BlueprintsBlock {
-  BlueprintsBlock(
-    artifacts: List(ParsedArtifactRef),
-    items: List(BlueprintItem),
-    leading_comments: List(Comment),
-  )
+  BlueprintsBlock(items: List(BlueprintItem), leading_comments: List(Comment))
 }
 
 /// A single blueprint item with name, extends, requires, and provides.

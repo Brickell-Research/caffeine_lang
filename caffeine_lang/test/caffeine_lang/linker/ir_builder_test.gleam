@@ -2,11 +2,9 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
-import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
 import caffeine_lang/value.{type Value}
 import gleam/dict
@@ -16,11 +14,6 @@ import gleam/set
 import gleam/string
 import gleeunit/should
 import test_helpers
-
-/// Standard reserved labels set for tests.
-fn test_reserved_labels() {
-  ir_builder.reserved_labels_from_artifacts(stdlib_artifacts.standard_library())
-}
 
 // ==== extract_path_prefix ====
 // * ✅ standard path with .json extension
@@ -63,7 +56,7 @@ pub fn extract_path_prefix_test() {
 // * ✅ misc metadata populated from string values (excluding filtered keys)
 pub fn build_all_test() {
   // empty list returns empty list
-  ir_builder.build_all([], reserved_labels: test_reserved_labels())
+  ir_builder.build_all([])
   |> should.equal(Ok([]))
 
   // single expectation builds correct IR
@@ -74,10 +67,9 @@ pub fn build_all_test() {
       make_expectation("my_test", [#("threshold", value.FloatValue(99.9))])
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/service.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([
+        #([#(expectation, blueprint)], "org/team/service.json"),
+      ])
     ir.metadata.friendly_label
     |> should.equal(identifiers.ExpectationLabel("my_test"))
     ir.metadata.org_name |> should.equal(identifiers.OrgName("org"))
@@ -86,7 +78,8 @@ pub fn build_all_test() {
     ir.metadata.blueprint_name
     |> should.equal(identifiers.BlueprintName("test_blueprint"))
     ir.unique_identifier |> should.equal("org_service_my_test")
-    ir.artifact_refs |> should.equal([SLO])
+    ir.slo_fields |> option.is_some |> should.be_true
+    ir.dependency_fields |> should.equal(option.None)
     ir.vendor |> should.equal(option.Some(vendor.Datadog))
     // Check values contain expected tuples (order-independent)
     ir.values
@@ -124,10 +117,9 @@ pub fn build_all_test() {
       ])
 
     let assert Ok(result) =
-      ir_builder.build_all(
-        [#([#(exp1, blueprint), #(exp2, blueprint)], "org/team/service.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([
+        #([#(exp1, blueprint), #(exp2, blueprint)], "org/team/service.json"),
+      ])
 
     result |> list.length |> should.equal(2)
     let assert [ir1, ir2] = result
@@ -156,13 +148,10 @@ pub fn build_all_test() {
       ])
 
     let assert Ok(result) =
-      ir_builder.build_all(
-        [
-          #([#(exp1, blueprint)], "org/team/file1.json"),
-          #([#(exp2, blueprint)], "org/team/file2.json"),
-        ],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([
+        #([#(exp1, blueprint)], "org/team/file1.json"),
+        #([#(exp2, blueprint)], "org/team/file2.json"),
+      ])
 
     result |> list.length |> should.equal(2)
     let assert [ir1, ir2] = result
@@ -175,7 +164,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -196,10 +184,7 @@ pub fn build_all_test() {
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/svc.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
     ir.values
     |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
@@ -225,7 +210,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -247,10 +231,7 @@ pub fn build_all_test() {
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/svc.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
     ir.values
     |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
@@ -277,7 +258,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -302,10 +282,7 @@ pub fn build_all_test() {
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/svc.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
     ir.values
     |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
@@ -335,7 +312,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -357,10 +333,7 @@ pub fn build_all_test() {
       ])
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/svc.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
     ir.values
     |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
@@ -384,7 +357,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("vendor", types.PrimitiveType(types.String)),
           #("env", types.PrimitiveType(types.String)),
@@ -407,10 +379,7 @@ pub fn build_all_test() {
       )
 
     let assert Ok([ir]) =
-      ir_builder.build_all(
-        [#([#(expectation, blueprint)], "org/team/svc.json")],
-        reserved_labels: test_reserved_labels(),
-      )
+      ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
     // misc should contain string values but NOT threshold or non-strings
     ir.metadata.misc
@@ -429,7 +398,6 @@ pub fn build_all_list_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: [SLO],
       params: dict.from_list([
         #("vendor", types.PrimitiveType(types.String)),
         #(
@@ -459,10 +427,7 @@ pub fn build_all_list_misc_test() {
     )
 
   let assert Ok([ir]) =
-    ir_builder.build_all(
-      [#([#(expectation, blueprint)], "org/team/svc.json")],
-      reserved_labels: test_reserved_labels(),
-    )
+    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
   ir.metadata.misc
   |> should.equal(
@@ -478,7 +443,6 @@ pub fn build_all_optional_none_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: [SLO],
       params: dict.from_list([
         #("vendor", types.PrimitiveType(types.String)),
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -495,10 +459,7 @@ pub fn build_all_optional_none_misc_test() {
     make_expectation("my_test", [#("threshold", value.FloatValue(1.0))])
 
   let assert Ok([ir]) =
-    ir_builder.build_all(
-      [#([#(expectation, blueprint)], "org/team/svc.json")],
-      reserved_labels: test_reserved_labels(),
-    )
+    ir_builder.build_all([#([#(expectation, blueprint)], "org/team/svc.json")])
 
   // Optional(None) should be excluded from misc (threshold is filtered by label)
   ir.metadata.misc
@@ -518,7 +479,6 @@ fn make_blueprint(
 ) -> blueprints.Blueprint(blueprints.BlueprintValidated) {
   blueprints.Blueprint(
     name: name,
-    artifact_refs: [SLO],
     params: [
       #("vendor", types.PrimitiveType(types.String)),
       ..{
