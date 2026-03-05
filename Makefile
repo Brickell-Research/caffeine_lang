@@ -40,20 +40,3 @@ test-all: test test-js test-e2e
 
 # Run CI pipeline: format check, build, then test
 ci: lint build test
-
-# Watch for changes and run tests automatically
-watch:
-	@./watch.sh
-
-# Watch for changes and run tests with JavaScript target
-watch-js:
-	@./watch.sh --target=javascript
-
-# Generate a report of the codebase (per module)
-lines-of-code:
-	@for mod in caffeine_lang caffeine_lsp caffeine_cli; do \
-		src=$$(find $$mod/src -name '*.gleam' 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $$1}'); \
-		test=$$(find $$mod/test -name '*.gleam' 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $$1}'); \
-		src=$${src:-0}; test=$${test:-0}; \
-		printf "%-16s src: %5s  test: %5s  total: %5s\n" "$$mod" "$$src" "$$test" "$$((src + test))"; \
-	done
