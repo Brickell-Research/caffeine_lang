@@ -9,8 +9,10 @@ import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{DsError, DsWarning}
 import caffeine_lsp/position_utils
 import gleam/bool
+import gleam/int
 import gleam/list
 import gleam/option.{type Option}
+import gleam/order
 import gleam/string
 
 /// Structured diagnostic codes for machine-readable identification.
@@ -76,7 +78,7 @@ pub fn get_diagnostics(content: String) -> List(Diagnostic) {
 /// Validation diagnostics from a pre-parsed result.
 fn get_diagnostics_from_parsed(
   content: String,
-  parsed: Result(file_utils.ParsedFile, #(ParserError, ParserError)),
+  parsed: Result(file_utils.ParsedFile, #(List(ParserError), List(ParserError))),
 ) -> List(Diagnostic) {
   case parsed {
     Ok(file_utils.Blueprints(file)) ->
@@ -89,13 +91,9 @@ fn get_diagnostics_from_parsed(
         Ok(_) -> []
         Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
-    Error(#(blueprint_err, expects_err)) -> {
-      use <- bool.guard(
-        when: string.starts_with(string.trim_start(content), "Expectations"),
-        return: [parser_error_to_diagnostic(expects_err)],
-      )
-      [parser_error_to_diagnostic(blueprint_err)]
-    }
+    Error(#(bp_errs, ex_errs)) ->
+      pick_further_errors(bp_errs, ex_errs)
+      |> list.map(parser_error_to_diagnostic)
   }
 }
 
@@ -510,6 +508,35 @@ fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
       )
     }
   }
+}
+
+/// Pick the error list that got further in the source.
+/// When both parsers fail, the one that progressed further is more likely
+/// to match the file's actual format and its errors will be more relevant.
+fn pick_further_errors(
+  a: List(ParserError),
+  b: List(ParserError),
+) -> List(ParserError) {
+  let a_max = max_error_line(a)
+  let b_max = max_error_line(b)
+  case int.compare(a_max, b_max) {
+    order.Gt -> a
+    order.Lt -> b
+    order.Eq -> {
+      // Prefer the list with more errors (more recovery = better match)
+      case int.compare(list.length(a), list.length(b)) {
+        order.Gt | order.Eq -> a
+        order.Lt -> b
+      }
+    }
+  }
+}
+
+/// Find the maximum error line across a list of parser errors.
+fn max_error_line(errors: List(ParserError)) -> Int {
+  list.fold(errors, 0, fn(acc, err) {
+    int.max(acc, parser_error.error_line(err))
+  })
 }
 
 /// Convert 1-indexed line to 0-indexed LSP line.

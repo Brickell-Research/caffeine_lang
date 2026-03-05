@@ -57,9 +57,7 @@ pub type ExpectsFile(phase) {
 
 /// Promotes a BlueprintsFile to a new phantom phase by reconstructing all fields.
 @internal
-pub fn promote_blueprints_file(
-  file: BlueprintsFile(a),
-) -> BlueprintsFile(b) {
+pub fn promote_blueprints_file(file: BlueprintsFile(a)) -> BlueprintsFile(b) {
   BlueprintsFile(
     type_aliases: file.type_aliases,
     extendables: file.extendables,

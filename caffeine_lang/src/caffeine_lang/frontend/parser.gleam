@@ -34,56 +34,61 @@ type ParserState {
 }
 
 /// Parses a blueprints file from source text.
+/// Returns all recoverable parse errors rather than stopping at the first one.
 pub fn parse_blueprints_file(
   source: String,
-) -> Result(BlueprintsFile(Parsed), ParserError) {
+) -> Result(BlueprintsFile(Parsed), List(ParserError)) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
-    |> result.map_error(parser_error.TokenizerError),
+    |> result.map_error(fn(e) { [parser_error.TokenizerError(e)] }),
   )
   let filtered = filter_whitespace(tokens)
   let state = init_state(filtered)
   let #(pending, state) = consume_comments(state)
-  use #(type_aliases, pending, state) <- result.try(parse_type_aliases(
-    state,
-    pending,
-  ))
-  use #(extendables, pending, state) <- result.try(parse_extendables(
-    state,
-    pending,
-  ))
-  use #(blocks, pending, _state) <- result.try(parse_blueprints_blocks(
-    state,
-    pending,
-  ))
-  Ok(ast.BlueprintsFile(
-    type_aliases:,
-    extendables:,
-    blocks:,
-    trailing_comments: pending,
-  ))
+  use #(type_aliases, pending, state) <- result.try(
+    parse_type_aliases(state, pending)
+    |> result.map_error(fn(e) { [e] }),
+  )
+  use #(extendables, pending, state) <- result.try(
+    parse_extendables(state, pending)
+    |> result.map_error(fn(e) { [e] }),
+  )
+  let #(blocks, errors, pending, _state) =
+    parse_blueprints_blocks_recovering(state, pending)
+  case errors {
+    [] ->
+      Ok(ast.BlueprintsFile(
+        type_aliases:,
+        extendables:,
+        blocks:,
+        trailing_comments: pending,
+      ))
+    errs -> Error(errs)
+  }
 }
 
 /// Parses an expects file from source text.
+/// Returns all recoverable parse errors rather than stopping at the first one.
 pub fn parse_expects_file(
   source: String,
-) -> Result(ExpectsFile(Parsed), ParserError) {
+) -> Result(ExpectsFile(Parsed), List(ParserError)) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
-    |> result.map_error(parser_error.TokenizerError),
+    |> result.map_error(fn(e) { [parser_error.TokenizerError(e)] }),
   )
   let filtered = filter_whitespace(tokens)
   let state = init_state(filtered)
   let #(pending, state) = consume_comments(state)
-  use #(extendables, pending, state) <- result.try(parse_extendables(
-    state,
-    pending,
-  ))
-  use #(blocks, pending, _state) <- result.try(parse_expects_blocks(
-    state,
-    pending,
-  ))
-  Ok(ast.ExpectsFile(extendables:, blocks:, trailing_comments: pending))
+  use #(extendables, pending, state) <- result.try(
+    parse_extendables(state, pending)
+    |> result.map_error(fn(e) { [e] }),
+  )
+  let #(blocks, errors, pending, _state) =
+    parse_expects_blocks_recovering(state, pending)
+  case errors {
+    [] -> Ok(ast.ExpectsFile(extendables:, blocks:, trailing_comments: pending))
+    errs -> Error(errs)
+  }
 }
 
 /// Filter out whitespace tokens (keep comments in stream).
@@ -335,55 +340,6 @@ fn parse_extendable_kind(
 // BLUEPRINTS BLOCKS
 // =============================================================================
 
-/// Parse zero or more blueprints blocks.
-fn parse_blueprints_blocks(
-  state: ParserState,
-  pending: List(Comment),
-) -> Result(#(List(BlueprintsBlock), List(Comment), ParserState), ParserError) {
-  parse_blueprints_blocks_loop(state, [], pending)
-}
-
-fn parse_blueprints_blocks_loop(
-  state: ParserState,
-  acc: List(BlueprintsBlock),
-  pending: List(Comment),
-) -> Result(#(List(BlueprintsBlock), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordBlueprints -> {
-      use #(block, trailing, state) <- result.try(parse_blueprints_block(
-        state,
-        pending,
-      ))
-      let #(more_comments, state) = consume_comments(state)
-      let next_pending = list.append(trailing, more_comments)
-      parse_blueprints_blocks_loop(state, [block, ..acc], next_pending)
-    }
-    token.EOF -> Ok(#(list.reverse(acc), pending, state))
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "Blueprints",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-fn parse_blueprints_block(
-  state: ParserState,
-  leading_comments: List(Comment),
-) -> Result(#(BlueprintsBlock, List(Comment), ParserState), ParserError) {
-  use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
-  use state <- result.try(expect(state, token.KeywordFor, "for"))
-  use #(artifacts, state) <- result.try(parse_artifacts(state))
-  use #(items, trailing, state) <- result.try(parse_blueprint_items(state))
-  Ok(#(
-    ast.BlueprintsBlock(artifacts:, items:, leading_comments:),
-    trailing,
-    state,
-  ))
-}
-
 fn parse_artifacts(
   state: ParserState,
 ) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
@@ -447,28 +403,6 @@ fn resolve_artifact_ref(
   }
 }
 
-fn parse_blueprint_items(
-  state: ParserState,
-) -> Result(#(List(BlueprintItem), List(Comment), ParserState), ParserError) {
-  let #(pending, state) = consume_comments(state)
-  parse_blueprint_items_loop(state, [], pending)
-}
-
-fn parse_blueprint_items_loop(
-  state: ParserState,
-  acc: List(BlueprintItem),
-  pending: List(Comment),
-) -> Result(#(List(BlueprintItem), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolStar -> {
-      use #(item, state) <- result.try(parse_blueprint_item(state, pending))
-      let #(next_pending, state) = consume_comments(state)
-      parse_blueprint_items_loop(state, [item, ..acc], next_pending)
-    }
-    _ -> Ok(#(list.reverse(acc), pending, state))
-  }
-}
-
 fn parse_blueprint_item(
   state: ParserState,
   leading_comments: List(Comment),
@@ -491,77 +425,6 @@ fn parse_blueprint_item(
 // EXPECTS BLOCKS
 // =============================================================================
 
-/// Parse zero or more expects blocks.
-fn parse_expects_blocks(
-  state: ParserState,
-  pending: List(Comment),
-) -> Result(#(List(ExpectsBlock), List(Comment), ParserState), ParserError) {
-  parse_expects_blocks_loop(state, [], pending)
-}
-
-fn parse_expects_blocks_loop(
-  state: ParserState,
-  acc: List(ExpectsBlock),
-  pending: List(Comment),
-) -> Result(#(List(ExpectsBlock), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordExpectations -> {
-      use #(block, trailing, state) <- result.try(parse_expects_block(
-        state,
-        pending,
-      ))
-      let #(more_comments, state) = consume_comments(state)
-      let next_pending = list.append(trailing, more_comments)
-      parse_expects_blocks_loop(state, [block, ..acc], next_pending)
-    }
-    token.EOF -> Ok(#(list.reverse(acc), pending, state))
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "Expectations",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-fn parse_expects_block(
-  state: ParserState,
-  leading_comments: List(Comment),
-) -> Result(#(ExpectsBlock, List(Comment), ParserState), ParserError) {
-  use state <- result.try(expect(
-    state,
-    token.KeywordExpectations,
-    "Expectations",
-  ))
-  use state <- result.try(expect(state, token.KeywordFor, "for"))
-  use #(blueprint, state) <- result.try(parse_string_literal(state))
-  use #(items, trailing, state) <- result.try(parse_expect_items(state))
-  Ok(#(ast.ExpectsBlock(blueprint:, items:, leading_comments:), trailing, state))
-}
-
-fn parse_expect_items(
-  state: ParserState,
-) -> Result(#(List(ExpectItem), List(Comment), ParserState), ParserError) {
-  let #(pending, state) = consume_comments(state)
-  parse_expect_items_loop(state, [], pending)
-}
-
-fn parse_expect_items_loop(
-  state: ParserState,
-  acc: List(ExpectItem),
-  pending: List(Comment),
-) -> Result(#(List(ExpectItem), List(Comment), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolStar -> {
-      use #(item, state) <- result.try(parse_expect_item(state, pending))
-      let #(next_pending, state) = consume_comments(state)
-      parse_expect_items_loop(state, [item, ..acc], next_pending)
-    }
-    _ -> Ok(#(list.reverse(acc), pending, state))
-  }
-}
-
 fn parse_expect_item(
   state: ParserState,
   leading_comments: List(Comment),
@@ -583,6 +446,300 @@ fn parse_expect_item(
       use #(provides, state) <- result.try(parse_literal_struct(state))
       Ok(#(ast.ExpectItem(name:, extends:, provides:, leading_comments:), state))
     }
+  }
+}
+
+// =============================================================================
+// ERROR RECOVERY
+// =============================================================================
+
+/// Skip tokens until the next block boundary (Blueprints, Expectations, or EOF).
+fn skip_to_block_boundary(state: ParserState) -> ParserState {
+  case peek(state) {
+    token.KeywordBlueprints | token.KeywordExpectations | token.EOF -> state
+    _ -> skip_to_block_boundary(advance(state))
+  }
+}
+
+/// Skip tokens until the next item boundary (*, block keyword, or EOF).
+fn skip_to_item_boundary(state: ParserState) -> ParserState {
+  case peek(state) {
+    token.SymbolStar
+    | token.KeywordBlueprints
+    | token.KeywordExpectations
+    | token.EOF -> state
+    _ -> skip_to_item_boundary(advance(state))
+  }
+}
+
+/// Parse blueprints blocks with error recovery between blocks and items.
+fn parse_blueprints_blocks_recovering(
+  state: ParserState,
+  pending: List(Comment),
+) -> #(List(BlueprintsBlock), List(ParserError), List(Comment), ParserState) {
+  parse_blueprints_blocks_recovering_loop(state, [], [], pending)
+}
+
+fn parse_blueprints_blocks_recovering_loop(
+  state: ParserState,
+  block_acc: List(BlueprintsBlock),
+  error_acc: List(ParserError),
+  pending: List(Comment),
+) -> #(List(BlueprintsBlock), List(ParserError), List(Comment), ParserState) {
+  case peek(state) {
+    token.KeywordBlueprints -> {
+      let #(block_result, item_errors, state) =
+        parse_blueprints_block_recovering(state, pending)
+      let #(more_comments, state) = consume_comments(state)
+      case block_result {
+        Ok(#(block, trailing)) -> {
+          let next_pending = list.append(trailing, more_comments)
+          parse_blueprints_blocks_recovering_loop(
+            state,
+            [block, ..block_acc],
+            list.append(error_acc, item_errors),
+            next_pending,
+          )
+        }
+        Error(err) -> {
+          // Advance past current keyword to avoid infinite loop, then skip to next boundary
+          let state = skip_to_block_boundary(advance(state))
+          let #(next_pending, state) = consume_comments(state)
+          parse_blueprints_blocks_recovering_loop(
+            state,
+            block_acc,
+            list.append(error_acc, [err, ..item_errors]),
+            next_pending,
+          )
+        }
+      }
+    }
+    token.EOF -> #(list.reverse(block_acc), error_acc, pending, state)
+    tok -> {
+      let err =
+        parser_error.UnexpectedToken(
+          "Blueprints",
+          token.to_string(tok),
+          state.line,
+          state.column,
+        )
+      #(list.reverse(block_acc), list.append(error_acc, [err]), pending, state)
+    }
+  }
+}
+
+/// Parse a single blueprints block, recovering from item-level errors.
+fn parse_blueprints_block_recovering(
+  state: ParserState,
+  leading_comments: List(Comment),
+) -> #(
+  Result(#(BlueprintsBlock, List(Comment)), ParserError),
+  List(ParserError),
+  ParserState,
+) {
+  case parse_blueprints_block_header(state) {
+    Error(err) -> #(Error(err), [], state)
+    Ok(#(artifacts, state)) -> {
+      let #(items, item_errors, trailing, state) =
+        parse_blueprint_items_recovering(state)
+      #(
+        Ok(#(
+          ast.BlueprintsBlock(artifacts:, items:, leading_comments:),
+          trailing,
+        )),
+        item_errors,
+        state,
+      )
+    }
+  }
+}
+
+/// Parse just the header of a blueprints block (Blueprints for "artifact").
+fn parse_blueprints_block_header(
+  state: ParserState,
+) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
+  use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
+  use state <- result.try(expect(state, token.KeywordFor, "for"))
+  use #(artifacts, state) <- result.try(parse_artifacts(state))
+  Ok(#(artifacts, state))
+}
+
+/// Parse blueprint items with recovery between items.
+fn parse_blueprint_items_recovering(
+  state: ParserState,
+) -> #(List(BlueprintItem), List(ParserError), List(Comment), ParserState) {
+  let #(pending, state) = consume_comments(state)
+  parse_blueprint_items_recovering_loop(state, [], [], pending)
+}
+
+fn parse_blueprint_items_recovering_loop(
+  state: ParserState,
+  item_acc: List(BlueprintItem),
+  error_acc: List(ParserError),
+  pending: List(Comment),
+) -> #(List(BlueprintItem), List(ParserError), List(Comment), ParserState) {
+  case peek(state) {
+    token.SymbolStar -> {
+      case parse_blueprint_item(state, pending) {
+        Ok(#(item, state)) -> {
+          let #(next_pending, state) = consume_comments(state)
+          parse_blueprint_items_recovering_loop(
+            state,
+            [item, ..item_acc],
+            error_acc,
+            next_pending,
+          )
+        }
+        Error(err) -> {
+          // Advance past current * to avoid infinite loop, then skip to next boundary
+          let state = skip_to_item_boundary(advance(state))
+          let #(next_pending, state) = consume_comments(state)
+          parse_blueprint_items_recovering_loop(
+            state,
+            item_acc,
+            [err, ..error_acc],
+            next_pending,
+          )
+        }
+      }
+    }
+    _ -> #(list.reverse(item_acc), list.reverse(error_acc), pending, state)
+  }
+}
+
+/// Parse expects blocks with error recovery between blocks and items.
+fn parse_expects_blocks_recovering(
+  state: ParserState,
+  pending: List(Comment),
+) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
+  parse_expects_blocks_recovering_loop(state, [], [], pending)
+}
+
+fn parse_expects_blocks_recovering_loop(
+  state: ParserState,
+  block_acc: List(ExpectsBlock),
+  error_acc: List(ParserError),
+  pending: List(Comment),
+) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
+  case peek(state) {
+    token.KeywordExpectations -> {
+      let #(block_result, item_errors, state) =
+        parse_expects_block_recovering(state, pending)
+      let #(more_comments, state) = consume_comments(state)
+      case block_result {
+        Ok(#(block, trailing)) -> {
+          let next_pending = list.append(trailing, more_comments)
+          parse_expects_blocks_recovering_loop(
+            state,
+            [block, ..block_acc],
+            list.append(error_acc, item_errors),
+            next_pending,
+          )
+        }
+        Error(err) -> {
+          // Advance past current keyword to avoid infinite loop, then skip to next boundary
+          let state = skip_to_block_boundary(advance(state))
+          let #(next_pending, state) = consume_comments(state)
+          parse_expects_blocks_recovering_loop(
+            state,
+            block_acc,
+            list.append(error_acc, [err, ..item_errors]),
+            next_pending,
+          )
+        }
+      }
+    }
+    token.EOF -> #(list.reverse(block_acc), error_acc, pending, state)
+    tok -> {
+      let err =
+        parser_error.UnexpectedToken(
+          "Expectations",
+          token.to_string(tok),
+          state.line,
+          state.column,
+        )
+      #(list.reverse(block_acc), list.append(error_acc, [err]), pending, state)
+    }
+  }
+}
+
+/// Parse a single expects block, recovering from item-level errors.
+fn parse_expects_block_recovering(
+  state: ParserState,
+  leading_comments: List(Comment),
+) -> #(
+  Result(#(ExpectsBlock, List(Comment)), ParserError),
+  List(ParserError),
+  ParserState,
+) {
+  case parse_expects_block_header(state) {
+    Error(err) -> #(Error(err), [], state)
+    Ok(#(blueprint, state)) -> {
+      let #(items, item_errors, trailing, state) =
+        parse_expect_items_recovering(state)
+      #(
+        Ok(#(ast.ExpectsBlock(blueprint:, items:, leading_comments:), trailing)),
+        item_errors,
+        state,
+      )
+    }
+  }
+}
+
+/// Parse just the header of an expects block (Expectations for "blueprint").
+fn parse_expects_block_header(
+  state: ParserState,
+) -> Result(#(String, ParserState), ParserError) {
+  use state <- result.try(expect(
+    state,
+    token.KeywordExpectations,
+    "Expectations",
+  ))
+  use state <- result.try(expect(state, token.KeywordFor, "for"))
+  use #(blueprint, state) <- result.try(parse_string_literal(state))
+  Ok(#(blueprint, state))
+}
+
+/// Parse expect items with recovery between items.
+fn parse_expect_items_recovering(
+  state: ParserState,
+) -> #(List(ExpectItem), List(ParserError), List(Comment), ParserState) {
+  let #(pending, state) = consume_comments(state)
+  parse_expect_items_recovering_loop(state, [], [], pending)
+}
+
+fn parse_expect_items_recovering_loop(
+  state: ParserState,
+  item_acc: List(ExpectItem),
+  error_acc: List(ParserError),
+  pending: List(Comment),
+) -> #(List(ExpectItem), List(ParserError), List(Comment), ParserState) {
+  case peek(state) {
+    token.SymbolStar -> {
+      case parse_expect_item(state, pending) {
+        Ok(#(item, state)) -> {
+          let #(next_pending, state) = consume_comments(state)
+          parse_expect_items_recovering_loop(
+            state,
+            [item, ..item_acc],
+            error_acc,
+            next_pending,
+          )
+        }
+        Error(err) -> {
+          // Advance past current * to avoid infinite loop, then skip to next boundary
+          let state = skip_to_item_boundary(advance(state))
+          let #(next_pending, state) = consume_comments(state)
+          parse_expect_items_recovering_loop(
+            state,
+            item_acc,
+            [err, ..error_acc],
+            next_pending,
+          )
+        }
+      }
+    }
+    _ -> #(list.reverse(item_acc), list.reverse(error_acc), pending, state)
   }
 }
 

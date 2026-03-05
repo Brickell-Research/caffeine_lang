@@ -27,8 +27,8 @@ pub fn compile_blueprints(
 ) -> Result(List(Blueprint(Raw)), CompilationError) {
   use ast <- result.try(
     parser.parse_blueprints_file(source.content)
-    |> result.map_error(fn(err) {
-      parser_error_to_compilation_error(err, source.path)
+    |> result.map_error(fn(errs) {
+      parser_errors_to_compilation_error(errs, source.path)
     }),
   )
   use validated <- result.try(
@@ -47,8 +47,8 @@ pub fn compile_expects(
 ) -> Result(List(Expectation), CompilationError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
-    |> result.map_error(fn(err) {
-      parser_error_to_compilation_error(err, source.path)
+    |> result.map_error(fn(errs) {
+      parser_errors_to_compilation_error(errs, source.path)
     }),
   )
   use validated <- result.try(
@@ -67,6 +67,22 @@ fn parser_error_to_compilation_error(
   errors.frontend_parse_error(
     msg: file_path <> ": " <> parser_error.to_string(err),
   )
+}
+
+/// Converts a list of ParserErrors to a single CompilationError.
+fn parser_errors_to_compilation_error(
+  errs: List(ParserError),
+  file_path: String,
+) -> CompilationError {
+  case errs {
+    [single] -> parser_error_to_compilation_error(single, file_path)
+    multiple -> {
+      let compilation_errors =
+        multiple
+        |> list.map(parser_error_to_compilation_error(_, file_path))
+      errors.CompilationErrors(errors: compilation_errors)
+    }
+  }
 }
 
 fn validator_error_to_compilation_error(
@@ -171,7 +187,7 @@ pub fn compile_blueprints_rich(
 ) -> Result(List(Blueprint(Raw)), RichError) {
   use ast <- result.try(
     parser.parse_blueprints_file(source.content)
-    |> result.map_error(fn(err) { parser_error_to_rich_error(err, source) }),
+    |> result.map_error(fn(errs) { parser_errors_to_rich_error(errs, source) }),
   )
   use validated <- result.try(
     validator.validate_blueprints_file(ast)
@@ -189,7 +205,7 @@ pub fn compile_expects_rich(
 ) -> Result(List(Expectation), RichError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
-    |> result.map_error(fn(err) { parser_error_to_rich_error(err, source) }),
+    |> result.map_error(fn(errs) { parser_errors_to_rich_error(errs, source) }),
   )
   use validated <- result.try(
     validator.validate_expects_file(ast)
@@ -268,6 +284,34 @@ fn parser_error_to_rich_error(
     location:,
     suggestion:,
   )
+}
+
+/// Converts a list of ParserErrors to a RichError.
+/// Uses the first error for the primary rich error since RichError is a single error.
+fn parser_errors_to_rich_error(
+  errs: List(ParserError),
+  source: SourceFile(a),
+) -> RichError {
+  case errs {
+    [single] -> parser_error_to_rich_error(single, source)
+    [first, ..] -> {
+      let compilation_error =
+        parser_errors_to_compilation_error(errs, source.path)
+      let first_rich = parser_error_to_rich_error(first, source)
+      RichError(
+        error: compilation_error,
+        code: first_rich.code,
+        source_path: first_rich.source_path,
+        source_content: first_rich.source_content,
+        location: first_rich.location,
+        suggestion: first_rich.suggestion,
+      )
+    }
+    [] ->
+      rich_error.from_compilation_error(errors.frontend_parse_error(
+        msg: source.path <> ": unknown parse error",
+      ))
+  }
 }
 
 /// Converts a list of ValidatorErrors to a RichError.

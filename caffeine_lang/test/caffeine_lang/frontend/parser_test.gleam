@@ -1079,22 +1079,22 @@ pub fn parse_error_line_numbers_test() {
     #(
       "error on line 1 reports line 1",
       "\"SLO\"",
-      Error(parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)),
+      Error([parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)]),
     ),
     #(
       "error on line 2 reports line 2",
       "Blueprints for \"SLO\"\ninvalid",
-      Error(parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)),
+      Error([parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)]),
     ),
     #(
       "error on line 3 reports line 3",
       "Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }",
-      Error(parser_error.UnknownType("bad", 3, 19)),
+      Error([parser_error.UnknownType("bad", 3, 19)]),
     ),
     #(
       "error after blank lines reports correct line",
       "Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }",
-      Error(parser_error.UnknownType("bad", 5, 19)),
+      Error([parser_error.UnknownType("bad", 5, 19)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)
@@ -1104,7 +1104,7 @@ pub fn parse_error_line_numbers_test() {
     #(
       "expects file error reports correct line",
       "Expectations for \"test\"\ninvalid",
-      Error(parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)),
+      Error([parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_expects_file)
@@ -1119,17 +1119,25 @@ pub fn parse_error_missing_delimiter_test() {
     #(
       "missing } at end of file points to correct line (not EOF line)",
       "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n",
-      Error(parser_error.UnexpectedToken("}", "end of file", 3, 17)),
+      Error([parser_error.UnexpectedToken("}", "end of file", 3, 17)]),
     ),
     #(
       "missing } in middle of file points to correct line (not far-away next token)",
       "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
-      Error(parser_error.UnexpectedToken("}", "Blueprints", 3, 17)),
+      Error([
+        parser_error.UnexpectedToken("}", "Blueprints", 3, 17),
+        parser_error.UnexpectedToken(
+          "\"SLO\" or \"DependencyRelations\"",
+          "\"Other\"",
+          6,
+          16,
+        ),
+      ]),
     ),
     #(
       "missing } in refinement points to last token on same line",
       "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
-      Error(parser_error.UnexpectedToken("}", "Provides", 3, 46)),
+      Error([parser_error.UnexpectedToken("}", "Provides", 3, 46)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)

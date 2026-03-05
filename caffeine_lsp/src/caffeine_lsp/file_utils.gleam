@@ -23,25 +23,27 @@ pub fn is_defined_symbol(content: String, name: String) -> Bool {
 }
 
 /// Try to parse content, detecting file type first to avoid double-parsing.
-/// Returns the parsed file or both parser errors.
-pub fn parse(content: String) -> Result(ParsedFile, #(ParserError, ParserError)) {
+/// Returns the parsed file or both parser error lists.
+pub fn parse(
+  content: String,
+) -> Result(ParsedFile, #(List(ParserError), List(ParserError))) {
   case string.starts_with(string.trim_start(content), "Expectations") {
     True ->
       case parser.parse_expects_file(content) {
         Ok(file) -> Ok(Expects(file))
-        Error(ex_err) ->
+        Error(ex_errs) ->
           case parser.parse_blueprints_file(content) {
             Ok(file) -> Ok(Blueprints(file))
-            Error(bp_err) -> Error(#(bp_err, ex_err))
+            Error(bp_errs) -> Error(#(bp_errs, ex_errs))
           }
       }
     False ->
       case parser.parse_blueprints_file(content) {
         Ok(file) -> Ok(Blueprints(file))
-        Error(bp_err) ->
+        Error(bp_errs) ->
           case parser.parse_expects_file(content) {
             Ok(file) -> Ok(Expects(file))
-            Error(ex_err) -> Error(#(bp_err, ex_err))
+            Error(ex_errs) -> Error(#(bp_errs, ex_errs))
           }
       }
   }
