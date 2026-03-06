@@ -4,6 +4,8 @@
 import {
   get_hover,
   get_completions,
+  get_signature_help,
+  get_inlay_hints,
   get_semantic_tokens,
   get_symbols,
   get_code_actions,
@@ -63,8 +65,9 @@ export function handleCompletion(ctx: HandlerContext, params: any) {
 
   try {
     const blueprintNames = toList(ctx.workspace.allKnownBlueprints());
+    const validatedBlueprints = ctx.workspace.allValidatedBlueprints();
     const items = gleamArray(
-      get_completions(text, params.position.line, params.position.character, blueprintNames) as GleamList,
+      get_completions(text, params.position.line, params.position.character, blueprintNames, validatedBlueprints) as GleamList,
     );
     return items.map((item) => ({
       label: item.label,
@@ -290,5 +293,66 @@ export function handleLinkedEditing(ctx: HandlerContext, params: any) {
     return { ranges: ranges.map((r) => range(r[0], r[1], r[0], r[1] + r[2])) };
   } catch {
     return null;
+  }
+}
+
+// --- Signature help ---
+
+// deno-lint-ignore no-explicit-any
+export function handleSignatureHelp(ctx: HandlerContext, params: any) {
+  const doc = ctx.documents.get(params.textDocument.uri);
+  if (!doc) return null;
+
+  try {
+    const result = get_signature_help(
+      doc.getText(),
+      params.position.line,
+      params.position.character,
+      ctx.workspace.allValidatedBlueprints(),
+    );
+    if (result instanceof Some) {
+      const sig = result[0];
+      const sigParams = gleamArray(sig.parameters as GleamList);
+      return {
+        signatures: [{
+          label: sig.label,
+          parameters: sigParams.map((p: { label: string; documentation: string }) => ({
+            label: p.label,
+            documentation: p.documentation,
+          })),
+          activeParameter: sig.active_parameter,
+        }],
+        activeSignature: 0,
+        activeParameter: sig.active_parameter,
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+// --- Inlay hints ---
+
+// deno-lint-ignore no-explicit-any
+export function handleInlayHints(ctx: HandlerContext, params: any) {
+  const doc = ctx.documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  try {
+    const hints = gleamArray(
+      get_inlay_hints(
+        doc.getText(),
+        params.range.start.line,
+        params.range.end.line,
+        ctx.workspace.allValidatedBlueprints(),
+      ) as GleamList,
+    );
+    return hints.map((h: { line: number; column: number; label: string; kind: number; padding_left: boolean }) => ({
+      position: { line: h.line, character: h.column },
+      label: h.label,
+      kind: h.kind,
+      paddingLeft: h.padding_left,
+    }));
+  } catch {
+    return [];
   }
 }

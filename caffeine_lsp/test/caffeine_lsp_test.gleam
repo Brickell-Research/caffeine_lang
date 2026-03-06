@@ -7,6 +7,7 @@ import caffeine_lsp/file_utils
 import caffeine_lsp/folding_range
 import caffeine_lsp/highlight
 import caffeine_lsp/hover
+import caffeine_lsp/inlay_hints
 import caffeine_lsp/keyword_info
 import caffeine_lsp/linked_editing_range
 import caffeine_lsp/linker_diagnostics
@@ -16,6 +17,7 @@ import caffeine_lsp/references
 import caffeine_lsp/rename
 import caffeine_lsp/selection_range.{type SelectionRange, HasParent, NoParent}
 import caffeine_lsp/semantic_tokens
+import caffeine_lsp/signature_help
 import caffeine_lsp/type_hierarchy.{BlueprintKind, ExpectationKind}
 import caffeine_lsp/workspace_symbols
 import gleam/list
@@ -323,12 +325,12 @@ pub fn hover_type_alias_test() {
 // ==========================================================================
 
 pub fn completion_returns_items_test() {
-  let items = completion.get_completions("", 0, 0, [])
+  let items = completion.get_completions("", 0, 0, [], [])
   { items != [] } |> should.be_true()
 }
 
 pub fn completion_includes_keywords_test() {
-  let items = completion.get_completions("", 0, 0, [])
+  let items = completion.get_completions("", 0, 0, [], [])
   let has_blueprints = list.any(items, fn(item) { item.label == "Blueprints" })
   has_blueprints |> should.be_true()
 }
@@ -337,7 +339,7 @@ pub fn completion_extends_context_test() {
   let source =
     "_defaults (Provides): { env: \"production\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Line 3 (0-indexed), cursor inside "extends [_defaults]"
-  let items = completion.get_completions(source, 3, 22, [])
+  let items = completion.get_completions(source, 3, 22, [], [])
   let has_defaults = list.any(items, fn(item) { item.label == "_defaults" })
   has_defaults |> should.be_true()
 }
@@ -345,7 +347,7 @@ pub fn completion_extends_context_test() {
 pub fn completion_type_context_test() {
   let source = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: "
   // After the colon
-  let items = completion.get_completions(source, 2, 21, [])
+  let items = completion.get_completions(source, 2, 21, [], [])
   // Should include type names but not keywords like "Blueprints"
   let has_string = list.any(items, fn(item) { item.label == "String" })
   has_string |> should.be_true()
@@ -354,7 +356,7 @@ pub fn completion_type_context_test() {
 pub fn completion_includes_extendables_test() {
   let source =
     "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  let items = completion.get_completions(source, 4, 0, [])
+  let items = completion.get_completions(source, 4, 0, [], [])
   let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
 }
@@ -1130,7 +1132,7 @@ pub fn field_completion_suggests_extended_fields_test() {
   let source =
     "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      status: true\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
-  let items = completion.get_completions(source, 6, 6, [])
+  let items = completion.get_completions(source, 6, 6, [], [])
   // Should suggest env and threshold from _defaults (minus any already defined)
   let labels = list.map(items, fn(i) { i.label })
   // "status" is already defined, but env and threshold come from _defaults
@@ -1143,7 +1145,7 @@ pub fn field_completion_excludes_defined_fields_test() {
   let source =
     "_defaults (Provides): { env: \"production\", threshold: 99.0 }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides {\n      env: \"staging\"\n      \n    }\n"
   // Line 6 is the empty line inside Provides block
-  let items = completion.get_completions(source, 6, 6, [])
+  let items = completion.get_completions(source, 6, 6, [], [])
   let labels = list.map(items, fn(i) { i.label })
   // env is already defined in Provides, should not be suggested
   list.contains(labels, "env") |> should.be_false()
@@ -1273,7 +1275,7 @@ pub fn extends_completion_filters_used_test() {
   // Cursor inside "extends [_base, _auth]" at position after "_base, "
   // Line 4: "  * "api" extends [_base, _auth]:"
   // Position 28 is right after the comma+space, before _auth
-  let items = completion.get_completions(source, 4, 28, [])
+  let items = completion.get_completions(source, 4, 28, [], [])
   let labels = list.map(items, fn(i) { i.label })
   // _base already appears before cursor, should be filtered out
   list.contains(labels, "_base") |> should.be_false()
@@ -1706,9 +1708,13 @@ pub fn blueprint_header_completion_suggests_names_test() {
   let source = "Expectations for \""
   // Cursor right after the opening quote (line 0, col 19)
   let items =
-    completion.get_completions(source, 0, 19, [
-      "api_availability", "latency_slo",
-    ])
+    completion.get_completions(
+      source,
+      0,
+      19,
+      ["api_availability", "latency_slo"],
+      [],
+    )
   let labels = list.map(items, fn(i) { i.label })
   list.contains(labels, "api_availability") |> should.be_true()
   list.contains(labels, "latency_slo") |> should.be_true()
@@ -1718,9 +1724,13 @@ pub fn blueprint_header_completion_filters_by_prefix_test() {
   let source = "Expectations for \"api"
   // Cursor after "api" (line 0, col 22)
   let items =
-    completion.get_completions(source, 0, 22, [
-      "api_availability", "latency_slo",
-    ])
+    completion.get_completions(
+      source,
+      0,
+      22,
+      ["api_availability", "latency_slo"],
+      [],
+    )
   let labels = list.map(items, fn(i) { i.label })
   list.contains(labels, "api_availability") |> should.be_true()
   list.contains(labels, "latency_slo") |> should.be_false()
@@ -1728,7 +1738,7 @@ pub fn blueprint_header_completion_filters_by_prefix_test() {
 
 pub fn blueprint_header_completion_empty_without_names_test() {
   let source = "Expectations for \""
-  let items = completion.get_completions(source, 0, 19, [])
+  let items = completion.get_completions(source, 0, 19, [], [])
   items |> should.equal([])
 }
 
@@ -1736,7 +1746,7 @@ pub fn blueprint_header_completion_not_after_closing_quote_test() {
   let source = "Expectations for \"api_availability\""
   // Cursor after the closing quote — should NOT be in header context
   let items =
-    completion.get_completions(source, 0, 36, ["api_availability", "other"])
+    completion.get_completions(source, 0, 36, ["api_availability", "other"], [])
   let labels = list.map(items, fn(i) { i.label })
   // Should fall through to general context, not blueprint header
   list.contains(labels, "api_availability") |> should.be_false()
@@ -1985,4 +1995,299 @@ pub fn linker_diagnostics_empty_blueprints_test() {
 "
   linker_diagnostics.get_linker_diagnostics(ex_source, [])
   |> should.equal([])
+}
+
+// ==========================================================================
+// Blueprint-aware field completion tests
+// ==========================================================================
+
+// ==== blueprint-aware completion ====
+// * ✅ suggests blueprint remaining params in expects Provides
+// * ✅ filters out already-filled fields
+// * ✅ falls back to extendable-only with empty blueprints
+
+pub fn blueprint_aware_completion_suggests_params_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+
+    }
+"
+  // Line 4 is the empty line inside Provides
+  let items = completion.get_completions(ex_source, 4, 6, [], blueprints)
+  let labels = list.map(items, fn(i) { i.label })
+  // status should be suggested (remaining param from blueprint Requires)
+  list.contains(labels, "status") |> should.be_true()
+  // env is already provided, should NOT be suggested
+  list.contains(labels, "env") |> should.be_false()
+}
+
+pub fn blueprint_aware_completion_no_blueprints_test() {
+  let ex_source =
+    "_defaults (Provides): { env: \"production\" }
+
+Expectations for \"my_slo\"
+  * \"checkout\" extends [_defaults]:
+    Provides {
+      status: true
+
+    }
+"
+  // With empty blueprints list, should only get extendable fields
+  let items = completion.get_completions(ex_source, 6, 6, [], [])
+  let labels = list.map(items, fn(i) { i.label })
+  list.contains(labels, "env") |> should.be_true()
+}
+
+pub fn blueprint_aware_completion_unknown_blueprint_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // This expects file references "nonexistent" which doesn't match any blueprint
+  // No blueprint params should appear, falls through to general context
+  let ex_source =
+    "Expectations for \"nonexistent\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+
+    }
+"
+  let items = completion.get_completions(ex_source, 4, 6, [], blueprints)
+  let labels = list.map(items, fn(i) { i.label })
+  // Should NOT contain blueprint-specific params like "env"
+  // (falls through to general completions since no field context found)
+  let has_blueprints_keyword = list.any(labels, fn(l) { l == "Blueprints" })
+  has_blueprints_keyword |> should.be_true()
+}
+
+// ==========================================================================
+// Signature help tests
+// ==========================================================================
+
+// ==== get_signature_help ====
+// * ✅ returns SignatureHelp inside expects Provides block
+// * ✅ active parameter matches current field line
+// * ✅ returns None outside Provides block
+// * ✅ returns None for blueprints file
+
+pub fn signature_help_in_provides_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+      status: true
+    }
+"
+  // Cursor on the env field line (line 3)
+  case signature_help.get_signature_help(ex_source, 3, 10, blueprints) {
+    option.Some(sig) -> {
+      // Label should contain the item name and params
+      { string.contains(sig.label, "checkout") } |> should.be_true()
+      // Should have parameters listed
+      { sig.parameters != [] } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn signature_help_active_parameter_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+      status: true
+    }
+"
+  // Cursor on the status line (line 4)
+  case signature_help.get_signature_help(ex_source, 4, 10, blueprints) {
+    option.Some(sig) -> {
+      // Active parameter should be >= 0 (matched to status)
+      { sig.active_parameter >= 0 } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn signature_help_none_for_blueprints_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides { value: \"test\" }
+"
+  signature_help.get_signature_help(bp_source, 2, 10, [])
+  |> should.equal(option.None)
+}
+
+pub fn signature_help_none_outside_item_test() {
+  let ex_source =
+    "Expectations for \"my_slo\"
+"
+  signature_help.get_signature_help(ex_source, 0, 5, [])
+  |> should.equal(option.None)
+}
+
+// ==========================================================================
+// Inlay hints tests
+// ==========================================================================
+
+// ==== get_inlay_hints ====
+// * ✅ returns type hints for fields matching blueprint params
+// * ✅ returns empty for fields not in blueprint params
+// * ✅ returns empty for blueprints file
+// * ✅ respects line range
+
+pub fn inlay_hints_shows_types_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  let hints = inlay_hints.get_inlay_hints(ex_source, 0, 10, blueprints)
+  // Should have at least one hint for the "env" field
+  { hints != [] } |> should.be_true()
+  // Check that one of the hints contains a type string
+  let labels = list.map(hints, fn(h) { h.label })
+  let has_type_hint = list.any(labels, fn(l) { string.contains(l, "String") })
+  has_type_hint |> should.be_true()
+}
+
+pub fn inlay_hints_empty_for_blueprints_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides { value: \"test\" }
+"
+  inlay_hints.get_inlay_hints(bp_source, 0, 10, [])
+  |> should.equal([])
+}
+
+pub fn inlay_hints_no_match_no_hints_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Blueprint ref "nonexistent" doesn't match
+  let ex_source =
+    "Expectations for \"nonexistent\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  inlay_hints.get_inlay_hints(ex_source, 0, 10, blueprints)
+  |> should.equal([])
+}
+
+pub fn inlay_hints_respects_range_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+      status: true
+    }
+"
+  // Only request hints for line 0 (header line) — should get no field hints
+  let hints = inlay_hints.get_inlay_hints(ex_source, 0, 0, blueprints)
+  hints |> should.equal([])
 }

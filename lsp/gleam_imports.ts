@@ -22,6 +22,10 @@ export { get_hover } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caf
 
 export { get_completions } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/completion.mjs";
 
+export { get_signature_help } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/signature_help.mjs";
+
+export { get_inlay_hints } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/inlay_hints.mjs";
+
 export {
   get_semantic_tokens,
   token_types,

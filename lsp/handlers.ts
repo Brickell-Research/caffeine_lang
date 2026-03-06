@@ -28,6 +28,8 @@ import type { WorkspaceIndex } from "./workspace.ts";
 import {
   handleHover,
   handleCompletion,
+  handleSignatureHelp,
+  handleInlayHints,
   handleHighlight,
   handleFormatting,
   handleCodeAction,
@@ -74,6 +76,7 @@ export function registerHandlers(ctx: HandlerContext): void {
 
   ctx.connection.onHover((p) => handleHover(ctx, p));
   ctx.connection.onCompletion((p) => handleCompletion(ctx, p));
+  ctx.connection.onSignatureHelp((p) => handleSignatureHelp(ctx, p));
   ctx.connection.onDefinition((p) => handleDefinition(ctx, p));
   ctx.connection.onDeclaration((p) => handleDefinition(ctx, p));
   ctx.connection.onDocumentHighlight((p) => handleHighlight(ctx, p));
@@ -87,6 +90,7 @@ export function registerHandlers(ctx: HandlerContext): void {
   ctx.connection.onFoldingRanges((p) => handleFoldingRanges(ctx, p));
   ctx.connection.onSelectionRanges((p) => handleSelectionRanges(ctx, p));
   ctx.connection.languages.onLinkedEditingRange((p) => handleLinkedEditing(ctx, p));
+  ctx.connection.languages.inlayHint.on((p) => handleInlayHints(ctx, p));
   ctx.connection.languages.typeHierarchy.onPrepare((p) => handleTypeHierarchyPrepare(ctx, p));
   ctx.connection.languages.typeHierarchy.onSupertypes((p) => handleTypeHierarchySupertypes(ctx, p));
   ctx.connection.languages.typeHierarchy.onSubtypes((p) => handleTypeHierarchySubtypes(ctx, p));
@@ -167,6 +171,11 @@ function registerInitializeHandler(ctx: HandlerContext): void {
         completionProvider: {
           triggerCharacters: [":", "[", "{", ",", "\""],
         },
+        signatureHelpProvider: {
+          triggerCharacters: [":"],
+          retriggerCharacters: [","],
+        },
+        inlayHintProvider: true,
         codeActionProvider: {
           codeActionKinds: ["quickfix"],
         },

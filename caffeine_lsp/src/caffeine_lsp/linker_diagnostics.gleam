@@ -68,7 +68,8 @@ fn check_expectation(
 
 /// Compute params the expectation must provide — blueprint params minus
 /// keys already filled by the blueprint's own inputs.
-fn compute_remaining_params(
+@internal
+pub fn compute_remaining_params(
   blueprint: Blueprint(BlueprintValidated),
 ) -> dict.Dict(String, AcceptedTypes) {
   let blueprint_input_keys = blueprint.inputs |> dict.keys |> set.from_list

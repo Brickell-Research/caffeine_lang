@@ -1,13 +1,17 @@
 import caffeine_lang/frontend/ast
+import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/types.{type TypeMeta}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
+import caffeine_lsp/linker_diagnostics
 import caffeine_lsp/lsp_types.{
   CikClass, CikField, CikKeyword, CikModule, CikVariable,
 }
 import gleam/bool
+import gleam/dict
 import gleam/list
 import gleam/option
+import gleam/set
 import gleam/string
 
 /// A completion item returned to the editor.
@@ -18,15 +22,18 @@ pub type CompletionItem {
 /// Returns a list of completion items, context-aware based on
 /// the cursor position in the document. Workspace blueprint names
 /// from other files are used for cross-file blueprint header completion.
+/// Validated blueprints enable field suggestions from blueprint Requires.
 pub fn get_completions(
   content: String,
   line: Int,
   character: Int,
   workspace_blueprint_names: List(String),
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> List(CompletionItem) {
   // Parse once and reuse across all completion paths.
   let parsed = file_utils.parse(content)
-  let context = get_context(content, parsed, line, character)
+  let context =
+    get_context(content, parsed, line, character, validated_blueprints)
   case context {
     BlueprintHeaderContext(prefix) ->
       blueprint_header_completions(workspace_blueprint_names, prefix)
@@ -52,6 +59,7 @@ fn get_context(
   parsed: Result(file_utils.ParsedFile, a),
   line: Int,
   character: Int,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> CompletionContext {
   let lines = string.split(content, "\n")
   case list.drop(lines, line) {
@@ -66,7 +74,7 @@ fn get_context(
             ExtendsContext(already_used: extract_used_extends(trimmed)),
           )
           use <- bool.guard(is_type_context(trimmed), TypeContext)
-          case get_field_context(parsed, lines, line) {
+          case get_field_context(parsed, lines, line, validated_blueprints) {
             option.Some(fields) -> FieldContext(fields)
             option.None -> GeneralContext
           }
@@ -119,6 +127,7 @@ fn get_field_context(
   parsed: Result(file_utils.ParsedFile, a),
   lines: List(String),
   line: Int,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> option.Option(List(#(String, String))) {
   case find_enclosing_item(lines, line) {
     option.None -> option.None
@@ -127,14 +136,24 @@ fn get_field_context(
         Ok(file_utils.Blueprints(file)) ->
           blueprint_field_context(file, item_name, lines, line)
         Ok(file_utils.Expects(file)) ->
-          expects_field_context(file, item_name, lines, line)
+          expects_field_context(
+            file,
+            item_name,
+            lines,
+            line,
+            validated_blueprints,
+          )
         Error(_) -> option.None
       }
   }
 }
 
 /// Walk backwards from the cursor line to find the enclosing item name.
-fn find_enclosing_item(lines: List(String), line: Int) -> option.Option(String) {
+@internal
+pub fn find_enclosing_item(
+  lines: List(String),
+  line: Int,
+) -> option.Option(String) {
   // Take lines up to and including the cursor line, then reverse to walk backwards.
   let prefix = list.take(lines, line + 1) |> list.reverse
   find_enclosing_item_loop(prefix)
@@ -148,6 +167,36 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
       case string.starts_with(trimmed, "* \"") {
         True -> extract_item_name(trimmed)
         False -> find_enclosing_item_loop(rest)
+      }
+    }
+  }
+}
+
+/// Walk backwards from the cursor line to find the enclosing
+/// `Expectations for "name"` header and return the blueprint ref.
+@internal
+pub fn find_enclosing_blueprint_ref(
+  lines: List(String),
+  line: Int,
+) -> option.Option(String) {
+  let prefix = list.take(lines, line + 1) |> list.reverse
+  find_enclosing_blueprint_ref_loop(prefix)
+}
+
+fn find_enclosing_blueprint_ref_loop(
+  lines: List(String),
+) -> option.Option(String) {
+  case lines {
+    [] -> option.None
+    [line_text, ..rest] -> {
+      let trimmed = string.trim(line_text)
+      case string.split_once(trimmed, "Expectations for \"") {
+        Ok(#(_, after)) ->
+          case string.split_once(after, "\"") {
+            Ok(#(name, _)) -> option.Some(name)
+            Error(_) -> option.None
+          }
+        Error(_) -> find_enclosing_blueprint_ref_loop(rest)
       }
     }
   }
@@ -189,12 +238,14 @@ fn blueprint_field_context(
   }
 }
 
-/// Collect available fields from extended extendables for an expects item.
+/// Collect available fields from extended extendables and blueprint
+/// remaining params for an expects item.
 fn expects_field_context(
   file: ast.ExpectsFile(ast.Parsed),
   item_name: String,
-  _lines: List(String),
-  _line: Int,
+  lines: List(String),
+  line: Int,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> option.Option(List(#(String, String))) {
   let item =
     list.flat_map(file.blocks, fn(b) { b.items })
@@ -205,13 +256,50 @@ fn expects_field_context(
       let extended_fields =
         collect_extended_fields(item.extends, file.extendables)
       let existing = existing_provides_fields(item.provides)
+      let existing_set = set.from_list(existing)
+
+      // Add fields from the blueprint's Requires (remaining params).
+      let blueprint_fields =
+        blueprint_remaining_fields(lines, line, validated_blueprints)
+      let extended_names = list.map(extended_fields, fn(f) { f.0 })
+      let extended_set = set.from_list(extended_names)
+
+      // Merge: extendable fields + blueprint params not already in extendables
+      let merged =
+        list.append(
+          extended_fields,
+          list.filter(blueprint_fields, fn(f) {
+            !set.contains(extended_set, f.0)
+          }),
+        )
       let available =
-        list.filter(extended_fields, fn(f) { !list.contains(existing, f.0) })
+        list.filter(merged, fn(f) { !set.contains(existing_set, f.0) })
       case available {
         [] -> option.None
         _ -> option.Some(available)
       }
     }
+  }
+}
+
+/// Look up the blueprint's remaining params and return as field name/type pairs.
+fn blueprint_remaining_fields(
+  lines: List(String),
+  line: Int,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
+) -> List(#(String, String)) {
+  case find_enclosing_blueprint_ref(lines, line) {
+    option.None -> []
+    option.Some(blueprint_ref) ->
+      case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
+        Error(_) -> []
+        Ok(blueprint) ->
+          linker_diagnostics.compute_remaining_params(blueprint)
+          |> dict.to_list
+          |> list.map(fn(pair) {
+            #(pair.0, types.accepted_type_to_string(pair.1))
+          })
+      }
   }
 }
 
