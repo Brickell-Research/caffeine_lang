@@ -11,6 +11,7 @@ pub type Value {
   StringValue(String)
   IntValue(Int)
   FloatValue(Float)
+  PercentageValue(Float)
   BoolValue(Bool)
   ListValue(List(Value))
   DictValue(Dict(String, Value))
@@ -25,6 +26,7 @@ pub fn to_string(value: Value) -> String {
     StringValue(s) -> s
     IntValue(i) -> int.to_string(i)
     FloatValue(f) -> float.to_string(f)
+    PercentageValue(f) -> float.to_string(f)
     BoolValue(True) -> "true"
     BoolValue(False) -> "false"
     ListValue(items) ->
@@ -47,6 +49,7 @@ pub fn to_preview_string(value: Value) -> String {
     StringValue(s) -> "\"" <> s <> "\""
     IntValue(i) -> int.to_string(i)
     FloatValue(f) -> float.to_string(f)
+    PercentageValue(f) -> float.to_string(f) <> "%"
     BoolValue(True) -> "true"
     BoolValue(False) -> "false"
     ListValue(_) -> "List"
@@ -62,6 +65,7 @@ pub fn classify(value: Value) -> String {
     StringValue(_) -> "String"
     IntValue(_) -> "Int"
     FloatValue(_) -> "Float"
+    PercentageValue(_) -> "Percentage"
     BoolValue(_) -> "Bool"
     ListValue(_) -> "List"
     DictValue(_) -> "Dict"
@@ -92,6 +96,15 @@ pub fn extract_int(value: Value) -> Result(Int, Nil) {
 pub fn extract_float(value: Value) -> Result(Float, Nil) {
   case value {
     FloatValue(f) -> Ok(f)
+    _ -> Error(Nil)
+  }
+}
+
+/// Extracts a Float from a PercentageValue, returning Error otherwise.
+@internal
+pub fn extract_percentage(value: Value) -> Result(Float, Nil) {
+  case value {
+    PercentageValue(f) -> Ok(f)
     _ -> Error(Nil)
   }
 }

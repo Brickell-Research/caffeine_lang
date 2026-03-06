@@ -257,7 +257,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
         helpers.ValueTuple(
           "threshold",
           types.PrimitiveType(types.NumericType(types.Float)),
-          value.FloatValue(99.0),
+          value.PercentageValue(99.0),
         ),
         helpers.ValueTuple(
           "window_in_days",

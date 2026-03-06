@@ -268,13 +268,13 @@ pub fn lower_blueprints_percentage_types_test() {
 }
 
 // ==== lower_expectations (percentage literal) ====
-// * ✅ percentage literal lowers to FloatValue
+// * ✅ percentage literal lowers to PercentageValue
 pub fn lower_expectations_percentage_literal_test() {
   let expectations = parse_and_lower_expects("expects_percentage_literal")
   let assert Ok(exp) = list.first(expectations)
 
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = value.extract_float(threshold_val)
+  let assert Ok(threshold_float) = value.extract_percentage(threshold_val)
   threshold_float |> should.equal(99.9)
 }
 

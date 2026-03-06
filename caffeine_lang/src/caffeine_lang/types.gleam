@@ -984,7 +984,7 @@ pub fn validate_numeric_value(
       Error([
         ValidationError(expected: "Float", found: value.classify(val), path: []),
       ])
-    Percentage, value.FloatValue(f) ->
+    Percentage, value.PercentageValue(f) ->
       case f >=. 0.0 && f <=. 100.0 {
         True -> Ok(val)
         False ->
@@ -996,6 +996,14 @@ pub fn validate_numeric_value(
             ),
           ])
       }
+    Percentage, value.FloatValue(_) ->
+      Error([
+        ValidationError(
+          expected: "Percentage (use % suffix, e.g. 99.9%)",
+          found: value.classify(val),
+          path: [],
+        ),
+      ])
     Percentage, _ ->
       Error([
         ValidationError(
@@ -1247,7 +1255,7 @@ fn value_to_type_string(
       Ok(int.to_string(i))
     PrimitiveType(NumericType(Float)), value.FloatValue(f) ->
       Ok(float.to_string(f))
-    PrimitiveType(NumericType(Percentage)), value.FloatValue(f) ->
+    PrimitiveType(NumericType(Percentage)), value.PercentageValue(f) ->
       Ok(float.to_string(f))
     PrimitiveType(SemanticType(_)), value.StringValue(s) -> Ok(s)
     ModifierType(Optional(inner)), value.NilValue -> {
@@ -1438,7 +1446,7 @@ pub fn resolve_primitive_to_string(
     String, value.StringValue(s) -> s
     NumericType(Integer), value.IntValue(i) -> int.to_string(i)
     NumericType(Float), value.FloatValue(f) -> float.to_string(f)
-    NumericType(Percentage), value.FloatValue(f) -> float.to_string(f)
+    NumericType(Percentage), value.PercentageValue(f) -> float.to_string(f)
     SemanticType(_), value.StringValue(s) -> s
     _, _ -> value.to_string(val)
   }

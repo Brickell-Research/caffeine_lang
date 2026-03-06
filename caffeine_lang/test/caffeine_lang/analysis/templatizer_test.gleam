@@ -186,7 +186,7 @@ pub fn parse_and_resolve_query_template_test() {
         helpers.ValueTuple(
           "threshold",
           typ: types.PrimitiveType(types.NumericType(types.Float)),
-          value: value.FloatValue(99.5),
+          value: value.PercentageValue(99.5),
         ),
       ],
       Ok("time_slice(query > 99.5 per 5m)"),

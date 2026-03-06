@@ -71,7 +71,7 @@ pub fn build_all_test() {
     let blueprint =
       make_blueprint("test_blueprint", [#("threshold", FloatType)])
     let expectation =
-      make_expectation("my_test", [#("threshold", value.FloatValue(99.9))])
+      make_expectation("my_test", [#("threshold", value.PercentageValue(99.9))])
 
     let assert Ok([ir]) =
       ir_builder.build_all(
@@ -95,7 +95,7 @@ pub fn build_all_test() {
       helpers.ValueTuple(
         label: "threshold",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
-        value: value.FloatValue(99.9),
+        value: value.PercentageValue(99.9),
       ),
       helpers.ValueTuple(
         label: "vendor",
@@ -114,12 +114,12 @@ pub fn build_all_test() {
       ])
     let exp1 =
       make_expectation("first", [
-        #("threshold", value.FloatValue(99.9)),
+        #("threshold", value.PercentageValue(99.9)),
         #("value", value.FloatValue(1.0)),
       ])
     let exp2 =
       make_expectation("second", [
-        #("threshold", value.FloatValue(99.9)),
+        #("threshold", value.PercentageValue(99.9)),
         #("value", value.FloatValue(2.0)),
       ])
 
@@ -146,12 +146,12 @@ pub fn build_all_test() {
       ])
     let exp1 =
       make_expectation("from_file1", [
-        #("threshold", value.FloatValue(99.9)),
+        #("threshold", value.PercentageValue(99.9)),
         #("id", value.FloatValue(1.0)),
       ])
     let exp2 =
       make_expectation("from_file2", [
-        #("threshold", value.FloatValue(99.9)),
+        #("threshold", value.PercentageValue(99.9)),
         #("id", value.FloatValue(2.0)),
       ])
 
@@ -189,7 +189,7 @@ pub fn build_all_test() {
         ]),
         inputs: dict.from_list([
           #("vendor", value.StringValue(constants.vendor_datadog)),
-          #("threshold", value.FloatValue(99.9)),
+          #("threshold", value.PercentageValue(99.9)),
         ]),
       )
     let expectation =
@@ -240,7 +240,7 @@ pub fn build_all_test() {
         ]),
         inputs: dict.from_list([
           #("vendor", value.StringValue(constants.vendor_datadog)),
-          #("threshold", value.FloatValue(99.9)),
+          #("threshold", value.PercentageValue(99.9)),
         ]),
       )
     let expectation =
@@ -295,7 +295,7 @@ pub fn build_all_test() {
         ]),
         inputs: dict.from_list([
           #("vendor", value.StringValue(constants.vendor_datadog)),
-          #("threshold", value.FloatValue(99.9)),
+          #("threshold", value.PercentageValue(99.9)),
         ]),
       )
     let expectation =
@@ -347,7 +347,7 @@ pub fn build_all_test() {
         ]),
         inputs: dict.from_list([
           #("vendor", value.StringValue(constants.vendor_datadog)),
-          #("threshold", value.FloatValue(99.9)),
+          #("threshold", value.PercentageValue(99.9)),
           #("from_blueprint", value.StringValue("blueprint_value")),
         ]),
       )
@@ -402,7 +402,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("env", value.StringValue("production")),
           #("region", value.StringValue("us-east-1")),
-          #("threshold", value.FloatValue(99.9)),
+          #("threshold", value.PercentageValue(99.9)),
         ]),
       )
 
@@ -454,7 +454,7 @@ pub fn build_all_list_misc_test() {
             value.StringValue("deploy-demo"),
           ]),
         ),
-        #("threshold", value.FloatValue(99.9)),
+        #("threshold", value.PercentageValue(99.9)),
       ]),
     )
 
@@ -492,7 +492,7 @@ pub fn build_all_optional_none_misc_test() {
       ]),
     )
   let expectation =
-    make_expectation("my_test", [#("threshold", value.FloatValue(1.0))])
+    make_expectation("my_test", [#("threshold", value.PercentageValue(1.0))])
 
   let assert Ok([ir]) =
     ir_builder.build_all(

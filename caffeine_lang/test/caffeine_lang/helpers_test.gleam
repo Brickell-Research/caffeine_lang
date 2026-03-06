@@ -100,7 +100,7 @@ pub fn extract_threshold_test() {
     helpers.ValueTuple(
       "threshold",
       types.PrimitiveType(types.NumericType(types.Float)),
-      value.FloatValue(95.0),
+      value.PercentageValue(95.0),
     ),
   ]
   helpers.extract_threshold(with_threshold)

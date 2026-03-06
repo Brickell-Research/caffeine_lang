@@ -3,6 +3,6 @@ Expectations for "api_availability"
     Provides {
       env: "production",
       service: "auth-service",
-      threshold: 99.99,
+      threshold: 99.99%,
       window_in_days: 30
     }

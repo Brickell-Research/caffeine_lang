@@ -86,7 +86,7 @@ pub fn extract_value(
 @internal
 pub fn extract_threshold(values: List(ValueTuple)) -> Float {
   let assert Ok(threshold) =
-    extract_value(values, "threshold", value.extract_float)
+    extract_value(values, "threshold", value.extract_percentage)
   threshold
 }
 

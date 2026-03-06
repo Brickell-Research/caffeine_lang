@@ -27,7 +27,7 @@ pub fn make_slo_ir(
     helpers.ValueTuple(
       "threshold",
       types.PrimitiveType(types.NumericType(types.Float)),
-      value.FloatValue(threshold),
+      value.PercentageValue(threshold),
     ),
   ]
   ir.IntermediateRepresentation(
@@ -59,7 +59,7 @@ pub fn make_ir_with_deps(
     helpers.ValueTuple(
       "threshold",
       types.PrimitiveType(types.NumericType(types.Float)),
-      value.FloatValue(threshold),
+      value.PercentageValue(threshold),
     ),
     make_relations_value(hard_deps, soft_deps),
   ]
@@ -180,7 +180,7 @@ pub fn make_vendor_slo_ir(
       helpers.ValueTuple(
         "threshold",
         types.PrimitiveType(types.NumericType(types.Float)),
-        value.FloatValue(threshold),
+        value.PercentageValue(threshold),
       ),
       helpers.ValueTuple(
         "window_in_days",

@@ -107,7 +107,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -170,7 +170,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -238,7 +238,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -295,7 +295,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.5),
+              value.PercentageValue(99.5),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -358,7 +358,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -428,7 +428,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -481,7 +481,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -580,7 +580,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -671,7 +671,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -764,7 +764,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -839,7 +839,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -919,7 +919,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",
@@ -998,7 +998,7 @@ pub fn generate_terraform_test() {
             helpers.ValueTuple(
               "threshold",
               types.PrimitiveType(types.NumericType(types.Float)),
-              value.FloatValue(99.9),
+              value.PercentageValue(99.9),
             ),
             helpers.ValueTuple(
               "window_in_days",

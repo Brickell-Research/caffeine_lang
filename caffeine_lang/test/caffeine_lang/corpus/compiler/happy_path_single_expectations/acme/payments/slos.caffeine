@@ -3,6 +3,6 @@ Expectations for "api_availability"
     Provides {
       env: "production",
       status: true,
-      threshold: 99.95,
+      threshold: 99.95%,
       window_in_days: 30
     }

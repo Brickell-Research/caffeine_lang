@@ -16,7 +16,7 @@ fn blueprints() -> List(blueprints.Blueprint(blueprints.BlueprintValidated)) {
       name: "success_rate",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
+        #("percentile", types.PrimitiveType(types.NumericType(types.Percentage))),
       ]),
       inputs: dict.from_list([]),
     ),
@@ -32,7 +32,7 @@ fn blueprints_with_inputs() -> List(
       artifact_refs: [SLO],
       params: dict.from_list([
         #("vendor", types.PrimitiveType(types.String)),
-        #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
+        #("threshold", types.PrimitiveType(types.NumericType(types.Percentage))),
       ]),
       inputs: dict.from_list([
         #("vendor", value.StringValue(constants.vendor_datadog)),
@@ -49,7 +49,7 @@ fn blueprints_with_defaulted() -> List(
       name: "success_rate_with_defaulted",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
+        #("threshold", types.PrimitiveType(types.NumericType(types.Percentage))),
         #(
           "default_env",
           types.ModifierType(types.Defaulted(
@@ -91,7 +91,7 @@ pub fn validate_expectations_test() {
         expectations.Expectation(
           name: "my_expectation",
           blueprint_ref: "success_rate",
-          inputs: dict.from_list([#("percentile", value.FloatValue(99.9))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
         ),
       ],
       Ok([
@@ -99,7 +99,7 @@ pub fn validate_expectations_test() {
           expectations.Expectation(
             name: "my_expectation",
             blueprint_ref: "success_rate",
-            inputs: dict.from_list([#("percentile", value.FloatValue(99.9))]),
+            inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
           ),
           blueprints.Blueprint(
             name: "success_rate",
@@ -107,7 +107,7 @@ pub fn validate_expectations_test() {
             params: dict.from_list([
               #(
                 "percentile",
-                types.PrimitiveType(types.NumericType(types.Float)),
+                types.PrimitiveType(types.NumericType(types.Percentage)),
               ),
             ]),
             inputs: dict.from_list([]),
@@ -128,7 +128,7 @@ pub fn validate_expectations_test() {
         expectations.Expectation(
           name: "my_expectation_with_defaulted",
           blueprint_ref: "success_rate_with_defaulted",
-          inputs: dict.from_list([#("threshold", value.FloatValue(99.9))]),
+          inputs: dict.from_list([#("threshold", value.PercentageValue(99.9))]),
         ),
       ],
       True,
@@ -155,12 +155,12 @@ pub fn validate_expectations_test() {
         expectations.Expectation(
           name: "first_expectation",
           blueprint_ref: "success_rate",
-          inputs: dict.from_list([#("percentile", value.FloatValue(99.9))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
         ),
         expectations.Expectation(
           name: "second_expectation",
           blueprint_ref: "success_rate",
-          inputs: dict.from_list([#("percentile", value.FloatValue(95.0))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(95.0))]),
         ),
       ],
       True,
@@ -183,12 +183,12 @@ pub fn validate_expectations_test() {
         expectations.Expectation(
           name: "my_expectation",
           blueprint_ref: "success_rate",
-          inputs: dict.from_list([#("percentile", value.FloatValue(99.9))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
         ),
         expectations.Expectation(
           name: "my_expectation",
           blueprint_ref: "success_rate",
-          inputs: dict.from_list([#("percentile", value.FloatValue(95.0))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(95.0))]),
         ),
       ],
       Error(errors.LinkerDuplicateError(
@@ -209,7 +209,7 @@ pub fn validate_expectations_test() {
         expectations.Expectation(
           name: "my_expectation",
           blueprint_ref: "nonexistent_blueprint",
-          inputs: dict.from_list([#("percentile", value.FloatValue(99.9))]),
+          inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
         ),
       ],
       False,
@@ -234,7 +234,7 @@ pub fn validate_expectations_test() {
           blueprint_ref: "success_rate_with_defaults",
           inputs: dict.from_list([
             #("vendor", value.StringValue("honeycomb")),
-            #("threshold", value.FloatValue(99.9)),
+            #("threshold", value.PercentageValue(99.9)),
           ]),
         ),
       ],
@@ -282,7 +282,7 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           blueprint_ref: "success_rate",
           inputs: dict.from_list([
-            #("percentile", value.FloatValue(99.9)),
+            #("percentile", value.PercentageValue(99.9)),
             #("extra", value.StringValue("bad")),
           ]),
         ),
@@ -311,7 +311,7 @@ pub fn validate_expectations_test() {
         ),
       ],
       Error(errors.LinkerValueValidationError(
-        msg: "Input validation errors: expectation 'org.team.service.my_expectation' - expected (Float) received (String) value (\"not a float\") for (percentile)",
+        msg: "Input validation errors: expectation 'org.team.service.my_expectation' - expected (Percentage) received (String) value (\"not a float\") for (percentile)",
         context: errors.empty_context(),
       )),
     ),

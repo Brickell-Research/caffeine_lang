@@ -136,20 +136,20 @@ pub fn validate_numeric_value_test() {
   })
 
   // Percentage validation
-  let pct_ok = value.FloatValue(99.9)
-  let pct_too_high = value.FloatValue(101.0)
-  let pct_too_low = value.FloatValue(-1.0)
+  let pct_ok = value.PercentageValue(99.9)
+  let pct_too_high = value.PercentageValue(101.0)
+  let pct_too_low = value.PercentageValue(-1.0)
   [
-    #("Percentage with valid float", #(Percentage, pct_ok), Ok(pct_ok)),
+    #("Percentage with valid percentage", #(Percentage, pct_ok), Ok(pct_ok)),
     #(
       "Percentage at lower bound 0.0",
-      #(Percentage, value.FloatValue(0.0)),
-      Ok(value.FloatValue(0.0)),
+      #(Percentage, value.PercentageValue(0.0)),
+      Ok(value.PercentageValue(0.0)),
     ),
     #(
       "Percentage at upper bound 100.0",
-      #(Percentage, value.FloatValue(100.0)),
-      Ok(value.FloatValue(100.0)),
+      #(Percentage, value.PercentageValue(100.0)),
+      Ok(value.PercentageValue(100.0)),
     ),
     #(
       "Percentage too high",
@@ -169,6 +169,17 @@ pub fn validate_numeric_value_test() {
         types.ValidationError(
           expected: "Percentage (0.0 <= x <= 100.0)",
           found: "-1.0",
+          path: [],
+        ),
+      ]),
+    ),
+    #(
+      "Percentage with float value (missing % suffix)",
+      #(Percentage, value.FloatValue(99.9)),
+      Error([
+        types.ValidationError(
+          expected: "Percentage (use % suffix, e.g. 99.9%)",
+          found: "Float",
           path: [],
         ),
       ]),

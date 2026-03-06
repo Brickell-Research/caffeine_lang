@@ -141,7 +141,7 @@ pub fn compile_from_strings_test() {
     Provides {
       env: \"production\",
       status: true,
-      threshold: 99.95,
+      threshold: 99.95%,
       window_in_days: 30
     }
 ",
@@ -170,7 +170,7 @@ pub fn compile_from_strings_test() {
         "Expectations for \"simple_slo\"
   * \"my_slo\":
     Provides {
-      threshold: 99.0,
+      threshold: 99.0%,
       window_in_days: 7
     }
 ",
@@ -196,7 +196,7 @@ pub fn compile_from_strings_test() {
   * \"cpu_availability\":
     Provides {
       env: \"production\",
-      threshold: 99.9,
+      threshold: 99.9%,
       window_in_days: 30
     }
 ",
@@ -287,7 +287,7 @@ pub fn compile_from_strings_test() {
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
     Provides {
-      threshold: 99.0,
+      threshold: 99.0%,
       window_in_days: 7
     }
 ",
@@ -313,7 +313,7 @@ pub fn compile_from_strings_test() {
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
     Provides {
-      threshold: 99.0,
+      threshold: 99.0%,
       window_in_days: 7
     }
 ",
@@ -339,7 +339,7 @@ pub fn compile_from_strings_test() {
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
     Provides {
-      threshold: 99.0,
+      threshold: 99.0%,
       window_in_days: 7
     }
 ",
@@ -389,7 +389,7 @@ pub fn compile_from_strings_honeycomb_test() {
   * \"api_success_rate\":
     Provides {
       env: \"production\",
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 14
     }
 ",
@@ -435,14 +435,14 @@ pub fn compile_from_strings_honeycomb_test() {
   * \"dd_slo\":
     Provides {
       env: \"production\",
-      threshold: 99.9,
+      threshold: 99.9%,
       window_in_days: 30
     }
 
 Expectations for \"hc_blueprint\"
   * \"hc_slo\":
     Provides {
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 14
     }
 ",
@@ -475,7 +475,7 @@ Expectations for \"hc_blueprint\"
         "Expectations for \"hc_blueprint\"
   * \"hc_slo\":
     Provides {
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 91
     }
 ",
@@ -524,7 +524,7 @@ pub fn compile_from_strings_dynatrace_test() {
         "Expectations for \"dynatrace_availability\"
   * \"api_success_rate\":
     Provides {
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 30
     }
 ",
@@ -570,14 +570,14 @@ pub fn compile_from_strings_dynatrace_test() {
   * \"dd_slo\":
     Provides {
       env: \"production\",
-      threshold: 99.9,
+      threshold: 99.9%,
       window_in_days: 30
     }
 
 Expectations for \"dt_blueprint\"
   * \"dt_slo\":
     Provides {
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 14
     }
 ",
@@ -609,7 +609,7 @@ Expectations for \"dt_blueprint\"
         "Expectations for \"dt_blueprint\"
   * \"dt_slo\":
     Provides {
-      threshold: 99.5,
+      threshold: 99.5%,
       window_in_days: 91
     }
 ",

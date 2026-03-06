@@ -1,5 +1,6 @@
 import caffeine_lang/value.{
-  BoolValue, DictValue, FloatValue, IntValue, ListValue, NilValue, StringValue,
+  BoolValue, DictValue, FloatValue, IntValue, ListValue, NilValue,
+  PercentageValue, StringValue,
 }
 import gleam/dict
 import test_helpers
@@ -8,6 +9,7 @@ import test_helpers
 // * ✅ converts string value
 // * ✅ converts int value
 // * ✅ converts float value
+// * ✅ converts percentage value
 // * ✅ converts bool value
 // * ✅ converts nil value
 // * ✅ converts list value
@@ -17,6 +19,7 @@ pub fn to_string_test() {
     #("converts string value", StringValue("hello"), "hello"),
     #("converts int value", IntValue(42), "42"),
     #("converts float value", FloatValue(3.14), "3.14"),
+    #("converts percentage value", PercentageValue(99.9), "99.9"),
     #("converts bool value", BoolValue(True), "true"),
     #("converts nil value", NilValue, ""),
     #(
@@ -36,12 +39,14 @@ pub fn to_string_test() {
 // ==== to_preview_string ====
 // * ✅ quotes strings
 // * ✅ shows numbers directly
+// * ✅ shows percentage with suffix
 // * ✅ shows Nil for nil
 pub fn to_preview_string_test() {
   [
     #("quotes strings", StringValue("hello"), "\"hello\""),
     #("shows int directly", IntValue(42), "42"),
     #("shows float directly", FloatValue(3.14), "3.14"),
+    #("shows percentage with suffix", PercentageValue(99.9), "99.9%"),
     #("shows bool directly", BoolValue(True), "true"),
     #("shows Nil for nil", NilValue, "Nil"),
     #("shows List for list", ListValue([]), "List"),
@@ -57,6 +62,7 @@ pub fn classify_test() {
     #("classifies string", StringValue("x"), "String"),
     #("classifies int", IntValue(1), "Int"),
     #("classifies float", FloatValue(1.0), "Float"),
+    #("classifies percentage", PercentageValue(99.9), "Percentage"),
     #("classifies bool", BoolValue(True), "Bool"),
     #("classifies list", ListValue([]), "List"),
     #("classifies dict", DictValue(dict.new()), "Dict"),
@@ -96,6 +102,22 @@ pub fn extract_float_test() {
     #("returns Error for non-float", IntValue(1), Error(Nil)),
   ]
   |> test_helpers.table_test_1(value.extract_float)
+}
+
+// ==== extract_percentage ====
+// * ✅ extracts from PercentageValue
+// * ✅ returns Error for non-percentage
+pub fn extract_percentage_test() {
+  [
+    #(
+      "extracts from PercentageValue",
+      PercentageValue(99.9),
+      Ok(99.9),
+    ),
+    #("returns Error for FloatValue", FloatValue(99.9), Error(Nil)),
+    #("returns Error for non-percentage", IntValue(1), Error(Nil)),
+  ]
+  |> test_helpers.table_test_1(value.extract_percentage)
 }
 
 // ==== extract_bool ====
