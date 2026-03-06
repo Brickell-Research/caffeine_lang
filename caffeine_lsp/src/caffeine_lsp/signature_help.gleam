@@ -35,7 +35,7 @@ pub fn get_signature_help(
   let lines = string.split(content, "\n")
 
   // Must be inside an expectation item.
-  use item_name <- option_then(completion.find_enclosing_item(lines, line))
+  use _item_name <- option_then(completion.find_enclosing_item(lines, line))
   // Must be inside an Expectations block.
   use blueprint_ref <- option_then(completion.find_enclosing_blueprint_ref(
     lines,
@@ -55,9 +55,14 @@ pub fn get_signature_help(
   case param_list {
     [] -> option.None
     _ -> {
-      let param_names = list.map(param_list, fn(p) { p.0 })
-      let label = item_name <> "(" <> string.join(param_names, ", ") <> ")"
+      let param_labels =
+        list.map(param_list, fn(p) {
+          p.0 <> ": " <> types.accepted_type_to_string(p.1)
+        })
+      let label =
+        blueprint_ref <> "(" <> string.join(param_labels, ", ") <> ")"
 
+      let param_names = list.map(param_list, fn(p) { p.0 })
       let parameters =
         list.map(param_list, fn(p) {
           let type_str = types.accepted_type_to_string(p.1)

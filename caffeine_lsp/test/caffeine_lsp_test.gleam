@@ -2124,8 +2124,8 @@ pub fn signature_help_in_provides_test() {
   // Cursor on the env field line (line 3)
   case signature_help.get_signature_help(ex_source, 3, 10, blueprints) {
     option.Some(sig) -> {
-      // Label should contain the item name and params
-      { string.contains(sig.label, "checkout") } |> should.be_true()
+      // Label should contain the blueprint name and typed params
+      { string.contains(sig.label, "my_slo") } |> should.be_true()
       // Should have parameters listed
       { sig.parameters != [] } |> should.be_true()
     }
