@@ -14,11 +14,17 @@ import {
   applyIndexUpdates,
 } from "./workspace_parsers.ts";
 
+import { compile_validated_blueprints, Ok, toList } from "./gleam_imports.ts";
+import type { GleamList } from "./helpers.ts";
+import { gleamArray } from "./helpers.ts";
+
 export class WorkspaceIndex {
   root: string | null = null;
   files = new Set<string>();
   blueprintIndex = new Map<string, Set<string>>();
   expectationIndex = new Map<string, Map<string, string>>();
+  // deno-lint-ignore no-explicit-any
+  validatedBlueprintsCache = new Map<string, any>();
 
   private documents: TextDocuments<TextDocument>;
 
@@ -39,6 +45,7 @@ export class WorkspaceIndex {
         const names = extractBlueprintNames(text);
         if (names.length > 0) {
           this.blueprintIndex.set(uri, new Set(names));
+          this.tryCompileBlueprints(uri, text);
         }
         const ids = extractExpectationIdentifiers(text, uri);
         if (ids.size > 0) {
@@ -146,6 +153,37 @@ export class WorkspaceIndex {
 
   /** Updates both blueprint and expectation indices for a file. Returns true if either changed. */
   updateIndicesForFile(uri: string, text: string): boolean {
-    return applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
+    const changed = applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
+    if (this.blueprintIndex.has(uri)) {
+      this.tryCompileBlueprints(uri, text);
+    } else {
+      this.validatedBlueprintsCache.delete(uri);
+    }
+    return changed;
+  }
+
+  /** Try to compile and validate blueprints from file content, caching the result. */
+  private tryCompileBlueprints(uri: string, text: string): void {
+    try {
+      const result = compile_validated_blueprints(text);
+      if (result instanceof Ok) {
+        this.validatedBlueprintsCache.set(uri, result[0]);
+      } else {
+        this.validatedBlueprintsCache.delete(uri);
+      }
+    } catch {
+      this.validatedBlueprintsCache.delete(uri);
+    }
+  }
+
+  /** Collect all validated blueprints across the workspace as a single Gleam list. */
+  // deno-lint-ignore no-explicit-any
+  allValidatedBlueprints(): any {
+    // deno-lint-ignore no-explicit-any
+    const all: any[] = [];
+    for (const cached of this.validatedBlueprintsCache.values()) {
+      all.push(...gleamArray(cached as GleamList));
+    }
+    return toList(all);
   }
 }

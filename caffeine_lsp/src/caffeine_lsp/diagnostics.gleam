@@ -20,6 +20,9 @@ pub type DiagnosticCode {
   QuotedFieldName
   BlueprintNotFound
   DependencyNotFound
+  MissingRequiredFields
+  TypeMismatch
+  UnknownField
   NoDiagnosticCode
 }
 
@@ -29,6 +32,9 @@ pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
     QuotedFieldName -> option.Some("quoted-field-name")
     BlueprintNotFound -> option.Some("blueprint-not-found")
     DependencyNotFound -> option.Some("dependency-not-found")
+    MissingRequiredFields -> option.Some("missing-required-fields")
+    TypeMismatch -> option.Some("type-mismatch")
+    UnknownField -> option.Some("unknown-field")
     NoDiagnosticCode -> option.None
   }
 }

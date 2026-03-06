@@ -7,8 +7,16 @@ export {
   QuotedFieldName,
   BlueprintNotFound,
   DependencyNotFound,
+  MissingRequiredFields,
+  TypeMismatch,
+  UnknownField,
   NoDiagnosticCode,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
+
+export {
+  compile_validated_blueprints,
+  get_linker_diagnostics,
+} from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/linker_diagnostics.mjs";
 
 export { get_hover } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/hover.mjs";
 

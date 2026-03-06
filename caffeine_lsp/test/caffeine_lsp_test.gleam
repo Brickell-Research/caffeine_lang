@@ -9,6 +9,7 @@ import caffeine_lsp/highlight
 import caffeine_lsp/hover
 import caffeine_lsp/keyword_info
 import caffeine_lsp/linked_editing_range
+import caffeine_lsp/linker_diagnostics
 import caffeine_lsp/lsp_types
 import caffeine_lsp/position_utils
 import caffeine_lsp/references
@@ -1739,4 +1740,249 @@ pub fn blueprint_header_completion_not_after_closing_quote_test() {
   let labels = list.map(items, fn(i) { i.label })
   // Should fall through to general context, not blueprint header
   list.contains(labels, "api_availability") |> should.be_false()
+}
+
+// ==== compile_validated_blueprints ====
+// * ✅ valid blueprints file returns Ok
+// * ✅ invalid content returns Error(Nil)
+// * ✅ expects file returns Error(Nil)
+
+pub fn compile_validated_blueprints_valid_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  case linker_diagnostics.compile_validated_blueprints(source) {
+    Ok(blueprints) -> {
+      { blueprints != [] } |> should.be_true()
+    }
+    Error(_) -> should.fail()
+  }
+}
+
+pub fn compile_validated_blueprints_invalid_test() {
+  linker_diagnostics.compile_validated_blueprints("not valid caffeine")
+  |> should.be_error()
+}
+
+pub fn compile_validated_blueprints_expects_file_test() {
+  let source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  linker_diagnostics.compile_validated_blueprints(source)
+  |> should.be_error()
+}
+
+// ==== get_linker_diagnostics ====
+// * ✅ all fields provided correctly returns empty
+// * ✅ missing required field produces diagnostic
+// * ✅ unknown field produces diagnostic
+// * ✅ type mismatch produces diagnostic
+// * ✅ optional/defaulted fields omitted returns no diagnostic
+// * ✅ unknown blueprint ref returns no diagnostic
+// * ✅ empty blueprints list returns no diagnostic
+
+pub fn linker_diagnostics_all_correct_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  |> should.equal([])
+}
+
+pub fn linker_diagnostics_missing_required_field_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String, status: Boolean }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Missing 'env' and 'status' — both are required remaining params
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+    }
+"
+  let diags = linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  case diags {
+    [diag] -> {
+      diag.code |> should.equal(diagnostics.MissingRequiredFields)
+      diag.severity |> should.equal(1)
+      string.contains(diag.message, "env") |> should.be_true()
+      string.contains(diag.message, "status") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn linker_diagnostics_unknown_field_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\",
+      xyz: \"unknown\"
+    }
+"
+  let diags = linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  let unknown_diags =
+    list.filter(diags, fn(d) { d.code == diagnostics.UnknownField })
+  case unknown_diags {
+    [diag] -> {
+      string.contains(diag.message, "xyz") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn linker_diagnostics_type_mismatch_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\"
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Providing an integer for 'threshold' which expects Percentage (float)
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\",
+      threshold: 99
+    }
+"
+  let diags = linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  let type_diags =
+    list.filter(diags, fn(d) { d.code == diagnostics.TypeMismatch })
+  case type_diags {
+    [diag] -> {
+      string.contains(diag.message, "threshold") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn linker_diagnostics_optional_defaulted_omitted_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Omitting optional fields (tags, runbook) and defaulted field (window_in_days) — no errors
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  |> should.equal([])
+}
+
+pub fn linker_diagnostics_unknown_blueprint_ref_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"q\", total: \"q\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Blueprint ref "nonexistent" does not match — handled elsewhere, no linker diagnostic
+  let ex_source =
+    "Expectations for \"nonexistent\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  |> should.equal([])
+}
+
+pub fn linker_diagnostics_empty_blueprints_test() {
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  linker_diagnostics.get_linker_diagnostics(ex_source, [])
+  |> should.equal([])
 }

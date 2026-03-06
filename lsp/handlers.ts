@@ -12,6 +12,7 @@ import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   get_all_diagnostics,
+  get_linker_diagnostics,
   token_types,
   toList,
 } from "./gleam_imports.ts";
@@ -104,14 +105,19 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
   function revalidateAll() {
     const knownBlueprints = toList(workspace.allKnownBlueprints());
     const knownExpectations = toList(workspace.allKnownExpectationIdentifiers());
+    const validatedBlueprints = workspace.allValidatedBlueprints();
     for (const doc of documents.all()) {
       try {
-        const allDiags = gleamArray(
-          get_all_diagnostics(doc.getText(), knownBlueprints, knownExpectations) as GleamList,
+        const text = doc.getText();
+        const frontendDiags = gleamArray(
+          get_all_diagnostics(text, knownBlueprints, knownExpectations) as GleamList,
+        );
+        const linkerDiags = gleamArray(
+          get_linker_diagnostics(text, validatedBlueprints) as GleamList,
         );
         connection.sendDiagnostics({
           uri: doc.uri,
-          diagnostics: allDiags.map(gleamDiagToLsp),
+          diagnostics: [...frontendDiags, ...linkerDiags].map(gleamDiagToLsp),
         });
       } catch { /* ignore */ }
     }
@@ -204,16 +210,22 @@ function registerDiagnosticsHandler(
           scheduler.scheduleRevalidation();
         } else {
           try {
-            const allDiags = gleamArray(
+            const frontendDiags = gleamArray(
               get_all_diagnostics(
                 text,
                 toList(workspace.allKnownBlueprints()),
                 toList(workspace.allKnownExpectationIdentifiers()),
               ) as GleamList,
             );
+            const linkerDiags = gleamArray(
+              get_linker_diagnostics(
+                text,
+                workspace.allValidatedBlueprints(),
+              ) as GleamList,
+            );
             connection.sendDiagnostics({
               uri,
-              diagnostics: allDiags.map(gleamDiagToLsp),
+              diagnostics: [...frontendDiags, ...linkerDiags].map(gleamDiagToLsp),
             });
           } catch {
             connection.sendDiagnostics({ uri, diagnostics: [] });
@@ -250,6 +262,7 @@ function registerDocumentCloseHandler(
       } else {
         workspace.blueprintIndex.delete(uri);
         workspace.expectationIndex.delete(uri);
+        workspace.validatedBlueprintsCache.delete(uri);
       }
 
       const hasBlueprintsAfter = workspace.blueprintIndex.has(uri);
@@ -286,6 +299,7 @@ async function processWatchedFileChange(workspace: WorkspaceIndex, change: any):
     workspace.files.delete(uri);
     const hadBlueprints = workspace.blueprintIndex.delete(uri);
     const hadExpectations = workspace.expectationIndex.delete(uri);
+    workspace.validatedBlueprintsCache.delete(uri);
     return hadBlueprints || hadExpectations;
   }
   workspace.files.add(uri);

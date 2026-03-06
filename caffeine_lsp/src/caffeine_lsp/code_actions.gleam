@@ -58,6 +58,9 @@ fn diagnostic_to_action(
     }
     diagnostics.BlueprintNotFound -> Error(Nil)
     diagnostics.DependencyNotFound -> Error(Nil)
+    diagnostics.MissingRequiredFields -> Error(Nil)
+    diagnostics.TypeMismatch -> Error(Nil)
+    diagnostics.UnknownField -> Error(Nil)
     NoDiagnosticCode -> Error(Nil)
   }
 }
