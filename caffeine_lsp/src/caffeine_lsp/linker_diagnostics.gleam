@@ -41,9 +41,27 @@ pub fn get_linker_diagnostics(
   let source = source_file.SourceFile(path: "lsp", content: content)
   case pipeline.compile_expects(source) {
     Error(_) -> []
-    Ok(expectations) ->
-      expectations
-      |> list.flat_map(check_expectation(content, _, all_validated_blueprints))
+    Ok(expectations) -> {
+      let #(diagnostics, _) =
+        list.fold(expectations, #([], 0), fn(acc, expectation) {
+          let #(diags_so_far, search_from) = acc
+          let anchor_line =
+            position_utils.find_name_position_after_line(
+              content,
+              expectation.name,
+              search_from,
+            ).0
+          let new_diags =
+            check_expectation(
+              content,
+              expectation,
+              all_validated_blueprints,
+              anchor_line,
+            )
+          #(list.append(diags_so_far, new_diags), anchor_line + 1)
+        })
+      diagnostics
+    }
   }
 }
 
@@ -52,15 +70,31 @@ fn check_expectation(
   content: String,
   expectation: Expectation,
   blueprints: List(Blueprint(BlueprintValidated)),
+  anchor_line: Int,
 ) -> List(Diagnostic) {
   case list.find(blueprints, fn(b) { b.name == expectation.blueprint_ref }) {
     Error(Nil) -> []
     Ok(blueprint) -> {
       let remaining_params = compute_remaining_params(blueprint)
       list.flatten([
-        check_missing_required(content, expectation, remaining_params),
-        check_unknown_fields(content, expectation, remaining_params),
-        check_type_mismatches(content, expectation, remaining_params),
+        check_missing_required(
+          content,
+          expectation,
+          remaining_params,
+          anchor_line,
+        ),
+        check_unknown_fields(
+          content,
+          expectation,
+          remaining_params,
+          anchor_line,
+        ),
+        check_type_mismatches(
+          content,
+          expectation,
+          remaining_params,
+          anchor_line,
+        ),
       ])
     }
   }
@@ -82,6 +116,7 @@ fn check_missing_required(
   content: String,
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
+  anchor_line: Int,
 ) -> List(Diagnostic) {
   let input_keys = expectation.inputs |> dict.keys |> set.from_list
   let missing =
@@ -96,7 +131,11 @@ fn check_missing_required(
     [] -> []
     _ -> {
       let #(line, col) =
-        position_utils.find_name_position(content, expectation.name)
+        position_utils.find_name_position_after_line(
+          content,
+          expectation.name,
+          anchor_line,
+        )
       let message = "Missing required fields: " <> string.join(missing, ", ")
       [
         Diagnostic(
@@ -117,6 +156,7 @@ fn check_unknown_fields(
   content: String,
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
+  anchor_line: Int,
 ) -> List(Diagnostic) {
   let param_keys = remaining_params |> dict.keys |> set.from_list
   let unknown_keys =
@@ -126,7 +166,8 @@ fn check_unknown_fields(
 
   unknown_keys
   |> list.map(fn(key) {
-    let #(line, col) = position_utils.find_name_position(content, key)
+    let #(line, col) =
+      position_utils.find_name_position_after_line(content, key, anchor_line)
     Diagnostic(
       line: line,
       column: col,
@@ -143,6 +184,7 @@ fn check_type_mismatches(
   content: String,
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
+  anchor_line: Int,
 ) -> List(Diagnostic) {
   expectation.inputs
   |> dict.to_list
@@ -154,7 +196,12 @@ fn check_type_mismatches(
         case types.validate_value(expected_type, val) {
           Ok(_) -> Error(Nil)
           Error(_) -> {
-            let #(line, col) = position_utils.find_name_position(content, key)
+            let #(line, col) =
+              position_utils.find_name_position_after_line(
+                content,
+                key,
+                anchor_line,
+              )
             let message =
               "Expected "
               <> types.accepted_type_to_string(expected_type)

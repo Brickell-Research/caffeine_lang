@@ -21,6 +21,18 @@ pub fn find_name_position_in_lines(
   find_in_lines(lines, name, 0)
 }
 
+/// Find the 0-indexed line and column of the first whole-word occurrence
+/// of a name, searching only from `start_line` onward. Returns #(0, 0)
+/// if not found.
+pub fn find_name_position_after_line(
+  content: String,
+  name: String,
+  start_line: Int,
+) -> #(Int, Int) {
+  let lines = string.split(content, "\n") |> list.drop(start_line)
+  find_in_lines(lines, name, start_line)
+}
+
 /// Find all 0-indexed (line, col) positions of whole-word occurrences of a name.
 pub fn find_all_name_positions(
   content: String,
