@@ -30,21 +30,17 @@ pub fn get_inlay_hints(
   validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> List(InlayHint) {
   case file_utils.parse(content) {
-    Ok(file_utils.Expects(file)) ->
-      get_expects_hints(
-        content,
-        file,
-        start_line,
-        end_line,
-        validated_blueprints,
-      )
+    Ok(file_utils.Expects(file)) -> {
+      let lines = string.split(content, "\n")
+      get_expects_hints(lines, file, start_line, end_line, validated_blueprints)
+    }
     _ -> []
   }
 }
 
 /// Generate hints for all expectation blocks in an expects file.
 fn get_expects_hints(
-  content: String,
+  lines: List(String),
   file: ast.ExpectsFile(ast.Parsed),
   start_line: Int,
   end_line: Int,
@@ -57,7 +53,7 @@ fn get_expects_hints(
         let remaining_params =
           linker_diagnostics.compute_remaining_params(blueprint)
         list.flat_map(block.items, fn(item) {
-          get_item_hints(content, item, remaining_params, start_line, end_line)
+          get_item_hints(lines, item, remaining_params, start_line, end_line)
         })
       }
     }
@@ -66,20 +62,21 @@ fn get_expects_hints(
 
 /// Generate type hints for fields in a single expectation item.
 fn get_item_hints(
-  content: String,
+  lines: List(String),
   item: ast.ExpectItem,
   remaining_params: dict.Dict(String, types.AcceptedTypes),
   start_line: Int,
   end_line: Int,
 ) -> List(InlayHint) {
-  let lines = string.split(content, "\n")
+  // Find the item header line to scope field search within this item.
+  let item_start = find_item_start(lines, item.name, 0)
   list.filter_map(item.provides.fields, fn(field) {
     case dict.get(remaining_params, field.name) {
       Error(_) -> Error(Nil)
       Ok(expected_type) -> {
         let type_str = types.accepted_type_to_string(expected_type)
-        // Find the field's line position by scanning for "field_name:" pattern.
-        case find_field_line(lines, field.name, 0) {
+        // Search for the field only after the item header line.
+        case find_field_line(lines, field.name, 0, item_start) {
           Error(_) -> Error(Nil)
           Ok(#(field_line, field_col)) -> {
             case field_line >= start_line && field_line <= end_line {
@@ -100,22 +97,49 @@ fn get_item_hints(
   })
 }
 
-/// Find the line number and column of a field name in the source lines.
+/// Find the line number where an item header `* "name"` appears.
+fn find_item_start(
+  lines: List(String),
+  item_name: String,
+  current_line: Int,
+) -> Int {
+  let pattern = "* \"" <> item_name <> "\""
+  case lines {
+    [] -> 0
+    [line_text, ..rest] -> {
+      let trimmed = string.trim(line_text)
+      case string.starts_with(trimmed, pattern) {
+        True -> current_line
+        False -> find_item_start(rest, item_name, current_line + 1)
+      }
+    }
+  }
+}
+
+/// Find the line number and column of a field name in the source lines,
+/// starting search from after `skip_until` to scope within the correct item.
 fn find_field_line(
   lines: List(String),
   field_name: String,
   current_line: Int,
+  skip_until: Int,
 ) -> Result(#(Int, Int), Nil) {
   case lines {
     [] -> Error(Nil)
     [line_text, ..rest] -> {
-      let trimmed = string.trim(line_text)
-      case string.starts_with(trimmed, field_name <> ":") {
+      case current_line > skip_until {
+        False -> find_field_line(rest, field_name, current_line + 1, skip_until)
         True -> {
-          let col = string.length(line_text) - string.length(trimmed)
-          Ok(#(current_line, col))
+          let trimmed = string.trim(line_text)
+          case string.starts_with(trimmed, field_name <> ":") {
+            True -> {
+              let col = string.length(line_text) - string.length(trimmed)
+              Ok(#(current_line, col))
+            }
+            False ->
+              find_field_line(rest, field_name, current_line + 1, skip_until)
+          }
         }
-        False -> find_field_line(rest, field_name, current_line + 1)
       }
     }
   }

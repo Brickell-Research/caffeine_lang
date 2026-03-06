@@ -2291,3 +2291,44 @@ pub fn inlay_hints_respects_range_test() {
   let hints = inlay_hints.get_inlay_hints(ex_source, 0, 0, blueprints)
   hints |> should.equal([])
 }
+
+pub fn inlay_hints_duplicate_field_names_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+
+  // Two items both have an "env" field — hints should point to correct lines
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+  * \"payments\":
+    Provides {
+      env: \"staging\"
+    }
+"
+  let hints = inlay_hints.get_inlay_hints(ex_source, 0, 20, blueprints)
+  // Should have exactly 2 hints (one per item's env field)
+  list.length(hints) |> should.equal(2)
+  // First hint on line 3, second on line 7 — different lines
+  let lines = list.map(hints, fn(h) { h.line })
+  case lines {
+    [first, second] -> {
+      first |> should.equal(3)
+      second |> should.equal(7)
+    }
+    _ -> should.fail()
+  }
+}
