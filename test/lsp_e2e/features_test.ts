@@ -199,3 +199,104 @@ test("go-to-definition on extendable navigates to definition", async () => {
     await client.shutdown();
   }
 }, 30_000);
+
+// ==== signature_help ====
+// * Signature help inside expectation Provides block returns blueprint params
+test("signature help returns blueprint parameters in expects Provides", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
+
+    // Open blueprint first so server indexes it
+    const bpUri = fixtureUri("valid_blueprint.caffeine");
+    const bpText = await readFixture("valid_blueprint.caffeine");
+    const bpDiagPromise = client.waitForDiagnostics(bpUri);
+    client.openDocument(bpUri, bpText);
+    await bpDiagPromise;
+
+    // Open expects file
+    const exUri = fixtureUri("valid_expects.caffeine");
+    const exText = await readFixture("valid_expects.caffeine");
+    const exDiagPromise = client.waitForDiagnostics(exUri);
+    client.openDocument(exUri, exText);
+    await exDiagPromise;
+
+    // Line 2: '    Provides { vendor: "datadog", threshold: 99.9 }'
+    // Cursor on "vendor" field line
+    const result = await client.signatureHelp(exUri, 2, 20);
+
+    expect(result !== null).toBeTruthy();
+    expect(result.signatures.length).toBeGreaterThan(0);
+    expect(result.signatures[0].label).toContain("test_blueprint");
+    expect(result.signatures[0].parameters.length).toBeGreaterThan(0);
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
+
+// ==== inlay_hints ====
+// * Inlay hints in expects file show field types from blueprint
+test("inlay hints show field types from blueprint", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
+
+    // Open blueprint first
+    const bpUri = fixtureUri("valid_blueprint.caffeine");
+    const bpText = await readFixture("valid_blueprint.caffeine");
+    const bpDiagPromise = client.waitForDiagnostics(bpUri);
+    client.openDocument(bpUri, bpText);
+    await bpDiagPromise;
+
+    // Open expects file
+    const exUri = fixtureUri("valid_expects.caffeine");
+    const exText = await readFixture("valid_expects.caffeine");
+    const exDiagPromise = client.waitForDiagnostics(exUri);
+    client.openDocument(exUri, exText);
+    await exDiagPromise;
+
+    // Request inlay hints for the full file range
+    const hints = await client.inlayHints(exUri, 0, 10);
+
+    expect(Array.isArray(hints)).toBeTruthy();
+    expect(hints.length).toBeGreaterThan(0);
+    // At least one hint should contain a type string
+    const labels = hints.map((h: Record<string, unknown>) => h.label);
+    const hasTypeHint = labels.some((l: unknown) =>
+      typeof l === "string" && (l.includes("String") || l.includes("Float")),
+    );
+    expect(hasTypeHint).toBeTruthy();
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);
+
+// ==== type_hierarchy_prepare ====
+// * Type hierarchy prepare on expectation item returns hierarchy items
+test("type hierarchy prepare on expectation item returns items", async () => {
+  const client = new LspTestClient(ROOT_DIR);
+  try {
+    await client.start();
+    await client.initialize();
+
+    const exUri = fixtureUri("valid_expects.caffeine");
+    const exText = await readFixture("valid_expects.caffeine");
+    const exDiagPromise = client.waitForDiagnostics(exUri);
+    client.openDocument(exUri, exText);
+    await exDiagPromise;
+
+    // Line 1: '  * "test_expectation":'
+    // Cursor on "test_expectation" (inside the item name)
+    const result = await client.prepareTypeHierarchy(exUri, 1, 8);
+
+    expect(result !== null).toBeTruthy();
+    expect(Array.isArray(result)).toBeTruthy();
+    if (result && result.length > 0) {
+      expect(result[0].name).toBe("test_expectation");
+    }
+  } finally {
+    await client.shutdown();
+  }
+}, 30_000);

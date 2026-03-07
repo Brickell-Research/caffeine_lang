@@ -825,6 +825,107 @@ pub fn extract_word_at_out_of_bounds_test() {
   |> should.equal("")
 }
 
+// ==== find_block_end ====
+// * ✅ finds last content line before dedent
+// * ✅ returns fallback for empty input
+// * ✅ skips blank lines within block
+// * ✅ stops at line with indent <= parent
+pub fn find_block_end_content_lines_test() {
+  // Simulates lines after a block header at indent 2
+  let lines = ["    field1: String", "    field2: Float", "  next_item"]
+  // parent_indent=2, start_idx=5, fallback=4
+  position_utils.find_block_end(lines, 2, 5, 4)
+  |> should.equal(6)
+}
+
+pub fn find_block_end_empty_test() {
+  position_utils.find_block_end([], 2, 0, 99)
+  |> should.equal(99)
+}
+
+pub fn find_block_end_skips_blanks_test() {
+  let lines = ["    field1: String", "", "    field2: Float"]
+  position_utils.find_block_end(lines, 2, 0, 0)
+  |> should.equal(2)
+}
+
+pub fn find_block_end_stops_at_dedent_test() {
+  let lines = ["    deep", "  shallow"]
+  position_utils.find_block_end(lines, 2, 10, 9)
+  |> should.equal(10)
+}
+
+// ==== find_item_start_line ====
+// * ✅ finds item by name
+// * ✅ returns fallback when not found
+// * ✅ matches exact pattern with quotes
+pub fn find_item_start_line_found_test() {
+  let lines = [
+    "Expectations for \"test\"",
+    "  * \"api\":",
+    "    Provides { x: 1 }",
+    "  * \"web\":",
+    "    Provides { y: 2 }",
+  ]
+  position_utils.find_item_start_line(lines, "api", 99)
+  |> should.equal(1)
+
+  position_utils.find_item_start_line(lines, "web", 99)
+  |> should.equal(3)
+}
+
+pub fn find_item_start_line_not_found_test() {
+  let lines = ["Expectations for \"test\"", "  * \"api\":"]
+  position_utils.find_item_start_line(lines, "missing", 42)
+  |> should.equal(42)
+}
+
+pub fn find_item_start_line_partial_match_test() {
+  // "api_v2" should not match "api"
+  let lines = ["  * \"api_v2\":"]
+  position_utils.find_item_start_line(lines, "api", 99)
+  |> should.equal(99)
+}
+
+// ==== find_enclosing_item ====
+// * ✅ finds enclosing item from inside provides block
+// * ✅ returns None when no item above
+pub fn find_enclosing_item_found_test() {
+  let lines =
+    string.split(
+      "Expectations for \"test\"\n  * \"my_slo\":\n    Provides { x: 1 }",
+      "\n",
+    )
+  // Cursor on line 2 (Provides line), should find "my_slo"
+  completion.find_enclosing_item(lines, 2)
+  |> should.equal(option.Some("my_slo"))
+}
+
+pub fn find_enclosing_item_none_test() {
+  let lines = string.split("Expectations for \"test\"", "\n")
+  completion.find_enclosing_item(lines, 0)
+  |> should.equal(option.None)
+}
+
+// ==== find_enclosing_blueprint_ref ====
+// * ✅ finds enclosing blueprint reference
+// * ✅ returns None when no header above
+pub fn find_enclosing_blueprint_ref_found_test() {
+  let lines =
+    string.split(
+      "Expectations for \"my_blueprint\"\n  * \"item\":\n    Provides { x: 1 }",
+      "\n",
+    )
+  completion.find_enclosing_blueprint_ref(lines, 2)
+  |> should.equal(option.Some("my_blueprint"))
+}
+
+pub fn find_enclosing_blueprint_ref_none_test() {
+  let lines = string.split("# just a comment\nsome text", "\n")
+  completion.find_enclosing_blueprint_ref(lines, 1)
+  |> should.equal(option.None)
+}
+
 // ==========================================================================
 // File utils tests
 // ==========================================================================
