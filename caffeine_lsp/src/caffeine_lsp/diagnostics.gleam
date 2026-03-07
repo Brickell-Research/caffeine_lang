@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Parsed,
-  type Struct, type Value, TypeValue,
+  type Struct, type Value, ExtendableRequires, TypeValue,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
@@ -399,12 +399,23 @@ fn collect_alias_refs_from_blueprint(
         })
       })
     })
+  // Refs from Requires extendable fields
+  let extendable_refs =
+    list.flat_map(file.extendables, fn(e) {
+      case e.kind {
+        ExtendableRequires ->
+          list.flat_map(e.body.fields, fn(f) {
+            collect_alias_refs_from_value(f.value)
+          })
+        _ -> []
+      }
+    })
   // Refs from type alias definitions (aliases referencing other aliases)
   let alias_refs =
     list.flat_map(file.type_aliases, fn(ta) {
       collect_alias_refs_from_parsed_type(ta.type_)
     })
-  set.from_list(list.append(field_refs, alias_refs))
+  set.from_list(list.flatten([field_refs, extendable_refs, alias_refs]))
 }
 
 /// Extract alias reference names from a field value.

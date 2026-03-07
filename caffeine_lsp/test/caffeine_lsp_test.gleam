@@ -2504,6 +2504,22 @@ Blueprints for \"SLO\"
   |> should.equal([])
 }
 
+pub fn type_alias_used_in_extendable_no_warning_test() {
+  let source =
+    "_env (Type): String
+
+_defaults (Requires): { environment: Defaulted(_env, \"production\") }
+
+Blueprints for \"SLO\"
+  * \"api\" extends [_defaults]:
+    Requires { }
+    Provides { value: \"test\" }
+"
+  diagnostics.get_diagnostics(source)
+  |> list.filter(fn(d) { d.code == diagnostics.UnusedTypeAlias })
+  |> should.equal([])
+}
+
 // ==========================================================================
 // Feature (3): Hover shows blueprint requires on expectation items
 // ==========================================================================
