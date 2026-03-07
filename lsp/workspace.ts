@@ -14,9 +14,10 @@ import {
   applyIndexUpdates,
 } from "./workspace_parsers.ts";
 
-import { compile_validated_blueprints, Ok, toList } from "./gleam_imports.ts";
+import { compile_validated_blueprints, get_workspace_symbols, Ok, toList } from "./gleam_imports.ts";
 import type { GleamList } from "./helpers.ts";
 import { gleamArray } from "./helpers.ts";
+import { debug } from "./debug.ts";
 
 export class WorkspaceIndex {
   root: string | null = null;
@@ -29,6 +30,10 @@ export class WorkspaceIndex {
   // deno-lint-ignore no-explicit-any
   private _mergedValidatedBlueprints: any = null;
   private _validatedBlueprintsDirty = true;
+
+  /** Cached workspace symbols per file URI. */
+  // deno-lint-ignore no-explicit-any
+  private workspaceSymbolsCache = new Map<string, any[]>();
 
   private documents: TextDocuments<TextDocument>;
 
@@ -173,6 +178,7 @@ export class WorkspaceIndex {
   /** Updates blueprint, expectation, and referenced blueprint indices for a file. Returns true if any changed. */
   updateIndicesForFile(uri: string, text: string): boolean {
     const changed = applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
+    this.workspaceSymbolsCache.delete(uri);
     if (this.blueprintIndex.has(uri)) {
       this.tryCompileBlueprints(uri, text);
     } else if (this.validatedBlueprintsCache.delete(uri)) {
@@ -206,6 +212,7 @@ export class WorkspaceIndex {
   /** Remove a file from all indices. Returns true if any index was modified. */
   removeFile(uri: string): boolean {
     this.files.delete(uri);
+    this.workspaceSymbolsCache.delete(uri);
     const hadBlueprints = this.blueprintIndex.delete(uri);
     const hadRefs = this.referencedBlueprintIndex.delete(uri);
     const hadExpectations = this.expectationIndex.delete(uri);
@@ -229,5 +236,21 @@ export class WorkspaceIndex {
     this._mergedValidatedBlueprints = toList(all);
     this._validatedBlueprintsDirty = false;
     return this._mergedValidatedBlueprints;
+  }
+
+  /** Get cached workspace symbols for a file, computing on first access. */
+  // deno-lint-ignore no-explicit-any
+  getCachedWorkspaceSymbols(uri: string, text: string): any[] {
+    const cached = this.workspaceSymbolsCache.get(uri);
+    if (cached) return cached;
+
+    try {
+      const symbols = gleamArray(get_workspace_symbols(text) as GleamList);
+      this.workspaceSymbolsCache.set(uri, symbols);
+      return symbols;
+    } catch (e) {
+      debug(`getCachedWorkspaceSymbols(${uri}): ${e}`);
+      return [];
+    }
   }
 }

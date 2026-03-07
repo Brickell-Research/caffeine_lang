@@ -2,7 +2,6 @@
 
 import { SymbolKind } from "vscode-languageserver/node.js";
 import {
-  get_workspace_symbols,
   prepare_type_hierarchy,
   BlueprintKind,
 } from "./gleam_imports.ts";
@@ -62,17 +61,15 @@ export async function handleTypeHierarchySupertypes(ctx: HandlerContext, params:
     if (!text || !text.trimStart().startsWith("Blueprints")) continue;
     if (!text.includes(`"${data.blueprint}"`)) continue;
 
-    try {
-      for (const sym of gleamArray(get_workspace_symbols(text) as GleamList)) {
-        if (sym.name === data.blueprint && sym.kind === SymbolKind.Class) {
-          const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
-          results.push({
-            name: sym.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
-            data: { kind: "blueprint", blueprint: "" },
-          });
-        }
+    for (const sym of ctx.workspace.getCachedWorkspaceSymbols(uri, text)) {
+      if (sym.name === data.blueprint && sym.kind === SymbolKind.Class) {
+        const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
+        results.push({
+          name: sym.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
+          data: { kind: "blueprint", blueprint: "" },
+        });
       }
-    } catch (e) { debug(`typeHierarchySupertypes: ${e}`); }
+    }
   }
 
   return results;

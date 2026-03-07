@@ -67,6 +67,12 @@ interface DiagnosticScheduler {
   scheduleRevalidation: () => void;
 }
 
+/** Debounce delay for per-document diagnostics after edits (ms). */
+const DIAGNOSTIC_DEBOUNCE_MS = 300;
+
+/** Delay before cross-file revalidation after index changes (ms). */
+const REVALIDATION_DELAY_MS = 50;
+
 // --- Entry point ---
 
 export function registerHandlers(ctx: HandlerContext): void {
@@ -141,7 +147,7 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
       revalidateTimer = setTimeout(() => {
         revalidateTimer = null;
         revalidateAll();
-      }, 50);
+      }, REVALIDATION_DELAY_MS);
     },
   };
 }
@@ -257,7 +263,7 @@ function registerDiagnosticsHandler(
             connection.sendDiagnostics({ uri, diagnostics: [] });
           }
         }
-      }, 300),
+      }, DIAGNOSTIC_DEBOUNCE_MS),
     );
   });
 }

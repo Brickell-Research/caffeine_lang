@@ -1,3 +1,6 @@
 Expectations for "test_blueprint"
   * "test_expectation":
-    Provides { vendor: "datadog", threshold: 99.9 }
+    Provides {
+      env: "production",
+      status: true
+    }

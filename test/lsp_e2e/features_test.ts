@@ -39,9 +39,9 @@ test("hover on type keyword returns markdown content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { vendor: String, threshold: Float }"
-    // "String" starts at character 23
-    const result = await client.hover(uri, 2, 23);
+    // Line 2: "    Requires { env: String, status: Boolean }"
+    // "String" starts at character 20
+    const result = await client.hover(uri, 2, 20);
 
     expect(result !== null).toBeTruthy();
     expect(result.contents).toBeTruthy();
@@ -67,9 +67,9 @@ test("hover on field name returns content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 3: "    Provides { vendor: "datadog", threshold: 99.9 }"
-    // "vendor" starts at character 15
-    const result = await client.hover(uri, 3, 15);
+    // Line 4: '      vendor: "datadog",'
+    // "vendor" starts at character 6 (in Provides block)
+    const result = await client.hover(uri, 4, 6);
 
     expect(result !== null).toBeTruthy();
     expect(result.contents).toBeTruthy();
@@ -119,9 +119,9 @@ test("completion in Requires block returns type keywords", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { vendor: String, threshold: Float }"
-    // Character 22 is the space after ":", should trigger type completions
-    const items = await client.completion(uri, 2, 22);
+    // Line 2: "    Requires { env: String, status: Boolean }"
+    // Character 19 is the space after ":", should trigger type completions
+    const items = await client.completion(uri, 2, 19);
 
     expect(Array.isArray(items)).toBeTruthy();
     expect(items.length > 0).toBeTruthy();
@@ -222,9 +222,9 @@ test("signature help returns blueprint parameters in expects Provides", async ()
     client.openDocument(exUri, exText);
     await exDiagPromise;
 
-    // Line 2: '    Provides { vendor: "datadog", threshold: 99.9 }'
+    // Line 3: '      vendor: "datadog",'
     // Cursor on "vendor" field line
-    const result = await client.signatureHelp(exUri, 2, 20);
+    const result = await client.signatureHelp(exUri, 3, 10);
 
     expect(result !== null).toBeTruthy();
     expect(result.signatures.length).toBeGreaterThan(0);

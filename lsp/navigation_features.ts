@@ -7,7 +7,6 @@ import {
   get_references,
   get_blueprint_name_at,
   find_references_to_name,
-  get_workspace_symbols,
   Some,
 } from "./gleam_imports.ts";
 
@@ -123,13 +122,11 @@ export async function handleWorkspaceSymbol(ctx: HandlerContext, params: any) {
     const text = await ctx.workspace.getFileContentAsync(uri);
     if (!text) continue;
 
-    try {
-      for (const sym of gleamArray(get_workspace_symbols(text) as GleamList)) {
-        if (query && !(sym.name as string).toLowerCase().includes(query)) continue;
-        const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
-        results.push({ name: sym.name, kind: sym.kind, location: { uri, range: r } });
-      }
-    } catch (e) { debug(`workspaceSymbol: ${e}`); }
+    for (const sym of ctx.workspace.getCachedWorkspaceSymbols(uri, text)) {
+      if (query && !(sym.name as string).toLowerCase().includes(query)) continue;
+      const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
+      results.push({ name: sym.name, kind: sym.kind, location: { uri, range: r } });
+    }
   }
 
   return results;

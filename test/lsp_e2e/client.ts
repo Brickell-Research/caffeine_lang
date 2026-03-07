@@ -222,6 +222,45 @@ export class LspTestClient {
     });
   }
 
+  /** Send textDocument/signatureHelp request. */
+  async signatureHelp(
+    uri: string,
+    line: number,
+    character: number,
+  ): Promise<any | null> {
+    return await this.sendRequest("textDocument/signatureHelp", {
+      textDocument: { uri },
+      position: { line, character },
+    });
+  }
+
+  /** Send textDocument/inlayHint request. */
+  async inlayHints(
+    uri: string,
+    startLine: number,
+    endLine: number,
+  ): Promise<any[]> {
+    return await this.sendRequest("textDocument/inlayHint", {
+      textDocument: { uri },
+      range: {
+        start: { line: startLine, character: 0 },
+        end: { line: endLine, character: 0 },
+      },
+    });
+  }
+
+  /** Send textDocument/prepareTypeHierarchy request. */
+  async prepareTypeHierarchy(
+    uri: string,
+    line: number,
+    character: number,
+  ): Promise<any[] | null> {
+    return await this.sendRequest("textDocument/prepareTypeHierarchy", {
+      textDocument: { uri },
+      position: { line, character },
+    });
+  }
+
   /** Send textDocument/codeAction request. */
   async codeActions(
     uri: string,
