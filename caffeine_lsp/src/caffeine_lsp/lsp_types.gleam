@@ -83,7 +83,6 @@ pub type SemanticTokenType {
   SttProperty
   SttFunction
   SttModifier
-  SttEnumMember
 }
 
 /// Converts a SemanticTokenType to its string name in the legend.
@@ -100,7 +99,6 @@ pub fn semantic_token_type_to_string(k: SemanticTokenType) -> String {
     SttProperty -> "property"
     SttFunction -> "function"
     SttModifier -> "modifier"
-    SttEnumMember -> "enumMember"
   }
 }
 
@@ -117,6 +115,5 @@ pub fn semantic_token_type_to_int(k: SemanticTokenType) -> Int {
     SttProperty -> 7
     SttFunction -> 8
     SttModifier -> 9
-    SttEnumMember -> 10
   }
 }

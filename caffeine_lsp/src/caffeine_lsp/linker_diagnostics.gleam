@@ -8,6 +8,7 @@ import caffeine_lang/source_file
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types.{type AcceptedTypes}
 import caffeine_lang/value
+import caffeine_lsp/blueprint_utils
 import caffeine_lsp/diagnostics.{
   type Diagnostic, Diagnostic, MissingRequiredFields, TypeMismatch, UnknownField,
 }
@@ -51,7 +52,9 @@ pub fn get_linker_diagnostics(
               content,
               expectation.name,
               search_from,
-            ).0
+            )
+            |> result.map(fn(pos) { pos.0 })
+            |> result.unwrap(search_from)
           let new_diags =
             check_expectation(
               content,
@@ -103,13 +106,12 @@ fn check_expectation(
 
 /// Compute params the expectation must provide — blueprint params minus
 /// keys already filled by the blueprint's own inputs.
+/// Delegates to blueprint_utils for shared access across modules.
 @internal
 pub fn compute_remaining_params(
   blueprint: Blueprint(BlueprintValidated),
 ) -> dict.Dict(String, AcceptedTypes) {
-  let blueprint_input_keys = blueprint.inputs |> dict.keys |> set.from_list
-  blueprint.params
-  |> dict.filter(fn(key, _) { !set.contains(blueprint_input_keys, key) })
+  blueprint_utils.compute_remaining_params(blueprint)
 }
 
 /// Check for required fields missing from the expectation.
@@ -137,13 +139,14 @@ fn check_missing_required(
           expectation.name,
           anchor_line,
         )
+        |> result.unwrap(#(0, 0))
       let message = "Missing required fields: " <> string.join(missing, ", ")
       [
         Diagnostic(
           line: line,
           column: col,
           end_column: col + string.length(expectation.name),
-          severity: lsp_types.diagnostic_severity_to_int(lsp_types.DsError),
+          severity: lsp_types.DsError,
           message: message,
           code: MissingRequiredFields,
         ),
@@ -169,11 +172,12 @@ fn check_unknown_fields(
   |> list.map(fn(key) {
     let #(line, col) =
       position_utils.find_name_position_after_line(content, key, anchor_line)
+      |> result.unwrap(#(0, 0))
     Diagnostic(
       line: line,
       column: col,
       end_column: col + string.length(key),
-      severity: lsp_types.diagnostic_severity_to_int(lsp_types.DsError),
+      severity: lsp_types.DsError,
       message: "Unknown field '" <> key <> "' — not in blueprint requires",
       code: UnknownField,
     )
@@ -203,6 +207,7 @@ fn check_type_mismatches(
                 key,
                 anchor_line,
               )
+              |> result.unwrap(#(0, 0))
             let message =
               "Expected "
               <> types.accepted_type_to_string(expected_type)
@@ -215,7 +220,7 @@ fn check_type_mismatches(
               line: line,
               column: col,
               end_column: col + string.length(key),
-              severity: lsp_types.diagnostic_severity_to_int(lsp_types.DsError),
+              severity: lsp_types.DsError,
               message: message,
               code: TypeMismatch,
             ))

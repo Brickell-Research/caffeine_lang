@@ -1,5 +1,4 @@
 // Workspace state management — file tracking, blueprint/expectation indices.
-// Pure TS/Node logic, no Gleam imports.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -27,6 +26,9 @@ export class WorkspaceIndex {
   expectationIndex = new Map<string, Map<string, string>>();
   // deno-lint-ignore no-explicit-any
   validatedBlueprintsCache = new Map<string, any>();
+  // deno-lint-ignore no-explicit-any
+  private _mergedValidatedBlueprints: any = null;
+  private _validatedBlueprintsDirty = true;
 
   private documents: TextDocuments<TextDocument>;
 
@@ -173,8 +175,8 @@ export class WorkspaceIndex {
     const changed = applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
     if (this.blueprintIndex.has(uri)) {
       this.tryCompileBlueprints(uri, text);
-    } else {
-      this.validatedBlueprintsCache.delete(uri);
+    } else if (this.validatedBlueprintsCache.delete(uri)) {
+      this._validatedBlueprintsDirty = true;
     }
     // Update referenced blueprint index
     const newRefs = extractReferencedBlueprintNames(text);
@@ -198,16 +200,34 @@ export class WorkspaceIndex {
     } catch {
       this.validatedBlueprintsCache.delete(uri);
     }
+    this._validatedBlueprintsDirty = true;
+  }
+
+  /** Remove a file from all indices. Returns true if any index was modified. */
+  removeFile(uri: string): boolean {
+    this.files.delete(uri);
+    const hadBlueprints = this.blueprintIndex.delete(uri);
+    const hadRefs = this.referencedBlueprintIndex.delete(uri);
+    const hadExpectations = this.expectationIndex.delete(uri);
+    if (this.validatedBlueprintsCache.delete(uri)) {
+      this._validatedBlueprintsDirty = true;
+    }
+    return hadBlueprints || hadRefs || hadExpectations;
   }
 
   /** Collect all validated blueprints across the workspace as a single Gleam list. */
   // deno-lint-ignore no-explicit-any
   allValidatedBlueprints(): any {
+    if (!this._validatedBlueprintsDirty && this._mergedValidatedBlueprints) {
+      return this._mergedValidatedBlueprints;
+    }
     // deno-lint-ignore no-explicit-any
     const all: any[] = [];
     for (const cached of this.validatedBlueprintsCache.values()) {
       all.push(...gleamArray(cached as GleamList));
     }
-    return toList(all);
+    this._mergedValidatedBlueprints = toList(all);
+    this._validatedBlueprintsDirty = false;
+    return this._mergedValidatedBlueprints;
   }
 }

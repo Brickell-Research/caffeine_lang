@@ -4,8 +4,9 @@
 import caffeine_lang/frontend/ast
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/types.{type AcceptedTypes, Defaulted, ModifierType}
+import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
-import caffeine_lsp/linker_diagnostics
+import caffeine_lsp/position_utils
 import gleam/dict
 import gleam/list
 import gleam/string
@@ -51,7 +52,7 @@ fn get_expects_hints(
       Error(_) -> []
       Ok(blueprint) -> {
         let remaining_params =
-          linker_diagnostics.compute_remaining_params(blueprint)
+          blueprint_utils.compute_remaining_params(blueprint)
         list.flat_map(block.items, fn(item) {
           get_item_hints(lines, item, remaining_params, start_line, end_line)
         })
@@ -69,7 +70,7 @@ fn get_item_hints(
   end_line: Int,
 ) -> List(InlayHint) {
   // Find the item header line to scope field search within this item.
-  let item_start = find_item_start(lines, item.name, 0)
+  let item_start = position_utils.find_item_start_line(lines, item.name, 0)
   list.filter_map(item.provides.fields, fn(field) {
     case dict.get(remaining_params, field.name) {
       Error(_) -> Error(Nil)
@@ -99,25 +100,6 @@ fn get_item_hints(
       }
     }
   })
-}
-
-/// Find the line number where an item header `* "name"` appears.
-fn find_item_start(
-  lines: List(String),
-  item_name: String,
-  current_line: Int,
-) -> Int {
-  let pattern = "* \"" <> item_name <> "\""
-  case lines {
-    [] -> 0
-    [line_text, ..rest] -> {
-      let trimmed = string.trim(line_text)
-      case string.starts_with(trimmed, pattern) {
-        True -> current_line
-        False -> find_item_start(rest, item_name, current_line + 1)
-      }
-    }
-  }
 }
 
 /// Find the line number and column of a field name in the source lines,

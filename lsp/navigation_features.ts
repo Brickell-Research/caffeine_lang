@@ -33,10 +33,10 @@ export async function handleDefinition(ctx: HandlerContext, params: any) {
     const result = get_definition(text, params.position.line, params.position.character);
     if (result instanceof Some) {
       const [defLine, defCol, nameLen] = [result[0][0], result[0][1], result[0][2]];
-      return {
+      return [{
         uri: params.textDocument.uri,
         range: range(defLine, defCol, defLine, defCol + nameLen),
-      };
+      }];
     }
 
     // Cross-file blueprint reference
@@ -44,10 +44,10 @@ export async function handleDefinition(ctx: HandlerContext, params: any) {
     if (bpRef instanceof Some) {
       const target = await ctx.workspace.findCrossFileBlueprintDef(bpRef[0] as string);
       if (target) {
-        return {
+        return [{
           uri: target.uri,
           range: range(target.line, target.col, target.line, target.col + target.nameLen),
-        };
+        }];
       }
     }
 
@@ -60,10 +60,8 @@ export async function handleDefinition(ctx: HandlerContext, params: any) {
       if (target) {
         const srcLine = params.position.line;
         return [{
-          originSelectionRange: range(srcLine, refStartCol, srcLine, refStartCol + refStr.length),
-          targetUri: target.uri,
-          targetRange: range(target.line, target.col, target.line, target.col + target.nameLen),
-          targetSelectionRange: range(target.line, target.col, target.line, target.col + target.nameLen),
+          uri: target.uri,
+          range: range(target.line, target.col, target.line, target.col + target.nameLen),
         }];
       }
     }

@@ -71,16 +71,9 @@ fn find_in_expects(
 }
 
 fn find_name_location(content: String, name: String) -> Option(#(Int, Int, Int)) {
-  let #(line, col) = position_utils.find_name_position(content, name)
-  case line == 0 && col == 0 {
-    // Could be genuinely at 0,0 or not found — check if name is actually there
-    True -> {
-      case string.starts_with(content, name) {
-        True -> option.Some(#(0, 0, string.length(name)))
-        False -> option.None
-      }
-    }
-    False -> option.Some(#(line, col, string.length(name)))
+  case position_utils.find_name_position(content, name) {
+    Ok(#(line, col)) -> option.Some(#(line, col, string.length(name)))
+    Error(_) -> option.None
   }
 }
 

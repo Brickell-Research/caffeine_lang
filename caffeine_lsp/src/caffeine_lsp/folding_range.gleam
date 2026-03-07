@@ -1,4 +1,4 @@
-import gleam/bool
+import caffeine_lsp/position_utils
 import gleam/list
 import gleam/string
 
@@ -60,27 +60,10 @@ fn is_foldable_start(trimmed: String, indent: Int) -> Bool {
 
 /// Find the last non-blank line before we hit a sibling or parent indent, or EOF.
 fn find_block_end(lines: List(#(Int, String)), parent_indent: Int) -> Int {
-  find_block_end_loop(lines, parent_indent, -1)
-}
-
-fn find_block_end_loop(
-  lines: List(#(Int, String)),
-  parent_indent: Int,
-  last_non_blank: Int,
-) -> Int {
-  case lines {
-    [] -> last_non_blank
-    [#(idx, line), ..rest] -> {
-      let trimmed = string.trim(line)
-      case trimmed {
-        "" -> find_block_end_loop(rest, parent_indent, last_non_blank)
-        _ -> {
-          let indent =
-            string.length(line) - string.length(string.trim_start(line))
-          use <- bool.guard(indent <= parent_indent, last_non_blank)
-          find_block_end_loop(rest, parent_indent, idx)
-        }
-      }
-    }
+  let plain_lines = list.map(lines, fn(pair) { pair.1 })
+  let start_idx = case lines {
+    [#(idx, _), ..] -> idx
+    [] -> 0
   }
+  position_utils.find_block_end(plain_lines, parent_indent, start_idx, -1)
 }

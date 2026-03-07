@@ -1,8 +1,8 @@
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer
 import caffeine_lsp/lsp_types.{
-  SttComment, SttEnumMember, SttFunction, SttKeyword, SttModifier, SttNumber,
-  SttOperator, SttProperty, SttString, SttType, SttVariable,
+  SttComment, SttFunction, SttKeyword, SttModifier, SttNumber, SttOperator,
+  SttProperty, SttString, SttType, SttVariable,
 }
 import gleam/float
 import gleam/int
@@ -13,7 +13,7 @@ import gleam/string
 /// Registered with the client in the server capabilities.
 pub const token_types = [
   "keyword", "type", "string", "number", "variable", "comment", "operator",
-  "property", "function", "modifier", "enumMember",
+  "property", "function", "modifier",
 ]
 
 /// Returns the semantic tokens data array for the given source content.
@@ -82,7 +82,6 @@ fn classify_token(
   let property = lsp_types.semantic_token_type_to_int(SttProperty)
   let function = lsp_types.semantic_token_type_to_int(SttFunction)
   let modifier = lsp_types.semantic_token_type_to_int(SttModifier)
-  let _enum_member = lsp_types.semantic_token_type_to_int(SttEnumMember)
 
   case tok {
     // Keywords

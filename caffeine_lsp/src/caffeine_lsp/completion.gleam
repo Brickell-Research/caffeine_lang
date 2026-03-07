@@ -1,9 +1,9 @@
 import caffeine_lang/frontend/ast
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/types.{type TypeMeta}
+import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
-import caffeine_lsp/linker_diagnostics
 import caffeine_lsp/lsp_types.{
   CikClass, CikField, CikKeyword, CikModule, CikVariable,
 }
@@ -300,7 +300,7 @@ fn blueprint_remaining_fields(
       case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
         Error(_) -> []
         Ok(blueprint) ->
-          linker_diagnostics.compute_remaining_params(blueprint)
+          blueprint_utils.compute_remaining_params(blueprint)
           |> dict.to_list
           |> list.map(fn(pair) {
             #(pair.0, types.accepted_type_to_string(pair.1))

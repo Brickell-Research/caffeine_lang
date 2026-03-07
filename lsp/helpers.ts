@@ -1,7 +1,7 @@
 // Pure LSP conversion utilities — no side effects, no connection state.
 
 import { DiagnosticSeverity } from "vscode-languageserver/node.js";
-import { diagnostic_code_to_string, Some } from "./gleam_imports.ts";
+import { diagnostic_code_to_string, diagnostic_severity_to_int, Some } from "./gleam_imports.ts";
 
 // deno-lint-ignore no-explicit-any
 export type GleamList = { toArray(): any[] };
@@ -31,7 +31,7 @@ export function gleamDiagToLsp(d: any) {
   const codeStr = diagnostic_code_to_string(d.code);
   const base = {
     range: range(d.line, d.column, d.line, d.end_column),
-    severity: d.severity as DiagnosticSeverity,
+    severity: diagnostic_severity_to_int(d.severity) as DiagnosticSeverity,
     source: "caffeine",
     message: d.message,
   };

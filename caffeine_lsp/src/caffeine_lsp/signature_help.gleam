@@ -3,8 +3,8 @@
 /// cursor is inside an expectation's Provides section.
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/types
+import caffeine_lsp/blueprint_utils
 import caffeine_lsp/completion
-import caffeine_lsp/linker_diagnostics
 import gleam/dict
 import gleam/list
 import gleam/option.{type Option}
@@ -35,18 +35,19 @@ pub fn get_signature_help(
   let lines = string.split(content, "\n")
 
   // Must be inside an expectation item.
-  use _item_name <- option_then(completion.find_enclosing_item(lines, line))
+  use _item_name <- option.then(completion.find_enclosing_item(lines, line))
   // Must be inside an Expectations block.
-  use blueprint_ref <- option_then(completion.find_enclosing_blueprint_ref(
+  use blueprint_ref <- option.then(completion.find_enclosing_blueprint_ref(
     lines,
     line,
   ))
   // Must find the matching validated blueprint.
-  use blueprint <- result_to_option(
-    list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }),
+  use blueprint <- option.then(
+    list.find(validated_blueprints, fn(b) { b.name == blueprint_ref })
+    |> option.from_result,
   )
 
-  let remaining_params = linker_diagnostics.compute_remaining_params(blueprint)
+  let remaining_params = blueprint_utils.compute_remaining_params(blueprint)
   let param_list =
     remaining_params
     |> dict.to_list
@@ -117,21 +118,5 @@ fn find_index(items: List(String), target: String, idx: Int) -> Int {
         True -> idx
         False -> find_index(rest, target, idx + 1)
       }
-  }
-}
-
-/// Helper to chain Option values using use syntax.
-fn option_then(opt: Option(a), f: fn(a) -> Option(b)) -> Option(b) {
-  case opt {
-    option.Some(val) -> f(val)
-    option.None -> option.None
-  }
-}
-
-/// Convert a Result to an Option, discarding the error.
-fn result_to_option(res: Result(a, b), f: fn(a) -> Option(c)) -> Option(c) {
-  case res {
-    Ok(val) -> f(val)
-    Error(_) -> option.None
   }
 }

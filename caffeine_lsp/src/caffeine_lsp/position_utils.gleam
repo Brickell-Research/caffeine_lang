@@ -4,31 +4,34 @@ import gleam/list
 import gleam/string
 
 /// Find the 0-indexed line and column of the first whole-word occurrence
-/// of a name in source. Returns #(0, 0) if not found.
-pub fn find_name_position(content: String, name: String) -> #(Int, Int) {
+/// of a name in source, or Error(Nil) if not found.
+pub fn find_name_position(
+  content: String,
+  name: String,
+) -> Result(#(Int, Int), Nil) {
   let lines = string.split(content, "\n")
   find_in_lines(lines, name, 0)
 }
 
 /// Find the 0-indexed line and column of the first whole-word occurrence
 /// of a name in pre-split source lines. Avoids re-splitting the content
-/// when called multiple times. Returns #(0, 0) if not found.
+/// when called multiple times. Returns Error(Nil) if not found.
 @internal
 pub fn find_name_position_in_lines(
   lines: List(String),
   name: String,
-) -> #(Int, Int) {
+) -> Result(#(Int, Int), Nil) {
   find_in_lines(lines, name, 0)
 }
 
 /// Find the 0-indexed line and column of the first whole-word occurrence
-/// of a name, searching only from `start_line` onward. Returns #(0, 0)
+/// of a name, searching only from `start_line` onward. Returns Error(Nil)
 /// if not found.
 pub fn find_name_position_after_line(
   content: String,
   name: String,
   start_line: Int,
-) -> #(Int, Int) {
+) -> Result(#(Int, Int), Nil) {
   let lines = string.split(content, "\n") |> list.drop(start_line)
   find_in_lines(lines, name, start_line)
 }
@@ -184,12 +187,12 @@ fn find_in_lines(
   lines: List(String),
   name: String,
   line_idx: Int,
-) -> #(Int, Int) {
+) -> Result(#(Int, Int), Nil) {
   case lines {
-    [] -> #(0, 0)
+    [] -> Error(Nil)
     [first, ..rest] -> {
       case find_whole_word(first, name, 0) {
-        Ok(col) -> #(line_idx, col)
+        Ok(col) -> Ok(#(line_idx, col))
         Error(_) -> find_in_lines(rest, name, line_idx + 1)
       }
     }
@@ -306,6 +309,72 @@ pub fn find_defined_symbol_positions(
       let len = string.length(name)
       find_all_name_positions(content, name)
       |> list.map(fn(pos) { #(pos.0, pos.1, len) })
+    }
+  }
+}
+
+/// Find the last non-blank line before a sibling or parent indent level.
+/// `lines` should start after the block header; `start_idx` is the 0-indexed
+/// line number of the first element. Returns `fallback` if no content found.
+@internal
+pub fn find_block_end(
+  lines: List(String),
+  parent_indent: Int,
+  start_idx: Int,
+  fallback: Int,
+) -> Int {
+  find_block_end_loop(lines, parent_indent, start_idx, fallback)
+}
+
+fn find_block_end_loop(
+  lines: List(String),
+  parent_indent: Int,
+  idx: Int,
+  last_non_blank: Int,
+) -> Int {
+  case lines {
+    [] -> last_non_blank
+    [line, ..rest] -> {
+      let trimmed = string.trim(line)
+      case trimmed {
+        "" -> find_block_end_loop(rest, parent_indent, idx + 1, last_non_blank)
+        _ -> {
+          let indent =
+            string.length(line) - string.length(string.trim_start(line))
+          use <- bool.guard(indent <= parent_indent, last_non_blank)
+          find_block_end_loop(rest, parent_indent, idx + 1, idx)
+        }
+      }
+    }
+  }
+}
+
+/// Find the 0-indexed line number where `* "item_name"` appears in lines.
+/// Returns `fallback` if not found.
+@internal
+pub fn find_item_start_line(
+  lines: List(String),
+  item_name: String,
+  fallback: Int,
+) -> Int {
+  let pattern = "* \"" <> item_name <> "\""
+  find_item_start_line_loop(lines, pattern, 0, fallback)
+}
+
+fn find_item_start_line_loop(
+  lines: List(String),
+  pattern: String,
+  idx: Int,
+  fallback: Int,
+) -> Int {
+  case lines {
+    [] -> fallback
+    [line, ..rest] -> {
+      let trimmed = string.trim(line)
+      case string.starts_with(trimmed, pattern) {
+        True -> idx
+        False -> find_item_start_line_loop(rest, pattern, idx + 1, fallback)
+      }
     }
   }
 }

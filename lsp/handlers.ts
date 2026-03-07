@@ -16,6 +16,7 @@ import {
   get_linker_diagnostics,
   token_types,
   toList,
+  version,
 } from "./gleam_imports.ts";
 
 import {
@@ -25,6 +26,7 @@ import {
 } from "./helpers.ts";
 
 import type { WorkspaceIndex } from "./workspace.ts";
+import { debug } from "./debug.ts";
 
 import {
   handleHover,
@@ -108,6 +110,7 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
   let revalidateTimer: ReturnType<typeof setTimeout> | null = null;
 
   function revalidateAll() {
+    debug(`revalidateAll: ${documents.all().length} open documents`);
     const knownBlueprints = toList(workspace.allKnownBlueprints());
     const knownExpectations = toList(workspace.allKnownExpectationIdentifiers());
     const referencedBlueprints = toList(workspace.allReferencedBlueprints());
@@ -152,8 +155,10 @@ function registerInitializeHandler(ctx: HandlerContext): void {
   connection.onInitialize(async (params: any) => {
     const rootUri: string | undefined = params.rootUri ?? params.rootPath;
     if (rootUri) {
+      debug(`initialize: root=${rootUri}`);
       try {
         await workspace.initializeFromRoot(rootUri);
+        debug(`initialize: indexed ${workspace.files.size} files, ${workspace.blueprintIndex.size} blueprint files, ${workspace.expectationIndex.size} expectation files`);
       } catch { /* ignore */ }
     }
 
@@ -192,7 +197,7 @@ function registerInitializeHandler(ctx: HandlerContext): void {
           full: true,
         },
       },
-      serverInfo: { name: "caffeine-lsp", version: "0.1.0" },
+      serverInfo: { name: "caffeine-lsp", version: version as string },
     };
   });
 }
@@ -280,10 +285,7 @@ function registerDocumentCloseHandler(
       if (diskText) {
         workspace.updateIndicesForFile(uri, diskText);
       } else {
-        workspace.blueprintIndex.delete(uri);
-        workspace.referencedBlueprintIndex.delete(uri);
-        workspace.expectationIndex.delete(uri);
-        workspace.validatedBlueprintsCache.delete(uri);
+        workspace.removeFile(uri);
       }
 
       const hasBlueprintsAfter = workspace.blueprintIndex.has(uri);
@@ -317,12 +319,7 @@ function registerWatchedFilesHandler(
 async function processWatchedFileChange(workspace: WorkspaceIndex, change: any): Promise<boolean> {
   const uri = change.uri;
   if (change.type === FileChangeType.Deleted) {
-    workspace.files.delete(uri);
-    const hadBlueprints = workspace.blueprintIndex.delete(uri);
-    const hadRefs = workspace.referencedBlueprintIndex.delete(uri);
-    const hadExpectations = workspace.expectationIndex.delete(uri);
-    workspace.validatedBlueprintsCache.delete(uri);
-    return hadBlueprints || hadRefs || hadExpectations;
+    return workspace.removeFile(uri);
   }
   workspace.files.add(uri);
   const text = await workspace.getFileContentAsync(uri);

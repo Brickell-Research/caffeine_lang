@@ -35,6 +35,8 @@ export {
   token_types,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/semantic_tokens.mjs";
 
+export { diagnostic_severity_to_int } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/lsp_types.mjs";
+
 export { get_symbols } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/document_symbols.mjs";
 
 export {
@@ -75,6 +77,8 @@ export {
   prepare_type_hierarchy,
   BlueprintKind,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/type_hierarchy.mjs";
+
+export { version } from "../caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/constants.mjs";
 
 // Gleam runtime types
 export { Ok, toList } from "../caffeine_lsp/build/dev/javascript/prelude.mjs";

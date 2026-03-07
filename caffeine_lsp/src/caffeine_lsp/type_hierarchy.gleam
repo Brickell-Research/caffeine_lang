@@ -5,6 +5,7 @@ import caffeine_lang/frontend/ast.{
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
 import gleam/list
+import gleam/result
 import gleam/string
 
 /// Whether the item is a blueprint (supertype) or expectation (subtype).
@@ -77,6 +78,7 @@ fn match_blueprint_item(
     True -> {
       let #(line, col) =
         position_utils.find_name_position_in_lines(lines, item.name)
+        |> result.unwrap(#(0, 0))
       Ok(TypeHierarchyItem(
         name: item.name,
         kind: BlueprintKind,
@@ -116,6 +118,7 @@ fn match_expect_item(
     True -> {
       let #(line, col) =
         position_utils.find_name_position_in_lines(lines, item.name)
+        |> result.unwrap(#(0, 0))
       Ok(TypeHierarchyItem(
         name: item.name,
         kind: ExpectationKind,

@@ -56,7 +56,7 @@ pub fn invalid_syntax_produces_diagnostic_test() {
   // Should produce at least one diagnostic
   case diags {
     [first, ..] -> {
-      first.severity |> should.equal(1)
+      first.severity |> should.equal(lsp_types.DsError)
       // message should be non-empty
       { first.message != "" } |> should.be_true()
     }
@@ -77,7 +77,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message |> should.equal("Duplicate extendable '_base'")
       // Finds first occurrence of the name in source
       diag.line |> should.equal(0)
@@ -98,7 +98,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal("Undefined extendable '_nonexistent' referenced by 'api'")
     }
@@ -119,7 +119,7 @@ Blueprints for \"SLO\"
   case diags {
     [diag] -> {
       // DuplicateExtendsReference is a warning
-      diag.severity |> should.equal(2)
+      diag.severity |> should.equal(lsp_types.DsWarning)
       diag.message
       |> should.equal("Duplicate extends reference '_base' in 'api'")
     }
@@ -140,7 +140,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message |> should.equal("Duplicate type alias '_env'")
       // Finds first occurrence of the name in source
       diag.line |> should.equal(0)
@@ -159,7 +159,7 @@ pub fn undefined_type_alias_diagnostic_test() {
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal("Undefined type alias '_undefined' referenced by 'test'")
     }
@@ -180,7 +180,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       // Message should mention circular
       { string.contains(diag.message, "Circular type alias") }
       |> should.be_true()
@@ -201,7 +201,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       { string.contains(diag.message, "_count") } |> should.be_true()
       { string.contains(diag.message, "must be String-based") }
       |> should.be_true()
@@ -221,7 +221,7 @@ Expectations for \"api_availability\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal("Extendable '_base' must be Provides, got Requires")
     }
@@ -252,7 +252,7 @@ Expectations for \"api_availability\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal(
         "Field 'env' in 'checkout' overshadows field from extendable '_defaults'",
@@ -411,7 +411,7 @@ pub fn semantic_token_type_indices_match_legend_test() {
     lsp_types.SttKeyword, lsp_types.SttType, lsp_types.SttString,
     lsp_types.SttNumber, lsp_types.SttVariable, lsp_types.SttComment,
     lsp_types.SttOperator, lsp_types.SttProperty, lsp_types.SttFunction,
-    lsp_types.SttModifier, lsp_types.SttEnumMember,
+    lsp_types.SttModifier,
   ]
   // Verify the legend has the expected length
   list.length(semantic_tokens.token_types)
@@ -772,20 +772,20 @@ pub fn code_actions_no_matching_diagnostic_test() {
 pub fn find_name_position_found_test() {
   let content = "line one\n_defaults here\nline three"
   position_utils.find_name_position(content, "_defaults")
-  |> should.equal(#(1, 0))
+  |> should.equal(Ok(#(1, 0)))
 }
 
 pub fn find_name_position_not_found_test() {
   let content = "line one\nline two"
   position_utils.find_name_position(content, "_missing")
-  |> should.equal(#(0, 0))
+  |> should.equal(Error(Nil))
 }
 
 pub fn find_name_position_empty_name_test() {
   let content = "Expectations for \"\"\n  * \"slo\":\n    Provides { x: true }"
   // Empty name must not hang (JS target: split_once matches empty string at pos 0)
   position_utils.find_name_position(content, "")
-  |> should.equal(#(0, 0))
+  |> should.equal(Error(Nil))
 }
 
 pub fn find_all_name_positions_empty_name_test() {
@@ -1306,7 +1306,7 @@ pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
     diagnostics.get_cross_file_diagnostics(source, ["other_blueprint"])
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal("Blueprint 'api_availability' not found in workspace")
       diag.code |> should.equal(diagnostics.BlueprintNotFound)
@@ -1376,7 +1376,7 @@ pub fn dependency_unknown_target_returns_diagnostic_test() {
   let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       diag.message
       |> should.equal("Dependency 'org.team.svc.dep' not found in workspace")
       diag.code |> should.equal(diagnostics.DependencyNotFound)
@@ -1497,7 +1497,7 @@ pub fn all_diagnostics_parse_error_test() {
   // Should produce at least one diagnostic (parse error)
   case diags {
     [first, ..] -> {
-      first.severity |> should.equal(1)
+      first.severity |> should.equal(lsp_types.DsError)
       { first.message != "" } |> should.be_true()
     }
     [] -> should.fail()
@@ -1855,7 +1855,7 @@ pub fn linker_diagnostics_missing_required_field_test() {
   case diags {
     [diag] -> {
       diag.code |> should.equal(diagnostics.MissingRequiredFields)
-      diag.severity |> should.equal(1)
+      diag.severity |> should.equal(lsp_types.DsError)
       string.contains(diag.message, "env") |> should.be_true()
       string.contains(diag.message, "status") |> should.be_true()
     }
@@ -2449,7 +2449,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(2)
+      diag.severity |> should.equal(lsp_types.DsWarning)
       string.contains(diag.message, "_unused") |> should.be_true()
       string.contains(diag.message, "never used") |> should.be_true()
     }
@@ -2483,7 +2483,7 @@ Blueprints for \"SLO\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(2)
+      diag.severity |> should.equal(lsp_types.DsWarning)
       string.contains(diag.message, "_unused") |> should.be_true()
       string.contains(diag.message, "never used") |> should.be_true()
     }
@@ -2591,7 +2591,7 @@ pub fn dead_blueprint_detected_test() {
   let diags = diagnostics.get_dead_blueprint_diagnostics(source, [])
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(2)
+      diag.severity |> should.equal(lsp_types.DsWarning)
       string.contains(diag.message, "api") |> should.be_true()
       string.contains(diag.message, "no expectations") |> should.be_true()
     }

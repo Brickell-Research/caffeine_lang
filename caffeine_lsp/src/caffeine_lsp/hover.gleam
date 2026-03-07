@@ -1,9 +1,9 @@
 import caffeine_lang/frontend/ast
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/types.{type ParsedType, type TypeMeta, ParsedTypeAliasRef}
+import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
-import caffeine_lsp/linker_diagnostics
 import caffeine_lsp/position_utils
 import gleam/dict
 import gleam/int
@@ -229,7 +229,7 @@ fn format_blueprint_requires(
   case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
     Error(_) -> ""
     Ok(blueprint) -> {
-      let remaining = linker_diagnostics.compute_remaining_params(blueprint)
+      let remaining = blueprint_utils.compute_remaining_params(blueprint)
       let params =
         dict.to_list(remaining)
         |> list.sort(fn(a, b) { string.compare(a.0, b.0) })

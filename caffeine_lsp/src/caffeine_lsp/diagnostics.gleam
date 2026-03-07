@@ -15,6 +15,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/order
+import gleam/result
 import gleam/set
 import gleam/string
 
@@ -54,7 +55,7 @@ pub type Diagnostic {
     line: Int,
     column: Int,
     end_column: Int,
-    severity: Int,
+    severity: lsp_types.DiagnosticSeverity,
     message: String,
     code: DiagnosticCode,
   )
@@ -151,12 +152,14 @@ fn check_blueprint_ref(
     when: list.contains(known_blueprints, block.blueprint),
     return: Error(Nil),
   )
-  let #(line, col) = position_utils.find_name_position(content, block.blueprint)
+  let #(line, col) =
+    position_utils.find_name_position(content, block.blueprint)
+    |> result.unwrap(#(0, 0))
   Ok(Diagnostic(
     line: line,
     column: col,
     end_column: col + string.length(block.blueprint),
-    severity: lsp_types.diagnostic_severity_to_int(DsError),
+    severity: DsError,
     message: "Blueprint '" <> block.blueprint <> "' not found in workspace",
     code: BlueprintNotFound,
   ))
@@ -266,12 +269,14 @@ fn check_dependency_ref(
     when: list.contains(known_identifiers, target),
     return: Error(Nil),
   )
-  let #(line, col) = position_utils.find_name_position(content, target)
+  let #(line, col) =
+    position_utils.find_name_position(content, target)
+    |> result.unwrap(#(0, 0))
   Ok(Diagnostic(
     line: line,
     column: col,
     end_column: col + string.length(target),
-    severity: lsp_types.diagnostic_severity_to_int(DsError),
+    severity: DsError,
     message: "Dependency '" <> target <> "' not found in workspace",
     code: DependencyNotFound,
   ))
@@ -281,10 +286,12 @@ fn check_dependency_ref(
 fn name_diagnostic(
   content: String,
   name: String,
-  severity: Int,
+  severity: lsp_types.DiagnosticSeverity,
   message: String,
 ) -> Diagnostic {
-  let #(line, col) = position_utils.find_name_position(content, name)
+  let #(line, col) =
+    position_utils.find_name_position(content, name)
+    |> result.unwrap(#(0, 0))
   Diagnostic(
     line: line,
     column: col,
@@ -341,12 +348,14 @@ fn get_unused_extendable_warnings(
   let defined = list.map(extendables, fn(e) { e.name })
   list.filter(defined, fn(name) { !set.contains(referenced, name) })
   |> list.map(fn(name) {
-    let #(line, col) = position_utils.find_name_position(content, name)
+    let #(line, col) =
+      position_utils.find_name_position(content, name)
+      |> result.unwrap(#(0, 0))
     Diagnostic(
       line: line,
       column: col,
       end_column: col + string.length(name),
-      severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+      severity: DsWarning,
       message: "Extendable '" <> name <> "' is defined but never used",
       code: UnusedExtendable,
     )
@@ -362,12 +371,14 @@ fn get_unused_alias_warnings(
   let defined = list.map(aliases, fn(ta) { ta.name })
   list.filter(defined, fn(name) { !set.contains(all_alias_refs, name) })
   |> list.map(fn(name) {
-    let #(line, col) = position_utils.find_name_position(content, name)
+    let #(line, col) =
+      position_utils.find_name_position(content, name)
+      |> result.unwrap(#(0, 0))
     Diagnostic(
       line: line,
       column: col,
       end_column: col + string.length(name),
-      severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+      severity: DsWarning,
       message: "Type alias '" <> name <> "' is defined but never used",
       code: UnusedTypeAlias,
     )
@@ -452,11 +463,12 @@ pub fn get_dead_blueprint_diagnostics(
               Ok({
                 let #(line, col) =
                   position_utils.find_name_position(content, item.name)
+                  |> result.unwrap(#(0, 0))
                 Diagnostic(
                   line: line,
                   column: col,
                   end_column: col + string.length(item.name),
-                  severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+                  severity: DsWarning,
                   message: "Blueprint '"
                     <> item.name
                     <> "' has no expectations in the workspace",
@@ -480,14 +492,14 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Duplicate extendable '" <> name <> "'",
       )
     validator.UndefinedExtendable(name, referenced_by, _candidates) ->
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Undefined extendable '"
           <> name
           <> "' referenced by '"
@@ -498,7 +510,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsWarning),
+        DsWarning,
         "Duplicate extends reference '"
           <> name
           <> "' in '"
@@ -509,14 +521,14 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Extendable '" <> name <> "' must be " <> expected <> ", got " <> got,
       )
     validator.UndefinedTypeAlias(name, referenced_by, _candidates) ->
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Undefined type alias '"
           <> name
           <> "' referenced by '"
@@ -527,7 +539,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Duplicate type alias '" <> name <> "'",
       )
     validator.CircularTypeAlias(name, cycle) -> {
@@ -535,7 +547,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Circular type alias '" <> name <> "': " <> cycle_str,
       )
     }
@@ -543,7 +555,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         alias_name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Dict key type '"
           <> alias_name
           <> "' resolves to '"
@@ -556,7 +568,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         field_name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Field '"
           <> field_name
           <> "' in '"
@@ -569,14 +581,14 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         name,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Name '" <> name <> "' is used as both an extendable and a type alias",
       )
     validator.InvalidRefinementValue(value, expected_type, referenced_by) ->
       name_diagnostic(
         content,
         value,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Refinement value '"
           <> value
           <> "' is not a valid "
@@ -589,7 +601,7 @@ fn validator_error_to_diagnostic(
       name_diagnostic(
         content,
         value,
-        lsp_types.diagnostic_severity_to_int(DsError),
+        DsError,
         "Percentage value '"
           <> value
           <> "' must be between 0.0 and 100.0, in '"
@@ -609,7 +621,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(got),
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Unexpected token: expected " <> expected <> ", got " <> got,
         code: NoDiagnosticCode,
       )
@@ -620,7 +632,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Unexpected end of file: expected " <> expected,
         code: NoDiagnosticCode,
       )
@@ -631,7 +643,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name),
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Unknown type '" <> name <> "'",
         code: NoDiagnosticCode,
       )
@@ -642,7 +654,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Invalid refinement: " <> message,
         code: NoDiagnosticCode,
       )
@@ -653,7 +665,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name) + 2,
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Field names should not be quoted. Use '"
           <> name
           <> "' instead",
@@ -666,7 +678,7 @@ fn parser_error_to_diagnostic(err: ParserError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(name),
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Invalid type alias name '" <> name <> "': " <> message,
         code: NoDiagnosticCode,
       )
@@ -682,7 +694,7 @@ fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + 1,
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Unterminated string",
         code: NoDiagnosticCode,
       )
@@ -693,7 +705,7 @@ fn tokenizer_error_to_diagnostic(err: TokenizerError) -> Diagnostic {
         line: to_lsp_line(line),
         column: col,
         end_column: col + string.length(char),
-        severity: lsp_types.diagnostic_severity_to_int(DsError),
+        severity: DsError,
         message: "Invalid character '" <> char <> "'",
         code: NoDiagnosticCode,
       )

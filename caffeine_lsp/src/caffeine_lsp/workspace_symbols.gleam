@@ -6,6 +6,7 @@ import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{SkClass, SkTypeParameter, SkVariable}
 import caffeine_lsp/position_utils
 import gleam/list
+import gleam/result
 import gleam/string
 
 /// A flat workspace symbol for cross-file search.
@@ -54,7 +55,9 @@ fn expects_symbols(
 }
 
 fn type_alias_symbol(ta: TypeAlias, lines: List(String)) -> WorkspaceSymbol {
-  let #(line, col) = position_utils.find_name_position_in_lines(lines, ta.name)
+  let #(line, col) =
+    position_utils.find_name_position_in_lines(lines, ta.name)
+    |> result.unwrap(#(0, 0))
   WorkspaceSymbol(
     ta.name,
     lsp_types.symbol_kind_to_int(SkTypeParameter),
@@ -65,7 +68,9 @@ fn type_alias_symbol(ta: TypeAlias, lines: List(String)) -> WorkspaceSymbol {
 }
 
 fn extendable_symbol(ext: Extendable, lines: List(String)) -> WorkspaceSymbol {
-  let #(line, col) = position_utils.find_name_position_in_lines(lines, ext.name)
+  let #(line, col) =
+    position_utils.find_name_position_in_lines(lines, ext.name)
+    |> result.unwrap(#(0, 0))
   WorkspaceSymbol(
     ext.name,
     lsp_types.symbol_kind_to_int(SkVariable),
@@ -81,6 +86,7 @@ fn blueprint_item_symbol(
 ) -> WorkspaceSymbol {
   let #(line, col) =
     position_utils.find_name_position_in_lines(lines, item.name)
+    |> result.unwrap(#(0, 0))
   WorkspaceSymbol(
     item.name,
     lsp_types.symbol_kind_to_int(SkClass),
@@ -93,6 +99,7 @@ fn blueprint_item_symbol(
 fn expect_item_symbol(item: ExpectItem, lines: List(String)) -> WorkspaceSymbol {
   let #(line, col) =
     position_utils.find_name_position_in_lines(lines, item.name)
+    |> result.unwrap(#(0, 0))
   WorkspaceSymbol(
     item.name,
     lsp_types.symbol_kind_to_int(SkClass),
