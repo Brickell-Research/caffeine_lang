@@ -7,6 +7,7 @@ import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/source_file
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types.{type AcceptedTypes}
+import caffeine_lang/value
 import caffeine_lsp/diagnostics.{
   type Diagnostic, Diagnostic, MissingRequiredFields, TypeMismatch, UnknownField,
 }
@@ -205,6 +206,8 @@ fn check_type_mismatches(
             let message =
               "Expected "
               <> types.accepted_type_to_string(expected_type)
+              <> " but got "
+              <> value.classify(val)
               <> " for '"
               <> key
               <> "'"

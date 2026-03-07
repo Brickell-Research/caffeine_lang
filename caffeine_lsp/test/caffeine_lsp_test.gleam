@@ -269,7 +269,7 @@ Expectations for \"api_availability\"
 pub fn hover_builtin_type_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  case hover.get_hover(source, 2, 20) {
+  case hover.get_hover(source, 2, 20, []) {
     option.Some(markdown) -> {
       { string.contains(markdown, "String") } |> should.be_true()
     }
@@ -280,7 +280,7 @@ pub fn hover_builtin_type_test() {
 pub fn hover_keyword_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  case hover.get_hover(source, 0, 3) {
+  case hover.get_hover(source, 0, 3, []) {
     option.Some(markdown) -> {
       { string.contains(markdown, "Blueprints") } |> should.be_true()
     }
@@ -291,14 +291,14 @@ pub fn hover_keyword_test() {
 pub fn hover_empty_space_returns_none_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  hover.get_hover(source, 0, 10)
+  hover.get_hover(source, 0, 10, [])
   |> should.equal(option.None)
 }
 
 pub fn hover_extendable_test() {
   let source =
     "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
-  case hover.get_hover(source, 0, 2) {
+  case hover.get_hover(source, 0, 2, []) {
     option.Some(markdown) -> {
       { string.contains(markdown, "_defaults") } |> should.be_true()
       { string.contains(markdown, "Provides") } |> should.be_true()
@@ -311,7 +311,7 @@ pub fn hover_type_alias_test() {
   let source =
     "_env (Type): String { x | x in { \"prod\", \"staging\" } }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: _env }\n    Provides { value: \"x\" }\n"
   // Hover on _env in the definition
-  case hover.get_hover(source, 0, 1) {
+  case hover.get_hover(source, 0, 1, []) {
     option.Some(markdown) -> {
       { string.contains(markdown, "_env") } |> should.be_true()
       { string.contains(markdown, "Type alias") } |> should.be_true()
@@ -1226,7 +1226,7 @@ pub fn hover_blueprint_item_test() {
   // Hover on "api" — it's at col ~5 on line 3 (inside quotes so extract_word_at hits it)
   // Actually, "api" is inside quotes, so we need to place cursor on "api" without quotes
   // Let's use a simpler test — hover on item name found after parsing
-  case hover.get_hover(source, 3, 7) {
+  case hover.get_hover(source, 3, 7, []) {
     option.Some(md) -> {
       { string.contains(md, "api") } |> should.be_true()
       { string.contains(md, "Blueprint item") } |> should.be_true()
@@ -1238,7 +1238,7 @@ pub fn hover_blueprint_item_test() {
 pub fn hover_expect_item_test() {
   let source =
     "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  case hover.get_hover(source, 1, 7) {
+  case hover.get_hover(source, 1, 7, []) {
     option.Some(md) -> {
       { string.contains(md, "checkout") } |> should.be_true()
       { string.contains(md, "Expectation item") } |> should.be_true()
@@ -1253,7 +1253,7 @@ pub fn hover_expect_item_test() {
 pub fn hover_field_name_test() {
   let source =
     "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
-  case hover.get_hover(source, 2, 16) {
+  case hover.get_hover(source, 2, 16, []) {
     option.Some(md) -> {
       { string.contains(md, "env") } |> should.be_true()
       { string.contains(md, "Field") } |> should.be_true()
@@ -2331,4 +2331,281 @@ pub fn inlay_hints_duplicate_field_names_test() {
     }
     _ -> should.fail()
   }
+}
+
+// ==========================================================================
+// Feature (2): Richer type mismatch messages
+// ==========================================================================
+// * ✅ includes actual type in message
+
+pub fn linker_diagnostics_type_mismatch_includes_actual_type_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\"
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: 42
+    }
+"
+  let diags = linker_diagnostics.get_linker_diagnostics(ex_source, blueprints)
+  let type_diags =
+    list.filter(diags, fn(d) { d.code == diagnostics.TypeMismatch })
+  case type_diags {
+    [diag] -> {
+      string.contains(diag.message, "Expected String") |> should.be_true()
+      string.contains(diag.message, "but got Int") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Feature (6): Inlay hints show default values
+// ==========================================================================
+// * ✅ shows default suffix for Defaulted types
+
+pub fn inlay_hints_shows_default_values_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: Defaulted(String, \"production\") }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+  let ex_source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+      env: \"prod\"
+    }
+"
+  let hints = inlay_hints.get_inlay_hints(ex_source, 0, 10, blueprints)
+  let labels = list.map(hints, fn(h) { h.label })
+  let has_default = list.any(labels, fn(l) { string.contains(l, "= ") })
+  has_default |> should.be_true()
+}
+
+// ==========================================================================
+// Feature (8): Hover resolves alias chains
+// ==========================================================================
+// * ✅ shows fully resolved type for chained aliases
+
+pub fn hover_type_alias_chain_resolution_test() {
+  let source =
+    "_env (Type): String { x | x in { \"prod\", \"staging\" } }
+_my_env (Type): _env
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: _my_env }
+    Provides { value: \"x\" }
+"
+  case hover.get_hover(source, 1, 1, []) {
+    option.Some(markdown) -> {
+      string.contains(markdown, "_my_env") |> should.be_true()
+      string.contains(markdown, "Type alias") |> should.be_true()
+      // Should show the full chain resolution
+      string.contains(markdown, "_env") |> should.be_true()
+      string.contains(markdown, "String") |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Feature (7): Unused extendable/type alias warnings
+// ==========================================================================
+// * ✅ warns on unused extendable
+// * ✅ warns on unused type alias
+// * ✅ no warning when extendable is used
+// * ✅ no warning when type alias is used
+
+pub fn unused_extendable_warning_test() {
+  let source =
+    "_unused (Provides): { vendor: \"datadog\" }
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { value: \"test\" }
+"
+  let diags = diagnostics.get_diagnostics(source)
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(2)
+      string.contains(diag.message, "_unused") |> should.be_true()
+      string.contains(diag.message, "never used") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn used_extendable_no_warning_test() {
+  let source =
+    "_defaults (Provides): { vendor: \"datadog\" }
+
+Blueprints for \"SLO\"
+  * \"api\" extends [_defaults]:
+    Requires { env: String }
+    Provides { value: \"test\" }
+"
+  diagnostics.get_diagnostics(source)
+  |> should.equal([])
+}
+
+pub fn unused_type_alias_warning_test() {
+  let source =
+    "_env (Type): String
+_unused (Type): Integer
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: _env }
+    Provides { value: \"test\" }
+"
+  let diags = diagnostics.get_diagnostics(source)
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(2)
+      string.contains(diag.message, "_unused") |> should.be_true()
+      string.contains(diag.message, "never used") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn used_type_alias_no_warning_test() {
+  let source =
+    "_env (Type): String
+
+Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: _env }
+    Provides { value: \"test\" }
+"
+  diagnostics.get_diagnostics(source)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Feature (3): Hover shows blueprint requires on expectation items
+// ==========================================================================
+// * ✅ shows requires fields when validated blueprints available
+
+pub fn hover_expect_item_shows_blueprint_requires_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\",
+      threshold: 99.9%
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+  let source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides { env: \"prod\" }
+"
+  case hover.get_hover(source, 1, 7, blueprints) {
+    option.Some(markdown) -> {
+      string.contains(markdown, "checkout") |> should.be_true()
+      string.contains(markdown, "Blueprint Requires") |> should.be_true()
+      string.contains(markdown, "env") |> should.be_true()
+      string.contains(markdown, "String") |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Feature (5): Snippet completion for field names
+// ==========================================================================
+// * ✅ field completions include insert_text with snippet
+
+pub fn field_completion_snippet_test() {
+  let bp_source =
+    "Blueprints for \"SLO\"
+  * \"my_slo\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      indicators: { good: \"query_good\", total: \"query_total\" },
+      evaluation: \"good / total\"
+    }
+"
+  let assert Ok(blueprints) =
+    linker_diagnostics.compile_validated_blueprints(bp_source)
+  let source =
+    "Expectations for \"my_slo\"
+  * \"checkout\":
+    Provides {
+
+    }
+"
+  let items = completion.get_completions(source, 3, 6, [], blueprints)
+  let env_items = list.filter(items, fn(i) { i.label == "env" })
+  case env_items {
+    [item] -> {
+      item.insert_text |> should.equal(option.Some("env: $1"))
+      item.insert_text_format |> should.equal(option.Some(2))
+    }
+    _ -> should.fail()
+  }
+}
+
+// ==========================================================================
+// Feature (11): Dead blueprint detection
+// ==========================================================================
+// * ✅ detects unreferenced blueprints
+// * ✅ no warning when blueprint has expectations
+
+pub fn dead_blueprint_detected_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { vendor: \"datadog\", indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
+"
+  let diags = diagnostics.get_dead_blueprint_diagnostics(source, [])
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(2)
+      string.contains(diag.message, "api") |> should.be_true()
+      string.contains(diag.message, "no expectations") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn referenced_blueprint_no_dead_warning_test() {
+  let source =
+    "Blueprints for \"SLO\"
+  * \"api\":
+    Requires { env: String }
+    Provides { vendor: \"datadog\", indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
+"
+  diagnostics.get_dead_blueprint_diagnostics(source, ["api"])
+  |> should.equal([])
 }

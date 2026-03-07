@@ -12,6 +12,7 @@ import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   get_all_diagnostics,
+  get_dead_blueprint_diagnostics,
   get_linker_diagnostics,
   token_types,
   toList,
@@ -109,6 +110,7 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
   function revalidateAll() {
     const knownBlueprints = toList(workspace.allKnownBlueprints());
     const knownExpectations = toList(workspace.allKnownExpectationIdentifiers());
+    const referencedBlueprints = toList(workspace.allReferencedBlueprints());
     const validatedBlueprints = workspace.allValidatedBlueprints();
     for (const doc of documents.all()) {
       try {
@@ -119,9 +121,12 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
         const linkerDiags = gleamArray(
           get_linker_diagnostics(text, validatedBlueprints) as GleamList,
         );
+        const deadBlueprintDiags = gleamArray(
+          get_dead_blueprint_diagnostics(text, referencedBlueprints) as GleamList,
+        );
         connection.sendDiagnostics({
           uri: doc.uri,
-          diagnostics: [...frontendDiags, ...linkerDiags].map(gleamDiagToLsp),
+          diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
         });
       } catch { /* ignore */ }
     }
@@ -232,9 +237,15 @@ function registerDiagnosticsHandler(
                 workspace.allValidatedBlueprints(),
               ) as GleamList,
             );
+            const deadBlueprintDiags = gleamArray(
+              get_dead_blueprint_diagnostics(
+                text,
+                toList(workspace.allReferencedBlueprints()),
+              ) as GleamList,
+            );
             connection.sendDiagnostics({
               uri,
-              diagnostics: [...frontendDiags, ...linkerDiags].map(gleamDiagToLsp),
+              diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
             });
           } catch {
             connection.sendDiagnostics({ uri, diagnostics: [] });
@@ -270,6 +281,7 @@ function registerDocumentCloseHandler(
         workspace.updateIndicesForFile(uri, diskText);
       } else {
         workspace.blueprintIndex.delete(uri);
+        workspace.referencedBlueprintIndex.delete(uri);
         workspace.expectationIndex.delete(uri);
         workspace.validatedBlueprintsCache.delete(uri);
       }
@@ -307,9 +319,10 @@ async function processWatchedFileChange(workspace: WorkspaceIndex, change: any):
   if (change.type === FileChangeType.Deleted) {
     workspace.files.delete(uri);
     const hadBlueprints = workspace.blueprintIndex.delete(uri);
+    const hadRefs = workspace.referencedBlueprintIndex.delete(uri);
     const hadExpectations = workspace.expectationIndex.delete(uri);
     workspace.validatedBlueprintsCache.delete(uri);
-    return hadBlueprints || hadExpectations;
+    return hadBlueprints || hadRefs || hadExpectations;
   }
   workspace.files.add(uri);
   const text = await workspace.getFileContentAsync(uri);

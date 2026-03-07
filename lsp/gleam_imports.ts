@@ -3,6 +3,7 @@
 
 export {
   get_all_diagnostics,
+  get_dead_blueprint_diagnostics,
   diagnostic_code_to_string,
   QuotedFieldName,
   BlueprintNotFound,
@@ -10,6 +11,9 @@ export {
   MissingRequiredFields,
   TypeMismatch,
   UnknownField,
+  UnusedExtendable,
+  UnusedTypeAlias,
+  DeadBlueprint,
   NoDiagnosticCode,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 

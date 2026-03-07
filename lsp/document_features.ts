@@ -48,6 +48,7 @@ export function handleHover(ctx: HandlerContext, params: any) {
       doc.getText(),
       params.position.line,
       params.position.character,
+      ctx.workspace.allValidatedBlueprints(),
     );
     if (result instanceof Some) {
       return { contents: { kind: "markdown" as const, value: result[0] } };
@@ -73,6 +74,8 @@ export function handleCompletion(ctx: HandlerContext, params: any) {
       label: item.label,
       kind: item.kind,
       detail: item.detail,
+      ...(item.insert_text instanceof Some ? { insertText: item.insert_text[0] } : {}),
+      ...(item.insert_text_format instanceof Some ? { insertTextFormat: item.insert_text_format[0] } : {}),
     }));
   } catch {
     return [];

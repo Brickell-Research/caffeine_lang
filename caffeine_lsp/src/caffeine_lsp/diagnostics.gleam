@@ -1,18 +1,21 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Parsed,
-  type Struct,
+  type Struct, type Value, TypeValue,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/tokenizer_error.{type TokenizerError}
 import caffeine_lang/frontend/validator.{type ValidatorError}
+import caffeine_lang/types.{type ParsedType, ParsedTypeAliasRef}
 import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{DsError, DsWarning}
 import caffeine_lsp/position_utils
 import gleam/bool
+import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/order
+import gleam/set
 import gleam/string
 
 /// Structured diagnostic codes for machine-readable identification.
@@ -23,6 +26,9 @@ pub type DiagnosticCode {
   MissingRequiredFields
   TypeMismatch
   UnknownField
+  UnusedExtendable
+  UnusedTypeAlias
+  DeadBlueprint
   NoDiagnosticCode
 }
 
@@ -35,6 +41,9 @@ pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
     MissingRequiredFields -> option.Some("missing-required-fields")
     TypeMismatch -> option.Some("type-mismatch")
     UnknownField -> option.Some("unknown-field")
+    UnusedExtendable -> option.Some("unused-extendable")
+    UnusedTypeAlias -> option.Some("unused-type-alias")
+    DeadBlueprint -> option.Some("dead-blueprint")
     NoDiagnosticCode -> option.None
   }
 }
@@ -89,12 +98,12 @@ fn get_diagnostics_from_parsed(
   case parsed {
     Ok(file_utils.Blueprints(file)) ->
       case validator.validate_blueprints_file(file) {
-        Ok(_) -> []
+        Ok(_) -> get_unused_warnings_blueprints(content, file)
         Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
     Ok(file_utils.Expects(file)) ->
       case validator.validate_expects_file(file) {
-        Ok(_) -> []
+        Ok(_) -> get_unused_warnings_expects(content, file)
         Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
     Error(#(bp_errs, ex_errs)) ->
@@ -284,6 +293,182 @@ fn name_diagnostic(
     message: message,
     code: NoDiagnosticCode,
   )
+}
+
+/// Detect unused extendables and type aliases in a blueprints file.
+fn get_unused_warnings_blueprints(
+  content: String,
+  file: BlueprintsFile(Parsed),
+) -> List(Diagnostic) {
+  let extendable_warnings =
+    get_unused_extendable_warnings(
+      content,
+      file.extendables,
+      list.flat_map(file.blocks, fn(b) {
+        list.flat_map(b.items, fn(i) { i.extends })
+      }),
+    )
+  let alias_warnings =
+    get_unused_alias_warnings(
+      content,
+      file.type_aliases,
+      collect_alias_refs_from_blueprint(file),
+    )
+  list.append(extendable_warnings, alias_warnings)
+}
+
+/// Detect unused extendables in an expects file.
+fn get_unused_warnings_expects(
+  content: String,
+  file: ExpectsFile(Parsed),
+) -> List(Diagnostic) {
+  get_unused_extendable_warnings(
+    content,
+    file.extendables,
+    list.flat_map(file.blocks, fn(b) {
+      list.flat_map(b.items, fn(i) { i.extends })
+    }),
+  )
+}
+
+/// Emit warnings for extendables that are defined but never referenced.
+fn get_unused_extendable_warnings(
+  content: String,
+  extendables: List(ast.Extendable),
+  all_extends_refs: List(String),
+) -> List(Diagnostic) {
+  let referenced = set.from_list(all_extends_refs)
+  let defined = list.map(extendables, fn(e) { e.name })
+  list.filter(defined, fn(name) { !set.contains(referenced, name) })
+  |> list.map(fn(name) {
+    let #(line, col) = position_utils.find_name_position(content, name)
+    Diagnostic(
+      line: line,
+      column: col,
+      end_column: col + string.length(name),
+      severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+      message: "Extendable '" <> name <> "' is defined but never used",
+      code: UnusedExtendable,
+    )
+  })
+}
+
+/// Emit warnings for type aliases that are defined but never referenced.
+fn get_unused_alias_warnings(
+  content: String,
+  aliases: List(ast.TypeAlias),
+  all_alias_refs: set.Set(String),
+) -> List(Diagnostic) {
+  let defined = list.map(aliases, fn(ta) { ta.name })
+  list.filter(defined, fn(name) { !set.contains(all_alias_refs, name) })
+  |> list.map(fn(name) {
+    let #(line, col) = position_utils.find_name_position(content, name)
+    Diagnostic(
+      line: line,
+      column: col,
+      end_column: col + string.length(name),
+      severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+      message: "Type alias '" <> name <> "' is defined but never used",
+      code: UnusedTypeAlias,
+    )
+  })
+}
+
+/// Collect all type alias references from a blueprints file's Requires fields
+/// and from other type alias definitions (chained aliases).
+fn collect_alias_refs_from_blueprint(
+  file: BlueprintsFile(Parsed),
+) -> set.Set(String) {
+  // Refs from Requires fields in blueprint items
+  let field_refs =
+    list.flat_map(file.blocks, fn(b) {
+      list.flat_map(b.items, fn(i) {
+        list.flat_map(i.requires.fields, fn(f) {
+          collect_alias_refs_from_value(f.value)
+        })
+      })
+    })
+  // Refs from type alias definitions (aliases referencing other aliases)
+  let alias_refs =
+    list.flat_map(file.type_aliases, fn(ta) {
+      collect_alias_refs_from_parsed_type(ta.type_)
+    })
+  set.from_list(list.append(field_refs, alias_refs))
+}
+
+/// Extract alias reference names from a field value.
+fn collect_alias_refs_from_value(value: Value) -> List(String) {
+  case value {
+    TypeValue(parsed_type) -> collect_alias_refs_from_parsed_type(parsed_type)
+    _ -> []
+  }
+}
+
+/// Recursively collect alias reference names from a parsed type.
+fn collect_alias_refs_from_parsed_type(parsed_type: ParsedType) -> List(String) {
+  case parsed_type {
+    ParsedTypeAliasRef(name) -> [name]
+    types.ParsedPrimitive(_) -> []
+    types.ParsedCollection(collection) ->
+      case collection {
+        types.List(inner) -> collect_alias_refs_from_parsed_type(inner)
+        types.Dict(key, val) ->
+          list.append(
+            collect_alias_refs_from_parsed_type(key),
+            collect_alias_refs_from_parsed_type(val),
+          )
+      }
+    types.ParsedModifier(modifier) ->
+      case modifier {
+        types.Optional(inner) -> collect_alias_refs_from_parsed_type(inner)
+        types.Defaulted(inner, _) -> collect_alias_refs_from_parsed_type(inner)
+      }
+    types.ParsedRefinement(refinement) ->
+      case refinement {
+        types.OneOf(inner, _) -> collect_alias_refs_from_parsed_type(inner)
+        types.InclusiveRange(inner, _, _) ->
+          collect_alias_refs_from_parsed_type(inner)
+      }
+    types.ParsedRecord(fields) ->
+      dict.values(fields)
+      |> list.flat_map(collect_alias_refs_from_parsed_type)
+  }
+}
+
+/// Detect blueprints with no expectations across the workspace.
+pub fn get_dead_blueprint_diagnostics(
+  content: String,
+  all_referenced_blueprints: List(String),
+) -> List(Diagnostic) {
+  use <- bool.guard(when: string.trim(content) == "", return: [])
+  case file_utils.parse(content) {
+    Ok(file_utils.Blueprints(file)) -> {
+      let referenced = set.from_list(all_referenced_blueprints)
+      list.flat_map(file.blocks, fn(block) {
+        list.filter_map(block.items, fn(item) {
+          case set.contains(referenced, item.name) {
+            True -> Error(Nil)
+            False ->
+              Ok({
+                let #(line, col) =
+                  position_utils.find_name_position(content, item.name)
+                Diagnostic(
+                  line: line,
+                  column: col,
+                  end_column: col + string.length(item.name),
+                  severity: lsp_types.diagnostic_severity_to_int(DsWarning),
+                  message: "Blueprint '"
+                    <> item.name
+                    <> "' has no expectations in the workspace",
+                  code: DeadBlueprint,
+                )
+              })
+          }
+        })
+      })
+    }
+    _ -> []
+  }
 }
 
 fn validator_error_to_diagnostic(

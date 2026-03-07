@@ -1,31 +1,43 @@
 import caffeine_lang/frontend/ast
-import caffeine_lang/types.{type TypeMeta}
+import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
+import caffeine_lang/types.{type ParsedType, type TypeMeta, ParsedTypeAliasRef}
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
+import caffeine_lsp/linker_diagnostics
 import caffeine_lsp/position_utils
+import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
 
 /// Returns hover markdown text for the word at the given position, or None.
-pub fn get_hover(content: String, line: Int, character: Int) -> Option(String) {
+pub fn get_hover(
+  content: String,
+  line: Int,
+  character: Int,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
+) -> Option(String) {
   let word = position_utils.extract_word_at(content, line, character)
   case word {
     "" -> option.None
-    w -> lookup_hover(w, content)
+    w -> lookup_hover(w, content, validated_blueprints)
   }
 }
 
 /// Look up hover documentation for a token name.
 /// Checks built-in types, keywords, then user-defined symbols.
-fn lookup_hover(word: String, content: String) -> Option(String) {
+fn lookup_hover(
+  word: String,
+  content: String,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
+) -> Option(String) {
   case list.find(types.all_type_metas(), fn(m: TypeMeta) { m.name == word }) {
     Ok(meta) -> option.Some(format_type_meta(meta))
     Error(_) ->
       case lookup_keyword(word) {
         option.Some(kw) -> option.Some(kw)
-        option.None -> lookup_user_defined(word, content)
+        option.None -> lookup_user_defined(word, content, validated_blueprints)
       }
   }
 }
@@ -52,7 +64,11 @@ fn lookup_keyword(word: String) -> Option(String) {
 }
 
 /// Look up user-defined extendables, type aliases, items, and fields.
-fn lookup_user_defined(word: String, content: String) -> Option(String) {
+fn lookup_user_defined(
+  word: String,
+  content: String,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
+) -> Option(String) {
   case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) ->
       lookup_extendable(word, file.extendables)
@@ -61,7 +77,9 @@ fn lookup_user_defined(word: String, content: String) -> Option(String) {
       |> option.lazy_or(fn() { lookup_blueprint_field(word, file) })
     Ok(file_utils.Expects(file)) ->
       lookup_extendable(word, file.extendables)
-      |> option.lazy_or(fn() { lookup_expect_item(word, file) })
+      |> option.lazy_or(fn() {
+        lookup_expect_item(word, file, validated_blueprints)
+      })
       |> option.lazy_or(fn() { lookup_expect_field(word, file) })
     Error(_) -> option.None
   }
@@ -101,16 +119,39 @@ fn lookup_type_alias(
 ) -> Option(String) {
   case list.find(aliases, fn(ta) { ta.name == word }) {
     Ok(ta) -> {
-      let resolved = types.parsed_type_to_string(ta.type_)
+      let direct = types.parsed_type_to_string(ta.type_)
+      let resolved = resolve_alias_chain(ta.type_, aliases, 0)
+      let resolved_str = types.parsed_type_to_string(resolved)
+      let display = case direct == resolved_str {
+        True -> "`" <> direct <> "`"
+        False -> "`" <> direct <> "` → `" <> resolved_str <> "`"
+      }
       option.Some(
-        "**"
-        <> ta.name
-        <> "** — Type alias\n\nResolves to: `"
-        <> resolved
-        <> "`",
+        "**" <> ta.name <> "** — Type alias\n\nResolves to: " <> display,
       )
     }
     Error(_) -> option.None
+  }
+}
+
+/// Resolve a type alias chain to its fully concrete type.
+/// Guards against cycles with a depth limit (validator catches cycles).
+fn resolve_alias_chain(
+  type_: ParsedType,
+  aliases: List(ast.TypeAlias),
+  depth: Int,
+) -> ParsedType {
+  case depth > 10 {
+    True -> type_
+    False ->
+      case type_ {
+        ParsedTypeAliasRef(name) ->
+          case list.find(aliases, fn(ta) { ta.name == name }) {
+            Ok(ta) -> resolve_alias_chain(ta.type_, aliases, depth + 1)
+            Error(_) -> type_
+          }
+        _ -> type_
+      }
   }
 }
 
@@ -146,15 +187,25 @@ fn lookup_blueprint_item(
 fn lookup_expect_item(
   word: String,
   file: ast.ExpectsFile(ast.Parsed),
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
 ) -> Option(String) {
-  let items = list.flat_map(file.blocks, fn(b) { b.items })
-  case list.find(items, fn(i) { i.name == word }) {
-    Ok(item) -> {
+  // Find the item and its enclosing block (for blueprint ref lookup).
+  let found =
+    list.find_map(file.blocks, fn(block) {
+      case list.find(block.items, fn(i) { i.name == word }) {
+        Ok(item) -> Ok(#(item, block.blueprint))
+        Error(_) -> Error(Nil)
+      }
+    })
+  case found {
+    Ok(#(item, blueprint_ref)) -> {
       let extends_info = case item.extends {
         [] -> ""
         exts -> "\n\nExtends: " <> string.join(exts, ", ")
       }
       let prov_count = list.length(item.provides.fields)
+      let requires_info =
+        format_blueprint_requires(blueprint_ref, validated_blueprints)
       option.Some(
         "**"
         <> item.name
@@ -162,10 +213,34 @@ fn lookup_expect_item(
         <> extends_info
         <> "\n\nProvides: "
         <> int.to_string(prov_count)
-        <> " fields",
+        <> " fields"
+        <> requires_info,
       )
     }
     Error(_) -> option.None
+  }
+}
+
+/// Format the blueprint's remaining Requires params for hover display.
+fn format_blueprint_requires(
+  blueprint_ref: String,
+  validated_blueprints: List(Blueprint(BlueprintValidated)),
+) -> String {
+  case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
+    Error(_) -> ""
+    Ok(blueprint) -> {
+      let remaining = linker_diagnostics.compute_remaining_params(blueprint)
+      let params =
+        dict.to_list(remaining)
+        |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+        |> list.map(fn(pair) {
+          "  - `" <> pair.0 <> "`: " <> types.accepted_type_to_string(pair.1)
+        })
+      case params {
+        [] -> ""
+        _ -> "\n\n**Blueprint Requires:**\n" <> string.join(params, "\n")
+      }
+    }
   }
 }
 

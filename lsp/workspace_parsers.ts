@@ -33,6 +33,18 @@ export function findBlueprintItemLocation(
   return null;
 }
 
+/** Extract blueprint names referenced via `Expectations for "name"` headers. */
+export function extractReferencedBlueprintNames(text: string): string[] {
+  const names: string[] = [];
+  const pattern = /Expectations\s+for\s+"([^"]+)"/;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("#")) continue;
+    const match = pattern.exec(line);
+    if (match) names.push(match[1]);
+  }
+  return names;
+}
+
 /** Extract org/team/service from a file path (last 3 path segments). */
 export function extractPathPrefix(filePath: string): [string, string, string] {
   const segments = filePath.split(path.sep);

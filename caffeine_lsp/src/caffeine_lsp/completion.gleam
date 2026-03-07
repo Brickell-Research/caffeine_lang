@@ -10,13 +10,19 @@ import caffeine_lsp/lsp_types.{
 import gleam/bool
 import gleam/dict
 import gleam/list
-import gleam/option
+import gleam/option.{type Option}
 import gleam/set
 import gleam/string
 
 /// A completion item returned to the editor.
 pub type CompletionItem {
-  CompletionItem(label: String, kind: Int, detail: String)
+  CompletionItem(
+    label: String,
+    kind: Int,
+    detail: String,
+    insert_text: Option(String),
+    insert_text_format: Option(Int),
+  )
 }
 
 /// Returns a list of completion items, context-aware based on
@@ -370,6 +376,8 @@ fn blueprint_header_completions(
       name,
       lsp_types.completion_item_kind_to_int(CikModule),
       "Blueprint",
+      option.None,
+      option.None,
     )
   })
 }
@@ -399,7 +407,13 @@ fn type_completions(
 
 fn field_completions(fields: List(#(String, String))) -> List(CompletionItem) {
   list.map(fields, fn(f) {
-    CompletionItem(f.0, lsp_types.completion_item_kind_to_int(CikField), f.1)
+    CompletionItem(
+      f.0,
+      lsp_types.completion_item_kind_to_int(CikField),
+      f.1,
+      option.Some(f.0 <> ": $1"),
+      option.Some(2),
+    )
   })
 }
 
@@ -432,6 +446,8 @@ fn keyword_items() -> List(CompletionItem) {
       kw.name,
       lsp_types.completion_item_kind_to_int(CikKeyword),
       kw.description,
+      option.None,
+      option.None,
     )
   })
 }
@@ -445,6 +461,8 @@ fn type_meta_items() -> List(CompletionItem) {
       m.name,
       lsp_types.completion_item_kind_to_int(CikClass),
       m.description,
+      option.None,
+      option.None,
     )
   })
 }
@@ -486,6 +504,8 @@ fn extract_extendable_names_from_text(content: String) -> List(CompletionItem) {
                   name,
                   lsp_types.completion_item_kind_to_int(CikVariable),
                   "extendable",
+                  option.None,
+                  option.None,
                 ))
             }
         }
@@ -502,6 +522,8 @@ fn extendable_items_from_list(
       e.name,
       lsp_types.completion_item_kind_to_int(CikVariable),
       detail,
+      option.None,
+      option.None,
     )
   })
 }
@@ -513,6 +535,8 @@ fn type_alias_items(aliases: List(ast.TypeAlias)) -> List(CompletionItem) {
       ta.name,
       lsp_types.completion_item_kind_to_int(CikVariable),
       detail,
+      option.None,
+      option.None,
     )
   })
 }

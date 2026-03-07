@@ -59,8 +59,7 @@ pub fn get_signature_help(
         list.map(param_list, fn(p) {
           p.0 <> ": " <> types.accepted_type_to_string(p.1)
         })
-      let label =
-        blueprint_ref <> "(" <> string.join(param_labels, ", ") <> ")"
+      let label = blueprint_ref <> "(" <> string.join(param_labels, ", ") <> ")"
 
       let param_names = list.map(param_list, fn(p) { p.0 })
       let parameters =

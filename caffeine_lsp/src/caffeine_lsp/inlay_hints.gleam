@@ -3,7 +3,7 @@
 /// based on the blueprint's required parameter types.
 import caffeine_lang/frontend/ast
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
-import caffeine_lang/types
+import caffeine_lang/types.{type AcceptedTypes, Defaulted, ModifierType}
 import caffeine_lsp/file_utils
 import caffeine_lsp/linker_diagnostics
 import gleam/dict
@@ -64,7 +64,7 @@ fn get_expects_hints(
 fn get_item_hints(
   lines: List(String),
   item: ast.ExpectItem,
-  remaining_params: dict.Dict(String, types.AcceptedTypes),
+  remaining_params: dict.Dict(String, AcceptedTypes),
   start_line: Int,
   end_line: Int,
 ) -> List(InlayHint) {
@@ -75,6 +75,10 @@ fn get_item_hints(
       Error(_) -> Error(Nil)
       Ok(expected_type) -> {
         let type_str = types.accepted_type_to_string(expected_type)
+        let default_suffix = case expected_type {
+          ModifierType(Defaulted(_, default_val)) -> " = " <> default_val
+          _ -> ""
+        }
         // Search for the field only after the item header line.
         case find_field_line(lines, field.name, 0, item_start) {
           Error(_) -> Error(Nil)
@@ -85,7 +89,7 @@ fn get_item_hints(
                 Ok(InlayHint(
                   line: field_line,
                   column: field_col + string.length(field.name),
-                  label: ": " <> type_str,
+                  label: ": " <> type_str <> default_suffix,
                   kind: 1,
                   padding_left: True,
                 ))

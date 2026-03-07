@@ -9,6 +9,7 @@ import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   extractBlueprintNames,
+  extractReferencedBlueprintNames,
   extractExpectationIdentifiers,
   findBlueprintItemLocation,
   applyIndexUpdates,
@@ -22,6 +23,7 @@ export class WorkspaceIndex {
   root: string | null = null;
   files = new Set<string>();
   blueprintIndex = new Map<string, Set<string>>();
+  referencedBlueprintIndex = new Map<string, Set<string>>();
   expectationIndex = new Map<string, Map<string, string>>();
   // deno-lint-ignore no-explicit-any
   validatedBlueprintsCache = new Map<string, any>();
@@ -46,6 +48,10 @@ export class WorkspaceIndex {
         if (names.length > 0) {
           this.blueprintIndex.set(uri, new Set(names));
           this.tryCompileBlueprints(uri, text);
+        }
+        const refBlueprints = extractReferencedBlueprintNames(text);
+        if (refBlueprints.length > 0) {
+          this.referencedBlueprintIndex.set(uri, new Set(refBlueprints));
         }
         const ids = extractExpectationIdentifiers(text, uri);
         if (ids.size > 0) {
@@ -108,6 +114,17 @@ export class WorkspaceIndex {
     return names;
   }
 
+  /** Collect all referenced blueprint names across the workspace (from expects files). */
+  allReferencedBlueprints(): string[] {
+    const names: string[] = [];
+    for (const set of this.referencedBlueprintIndex.values()) {
+      for (const name of set) {
+        names.push(name);
+      }
+    }
+    return names;
+  }
+
   /** Look up a cross-file blueprint definition by blueprint item name. */
   async findCrossFileBlueprintDef(
     blueprintItemName: string,
@@ -151,13 +168,20 @@ export class WorkspaceIndex {
     return null;
   }
 
-  /** Updates both blueprint and expectation indices for a file. Returns true if either changed. */
+  /** Updates blueprint, expectation, and referenced blueprint indices for a file. Returns true if any changed. */
   updateIndicesForFile(uri: string, text: string): boolean {
     const changed = applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
     if (this.blueprintIndex.has(uri)) {
       this.tryCompileBlueprints(uri, text);
     } else {
       this.validatedBlueprintsCache.delete(uri);
+    }
+    // Update referenced blueprint index
+    const newRefs = extractReferencedBlueprintNames(text);
+    if (newRefs.length > 0) {
+      this.referencedBlueprintIndex.set(uri, new Set(newRefs));
+    } else {
+      this.referencedBlueprintIndex.delete(uri);
     }
     return changed;
   }
