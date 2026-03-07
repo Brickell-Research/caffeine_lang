@@ -79,7 +79,7 @@ fn check_expectation(
   case list.find(blueprints, fn(b) { b.name == expectation.blueprint_ref }) {
     Error(Nil) -> []
     Ok(blueprint) -> {
-      let remaining_params = compute_remaining_params(blueprint)
+      let remaining_params = blueprint_utils.compute_remaining_params(blueprint)
       list.flatten([
         check_missing_required(
           content,
@@ -102,16 +102,6 @@ fn check_expectation(
       ])
     }
   }
-}
-
-/// Compute params the expectation must provide — blueprint params minus
-/// keys already filled by the blueprint's own inputs.
-/// Delegates to blueprint_utils for shared access across modules.
-@internal
-pub fn compute_remaining_params(
-  blueprint: Blueprint(BlueprintValidated),
-) -> dict.Dict(String, AcceptedTypes) {
-  blueprint_utils.compute_remaining_params(blueprint)
 }
 
 /// Check for required fields missing from the expectation.

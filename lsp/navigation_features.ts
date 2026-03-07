@@ -18,6 +18,7 @@ import {
 } from "./helpers.ts";
 
 import type { HandlerContext } from "./handlers.ts";
+import { debug } from "./debug.ts";
 
 // --- Definition / Declaration ---
 
@@ -55,17 +56,15 @@ export async function handleDefinition(ctx: HandlerContext, params: any) {
     const relRef = get_relation_ref_with_range_at_position(text, params.position.line, params.position.character);
     if (relRef instanceof Some) {
       const refStr = relRef[0][0] as string;
-      const refStartCol = relRef[0][1] as number;
       const target = await ctx.workspace.findExpectationByIdentifier(refStr);
       if (target) {
-        const srcLine = params.position.line;
         return [{
           uri: target.uri,
           range: range(target.line, target.col, target.line, target.col + target.nameLen),
         }];
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) { debug(`definition: ${e}`); }
   return null;
 }
 
@@ -102,11 +101,12 @@ export async function handleReferences(ctx: HandlerContext, params: any) {
         for (const r of otherRefs) {
           crossFileRefs.push({ uri, range: range(r[0], r[1], r[0], r[1] + r[2]) });
         }
-      } catch { /* skip */ }
+      } catch (e) { debug(`references cross-file: ${e}`); }
     }
 
     return [...sameFileRefs, ...crossFileRefs];
-  } catch {
+  } catch (e) {
+    debug(`references: ${e}`);
     return [];
   }
 }
@@ -129,7 +129,7 @@ export async function handleWorkspaceSymbol(ctx: HandlerContext, params: any) {
         const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
         results.push({ name: sym.name, kind: sym.kind, location: { uri, range: r } });
       }
-    } catch { /* ignore */ }
+    } catch (e) { debug(`workspaceSymbol: ${e}`); }
   }
 
   return results;

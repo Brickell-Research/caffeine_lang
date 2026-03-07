@@ -64,18 +64,18 @@ pub fn extract_word_at(content: String, line: Int, character: Int) -> String {
 fn word_at_column(line: String, col: Int) -> String {
   let graphemes = string.to_graphemes(line)
   let len = list.length(graphemes)
-  // Clamp col to valid range
-  let col = case col < 0 {
-    True -> 0
-    False ->
-      case col >= len {
-        True -> len - 1
-        False -> col
-      }
-  }
   case len == 0 {
     True -> ""
     False -> {
+      // Clamp col to valid range [0, len-1]
+      let col = case col < 0 {
+        True -> 0
+        False ->
+          case col >= len {
+            True -> len - 1
+            False -> col
+          }
+      }
       // Check if cursor is on a word character
       case list.drop(graphemes, col) {
         [g, ..] ->

@@ -55,11 +55,7 @@ fn encode_loop(
           }
           // Prepended in reverse field order since the list is reversed at the end.
           // After reversal, each group becomes: deltaLine, deltaStartChar, length, tokenType, tokenModifiers
-          let new_acc =
-            list.flatten([
-              [0, token_type, length, delta_col, delta_line],
-              acc,
-            ])
+          let new_acc = [0, token_type, length, delta_col, delta_line, ..acc]
           encode_loop(rest, line, col, new_acc)
         }
       }

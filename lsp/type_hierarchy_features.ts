@@ -1,5 +1,6 @@
 // Type hierarchy LSP handlers — prepare, supertypes, subtypes.
 
+import { SymbolKind } from "vscode-languageserver/node.js";
 import {
   get_workspace_symbols,
   prepare_type_hierarchy,
@@ -13,6 +14,7 @@ import {
 } from "./helpers.ts";
 
 import type { HandlerContext } from "./handlers.ts";
+import { debug } from "./debug.ts";
 
 // --- Type hierarchy: prepare ---
 
@@ -30,7 +32,7 @@ export function handleTypeHierarchyPrepare(ctx: HandlerContext, params: any) {
       const r = range(item.line, item.col, item.line, item.col + item.name_len);
       return {
         name: item.name,
-        kind: 5,
+        kind: SymbolKind.Class,
         uri: params.textDocument.uri,
         range: r,
         selectionRange: r,
@@ -40,7 +42,8 @@ export function handleTypeHierarchyPrepare(ctx: HandlerContext, params: any) {
         },
       };
     });
-  } catch {
+  } catch (e) {
+    debug(`typeHierarchyPrepare: ${e}`);
     return null;
   }
 }
@@ -61,15 +64,15 @@ export async function handleTypeHierarchySupertypes(ctx: HandlerContext, params:
 
     try {
       for (const sym of gleamArray(get_workspace_symbols(text) as GleamList)) {
-        if (sym.name === data.blueprint && sym.kind === 5) {
+        if (sym.name === data.blueprint && sym.kind === SymbolKind.Class) {
           const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
           results.push({
-            name: sym.name, kind: 5, uri, range: r, selectionRange: r,
+            name: sym.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
             data: { kind: "blueprint", blueprint: "" },
           });
         }
       }
-    } catch { /* ignore */ }
+    } catch (e) { debug(`typeHierarchySupertypes: ${e}`); }
   }
 
   return results;
@@ -93,7 +96,7 @@ export async function handleTypeHierarchySubtypes(ctx: HandlerContext, params: a
 
     try {
       collectSubtypesFromFile(text, blueprintName, uri, results);
-    } catch { /* ignore */ }
+    } catch (e) { debug(`typeHierarchySubtypes: ${e}`); }
   }
 
   return results;
@@ -112,7 +115,7 @@ function collectSubtypesFromFile(text: string, blueprintName: string, uri: strin
       if (item.blueprint === blueprintName) {
         const r = range(item.line, item.col, item.line, item.col + item.name_len);
         results.push({
-          name: item.name, kind: 5, uri, range: r, selectionRange: r,
+          name: item.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
           data: { kind: "expectation", blueprint: blueprintName },
         });
       }

@@ -131,7 +131,7 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
           uri: doc.uri,
           diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
         });
-      } catch { /* ignore */ }
+      } catch (e) { debug(`revalidateAll(${doc.uri}): ${e}`); }
     }
   }
 
@@ -159,7 +159,7 @@ function registerInitializeHandler(ctx: HandlerContext): void {
       try {
         await workspace.initializeFromRoot(rootUri);
         debug(`initialize: indexed ${workspace.files.size} files, ${workspace.blueprintIndex.size} blueprint files, ${workspace.expectationIndex.size} expectation files`);
-      } catch { /* ignore */ }
+      } catch (e) { debug(`initialize: ${e}`); }
     }
 
     return {
@@ -252,7 +252,8 @@ function registerDiagnosticsHandler(
               uri,
               diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
             });
-          } catch {
+          } catch (e) {
+            debug(`diagnostics(${uri}): ${e}`);
             connection.sendDiagnostics({ uri, diagnostics: [] });
           }
         }
@@ -280,7 +281,7 @@ function registerDocumentCloseHandler(
       let diskText: string | null = null;
       try {
         diskText = await fs.promises.readFile(fileURLToPath(uri), "utf-8");
-      } catch { /* File may have been deleted */ }
+      } catch { /* File may have been deleted — expected */ }
 
       if (diskText) {
         workspace.updateIndicesForFile(uri, diskText);
@@ -293,7 +294,7 @@ function registerDocumentCloseHandler(
       if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
         scheduler.scheduleRevalidation();
       }
-    })().catch(() => { /* async close handler — errors are non-fatal */ });
+    })().catch((e) => { debug(`documentClose: ${e}`); });
   });
 }
 

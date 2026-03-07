@@ -192,9 +192,9 @@ test("go-to-definition on extendable navigates to definition", async () => {
     const result = await client.definition(uri, 3, 24);
 
     expect(result !== null).toBeTruthy();
-    expect(result.uri).toBe(uri);
-    expect(result.range.start.line).toBe(0);
-    expect(result.range.start.character).toBe(0);
+    expect(result[0].uri).toBe(uri);
+    expect(result[0].range.start.line).toBe(0);
+    expect(result[0].range.start.character).toBe(0);
   } finally {
     await client.shutdown();
   }

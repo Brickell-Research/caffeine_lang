@@ -35,6 +35,7 @@ import {
 } from "./helpers.ts";
 
 import type { HandlerContext } from "./handlers.ts";
+import { debug } from "./debug.ts";
 
 // --- Hover ---
 
@@ -53,7 +54,7 @@ export function handleHover(ctx: HandlerContext, params: any) {
     if (result instanceof Some) {
       return { contents: { kind: "markdown" as const, value: result[0] } };
     }
-  } catch { /* ignore */ }
+  } catch (e) { debug(`hover: ${e}`); }
   return null;
 }
 
@@ -62,7 +63,8 @@ export function handleHover(ctx: HandlerContext, params: any) {
 // deno-lint-ignore no-explicit-any
 export function handleCompletion(ctx: HandlerContext, params: any) {
   const doc = ctx.documents.get(params.textDocument.uri);
-  const text = doc ? doc.getText() : "";
+  if (!doc) return [];
+  const text = doc.getText();
 
   try {
     const blueprintNames = toList(ctx.workspace.allKnownBlueprints());
@@ -77,7 +79,8 @@ export function handleCompletion(ctx: HandlerContext, params: any) {
       ...(item.insert_text instanceof Some ? { insertText: item.insert_text[0] } : {}),
       ...(item.insert_text_format instanceof Some ? { insertTextFormat: item.insert_text_format[0] } : {}),
     }));
-  } catch {
+  } catch (e) {
+    debug(`completion: ${e}`);
     return [];
   }
 }
@@ -97,7 +100,8 @@ export function handleHighlight(ctx: HandlerContext, params: any) {
       range: range(h[0], h[1], h[0], h[1] + h[2]),
       kind: 1,
     }));
-  } catch {
+  } catch (e) {
+    debug(`highlight: ${e}`);
     return [];
   }
 }
@@ -115,7 +119,7 @@ export function handleFormatting(ctx: HandlerContext, params: any) {
     if (result instanceof Ok) {
       return [{ range: range(0, 0, text.split("\n").length, 0), newText: result[0] }];
     }
-  } catch { /* ignore */ }
+  } catch (e) { debug(`formatting: ${e}`); }
   return [];
 }
 
@@ -166,7 +170,8 @@ export function handleCodeAction(_ctx: HandlerContext, params: any) {
         },
       };
     });
-  } catch {
+  } catch (e) {
+    debug(`codeAction: ${e}`);
     return [];
   }
 }
@@ -190,7 +195,7 @@ export function handlePrepareRename(ctx: HandlerContext, params: any) {
         ),
       };
     }
-  } catch { /* ignore */ }
+  } catch (e) { debug(`prepareRename: ${e}`); }
   return null;
 }
 
@@ -214,7 +219,8 @@ export function handleRename(ctx: HandlerContext, params: any) {
         })),
       },
     };
-  } catch {
+  } catch (e) {
+    debug(`rename: ${e}`);
     return null;
   }
 }
@@ -228,7 +234,8 @@ export function handleDocumentSymbol(ctx: HandlerContext, params: any) {
 
   try {
     return gleamArray(get_symbols(doc.getText()) as GleamList).map(gleamSymbolToLsp);
-  } catch {
+  } catch (e) {
+    debug(`documentSymbol: ${e}`);
     return [];
   }
 }
@@ -242,7 +249,8 @@ export function handleSemanticTokens(ctx: HandlerContext, params: any) {
 
   try {
     return { data: gleamArray(get_semantic_tokens(doc.getText()) as GleamList) };
-  } catch {
+  } catch (e) {
+    debug(`semanticTokens: ${e}`);
     return { data: [] };
   }
 }
@@ -260,7 +268,8 @@ export function handleFoldingRanges(ctx: HandlerContext, params: any) {
       endLine: r.end_line,
       kind: "region" as const,
     }));
-  } catch {
+  } catch (e) {
+    debug(`foldingRanges: ${e}`);
     return [];
   }
 }
@@ -276,7 +285,8 @@ export function handleSelectionRanges(ctx: HandlerContext, params: any) {
     return params.positions.map((pos: { line: number; character: number }) => {
       return gleamSelectionRangeToLsp(get_selection_range(doc.getText(), pos.line, pos.character));
     });
-  } catch {
+  } catch (e) {
+    debug(`selectionRanges: ${e}`);
     return [];
   }
 }
@@ -294,7 +304,8 @@ export function handleLinkedEditing(ctx: HandlerContext, params: any) {
     );
     if (ranges.length === 0) return null;
     return { ranges: ranges.map((r) => range(r[0], r[1], r[0], r[1] + r[2])) };
-  } catch {
+  } catch (e) {
+    debug(`linkedEditing: ${e}`);
     return null;
   }
 }
@@ -329,7 +340,7 @@ export function handleSignatureHelp(ctx: HandlerContext, params: any) {
         activeParameter: sig.active_parameter,
       };
     }
-  } catch { /* ignore */ }
+  } catch (e) { debug(`signatureHelp: ${e}`); }
   return null;
 }
 
@@ -355,7 +366,8 @@ export function handleInlayHints(ctx: HandlerContext, params: any) {
       kind: h.kind,
       paddingLeft: h.padding_left,
     }));
-  } catch {
+  } catch (e) {
+    debug(`inlayHints: ${e}`);
     return [];
   }
 }
