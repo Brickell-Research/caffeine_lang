@@ -152,23 +152,28 @@ fn find_comparator_loop(
 
 /// Finds the position of a substring in a string.
 fn find_substring_position(haystack: String, needle: String) -> Option(Int) {
-  find_substring_position_loop(haystack, needle, 0)
+  find_substring_position_loop(
+    haystack,
+    needle,
+    0,
+    string.length(needle),
+    string.length(haystack),
+  )
 }
 
 fn find_substring_position_loop(
   haystack: String,
   needle: String,
   pos: Int,
+  needle_len: Int,
+  haystack_len: Int,
 ) -> Option(Int) {
-  let needle_len = string.length(needle)
-  let haystack_len = string.length(haystack)
-
   use <- bool.guard(when: pos + needle_len > haystack_len, return: option.None)
   use <- bool.guard(
     when: string.slice(haystack, pos, needle_len) == needle,
     return: option.Some(pos),
   )
-  find_substring_position_loop(haystack, needle, pos + 1)
+  find_substring_position_loop(haystack, needle, pos + 1, needle_len, haystack_len)
 }
 
 /// Splits on "per" keyword, returning (threshold_str, interval_str).
@@ -258,12 +263,23 @@ fn find_operator(
 /// Used to validate parenthesized expressions during parsing.
 @internal
 pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
-  use <- bool.guard(when: pos >= string.length(input), return: count == 0)
+  is_balanced_parens_loop(input, pos, count, string.length(input))
+}
+
+/// Internal loop with pre-computed input length.
+fn is_balanced_parens_loop(
+  input: String,
+  pos: Int,
+  count: Int,
+  input_len: Int,
+) -> Bool {
+  use <- bool.guard(when: pos >= input_len, return: count == 0)
   let new_count = count_parens(count, input, pos)
   let does_not_close_too_early =
-    !{ { new_count == 0 } && !is_last_char(input, pos) }
+    !{ { new_count == 0 } && pos != input_len - 1 }
 
-  does_not_close_too_early && is_balanced_parens(input, pos + 1, new_count)
+  does_not_close_too_early
+  && is_balanced_parens_loop(input, pos + 1, new_count, input_len)
 }
 
 /// Returns true if the position is at the last character of the input string.
@@ -285,16 +301,35 @@ pub fn find_rightmost_operator_at_level(
   paren_level: Int,
   rightmost_pos: Int,
 ) -> Result(#(String, String), CompilationError) {
-  let operator_length = string.length(operator)
+  find_rightmost_operator_at_level_loop(
+    input,
+    operator,
+    start_pos,
+    paren_level,
+    rightmost_pos,
+    string.length(operator),
+    string.length(input),
+  )
+}
 
-  case start_pos >= string.length(input) {
+/// Internal loop with pre-computed lengths.
+fn find_rightmost_operator_at_level_loop(
+  input: String,
+  operator: String,
+  start_pos: Int,
+  paren_level: Int,
+  rightmost_pos: Int,
+  operator_length: Int,
+  input_len: Int,
+) -> Result(#(String, String), CompilationError) {
+  case start_pos >= input_len {
     True ->
       case rightmost_pos {
         -1 -> Error(errors.cql_parser_error(msg: "Operator not found"))
         pos -> {
           let left = string.trim(string.slice(input, 0, pos))
           let right_start = pos + operator_length
-          let right_length = string.length(input) - right_start
+          let right_length = input_len - right_start
           let right =
             string.trim(string.slice(input, right_start, right_length))
           Ok(#(left, right))
@@ -310,12 +345,14 @@ pub fn find_rightmost_operator_at_level(
         False -> rightmost_pos
       }
 
-      find_rightmost_operator_at_level(
+      find_rightmost_operator_at_level_loop(
         input,
         operator,
         start_pos + 1,
         new_paren_level,
         new_rightmost_pos,
+        operator_length,
+        input_len,
       )
     }
   }
