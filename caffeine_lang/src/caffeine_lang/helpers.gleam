@@ -71,6 +71,16 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
 /// Default SLO threshold percentage used when no explicit threshold is provided.
 pub const default_threshold_percentage = 99.9
 
+/// Build a Dict index from a list of ValueTuples for O(1) label lookups.
+@internal
+pub fn index_value_tuples(
+  values: List(ValueTuple),
+) -> dict.Dict(String, ValueTuple) {
+  values
+  |> list.map(fn(vt) { #(vt.label, vt) })
+  |> dict.from_list
+}
+
 /// Extract a value from a list of ValueTuple by label using the provided extractor.
 @internal
 pub fn extract_value(
@@ -83,12 +93,34 @@ pub fn extract_value(
   |> result.try(fn(vt) { extractor(vt.value) })
 }
 
+/// Extract a value from an indexed Dict of ValueTuples by label.
+@internal
+pub fn extract_value_indexed(
+  index: dict.Dict(String, ValueTuple),
+  label: String,
+  extractor: fn(Value) -> Result(a, Nil),
+) -> Result(a, Nil) {
+  index
+  |> dict.get(label)
+  |> result.try(fn(vt) { extractor(vt.value) })
+}
+
 /// Extract the threshold from a list of values.
 /// Threshold is a required param — linker validation guarantees it exists.
 @internal
 pub fn extract_threshold(values: List(ValueTuple)) -> Float {
   let assert Ok(threshold) =
     extract_value(values, "threshold", value.extract_percentage)
+  threshold
+}
+
+/// Extract the threshold from an indexed Dict of ValueTuples.
+@internal
+pub fn extract_threshold_indexed(
+  index: dict.Dict(String, ValueTuple),
+) -> Float {
+  let assert Ok(threshold) =
+    extract_value_indexed(index, "threshold", value.extract_percentage)
   threshold
 }
 
@@ -100,6 +132,24 @@ pub fn extract_relations(
 ) -> dict.Dict(DependencyRelationType, List(String)) {
   values
   |> list.find(fn(vt) { vt.label == "relations" })
+  |> extract_relations_from_value_tuple
+}
+
+/// Extract dependency relations from an indexed Dict of ValueTuples.
+@internal
+pub fn extract_relations_indexed(
+  index: dict.Dict(String, ValueTuple),
+) -> dict.Dict(DependencyRelationType, List(String)) {
+  index
+  |> dict.get("relations")
+  |> extract_relations_from_value_tuple
+}
+
+/// Shared implementation for extracting relations from a Result(ValueTuple, Nil).
+fn extract_relations_from_value_tuple(
+  vt_result: Result(ValueTuple, Nil),
+) -> dict.Dict(DependencyRelationType, List(String)) {
+  vt_result
   |> result.try(fn(vt) {
     case vt.value {
       value.DictValue(d) ->
@@ -141,6 +191,15 @@ pub fn extract_window_in_days(values: List(ValueTuple)) -> Int {
   |> result.unwrap(default_window_in_days)
 }
 
+/// Extract the window_in_days from an indexed Dict, falling back to the default.
+@internal
+pub fn extract_window_in_days_indexed(
+  index: dict.Dict(String, ValueTuple),
+) -> Int {
+  extract_value_indexed(index, "window_in_days", value.extract_int)
+  |> result.unwrap(default_window_in_days)
+}
+
 /// Extract indicators from a list of values as a Dict mapping indicator names to expressions.
 @internal
 pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String) {
@@ -150,11 +209,41 @@ pub fn extract_indicators(values: List(ValueTuple)) -> dict.Dict(String, String)
   |> result.unwrap(dict.new())
 }
 
+/// Extract indicators from an indexed Dict of ValueTuples.
+@internal
+pub fn extract_indicators_indexed(
+  index: dict.Dict(String, ValueTuple),
+) -> dict.Dict(String, String) {
+  index
+  |> dict.get("indicators")
+  |> result.try(fn(vt) { value.extract_string_dict(vt.value) })
+  |> result.unwrap(dict.new())
+}
+
 /// Extract user-provided tags as a sorted list of key-value pairs.
 @internal
 pub fn extract_tags(values: List(ValueTuple)) -> List(#(String, String)) {
   values
   |> list.find(fn(vt) { vt.label == "tags" })
+  |> result.try(fn(vt) {
+    case vt.value {
+      value.NilValue -> Ok(dict.new())
+      value.DictValue(_) -> value.extract_string_dict(vt.value)
+      _ -> Error(Nil)
+    }
+  })
+  |> result.unwrap(dict.new())
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+}
+
+/// Extract user-provided tags from an indexed Dict of ValueTuples.
+@internal
+pub fn extract_tags_indexed(
+  index: dict.Dict(String, ValueTuple),
+) -> List(#(String, String)) {
+  index
+  |> dict.get("tags")
   |> result.try(fn(vt) {
     case vt.value {
       value.NilValue -> Ok(dict.new())

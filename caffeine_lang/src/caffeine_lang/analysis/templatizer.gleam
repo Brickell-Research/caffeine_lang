@@ -30,7 +30,7 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/types
-import gleam/list
+import gleam/dict
 import gleam/result
 import gleam/string
 
@@ -80,8 +80,9 @@ pub fn parse_and_resolve_query_template(
   value_tuples: List(ValueTuple),
   from identifier: String,
 ) -> Result(String, CompilationError) {
+  let index = helpers.index_value_tuples(value_tuples)
   use resolved <- result.try(
-    do_parse_and_resolve_query_template(query, value_tuples)
+    do_parse_and_resolve_query_template(query, index)
     |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
   )
   Ok(cleanup_empty_template_artifacts(resolved))
@@ -90,7 +91,7 @@ pub fn parse_and_resolve_query_template(
 /// Internal recursive implementation of template resolution.
 fn do_parse_and_resolve_query_template(
   query: String,
-  value_tuples: List(ValueTuple),
+  index: dict.Dict(String, ValueTuple),
 ) -> Result(String, CompilationError) {
   case string.split_once(query, "$$") {
     // No more `$$`.
@@ -104,13 +105,13 @@ fn do_parse_and_resolve_query_template(
         Ok(#(inside, rest)) -> {
           use rest_of_items <- result.try(do_parse_and_resolve_query_template(
             rest,
-            value_tuples,
+            index,
           ))
 
           use template <- result.try(parse_template_variable(inside))
           use value_tuple <- result.try(
-            value_tuples
-            |> list.find(fn(vt) { vt.label == template.input_name })
+            index
+            |> dict.get(template.input_name)
             |> result.replace_error(
               errors.semantic_analysis_template_parse_error(
                 msg: "Missing input for template: " <> template.input_name,

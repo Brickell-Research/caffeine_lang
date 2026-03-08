@@ -67,14 +67,15 @@ fn build(
     let merged_inputs = dict.merge(blueprint.inputs, expectation.inputs)
 
     let value_tuples = build_value_tuples(merged_inputs, blueprint.params)
+    let index = helpers.index_value_tuples(value_tuples)
     let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
     let unique_name = org <> "_" <> service <> "_" <> expectation.name
     let artifact_data =
-      build_artifact_data(blueprint.artifact_refs, value_tuples)
+      build_artifact_data(blueprint.artifact_refs, index)
 
     // Resolve vendor from value tuples: required for SLO artifacts, None for dependency-only.
     use resolved_vendor <- result.try(resolve_vendor_from_values(
-      value_tuples,
+      index,
       blueprint.artifact_refs,
       org <> "." <> team <> "." <> service <> "." <> expectation.name,
     ))
@@ -97,19 +98,17 @@ fn build(
   })
 }
 
-/// Resolves the vendor from value tuples at IR construction time.
+/// Resolves the vendor from an indexed Dict of ValueTuples at IR construction time.
 /// SLO artifacts require a vendor; dependency-only artifacts get None.
 fn resolve_vendor_from_values(
-  value_tuples: List(helpers.ValueTuple),
+  index: dict.Dict(String, helpers.ValueTuple),
   artifact_refs: List(artifacts.ArtifactType),
   identifier: String,
 ) -> Result(option.Option(vendor.Vendor), CompilationError) {
   let has_slo = list.contains(artifact_refs, SLO)
   use <- bool.guard(when: !has_slo, return: Ok(option.None))
 
-  let vendor_value =
-    value_tuples
-    |> list.find(fn(vt) { vt.label == "vendor" })
+  let vendor_value = dict.get(index, "vendor")
 
   case vendor_value {
     Error(Nil) ->
@@ -258,19 +257,19 @@ fn resolve_values_for_tag(
   }
 }
 
-/// Build structured artifact data from artifact refs and value tuples.
+/// Build structured artifact data from artifact refs and an indexed Dict of ValueTuples.
 fn build_artifact_data(
   artifact_refs: List(artifacts.ArtifactType),
-  value_tuples: List(helpers.ValueTuple),
+  index: dict.Dict(String, helpers.ValueTuple),
 ) -> ir.ArtifactData {
   let fields =
     artifact_refs
     |> list.map(fn(ref) {
       case ref {
-        SLO -> #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples)))
+        SLO -> #(SLO, ir.SloArtifactFields(build_slo_fields(index)))
         DependencyRelations -> #(
           DependencyRelations,
-          ir.DependencyArtifactFields(build_dependency_fields(value_tuples)),
+          ir.DependencyArtifactFields(build_dependency_fields(index)),
         )
       }
     })
@@ -280,7 +279,7 @@ fn build_artifact_data(
   let fields = case dict.is_empty(fields) {
     True ->
       dict.from_list([
-        #(SLO, ir.SloArtifactFields(build_slo_fields(value_tuples))),
+        #(SLO, ir.SloArtifactFields(build_slo_fields(index))),
       ])
     False -> fields
   }
@@ -288,17 +287,19 @@ fn build_artifact_data(
   ir.ArtifactData(fields:)
 }
 
-/// Extract SLO-specific fields from value tuples.
-fn build_slo_fields(value_tuples: List(helpers.ValueTuple)) -> ir.SloFields {
-  let threshold = helpers.extract_threshold(value_tuples)
-  let indicators = helpers.extract_indicators(value_tuples)
-  let window_in_days = helpers.extract_window_in_days(value_tuples)
+/// Extract SLO-specific fields from an indexed Dict of ValueTuples.
+fn build_slo_fields(
+  index: dict.Dict(String, helpers.ValueTuple),
+) -> ir.SloFields {
+  let threshold = helpers.extract_threshold_indexed(index)
+  let indicators = helpers.extract_indicators_indexed(index)
+  let window_in_days = helpers.extract_window_in_days_indexed(index)
   let evaluation =
-    helpers.extract_value(value_tuples, "evaluation", value.extract_string)
+    helpers.extract_value_indexed(index, "evaluation", value.extract_string)
     |> option.from_result
-  let tags = helpers.extract_tags(value_tuples)
+  let tags = helpers.extract_tags_indexed(index)
   let runbook =
-    helpers.extract_value(value_tuples, "runbook", fn(v) {
+    helpers.extract_value_indexed(index, "runbook", fn(v) {
       case v {
         value.NilValue -> Ok(option.None)
         value.StringValue(s) -> Ok(option.Some(s))
@@ -317,12 +318,12 @@ fn build_slo_fields(value_tuples: List(helpers.ValueTuple)) -> ir.SloFields {
   )
 }
 
-/// Extract dependency-specific fields from value tuples.
+/// Extract dependency-specific fields from an indexed Dict of ValueTuples.
 fn build_dependency_fields(
-  value_tuples: List(helpers.ValueTuple),
+  index: dict.Dict(String, helpers.ValueTuple),
 ) -> ir.DependencyFields {
   ir.DependencyFields(
-    relations: helpers.extract_relations(value_tuples),
-    tags: helpers.extract_tags(value_tuples),
+    relations: helpers.extract_relations_indexed(index),
+    tags: helpers.extract_tags_indexed(index),
   )
 }
