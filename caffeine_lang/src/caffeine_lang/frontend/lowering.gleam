@@ -296,10 +296,13 @@ pub fn literal_to_value(lit: Literal) -> value.Value {
 /// Transforms template variables from $var->attr$ to $$var->attr$$ format.
 /// Also handles $var->attr.not$ to $$var->attr:not$$ format.
 fn transform_template_vars(s: String) -> String {
-  transform_template_vars_loop(s, "")
+  transform_template_vars_loop(s, [])
 }
 
-fn transform_template_vars_loop(remaining: String, acc: String) -> String {
+fn transform_template_vars_loop(
+  remaining: String,
+  acc: List(String),
+) -> String {
   case string.split_once(remaining, "$") {
     Ok(#(before, after)) -> {
       // Check if this is an escaped $$ (already transformed)
@@ -308,7 +311,7 @@ fn transform_template_vars_loop(remaining: String, acc: String) -> String {
           // Skip escaped $$, keep both dollars
           transform_template_vars_loop(
             string.drop_start(after, 1),
-            acc <> before <> "$$",
+            ["$$", before, ..acc],
           )
         }
         False -> {
@@ -319,12 +322,12 @@ fn transform_template_vars_loop(remaining: String, acc: String) -> String {
               let transformed = string.replace(var_content, ".not", ":not")
               transform_template_vars_loop(
                 rest,
-                acc <> before <> "$$" <> transformed <> "$$",
+                ["$$", transformed, "$$", before, ..acc],
               )
             }
             Error(Nil) -> {
               // No closing $, just append as-is
-              acc <> before <> "$" <> after
+              string.concat(list.reverse([after, "$", before, ..acc]))
             }
           }
         }
@@ -332,7 +335,7 @@ fn transform_template_vars_loop(remaining: String, acc: String) -> String {
     }
     Error(Nil) -> {
       // No more $, append the rest and we're done
-      acc <> remaining
+      string.concat(list.reverse([remaining, ..acc]))
     }
   }
 }
