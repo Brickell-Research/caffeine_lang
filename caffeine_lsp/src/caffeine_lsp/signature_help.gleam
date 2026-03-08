@@ -42,8 +42,9 @@ pub fn get_signature_help(
     line,
   ))
   // Must find the matching validated blueprint.
+  let blueprint_index = blueprint_utils.index_blueprints(validated_blueprints)
   use blueprint <- option.then(
-    list.find(validated_blueprints, fn(b) { b.name == blueprint_ref })
+    dict.get(blueprint_index, blueprint_ref)
     |> option.from_result,
   )
 

@@ -7,7 +7,7 @@ import caffeine_lang/types.{type AcceptedTypes, Defaulted, ModifierType}
 import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/list
 import gleam/string
 
@@ -33,7 +33,8 @@ pub fn get_inlay_hints(
   case file_utils.parse(content) {
     Ok(file_utils.Expects(file)) -> {
       let lines = string.split(content, "\n")
-      get_expects_hints(lines, file, start_line, end_line, validated_blueprints)
+      let blueprint_index = blueprint_utils.index_blueprints(validated_blueprints)
+      get_expects_hints(lines, file, start_line, end_line, blueprint_index)
     }
     _ -> []
   }
@@ -45,10 +46,10 @@ fn get_expects_hints(
   file: ast.ExpectsFile(ast.Parsed),
   start_line: Int,
   end_line: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  blueprint_index: Dict(String, Blueprint(BlueprintValidated)),
 ) -> List(InlayHint) {
   list.flat_map(file.blocks, fn(block) {
-    case list.find(validated_blueprints, fn(b) { b.name == block.blueprint }) {
+    case dict.get(blueprint_index, block.blueprint) {
       Error(_) -> []
       Ok(blueprint) -> {
         let remaining_params =

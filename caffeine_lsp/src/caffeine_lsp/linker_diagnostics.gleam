@@ -44,6 +44,8 @@ pub fn get_linker_diagnostics(
   case pipeline.compile_expects(source) {
     Error(_) -> []
     Ok(expectations) -> {
+      let blueprint_index =
+        blueprint_utils.index_blueprints(all_validated_blueprints)
       let #(diagnostics, _) =
         list.fold(expectations, #([], 0), fn(acc, expectation) {
           let #(diags_so_far, search_from) = acc
@@ -59,7 +61,7 @@ pub fn get_linker_diagnostics(
             check_expectation(
               content,
               expectation,
-              all_validated_blueprints,
+              blueprint_index,
               anchor_line,
             )
           #(list.append(diags_so_far, new_diags), anchor_line + 1)
@@ -69,14 +71,14 @@ pub fn get_linker_diagnostics(
   }
 }
 
-/// Check a single expectation against all known blueprints.
+/// Check a single expectation against an indexed Dict of blueprints.
 fn check_expectation(
   content: String,
   expectation: Expectation,
-  blueprints: List(Blueprint(BlueprintValidated)),
+  blueprint_index: dict.Dict(String, Blueprint(BlueprintValidated)),
   anchor_line: Int,
 ) -> List(Diagnostic) {
-  case list.find(blueprints, fn(b) { b.name == expectation.blueprint_ref }) {
+  case dict.get(blueprint_index, expectation.blueprint_ref) {
     Error(Nil) -> []
     Ok(blueprint) -> {
       let remaining_params = blueprint_utils.compute_remaining_params(blueprint)
