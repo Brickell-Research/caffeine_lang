@@ -9,6 +9,7 @@ import caffeine_query_language/resolver
 import gleam/dict
 import gleam/list
 import gleam/result
+import gleam/set.{type Set}
 import gleam/string
 import terra_madre/hcl
 
@@ -75,13 +76,19 @@ pub fn substitute_words(
 /// Returns a list of unique word strings found in the expression.
 @internal
 pub fn extract_words(exp: Exp(a)) -> List(String) {
+  extract_words_loop(exp, set.new())
+  |> set.to_list
+  |> list.sort(string.compare)
+}
+
+/// Accumulates unique word names into a Set.
+fn extract_words_loop(exp: Exp(a), acc: Set(String)) -> Set(String) {
   case exp {
-    Primary(PrimaryWord(Word(name))) -> [name]
-    Primary(PrimaryExp(inner)) -> extract_words(inner)
-    ast.TimeSliceExpr(_) -> []
+    Primary(PrimaryWord(Word(name))) -> set.insert(acc, name)
+    Primary(PrimaryExp(inner)) -> extract_words_loop(inner, acc)
+    ast.TimeSliceExpr(_) -> acc
     OperatorExpr(left, right, _) ->
-      list.append(extract_words(left), extract_words(right))
-      |> list.unique
+      extract_words_loop(right, extract_words_loop(left, acc))
   }
 }
 
