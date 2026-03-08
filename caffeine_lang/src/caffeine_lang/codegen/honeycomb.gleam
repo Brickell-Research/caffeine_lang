@@ -245,33 +245,11 @@ pub fn sanitize_honeycomb_tag_value(value: String) -> String {
 }
 
 fn is_lowercase_letter(char: String) -> Bool {
-  case char {
-    "a"
-    | "b"
-    | "c"
-    | "d"
-    | "e"
-    | "f"
-    | "g"
-    | "h"
-    | "i"
-    | "j"
-    | "k"
-    | "l"
-    | "m"
-    | "n"
-    | "o"
-    | "p"
-    | "q"
-    | "r"
-    | "s"
-    | "t"
-    | "u"
-    | "v"
-    | "w"
-    | "x"
-    | "y"
-    | "z" -> True
+  case string.to_utf_codepoints(char) {
+    [cp] -> {
+      let code = string.utf_codepoint_to_int(cp)
+      code >= 97 && code <= 122
+    }
     _ -> False
   }
 }
@@ -279,17 +257,16 @@ fn is_lowercase_letter(char: String) -> Bool {
 fn is_valid_tag_value_char(char: String) -> Bool {
   case char {
     "-" | "/" -> True
-    _ ->
-      case is_lowercase_letter(char) {
-        True -> True
-        False -> is_digit(char)
-      }
+    _ -> is_lowercase_letter(char) || is_digit(char)
   }
 }
 
 fn is_digit(char: String) -> Bool {
-  case char {
-    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> True
+  case string.to_utf_codepoints(char) {
+    [cp] -> {
+      let code = string.utf_codepoint_to_int(cp)
+      code >= 48 && code <= 57
+    }
     _ -> False
   }
 }
