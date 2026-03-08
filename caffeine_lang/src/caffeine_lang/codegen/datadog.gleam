@@ -193,11 +193,13 @@ pub fn generate_resources(
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
   irs
   |> list.try_fold(#([], []), fn(acc, ir) {
-    let #(resources, warnings) = acc
+    let #(resources, warning_lists) = acc
     use #(resource, ir_warnings) <- result.try(ir_to_terraform_resource(ir))
-    Ok(#([resource, ..resources], list.append(ir_warnings, warnings)))
+    Ok(#([resource, ..resources], [ir_warnings, ..warning_lists]))
   })
-  |> result.map(fn(pair) { #(list.reverse(pair.0), list.reverse(pair.1)) })
+  |> result.map(fn(pair) {
+    #(list.reverse(pair.0), list.flatten(list.reverse(pair.1)))
+  })
 }
 
 /// Terraform settings block with required Datadog provider.
