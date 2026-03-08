@@ -7,6 +7,7 @@ import caffeine_lang/value.{type Value}
 import gleam/dict
 import gleam/list
 import gleam/result
+import gleam/set
 import gleam/string
 
 /// An Expectation is a concrete implementation of an Artifact + Blueprint.
@@ -81,9 +82,10 @@ fn validate_blueprint_refs(
   blueprints: List(Blueprint(BlueprintValidated)),
 ) -> Result(Nil, CompilationError) {
   let blueprint_names = list.map(blueprints, fn(b) { b.name })
+  let blueprint_name_set = set.from_list(blueprint_names)
   let missing =
     expectations
-    |> list.filter(fn(e) { !list.contains(blueprint_names, e.blueprint_ref) })
+    |> list.filter(fn(e) { !set.contains(blueprint_name_set, e.blueprint_ref) })
     |> list.map(fn(e) { e.blueprint_ref })
 
   case missing {
