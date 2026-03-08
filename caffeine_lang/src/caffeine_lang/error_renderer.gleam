@@ -1,24 +1,24 @@
 /// Plain-text error renderer (no ANSI codes).
 /// Composes error code, message, location, source snippet, and suggestion
 /// into Rust/Elm-style diagnostic output.
-import caffeine_lang/errors.{type SourceLocation}
-import caffeine_lang/rich_error.{type RichError}
+import caffeine_lang/errors.{type CompilationError, type SourceLocation}
 import caffeine_lang/source_snippet
 import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
 
-/// Renders a RichError to a plain-text string.
-pub fn render_plain(error: RichError) -> String {
-  let code_str = rich_error.error_code_to_string(error.code)
-  let msg = rich_error.error_message(error.error)
+/// Renders a CompilationError to a plain-text diagnostic string.
+pub fn render_plain(error: CompilationError) -> String {
+  let code_str = errors.error_code_to_string(errors.error_code_for(error))
+  let msg = errors.to_message(error)
+  let ctx = errors.error_context(error)
 
   // Header line: error[E103]: message
   let header = "error[" <> code_str <> "]: " <> msg
 
   // Location line: --> path:line:column
-  let location_line = case error.source_path, error.location {
+  let location_line = case ctx.source_path, ctx.location {
     option.Some(path), option.Some(loc) ->
       option.Some(
         "  --> "
@@ -33,14 +33,14 @@ pub fn render_plain(error: RichError) -> String {
   }
 
   // Source snippet
-  let snippet = case error.source_content, error.location {
+  let snippet = case ctx.source_content, ctx.location {
     option.Some(content), option.Some(loc) ->
       option.Some(render_snippet(content, loc))
     _, _ -> option.None
   }
 
   // Suggestion line
-  let suggestion_line = case error.suggestion {
+  let suggestion_line = case ctx.suggestion {
     option.Some(suggestion) ->
       option.Some("   = help: Did you mean '" <> suggestion <> "'?")
     option.None -> option.None
@@ -57,8 +57,8 @@ pub fn render_plain(error: RichError) -> String {
   |> string.join("\n")
 }
 
-/// Renders a list of RichErrors to a plain-text string.
-pub fn render_all_plain(errors: List(RichError)) -> String {
+/// Renders a list of CompilationErrors to a plain-text string.
+pub fn render_all_plain(errors: List(CompilationError)) -> String {
   errors
   |> list.map(render_plain)
   |> string.join("\n\n")

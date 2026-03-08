@@ -7,7 +7,6 @@ import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/frontend/formatter
-import caffeine_lang/rich_error
 import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
@@ -431,9 +430,9 @@ fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
   Ok(Nil)
 }
 
-/// Formats a CompilationError using the rich error presenter with color support.
+/// Formats a CompilationError using the error presenter with color support.
 fn format_compilation_error(err: errors.CompilationError) -> String {
   let color_mode = color.detect_color_mode()
-  let rich_errors = rich_error.from_compilation_errors(err)
-  error_presenter.render_all(rich_errors, color_mode)
+  let errs = errors.to_list(err)
+  error_presenter.render_all(errs, color_mode)
 }

@@ -1,18 +1,18 @@
 /// Colorized error renderer for CLI output.
-/// Applies ANSI color codes to RichError diagnostic output.
+/// Applies ANSI color codes to CompilationError diagnostic output.
 import caffeine_cli/color.{type ColorMode}
-import caffeine_lang/errors.{type SourceLocation}
-import caffeine_lang/rich_error.{type RichError}
+import caffeine_lang/errors.{type CompilationError, type SourceLocation}
 import caffeine_lang/source_snippet
 import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
 
-/// Renders a RichError with ANSI color codes.
-pub fn render(error: RichError, color_mode: ColorMode) -> String {
-  let code_str = rich_error.error_code_to_string(error.code)
-  let msg = rich_error.error_message(error.error)
+/// Renders a CompilationError with ANSI color codes.
+pub fn render(error: CompilationError, color_mode: ColorMode) -> String {
+  let code_str = errors.error_code_to_string(errors.error_code_for(error))
+  let msg = errors.to_message(error)
+  let ctx = errors.error_context(error)
 
   // Header: error[E103]: message
   let header =
@@ -21,7 +21,7 @@ pub fn render(error: RichError, color_mode: ColorMode) -> String {
     <> msg
 
   // Location: --> path:line:column
-  let location_line = case error.source_path, error.location {
+  let location_line = case ctx.source_path, ctx.location {
     option.Some(path), option.Some(loc) ->
       option.Some(
         "  "
@@ -43,14 +43,14 @@ pub fn render(error: RichError, color_mode: ColorMode) -> String {
   }
 
   // Source snippet with colored markers
-  let snippet = case error.source_content, error.location {
+  let snippet = case ctx.source_content, ctx.location {
     option.Some(content), option.Some(loc) ->
       option.Some(render_colored_snippet(content, loc, color_mode))
     _, _ -> option.None
   }
 
   // Suggestion: = help: Did you mean 'X'?
-  let suggestion_line = case error.suggestion {
+  let suggestion_line = case ctx.suggestion {
     option.Some(suggestion) ->
       option.Some(
         "   "
@@ -72,8 +72,8 @@ pub fn render(error: RichError, color_mode: ColorMode) -> String {
   |> string.join("\n")
 }
 
-/// Renders a list of RichErrors with ANSI color codes.
-pub fn render_all(errors: List(RichError), color_mode: ColorMode) -> String {
+/// Renders a list of CompilationErrors with ANSI color codes.
+pub fn render_all(errors: List(CompilationError), color_mode: ColorMode) -> String {
   errors
   |> list.map(render(_, color_mode))
   |> string.join("\n\n")

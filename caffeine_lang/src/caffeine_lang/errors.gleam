@@ -1,5 +1,7 @@
+import caffeine_lang/constants
 import caffeine_lang/types.{type ValidationError}
 import caffeine_lang/value.{type Value}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string
@@ -135,6 +137,55 @@ pub fn cql_resolver_error(msg msg: String) -> CompilationError {
 /// Creates a CQLParserError with empty context.
 pub fn cql_parser_error(msg msg: String) -> CompilationError {
   CQLParserError(msg:, context: empty_context())
+}
+
+// ==== Error codes ====
+
+/// Machine-readable error code for diagnostic output.
+pub type ErrorCode {
+  ErrorCode(phase: String, number: Int)
+}
+
+/// Converts an ErrorCode to its display string (e.g., "E103").
+pub fn error_code_to_string(code: ErrorCode) -> String {
+  let s = int.to_string(code.number)
+  let padding = 3 - string.length(s)
+  case padding > 0 {
+    True -> "E" <> string.repeat("0", padding) <> s
+    False -> "E" <> s
+  }
+}
+
+/// Assigns an error code based on the CompilationError variant.
+pub fn error_code_for(error: CompilationError) -> ErrorCode {
+  case error {
+    FrontendParseError(..) -> ErrorCode("parse", 100)
+    FrontendValidationError(..) -> ErrorCode("validation", 200)
+    LinkerValueValidationError(..) -> ErrorCode("linker", 302)
+    LinkerDuplicateError(..) -> ErrorCode("linker", 303)
+    LinkerParseError(..) -> ErrorCode("linker", 301)
+    LinkerVendorResolutionError(..) -> ErrorCode("linker", 304)
+    SemanticAnalysisTemplateParseError(..) -> ErrorCode("semantic", 402)
+    SemanticAnalysisTemplateResolutionError(..) -> ErrorCode("semantic", 403)
+    SemanticAnalysisDependencyValidationError(..) -> ErrorCode("semantic", 404)
+    GeneratorSloQueryResolutionError(..) -> ErrorCode("codegen", 501)
+    GeneratorTerraformResolutionError(vendor:, ..) ->
+      vendor_to_error_code(vendor)
+    CQLResolverError(..) -> ErrorCode("cql", 601)
+    CQLParserError(..) -> ErrorCode("cql", 602)
+    CompilationErrors(..) -> ErrorCode("multiple", 0)
+  }
+}
+
+/// Maps a vendor string to its codegen error code.
+fn vendor_to_error_code(vendor: String) -> ErrorCode {
+  case vendor {
+    v if v == constants.vendor_datadog -> ErrorCode("codegen", 502)
+    v if v == constants.vendor_honeycomb -> ErrorCode("codegen", 503)
+    v if v == constants.vendor_dynatrace -> ErrorCode("codegen", 504)
+    v if v == constants.vendor_newrelic -> ErrorCode("codegen", 505)
+    _ -> ErrorCode("codegen", 500)
+  }
 }
 
 /// Extracts the ErrorContext from any CompilationError variant.

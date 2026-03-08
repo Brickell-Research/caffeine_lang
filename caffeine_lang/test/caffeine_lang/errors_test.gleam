@@ -1,8 +1,69 @@
-import caffeine_lang/errors
+import caffeine_lang/constants
+import caffeine_lang/errors.{ErrorCode}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/option
 import test_helpers
+
+// ==== error_code_to_string ====
+// * ✅ three digit number
+// * ✅ two digit number (pads)
+// * ✅ single digit number (pads)
+pub fn error_code_to_string_test() {
+  [
+    #("three digit number", ErrorCode("parse", 103), "E103"),
+    #("two digit number (pads)", ErrorCode("cql", 42), "E042"),
+    #("single digit number (pads)", ErrorCode("test", 1), "E001"),
+  ]
+  |> test_helpers.table_test_1(errors.error_code_to_string)
+}
+
+// ==== error_code_for ====
+// * ✅ frontend parse error
+// * ✅ frontend validation error
+// * ✅ linker vendor resolution error
+// * ✅ codegen error
+// * ✅ cql error
+pub fn error_code_for_test() {
+  [
+    #(
+      "frontend parse error",
+      errors.FrontendParseError(msg: "test", context: errors.empty_context()),
+      ErrorCode("parse", 100),
+    ),
+    #(
+      "frontend validation error",
+      errors.FrontendValidationError(
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("validation", 200),
+    ),
+    #(
+      "linker vendor resolution error",
+      errors.LinkerVendorResolutionError(
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("linker", 304),
+    ),
+    #(
+      "codegen error",
+      errors.GeneratorTerraformResolutionError(
+        vendor: constants.vendor_datadog,
+        msg: "test",
+        context: errors.empty_context(),
+      ),
+      ErrorCode("codegen", 502),
+    ),
+    #(
+      "cql error",
+      errors.CQLParserError(msg: "test", context: errors.empty_context()),
+      ErrorCode("cql", 602),
+    ),
+  ]
+  |> test_helpers.table_test_1(errors.error_code_for)
+}
 
 // ==== Format Decode Error Message Tests ====
 // * ✅ empty list
