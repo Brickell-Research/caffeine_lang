@@ -100,7 +100,7 @@ fn tokenize_loop(
         }
 
         "\"" -> {
-          case read_string(rest, "") {
+          case read_string(rest, []) {
             Ok(#(str_content, remaining)) ->
               tokenize_loop(
                 advance(state, remaining, 2 + string.length(str_content)),
@@ -254,22 +254,28 @@ fn count_indentation(source: String, count: Int) -> #(Int, String) {
 }
 
 fn read_until_newline(source: String) -> #(String, String) {
-  read_until_newline_loop(source, "")
+  read_until_newline_loop(source, [])
 }
 
-fn read_until_newline_loop(source: String, acc: String) -> #(String, String) {
+fn read_until_newline_loop(
+  source: String,
+  acc: List(String),
+) -> #(String, String) {
   case string.pop_grapheme(source) {
-    Ok(#("\n", _)) -> #(acc, source)
-    Ok(#(char, rest)) -> read_until_newline_loop(rest, acc <> char)
-    Error(Nil) -> #(acc, source)
+    Ok(#("\n", _)) -> #(string.concat(list.reverse(acc)), source)
+    Ok(#(char, rest)) -> read_until_newline_loop(rest, [char, ..acc])
+    Error(Nil) -> #(string.concat(list.reverse(acc)), source)
   }
 }
 
-fn read_string(source: String, acc: String) -> Result(#(String, String), Nil) {
+fn read_string(
+  source: String,
+  acc: List(String),
+) -> Result(#(String, String), Nil) {
   case string.pop_grapheme(source) {
-    Ok(#("\"", rest)) -> Ok(#(acc, rest))
+    Ok(#("\"", rest)) -> Ok(#(string.concat(list.reverse(acc)), rest))
     Ok(#("\n", _)) -> Error(Nil)
-    Ok(#(char, rest)) -> read_string(rest, acc <> char)
+    Ok(#(char, rest)) -> read_string(rest, [char, ..acc])
     Error(Nil) -> Error(Nil)
   }
 }
@@ -303,15 +309,23 @@ fn read_number(
   }
 }
 
-fn read_digits(source: String, acc: String) -> #(String, String) {
+fn read_digits(source: String, prefix: String) -> #(String, String) {
+  let initial = case prefix {
+    "" -> []
+    p -> [p]
+  }
+  read_digits_loop(source, initial)
+}
+
+fn read_digits_loop(source: String, acc: List(String)) -> #(String, String) {
   case string.pop_grapheme(source) {
     Ok(#(char, rest)) -> {
       case is_digit(char) {
-        True -> read_digits(rest, acc <> char)
-        False -> #(acc, source)
+        True -> read_digits_loop(rest, [char, ..acc])
+        False -> #(string.concat(list.reverse(acc)), source)
       }
     }
-    Error(Nil) -> #(acc, source)
+    Error(Nil) -> #(string.concat(list.reverse(acc)), source)
   }
 }
 
@@ -383,18 +397,21 @@ fn is_letter(char: String) -> Bool {
 }
 
 fn read_identifier(source: String) -> #(String, String) {
-  read_identifier_loop(source, "")
+  read_identifier_loop(source, [])
 }
 
-fn read_identifier_loop(source: String, acc: String) -> #(String, String) {
+fn read_identifier_loop(
+  source: String,
+  acc: List(String),
+) -> #(String, String) {
   case string.pop_grapheme(source) {
     Ok(#(char, rest)) -> {
       case is_identifier_char(char) {
-        True -> read_identifier_loop(rest, acc <> char)
-        False -> #(acc, source)
+        True -> read_identifier_loop(rest, [char, ..acc])
+        False -> #(string.concat(list.reverse(acc)), source)
       }
     }
-    Error(Nil) -> #(acc, source)
+    Error(Nil) -> #(string.concat(list.reverse(acc)), source)
   }
 }
 
