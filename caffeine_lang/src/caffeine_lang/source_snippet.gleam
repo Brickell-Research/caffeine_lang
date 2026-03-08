@@ -1,5 +1,6 @@
 /// Source snippet extraction for error display.
 /// Extracts lines around an error position and adds line numbers and markers.
+import gleam/bool
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
@@ -20,22 +21,23 @@ pub fn extract_snippet(
   column: Int,
   end_column: Option(Int),
 ) -> SourceSnippet {
-  let lines = string.split(source_content, "\n")
-  let total_lines = list.length(lines)
-
-  // Context window: 1 line above and below.
   let start_line = int.max(1, line - 1)
-  let end_line = int.min(total_lines, line + 1)
+  let end_line = line + 1
 
-  // Gutter width from largest line number.
-  let gutter_width = string.length(int.to_string(end_line))
+  let context = extract_context_lines(source_content, start_line, end_line)
+
+  // Gutter width from actual last line number found.
+  let max_line_num = case list.last(context) {
+    Ok(#(n, _)) -> n
+    Error(_) -> end_line
+  }
+  let gutter_width = string.length(int.to_string(max_line_num))
 
   // Extract and format context lines.
   let context_lines =
-    extract_lines(lines, start_line, end_line)
+    context
     |> list.map(fn(pair) {
-      let #(line_num, line_content) = pair
-      format_line(line_num, line_content, gutter_width)
+      format_line(pair.0, pair.1, gutter_width)
     })
 
   // Build marker line.
@@ -53,36 +55,45 @@ pub fn extract_snippet(
   SourceSnippet(rendered:)
 }
 
-/// Extracts lines from start_line to end_line (1-indexed, inclusive).
-fn extract_lines(
-  lines: List(String),
+/// Extracts only the lines in [start_line, end_line] without splitting the entire source.
+/// Uses split_once to skip lines before the range and stop after it.
+fn extract_context_lines(
+  source: String,
   start_line: Int,
   end_line: Int,
 ) -> List(#(Int, String)) {
-  extract_lines_loop(lines, 1, start_line, end_line, [])
+  let remaining = skip_lines(source, start_line - 1)
+  collect_lines(remaining, start_line, end_line, [])
   |> list.reverse
 }
 
-fn extract_lines_loop(
-  lines: List(String),
-  current: Int,
-  start: Int,
-  end: Int,
+/// Skips past the first `count` lines by splitting on newlines.
+fn skip_lines(source: String, count: Int) -> String {
+  use <- bool.guard(when: count <= 0, return: source)
+  case string.split_once(source, "\n") {
+    Ok(#(_, rest)) -> skip_lines(rest, count - 1)
+    Error(_) -> source
+  }
+}
+
+/// Collects lines from current_line to end_line (inclusive).
+fn collect_lines(
+  source: String,
+  current_line: Int,
+  end_line: Int,
   acc: List(#(Int, String)),
 ) -> List(#(Int, String)) {
-  case lines {
-    [] -> acc
-    [line, ..rest] -> {
-      case current > end {
-        True -> acc
-        False -> {
-          let new_acc = case current >= start {
-            True -> [#(current, line), ..acc]
-            False -> acc
-          }
-          extract_lines_loop(rest, current + 1, start, end, new_acc)
-        }
-      }
+  use <- bool.guard(when: current_line > end_line, return: acc)
+  case string.split_once(source, "\n") {
+    Ok(#(line, rest)) ->
+      collect_lines(rest, current_line + 1, end_line, [
+        #(current_line, line),
+        ..acc
+      ])
+    Error(_) -> {
+      // Last line (no trailing newline).
+      use <- bool.guard(when: string.is_empty(source), return: acc)
+      [#(current_line, source), ..acc]
     }
   }
 }
