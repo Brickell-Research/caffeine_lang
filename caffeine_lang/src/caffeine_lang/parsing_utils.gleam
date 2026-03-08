@@ -7,7 +7,7 @@ import gleam/string
 @internal
 pub fn split_at_top_level_comma(s: String) -> List(String) {
   let chars = string.to_graphemes(s)
-  do_split_at_top_level_comma(chars, 0, 0, "", [])
+  do_split_at_top_level_comma(chars, 0, 0, [], [])
 }
 
 /// Extracts the content inside the outermost pair of parentheses,
@@ -22,7 +22,7 @@ pub fn extract_paren_content(raw: String) -> Result(String, Nil) {
       use #(content, rest) <- result.try(find_matching_close_paren(
         after_open,
         1,
-        "",
+        [],
       ))
       // If there's non-whitespace content after the closing paren,
       // this is likely a refinement type and we should fail
@@ -39,18 +39,19 @@ pub fn extract_paren_content(raw: String) -> Result(String, Nil) {
 fn find_matching_close_paren(
   s: String,
   depth: Int,
-  acc: String,
+  acc: List(String),
 ) -> Result(#(String, String), Nil) {
   case string.pop_grapheme(s) {
     Error(_) -> Error(Nil)
-    Ok(#("(", rest)) -> find_matching_close_paren(rest, depth + 1, acc <> "(")
+    Ok(#("(", rest)) ->
+      find_matching_close_paren(rest, depth + 1, ["(", ..acc])
     Ok(#(")", rest)) -> {
       case depth {
-        1 -> Ok(#(acc, rest))
-        _ -> find_matching_close_paren(rest, depth - 1, acc <> ")")
+        1 -> Ok(#(string.concat(list.reverse(acc)), rest))
+        _ -> find_matching_close_paren(rest, depth - 1, [")", ..acc])
       }
     }
-    Ok(#(char, rest)) -> find_matching_close_paren(rest, depth, acc <> char)
+    Ok(#(char, rest)) -> find_matching_close_paren(rest, depth, [char, ..acc])
   }
 }
 
@@ -79,12 +80,12 @@ fn do_split_at_top_level_comma(
   chars: List(String),
   paren_depth: Int,
   brace_depth: Int,
-  current: String,
+  current: List(String),
   acc: List(String),
 ) -> List(String) {
   case chars {
     [] -> {
-      let trimmed = string.trim(current)
+      let trimmed = string.trim(string.concat(list.reverse(current)))
       case trimmed {
         "" -> list.reverse(acc)
         _ -> list.reverse([trimmed, ..acc])
@@ -95,7 +96,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth + 1,
         brace_depth,
-        current <> "(",
+        ["(", ..current],
         acc,
       )
     [")", ..rest] ->
@@ -103,7 +104,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth - 1,
         brace_depth,
-        current <> ")",
+        [")", ..current],
         acc,
       )
     ["{", ..rest] ->
@@ -111,7 +112,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth + 1,
-        current <> "{",
+        ["{", ..current],
         acc,
       )
     ["}", ..rest] ->
@@ -119,12 +120,12 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth - 1,
-        current <> "}",
+        ["}", ..current],
         acc,
       )
     [",", ..rest] if paren_depth == 0 && brace_depth == 0 -> {
-      let trimmed = string.trim(current)
-      do_split_at_top_level_comma(rest, paren_depth, brace_depth, "", [
+      let trimmed = string.trim(string.concat(list.reverse(current)))
+      do_split_at_top_level_comma(rest, paren_depth, brace_depth, [], [
         trimmed,
         ..acc
       ])
@@ -134,7 +135,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth,
-        current <> char,
+        [char, ..current],
         acc,
       )
   }
