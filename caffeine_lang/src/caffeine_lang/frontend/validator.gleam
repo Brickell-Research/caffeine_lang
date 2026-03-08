@@ -401,9 +401,13 @@ fn validate_no_circular_type_aliases(
 ) -> Result(Nil, ValidatorError) {
   let type_alias_map = build_type_alias_map(type_aliases)
   list.try_each(type_aliases, fn(ta) {
-    validate_type_alias_not_circular(ta.name, ta.type_, type_alias_map, [
+    validate_type_alias_not_circular(
       ta.name,
-    ])
+      ta.type_,
+      type_alias_map,
+      [ta.name],
+      set.from_list([ta.name]),
+    )
   })
 }
 
@@ -414,14 +418,18 @@ fn validate_type_alias_not_circular(
   original_name: String,
   typ: ParsedType,
   type_alias_map: List(#(String, ParsedType)),
-  visited: List(String),
+  visited_path: List(String),
+  visited_set: set.Set(String),
 ) -> Result(Nil, ValidatorError) {
   case typ {
     ParsedPrimitive(_) -> Ok(Nil)
     ParsedTypeAliasRef(name) -> {
       use <- bool.guard(
-        when: list.contains(visited, name),
-        return: Error(CircularTypeAlias(name: original_name, cycle: visited)),
+        when: set.contains(visited_set, name),
+        return: Error(CircularTypeAlias(
+          name: original_name,
+          cycle: visited_path,
+        )),
       )
       case list.key_find(type_alias_map, name) {
         Ok(resolved) ->
@@ -429,7 +437,8 @@ fn validate_type_alias_not_circular(
             original_name,
             resolved,
             type_alias_map,
-            [name, ..visited],
+            [name, ..visited_path],
+            set.insert(visited_set, name),
           )
         // Undefined ref is caught elsewhere
         Error(_) -> Ok(Nil)
@@ -442,7 +451,8 @@ fn validate_type_alias_not_circular(
           original_name,
           inner,
           type_alias_map,
-          visited,
+          visited_path,
+          visited_set,
         )
       })
   }
