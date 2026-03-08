@@ -72,7 +72,8 @@ fn run_parse_and_link(
   blueprint: SourceFile(BlueprintSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
-  linker.link(blueprint, expectations)
+  let artifacts = stdlib_artifacts.standard_library()
+  linker.link(blueprint, expectations, artifacts:)
 }
 
 fn run_semantic_analysis(

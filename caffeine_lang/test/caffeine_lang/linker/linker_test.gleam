@@ -1,5 +1,6 @@
 import caffeine_lang/linker/linker
 import caffeine_lang/source_file.{SourceFile}
+import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleeunit/should
 import simplifile
 
@@ -25,7 +26,7 @@ pub fn link_happy_path_test() {
     ),
   ]
 
-  let result = linker.link(blueprint, expectations)
+  let result = linker.link(blueprint, expectations, artifacts: stdlib_artifacts.standard_library())
   result |> should.be_ok()
 
   let assert Ok(irs) = result
@@ -34,7 +35,7 @@ pub fn link_happy_path_test() {
 
 pub fn link_invalid_blueprint_test() {
   let blueprint = SourceFile(path: "test.caffeine", content: "invalid source {")
-  let result = linker.link(blueprint, [])
+  let result = linker.link(blueprint, [], artifacts: stdlib_artifacts.standard_library())
   result |> should.be_error()
 }
 
@@ -47,6 +48,6 @@ pub fn link_invalid_expectation_test() {
       content: "Expectations for invalid {",
     )
 
-  let result = linker.link(blueprint, [bad_expectation])
+  let result = linker.link(blueprint, [bad_expectation], artifacts: stdlib_artifacts.standard_library())
   result |> should.be_error()
 }
