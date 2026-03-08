@@ -27,12 +27,14 @@ pub fn map_reference_to_referrer_over_collection(
   reference_name reference_name: fn(a) -> String,
   referrer_reference referrer_reference: fn(b) -> String,
 ) {
+  let reference_map =
+    references
+    |> list.map(fn(ref) { #(reference_name(ref), ref) })
+    |> dict.from_list
+
   referrers
   |> list.filter_map(fn(referrer) {
-    references
-    |> list.find(fn(reference) {
-      { reference |> reference_name } == { referrer |> referrer_reference }
-    })
+    dict.get(reference_map, referrer_reference(referrer))
     |> result.map(fn(reference) { #(referrer, reference) })
   })
 }
