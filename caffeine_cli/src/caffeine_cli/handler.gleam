@@ -10,6 +10,7 @@ import caffeine_lang/frontend/formatter
 import caffeine_lang/source_file.{SourceFile}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
+import caffeine_lsp/server as lsp_server
 import filepath
 import gleam/list
 import gleam/option.{type Option}
@@ -153,9 +154,8 @@ pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help("Start the Language Server Protocol server")
   use _, _, _ <- glint.command()
 
-  Error(
-    "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
-  )
+  lsp_server.start()
+  Ok(Nil)
 }
 
 /// Builds the root command for version display.
