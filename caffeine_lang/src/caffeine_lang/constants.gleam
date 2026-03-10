@@ -1,5 +1,5 @@
 /// The current version of the Caffeine language compiler.
-pub const version = "4.6.7"
+pub const version = "4.7.0"
 
 /// The identifier for the Datadog vendor target.
 pub const vendor_datadog = "datadog"
