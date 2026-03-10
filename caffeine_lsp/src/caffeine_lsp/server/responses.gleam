@@ -390,18 +390,29 @@ fn type_hierarchy_kind_to_int(kind: TypeHierarchyKind) -> Int {
   }
 }
 
-/// Encode a type hierarchy item.
+/// Encode a type hierarchy item with data for supertypes/subtypes roundtrip.
 pub fn encode_type_hierarchy_item(
   item: TypeHierarchyItem,
   uri: String,
 ) -> json.Json {
   let r = range(item.line, item.col, item.line, item.col + item.name_len)
+  let kind_str = case item.kind {
+    BlueprintKind -> "blueprint"
+    ExpectationKind -> "expectation"
+  }
   json.object([
     #("name", json.string(item.name)),
     #("kind", json.int(type_hierarchy_kind_to_int(item.kind))),
     #("uri", json.string(uri)),
     #("range", r),
     #("selectionRange", r),
+    #(
+      "data",
+      json.object([
+        #("kind", json.string(kind_str)),
+        #("blueprint", json.string(item.blueprint)),
+      ]),
+    ),
   ])
 }
 

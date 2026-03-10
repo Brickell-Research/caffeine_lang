@@ -176,6 +176,25 @@ pub fn type_hierarchy_item(
   |> nullify
 }
 
+/// Decoded type hierarchy item data for supertypes/subtypes requests.
+pub type TypeHierarchyData {
+  TypeHierarchyData(name: String, kind: String, blueprint: String)
+}
+
+/// Decode type hierarchy item with data fields for supertypes/subtypes.
+pub fn type_hierarchy_item_data(dyn: Dynamic) -> Result(TypeHierarchyData, Nil) {
+  decode.run(dyn, {
+    use name <- decode.subfield(["item", "name"], decode.string)
+    use kind <- decode.subfield(["item", "data", "kind"], decode.string)
+    use blueprint <- decode.subfield(
+      ["item", "data", "blueprint"],
+      decode.string,
+    )
+    decode.success(TypeHierarchyData(name:, kind:, blueprint:))
+  })
+  |> nullify
+}
+
 /// Decode changed files from didChangeWatchedFiles params.
 pub fn watched_file_changes(dyn: Dynamic) -> Result(List(#(String, Int)), Nil) {
   let change_decoder = {

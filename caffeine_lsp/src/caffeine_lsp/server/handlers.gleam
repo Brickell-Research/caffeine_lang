@@ -1,7 +1,8 @@
-/// LSP request router and single-document feature handlers.
+/// LSP request router — single-document and cross-file feature handlers.
 import caffeine_lang/frontend/formatter
 import caffeine_lsp/code_actions.{ActionDiagnostic}
 import caffeine_lsp/completion
+import caffeine_lsp/definition
 import caffeine_lsp/diagnostics.{
   type DiagnosticCode, BlueprintNotFound, DeadBlueprint, DependencyNotFound,
   MissingRequiredFields, NoDiagnosticCode, QuotedFieldName, TypeMismatch,
@@ -13,14 +14,18 @@ import caffeine_lsp/highlight
 import caffeine_lsp/hover
 import caffeine_lsp/inlay_hints
 import caffeine_lsp/linked_editing_range
+import caffeine_lsp/references
 import caffeine_lsp/rename
 import caffeine_lsp/selection_range
 import caffeine_lsp/semantic_tokens
+import caffeine_lsp/server/capabilities
 import caffeine_lsp/server/params
 import caffeine_lsp/server/responses
 import caffeine_lsp/server/workspace.{type WorkspaceState}
 import caffeine_lsp/signature_help
 import caffeine_lsp/type_hierarchy
+import caffeine_lsp/workspace_symbols
+import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/json
 import gleam/list
@@ -40,6 +45,7 @@ pub fn handle_request(
   ws: WorkspaceState,
 ) -> Result(HandleResult, Nil) {
   case method {
+    "initialize" -> Ok(handle_initialize(ws, params))
     "textDocument/hover" -> Ok(handle_hover(ws, params))
     "textDocument/completion" -> Ok(handle_completion(ws, params))
     "textDocument/signatureHelp" -> Ok(handle_signature_help(ws, params))
@@ -54,8 +60,16 @@ pub fn handle_request(
     "textDocument/selectionRange" -> Ok(handle_selection_ranges(ws, params))
     "textDocument/linkedEditingRange" -> Ok(handle_linked_editing(ws, params))
     "textDocument/inlayHint" -> Ok(handle_inlay_hints(ws, params))
+    "textDocument/definition" -> Ok(handle_definition(ws, params))
+    "textDocument/declaration" -> Ok(handle_definition(ws, params))
+    "textDocument/references" -> Ok(handle_references(ws, params))
+    "workspace/symbol" -> Ok(handle_workspace_symbol(ws, params))
     "textDocument/typeHierarchy/prepare" ->
       Ok(handle_type_hierarchy_prepare(ws, params))
+    "typeHierarchy/supertypes" ->
+      Ok(handle_type_hierarchy_supertypes(ws, params))
+    "typeHierarchy/subtypes" -> Ok(handle_type_hierarchy_subtypes(ws, params))
+    "shutdown" -> Ok(HandleResult(ws, json.null()))
     _ -> Error(Nil)
   }
 }
@@ -345,6 +359,302 @@ fn handle_type_hierarchy_prepare(
         Error(_) -> HandleResult(ws, json.null())
       }
   }
+}
+
+// --- Lifecycle ---
+
+fn handle_initialize(ws: WorkspaceState, params: Dynamic) -> HandleResult {
+  let ws2 = case params.root_uri(params) {
+    Ok(root) -> workspace.set_root(ws, root)
+    Error(_) -> ws
+  }
+  HandleResult(ws2, capabilities.initialize_result())
+}
+
+// --- Cross-file handlers ---
+
+fn handle_definition(ws: WorkspaceState, params: Dynamic) -> HandleResult {
+  case get_document(ws, params) {
+    Error(_) -> HandleResult(ws, json.null())
+    Ok(#(uri, text)) ->
+      case params.position(params) {
+        Error(_) -> HandleResult(ws, json.null())
+        Ok(#(line, character)) ->
+          resolve_definition(ws, uri, text, line, character)
+      }
+  }
+}
+
+/// Three-layer definition resolution: same-file, blueprint ref, relation ref.
+fn resolve_definition(
+  ws: WorkspaceState,
+  uri: String,
+  text: String,
+  line: Int,
+  character: Int,
+) -> HandleResult {
+  // Layer 1: Same-file definition (extendables, type aliases).
+  case definition.get_definition(text, line, character) {
+    option.Some(#(l, c, len)) ->
+      HandleResult(ws, responses.encode_definition(uri, l, c, len))
+    option.None ->
+      // Layer 2: Cross-file blueprint reference.
+      case definition.get_blueprint_ref_at_position(text, line, character) {
+        option.Some(bp_name) ->
+          case workspace.find_cross_file_blueprint_def(ws, bp_name) {
+            option.Some(#(u, l, c, len)) ->
+              HandleResult(ws, responses.encode_definition(u, l, c, len))
+            option.None -> HandleResult(ws, json.null())
+          }
+        option.None ->
+          // Layer 3: Cross-file relation (dependency) reference.
+          case
+            definition.get_relation_ref_with_range_at_position(
+              text,
+              line,
+              character,
+            )
+          {
+            option.Some(#(ref_str, _)) ->
+              case workspace.find_expectation_by_identifier(ws, ref_str) {
+                option.Some(#(u, l, c, len)) ->
+                  HandleResult(ws, responses.encode_definition(u, l, c, len))
+                option.None -> HandleResult(ws, json.null())
+              }
+            option.None -> HandleResult(ws, json.null())
+          }
+      }
+  }
+}
+
+fn handle_references(ws: WorkspaceState, params: Dynamic) -> HandleResult {
+  let empty = HandleResult(ws, json.preprocessed_array([]))
+  case get_document(ws, params) {
+    Error(_) -> empty
+    Ok(#(uri, text)) ->
+      case params.position(params) {
+        Error(_) -> empty
+        Ok(#(line, character)) -> {
+          // Same-file references.
+          let same_file =
+            references.get_references(text, line, character)
+            |> list.map(fn(r) {
+              let #(l, c, len) = r
+              responses.location(uri, responses.range(l, c, l, c + len))
+            })
+          // Cross-file: search other open documents for the blueprint name.
+          let bp_name = references.get_blueprint_name_at(text, line, character)
+          let cross_file = case bp_name {
+            "" -> []
+            _ -> collect_cross_file_references(ws, uri, bp_name)
+          }
+          HandleResult(
+            ws,
+            json.preprocessed_array(list.append(same_file, cross_file)),
+          )
+        }
+      }
+  }
+}
+
+/// Search all open documents (except current) for references to a name.
+fn collect_cross_file_references(
+  ws: WorkspaceState,
+  current_uri: String,
+  name: String,
+) -> List(json.Json) {
+  ws.documents
+  |> dict.to_list
+  |> list.filter(fn(entry) { entry.0 != current_uri })
+  |> list.flat_map(fn(entry) {
+    let #(u, text) = entry
+    references.find_references_to_name(text, name)
+    |> list.map(fn(r) {
+      let #(l, c, len) = r
+      responses.location(u, responses.range(l, c, l, c + len))
+    })
+  })
+}
+
+fn handle_workspace_symbol(ws: WorkspaceState, params: Dynamic) -> HandleResult {
+  let query = case params.query(params) {
+    Ok(q) -> string.lowercase(q)
+    Error(_) -> ""
+  }
+  let #(ws2, symbols) = collect_workspace_symbols(ws, query)
+  HandleResult(ws2, responses.encode_workspace_symbols(symbols))
+}
+
+/// Collect workspace symbols across all open documents, filtered by query.
+fn collect_workspace_symbols(
+  ws: WorkspaceState,
+  query: String,
+) -> #(WorkspaceState, List(#(String, workspace_symbols.WorkspaceSymbol))) {
+  ws.documents
+  |> dict.to_list
+  |> collect_workspace_symbols_loop(ws, query, [])
+}
+
+fn collect_workspace_symbols_loop(
+  entries: List(#(String, String)),
+  ws: WorkspaceState,
+  query: String,
+  acc: List(#(String, workspace_symbols.WorkspaceSymbol)),
+) -> #(WorkspaceState, List(#(String, workspace_symbols.WorkspaceSymbol))) {
+  case entries {
+    [] -> #(ws, list.reverse(acc))
+    [#(uri, text), ..rest] -> {
+      let #(ws2, symbols) =
+        workspace.get_cached_workspace_symbols(ws, uri, text)
+      let filtered = case query {
+        "" -> symbols
+        _ ->
+          list.filter(symbols, fn(s) {
+            string.contains(string.lowercase(s.name), query)
+          })
+      }
+      let new_acc = list.fold(filtered, acc, fn(a, sym) { [#(uri, sym), ..a] })
+      collect_workspace_symbols_loop(rest, ws2, query, new_acc)
+    }
+  }
+}
+
+fn handle_type_hierarchy_supertypes(
+  ws: WorkspaceState,
+  params: Dynamic,
+) -> HandleResult {
+  let empty = HandleResult(ws, json.preprocessed_array([]))
+  case params.type_hierarchy_item_data(params) {
+    Error(_) -> empty
+    Ok(data) ->
+      case data.kind {
+        "expectation" if data.blueprint != "" ->
+          find_blueprint_supertypes(ws, data.blueprint)
+        _ -> empty
+      }
+  }
+}
+
+/// Find blueprint definitions that match the given blueprint name.
+fn find_blueprint_supertypes(
+  ws: WorkspaceState,
+  blueprint_name: String,
+) -> HandleResult {
+  let items =
+    ws.documents
+    |> dict.to_list
+    |> list.filter_map(fn(entry) {
+      let #(uri, text) = entry
+      // Only check blueprint files that might contain this name.
+      case
+        string.starts_with(text, "Blueprints")
+        && string.contains(text, "\"" <> blueprint_name <> "\"")
+      {
+        False -> Error(Nil)
+        True -> {
+          let symbols = workspace_symbols.get_workspace_symbols(text)
+          case
+            list.find(symbols, fn(s) { s.name == blueprint_name && s.kind == 5 })
+          {
+            Ok(sym) ->
+              Ok(responses.encode_type_hierarchy_item(
+                type_hierarchy.TypeHierarchyItem(
+                  name: sym.name,
+                  kind: type_hierarchy.BlueprintKind,
+                  line: sym.line,
+                  col: sym.col,
+                  name_len: sym.name_len,
+                  blueprint: "",
+                ),
+                uri,
+              ))
+            Error(_) -> Error(Nil)
+          }
+        }
+      }
+    })
+  HandleResult(ws, json.preprocessed_array(items))
+}
+
+fn handle_type_hierarchy_subtypes(
+  ws: WorkspaceState,
+  params: Dynamic,
+) -> HandleResult {
+  let empty = HandleResult(ws, json.preprocessed_array([]))
+  case params.type_hierarchy_item_data(params) {
+    Error(_) -> empty
+    Ok(data) ->
+      case data.kind {
+        "blueprint" -> find_expectation_subtypes(ws, data.name)
+        _ -> empty
+      }
+  }
+}
+
+/// Find expectations that reference the given blueprint name.
+fn find_expectation_subtypes(
+  ws: WorkspaceState,
+  blueprint_name: String,
+) -> HandleResult {
+  let items =
+    ws.documents
+    |> dict.to_list
+    |> list.flat_map(fn(entry) {
+      let #(uri, text) = entry
+      case
+        string.starts_with(text, "Expectations")
+        && string.contains(text, "\"" <> blueprint_name <> "\"")
+      {
+        False -> []
+        True -> collect_subtypes_from_file(text, blueprint_name, uri)
+      }
+    })
+  HandleResult(ws, json.preprocessed_array(items))
+}
+
+/// Scan a file for expectation items that reference the target blueprint.
+fn collect_subtypes_from_file(
+  text: String,
+  blueprint_name: String,
+  uri: String,
+) -> List(json.Json) {
+  string.split(text, "\n")
+  |> list.index_map(fn(line_text, idx) { #(idx, line_text) })
+  |> list.filter_map(fn(entry) {
+    let #(line_idx, line_text) = entry
+    let trimmed = string.trim_start(line_text)
+    case string.starts_with(trimmed, "* \"") {
+      False -> Error(Nil)
+      True -> {
+        // Extract item name position.
+        case string.split(trimmed, "\"") {
+          [_, item_name, ..] -> {
+            let col = case string.split(line_text, "\"") {
+              [before, ..] -> string.length(before)
+              _ -> 0
+            }
+            let items =
+              type_hierarchy.prepare_type_hierarchy(text, line_idx, col + 1)
+            case list.find(items, fn(i) { i.blueprint == blueprint_name }) {
+              Ok(item) ->
+                Ok(responses.encode_type_hierarchy_item(
+                  type_hierarchy.TypeHierarchyItem(
+                    ..item,
+                    kind: type_hierarchy.ExpectationKind,
+                  ),
+                  uri,
+                ))
+              Error(_) -> {
+                let _ = item_name
+                Error(Nil)
+              }
+            }
+          }
+          _ -> Error(Nil)
+        }
+      }
+    }
+  })
 }
 
 // --- Helpers ---
