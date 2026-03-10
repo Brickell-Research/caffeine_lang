@@ -316,6 +316,66 @@ jobs:
           -d "$(jq -n --arg subject "Caffeine v${VERSION} Released" --arg body "$BODY" '{subject: $subject, body: $body}')"
         echo "Release email sent (or attempted)"
 
+    - name: Update Homebrew formula
+      if: steps.check_release.outputs.exists == 'false'
+      continue-on-error: true
+      env:
+        WEBSITE_TOKEN: ${{ secrets.GH_TOKEN }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        # Compute SHA256 for each platform tarball
+        SHA_MACOS_X64=$(sha256sum dist/caffeine-${VERSION}-macos-x64.tar.gz | cut -d' ' -f1)
+        SHA_MACOS_ARM64=$(sha256sum dist/caffeine-${VERSION}-macos-arm64.tar.gz | cut -d' ' -f1)
+        SHA_LINUX_X64=$(sha256sum dist/caffeine-${VERSION}-linux-x64.tar.gz | cut -d' ' -f1)
+
+        git clone "https://x-access-token:${WEBSITE_TOKEN}@github.com/Brickell-Research/homebrew-caffeine.git" homebrew-tap
+        cd homebrew-tap
+
+        # Rewrite the formula with updated version and SHAs
+        cat > Formula/caffeine_lang.rb << FORMULA
+        class CaffeineLang < Formula
+          desc "Caffeine programming language"
+          homepage "https://caffeine-lang.run"
+          license "GPL-3.0-only"
+          version "${VERSION}"
+
+          # Platform-specific downloads (each tarball contains ERTS + compiled BEAM files)
+          if OS.mac? && Hardware::CPU.intel?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-x64.tar.gz"
+            sha256 "${SHA_MACOS_X64}"
+          elsif OS.mac? && Hardware::CPU.arm?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-arm64.tar.gz"
+            sha256 "${SHA_MACOS_ARM64}"
+          elsif OS.linux? && Hardware::CPU.intel?
+            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-linux-x64.tar.gz"
+            sha256 "${SHA_LINUX_X64}"
+          end
+
+          def install
+            # Install the full ERTS bundle (VM + libs + wrapper) to libexec
+            libexec.install Dir["*"]
+            # Symlink the wrapper script into bin so it's on PATH
+            bin.install_symlink libexec/"caffeine"
+          end
+
+          test do
+            system "#{bin}/caffeine", "--version"
+          end
+        end
+        FORMULA
+        sed -i 's/^        //' Formula/caffeine_lang.rb
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add Formula/caffeine_lang.rb
+        if git diff --cached --quiet; then
+          echo "Homebrew formula already up to date"
+        else
+          git commit -m "Update caffeine_lang to ${VERSION}"
+          git push origin main
+          echo "Homebrew formula updated to ${VERSION}"
+        fi
+
     - name: Publish to Hex
       env:
         HEXPM_API_KEY: ${{ secrets.HEX_RELEASE_KEY }}
