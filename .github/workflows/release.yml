@@ -15,8 +15,220 @@ permissions:
   contents: write
 
 jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-24.04
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+          - target: macos-x64
+            runner: macos-13
+          - target: macos-arm64
+            runner: macos-14
+          - target: windows-x64
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      with:
+        ref: ${{ inputs.tag || github.ref }}
+        persist-credentials: false
+
+    - name: Setup BEAM (Erlang + Gleam)
+      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
+      with:
+        otp-version: '27'
+        gleam-version: '1.14.0'
+        rebar3-version: '3.25.0'
+
+    - name: Restore Gleam dependency cache
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: |
+          ~/.cache/gleam
+          caffeine_lang/build
+          caffeine_lsp/build
+          caffeine_cli/build
+        key: ${{ runner.os }}-${{ runner.arch }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-gleam-release-
+          ${{ runner.os }}-${{ runner.arch }}-gleam-
+
+    - name: Extract version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Build erlang-shipment
+      shell: bash
+      run: |
+        cd caffeine_cli
+        gleam export erlang-shipment
+
+    - name: Find OTP root
+      id: otp
+      shell: bash
+      run: |
+        OTP_ROOT=$(erl -eval 'io:format("~s", [code:root_dir()]), halt().' -noshell)
+        echo "root=$OTP_ROOT" >> "$GITHUB_OUTPUT"
+        ERTS_VSN=$(ls -d "$OTP_ROOT"/erts-* | head -1 | xargs basename)
+        echo "erts_vsn=$ERTS_VSN" >> "$GITHUB_OUTPUT"
+        echo "OTP root: $OTP_ROOT, ERTS: $ERTS_VSN"
+
+    - name: Bundle with ERTS (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        TARGET: ${{ matrix.target }}
+        OTP_ROOT: ${{ steps.otp.outputs.root }}
+        ERTS_VSN: ${{ steps.otp.outputs.erts_vsn }}
+      run: |
+        SHIPMENT="caffeine_cli/build/erlang-shipment"
+        BUNDLE="dist/caffeine-${VERSION}-${TARGET}"
+
+        # Create OTP-compatible directory layout
+        mkdir -p "$BUNDLE/bin" "$BUNDLE/lib"
+
+        # Copy ERTS (Erlang VM runtime — makes this standalone)
+        cp -r "$OTP_ROOT/$ERTS_VSN" "$BUNDLE/"
+
+        # Copy boot files (required by erlexec)
+        cp "$OTP_ROOT"/bin/start.boot "$OTP_ROOT"/bin/start_clean.boot \
+           "$OTP_ROOT"/bin/no_dot_erlang.boot "$BUNDLE/bin/"
+
+        # Copy required OTP standard library applications
+        for app in kernel stdlib; do
+          APP_DIR=$(ls -d "$OTP_ROOT"/lib/${app}-* 2>/dev/null | head -1)
+          if [ -d "$APP_DIR" ]; then
+            cp -r "$APP_DIR" "$BUNDLE/lib/"
+          fi
+        done
+
+        # Copy compiled .beam files from Gleam shipment
+        for d in "$SHIPMENT"/*/; do
+          cp -r "$d" "$BUNDLE/lib/$(basename "$d")"
+        done
+
+        # Write self-contained wrapper script
+        # Uses readlink loop for symlink resolution (Homebrew, caffeine_vm)
+        # Uses ERL_LIBS so erlexec auto-discovers all lib/*/ebin paths
+        printf '%s\n' \
+          '#!/bin/sh' \
+          'set -eu' \
+          'SCRIPT="$0"' \
+          'while [ -L "$SCRIPT" ]; do' \
+          '  DIR=$(cd "$(dirname "$SCRIPT")" && pwd)' \
+          '  SCRIPT=$(readlink "$SCRIPT")' \
+          '  case "$SCRIPT" in /*) ;; *) SCRIPT="$DIR/$SCRIPT" ;; esac' \
+          'done' \
+          'BASE=$(cd "$(dirname "$SCRIPT")" && pwd)' \
+          "export ROOTDIR=\"\$BASE\"" \
+          "export BINDIR=\"\$BASE/${ERTS_VSN}/bin\"" \
+          'export EMU=beam' \
+          'export PROGNAME=caffeine' \
+          'export ERL_LIBS="$BASE/lib"' \
+          'exec "$BINDIR/erlexec" \' \
+          '  -eval "caffeine_cli@@main:run(caffeine_cli)" \' \
+          '  -noshell \' \
+          '  -extra "$@"' \
+          > "$BUNDLE/caffeine"
+        chmod +x "$BUNDLE/caffeine"
+
+        # Create tarball
+        cd dist
+        tar czf "caffeine-${VERSION}-${TARGET}.tar.gz" "caffeine-${VERSION}-${TARGET}"
+        echo "Built: caffeine-${VERSION}-${TARGET}.tar.gz"
+
+    - name: Bundle with ERTS (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        TARGET: ${{ matrix.target }}
+        OTP_ROOT: ${{ steps.otp.outputs.root }}
+        ERTS_VSN: ${{ steps.otp.outputs.erts_vsn }}
+      run: |
+        $Shipment = "caffeine_cli\build\erlang-shipment"
+        $Bundle = "dist\caffeine-$env:VERSION-$env:TARGET"
+
+        # Create OTP-compatible directory layout
+        New-Item -ItemType Directory -Force -Path "$Bundle\bin" | Out-Null
+        New-Item -ItemType Directory -Force -Path "$Bundle\lib" | Out-Null
+
+        # Copy ERTS
+        Copy-Item -Recurse "$env:OTP_ROOT\$env:ERTS_VSN" "$Bundle\"
+
+        # Copy boot files
+        Copy-Item "$env:OTP_ROOT\bin\start.boot" "$Bundle\bin\"
+        Copy-Item "$env:OTP_ROOT\bin\start_clean.boot" "$Bundle\bin\"
+        Copy-Item "$env:OTP_ROOT\bin\no_dot_erlang.boot" "$Bundle\bin\"
+
+        # Copy required OTP libs
+        foreach ($app in @("kernel", "stdlib")) {
+          $AppDir = Get-ChildItem "$env:OTP_ROOT\lib\${app}-*" -Directory | Select-Object -First 1
+          if ($AppDir) {
+            Copy-Item -Recurse $AppDir.FullName "$Bundle\lib\"
+          }
+        }
+
+        # Copy Gleam shipment apps
+        Get-ChildItem "$Shipment" -Directory | ForEach-Object {
+          Copy-Item -Recurse $_.FullName "$Bundle\lib\"
+        }
+
+        # Write .cmd wrapper using ERL_LIBS (cmd.exe doesn't expand globs)
+        $CmdLines = @(
+          '@echo off'
+          'setlocal'
+          'set "BASE=%~dp0"'
+          'set "ROOTDIR=%BASE%"'
+          "set ""BINDIR=%BASE%$env:ERTS_VSN\bin"""
+          'set "EMU=beam"'
+          'set "PROGNAME=caffeine"'
+          'set "ERL_LIBS=%BASE%lib"'
+          '"%BINDIR%\erl.exe" -eval "caffeine_cli@@main:run(caffeine_cli)" -noshell -extra %*'
+        )
+        $CmdLines -join "`r`n" | Out-File -FilePath "$Bundle\caffeine.cmd" -Encoding ascii
+
+        # Create zip
+        Compress-Archive -Path $Bundle -DestinationPath "dist\caffeine-$env:VERSION-$env:TARGET.zip"
+        Write-Host "Built: caffeine-$env:VERSION-$env:TARGET.zip"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: caffeine-${{ matrix.target }}
+        path: |
+          dist/*.tar.gz
+          dist/*.zip
+        if-no-files-found: error
+        retention-days: 1
+
+    - name: Save Gleam cache
+      if: github.event_name == 'push'
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: |
+          ~/.cache/gleam
+          caffeine_lang/build
+          caffeine_lsp/build
+          caffeine_cli/build
+        key: ${{ runner.os }}-${{ runner.arch }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
+
   release:
-    name: Build and Release
+    name: Create Release
+    needs: build
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -41,20 +253,16 @@ jobs:
       with:
         bun-version: "latest"
 
-    - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+    - name: Download all build artifacts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
       with:
-        path: |
-          ~/.cache/gleam
-          caffeine_lang/build
-          caffeine_lsp/build
-          caffeine_cli/build
-        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-gleam-release-
-          ${{ runner.os }}-gleam-
+        path: dist
+        merge-multiple: true
 
-    - name: Extract version from gleam.toml
+    - name: List artifacts
+      run: ls -lh dist/
+
+    - name: Extract version
       id: version
       run: |
         VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
@@ -62,25 +270,15 @@ jobs:
         echo "Extracted version: $VERSION"
 
     - name: Generate release notes
-      id: release_notes
       env:
         VERSION: ${{ steps.version.outputs.version }}
       run: |
-        mkdir -p dist
-        # Find the previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
         if [ -z "$PREV_TAG" ]; then
-          echo "No previous tag found, using basic release notes"
           echo "## What's New in Caffeine v${VERSION}" > dist/release-notes.md
         else
-          echo "Generating release notes: ${TAG} <- ${PREV_TAG}"
           ./scripts/generate-release-notes.sh "$TAG" "$PREV_TAG" > dist/release-notes.md
         fi
-        echo "Release notes:"
-        cat dist/release-notes.md
-
-    # TODO: Add cross-platform binary compilation.
-    # Previously used Bun to compile JS bundles; now targeting Erlang directly.
 
     - name: Check if release exists
       id: check_release
@@ -89,10 +287,8 @@ jobs:
       run: |
         if gh release view "$TAG" &>/dev/null; then
           echo "exists=true" >> "$GITHUB_OUTPUT"
-          echo "Release $TAG already exists - skipping"
         else
           echo "exists=false" >> "$GITHUB_OUTPUT"
-          echo "Release $TAG does not exist - will create"
         fi
 
     - name: Create Release
@@ -101,6 +297,9 @@ jobs:
       with:
         tag_name: ${{ env.TAG }}
         body_path: dist/release-notes.md
+        files: |
+          dist/caffeine-*.tar.gz
+          dist/caffeine-*.zip
 
     - name: Send release email
       if: steps.check_release.outputs.exists == 'false'
@@ -165,14 +364,3 @@ jobs:
           git push origin main
           echo "Website compiler updated to version ${VERSION}"
         fi
-
-    - name: Save Gleam cache
-      if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          caffeine_lang/build
-          caffeine_lsp/build
-          caffeine_cli/build
-        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}

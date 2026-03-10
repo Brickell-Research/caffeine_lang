@@ -107,6 +107,17 @@ Caffeine is purely declarative - no functions, control flow, variables, or impor
 - **Template variables**: `$var->attr$` in query strings
 - **Comments**: `#` line, `##` section
 
+## Building
+
+Nix flake (`flake.nix`) provides:
+- `nix develop` — dev shell with Gleam, Erlang 27, rebar3, Bun, Node 20
+- `nix build` — erlang-shipment wrapped as `bin/caffeine` (requires Nix Erlang)
+- `nix build .#shipment` — raw erlang-shipment (BEAM bytecode)
+
+Manual build: `cd caffeine_cli && gleam export erlang-shipment` produces portable BEAM files in `build/erlang-shipment/`. Requires Erlang/OTP 27+ on the target machine.
+
 ## Release
 
-Releases are triggered by git tags (`v*`). The CI workflow publishes to GitHub Releases, Hex.pm, and updates the website's browser bundle. Cross-platform binary compilation is pending.
+Releases are triggered by git tags (`v*`). The CI workflow:
+1. **Matrix build** (5 runners): Linux x64/ARM64, macOS x64/ARM64, Windows x64. Each builds an erlang-shipment, bundles ERTS (Erlang runtime) for standalone execution — no Erlang needed on the user's machine.
+2. **Release job**: Creates GitHub Release with platform tarballs/zips, publishes to Hex.pm (caffeine_lang), builds browser bundle (esbuild via Bun), updates the website.
