@@ -1,9 +1,0 @@
-Blueprints for "SLO"
-  * "test_blueprint":
-    Requires { env: String, status: Boolean }
-    Provides {
-      vendor: "datadog",
-      indicators: { good: "query_good", total: "query_total" },
-      evaluation: "good / total",
-      threshold: 99.9%
-    }

@@ -1,4 +1,0 @@
-Blueprints for "SLO"
-  * "bad_blueprint"
-    Requires { vendor: String }
-    Provides { vendor: "datadog" }
