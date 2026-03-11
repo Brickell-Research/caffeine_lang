@@ -93,6 +93,9 @@ export async function fetchCaffeineSlos(
     const body = await response.json() as { data: DatadogSloResponse[] };
     const slos = body.data ?? [];
     debug(`datadog: fetched ${slos.length} caffeine-managed SLOs`);
+    if (slos.length >= 1000) {
+      debug("datadog: WARNING — response hit 1000 limit, some SLOs may be missing");
+    }
 
     for (const slo of slos) {
       const dottedId = parseCaffeineIdentity(slo.tags);
