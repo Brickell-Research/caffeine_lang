@@ -115,6 +115,9 @@ describe("categorizeStatus", () => {
 // * extracts vendor from blueprint Provides
 // * extracts vendor from expects Provides
 // * handles multiple items with different vendors
+// * resolves vendor through extends chain
+// * resolves vendor through multiple extends (first wins)
+// * direct vendor overrides extended vendor
 // * skips comments
 // * returns empty map for files without vendors
 
@@ -187,6 +190,64 @@ describe("extractVendors", () => {
 
   test("returns empty map for empty text", () => {
     expect(extractVendors("").size).toBe(0);
+  });
+
+  test("resolves vendor through single extends", () => {
+    const text = `_defaults (Provides): { vendor: "datadog" }
+
+Expectations for "test_blueprint"
+  * "checkout" extends [_defaults]:
+    Provides { threshold: 99.9 }`;
+    const vendors = extractVendors(text);
+    expect(vendors.size).toBe(1);
+    expect(vendors.get("checkout")).toBe("datadog");
+  });
+
+  test("resolves vendor through extends in blueprint file", () => {
+    const text = `_base (Provides): { vendor: "datadog" }
+
+Blueprints for "SLO"
+  * "api-latency" extends [_base]:
+    Requires { env: String }
+    Provides { threshold: 99.9% }`;
+    const vendors = extractVendors(text);
+    expect(vendors.size).toBe(1);
+    expect(vendors.get("api-latency")).toBe("datadog");
+  });
+
+  test("resolves vendor from first matching extends", () => {
+    const text = `_no_vendor (Provides): { threshold: 99.0 }
+_dd (Provides): { vendor: "datadog" }
+
+Expectations for "bp"
+  * "item" extends [_no_vendor, _dd]:
+    Provides { env: "prod" }`;
+    const vendors = extractVendors(text);
+    expect(vendors.get("item")).toBe("datadog");
+  });
+
+  test("direct vendor overrides extended vendor", () => {
+    const text = `_base (Provides): { vendor: "datadog" }
+
+Expectations for "bp"
+  * "item" extends [_base]:
+    Provides { vendor: "honeycomb" }`;
+    const vendors = extractVendors(text);
+    expect(vendors.get("item")).toBe("honeycomb");
+  });
+
+  test("handles multi-line extendable definition", () => {
+    const text = `_base (Provides): {
+  vendor: "datadog",
+  window_in_days: 30
+}
+
+Blueprints for "SLO"
+  * "api" extends [_base]:
+    Requires { env: String }
+    Provides { threshold: 99.9% }`;
+    const vendors = extractVendors(text);
+    expect(vendors.get("api")).toBe("datadog");
   });
 });
 
