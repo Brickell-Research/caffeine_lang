@@ -209,6 +209,67 @@ pub fn generate_terraform_test() {
   })
 }
 
+// ==== generate_terraform (multiple SLOs) ====
+// * ✅ two SLOs generate 2 resources
+pub fn generate_terraform_multiple_slos_test() {
+  let ir1 =
+    make_newrelic_ir(
+      "API Success Rate",
+      "acme_payments_api_success",
+      "acme",
+      "platform",
+      "payments",
+      "newrelic_availability",
+      99.5,
+      7,
+      "good / valid",
+      [
+        #(
+          "good",
+          "Transaction WHERE appName = 'payments' AND duration < 0.1",
+        ),
+        #("valid", "Transaction WHERE appName = 'payments'"),
+      ],
+    )
+  let ir2 =
+    make_newrelic_ir(
+      "Checkout Latency",
+      "acme_payments_checkout_latency",
+      "acme",
+      "platform",
+      "payments",
+      "newrelic_latency",
+      99.0,
+      28,
+      "good / valid",
+      [
+        #("good", "Transaction WHERE duration < 0.5"),
+        #("valid", "Transaction"),
+      ],
+    )
+
+  let result = newrelic.generate_terraform([ir1, ir2])
+  result |> should.be_ok
+  let assert Ok(tf) = result
+
+  // Both resources should be present
+  string.contains(
+    tf,
+    "\"newrelic_service_level\" \"acme_payments_api_success\"",
+  )
+  |> should.be_true
+  string.contains(
+    tf,
+    "\"newrelic_service_level\" \"acme_payments_checkout_latency\"",
+  )
+  |> should.be_true
+  // Only one provider block
+  string.contains(tf, "newrelic/newrelic") |> should.be_true
+  // Check different rolling counts
+  string.contains(tf, "count = 7") |> should.be_true
+  string.contains(tf, "count = 28") |> should.be_true
+}
+
 // ==== ir_to_terraform_resource ====
 // * ❌ evaluation references undefined indicator returns error
 // * ❌ missing evaluation returns error

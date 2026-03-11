@@ -239,6 +239,122 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
   }
 }
 
+// ==== generate_terraform (multiple SLOs) ====
+// * ✅ two SLOs generate 4 resources (2 derived_columns + 2 SLOs)
+pub fn generate_terraform_multiple_slos_test() {
+  let ir1 =
+    make_honeycomb_ir(
+      "API Success Rate",
+      "acme_payments_api_success",
+      "acme",
+      "platform",
+      "payments",
+      "trace_availability",
+      99.5,
+      14,
+      "sli",
+      [#("sli", "LT($\"status_code\", 500)")],
+    )
+  let ir2 =
+    make_honeycomb_ir(
+      "Checkout Latency",
+      "acme_payments_checkout_latency",
+      "acme",
+      "platform",
+      "payments",
+      "trace_latency",
+      99.0,
+      30,
+      "sli",
+      [#("sli", "HEATMAP(duration_ms)")],
+    )
+
+  let result = honeycomb.generate_terraform([ir1, ir2])
+  result |> should.be_ok
+  let assert Ok(tf) = result
+
+  // Both derived columns and SLOs should be present
+  string.contains(tf, "acme_payments_api_success_sli") |> should.be_true
+  string.contains(tf, "acme_payments_checkout_latency_sli") |> should.be_true
+  string.contains(tf, "\"honeycombio_slo\" \"acme_payments_api_success\"")
+  |> should.be_true
+  string.contains(tf, "\"honeycombio_slo\" \"acme_payments_checkout_latency\"")
+  |> should.be_true
+  // Only one provider/settings block
+  string.contains(tf, "honeycombio/honeycombio") |> should.be_true
+}
+
+// ==== generate_terraform (with user tags) ====
+// * ✅ user tags appear in generated output (sanitized)
+pub fn generate_terraform_with_tags_test() {
+  // Build an IR with user tags via manual construction to set slo.tags
+  let ir =
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Tagged SLO"),
+        org_name: identifiers.OrgName("acme"),
+        service_name: identifiers.ServiceName("payments"),
+        blueprint_name: identifiers.BlueprintName("trace_availability"),
+        team_name: identifiers.TeamName("platform"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "acme_payments_tagged",
+      artifact_refs: [SLO],
+      values: [
+        helpers.ValueTuple(
+          "vendor",
+          types.PrimitiveType(types.String),
+          value.StringValue(constants.vendor_honeycomb),
+        ),
+        helpers.ValueTuple(
+          "threshold",
+          types.PrimitiveType(types.NumericType(types.Float)),
+          value.PercentageValue(99.5),
+        ),
+        helpers.ValueTuple(
+          "window_in_days",
+          types.PrimitiveType(types.NumericType(types.Integer)),
+          value.IntValue(14),
+        ),
+        helpers.ValueTuple(
+          "evaluation",
+          types.PrimitiveType(types.String),
+          value.StringValue("sli"),
+        ),
+        helpers.ValueTuple(
+          "indicators",
+          types.CollectionType(types.Dict(
+            types.PrimitiveType(types.String),
+            types.PrimitiveType(types.String),
+          )),
+          value.DictValue(
+            dict.from_list([
+              #("sli", value.StringValue("LT($\"status_code\", 500)")),
+            ]),
+          ),
+        ),
+      ],
+      artifact_data: ir.slo_only(ir.SloFields(
+        threshold: 99.5,
+        indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
+        window_in_days: 14,
+        evaluation: option.Some("sli"),
+        tags: [#("env", "production"), #("tier", "1")],
+        runbook: option.None,
+      )),
+      vendor: option.Some(vendor.Honeycomb),
+    )
+
+  let result = honeycomb.generate_terraform([ir])
+  result |> should.be_ok
+  let assert Ok(tf) = result
+
+  // User tags should appear sanitized in the output
+  string.contains(tf, "env") |> should.be_true
+  string.contains(tf, "production") |> should.be_true
+  string.contains(tf, "tier") |> should.be_true
+}
+
 // ==== sanitize_honeycomb_tag_key ====
 // * ✅ removes underscores
 // * ✅ removes digits

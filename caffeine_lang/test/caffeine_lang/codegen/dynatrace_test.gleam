@@ -133,6 +133,55 @@ pub fn generate_terraform_test() {
   })
 }
 
+// ==== generate_terraform (multiple SLOs) ====
+// * ✅ two SLOs generate 2 resources
+pub fn generate_terraform_multiple_slos_test() {
+  let ir1 =
+    make_dynatrace_ir(
+      "API Success Rate",
+      "acme_payments_api_success",
+      "acme",
+      "platform",
+      "payments",
+      "dynatrace_availability",
+      99.5,
+      30,
+      "success / total",
+      [
+        #("success", "builtin:service.errors.server.successCount:splitBy()"),
+        #("total", "builtin:service.requestCount.server:splitBy()"),
+      ],
+    )
+  let ir2 =
+    make_dynatrace_ir(
+      "Checkout Latency",
+      "acme_payments_checkout_latency",
+      "acme",
+      "platform",
+      "payments",
+      "dynatrace_latency",
+      99.0,
+      14,
+      "sli",
+      [#("sli", "builtin:service.response.time:splitBy()")],
+    )
+
+  let result = dynatrace.generate_terraform([ir1, ir2])
+  result |> should.be_ok
+  let assert Ok(tf) = result
+
+  // Both resources should be present
+  string.contains(tf, "\"dynatrace_slo_v2\" \"acme_payments_api_success\"")
+  |> should.be_true
+  string.contains(tf, "\"dynatrace_slo_v2\" \"acme_payments_checkout_latency\"")
+  |> should.be_true
+  // Only one provider block
+  string.contains(tf, "dynatrace-oss/dynatrace") |> should.be_true
+  // Check different windows
+  string.contains(tf, "evaluation_window = \"-30d\"") |> should.be_true
+  string.contains(tf, "evaluation_window = \"-14d\"") |> should.be_true
+}
+
 // ==== window_to_evaluation_window ====
 // * ✅ 1 -> "-1d" (minimum)
 // * ✅ 30 -> "-30d"
