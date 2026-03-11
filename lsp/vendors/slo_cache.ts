@@ -11,7 +11,7 @@ const DEFAULT_TTL_MS = 60_000;
 const REFRESH_INTERVAL_MS = 60_000;
 
 export class SloStatusCache {
-  private data = new Map<string, SloStatus>();
+  private data = new Map<string, SloStatus[]>();
   private lastFetchMs = 0;
   private ttlMs: number;
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -24,8 +24,8 @@ export class SloStatusCache {
     this.ttlMs = ttlMs;
   }
 
-  /** Get cached SLO status by dotted identifier (e.g., "org.team.service.name"). */
-  get(dottedId: string): SloStatus | null {
+  /** Get cached SLO statuses by dotted identifier (one per timeframe window). */
+  get(dottedId: string): SloStatus[] | null {
     return this.data.get(dottedId) ?? null;
   }
 

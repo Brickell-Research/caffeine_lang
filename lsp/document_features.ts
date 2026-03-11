@@ -421,21 +421,23 @@ export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloSt
     const dottedId = ctx.workspace.getDottedIdForItem(uri, item.name);
     if (!dottedId) continue;
 
-    const sloStatus = sloCache.get(dottedId);
-    const title = sloStatus
-      ? formatSloLensTitle(sloStatus)
-      : sloCache.hasData
-        ? "SLO not found in Datadog"
-        : "SLO data loading...";
+    const sloStatuses = sloCache.get(dottedId);
 
-    const command = sloStatus?.dashboard_url
-      ? { title, command: "vscode.open", arguments: [sloStatus.dashboard_url] }
-      : { title, command: "" };
-
-    lenses.push({
-      range: range(item.line, 0, item.line, 0),
-      command,
-    });
+    if (sloStatuses) {
+      for (const slo of sloStatuses) {
+        const title = formatSloLensTitle(slo);
+        const command = slo.dashboard_url
+          ? { title, command: "vscode.open", arguments: [slo.dashboard_url] }
+          : { title, command: "" };
+        lenses.push({ range: range(item.line, 0, item.line, 0), command });
+      }
+    } else {
+      const title = sloCache.hasData ? "SLO not found in Datadog" : "SLO data loading...";
+      lenses.push({
+        range: range(item.line, 0, item.line, 0),
+        command: { title, command: "" },
+      });
+    }
   }
 
   return lenses;

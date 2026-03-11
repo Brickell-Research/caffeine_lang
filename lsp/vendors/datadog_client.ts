@@ -68,11 +68,11 @@ function normalizeWindow(timeframe: string): string {
 }
 
 /** Fetch all caffeine-managed SLOs from Datadog.
- *  Returns a Map from dotted identifier to SloStatus. */
+ *  Returns a Map from dotted identifier to SloStatus array (one per timeframe window). */
 export async function fetchCaffeineSlos(
   credentials: DatadogCredentials,
-): Promise<Map<string, SloStatus>> {
-  const result = new Map<string, SloStatus>();
+): Promise<Map<string, SloStatus[]>> {
+  const result = new Map<string, SloStatus[]>();
   const baseUrl = `https://api.${credentials.site}`;
   const url = `${baseUrl}/api/v1/slo?tags_query=managed_by:caffeine&limit=1000`;
 
@@ -101,22 +101,25 @@ export async function fetchCaffeineSlos(
       const dottedId = parseCaffeineIdentity(slo.tags);
       if (!dottedId) continue;
 
-      // Use the first overall_status entry (typically the primary threshold)
-      const primary = slo.overall_status?.[0];
-      if (!primary || primary.sli_value == null) continue;
+      const dashboardUrl = `https://app.${credentials.site}/slo?slo_id=${slo.id}`;
+      const statuses: SloStatus[] = [];
 
-      const sliValue = primary.sli_value;
-      const target = primary.target;
-      const errorBudget = primary.error_budget_remaining ?? 0;
+      for (const entry of slo.overall_status ?? []) {
+        if (entry.sli_value == null) continue;
+        const errorBudget = entry.error_budget_remaining ?? 0;
+        statuses.push({
+          sli_value: entry.sli_value,
+          target: entry.target,
+          error_budget_remaining: errorBudget,
+          window: normalizeWindow(entry.timeframe),
+          status: categorizeStatus(entry.sli_value, entry.target, errorBudget),
+          dashboard_url: dashboardUrl,
+        });
+      }
 
-      result.set(dottedId, {
-        sli_value: sliValue,
-        target,
-        error_budget_remaining: errorBudget,
-        window: normalizeWindow(primary.timeframe),
-        status: categorizeStatus(sliValue, target, errorBudget),
-        dashboard_url: `https://app.${credentials.site}/slo?slo_id=${slo.id}`,
-      });
+      if (statuses.length > 0) {
+        result.set(dottedId, statuses);
+      }
     }
   } catch (e) {
     debug(`datadog: fetch error: ${e}`);
