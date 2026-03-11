@@ -43,6 +43,7 @@ import {
   handleFoldingRanges,
   handleSelectionRanges,
   handleLinkedEditing,
+  handleCodeLens,
 } from "./document_features.ts";
 
 import {
@@ -57,10 +58,13 @@ import {
   handleTypeHierarchySubtypes,
 } from "./type_hierarchy_features.ts";
 
+import type { SloStatusCache } from "./vendors/slo_cache.ts";
+
 export interface HandlerContext {
   connection: Connection;
   documents: TextDocuments<TextDocument>;
   workspace: WorkspaceIndex;
+  sloCache: SloStatusCache | null;
 }
 
 interface DiagnosticScheduler {
@@ -104,6 +108,7 @@ export function registerHandlers(ctx: HandlerContext): void {
   ctx.connection.languages.typeHierarchy.onSupertypes((p) => handleTypeHierarchySupertypes(ctx, p));
   ctx.connection.languages.typeHierarchy.onSubtypes((p) => handleTypeHierarchySubtypes(ctx, p));
   ctx.connection.onWorkspaceSymbol((p) => handleWorkspaceSymbol(ctx, p));
+  ctx.connection.onCodeLens((p) => handleCodeLens(ctx, p, ctx.sloCache));
 
   ctx.documents.listen(ctx.connection);
   ctx.connection.listen();
@@ -165,6 +170,12 @@ function registerInitializeHandler(ctx: HandlerContext): void {
       try {
         await workspace.initializeFromRoot(rootUri);
         debug(`initialize: indexed ${workspace.files.size} files, ${workspace.blueprintIndex.size} blueprint files, ${workspace.expectationIndex.size} expectation files`);
+        // Kick off SLO data fetch if Datadog expectations exist
+        if (ctx.sloCache && workspace.hasVendor("datadog")) {
+          debug("slo-overlay: Datadog expectations found, fetching SLO data");
+          ctx.sloCache.refresh();
+          ctx.sloCache.startPeriodicRefresh();
+        }
       } catch (e) { debug(`initialize: ${e}`); }
     }
 
@@ -192,6 +203,7 @@ function registerInitializeHandler(ctx: HandlerContext): void {
           retriggerCharacters: [","],
         },
         inlayHintProvider: true,
+        codeLensProvider: ctx.sloCache ? { resolveProvider: false } : undefined,
         codeActionProvider: {
           codeActionKinds: ["quickfix"],
         },

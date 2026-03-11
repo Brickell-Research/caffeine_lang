@@ -10,6 +10,7 @@ import {
   extractBlueprintNames,
   extractReferencedBlueprintNames,
   extractExpectationIdentifiers,
+  extractVendors,
   findBlueprintItemLocation,
   applyIndexUpdates,
 } from "./workspace_parsers.ts";
@@ -25,6 +26,9 @@ export class WorkspaceIndex {
   blueprintIndex = new Map<string, Set<string>>();
   referencedBlueprintIndex = new Map<string, Set<string>>();
   expectationIndex = new Map<string, Map<string, string>>();
+  /** Maps file URI → (item name → vendor string, e.g., "datadog").
+   *  Covers both blueprint items and expectation items that have vendor in Provides. */
+  vendorIndex = new Map<string, Map<string, string>>();
   // deno-lint-ignore no-explicit-any
   validatedBlueprintsCache = new Map<string, any>();
   // deno-lint-ignore no-explicit-any
@@ -63,6 +67,10 @@ export class WorkspaceIndex {
         const ids = extractExpectationIdentifiers(text, uri);
         if (ids.size > 0) {
           this.expectationIndex.set(uri, ids);
+        }
+        const vendors = extractVendors(text);
+        if (vendors.size > 0) {
+          this.vendorIndex.set(uri, vendors);
         }
       }
     }
@@ -191,6 +199,13 @@ export class WorkspaceIndex {
     } else {
       this.referencedBlueprintIndex.delete(uri);
     }
+    // Update vendor index
+    const newVendors = extractVendors(text);
+    if (newVendors.size > 0) {
+      this.vendorIndex.set(uri, newVendors);
+    } else {
+      this.vendorIndex.delete(uri);
+    }
     return changed;
   }
 
@@ -216,6 +231,7 @@ export class WorkspaceIndex {
     const hadBlueprints = this.blueprintIndex.delete(uri);
     const hadRefs = this.referencedBlueprintIndex.delete(uri);
     const hadExpectations = this.expectationIndex.delete(uri);
+    this.vendorIndex.delete(uri);
     if (this.validatedBlueprintsCache.delete(uri)) {
       this._validatedBlueprintsDirty = true;
     }
@@ -236,6 +252,62 @@ export class WorkspaceIndex {
     this._mergedValidatedBlueprints = toList(all);
     this._validatedBlueprintsDirty = false;
     return this._mergedValidatedBlueprints;
+  }
+
+  /** Check whether any expectation in the workspace uses a given vendor. */
+  hasVendor(vendor: string): boolean {
+    for (const vendorMap of this.vendorIndex.values()) {
+      for (const v of vendorMap.values()) {
+        if (v === vendor) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Get the vendor for an expectation item in a file, or null.
+   *  First checks if the expectation itself provides a vendor,
+   *  then resolves through its blueprint. */
+  getVendorForItem(uri: string, itemName: string): string | null {
+    // Direct vendor in expectation's Provides
+    const direct = this.vendorIndex.get(uri)?.get(itemName);
+    if (direct) return direct;
+
+    // Resolve through blueprint: find which blueprint this expectation references
+    const text = this.documents.get(uri)?.getText();
+    if (!text) return null;
+    const blueprintName = this.findBlueprintForExpectation(text, itemName);
+    if (!blueprintName) return null;
+
+    // Look up the vendor from the blueprint's vendor index
+    for (const [bpUri, vendors] of this.vendorIndex) {
+      if (!this.blueprintIndex.has(bpUri)) continue;
+      const vendor = vendors.get(blueprintName);
+      if (vendor) return vendor;
+    }
+    return null;
+  }
+
+  /** Find the blueprint name referenced by an expectation item.
+   *  Looks for the nearest `Expectations for "name"` header above the item. */
+  private findBlueprintForExpectation(text: string, itemName: string): string | null {
+    const lines = text.split("\n");
+    const headerPattern = /Expectations\s+for\s+"([^"]+)"/;
+    let currentBlueprint: string | null = null;
+    for (const line of lines) {
+      const headerMatch = headerPattern.exec(line);
+      if (headerMatch) {
+        currentBlueprint = headerMatch[1];
+      }
+      if (currentBlueprint && line.includes(`"${itemName}"`)) {
+        return currentBlueprint;
+      }
+    }
+    return null;
+  }
+
+  /** Get the dotted identifier for an expectation item in a file, or null. */
+  getDottedIdForItem(uri: string, itemName: string): string | null {
+    return this.expectationIndex.get(uri)?.get(itemName) ?? null;
   }
 
   /** Get cached workspace symbols for a file, computing on first access. */

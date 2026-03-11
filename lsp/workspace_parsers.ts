@@ -83,6 +83,34 @@ export function extractExpectationIdentifiers(
   return result;
 }
 
+/** Extract vendor values from a file's text.
+ *  Works for both blueprints and expects files — looks for `vendor: "value"`
+ *  anywhere in Provides blocks. For blueprints, maps blueprint item name to vendor.
+ *  For expects, maps expectation item name to vendor.
+ *  Returns a Map from item name to vendor string (e.g., "datadog"). */
+export function extractVendors(text: string): Map<string, string> {
+  const result = new Map<string, string>();
+  const lines = text.split("\n");
+  let currentItem: string | null = null;
+  const itemPattern = /\*\s+"([^"]+)"/;
+  const vendorPattern = /vendor\s*:\s*"([^"]+)"/;
+
+  for (const line of lines) {
+    if (line.trimStart().startsWith("#")) continue;
+    const itemMatch = itemPattern.exec(line);
+    if (itemMatch) {
+      currentItem = itemMatch[1];
+    }
+    if (currentItem) {
+      const vendorMatch = vendorPattern.exec(line);
+      if (vendorMatch) {
+        result.set(currentItem, vendorMatch[1]);
+      }
+    }
+  }
+  return result;
+}
+
 /** Update blueprint and expectation indices for a file, mutating both maps in place. Returns true if either changed. */
 export function applyIndexUpdates(
   uri: string,

@@ -35,6 +35,7 @@ import {
 } from "./helpers.ts";
 
 import type { HandlerContext } from "./handlers.ts";
+import type { SloStatusCache } from "./vendors/slo_cache.ts";
 import { debug } from "./debug.ts";
 
 // --- Hover ---
@@ -370,4 +371,68 @@ export function handleInlayHints(ctx: HandlerContext, params: any) {
     debug(`inlayHints: ${e}`);
     return [];
   }
+}
+
+// --- Code lenses (SLO overlay) ---
+
+/** Extract expectation item names and their line positions from an expects file. */
+function extractExpectationPositions(text: string): Array<{ name: string; line: number }> {
+  const results: Array<{ name: string; line: number }> = [];
+  if (!text.includes("Expectations for")) return results;
+
+  const lines = text.split("\n");
+  const pattern = /\*\s+"([^"]+)"/;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trimStart().startsWith("#")) continue;
+    const match = pattern.exec(lines[i]);
+    if (match) results.push({ name: match[1], line: i });
+  }
+  return results;
+}
+
+/** Format an SLO status into a human-readable code lens title. */
+function formatSloLensTitle(slo: { sli_value: number; target: number; error_budget_remaining: number; window: string; status: string }): string {
+  const sli = slo.sli_value.toFixed(2);
+  const target = slo.target.toFixed(1);
+  const budget = slo.error_budget_remaining.toFixed(1);
+  const warn = slo.status === "breaching" ? " 🔴" : slo.status === "warning" ? " ⚠️" : "";
+  return `SLI: ${sli}% | Target: ${target}% | Budget: ${budget}% remaining | ${slo.window}${warn}`;
+}
+
+// deno-lint-ignore no-explicit-any
+export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloStatusCache | null) {
+  if (!sloCache) return [];
+
+  const doc = ctx.documents.get(params.textDocument.uri);
+  if (!doc) return [];
+
+  const uri = params.textDocument.uri;
+  const text = doc.getText();
+  const items = extractExpectationPositions(text);
+  if (items.length === 0) return [];
+
+  // deno-lint-ignore no-explicit-any
+  const lenses: any[] = [];
+
+  for (const item of items) {
+    const vendor = ctx.workspace.getVendorForItem(uri, item.name);
+    if (vendor !== "datadog") continue;
+
+    const dottedId = ctx.workspace.getDottedIdForItem(uri, item.name);
+    if (!dottedId) continue;
+
+    const sloStatus = sloCache.get(dottedId);
+    const title = sloStatus
+      ? formatSloLensTitle(sloStatus)
+      : sloCache.hasData
+        ? "SLO not found in Datadog"
+        : "SLO data loading...";
+
+    lenses.push({
+      range: range(item.line, 0, item.line, 0),
+      command: { title, command: "" },
+    });
+  }
+
+  return lenses;
 }
