@@ -40,12 +40,28 @@ jobs:
         ref: ${{ inputs.tag || github.ref }}
         persist-credentials: false
 
-    - name: Setup BEAM (Erlang + Gleam)
+    - name: Setup BEAM (Erlang)
       uses: erlef/setup-beam@9d5b75ddfda22fb979d2270283237aef8aa68d6b # v1.22.0
       with:
         otp-version: '27'
-        gleam-version: '1.14.0'
         rebar3-version: '3.25.0'
+
+    - name: Install Gleam
+      shell: bash
+      env:
+        GLEAM_VERSION: '1.14.0'
+      run: |
+        case "$(uname -s)-$(uname -m)" in
+          Linux-x86_64)   TARGET="x86_64-unknown-linux-musl" ;;
+          Darwin-x86_64)  TARGET="x86_64-apple-darwin" ;;
+          Darwin-arm64)   TARGET="aarch64-apple-darwin" ;;
+          MINGW*|MSYS*)   TARGET="x86_64-pc-windows-msvc" ;;
+          *)              echo "Unsupported platform"; exit 1 ;;
+        esac
+        URL="https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-${TARGET}.tar.gz"
+        echo "Downloading Gleam from $URL"
+        curl -fSL "$URL" | tar xz -C /usr/local/bin
+        gleam --version
 
     - name: Restore Gleam dependency cache
       uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
