@@ -2726,3 +2726,145 @@ pub fn referenced_blueprint_no_dead_warning_test() {
   diagnostics.get_dead_blueprint_diagnostics(source, ["api"])
   |> should.equal([])
 }
+
+// ==========================================================================
+// LSP type converter functions
+// ==========================================================================
+// * ✅ completion_item_kind_to_int maps all 5 variants
+// * ✅ symbol_kind_to_int maps all 5 variants
+// * ✅ diagnostic_severity_to_int maps both variants
+
+pub fn completion_item_kind_to_int_test() {
+  lsp_types.completion_item_kind_to_int(lsp_types.CikField)
+  |> should.equal(5)
+  lsp_types.completion_item_kind_to_int(lsp_types.CikVariable)
+  |> should.equal(6)
+  lsp_types.completion_item_kind_to_int(lsp_types.CikClass)
+  |> should.equal(7)
+  lsp_types.completion_item_kind_to_int(lsp_types.CikModule)
+  |> should.equal(9)
+  lsp_types.completion_item_kind_to_int(lsp_types.CikKeyword)
+  |> should.equal(14)
+}
+
+pub fn symbol_kind_to_int_test() {
+  lsp_types.symbol_kind_to_int(lsp_types.SkModule)
+  |> should.equal(2)
+  lsp_types.symbol_kind_to_int(lsp_types.SkClass)
+  |> should.equal(5)
+  lsp_types.symbol_kind_to_int(lsp_types.SkProperty)
+  |> should.equal(7)
+  lsp_types.symbol_kind_to_int(lsp_types.SkVariable)
+  |> should.equal(13)
+  lsp_types.symbol_kind_to_int(lsp_types.SkTypeParameter)
+  |> should.equal(26)
+}
+
+pub fn diagnostic_severity_to_int_test() {
+  lsp_types.diagnostic_severity_to_int(lsp_types.DsError)
+  |> should.equal(1)
+  lsp_types.diagnostic_severity_to_int(lsp_types.DsWarning)
+  |> should.equal(2)
+}
+
+// ==========================================================================
+// Position utility functions
+// ==========================================================================
+// * ✅ find_all_quoted_string_positions finds target on single line
+// * ✅ find_all_quoted_string_positions finds target on multiple lines
+// * ✅ find_all_quoted_string_positions returns empty for no match
+// * ✅ find_all_quoted_string_positions finds multiple occurrences on same line
+// * ✅ find_defined_symbol_positions finds extendable symbol
+// * ✅ find_defined_symbol_positions finds item name symbol
+// * ✅ find_defined_symbol_positions returns empty for non-symbol
+
+pub fn find_all_quoted_string_positions_single_test() {
+  let content = "    Provides { name: \"hello\" }\n"
+  position_utils.find_all_quoted_string_positions(content, "hello")
+  |> should.equal([#(0, 22)])
+}
+
+pub fn find_all_quoted_string_positions_multiple_lines_test() {
+  let content =
+    "line 0\n\"target\" on line 1\nline 2\nand \"target\" on line 3\n"
+  position_utils.find_all_quoted_string_positions(content, "target")
+  |> should.equal([#(1, 1), #(3, 5)])
+}
+
+pub fn find_all_quoted_string_positions_no_match_test() {
+  let content = "no quotes here\njust plain text\n"
+  position_utils.find_all_quoted_string_positions(content, "missing")
+  |> should.equal([])
+}
+
+pub fn find_all_quoted_string_positions_same_line_twice_test() {
+  let content = "    hard: [\"a.b.c.d\", \"a.b.c.d\"]\n"
+  let result =
+    position_utils.find_all_quoted_string_positions(content, "a.b.c.d")
+  // Both occurrences found (order may vary for same-line matches)
+  list.length(result) |> should.equal(2)
+  list.contains(result, #(0, 12)) |> should.be_true()
+  list.contains(result, #(0, 23)) |> should.be_true()
+}
+
+pub fn find_defined_symbol_positions_extendable_test() {
+  let content =
+    "_defaults (Requires): { env: String }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires {}\n    Provides { vendor: \"datadog\" }\n"
+  // Cursor on '_defaults' at line 0, col 1
+  let result = position_utils.find_defined_symbol_positions(content, 0, 1)
+  // Should find occurrences at definition (line 0) and reference (line 3)
+  { list.length(result) >= 2 } |> should.be_true()
+}
+
+pub fn find_defined_symbol_positions_item_name_test() {
+  let content =
+    "Blueprints for \"SLO\"\n  * \"api_avail\":\n    Requires {}\n    Provides { vendor: \"datadog\" }\n\nExpectations for \"api_avail\"\n  * \"my_slo\":\n    Provides {}\n"
+  // Cursor on 'api_avail' at line 1, col 6
+  let result = position_utils.find_defined_symbol_positions(content, 1, 6)
+  // Should find the blueprint item name and the expectations reference
+  { list.length(result) >= 2 } |> should.be_true()
+}
+
+pub fn find_defined_symbol_positions_non_symbol_test() {
+  let content = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n"
+  // Cursor on 'env' — not a defined symbol (not _name or * "name")
+  position_utils.find_defined_symbol_positions(content, 2, 16)
+  |> should.equal([])
+}
+
+// ==========================================================================
+// Definition: relation ref with range
+// ==========================================================================
+// * ✅ get_relation_ref_with_range_at_position returns ref and start col
+// * ✅ get_relation_ref_with_range_at_position returns None outside quotes
+// * ✅ get_relation_ref_with_range_at_position returns None for non-dotted path
+
+pub fn relation_ref_with_range_valid_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  // Line 2, cursor on 'o' of org.team.svc.dep
+  case definition.get_relation_ref_with_range_at_position(source, 2, 36) {
+    option.Some(#(ref, start_col)) -> {
+      ref |> should.equal("org.team.svc.dep")
+      // Start col should be the position of 'o' after the opening quote
+      { start_col >= 35 && start_col <= 37 } |> should.be_true()
+    }
+    option.None -> should.fail()
+  }
+}
+
+pub fn relation_ref_with_range_outside_quotes_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+  // Line 2, cursor on '[' — outside quotes
+  definition.get_relation_ref_with_range_at_position(source, 2, 34)
+  |> should.equal(option.None)
+}
+
+pub fn relation_ref_with_range_non_dotted_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
+  // Cursor inside "not_a_path" — not 4-segment dotted
+  definition.get_relation_ref_with_range_at_position(source, 2, 23)
+  |> should.equal(option.None)
+}
