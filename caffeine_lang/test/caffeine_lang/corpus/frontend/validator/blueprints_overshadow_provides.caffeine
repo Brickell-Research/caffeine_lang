@@ -1,0 +1,6 @@
+_base (Provides): { vendor: "datadog", value: "base" }
+
+Blueprints for "SLO"
+  * "api" extends [_base]:
+    Requires { threshold: Float }
+    Provides { vendor: "honeycomb" }

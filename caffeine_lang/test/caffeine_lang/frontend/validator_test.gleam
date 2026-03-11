@@ -37,6 +37,10 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
 // * ❌ extends references non-existent extendable
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
+// ==== Error Cases - Overshadowing ====
+// * ❌ blueprint requires field overshadows extendable requires field
+// * ❌ blueprint provides field overshadows extendable provides field
+// * ❌ blueprint requires field overshadows one of multiple extended extendables
 // ==== Error Cases - Name Collisions ====
 // * ❌ extendable name collides with type alias name
 // ==== Error Cases - Type Aliases ====
@@ -132,6 +136,60 @@ pub fn validate_blueprints_file_test() {
       parse_blueprints("blueprints_duplicate_extends_ref"),
       Error([
         validator.DuplicateExtendsReference(name: "_base", referenced_by: "api"),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Overshadowing - requires field shadows extendable requires field
+  [
+    #(
+      "blueprint requires field overshadows extendable requires field",
+      parse_blueprints("blueprints_overshadow_requires"),
+      Error([
+        validator.ExtendableOvershadowing(
+          field_name: "env",
+          item_name: "api",
+          extendable_name: "_common",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Overshadowing - provides field shadows extendable provides field
+  [
+    #(
+      "blueprint provides field overshadows extendable provides field",
+      parse_blueprints("blueprints_overshadow_provides"),
+      Error([
+        validator.ExtendableOvershadowing(
+          field_name: "vendor",
+          item_name: "api",
+          extendable_name: "_base",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Overshadowing - requires field shadows one of multiple extended extendables
+  [
+    #(
+      "blueprint requires field overshadows one of multiple extended extendables",
+      parse_blueprints("blueprints_overshadow_multiple_extends"),
+      Error([
+        validator.ExtendableOvershadowing(
+          field_name: "threshold",
+          item_name: "api",
+          extendable_name: "_metrics",
+        ),
       ]),
     ),
   ]
@@ -240,6 +298,7 @@ pub fn validate_blueprints_file_test() {
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
 // * ❌ Requires extendable in expects file (only Provides allowed)
+// * ❌ expectation provides field overshadows extendable provides field
 pub fn validate_expects_file_test() {
   // Happy paths
   [
@@ -336,6 +395,24 @@ pub fn validate_expects_file_test() {
           name: "_common",
           expected: "Provides",
           got: "Requires",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_expects_file(file)
+  })
+
+  // Overshadowing - provides field shadows extendable provides field
+  [
+    #(
+      "expectation provides field overshadows extendable provides field",
+      parse_expects("expects_overshadow_provides"),
+      Error([
+        validator.ExtendableOvershadowing(
+          field_name: "env",
+          item_name: "checkout",
+          extendable_name: "_defaults",
         ),
       ]),
     ),
