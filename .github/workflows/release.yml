@@ -165,6 +165,7 @@ jobs:
           'export PROGNAME=caffeine' \
           'export ERL_LIBS="$BASE/lib"' \
           'exec "$BINDIR/erlexec" \' \
+          '  -boot start_clean \' \
           '  -eval "caffeine_cli@@main:run(caffeine_cli)" \' \
           '  -noshell \' \
           '  -extra "$@"' \
@@ -223,7 +224,7 @@ jobs:
           'set "EMU=beam"'
           'set "PROGNAME=caffeine"'
           'set "ERL_LIBS=%BASE%lib"'
-          '"%BINDIR%\erl.exe" -eval "caffeine_cli@@main:run(caffeine_cli)" -noshell -extra %*'
+          '"%BINDIR%\erl.exe" -boot start_clean -eval "caffeine_cli@@main:run(caffeine_cli)" -noshell -extra %*'
         )
         $CmdLines -join "`r`n" | Out-File -FilePath "$Bundle\caffeine.cmd" -Encoding ascii
 
