@@ -5,10 +5,10 @@ import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import caffeine_lang/linker/ir_builder
+import caffeine_lang/parallel
 import caffeine_lang/source_file.{
   type BlueprintSource, type ExpectationSource, type SourceFile,
 }
-import gleam/list
 import gleam/result
 
 /// Links a blueprint and expectation sources into intermediate representations.
@@ -44,7 +44,7 @@ fn parse_expectation_sources(
   ),
 ) {
   sources
-  |> list.map(fn(source) {
+  |> parallel.parallel_map(fn(source) {
     pipeline.compile_expects(source)
     |> result.try(fn(raw_expectations) {
       expectations.validate_expectations(

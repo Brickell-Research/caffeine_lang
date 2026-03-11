@@ -6,6 +6,7 @@ import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir.{
   type DepsValidated, type IntermediateRepresentation, type Resolved,
 }
+import caffeine_lang/parallel
 import gleam/bool
 import gleam/list
 import gleam/option
@@ -17,7 +18,7 @@ pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation(DepsValidated)),
 ) -> Result(List(IntermediateRepresentation(Resolved)), CompilationError) {
   irs
-  |> list.map(fn(ir) {
+  |> parallel.parallel_map(fn(ir) {
     use <- bool.guard(
       when: !list.contains(ir.artifact_refs, SLO),
       return: Ok(ir.promote(ir)),

@@ -61,6 +61,7 @@ simplifile = ">= 2.3.0 and < 3.0.0"
 "caffeine_lang/rich_error" = true
 "caffeine_lang/source_snippet" = true
 "caffeine_lang/string_distance" = true
+"caffeine_lang/parallel" = true
 "caffeine_lang/types" = true
 "caffeine_lang/value" = true
 # Standard library
