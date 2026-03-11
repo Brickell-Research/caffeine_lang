@@ -59,6 +59,56 @@ pub fn literal_to_string_test() {
     #("False -> false", ast.LiteralFalse, "false"),
     #("List -> [...]", ast.LiteralList([]), "[...]"),
     #("Struct -> {...}", ast.LiteralStruct([], []), "{...}"),
+    #("Percentage -> number%", ast.LiteralPercentage(99.9), "99.9%"),
   ]
   |> test_helpers.table_test_1(ast.literal_to_string)
+}
+
+// ==== parsed_artifact_ref_to_string ====
+// * ✅ ParsedSLO -> "SLO"
+// * ✅ ParsedDependencyRelations -> "DependencyRelations"
+pub fn parsed_artifact_ref_to_string_test() {
+  [
+    #("ParsedSLO -> SLO", ast.ParsedSLO, "SLO"),
+    #(
+      "ParsedDependencyRelations -> DependencyRelations",
+      ast.ParsedDependencyRelations,
+      "DependencyRelations",
+    ),
+  ]
+  |> test_helpers.table_test_1(ast.parsed_artifact_ref_to_string)
+}
+
+// ==== value_to_string ====
+// * ✅ TypeValue delegates to parsed_type_to_string
+// * ✅ LiteralValue delegates to literal_to_string
+pub fn value_to_string_test() {
+  [
+    #(
+      "TypeValue(String) -> String",
+      ast.TypeValue(types.ParsedPrimitive(types.String)),
+      "String",
+    ),
+    #(
+      "TypeValue(Boolean) -> Boolean",
+      ast.TypeValue(types.ParsedPrimitive(types.Boolean)),
+      "Boolean",
+    ),
+    #(
+      "LiteralValue(String) -> quoted string",
+      ast.LiteralValue(ast.LiteralString("hello")),
+      "\"hello\"",
+    ),
+    #(
+      "LiteralValue(Integer) -> number",
+      ast.LiteralValue(ast.LiteralInteger(42)),
+      "42",
+    ),
+    #(
+      "LiteralValue(True) -> true",
+      ast.LiteralValue(ast.LiteralTrue),
+      "true",
+    ),
+  ]
+  |> test_helpers.table_test_1(ast.value_to_string)
 }

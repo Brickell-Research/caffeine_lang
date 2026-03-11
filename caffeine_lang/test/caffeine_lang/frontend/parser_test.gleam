@@ -3,7 +3,9 @@ import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error
 import caffeine_lang/types
 import gleam/dict
+import gleam/list
 import gleam/set
+import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -1141,4 +1143,35 @@ pub fn parse_error_missing_delimiter_test() {
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)
+}
+
+// ==== parse (edge cases) ====
+// * ✅ empty Requires {} parses to empty struct
+// * ✅ empty Provides {} parses to empty struct
+// * ✅ multiple errors across items are all collected
+pub fn parse_empty_requires_struct_test() {
+  let source =
+    "Blueprints for \"SLO\"\n  * \"test\":\n    Requires {}\n    Provides { v: \"x\" }\n"
+  let assert Ok(file) = parser.parse_blueprints_file(source)
+  let assert [block] = file.blocks
+  let assert [item] = block.items
+  item.requires.fields |> should.equal([])
+}
+
+pub fn parse_empty_provides_struct_test() {
+  let source =
+    "Expectations for \"bp\"\n  * \"test\":\n    Provides {}\n"
+  let assert Ok(file) = parser.parse_expects_file(source)
+  let assert [block] = file.blocks
+  let assert [item] = block.items
+  item.provides.fields |> should.equal([])
+}
+
+pub fn parse_multiple_errors_across_items_test() {
+  // Two items, each with an error — both errors should be collected
+  let source =
+    "Blueprints for \"SLO\"\n  * \"a\":\n    Requires { f: Unknown }\n    Provides {}\n  * \"b\":\n    Requires { g: Unknown }\n    Provides {}\n"
+  let assert Error(errors) = parser.parse_blueprints_file(source)
+  // Should have at least 2 errors (one per bad type)
+  { list.length(errors) >= 2 } |> should.be_true()
 }
