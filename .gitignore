@@ -127,11 +127,10 @@ _build/*
 # Nix
 result*
 
-# JavaScript
+# JavaScript (browser bundle build artifacts)
 node_modules/
-package-lock.json
-package.json
-yarn.lock
+
+# Binary archives
 caffeine
 caffeine.zip
 caffeine.xz

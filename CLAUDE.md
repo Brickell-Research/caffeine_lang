@@ -24,11 +24,11 @@ make watch-js     # Auto-test with JavaScript target
 
 To test a single package: `cd caffeine_lang && gleam test`
 
-IMPORTANT: Tests must pass on both Erlang and JavaScript targets. Always verify with:
+IMPORTANT: Tests must pass on the Erlang target. `caffeine_lang` must also pass on JavaScript:
 ```bash
 cd caffeine_lang && gleam test && gleam test --target javascript
-cd caffeine_lsp && gleam test && gleam test --target javascript
-cd caffeine_cli && gleam test && gleam test --target javascript
+cd caffeine_lsp && gleam test
+cd caffeine_cli && gleam test
 ```
 
 ## Compilation Pipeline
@@ -95,7 +95,7 @@ Errors are prefixed with file paths and identifiers as they bubble up via `error
 
 ## LSP
 
-The LSP server (`caffeine_lsp/src/caffeine_lsp/server.gleam`) maintains a `ServerState` with open document text. Features: diagnostics, hover, completion (context-aware with `:` and `[` triggers), document symbols, semantic tokens, go-to-definition, code actions (quickfix), and formatting. Dual runtime support (Erlang + JS/Deno) via FFI bindings.
+The LSP server (`caffeine_lsp/src/caffeine_lsp/server.gleam`) is a pure Gleam implementation targeting Erlang. It communicates via JSON-RPC over stdin/stdout with Content-Length framing. Features: diagnostics, hover, completion (context-aware with `:` and `[` triggers), document symbols, semantic tokens, go-to-definition, code actions (quickfix), formatting, references, rename, type hierarchy, and workspace symbols.
 
 ## Language Features
 
@@ -107,6 +107,17 @@ Caffeine is purely declarative - no functions, control flow, variables, or impor
 - **Template variables**: `$var->attr$` in query strings
 - **Comments**: `#` line, `##` section
 
+## Building
+
+Nix flake (`flake.nix`) provides:
+- `nix develop` — dev shell with Gleam, Erlang 27, rebar3, Bun, Node 20
+- `nix build` — erlang-shipment wrapped as `bin/caffeine` (requires Nix Erlang)
+- `nix build .#shipment` — raw erlang-shipment (BEAM bytecode)
+
+Manual build: `cd caffeine_cli && gleam export erlang-shipment` produces portable BEAM files in `build/erlang-shipment/`. Requires Erlang/OTP 27+ on the target machine.
+
 ## Release
 
-Releases are triggered by git tags (`v*`). The CI workflow compiles cross-platform binaries via Deno, publishes to GitHub Releases, Hex.pm, Homebrew tap, and updates the website's browser bundle.
+Releases are triggered by git tags (`v*`). The CI workflow:
+1. **Matrix build** (5 runners): Linux x64/ARM64, macOS x64/ARM64, Windows x64. Each builds an erlang-shipment, bundles ERTS (Erlang runtime) for standalone execution — no Erlang needed on the user's machine.
+2. **Release job**: Creates GitHub Release with platform tarballs/zips, publishes to Hex.pm (caffeine_lang), builds browser bundle (esbuild via Bun), updates the website.
