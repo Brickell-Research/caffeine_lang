@@ -500,6 +500,145 @@ Expectations for \"hc_blueprint\"
   })
 }
 
+// ==== compile_from_strings (New Relic) ====
+// * ✅ happy path - single New Relic SLO
+// * ✅ happy path - mixed vendors (Datadog + New Relic)
+// * ✅ sad path   - New Relic with invalid window (not 1, 7, or 28)
+pub fn compile_from_strings_newrelic_test() {
+  [
+    // happy path - single New Relic SLO
+    #(
+      "happy path - single New Relic SLO",
+      #(
+        "Blueprints for \"SLO\"
+  * \"newrelic_availability\":
+    Requires { env: String }
+    Provides {
+      vendor: \"newrelic\",
+      evaluation: \"good / valid\",
+      indicators: {
+        good: \"Transaction WHERE appName = 'payments' AND duration < 0.1\",
+        valid: \"Transaction WHERE appName = 'payments'\"
+      }
+    }
+",
+        "Expectations for \"newrelic_availability\"
+  * \"api_success_rate\":
+    Provides {
+      env: \"production\",
+      threshold: 99.5%,
+      window_in_days: 7
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "newrelic_service_level",
+          "api_success_rate",
+          "var.newrelic_entity_guid",
+          "var.newrelic_account_id",
+          "var.newrelic_api_key",
+          "good_events",
+          "valid_events",
+          "count = 7",
+        ],
+      ),
+      True,
+    ),
+    // happy path - mixed vendors (Datadog + New Relic)
+    #(
+      "happy path - mixed vendors (Datadog + New Relic)",
+      #(
+        "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+  * \"nr_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"newrelic\",
+      evaluation: \"good / valid\",
+      indicators: {
+        good: \"Transaction WHERE duration < 0.1\",
+        valid: \"Transaction\"
+      }
+    }
+",
+        "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Expectations for \"nr_blueprint\"
+  * \"nr_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 7
+    }
+",
+        "acme/platform/payments.caffeine",
+        [
+          "datadog_service_level_objective",
+          "newrelic_service_level",
+          "var.datadog_api_key",
+          "var.newrelic_api_key",
+        ],
+      ),
+      True,
+    ),
+    // sad path - New Relic with invalid window (not 1, 7, or 28)
+    #(
+      "sad path - New Relic with invalid window (not 1, 7, or 28)",
+      #(
+        "Blueprints for \"SLO\"
+  * \"nr_blueprint\":
+    Requires {}
+    Provides {
+      vendor: \"newrelic\",
+      evaluation: \"good / valid\",
+      indicators: {
+        good: \"Transaction WHERE duration < 0.1\",
+        valid: \"Transaction\"
+      }
+    }
+",
+        "Expectations for \"nr_blueprint\"
+  * \"nr_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 30
+    }
+",
+        "acme/platform/payments.caffeine",
+        [],
+      ),
+      False,
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(input) {
+    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let result =
+      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+    case expected_substrings {
+      [] ->
+        case result {
+          Ok(_) -> True
+          Error(_) -> False
+        }
+      _ -> contains_all_substrings(result, expected_substrings)
+    }
+  })
+}
+
 // ==== compile_from_strings (Dynatrace) ====
 // * ✅ happy path - single Dynatrace SLO
 // * ✅ happy path - mixed vendors (Datadog + Dynatrace)

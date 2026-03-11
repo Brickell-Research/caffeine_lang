@@ -212,6 +212,7 @@ pub fn generate_terraform_test() {
 // ==== ir_to_terraform_resource ====
 // * ❌ evaluation references undefined indicator returns error
 // * ❌ missing evaluation returns error
+// * ❌ evaluation not in "good / valid" format returns error
 pub fn ir_to_terraform_resource_undefined_indicator_test() {
   let ir =
     make_newrelic_ir(
@@ -230,6 +231,29 @@ pub fn ir_to_terraform_resource_undefined_indicator_test() {
   case newrelic.ir_to_terraform_resource(ir) {
     Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
       string.contains(msg, "undefined indicators")
+      |> should.be_true
+    _ -> should.fail()
+  }
+}
+
+pub fn ir_to_terraform_resource_wrong_format_evaluation_test() {
+  let ir =
+    make_newrelic_ir(
+      "Single Indicator SLO",
+      "acme_payments_single",
+      "acme",
+      "platform",
+      "payments",
+      "test_blueprint",
+      99.0,
+      7,
+      "sli",
+      [#("sli", "Transaction WHERE appName = 'payments'")],
+    )
+
+  case newrelic.ir_to_terraform_resource(ir) {
+    Error(errors.GeneratorTerraformResolutionError(msg:, ..)) ->
+      string.contains(msg, "good / valid")
       |> should.be_true
     _ -> should.fail()
   }
