@@ -46,7 +46,8 @@ jobs:
         otp-version: '27'
         rebar3-version: '3.25.0'
 
-    - name: Install Gleam
+    - name: Install Gleam (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       env:
         GLEAM_VERSION: '1.14.0'
@@ -55,12 +56,23 @@ jobs:
           Linux-x86_64)   TARGET="x86_64-unknown-linux-musl" ;;
           Darwin-x86_64)  TARGET="x86_64-apple-darwin" ;;
           Darwin-arm64)   TARGET="aarch64-apple-darwin" ;;
-          MINGW*|MSYS*)   TARGET="x86_64-pc-windows-msvc" ;;
           *)              echo "Unsupported platform"; exit 1 ;;
         esac
-        URL="https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-${TARGET}.tar.gz"
-        echo "Downloading Gleam from $URL"
-        curl -fSL "$URL" | tar xz -C /usr/local/bin
+        curl -fSL "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-${TARGET}.tar.gz" \
+          | tar xz -C /usr/local/bin
+        gleam --version
+
+    - name: Install Gleam (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        GLEAM_VERSION: '1.14.0'
+      run: |
+        $url = "https://github.com/gleam-lang/gleam/releases/download/v$env:GLEAM_VERSION/gleam-v$env:GLEAM_VERSION-x86_64-pc-windows-msvc.zip"
+        $tmp = "$env:TEMP\gleam.zip"
+        Invoke-WebRequest -Uri $url -OutFile $tmp
+        Expand-Archive -Path $tmp -DestinationPath "$env:TEMP\gleam" -Force
+        Copy-Item "$env:TEMP\gleam\gleam.exe" -Destination "C:\Windows\gleam.exe"
         gleam --version
 
     - name: Restore Gleam dependency cache
