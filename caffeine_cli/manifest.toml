@@ -3,7 +3,7 @@
 
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
-  { name = "caffeine_lang", version = "4.7.4", build_tools = ["gleam"], requirements = ["gleam_stdlib", "terra_madre"], source = "local", path = "../caffeine_lang" },
+  { name = "caffeine_lang", version = "4.7.5", build_tools = ["gleam"], requirements = ["gleam_stdlib", "terra_madre"], source = "local", path = "../caffeine_lang" },
   { name = "caffeine_lsp", version = "0.1.0", build_tools = ["gleam"], requirements = ["caffeine_lang", "gleam_json", "gleam_stdlib"], source = "local", path = "../caffeine_lsp" },
   { name = "envoy", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "envoy", source = "hex", outer_checksum = "850DA9D29D2E5987735872A2B5C81035146D7FE19EFC486129E44440D03FD832" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
