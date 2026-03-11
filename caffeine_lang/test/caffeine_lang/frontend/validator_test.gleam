@@ -49,6 +49,9 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
 // * ❌ invalid Dict key type alias (non-String)
 // ==== Error Cases - Record Type Aliases ====
 // * ❌ circular type alias in record field
+// * ❌ circular type alias two-level (_a → _b → _a)
+// * ❌ circular type alias three-level (_a → _b → _c → _a)
+// * ❌ circular type alias through List inner type
 // * ❌ undefined type alias in record field
 pub fn validate_blueprints_file_test() {
   // Happy paths
@@ -269,6 +272,48 @@ pub fn validate_blueprints_file_test() {
     validator.validate_blueprints_file(file)
   })
 
+  // Circular type alias two-level (_a → _b → _a)
+  [
+    #(
+      "circular type alias two-level",
+      parse_blueprints("blueprints_circular_two_level"),
+      Error([
+        validator.CircularTypeAlias(name: "_a", cycle: ["_b", "_a"]),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Circular type alias three-level (_a → _b → _c → _a)
+  [
+    #(
+      "circular type alias three-level",
+      parse_blueprints("blueprints_circular_three_level"),
+      Error([
+        validator.CircularTypeAlias(name: "_a", cycle: ["_c", "_b", "_a"]),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Circular type alias through List inner type
+  [
+    #(
+      "circular type alias through List inner type",
+      parse_blueprints("blueprints_circular_through_list"),
+      Error([
+        validator.CircularTypeAlias(name: "_a", cycle: ["_b", "_a"]),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
   // Undefined type alias in record field
   [
     #(
@@ -424,6 +469,9 @@ pub fn validate_expects_file_test() {
 
 // ==== Refinement Value Validation ====
 // * ❌ refinement type mismatch (e.g. string literal in Integer OneOf)
+// * ❌ refinement type mismatch - Float OneOf with string
+// * ❌ refinement type mismatch - Boolean OneOf with invalid value
+// * ❌ refinement type mismatch - Integer InclusiveRange with string bounds
 // * ❌ percentage bounds out of range
 pub fn validate_refinement_values_test() {
   // Refinement type mismatch - string "hello" in Integer OneOf
@@ -436,6 +484,60 @@ pub fn validate_refinement_values_test() {
           value: "hello",
           expected_type: "Integer",
           referenced_by: "_bad_type",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Refinement type mismatch - Float OneOf with string
+  [
+    #(
+      "refinement type mismatch - Float OneOf with string",
+      parse_blueprints("blueprints_refinement_float_mismatch"),
+      Error([
+        validator.InvalidRefinementValue(
+          value: "hello",
+          expected_type: "Float",
+          referenced_by: "test",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Refinement type mismatch - Boolean OneOf with invalid value
+  [
+    #(
+      "refinement type mismatch - Boolean OneOf with invalid value",
+      parse_blueprints("blueprints_refinement_bool_mismatch"),
+      Error([
+        validator.InvalidRefinementValue(
+          value: "yes",
+          expected_type: "Boolean",
+          referenced_by: "test",
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(file) {
+    validator.validate_blueprints_file(file)
+  })
+
+  // Refinement type mismatch - Integer InclusiveRange with string bounds
+  [
+    #(
+      "refinement type mismatch - Integer InclusiveRange with string bounds",
+      parse_blueprints("blueprints_refinement_range_mismatch"),
+      Error([
+        validator.InvalidRefinementValue(
+          value: "a",
+          expected_type: "Integer",
+          referenced_by: "test",
         ),
       ]),
     ),

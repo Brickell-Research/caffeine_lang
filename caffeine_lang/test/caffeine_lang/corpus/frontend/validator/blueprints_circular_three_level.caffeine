@@ -1,0 +1,8 @@
+_a (Type): _b
+_b (Type): _c
+_c (Type): _a
+
+Blueprints for "SLO"
+  * "api":
+    Requires { data: _a }
+    Provides { value: "x" }

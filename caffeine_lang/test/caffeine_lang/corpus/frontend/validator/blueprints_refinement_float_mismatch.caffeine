@@ -1,0 +1,4 @@
+Blueprints for "SLO"
+  * "test":
+    Requires { rate: Float { x | x in { "hello" } } }
+    Provides { value: "x" }
