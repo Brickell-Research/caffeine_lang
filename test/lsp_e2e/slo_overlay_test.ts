@@ -312,7 +312,7 @@ describe("formatSloLensTitle", () => {
       window: "30d",
       status: "ok",
     });
-    expect(title).toBe("SLI: 99.95% | Target: 99.9% | Budget: 50.0% remaining | 30d");
+    expect(title).toBe("SLI: 99.95% | Target: 99.9% | Budget: 50.0% remaining | 30d 🟢");
   });
 
   test("formats warning status with warning icon", () => {
@@ -326,6 +326,7 @@ describe("formatSloLensTitle", () => {
     expect(title).toContain("Budget: 15.3% remaining");
     expect(title).toContain("\u26A0\uFE0F"); // warning emoji
     expect(title).not.toContain("\uD83D\uDD34"); // no red circle
+    expect(title).not.toContain("\uD83D\uDFE2"); // no green circle
   });
 
   test("formats breaching status with red circle icon", () => {
@@ -338,6 +339,7 @@ describe("formatSloLensTitle", () => {
     });
     expect(title).toContain("SLI: 99.50%");
     expect(title).toContain("\uD83D\uDD34"); // red circle
+    expect(title).not.toContain("\uD83D\uDFE2"); // no green circle
   });
 
   test("formats values with correct decimal precision", () => {
@@ -348,7 +350,7 @@ describe("formatSloLensTitle", () => {
       window: "90d",
       status: "ok",
     });
-    expect(title).toBe("SLI: 100.00% | Target: 99.0% | Budget: 100.0% remaining | 90d");
+    expect(title).toBe("SLI: 100.00% | Target: 99.0% | Budget: 100.0% remaining | 90d 🟢");
   });
 });
 
