@@ -4,15 +4,17 @@
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
+import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
+import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
 import gleam/option
 import gleam/set
+import gleeunit/should
 import test_helpers
 
 // ==== resolve_intermediate_representations ====
@@ -1160,4 +1162,257 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
   |> test_helpers.table_test_1(
     semantic_analyzer.resolve_intermediate_representations,
   )
+}
+
+// ==== resolve_indicators ====
+// * ✅ error - no vendor resolved returns SemanticAnalysisTemplateResolutionError
+pub fn resolve_indicators_no_vendor_error_test() {
+  let ir =
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("No Vendor SLO"),
+        org_name: identifiers.OrgName("test"),
+        service_name: identifiers.ServiceName("service"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("test_team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "no_vendor_slo",
+      artifact_refs: [SLO],
+      values: [
+        helpers.ValueTuple(
+          "indicators",
+          types.CollectionType(types.Dict(
+            types.PrimitiveType(types.String),
+            types.PrimitiveType(types.String),
+          )),
+          value.DictValue(
+            dict.from_list([
+              #("query", value.StringValue("avg:system.cpu{env:prod}")),
+            ]),
+          ),
+        ),
+      ],
+      artifact_data: ir.slo_only(ir.SloFields(
+        threshold: 0.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.None,
+    )
+
+  let assert Error(err) = semantic_analyzer.resolve_indicators(ir)
+  err
+  |> should.equal(errors.semantic_analysis_template_resolution_error(
+    msg: "expectation 'test.test_team.service.No Vendor SLO' - no vendor resolved",
+  ))
+}
+
+// ==== resolve_indicators ====
+// * ✅ happy path - NewRelic indicators pass through without template resolution
+pub fn resolve_indicators_newrelic_passthrough_test() {
+  [
+    #(
+      "NewRelic indicators pass through without template resolution",
+      ir.IntermediateRepresentation(
+        metadata: ir.IntermediateRepresentationMetaData(
+          friendly_label: identifiers.ExpectationLabel("NR SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
+          misc: dict.new(),
+        ),
+        unique_identifier: "nr_slo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_newrelic),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            types.CollectionType(types.Dict(
+              types.PrimitiveType(types.String),
+              types.PrimitiveType(types.String),
+            )),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "good",
+                  value.StringValue(
+                    "FROM Transaction SELECT count(*) WHERE duration < 0.5",
+                  ),
+                ),
+                #(
+                  "valid",
+                  value.StringValue(
+                    "FROM Transaction SELECT count(*)",
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+        artifact_data: ir.slo_only(ir.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: option.Some(vendor.NewRelic),
+      ),
+      Ok(ir.IntermediateRepresentation(
+        metadata: ir.IntermediateRepresentationMetaData(
+          friendly_label: identifiers.ExpectationLabel("NR SLO"),
+          org_name: identifiers.OrgName("test"),
+          service_name: identifiers.ServiceName("service"),
+          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          team_name: identifiers.TeamName("test_team"),
+          misc: dict.new(),
+        ),
+        unique_identifier: "nr_slo",
+        artifact_refs: [SLO],
+        values: [
+          helpers.ValueTuple(
+            "vendor",
+            types.PrimitiveType(types.String),
+            value.StringValue(constants.vendor_newrelic),
+          ),
+          helpers.ValueTuple(
+            "indicators",
+            types.CollectionType(types.Dict(
+              types.PrimitiveType(types.String),
+              types.PrimitiveType(types.String),
+            )),
+            value.DictValue(
+              dict.from_list([
+                #(
+                  "good",
+                  value.StringValue(
+                    "FROM Transaction SELECT count(*) WHERE duration < 0.5",
+                  ),
+                ),
+                #(
+                  "valid",
+                  value.StringValue(
+                    "FROM Transaction SELECT count(*)",
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+        artifact_data: ir.slo_only(ir.SloFields(
+          threshold: 0.0,
+          indicators: dict.new(),
+          window_in_days: 30,
+          evaluation: option.None,
+          tags: [],
+          runbook: option.None,
+        )),
+        vendor: option.Some(vendor.NewRelic),
+      )),
+    ),
+  ]
+  |> test_helpers.table_test_1(semantic_analyzer.resolve_indicators)
+}
+
+// ==== resolve_intermediate_representations ====
+// * ✅ non-SLO artifact skips indicator resolution via promote
+pub fn resolve_intermediate_representations_non_slo_skip_test() {
+  let non_slo_ir =
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Deps Only"),
+        org_name: identifiers.OrgName("test"),
+        service_name: identifiers.ServiceName("service"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("test_team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "deps_only",
+      artifact_refs: [DependencyRelations],
+      values: [],
+      artifact_data: ir.slo_only(ir.SloFields(
+        threshold: 0.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.None,
+    )
+
+  [
+    #(
+      "non-SLO artifact skips indicator resolution",
+      [non_slo_ir],
+      Ok([
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
+            friendly_label: identifiers.ExpectationLabel("Deps Only"),
+            org_name: identifiers.OrgName("test"),
+            service_name: identifiers.ServiceName("service"),
+            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            team_name: identifiers.TeamName("test_team"),
+            misc: dict.new(),
+          ),
+          unique_identifier: "deps_only",
+          artifact_refs: [DependencyRelations],
+          values: [],
+          artifact_data: ir.slo_only(ir.SloFields(
+            threshold: 0.0,
+            indicators: dict.new(),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+          )),
+          vendor: option.None,
+        ),
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(
+    semantic_analyzer.resolve_intermediate_representations,
+  )
+}
+
+// ==== resolve_intermediate_representations ====
+// * ✅ error - no vendor on SLO IR propagates through from_results
+pub fn resolve_intermediate_representations_no_vendor_error_test() {
+  let no_vendor_ir =
+    ir.IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Bad SLO"),
+        org_name: identifiers.OrgName("test"),
+        service_name: identifiers.ServiceName("service"),
+        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        team_name: identifiers.TeamName("test_team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "bad_slo",
+      artifact_refs: [SLO],
+      values: [],
+      artifact_data: ir.slo_only(ir.SloFields(
+        threshold: 0.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.None,
+    )
+
+  semantic_analyzer.resolve_intermediate_representations([no_vendor_ir])
+  |> should.be_error()
 }
