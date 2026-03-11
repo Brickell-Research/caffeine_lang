@@ -26,18 +26,17 @@ const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 const workspace = new WorkspaceIndex(documents);
 
-// Initialize SLO overlay if Datadog credentials are available.
+// SLO cache is created lazily — either from env vars at startup,
+// or after loading .env from workspace root during initialization.
 const ddCredentials = getDatadogCredentials();
 let sloCache: SloStatusCache | null = null;
 if (ddCredentials) {
-  debug("slo-overlay: Datadog credentials found");
+  debug("slo-overlay: Datadog credentials found in environment");
   sloCache = new SloStatusCache(ddCredentials);
-  // Notify IDE to refresh code lenses after SLO data loads.
   sloCache.onDidRefresh(() => {
     connection.languages.codeLens.refresh();
   });
-} else {
-  debug("slo-overlay: disabled (no DD_API_KEY/DD_APP_KEY)");
 }
 
-registerHandlers({ connection, documents, workspace, sloCache });
+const ctx = { connection, documents, workspace, sloCache };
+registerHandlers(ctx);

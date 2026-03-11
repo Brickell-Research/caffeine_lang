@@ -4,11 +4,15 @@
  */
 
 import { expect, test, describe } from "bun:test";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 import { parseCaffeineIdentity, categorizeStatus } from "../../lsp/vendors/datadog_client.ts";
 import { extractVendors } from "../../lsp/workspace_parsers.ts";
 import { extractExpectationPositions, formatSloLensTitle } from "../../lsp/document_features.ts";
 import { SloStatusCache } from "../../lsp/vendors/slo_cache.ts";
+import { loadEnvFile } from "../../lsp/vendors/types.ts";
 
 // ==== parseCaffeineIdentity ====
 // * builds dotted ID from complete tag set
@@ -375,5 +379,82 @@ describe("SloStatusCache", () => {
   test("isStale is true with a zero TTL", () => {
     const cache = new SloStatusCache(fakeCreds, 0);
     expect(cache.isStale).toBe(true);
+  });
+});
+
+// ==== loadEnvFile ====
+// * loads key=value pairs into process.env
+// * does not override existing env vars
+// * strips quotes from values
+// * ignores comments and blank lines
+
+describe("loadEnvFile", () => {
+  function withTempEnv(content: string, fn: (dir: string) => void) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caffeine-test-"));
+    fs.writeFileSync(path.join(dir, ".env"), content);
+    try {
+      fn(dir);
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  }
+
+  test("loads key=value pairs", () => {
+    const key = `__CAFFEINE_TEST_${Date.now()}_A`;
+    withTempEnv(`${key}=hello`, (dir) => {
+      delete process.env[key];
+      loadEnvFile(dir);
+      expect(process.env[key]).toBe("hello");
+      delete process.env[key];
+    });
+  });
+
+  test("does not override existing env vars", () => {
+    const key = `__CAFFEINE_TEST_${Date.now()}_B`;
+    process.env[key] = "original";
+    withTempEnv(`${key}=overwritten`, (dir) => {
+      loadEnvFile(dir);
+      expect(process.env[key]).toBe("original");
+      delete process.env[key];
+    });
+  });
+
+  test("strips double quotes from values", () => {
+    const key = `__CAFFEINE_TEST_${Date.now()}_C`;
+    withTempEnv(`${key}="quoted-value"`, (dir) => {
+      delete process.env[key];
+      loadEnvFile(dir);
+      expect(process.env[key]).toBe("quoted-value");
+      delete process.env[key];
+    });
+  });
+
+  test("strips single quotes from values", () => {
+    const key = `__CAFFEINE_TEST_${Date.now()}_D`;
+    withTempEnv(`${key}='single-quoted'`, (dir) => {
+      delete process.env[key];
+      loadEnvFile(dir);
+      expect(process.env[key]).toBe("single-quoted");
+      delete process.env[key];
+    });
+  });
+
+  test("ignores comments and blank lines", () => {
+    const key = `__CAFFEINE_TEST_${Date.now()}_E`;
+    withTempEnv(`# comment\n\n${key}=value\n# another comment`, (dir) => {
+      delete process.env[key];
+      loadEnvFile(dir);
+      expect(process.env[key]).toBe("value");
+      delete process.env[key];
+    });
+  });
+
+  test("does nothing when .env file is missing", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caffeine-test-noenv-"));
+    try {
+      loadEnvFile(dir); // should not throw
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
   });
 });

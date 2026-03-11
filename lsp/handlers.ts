@@ -27,6 +27,8 @@ import {
 
 import type { WorkspaceIndex } from "./workspace.ts";
 import { debug } from "./debug.ts";
+import { loadEnvFile, getDatadogCredentials } from "./vendors/types.ts";
+import { SloStatusCache } from "./vendors/slo_cache.ts";
 
 import {
   handleHover,
@@ -167,6 +169,25 @@ function registerInitializeHandler(ctx: HandlerContext): void {
     const rootUri: string | undefined = params.rootUri ?? params.rootPath;
     if (rootUri) {
       debug(`initialize: root=${rootUri}`);
+
+      // Load .env from workspace root (only sets vars not already in process.env)
+      const rootPath = rootUri.startsWith("file://")
+        ? fileURLToPath(rootUri)
+        : rootUri;
+      loadEnvFile(rootPath);
+
+      // Lazily create SLO cache if credentials became available from .env
+      if (!ctx.sloCache) {
+        const creds = getDatadogCredentials();
+        if (creds) {
+          debug("slo-overlay: Datadog credentials found via .env");
+          ctx.sloCache = new SloStatusCache(creds);
+          ctx.sloCache.onDidRefresh(() => {
+            connection.languages.codeLens.refresh();
+          });
+        }
+      }
+
       try {
         await workspace.initializeFromRoot(rootUri);
         debug(`initialize: indexed ${workspace.files.size} files, ${workspace.blueprintIndex.size} blueprint files, ${workspace.expectationIndex.size} expectation files`);
@@ -203,7 +224,7 @@ function registerInitializeHandler(ctx: HandlerContext): void {
           retriggerCharacters: [","],
         },
         inlayHintProvider: true,
-        codeLensProvider: ctx.sloCache ? { resolveProvider: false } : undefined,
+        codeLensProvider: { resolveProvider: false },
         codeActionProvider: {
           codeActionKinds: ["quickfix"],
         },
