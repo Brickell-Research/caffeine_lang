@@ -1,0 +1,8 @@
+_base (Provides): {
+  # Empty extendable with only a comment
+}
+
+Blueprints for "SLO"
+  * "test" extends [_base]:
+    Requires { env: String }
+    Provides { value: "x" }

@@ -1,0 +1,10 @@
+Blueprints for "SLO"
+  * "fits_inline":
+    Requires { env: String }
+    Provides { value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+
+  * "goes_multiline":
+    Requires { env: String }
+    Provides {
+      value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }

@@ -38,6 +38,11 @@ fn read_file(path: String) -> String {
 // * ✅ extendable joining collapses blank lines between extendables
 // * ✅ record type blueprint formats correctly
 // * ✅ percentage types and literals format correctly
+// ==== format (80-column boundary) ====
+// * ✅ inline struct at 65 chars stays inline (65 + 14 = 79 < 80)
+// * ✅ multiline struct at 66 chars goes multiline (66 + 14 = 80, not < 80)
+// ==== format (empty struct with comment) ====
+// * ✅ empty extendable struct with trailing comment preserves comment
 pub fn format_test() {
   [
     #("unformatted_blueprint", "formatted_blueprint"),
@@ -76,6 +81,10 @@ pub fn format_test() {
     #("record_type_blueprint", "record_type_blueprint"),
     // Percentage types
     #("percentage_types", "percentage_types"),
+    // 80-column boundary
+    #("boundary_80_col", "boundary_80_col"),
+    // Empty struct with trailing comment
+    #("empty_struct_trailing_comment", "empty_struct_trailing_comment"),
   ]
   |> list.each(fn(pair) {
     let #(input_name, expected_name) = pair
@@ -108,6 +117,8 @@ pub fn format_idempotent_test() {
     "unformatted_extendable_joining",
     "record_type_blueprint",
     "percentage_types",
+    "boundary_80_col",
+    "empty_struct_trailing_comment",
   ]
   |> list.each(fn(file_name) {
     let input = read_file(corpus_path(file_name))
