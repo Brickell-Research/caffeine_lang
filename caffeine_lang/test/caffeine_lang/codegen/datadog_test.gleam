@@ -5,7 +5,9 @@ import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
-import caffeine_lang/linker/ir
+import caffeine_lang/linker/ir.{
+  type IntermediateRepresentation, IntermediateRepresentation, SloFields,
+}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -1072,6 +1074,142 @@ pub fn generate_terraform_test() {
       }
     }
   })
+}
+
+// ==== resolve_indicators ====
+// * ❌ missing 'indicators' field in IR values
+// * ❌ failed to decode indicators (non-string dict)
+// * ❌ failed to decode 'evaluation' field as string
+pub fn resolve_indicators_missing_indicators_test() {
+  // IR with no "indicators" ValueTuple at all
+  let ir: IntermediateRepresentation(ir.DepsValidated) =
+    IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Test SLO"),
+        org_name: identifiers.OrgName("org"),
+        service_name: identifiers.ServiceName("svc"),
+        blueprint_name: identifiers.BlueprintName("bp"),
+        team_name: identifiers.TeamName("team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "org_svc_test",
+      artifact_refs: [artifacts.SLO],
+      values: [
+        helpers.ValueTuple(
+          "vendor",
+          types.PrimitiveType(types.String),
+          value.StringValue(constants.vendor_datadog),
+        ),
+      ],
+      artifact_data: ir.slo_only(SloFields(
+        threshold: 99.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.Some(vendor.Datadog),
+    )
+
+  case datadog.resolve_indicators(ir) {
+    Error(errors.SemanticAnalysisTemplateResolutionError(msg:, ..)) ->
+      string.contains(msg, "missing 'indicators' field")
+      |> should.be_true
+    _ -> should.fail()
+  }
+}
+
+pub fn resolve_indicators_bad_decode_test() {
+  // IR with "indicators" but value is IntValue (not a dict)
+  let ir: IntermediateRepresentation(ir.DepsValidated) =
+    IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Test SLO"),
+        org_name: identifiers.OrgName("org"),
+        service_name: identifiers.ServiceName("svc"),
+        blueprint_name: identifiers.BlueprintName("bp"),
+        team_name: identifiers.TeamName("team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "org_svc_test",
+      artifact_refs: [artifacts.SLO],
+      values: [
+        helpers.ValueTuple(
+          "indicators",
+          types.PrimitiveType(types.NumericType(types.Integer)),
+          value.IntValue(42),
+        ),
+      ],
+      artifact_data: ir.slo_only(SloFields(
+        threshold: 99.0,
+        indicators: dict.new(),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.Some(vendor.Datadog),
+    )
+
+  case datadog.resolve_indicators(ir) {
+    Error(errors.SemanticAnalysisTemplateResolutionError(msg:, ..)) ->
+      string.contains(msg, "failed to decode indicators")
+      |> should.be_true
+    _ -> should.fail()
+  }
+}
+
+pub fn resolve_indicators_bad_evaluation_decode_test() {
+  // IR with "evaluation" as IntValue (not a string)
+  let ir: IntermediateRepresentation(ir.DepsValidated) =
+    IntermediateRepresentation(
+      metadata: ir.IntermediateRepresentationMetaData(
+        friendly_label: identifiers.ExpectationLabel("Test SLO"),
+        org_name: identifiers.OrgName("org"),
+        service_name: identifiers.ServiceName("svc"),
+        blueprint_name: identifiers.BlueprintName("bp"),
+        team_name: identifiers.TeamName("team"),
+        misc: dict.new(),
+      ),
+      unique_identifier: "org_svc_test",
+      artifact_refs: [artifacts.SLO],
+      values: [
+        helpers.ValueTuple(
+          "indicators",
+          types.CollectionType(types.Dict(
+            types.PrimitiveType(types.String),
+            types.PrimitiveType(types.String),
+          )),
+          value.DictValue(
+            dict.from_list([
+              #("numerator", value.StringValue("count:test")),
+            ]),
+          ),
+        ),
+        helpers.ValueTuple(
+          "evaluation",
+          types.PrimitiveType(types.NumericType(types.Integer)),
+          value.IntValue(99),
+        ),
+      ],
+      artifact_data: ir.slo_only(SloFields(
+        threshold: 99.0,
+        indicators: dict.from_list([#("numerator", "count:test")]),
+        window_in_days: 30,
+        evaluation: option.None,
+        tags: [],
+        runbook: option.None,
+      )),
+      vendor: option.Some(vendor.Datadog),
+    )
+
+  case datadog.resolve_indicators(ir) {
+    Error(errors.SemanticAnalysisTemplateResolutionError(msg:, ..)) ->
+      string.contains(msg, "failed to decode 'evaluation' field as string")
+      |> should.be_true
+    _ -> should.fail()
+  }
 }
 
 // ==== window_to_timeframe ====
