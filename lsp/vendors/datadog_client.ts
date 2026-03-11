@@ -99,7 +99,10 @@ export async function fetchCaffeineSlos(
 
     for (const slo of slos) {
       const dottedId = parseCaffeineIdentity(slo.tags);
-      if (!dottedId) continue;
+      if (!dottedId) {
+        debug(`datadog: SLO "${slo.name}" has no caffeine identity tags: [${slo.tags.join(", ")}]`);
+        continue;
+      }
 
       const dashboardUrl = `https://app.${credentials.site}/slo?slo_id=${slo.id}`;
       const statuses: SloStatus[] = [];

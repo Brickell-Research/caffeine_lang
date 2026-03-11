@@ -34,7 +34,11 @@ if (ddCredentials) {
   debug("slo-overlay: Datadog credentials found in environment");
   sloCache = new SloStatusCache(ddCredentials);
   sloCache.onDidRefresh(() => {
-    connection.languages.codeLens.refresh();
+    try {
+      connection.languages.codeLens.refresh();
+    } catch {
+      // Client may not support workspace/codeLens/refresh
+    }
   });
 }
 

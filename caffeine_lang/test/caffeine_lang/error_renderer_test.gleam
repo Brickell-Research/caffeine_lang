@@ -78,3 +78,39 @@ pub fn render_plain_path_no_location_test() {
   error_renderer.render_plain(err)
   |> should.equal("error[E304]: vendor issue\n  --> my/file.caffeine")
 }
+
+// ==== render_all_plain ====
+// * ✅ empty list → empty string
+// * ✅ single error → same as render_plain
+// * ✅ multiple errors → joined with double newline
+pub fn render_all_plain_empty_test() {
+  error_renderer.render_all_plain([])
+  |> should.equal("")
+}
+
+pub fn render_all_plain_single_test() {
+  let err =
+    errors.LinkerParseError(
+      msg: "something broke",
+      context: errors.empty_context(),
+    )
+  error_renderer.render_all_plain([err])
+  |> should.equal("error[E301]: something broke")
+}
+
+pub fn render_all_plain_multiple_test() {
+  let err1 =
+    errors.FrontendParseError(
+      msg: "parse failure",
+      context: errors.empty_context(),
+    )
+  let err2 =
+    errors.LinkerParseError(
+      msg: "link failure",
+      context: errors.empty_context(),
+    )
+  error_renderer.render_all_plain([err1, err2])
+  |> should.equal(
+    "error[E100]: parse failure\n\nerror[E301]: link failure",
+  )
+}

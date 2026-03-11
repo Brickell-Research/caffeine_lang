@@ -183,7 +183,11 @@ function registerInitializeHandler(ctx: HandlerContext): void {
           debug("slo-overlay: Datadog credentials found via .env");
           ctx.sloCache = new SloStatusCache(creds);
           ctx.sloCache.onDidRefresh(() => {
-            connection.languages.codeLens.refresh();
+            try {
+              connection.languages.codeLens.refresh();
+            } catch {
+              // Client may not support workspace/codeLens/refresh
+            }
           });
         }
       }
