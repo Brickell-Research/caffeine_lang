@@ -15,7 +15,7 @@
         gleam = pkgs.gleam;
         rebar3 = pkgs.rebar3;
 
-        version = "4.7.7";
+        version = "4.7.8";
 
         # Build the erlang-shipment: precompiled BEAM files + entrypoint
         caffeine-shipment = pkgs.stdenv.mkDerivation {
