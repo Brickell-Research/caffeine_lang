@@ -26,7 +26,7 @@ export interface DatadogSloResult {
 
 /** Parse caffeine identity tags from a Datadog SLO's tags array.
  *  Tags are in "key:value" format. We extract org, team, service, expectation. */
-function parseCaffeineIdentity(tags: string[]): string | null {
+export function parseCaffeineIdentity(tags: string[]): string | null {
   let org: string | null = null;
   let team: string | null = null;
   let service: string | null = null;
@@ -52,7 +52,7 @@ function parseCaffeineIdentity(tags: string[]): string | null {
 }
 
 /** Determine status category from SLI value vs target and error budget. */
-function categorizeStatus(
+export function categorizeStatus(
   sliValue: number,
   target: number,
   errorBudgetRemaining: number,

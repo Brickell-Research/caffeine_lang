@@ -376,7 +376,7 @@ export function handleInlayHints(ctx: HandlerContext, params: any) {
 // --- Code lenses (SLO overlay) ---
 
 /** Extract expectation item names and their line positions from an expects file. */
-function extractExpectationPositions(text: string): Array<{ name: string; line: number }> {
+export function extractExpectationPositions(text: string): Array<{ name: string; line: number }> {
   const results: Array<{ name: string; line: number }> = [];
   if (!text.includes("Expectations for")) return results;
 
@@ -391,7 +391,7 @@ function extractExpectationPositions(text: string): Array<{ name: string; line: 
 }
 
 /** Format an SLO status into a human-readable code lens title. */
-function formatSloLensTitle(slo: { sli_value: number; target: number; error_budget_remaining: number; window: string; status: string }): string {
+export function formatSloLensTitle(slo: { sli_value: number; target: number; error_budget_remaining: number; window: string; status: string }): string {
   const sli = slo.sli_value.toFixed(2);
   const target = slo.target.toFixed(1);
   const budget = slo.error_budget_remaining.toFixed(1);
