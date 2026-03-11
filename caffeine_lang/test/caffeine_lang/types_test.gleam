@@ -1,8 +1,10 @@
 import caffeine_lang/types.{
-  type AcceptedTypes, type PrimitiveTypes, Boolean, CollectionType, Defaulted,
-  Dict, Float, InclusiveRange, Integer, List, ModifierType, NumericType, OneOf,
-  Optional, Percentage, PrimitiveType, RecordType, RefinementType, SemanticType,
-  String, URL,
+  type AcceptedTypes, type ParsedType, type PrimitiveTypes, Boolean,
+  CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer, List,
+  ModifierType, NumericType, OneOf, Optional, ParsedCollection, ParsedModifier,
+  ParsedPrimitive, ParsedRecord, ParsedRefinement, ParsedTypeAliasRef,
+  Percentage, PrimitiveType, RecordType, RefinementType, SemanticType, String,
+  URL,
 }
 import caffeine_lang/value
 import gleam/dict
@@ -2103,6 +2105,11 @@ pub fn parse_accepted_type_test() {
 }
 
 // ==== validate_value (integration) ====
+// * ✅ Primitive dispatch
+// * ✅ Collection dispatch
+// * ✅ Modifier dispatch
+// * ✅ Refinement dispatch
+// * ✅ Record dispatch
 pub fn validate_value_test() {
   [
     // Primitive dispatch
@@ -2124,6 +2131,37 @@ pub fn validate_value_test() {
     #(
       "Modifier dispatch",
       #(ModifierType(Optional(PrimitiveType(String))), value.NilValue),
+      True,
+    ),
+    // Refinement dispatch
+    #(
+      "Refinement dispatch",
+      #(
+        RefinementType(OneOf(
+          PrimitiveType(String),
+          set.from_list(["a", "b"]),
+        )),
+        value.StringValue("a"),
+      ),
+      True,
+    ),
+    // Record dispatch
+    #(
+      "Record dispatch",
+      #(
+        RecordType(
+          dict.from_list([
+            #("name", PrimitiveType(String)),
+            #("count", PrimitiveType(NumericType(Integer))),
+          ]),
+        ),
+        value.DictValue(
+          dict.from_list([
+            #("name", value.StringValue("test")),
+            #("count", value.IntValue(42)),
+          ]),
+        ),
+      ),
       True,
     ),
   ]
@@ -2559,6 +2597,146 @@ pub fn record_is_optional_or_defaulted_test() {
   RecordType(dict.from_list([#("a", PrimitiveType(String))]))
   |> types.is_optional_or_defaulted
   |> should.be_false
+}
+
+// ===========================================================================
+// ParsedType tests
+// ===========================================================================
+
+// ==== parsed_type_to_string ====
+// * ✅ ParsedPrimitive(String) → "String"
+// * ✅ ParsedPrimitive(NumericType(Integer)) → "Integer"
+// * ✅ ParsedCollection(List) → "List(String)"
+// * ✅ ParsedCollection(Dict) → "Dict(String, Integer)"
+// * ✅ ParsedModifier(Optional) → "Optional(String)"
+// * ✅ ParsedModifier(Defaulted) → "Defaulted(Float, 0.5)"
+// * ✅ ParsedRefinement(OneOf) → refinement string
+// * ✅ ParsedRefinement(InclusiveRange) → range string
+// * ✅ ParsedTypeAliasRef → alias name directly
+// * ✅ ParsedRecord → formatted record
+pub fn parsed_type_to_string_test() {
+  [
+    #(
+      "ParsedPrimitive String",
+      ParsedPrimitive(String),
+      "String",
+    ),
+    #(
+      "ParsedPrimitive Integer",
+      ParsedPrimitive(NumericType(Integer)),
+      "Integer",
+    ),
+    #(
+      "ParsedCollection List",
+      ParsedCollection(List(ParsedPrimitive(String))),
+      "List(String)",
+    ),
+    #(
+      "ParsedCollection Dict",
+      ParsedCollection(Dict(
+        ParsedPrimitive(String),
+        ParsedPrimitive(NumericType(Integer)),
+      )),
+      "Dict(String, Integer)",
+    ),
+    #(
+      "ParsedModifier Optional",
+      ParsedModifier(Optional(ParsedPrimitive(String))),
+      "Optional(String)",
+    ),
+    #(
+      "ParsedModifier Defaulted",
+      ParsedModifier(Defaulted(ParsedPrimitive(NumericType(Float)), "0.5")),
+      "Defaulted(Float, 0.5)",
+    ),
+    #(
+      "ParsedRefinement OneOf",
+      ParsedRefinement(OneOf(
+        ParsedPrimitive(String),
+        set.from_list(["a", "b"]),
+      )),
+      "String { x | x in { a, b } }",
+    ),
+    #(
+      "ParsedRefinement InclusiveRange",
+      ParsedRefinement(InclusiveRange(
+        ParsedPrimitive(NumericType(Integer)),
+        "0",
+        "100",
+      )),
+      "Integer { x | x in ( 0..100 ) }",
+    ),
+    #(
+      "ParsedTypeAliasRef",
+      ParsedTypeAliasRef("_env"),
+      "_env",
+    ),
+    #(
+      "ParsedRecord",
+      ParsedRecord(dict.from_list([
+        #("name", ParsedPrimitive(String)),
+        #("count", ParsedPrimitive(NumericType(Integer))),
+      ])),
+      "{ count: Integer, name: String }",
+    ),
+  ]
+  |> test_helpers.table_test_1(types.parsed_type_to_string)
+}
+
+// ==== try_each_inner_parsed ====
+// * ✅ ParsedPrimitive calls f on self
+// * ✅ ParsedTypeAliasRef calls f on self
+// * ✅ ParsedCollection(List) calls f on inner type
+// * ✅ ParsedModifier(Optional) calls f on inner type
+// * ✅ ParsedRefinement(OneOf) calls f on inner type
+// * ✅ ParsedRecord calls f on each field type
+// * ✅ Error propagation through ParsedTypeAliasRef
+pub fn try_each_inner_parsed_test() {
+  let always_ok = fn(_: ParsedType) { Ok(Nil) }
+
+  // ParsedPrimitive calls f on self
+  types.try_each_inner_parsed(ParsedPrimitive(String), always_ok)
+  |> should.equal(Ok(Nil))
+
+  // ParsedTypeAliasRef calls f on self
+  types.try_each_inner_parsed(ParsedTypeAliasRef("_env"), always_ok)
+  |> should.equal(Ok(Nil))
+
+  // ParsedCollection(List) calls f on inner
+  types.try_each_inner_parsed(
+    ParsedCollection(List(ParsedPrimitive(String))),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // ParsedModifier(Optional) calls f on inner
+  types.try_each_inner_parsed(
+    ParsedModifier(Optional(ParsedPrimitive(String))),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // ParsedRefinement(OneOf) calls f on inner
+  types.try_each_inner_parsed(
+    ParsedRefinement(OneOf(ParsedPrimitive(String), set.from_list(["a"]))),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // ParsedRecord calls f on each field type
+  types.try_each_inner_parsed(
+    ParsedRecord(dict.from_list([
+      #("a", ParsedPrimitive(String)),
+      #("b", ParsedPrimitive(NumericType(Integer))),
+    ])),
+    always_ok,
+  )
+  |> should.equal(Ok(Nil))
+
+  // Error propagation
+  let always_err = fn(_: ParsedType) { Error("fail") }
+  types.try_each_inner_parsed(ParsedTypeAliasRef("_env"), always_err)
+  |> should.equal(Error("fail"))
 }
 
 // ===========================================================================
