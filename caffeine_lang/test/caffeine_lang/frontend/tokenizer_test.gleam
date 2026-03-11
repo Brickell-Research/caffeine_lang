@@ -1,8 +1,9 @@
-import caffeine_lang/frontend/token.{type Token}
+import caffeine_lang/frontend/token.{type PositionedToken, type Token}
 import caffeine_lang/frontend/tokenizer
 import caffeine_lang/frontend/tokenizer_error
 import gleam/list
 import gleam/result
+import gleeunit/should
 import test_helpers
 
 /// Strip position info from tokenizer output for tests that only care about token types.
@@ -655,4 +656,106 @@ pub fn tokenize_edge_cases_test() {
     ),
   ]
   |> test_helpers.table_test_1(tokenize_tokens)
+}
+
+// ==== tokenize (position tracking) ====
+// * ✅ line numbers advance after newlines
+// * ✅ column numbers advance within a line
+// * ✅ positions reset to column 1 on new line
+pub fn tokenize_position_tracking_test() {
+  // "Blueprints\nfor"
+  // Line 1: Blueprints (col 1), Newline (col 11)
+  // Line 2: for (col 1), EOF (col 4)
+  let assert Ok(tokens) = tokenizer.tokenize("Blueprints\nfor")
+  tokens
+  |> should.equal([
+    token.PositionedToken(token.KeywordBlueprints, 1, 1),
+    token.PositionedToken(token.WhitespaceNewline, 1, 11),
+    token.PositionedToken(token.KeywordFor, 2, 1),
+    token.PositionedToken(token.EOF, 2, 4),
+  ])
+}
+
+pub fn tokenize_column_advancement_test() {
+  // "{:}" — each single-char symbol advances column by 1
+  let assert Ok(tokens) = tokenizer.tokenize("{:}")
+  tokens
+  |> should.equal([
+    token.PositionedToken(token.SymbolLeftBrace, 1, 1),
+    token.PositionedToken(token.SymbolColon, 1, 2),
+    token.PositionedToken(token.SymbolRightBrace, 1, 3),
+    token.PositionedToken(token.EOF, 1, 4),
+  ])
+}
+
+pub fn tokenize_multiline_positions_test() {
+  // Three lines with indentation
+  let source = "Requires\n  {\n  }"
+  let assert Ok(tokens) = tokenizer.tokenize(source)
+  let positions =
+    list.map(tokens, fn(pt: PositionedToken) { #(pt.line, pt.column) })
+  // Requires at (1,1), newline at (1,9), indent at (2,1), { at (2,3),
+  // newline at (2,4), indent at (3,1), } at (3,3), EOF at (3,4)
+  positions
+  |> should.equal([
+    #(1, 1),
+    #(1, 9),
+    #(2, 1),
+    #(2, 3),
+    #(2, 4),
+    #(3, 1),
+    #(3, 3),
+    #(3, 4),
+  ])
+}
+
+// ==== tokenize (carriage return handling) ====
+// * ✅ standalone carriage return is silently skipped
+pub fn tokenize_standalone_cr_test() {
+  // Standalone \r (not part of \r\n grapheme) is skipped per line 51
+  // Test: \r between tokens on same line
+  let assert Ok(tokens) = tokenizer.tokenize("{\r}")
+  tokens
+  |> should.equal([
+    token.PositionedToken(token.SymbolLeftBrace, 1, 1),
+    token.PositionedToken(token.SymbolRightBrace, 1, 3),
+    token.PositionedToken(token.EOF, 1, 4),
+  ])
+}
+
+// ==== tokenize (equals sign) ====
+// * ✅ equals sign tokenized as SymbolEquals
+pub fn tokenize_equals_sign_test() {
+  [
+    #(
+      "standalone equals",
+      "=",
+      Ok([token.SymbolEquals, token.EOF]),
+    ),
+    #(
+      "equals in context",
+      "{ x = 1 }",
+      Ok([
+        token.SymbolLeftBrace,
+        token.KeywordX,
+        token.SymbolEquals,
+        token.LiteralInteger(1),
+        token.SymbolRightBrace,
+        token.EOF,
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(tokenize_tokens)
+}
+
+// ==== tokenize (unicode rejection) ====
+// * ✅ unicode character produces InvalidCharacter error
+pub fn tokenize_unicode_invalid_character_test() {
+  tokenizer.tokenize("café")
+  |> should.equal(Error(tokenizer_error.InvalidCharacter(1, 4, "é")))
+}
+
+pub fn tokenize_emoji_invalid_character_test() {
+  tokenizer.tokenize("name🎉")
+  |> should.equal(Error(tokenizer_error.InvalidCharacter(1, 5, "🎉")))
 }
