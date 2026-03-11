@@ -1,0 +1,10 @@
+Blueprints for "SLO"
+  * "test":
+    Requires { env: String }
+    Provides {
+      multi_var: "count:$a->x$.sum{$b->y$}",
+      unclosed: "$env->env no closing",
+      already_escaped: "$$skip->this$$",
+      multi_not: "$a->b.not$ $c->d.not$",
+      mixed: "prefix $var->attr$ suffix"
+    }

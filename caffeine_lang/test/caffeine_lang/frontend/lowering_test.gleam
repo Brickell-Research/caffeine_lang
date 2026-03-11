@@ -42,6 +42,7 @@ fn parse_and_lower_expects(file_name: String) -> List(Expectation) {
 // * ✅ blueprint with extends (extendable flattening)
 // * ✅ advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ template variables are transformed ($var$ -> $$var$$)
+// * ✅ template var edge cases (multiple vars, unclosed, already escaped, multi .not, mixed)
 // * ✅ type aliases are resolved inline
 // * ✅ Defaulted with type alias (Defaulted containing refinement type from alias)
 pub fn lower_blueprints_simple_test() {
@@ -188,6 +189,37 @@ pub fn lower_blueprints_template_vars_test() {
   let assert Ok(num_str) = value.extract_string(num_val)
   num_str
   |> should.equal("sum:http.requests{$$env->env$$, $$status->status:not$$}")
+}
+
+pub fn lower_blueprints_template_vars_edge_cases_test() {
+  let blueprints =
+    parse_and_lower_blueprints("blueprints_template_vars_edge_cases")
+  let assert Ok(bp) = list.first(blueprints)
+
+  // Multiple variables in one string
+  let assert Ok(multi_val) = dict.get(bp.inputs, "multi_var")
+  let assert Ok(multi_str) = value.extract_string(multi_val)
+  multi_str |> should.equal("count:$$a->x$$.sum{$$b->y$$}")
+
+  // Unclosed variable stays as-is
+  let assert Ok(unclosed_val) = dict.get(bp.inputs, "unclosed")
+  let assert Ok(unclosed_str) = value.extract_string(unclosed_val)
+  unclosed_str |> should.equal("$env->env no closing")
+
+  // Already escaped $$ preserved
+  let assert Ok(escaped_val) = dict.get(bp.inputs, "already_escaped")
+  let assert Ok(escaped_str) = value.extract_string(escaped_val)
+  escaped_str |> should.equal("$$skip->this$$")
+
+  // Multiple .not replacements
+  let assert Ok(not_val) = dict.get(bp.inputs, "multi_not")
+  let assert Ok(not_str) = value.extract_string(not_val)
+  not_str |> should.equal("$$a->b:not$$ $$c->d:not$$")
+
+  // Mixed content with prefix and suffix
+  let assert Ok(mixed_val) = dict.get(bp.inputs, "mixed")
+  let assert Ok(mixed_str) = value.extract_string(mixed_val)
+  mixed_str |> should.equal("prefix $$var->attr$$ suffix")
 }
 
 pub fn lower_blueprints_type_alias_test() {
