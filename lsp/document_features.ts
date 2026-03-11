@@ -428,9 +428,13 @@ export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloSt
         ? "SLO not found in Datadog"
         : "SLO data loading...";
 
+    const command = sloStatus?.dashboard_url
+      ? { title, command: "vscode.open", arguments: [sloStatus.dashboard_url] }
+      : { title, command: "" };
+
     lenses.push({
       range: range(item.line, 0, item.line, 0),
-      command: { title, command: "" },
+      command,
     });
   }
 

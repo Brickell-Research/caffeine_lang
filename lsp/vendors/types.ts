@@ -7,6 +7,8 @@ export interface SloStatus {
   error_budget_remaining: number;
   window: string;
   status: "ok" | "warning" | "breaching";
+  /** URL to the SLO dashboard in the vendor's UI, if available. */
+  dashboard_url: string | null;
 }
 
 /** Datadog API credentials from environment variables. */

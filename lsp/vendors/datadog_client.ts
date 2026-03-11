@@ -112,6 +112,7 @@ export async function fetchCaffeineSlos(
         error_budget_remaining: errorBudget,
         window: normalizeWindow(primary.timeframe),
         status: categorizeStatus(sliValue, target, errorBudget),
+        dashboard_url: `https://app.${credentials.site}/slo?slo_id=${slo.id}`,
       });
     }
   } catch (e) {
