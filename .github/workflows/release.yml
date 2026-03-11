@@ -26,7 +26,7 @@ jobs:
           - target: macos-x64
             runner: macos-13
           - target: macos-arm64
-            runner: macos-14
+            runner: macos-15
           - target: windows-x64
             runner: windows-latest
     runs-on: ${{ matrix.runner }}
