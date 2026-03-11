@@ -45,6 +45,14 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ time_slice(Query > 100 per 10m) - minutes interval
 // * ✅ time_slice(Query > 100 per 1h) - hours interval
 // * ✅ time_slice(Query > 100 per 1.5h) - decimal interval
+// time_slice edge cases (see time_slice_edge_cases_test):
+// * ✅ negative threshold
+// * ✅ fractional seconds (0.5s)
+// * ✅ very large interval (24h = 86400s)
+// * ✅ zero threshold
+// operator precedence edge cases (see operator_precedence_edge_cases_test):
+// * ✅ four-level precedence: a + b * c - d / e
+// * ✅ all operators mixed: a * b + c - d / e
 // time_slice invalid inner syntax (see time_slice_invalid_syntax_test):
 // * ✅ time_slice(Query > 100) - missing per <interval>
 // * ✅ time_slice(Query 100 per 10s) - missing comparator
@@ -545,4 +553,98 @@ pub fn time_slice_nested_parsing_test() {
   let result4 =
     parse_expr("time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s)")
   should.be_ok(result4)
+}
+
+// ==== time_slice edge cases Tests ====
+
+pub fn time_slice_edge_cases_test() {
+  [
+    // negative threshold
+    #(
+      "negative threshold",
+      "time_slice(Query > -100 per 10s)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: -100.0,
+          interval_seconds: 10.0,
+        )),
+      ),
+    ),
+    // fractional seconds (0.5s)
+    #(
+      "fractional seconds (0.5s)",
+      "time_slice(Query > 100 per 0.5s)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 0.5,
+        )),
+      ),
+    ),
+    // very large interval (24h = 86400s)
+    #(
+      "very large interval (24h = 86400s)",
+      "time_slice(Query > 100 per 24h)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 100.0,
+          interval_seconds: 86_400.0,
+        )),
+      ),
+    ),
+    // zero threshold
+    #(
+      "zero threshold",
+      "time_slice(Query > 0 per 10s)",
+      Ok(
+        TimeSliceExpr(TimeSliceExp(
+          query: "Query",
+          comparator: GreaterThan,
+          threshold: 0.0,
+          interval_seconds: 10.0,
+        )),
+      ),
+    ),
+  ]
+  |> test_helpers.table_test_1(parse_expr)
+}
+
+// ==== operator precedence edge cases Tests ====
+
+pub fn operator_precedence_edge_cases_test() {
+  [
+    // four-level precedence: a + b * c - d / e
+    // Parsed as: Add(a, Sub(Mul(b, c), Div(d, e)))
+    #(
+      "four-level precedence: a + b * c - d / e",
+      "a + b * c - d / e",
+      Ok(OperatorExpr(
+        prim_word("a"),
+        OperatorExpr(
+          simple_op_cont("b", "c", Mul),
+          simple_op_cont("d", "e", Div),
+          Sub,
+        ),
+        Add,
+      )),
+    ),
+    // all operators mixed: a * b + c - d / e
+    // Parsed as: Add(Mul(a, b), Sub(c, Div(d, e)))
+    #(
+      "all operators mixed: a * b + c - d / e",
+      "a * b + c - d / e",
+      Ok(OperatorExpr(
+        simple_op_cont("a", "b", Mul),
+        OperatorExpr(prim_word("c"), simple_op_cont("d", "e", Div), Sub),
+        Add,
+      )),
+    ),
+  ]
+  |> test_helpers.table_test_1(parse_expr)
 }

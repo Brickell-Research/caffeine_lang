@@ -12,6 +12,12 @@ const prim_word = cql_test_helpers.prim_word
 
 const simple_op_cont = cql_test_helpers.simple_op_cont
 
+// ==== comparator_to_string Tests ====
+// * ✅ LessThan returns quoted "<"
+// * ✅ LessThanOrEqualTo returns quoted "<="
+// * ✅ GreaterThan returns quoted ">"
+// * ✅ GreaterThanOrEqualTo returns quoted ">="
+
 // ==== resolve_primitives Tests ====
 // good_over_total:
 // * ✅ simple good over total (A / B)
@@ -29,6 +35,20 @@ const simple_op_cont = cql_test_helpers.simple_op_cont
 // * ✅ A + time_slice(Query > 100 per 10s) - keyword not at top level
 // * ✅ (time_slice(Query > 100 per 10s)) - wrapped in parens
 // * ✅ time_slice(A > 1 per 1s) / time_slice(B > 2 per 2s) - multiple keywords
+pub fn comparator_to_string_test() {
+  [
+    #("LessThan returns quoted <", ast.LessThan, "\"<\""),
+    #("LessThanOrEqualTo returns quoted <=", ast.LessThanOrEqualTo, "\"<=\""),
+    #("GreaterThan returns quoted >", ast.GreaterThan, "\">\""),
+    #(
+      "GreaterThanOrEqualTo returns quoted >=",
+      ast.GreaterThanOrEqualTo,
+      "\">=\"",
+    ),
+  ]
+  |> test_helpers.table_test_1(resolver.comparator_to_string)
+}
+
 pub fn resolve_primitives_test() {
   let lhs_complex =
     parens(ast.OperatorExpr(

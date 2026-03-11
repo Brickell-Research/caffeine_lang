@@ -355,6 +355,27 @@ pub fn extract_words_test() {
   })
 }
 
+// ==== strip_outer_parens ====
+// * ✅ strips balanced outer parens
+// * ✅ leaves non-wrapping parens unchanged
+// * ✅ non-parenthesized string unchanged
+// * ✅ strips nested parens to one level
+// * ✅ empty string
+// * ✅ empty parens
+// * ✅ trims whitespace before stripping
+pub fn strip_outer_parens_test() {
+  [
+    #("strips balanced outer parens", "(a + b)", "a + b"),
+    #("leaves non-wrapping parens unchanged", "(a + b) * c", "(a + b) * c"),
+    #("non-parenthesized string unchanged", "hello", "hello"),
+    #("strips nested parens to one level", "((a + b))", "(a + b)"),
+    #("empty string", "", ""),
+    #("empty parens", "()", ""),
+    #("trims whitespace before stripping", "  (a + b)  ", "a + b"),
+  ]
+  |> test_helpers.table_test_1(printer.strip_outer_parens)
+}
+
 // ==== resolve_slo_to_expression ====
 // * ✅ single word identity substitutes indicator value
 // * ✅ division substitutes and renders as division
