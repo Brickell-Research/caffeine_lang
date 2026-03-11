@@ -141,10 +141,32 @@ jobs:
           fi
         done
 
-        # Copy compiled .beam files from Gleam shipment
+        # Copy compiled .beam files from Gleam shipment (skip gleeunit test framework)
         for d in "$SHIPMENT"/*/; do
+          case "$(basename "$d")" in
+            gleeunit) continue ;;
+          esac
           cp -r "$d" "$BUNDLE/lib/$(basename "$d")"
         done
+
+        # Strip debug info from all .beam files (~83% size reduction, faster module loading)
+        erl -noshell -eval '
+          Dir = "'$BUNDLE'/lib",
+          {ok, Libs} = file:list_dir(Dir),
+          lists:foreach(fun(Lib) ->
+            Ebin = filename:join([Dir, Lib, "ebin"]),
+            case file:list_dir(Ebin) of
+              {ok, Files} ->
+                [begin
+                   F = filename:join(Ebin, Name),
+                   {ok, Bin} = file:read_file(F),
+                   {ok, {_, Stripped}} = beam_lib:strip(Bin),
+                   file:write_file(F, Stripped)
+                 end || Name <- Files, filename:extension(Name) == ".beam"];
+              _ -> ok
+            end
+          end, Libs),
+          halt().'
 
         # Write self-contained wrapper script
         # Uses readlink loop for symlink resolution (Homebrew, caffeine_vm)
@@ -166,8 +188,7 @@ jobs:
           'export ERL_LIBS="$BASE/lib"' \
           'exec "$BINDIR/erlexec" \' \
           '  -boot no_dot_erlang \' \
-          '  +S 1:1 +SDcpu 1:1 +SDio 1 +A 0 \' \
-          '  +sbwt none +swt very_low \' \
+          '  +A 0 \' \
           '  -eval "caffeine_cli@@main:run(caffeine_cli)" \' \
           '  -noshell \' \
           '  -extra "$@"' \
@@ -211,10 +232,29 @@ jobs:
           }
         }
 
-        # Copy Gleam shipment apps
-        Get-ChildItem "$Shipment" -Directory | ForEach-Object {
+        # Copy Gleam shipment apps (skip gleeunit test framework)
+        Get-ChildItem "$Shipment" -Directory | Where-Object { $_.Name -ne "gleeunit" } | ForEach-Object {
           Copy-Item -Recurse $_.FullName "$Bundle\lib\"
         }
+
+        # Strip debug info from all .beam files (~83% size reduction, faster module loading)
+        erl -noshell -eval "
+          Dir = ""$($Bundle -replace '\\','/')/lib"",
+          {ok, Libs} = file:list_dir(Dir),
+          lists:foreach(fun(Lib) ->
+            Ebin = filename:join([Dir, Lib, <<""ebin"">>]),
+            case file:list_dir(Ebin) of
+              {ok, Files} ->
+                [begin
+                   F = filename:join(Ebin, Name),
+                   {ok, Bin} = file:read_file(F),
+                   {ok, {_, Stripped}} = beam_lib:strip(Bin),
+                   file:write_file(F, Stripped)
+                 end || Name <- Files, filename:extension(Name) == "".beam""];
+              _ -> ok
+            end
+          end, Libs),
+          halt()."
 
         # Write .cmd wrapper using ERL_LIBS (cmd.exe doesn't expand globs)
         $CmdLines = @(
@@ -226,7 +266,7 @@ jobs:
           'set "EMU=beam"'
           'set "PROGNAME=caffeine"'
           'set "ERL_LIBS=%BASE%lib"'
-          '"%BINDIR%\erl.exe" -boot no_dot_erlang +S 1:1 +SDcpu 1:1 +SDio 1 +A 0 +sbwt none +swt very_low -eval "caffeine_cli@@main:run(caffeine_cli)" -noshell -extra %*'
+          '"%BINDIR%\erl.exe" -boot no_dot_erlang +A 0 -eval "caffeine_cli@@main:run(caffeine_cli)" -noshell -extra %*'
         )
         $CmdLines -join "`r`n" | Out-File -FilePath "$Bundle\caffeine.cmd" -Encoding ascii
 
