@@ -4,8 +4,10 @@ import caffeine_lang/source_file.{
   type ExpectationSource, type SourceFile, SourceFile,
 }
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
+import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -771,4 +773,172 @@ Expectations for \"dt_blueprint\"
       _ -> contains_all_substrings(result, expected_substrings)
     }
   })
+}
+
+// ==== compile_from_strings (dependency graph) ====
+// * ✅ SLO without DependencyRelations produces dependency_graph == None
+// * ✅ SLO with DependencyRelations produces dependency_graph == Some(Mermaid)
+pub fn compile_from_strings_dependency_graph_none_test() {
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      "Blueprints for \"SLO\"
+  * \"simple\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"good / total\",
+      indicators: { good: \"count:ok\", total: \"count:all\" }
+    }
+",
+      "Expectations for \"simple\"
+  * \"my_slo\":
+    Provides {
+      threshold: 99.0%,
+      window_in_days: 30
+    }
+",
+      "acme/platform/payments.caffeine",
+    )
+
+  output.dependency_graph |> should.equal(option.None)
+}
+
+pub fn compile_from_strings_dependency_graph_some_test() {
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      "Blueprints for \"SLO\" + \"DependencyRelations\"
+  * \"tracked\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"good / total\",
+      indicators: { good: \"count:ok\", total: \"count:all\" },
+      relations: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
+    }
+
+Blueprints for \"SLO\"
+  * \"standalone\":
+    Requires {}
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"good / total\",
+      indicators: { good: \"count:ok\", total: \"count:all\" }
+    }
+",
+      "Expectations for \"tracked\"
+  * \"tracked_slo\":
+    Provides {
+      threshold: 99.0%,
+      window_in_days: 30
+    }
+
+Expectations for \"standalone\"
+  * \"standalone_slo\":
+    Provides {
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+",
+      "acme/platform/payments.caffeine",
+    )
+
+  // Has DependencyRelations -> graph should be Some with Mermaid content
+  output.dependency_graph |> should.be_some()
+  let assert option.Some(graph) = output.dependency_graph
+  graph |> string.contains("graph TD") |> should.be_true()
+  graph |> string.contains("tracked_slo") |> should.be_true()
+  graph |> string.contains("standalone_slo") |> should.be_true()
+  graph |> string.contains("-->|hard|") |> should.be_true()
+}
+
+// ==== compile_from_strings (all four vendors) ====
+// * ✅ all four vendors in single compilation merge providers and variables
+pub fn compile_from_strings_all_four_vendors_test() {
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      "Blueprints for \"SLO\"
+  * \"dd\":
+    Requires { env: String }
+    Provides {
+      vendor: \"datadog\",
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.ok{$env->env$}\",
+        denominator: \"sum:http.total{$env->env$}\"
+      }
+    }
+
+  * \"hc\":
+    Requires {}
+    Provides {
+      vendor: \"honeycomb\",
+      evaluation: \"sli\",
+      indicators: { sli: \"HEATMAP(duration_ms)\" }
+    }
+
+  * \"dt\":
+    Requires {}
+    Provides {
+      vendor: \"dynatrace\",
+      evaluation: \"sli\",
+      indicators: { sli: \"builtin:service.requestCount.server:splitBy()\" }
+    }
+
+  * \"nr\":
+    Requires {}
+    Provides {
+      vendor: \"newrelic\",
+      evaluation: \"good / valid\",
+      indicators: {
+        good: \"Transaction WHERE duration < 0.1\",
+        valid: \"Transaction\"
+      }
+    }
+",
+      "Expectations for \"dd\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Expectations for \"hc\"
+  * \"hc_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 14
+    }
+
+Expectations for \"dt\"
+  * \"dt_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 30
+    }
+
+Expectations for \"nr\"
+  * \"nr_slo\":
+    Provides {
+      threshold: 99.0%,
+      window_in_days: 7
+    }
+",
+      "acme/platform/payments.caffeine",
+    )
+
+  // All four vendor resources present
+  output.terraform |> string.contains("datadog_service_level_objective") |> should.be_true()
+  output.terraform |> string.contains("honeycombio_slo") |> should.be_true()
+  output.terraform |> string.contains("dynatrace_slo_v2") |> should.be_true()
+  output.terraform |> string.contains("newrelic_service_level") |> should.be_true()
+
+  // All four providers present
+  output.terraform |> string.contains("var.datadog_api_key") |> should.be_true()
+  output.terraform |> string.contains("var.honeycomb_api_key") |> should.be_true()
+  output.terraform |> string.contains("var.dynatrace_api_token") |> should.be_true()
+  output.terraform |> string.contains("var.newrelic_api_key") |> should.be_true()
+
+  // No deps -> graph is None
+  output.dependency_graph |> should.equal(option.None)
 }
