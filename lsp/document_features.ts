@@ -395,8 +395,8 @@ export function formatSloLensTitle(slo: { sli_value: number; target: number; err
   const sli = slo.sli_value.toFixed(2);
   const target = slo.target.toFixed(1);
   const budget = slo.error_budget_remaining.toFixed(1);
-  const warn = slo.status === "breaching" ? " 🔴" : slo.status === "warning" ? " ⚠️" : "";
-  return `SLI: ${sli}% | Target: ${target}% | Budget: ${budget}% remaining | ${slo.window}${warn}`;
+  const icon = slo.status === "breaching" ? " 🔴" : slo.status === "warning" ? " ⚠️" : " 🟢";
+  return `SLI: ${sli}% | Target: ${target}% | Budget: ${budget}% remaining | ${slo.window}${icon}`;
 }
 
 // deno-lint-ignore no-explicit-any

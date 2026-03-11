@@ -3,25 +3,16 @@
 import type { DatadogCredentials, SloStatus } from "./types.ts";
 import { debug } from "../debug.ts";
 
-/** Raw SLO object from the Datadog API (partial — only fields we use). */
-interface DatadogSloResponse {
+/** Raw SLO object from the Datadog list API. */
+interface DatadogSloListEntry {
   id: string;
   name: string;
   tags: string[];
-  overall_status: Array<{
-    sli_value: number | null;
-    error_budget_remaining: number | null;
-    target: number;
+  thresholds: Array<{
     timeframe: string;
+    target: number;
+    target_display: string;
   }>;
-}
-
-/** A fetched SLO with its parsed caffeine identity tags. */
-export interface DatadogSloResult {
-  id: string;
-  name: string;
-  dottedId: string | null;
-  status: SloStatus | null;
 }
 
 /** Parse caffeine identity tags from a Datadog SLO's tags array.
@@ -62,68 +53,149 @@ export function categorizeStatus(
   return "ok";
 }
 
-/** Convert Datadog timeframe string (e.g., "30d") to display format. */
-function normalizeWindow(timeframe: string): string {
-  return timeframe;
+/** Calculate error budget remaining as a percentage.
+ *  Formula: ((sli - target) / (100 - target)) * 100 */
+function calcErrorBudget(sliValue: number, target: number): number {
+  const errorBudgetTotal = 100 - target;
+  if (errorBudgetTotal <= 0) return 0;
+  return ((sliValue - target) / errorBudgetTotal) * 100;
+}
+
+/** Convert timeframe string (e.g., "7d") to seconds. */
+function timeframeToSeconds(timeframe: string): number {
+  const match = timeframe.match(/^(\d+)d$/);
+  if (match) return parseInt(match[1], 10) * 86400;
+  // Fallback: 30 days
+  return 30 * 86400;
+}
+
+/** Standard headers for Datadog API requests. */
+function ddHeaders(credentials: DatadogCredentials): Record<string, string> {
+  return {
+    "DD-API-KEY": credentials.apiKey,
+    "DD-APPLICATION-KEY": credentials.appKey,
+    "Content-Type": "application/json",
+  };
 }
 
 /** Fetch all caffeine-managed SLOs from Datadog.
+ *  Two-phase: list SLOs by tag to get IDs/thresholds, then fetch history for SLI values.
  *  Returns a Map from dotted identifier to SloStatus array (one per timeframe window). */
 export async function fetchCaffeineSlos(
   credentials: DatadogCredentials,
 ): Promise<Map<string, SloStatus[]>> {
   const result = new Map<string, SloStatus[]>();
   const baseUrl = `https://api.${credentials.site}`;
-  const url = `${baseUrl}/api/v1/slo?tags_query=managed_by:caffeine&limit=1000`;
+  const headers = ddHeaders(credentials);
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "DD-API-KEY": credentials.apiKey,
-        "DD-APPLICATION-KEY": credentials.appKey,
-        "Content-Type": "application/json",
-      },
-    });
+    // Phase 1: List caffeine-managed SLOs to get IDs, tags, and thresholds
+    const listUrl = `${baseUrl}/api/v1/slo?tags_query=managed_by:caffeine&limit=1000`;
+    const listResponse = await fetch(listUrl, { headers });
 
-    if (!response.ok) {
-      debug(`datadog: fetch failed ${response.status} ${response.statusText}`);
+    if (!listResponse.ok) {
+      debug(`datadog: list failed ${listResponse.status} ${listResponse.statusText}`);
       return result;
     }
 
-    const body = await response.json() as { data: DatadogSloResponse[] };
-    const slos = body.data ?? [];
-    debug(`datadog: fetched ${slos.length} caffeine-managed SLOs`);
-    if (slos.length >= 1000) {
+    const listBody = await listResponse.json() as { data: DatadogSloListEntry[] };
+    const sloList = listBody.data ?? [];
+    debug(`datadog: listed ${sloList.length} caffeine-managed SLOs`);
+    if (sloList.length >= 1000) {
       debug("datadog: WARNING — response hit 1000 limit, some SLOs may be missing");
     }
 
-    for (const slo of slos) {
-      const dottedId = parseCaffeineIdentity(slo.tags);
-      if (!dottedId) {
-        debug(`datadog: SLO "${slo.name}" has no caffeine identity tags: [${slo.tags.join(", ")}]`);
-        continue;
-      }
+    // Build work items: SLO ID → { dottedId, thresholds }
+    interface SloWorkItem {
+      id: string;
+      name: string;
+      dottedId: string;
+      thresholds: DatadogSloListEntry["thresholds"];
+    }
+    const workItems: SloWorkItem[] = [];
 
-      const dashboardUrl = `https://app.${credentials.site}/slo?slo_id=${slo.id}`;
-      const statuses: SloStatus[] = [];
-
-      for (const entry of slo.overall_status ?? []) {
-        if (entry.sli_value == null) continue;
-        const errorBudget = entry.error_budget_remaining ?? 0;
-        statuses.push({
-          sli_value: entry.sli_value,
-          target: entry.target,
-          error_budget_remaining: errorBudget,
-          window: normalizeWindow(entry.timeframe),
-          status: categorizeStatus(entry.sli_value, entry.target, errorBudget),
-          dashboard_url: dashboardUrl,
+    for (const slo of sloList) {
+      const dottedId = parseCaffeineIdentity(slo.tags ?? []);
+      if (dottedId) {
+        workItems.push({
+          id: slo.id,
+          name: slo.name,
+          dottedId,
+          thresholds: slo.thresholds ?? [],
         });
       }
-
-      if (statuses.length > 0) {
-        result.set(dottedId, statuses);
-      }
     }
+    debug(`datadog: ${workItems.length} SLOs have valid caffeine identity tags`);
+    if (workItems.length === 0) return result;
+
+    // Phase 2: Fetch SLO history for all SLOs in parallel to get actual SLI values.
+    // The list/detail endpoints don't include current SLI — only the history endpoint does.
+    // 56 parallel requests is well within Datadog's 300 req/min rate limit.
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    await Promise.all(workItems.map(async (item) => {
+      try {
+        const thresholds = item.thresholds;
+        if (thresholds.length === 0) return;
+
+        // Pick the longest timeframe to fetch history for
+        let maxSeconds = 0;
+        for (const t of thresholds) {
+          const sec = timeframeToSeconds(t.timeframe);
+          if (sec > maxSeconds) maxSeconds = sec;
+        }
+        const fromTs = nowSec - maxSeconds;
+
+        const historyUrl = `${baseUrl}/api/v1/slo/${item.id}/history?from_ts=${fromTs}&to_ts=${nowSec}`;
+        const resp = await fetch(historyUrl, { headers });
+        if (!resp.ok) {
+          debug(`datadog: history ${item.id} failed ${resp.status}`);
+          return;
+        }
+
+        // deno-lint-ignore no-explicit-any
+        const body = await resp.json() as { data: any; errors: any };
+
+        const dashboardUrl = `https://app.${credentials.site}/slo?slo_id=${item.id}`;
+        const statuses: SloStatus[] = [];
+
+        // Extract SLI from the history response.
+        const historyData = body.data;
+        if (!historyData?.overall) return;
+
+        const overall = historyData.overall;
+        const sliValue = overall.sli_value;
+        if (typeof sliValue !== "number") return;
+
+        // error_budget_remaining is an object like {"custom": 100} or {"7d": 85.3}
+        // Extract the first numeric value; fall back to calculating from SLI and target
+        let ddErrorBudget: number | null = null;
+        const ebrObj = overall.error_budget_remaining;
+        if (ebrObj && typeof ebrObj === "object") {
+          for (const val of Object.values(ebrObj)) {
+            if (typeof val === "number") { ddErrorBudget = val; break; }
+          }
+        }
+
+        for (const threshold of thresholds) {
+          const errorBudget = ddErrorBudget ?? calcErrorBudget(sliValue, threshold.target);
+          statuses.push({
+            sli_value: sliValue,
+            target: threshold.target,
+            error_budget_remaining: errorBudget,
+            window: threshold.timeframe,
+            status: categorizeStatus(sliValue, threshold.target, errorBudget),
+            dashboard_url: dashboardUrl,
+          });
+        }
+
+        if (statuses.length > 0) {
+          result.set(item.dottedId, statuses);
+        }
+      } catch (e) {
+        debug(`datadog: history ${item.id} error: ${e}`);
+      }
+    }));
   } catch (e) {
     debug(`datadog: fetch error: ${e}`);
   }

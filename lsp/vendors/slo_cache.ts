@@ -4,11 +4,12 @@ import type { DatadogCredentials, SloStatus } from "./types.ts";
 import { fetchCaffeineSlos } from "./datadog_client.ts";
 import { debug } from "../debug.ts";
 
-/** Cache TTL in milliseconds. */
-const DEFAULT_TTL_MS = 60_000;
+/** Cache TTL in milliseconds (5 minutes). */
+const DEFAULT_TTL_MS = 300_000;
 
-/** Refresh interval in milliseconds. */
-const REFRESH_INTERVAL_MS = 60_000;
+/** Refresh interval in milliseconds (5 minutes).
+ *  Each refresh makes 1 list + N history API calls, so keep this conservative. */
+const REFRESH_INTERVAL_MS = 300_000;
 
 export class SloStatusCache {
   private data = new Map<string, SloStatus[]>();

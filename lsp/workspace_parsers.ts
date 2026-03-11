@@ -77,7 +77,8 @@ export function extractExpectationIdentifiers(
     const match = pattern.exec(line);
     if (match) {
       const name = match[1];
-      result.set(name, `${org}.${team}.${service}.${name}`);
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      result.set(name, `${org}.${team}.${service}.${slug}`);
     }
   }
   return result;

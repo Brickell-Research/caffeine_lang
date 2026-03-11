@@ -60,8 +60,6 @@ import {
   handleTypeHierarchySubtypes,
 } from "./type_hierarchy_features.ts";
 
-import type { SloStatusCache } from "./vendors/slo_cache.ts";
-
 export interface HandlerContext {
   connection: Connection;
   documents: TextDocuments<TextDocument>;
@@ -183,11 +181,10 @@ function registerInitializeHandler(ctx: HandlerContext): void {
           debug("slo-overlay: Datadog credentials found via .env");
           ctx.sloCache = new SloStatusCache(creds);
           ctx.sloCache.onDidRefresh(() => {
-            try {
-              connection.languages.codeLens.refresh();
-            } catch {
-              // Client may not support workspace/codeLens/refresh
-            }
+            debug("slo-overlay: cache refreshed, requesting codeLens refresh from client");
+            connection.sendRequest("workspace/codeLens/refresh")
+              .then(() => debug("slo-overlay: codeLens refresh succeeded"))
+              .catch((e: unknown) => debug(`slo-overlay: codeLens refresh rejected: ${e}`));
           });
         }
       }
