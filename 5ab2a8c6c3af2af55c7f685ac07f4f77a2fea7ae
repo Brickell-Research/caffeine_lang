@@ -1,0 +1,37 @@
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  25b9d793179f81ec 165
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  25b9d793179f81ec 581
+lsp/workspace_parsers.ts
+  25b9d793179f81ec 10
+test/lsp_e2e/stability_test.ts
+  25b9d793179f81ec 76,124
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  25b9d793179f81ec 1072
+caffeine_lsp/src/caffeine_lsp/document_symbols.gleam
+  25b9d793179f81ec 49
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  25b9d793179f81ec 294-295
+docs/caffeine_spec.md
+  25b9d793179f81ec 41,281,482
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "5ab2a8c6c3af2af55c7f685ac07f4f77a2fea7ae",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 62,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
