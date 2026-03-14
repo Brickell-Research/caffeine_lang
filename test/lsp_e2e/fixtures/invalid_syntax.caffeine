@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "bad_blueprint"
     Requires { env: String }
     Provides {}

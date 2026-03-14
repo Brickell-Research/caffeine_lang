@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "fits_inline":
     Requires { env: String }
     Provides { value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }

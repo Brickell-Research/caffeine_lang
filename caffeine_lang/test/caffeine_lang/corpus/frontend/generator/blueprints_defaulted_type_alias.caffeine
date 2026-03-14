@@ -4,7 +4,7 @@ _env_requires (Requires): {
   environment: Defaulted(_env, "production")
 }
 
-Blueprints for "SLO"
+Blueprints
   * "test" extends [_env_requires]:
     Requires {
       threshold: Integer

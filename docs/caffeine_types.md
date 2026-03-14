@@ -199,7 +199,7 @@ Type aliases are resolved before extendables during compilation:
 _env (Type): String { x | x in { prod, staging, dev } }
 _common (Requires): { env: Defaulted(_env, "prod") }
 
-Blueprints for "SLO"
+Blueprints
   * "api" extends [_common]:
     Requires { threshold: Float }
 ```

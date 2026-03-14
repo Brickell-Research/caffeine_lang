@@ -1,6 +1,6 @@
 _common (Requires): { env: String, region: String }
 
-Blueprints for "SLO"
+Blueprints
   * "api" extends [_common]:
     Requires { env: String, threshold: Float }
     Provides { vendor: "datadog" }

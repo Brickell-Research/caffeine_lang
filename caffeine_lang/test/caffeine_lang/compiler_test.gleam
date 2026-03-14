@@ -135,7 +135,7 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - single expectation with templated queries",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"api_availability\":
     Requires { env: String, status: Boolean }
     Provides {
@@ -168,7 +168,7 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - path extraction (org/team/service from file path)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"simple_slo\":
     Requires {}
     Provides {
@@ -192,7 +192,7 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - time_slice SLO expression",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"cpu_slo\":
     Requires { env: String }
     Provides {
@@ -241,7 +241,7 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid expectations DSL",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"api_availability\":
     Requires {}
     Provides {
@@ -259,7 +259,7 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - missing blueprint reference",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"some_blueprint\":
     Requires {}
     Provides {
@@ -280,7 +280,7 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency reference (target does not exist)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"slo_with_deps\":
     Requires {}
     Provides {
@@ -305,7 +305,7 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency format (not 4 parts)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"slo_with_deps\":
     Requires {}
     Provides {
@@ -330,7 +330,7 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - self-reference in dependency",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"slo_with_deps\":
     Requires {}
     Provides {
@@ -381,7 +381,7 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "happy path - single Honeycomb SLO",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"honeycomb_availability\":
     Requires { env: String }
     Provides {
@@ -416,7 +416,7 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"hc_blueprint\":
     Requires {}
     Provides {
@@ -465,7 +465,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"dd_blueprint\":
     Requires { env: String }
     Provides {
@@ -480,7 +480,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let hc_source =
     SourceFile(
       path: "blueprints/honeycomb.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"hc_blueprint\":
     Requires {}
     Provides {
@@ -542,7 +542,7 @@ pub fn compile_from_strings_newrelic_test() {
     #(
       "happy path - single New Relic SLO",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"newrelic_availability\":
     Requires { env: String }
     Provides {
@@ -579,7 +579,7 @@ pub fn compile_from_strings_newrelic_test() {
     #(
       "sad path - New Relic with invalid window (not 1, 7, or 28)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"nr_blueprint\":
     Requires {}
     Provides {
@@ -629,7 +629,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"dd_blueprint\":
     Requires { env: String }
     Provides {
@@ -644,7 +644,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let nr_source =
     SourceFile(
       path: "blueprints/newrelic.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"nr_blueprint\":
     Requires {}
     Provides {
@@ -706,7 +706,7 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "happy path - single Dynatrace SLO",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dynatrace_availability\":
     Requires {}
     Provides {
@@ -740,7 +740,7 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
-        "Blueprints for \"SLO\"
+        "Blueprints
   * \"dt_blueprint\":
     Requires {}
     Provides {
@@ -789,7 +789,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"dd_blueprint\":
     Requires { env: String }
     Provides {
@@ -804,7 +804,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let dt_source =
     SourceFile(
       path: "blueprints/dynatrace.caffeine",
-      content: "Blueprints for \"SLO\"
+      content: "Blueprints
   * \"dt_blueprint\":
     Requires {}
     Provides {
@@ -862,7 +862,7 @@ Expectations for \"dt_blueprint\"
 pub fn compile_from_strings_dependency_graph_none_test() {
   let assert Ok(output) =
     compiler.compile_from_strings(
-      "Blueprints for \"SLO\"
+      "Blueprints
   * \"simple\":
     Requires {}
     Provides {
@@ -887,7 +887,7 @@ pub fn compile_from_strings_dependency_graph_none_test() {
 pub fn compile_from_strings_dependency_graph_some_test() {
   let assert Ok(output) =
     compiler.compile_from_strings(
-      "Blueprints for \"SLO\"
+      "Blueprints
   * \"tracked\":
     Requires {}
     Provides {
@@ -896,7 +896,7 @@ pub fn compile_from_strings_dependency_graph_some_test() {
       depends_on: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
     }
 
-Blueprints for \"SLO\"
+Blueprints
   * \"standalone\":
     Requires {}
     Provides {
@@ -938,7 +938,7 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/datadog.caffeine",
-        content: "Blueprints for \"SLO\"
+        content: "Blueprints
   * \"dd\":
     Requires { env: String }
     Provides {
@@ -956,7 +956,7 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/honeycomb.caffeine",
-        content: "Blueprints for \"SLO\"
+        content: "Blueprints
   * \"hc\":
     Requires {}
     Provides {
@@ -971,7 +971,7 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/dynatrace.caffeine",
-        content: "Blueprints for \"SLO\"
+        content: "Blueprints
   * \"dt\":
     Requires {}
     Provides {
@@ -986,7 +986,7 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/newrelic.caffeine",
-        content: "Blueprints for \"SLO\"
+        content: "Blueprints
   * \"nr\":
     Requires {}
     Provides {

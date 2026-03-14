@@ -162,7 +162,7 @@ fn format_extendable(ext: Extendable) -> String {
 
 fn format_blueprints_block(block: BlueprintsBlock) -> String {
   let comments = format_comments(block.leading_comments, "")
-  let header = "Blueprints for \"SLO\""
+  let header = "Blueprints"
 
   let items =
     block.items

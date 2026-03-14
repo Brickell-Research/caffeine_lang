@@ -1,7 +1,7 @@
 _env (Type): String { x | x in { "production", "staging" } }
 _relation (Type): String { x | x in { "friend", "colleague" } }
 
-Blueprints for "SLO"
+Blueprints
   * "test":
     Requires {
       env: _env,

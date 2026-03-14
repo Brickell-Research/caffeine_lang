@@ -32,7 +32,7 @@ test("stability: server survives after workspace scan with malformed document", 
 
     // This is the exact content from the user's crash report — a malformed
     // Blueprints file with unterminated strings in a signals block.
-    const malformedContent = `Blueprints for "SLO"
+    const malformedContent = `Blueprints
   * "Uptime":
     Requires { }
     Provides {
@@ -73,7 +73,7 @@ test("stability: server handles multiple document operations after workspace sca
     await client.start();
     await client.initialize();
 
-    const validContent = `Blueprints for "TestStability"
+    const validContent = `Blueprints
   * "Check":
     Requires { }
     Provides {
@@ -121,7 +121,7 @@ test("stability: production entrypoint (main.mjs) survives after workspace scan"
 
     const uri = fixtureUri("stability_prod.caffeine");
     const diagPromise = client.waitForDiagnostics(uri);
-    client.openDocument(uri, `Blueprints for "ProdTest"\n  * "Item":\n    Requires { }\n    Provides { slo_type: "monitor" }\n`);
+    client.openDocument(uri, `Blueprints\n  * "Item":\n    Requires { }\n    Provides { slo_type: "monitor" }\n`);
     await diagPromise;
 
     // Wait past the 3-second watchdog interval

@@ -157,7 +157,7 @@ test("document symbols returns symbols for blueprint file", async () => {
       expect(symbol.selectionRange).toBeTruthy();
     }
 
-    // Look for the blueprint block symbol (Blueprints for "SLO" -> kind Module=2)
+    // Look for the blueprint block symbol (Blueprints -> kind Module=2)
     const moduleSymbol = symbols.find(
       (s: { kind: number }) => s.kind === 2,
     );

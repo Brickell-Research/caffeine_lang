@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "test":
     Requires { field: Unknown }
     Provides { value: "x" }

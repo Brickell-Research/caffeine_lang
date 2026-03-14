@@ -38,7 +38,7 @@ Caffeine is guided by these core principles:
 | **Blueprint** | `blueprints.caffeine` | Partially instantiated artifact |
 | **Expectation** | `expectations/**/*.caffeine` | Fully instantiated blueprint |
 
-**Note:** Artifacts are defined exclusively in the compiler's stdlib and are not part of the user-facing DSL. Users reference artifacts by name in `Blueprints for "<ArtifactName>"` but cannot define new artifacts.
+**Note:** Artifacts are defined exclusively in the compiler's stdlib and are not part of the user-facing DSL. Users reference artifacts by name in `Blueprints` blocks but cannot define new artifacts.
 
 ---
 
@@ -278,7 +278,7 @@ Reusable value blocks that can be extended by blueprints or expectations.
 **Rules:**
 - Must start with `_` prefix
 - Must specify kind: `(Requires)` for type definitions, `(Provides)` for value definitions
-- Must appear after type aliases but before any `Blueprints for` or `Expects for`
+- Must appear after type aliases but before any `Blueprints` or `Expects for`
 - File-scoped only (cannot reference across files)
 - Can reference type aliases defined in the same file
 
@@ -303,7 +303,7 @@ _strict (Provides): { threshold: 99.99, window_in_days: 7 }
 ### Single Artifact
 
 ```caffeine
-Blueprints for "<ArtifactName>"
+Blueprints
   * "<blueprint_name>":
     Requires { <required_params> }
     Provides { <provided_values> }
@@ -314,7 +314,7 @@ Blueprints for "<ArtifactName>"
 A blueprint can implement multiple artifacts using `+`. Params from all artifacts are merged.
 
 ```caffeine
-Blueprints for "<Artifact1>" + "<Artifact2>"
+Blueprints
   * "<blueprint_name>":
     Requires { <params_from_both_artifacts> }
     Provides { <values_for_both_artifacts> }
@@ -423,7 +423,7 @@ _relation (Type): String { x | x in { hard, soft } }
 _base_slo (Provides): { vendor: "datadog" }
 _common (Requires): { env: Defaulted(_env, "prod"), window_in_days: Defaulted(_window, 30) }
 
-Blueprints for "SLO"
+Blueprints
   ## API Availability
   * "api_availability" extends [_base_slo, _common]:
     Requires {
@@ -468,7 +468,7 @@ Blueprints for "SLO"
       }
     }
 
-Blueprints for "DependencyRelation"
+Blueprints
   ## Hard Dependency
   * "hard_dependency":
     Requires { from: String, to: String }
@@ -479,7 +479,7 @@ Blueprints for "DependencyRelation"
     Requires { from: String, to: String }
     Provides { type: "soft", error_budget_share: 0.1 }
 
-Blueprints for "SLO" + "DependencyRelation"
+Blueprints
   ## SLO with Upstream Tracking
   * "tracked_slo" extends [_base_slo]:
     Requires {

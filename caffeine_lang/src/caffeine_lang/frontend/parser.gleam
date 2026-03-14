@@ -340,30 +340,6 @@ fn parse_extendable_kind(
 // BLUEPRINTS BLOCKS
 // =============================================================================
 
-/// Validates the artifact name is "SLO" and advances state.
-fn parse_artifacts(state: ParserState) -> Result(ParserState, ParserError) {
-  case peek(state) {
-    token.LiteralString("SLO") -> {
-      let state = advance(state)
-      Ok(state)
-    }
-    token.LiteralString(name) ->
-      Error(parser_error.UnexpectedToken(
-        "\"SLO\"",
-        "\"" <> name <> "\"",
-        state.line,
-        state.column,
-      ))
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "artifact name",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
 fn parse_blueprint_item(
   state: ParserState,
   leading_comments: List(Comment),
@@ -602,13 +578,11 @@ fn block_recovering(
   }
 }
 
-/// Parse just the header of a blueprints block (Blueprints for "SLO").
+/// Parse just the header of a blueprints block (Blueprints).
 fn parse_blueprints_block_header(
   state: ParserState,
 ) -> Result(#(Nil, ParserState), ParserError) {
   use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
-  use state <- result.try(expect(state, token.KeywordFor, "for"))
-  use state <- result.try(parse_artifacts(state))
   Ok(#(Nil, state))
 }
 

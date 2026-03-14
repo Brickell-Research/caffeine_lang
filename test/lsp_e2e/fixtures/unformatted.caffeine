@@ -1,4 +1,4 @@
-Blueprints for   "SLO"
+Blueprints
   * "test_blueprint" :
     Requires   {   env:  String,    threshold:  Float   }
     Provides   {   threshold:  99.9   }

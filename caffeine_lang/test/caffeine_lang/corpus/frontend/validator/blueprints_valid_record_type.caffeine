@@ -1,6 +1,6 @@
 _indicators (Type): { numerator: String, denominator: String }
 
-Blueprints for "SLO"
+Blueprints
   * "api":
     Requires { indicators: _indicators }
     Provides { value: "x" }

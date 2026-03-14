@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "test":
     Requires { count: Integer { x | x in ( "a".."z" ) } }
     Provides { value: "x" }

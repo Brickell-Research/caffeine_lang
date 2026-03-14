@@ -292,28 +292,13 @@ pub fn tokenize_comments_test() {
 
 // ==== tokenize_blueprint_header ====
 // * ✅ single artifact header
-// * ✅ multi-artifact header
 pub fn tokenize_blueprint_header_test() {
   [
     #(
       "single artifact header",
-      "Blueprints for \"SLO\"",
+      "Blueprints",
       Ok([
         token.KeywordBlueprints,
-        token.KeywordFor,
-        token.LiteralString("SLO"),
-        token.EOF,
-      ]),
-    ),
-    #(
-      "multi-artifact header",
-      "Blueprints for \"SLO\" + \"DependencyRelation\"",
-      Ok([
-        token.KeywordBlueprints,
-        token.KeywordFor,
-        token.LiteralString("SLO"),
-        token.SymbolPlus,
-        token.LiteralString("DependencyRelation"),
         token.EOF,
       ]),
     ),
@@ -570,11 +555,9 @@ pub fn tokenize_multiline_test() {
   [
     #(
       "full blueprint structure",
-      "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }",
+      "Blueprints\n  * \"api\":\n    Requires { env: String }",
       Ok([
         token.KeywordBlueprints,
-        token.KeywordFor,
-        token.LiteralString("SLO"),
         token.WhitespaceNewline,
         token.WhitespaceIndent(2),
         token.SymbolStar,

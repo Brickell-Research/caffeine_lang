@@ -14,7 +14,7 @@ pub fn discover_single_file_test() {
   let dir = "test/caffeine_cli/tmp_discover_single"
   let file = dir <> "/test.caffeine"
   let _ = simplifile.create_directory_all(dir)
-  let _ = simplifile.write(file, "Blueprints for \"SLO\"\n")
+  let _ = simplifile.write(file, "Blueprints\n")
 
   let result = file_discovery.discover(file)
   result |> should.be_ok()

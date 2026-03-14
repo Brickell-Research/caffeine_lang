@@ -964,8 +964,6 @@ pub fn parse_expects_file_test() {
 
 // ==== parse_errors ====
 // * ✅ missing Blueprints keyword
-// * ✅ missing for keyword
-// * ✅ missing artifact name
 // * ✅ missing blueprint name
 // * ✅ unknown type
 // * ✅ unclosed type paren
@@ -986,8 +984,6 @@ pub fn parse_errors_test() {
       errors_path("missing_blueprints_keyword"),
       True,
     ),
-    #("missing for keyword", errors_path("missing_for_keyword"), True),
-    #("missing artifact name", errors_path("missing_artifact_name"), True),
     #("missing blueprint name", errors_path("missing_blueprint_name"), True),
     #("unknown type", errors_path("unknown_type"), True),
     #("unclosed type paren", errors_path("unclosed_type_paren"), True),
@@ -1033,17 +1029,17 @@ pub fn parse_error_line_numbers_test() {
     ),
     #(
       "error on line 2 reports line 2",
-      "Blueprints for \"SLO\"\ninvalid",
+      "Blueprints\ninvalid",
       Error([parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)]),
     ),
     #(
       "error on line 3 reports line 3",
-      "Blueprints for \"SLO\"\n* \"test\":\nRequires { field: bad }",
+      "Blueprints\n* \"test\":\nRequires { field: bad }",
       Error([parser_error.UnknownType("bad", 3, 19)]),
     ),
     #(
       "error after blank lines reports correct line",
-      "Blueprints for \"SLO\"\n\n\n* \"test\":\nRequires { field: bad }",
+      "Blueprints\n\n\n* \"test\":\nRequires { field: bad }",
       Error([parser_error.UnknownType("bad", 5, 19)]),
     ),
   ]
@@ -1068,20 +1064,19 @@ pub fn parse_error_missing_delimiter_test() {
   [
     #(
       "missing } at end of file points to correct line (not EOF line)",
-      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n",
+      "Blueprints\n* \"test\":\nRequires { env: String\n",
       Error([parser_error.UnexpectedToken("}", "end of file", 3, 17)]),
     ),
     #(
       "missing } in middle of file points to correct line (not far-away next token)",
-      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
+      "Blueprints\n* \"test\":\nRequires { env: String\n\n\nBlueprints",
       Error([
         parser_error.UnexpectedToken("}", "Blueprints", 3, 17),
-        parser_error.UnexpectedToken("\"SLO\"", "\"Other\"", 6, 16),
       ]),
     ),
     #(
       "missing } in refinement points to last token on same line",
-      "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
+      "Blueprints\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
       Error([parser_error.UnexpectedToken("}", "Provides", 3, 46)]),
     ),
   ]
@@ -1094,7 +1089,7 @@ pub fn parse_error_missing_delimiter_test() {
 // * ✅ multiple errors across items are all collected
 pub fn parse_empty_requires_struct_test() {
   let source =
-    "Blueprints for \"SLO\"\n  * \"test\":\n    Requires {}\n    Provides { v: \"x\" }\n"
+    "Blueprints\n  * \"test\":\n    Requires {}\n    Provides { v: \"x\" }\n"
   let assert Ok(file) = parser.parse_blueprints_file(source)
   let assert [block] = file.blocks
   let assert [item] = block.items
@@ -1112,7 +1107,7 @@ pub fn parse_empty_provides_struct_test() {
 pub fn parse_multiple_errors_across_items_test() {
   // Two items, each with an error — both errors should be collected
   let source =
-    "Blueprints for \"SLO\"\n  * \"a\":\n    Requires { f: Unknown }\n    Provides {}\n  * \"b\":\n    Requires { g: Unknown }\n    Provides {}\n"
+    "Blueprints\n  * \"a\":\n    Requires { f: Unknown }\n    Provides {}\n  * \"b\":\n    Requires { g: Unknown }\n    Provides {}\n"
   let assert Error(errors) = parser.parse_blueprints_file(source)
   // Should have at least 2 errors (one per bad type)
   { list.length(errors) >= 2 } |> should.be_true()

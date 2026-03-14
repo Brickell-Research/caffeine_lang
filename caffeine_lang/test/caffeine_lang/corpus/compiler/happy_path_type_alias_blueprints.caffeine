@@ -1,6 +1,6 @@
 _env (Type): String { x | x in { "production", "staging" } }
 
-Blueprints for "SLO"
+Blueprints
   * "api_availability_with_type_alias":
     Requires { env: _env, status: Boolean }
     Provides {

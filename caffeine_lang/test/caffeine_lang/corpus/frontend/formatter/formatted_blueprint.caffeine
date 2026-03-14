@@ -1,6 +1,6 @@
 _base (Provides): { vendor: "datadog" }
 
-Blueprints for "SLO"
+Blueprints
   * "api_availability" extends [_base]:
     Requires { env: String, status: Boolean, threshold: Float }
     Provides {

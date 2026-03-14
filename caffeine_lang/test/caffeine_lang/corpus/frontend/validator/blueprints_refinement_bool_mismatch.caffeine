@@ -1,4 +1,4 @@
-Blueprints for "SLO"
+Blueprints
   * "test":
     Requires { flag: Boolean { x | x in { "yes" } } }
     Provides { value: "x" }

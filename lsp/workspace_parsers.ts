@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 /** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files. */
 export function extractBlueprintNames(text: string): string[] {
-  if (!text.includes("Blueprints for")) return [];
+  if (!text.includes("Blueprints")) return [];
   const names: string[] = [];
   const pattern = /\*\s+"([^"]+)"/;
   for (const line of text.split("\n")) {
