@@ -150,6 +150,81 @@ export function extractVendors(text: string): Map<string, string> {
   return result;
 }
 
+/** Extract dependency relations from an expectations file.
+ *  Parses `relations: { hard: [...], soft: [...] }` blocks within Provides sections.
+ *  Returns a Map from item name to { hard: string[], soft: string[] }. */
+export function extractDependencyRelations(
+  text: string,
+): Map<string, { hard: string[]; soft: string[] }> {
+  const result = new Map<string, { hard: string[]; soft: string[] }>();
+  if (!text.includes("Expectations for")) return result;
+
+  const lines = text.split("\n");
+  const itemPattern = /\*\s+"([^"]+)"/;
+  let currentItem: string | null = null;
+
+  // Accumulate text per item to extract relations from multi-line Provides blocks
+  let itemText = "";
+
+  for (let i = 0; i <= lines.length; i++) {
+    const line = i < lines.length ? lines[i] : "";
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith("#")) continue;
+
+    const itemMatch = itemPattern.exec(line);
+    // When we hit a new item or end of file, process the accumulated text
+    if (itemMatch || i === lines.length) {
+      if (currentItem && itemText) {
+        const relations = parseRelationsFromText(itemText);
+        if (relations) {
+          result.set(currentItem, relations);
+        }
+      }
+      currentItem = itemMatch ? itemMatch[1] : null;
+      itemText = "";
+    }
+
+    if (currentItem) {
+      itemText += line + "\n";
+    }
+  }
+
+  return result;
+}
+
+/** Parse hard/soft relation lists from a block of text containing a relations field. */
+function parseRelationsFromText(
+  text: string,
+): { hard: string[]; soft: string[] } | null {
+  // Look for `relations:` followed by a struct containing hard/soft lists
+  const relationsIdx = text.indexOf("relations:");
+  if (relationsIdx < 0) return null;
+
+  const afterRelations = text.slice(relationsIdx);
+  const hard = extractStringList(afterRelations, "hard");
+  const soft = extractStringList(afterRelations, "soft");
+
+  if (hard.length === 0 && soft.length === 0) return null;
+  return { hard, soft };
+}
+
+/** Extract a string list value for a given key (e.g., `hard: ["a", "b"]`). */
+function extractStringList(text: string, key: string): string[] {
+  // Match key: [ ... ] allowing multi-line
+  const keyPattern = new RegExp(`${key}\\s*:\\s*\\[([^\\]]*)]`);
+  const match = keyPattern.exec(text);
+  if (!match) return [];
+
+  const listContent = match[1];
+  const strings: string[] = [];
+  const stringPattern = /"([^"]+)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = stringPattern.exec(listContent)) !== null) {
+    strings.push(m[1]);
+  }
+  return strings;
+}
+
 /** Update blueprint and expectation indices for a file, mutating both maps in place. Returns true if either changed. */
 export function applyIndexUpdates(
   uri: string,
