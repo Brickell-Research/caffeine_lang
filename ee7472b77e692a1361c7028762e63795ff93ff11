@@ -1,0 +1,23 @@
+caffeine_lang/src/caffeine_lang/standard_library/artifacts.gleam
+  25b9d793179f81ec 92-93,95-96,100-101,103-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "ee7472b77e692a1361c7028762e63795ff93ff11",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 2,
+      "accepted_lines": 8,
+      "overriden_lines": 2
+    }
+  }
+}
