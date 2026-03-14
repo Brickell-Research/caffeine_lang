@@ -60,6 +60,11 @@ import {
   handleTypeHierarchySubtypes,
 } from "./type_hierarchy_features.ts";
 
+import {
+  handleDependencyGraph,
+  handleApplyDependencyEdit,
+} from "./graph_features.ts";
+
 export interface HandlerContext {
   connection: Connection;
   documents: TextDocuments<TextDocument>;
@@ -109,6 +114,10 @@ export function registerHandlers(ctx: HandlerContext): void {
   ctx.connection.languages.typeHierarchy.onSubtypes((p) => handleTypeHierarchySubtypes(ctx, p));
   ctx.connection.onWorkspaceSymbol((p) => handleWorkspaceSymbol(ctx, p));
   ctx.connection.onCodeLens((p) => handleCodeLens(ctx, p, ctx.sloCache));
+
+  // Custom graph topology requests
+  ctx.connection.onRequest("caffeine/dependencyGraph", () => handleDependencyGraph(ctx));
+  ctx.connection.onRequest("caffeine/applyDependencyEdit", (params) => handleApplyDependencyEdit(ctx, params));
 
   ctx.documents.listen(ctx.connection);
   ctx.connection.listen();

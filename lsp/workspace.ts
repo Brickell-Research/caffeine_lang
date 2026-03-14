@@ -11,6 +11,7 @@ import {
   extractReferencedBlueprintNames,
   extractExpectationIdentifiers,
   extractVendors,
+  extractDependencyRelations,
   findBlueprintItemLocation,
   applyIndexUpdates,
 } from "./workspace_parsers.ts";
@@ -29,6 +30,9 @@ export class WorkspaceIndex {
   /** Maps file URI → (item name → vendor string, e.g., "datadog").
    *  Covers both blueprint items and expectation items that have vendor in Provides. */
   vendorIndex = new Map<string, Map<string, string>>();
+  /** Maps file URI → (item name → { hard, soft } dependency relations).
+   *  Used by the topology graph to build edges between expectations. */
+  dependencyIndex = new Map<string, Map<string, { hard: string[]; soft: string[] }>>();
   // deno-lint-ignore no-explicit-any
   validatedBlueprintsCache = new Map<string, any>();
   // deno-lint-ignore no-explicit-any
@@ -71,6 +75,10 @@ export class WorkspaceIndex {
         const vendors = extractVendors(text);
         if (vendors.size > 0) {
           this.vendorIndex.set(uri, vendors);
+        }
+        const deps = extractDependencyRelations(text);
+        if (deps.size > 0) {
+          this.dependencyIndex.set(uri, deps);
         }
       }
     }
@@ -206,6 +214,13 @@ export class WorkspaceIndex {
     } else {
       this.vendorIndex.delete(uri);
     }
+    // Update dependency index
+    const newDeps = extractDependencyRelations(text);
+    if (newDeps.size > 0) {
+      this.dependencyIndex.set(uri, newDeps);
+    } else {
+      this.dependencyIndex.delete(uri);
+    }
     return changed;
   }
 
@@ -232,6 +247,7 @@ export class WorkspaceIndex {
     const hadRefs = this.referencedBlueprintIndex.delete(uri);
     const hadExpectations = this.expectationIndex.delete(uri);
     this.vendorIndex.delete(uri);
+    this.dependencyIndex.delete(uri);
     if (this.validatedBlueprintsCache.delete(uri)) {
       this._validatedBlueprintsDirty = true;
     }
