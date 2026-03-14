@@ -1,12 +1,12 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
-  type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
-  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
-  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
-  LiteralTrue, LiteralValue, Struct, TypeValue,
+  type BlueprintItem, type BlueprintsFile, type Comment, type ExpectItem,
+  type ExpectsBlock, type ExpectsFile, type Extendable, type Field, type Literal,
+  type Parsed, type Struct, type TypeAlias, ExtendableProvides,
+  ExtendableRequires, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
+  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
+  Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -33,41 +33,37 @@ type FieldContext {
 }
 
 /// Format a Caffeine source file. Auto-detects whether it's a blueprints or expectations file.
+/// Expectations files are detected by the presence of the Expectations keyword;
+/// all other files are treated as blueprints files.
 pub fn format(source: String) -> Result(String, String) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
     |> result.map_error(fn(_) { "Tokenization error" }),
   )
 
-  let first_keyword =
-    tokens
-    |> list.find(fn(ptok) {
+  let has_expectations =
+    list.any(tokens, fn(ptok) {
       case ptok {
-        token.PositionedToken(token.KeywordBlueprints, _, _) -> True
         token.PositionedToken(token.KeywordExpectations, _, _) -> True
         _ -> False
       }
     })
 
-  case first_keyword {
-    Ok(token.PositionedToken(token.KeywordBlueprints, _, _)) -> {
-      use parsed <- result.try(
-        parser.parse_blueprints_file(source)
-        |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
-      )
-      Ok(format_blueprints_file(parsed))
-    }
-    Ok(token.PositionedToken(token.KeywordExpectations, _, _)) -> {
+  case has_expectations {
+    True -> {
       use parsed <- result.try(
         parser.parse_expects_file(source)
         |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
       )
       Ok(format_expects_file(parsed))
     }
-    _ ->
-      Error(
-        "Unable to detect file type: no Blueprints or Expectations keyword found",
+    False -> {
+      use parsed <- result.try(
+        parser.parse_blueprints_file(source)
+        |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
       )
+      Ok(format_blueprints_file(parsed))
+    }
   }
 }
 
@@ -90,9 +86,12 @@ fn format_blueprints_file(file: BlueprintsFile(Parsed)) -> String {
       ])
   }
 
-  let sections = case file.blocks {
+  let sections = case file.items {
     [] -> sections
-    blocks -> list.append(sections, list.map(blocks, format_blueprints_block))
+    items ->
+      list.append(sections, [
+        list.map(items, format_blueprint_item) |> string.join("\n\n"),
+      ])
   }
 
   let trailing = format_comments(file.trailing_comments, "")
@@ -160,18 +159,6 @@ fn format_extendable(ext: Extendable) -> String {
   <> format_struct(ext.body, 0, context)
 }
 
-fn format_blueprints_block(block: BlueprintsBlock) -> String {
-  let comments = format_comments(block.leading_comments, "")
-  let header = "Blueprints"
-
-  let items =
-    block.items
-    |> list.map(format_blueprint_item)
-    |> string.join("\n\n")
-
-  comments <> header <> "\n" <> items
-}
-
 fn format_expects_block(block: ExpectsBlock) -> String {
   let comments = format_comments(block.leading_comments, "")
   let header = "Expectations for \"" <> block.blueprint <> "\""
@@ -185,13 +172,12 @@ fn format_expects_block(block: ExpectsBlock) -> String {
 }
 
 fn format_blueprint_item(item: BlueprintItem) -> String {
-  let comments = format_comments(item.leading_comments, "  ")
+  let comments = format_comments(item.leading_comments, "")
   let name_line =
-    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "\"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
-  let requires = "    Requires " <> format_struct(item.requires, 4, TypeFields)
-  let provides =
-    "    Provides " <> format_struct(item.provides, 4, LiteralFields)
+  let requires = "  Requires " <> format_struct(item.requires, 2, TypeFields)
+  let provides = "  Provides " <> format_struct(item.provides, 2, LiteralFields)
 
   comments <> name_line <> "\n" <> requires <> "\n" <> provides
 }

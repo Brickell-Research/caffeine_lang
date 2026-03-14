@@ -43,16 +43,9 @@ fn blueprints_file_symbols(
     list.map(file.type_aliases, fn(ta) { type_alias_symbol(ta, lines) })
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
-  let #(block_syms, _) =
-    list.fold(file.blocks, #([], 0), fn(acc, b) {
-      let #(syms, search_from) = acc
-      let name = "Blueprints"
-      let children =
-        list.map(b.items, fn(item) { blueprint_item_symbol(item, lines) })
-      let sym = block_symbol("Blueprints", lines, name, children, search_from)
-      #([sym, ..syms], sym.line + 1)
-    })
-  list.flatten([alias_syms, ext_syms, list.reverse(block_syms)])
+  let item_syms =
+    list.map(file.items, fn(item) { blueprint_item_symbol(item, lines) })
+  list.flatten([alias_syms, ext_syms, item_syms])
 }
 
 fn expects_file_symbols(

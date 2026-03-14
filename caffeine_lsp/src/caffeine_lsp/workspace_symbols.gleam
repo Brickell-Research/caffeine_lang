@@ -35,9 +35,7 @@ fn blueprints_symbols(
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let item_syms =
-    list.flat_map(file.blocks, fn(b) {
-      list.map(b.items, fn(item) { blueprint_item_symbol(item, lines) })
-    })
+    list.map(file.items, fn(item) { blueprint_item_symbol(item, lines) })
   list.flatten([alias_syms, ext_syms, item_syms])
 }
 

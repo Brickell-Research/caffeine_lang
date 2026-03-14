@@ -1,4 +1,3 @@
-Blueprints
-  * "tracked_slo":
-    Requires { env: String, upstream: String }
-    Provides { vendor: "datadog", type: "hard" }
+"tracked_slo":
+  Requires { env: String, upstream: String }
+  Provides { vendor: "datadog", type: "hard" }

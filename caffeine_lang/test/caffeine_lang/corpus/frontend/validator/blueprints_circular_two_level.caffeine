@@ -1,7 +1,6 @@
 _a (Type): _b
 _b (Type): _a
 
-Blueprints
-  * "api":
-    Requires { data: _a }
-    Provides { value: "x" }
+"api":
+  Requires { data: _a }
+  Provides { value: "x" }

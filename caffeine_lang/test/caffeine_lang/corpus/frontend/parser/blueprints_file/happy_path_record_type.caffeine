@@ -1,4 +1,3 @@
-Blueprints
-  * "api":
-    Requires { indicators: { numerator: String, denominator: String } }
-    Provides { value: "x" }
+"api":
+  Requires { indicators: { numerator: String, denominator: String } }
+  Provides { value: "x" }

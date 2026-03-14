@@ -38,7 +38,7 @@ pub fn get_selection_range(
   // Find enclosing block (Blueprints/Expectations or extendable)
   let block_range = find_enclosing_block(lines, line, file_range)
 
-  // Find enclosing item (* "name":)
+  // Find enclosing item ("name": or * "name":)
   let item_range = find_enclosing_item(lines, line, block_range)
 
   // Find enclosing section (Requires/Provides)
@@ -112,11 +112,13 @@ fn find_enclosing_item(
   case start {
     -1 -> parent
     _ -> {
+      let item_indent = trimmed_start_col(lines, start)
       let remaining = list.drop(lines, start + 1)
-      let end = position_utils.find_block_end(remaining, 2, start + 1, start)
+      let end =
+        position_utils.find_block_end(remaining, item_indent, start + 1, start)
       SelectionRange(
         start,
-        trimmed_start_col(lines, start),
+        item_indent,
         end,
         line_length_at(lines, end),
         HasParent(parent),
@@ -126,12 +128,14 @@ fn find_enclosing_item(
 }
 
 /// Walk backwards (via reversed list) to find the enclosing item start.
+/// Matches both blueprint items (`"name":` at column 0) and expect items
+/// (`* "name":` indented).
 fn find_item_start_loop(reversed: List(String), idx: Int) -> Int {
   case reversed {
     [] -> -1
     [line, ..rest] -> {
       let trimmed = string.trim(line)
-      use <- bool.guard(string.starts_with(trimmed, "* \""), idx)
+      use <- bool.guard(is_item_line(line, trimmed), idx)
       find_item_start_loop(rest, idx - 1)
     }
   }
@@ -172,7 +176,7 @@ fn find_section_start_loop(reversed: List(String), idx: Int) -> Int {
           || string.starts_with(trimmed, "Provides"),
         idx,
       )
-      use <- bool.guard(string.starts_with(trimmed, "* \""), -1)
+      use <- bool.guard(is_item_line(line, trimmed), -1)
       find_section_start_loop(rest, idx - 1)
     }
   }
@@ -197,4 +201,15 @@ fn trimmed_start_col(lines: List(String), idx: Int) -> Int {
     [line, ..] -> string.length(line) - string.length(string.trim_start(line))
     [] -> 0
   }
+}
+
+/// Check whether a line is an item header. Matches both blueprint items
+/// (`"name":` at column 0) and expect items (`* "name":` indented).
+/// Uses the raw line to check indent so quoted field names at deeper
+/// indentation are not mistaken for items.
+fn is_item_line(raw_line: String, trimmed: String) -> Bool {
+  // Expect items: `* "name"` at any indent
+  string.starts_with(trimmed, "* \"")
+  // Blueprint items: `"name"` at column 0 (no indentation)
+  || string.starts_with(raw_line, "\"")
 }

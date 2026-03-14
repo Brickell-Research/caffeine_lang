@@ -374,9 +374,8 @@ pub fn tokenize_blueprint_item_test() {
   [
     #(
       "item with extends",
-      "* \"api_availability\" extends [_base]:",
+      "\"api_availability\" extends [_base]:",
       Ok([
-        token.SymbolStar,
         token.LiteralString("api_availability"),
         token.KeywordExtends,
         token.SymbolLeftBracket,
@@ -388,9 +387,8 @@ pub fn tokenize_blueprint_item_test() {
     ),
     #(
       "item without extends",
-      "* \"latency\":",
+      "\"latency\":",
       Ok([
-        token.SymbolStar,
         token.LiteralString("latency"),
         token.SymbolColon,
         token.EOF,
@@ -555,16 +553,12 @@ pub fn tokenize_multiline_test() {
   [
     #(
       "full blueprint structure",
-      "Blueprints\n  * \"api\":\n    Requires { env: String }",
+      "\"api\":\n  Requires { env: String }",
       Ok([
-        token.KeywordBlueprints,
-        token.WhitespaceNewline,
-        token.WhitespaceIndent(2),
-        token.SymbolStar,
         token.LiteralString("api"),
         token.SymbolColon,
         token.WhitespaceNewline,
-        token.WhitespaceIndent(4),
+        token.WhitespaceIndent(2),
         token.KeywordRequires,
         token.SymbolLeftBrace,
         token.Identifier("env"),
@@ -646,14 +640,14 @@ pub fn tokenize_edge_cases_test() {
 // * ✅ column numbers advance within a line
 // * ✅ positions reset to column 1 on new line
 pub fn tokenize_position_tracking_test() {
-  // "Blueprints\nfor"
-  // Line 1: Blueprints (col 1), Newline (col 11)
+  // "Requires\nfor"
+  // Line 1: Requires (col 1), Newline (col 9)
   // Line 2: for (col 1), EOF (col 4)
-  let assert Ok(tokens) = tokenizer.tokenize("Blueprints\nfor")
+  let assert Ok(tokens) = tokenizer.tokenize("Requires\nfor")
   tokens
   |> should.equal([
-    token.PositionedToken(token.KeywordBlueprints, 1, 1),
-    token.PositionedToken(token.WhitespaceNewline, 1, 11),
+    token.PositionedToken(token.KeywordRequires, 1, 1),
+    token.PositionedToken(token.WhitespaceNewline, 1, 9),
     token.PositionedToken(token.KeywordFor, 2, 1),
     token.PositionedToken(token.EOF, 2, 4),
   ])

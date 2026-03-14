@@ -66,9 +66,7 @@ pub fn validate_blueprints_file(
 ) -> Result(BlueprintsFile(Validated), List(ValidatorError)) {
   let type_aliases = file.type_aliases
   let extendables = file.extendables
-  let items =
-    file.blocks
-    |> list.flat_map(fn(block) { block.items })
+  let items = file.items
 
   // Group A: type alias structural checks (sequential — circularity depends on no dupes)
   let type_alias_errors =

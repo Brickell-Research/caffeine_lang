@@ -1,13 +1,11 @@
 ## Availability Blueprints
-Blueprints
-  # The main API availability SLO
-  * "api_availability":
-    Requires { env: String }
-    Provides { vendor: "datadog" }
+# The main API availability SLO
+"api_availability":
+  Requires { env: String }
+  Provides { vendor: "datadog" }
 
 ##  === Latency Blueprints ===
 # These blueprints track latency
-Blueprints
-  * "api_latency":
-    Requires { env: String }
-    Provides { vendor: "datadog" }
+"api_latency":
+  Requires { env: String }
+  Provides { vendor: "datadog" }

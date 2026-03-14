@@ -135,16 +135,15 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - single expectation with templated queries",
       #(
-        "Blueprints
-  * \"api_availability\":
-    Requires { env: String, status: Boolean }
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
+        "\"api_availability\":
+  Requires { env: String, status: Boolean }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
+      denominator: \"sum:http.requests{$env->env$}\"
     }
+  }
 ",
         "Expectations for \"api_availability\"
   * \"checkout_availability\":
@@ -168,13 +167,12 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - path extraction (org/team/service from file path)",
       #(
-        "Blueprints
-  * \"simple_slo\":
-    Requires {}
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" }
-    }
+        "\"simple_slo\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" }
+  }
 ",
         "Expectations for \"simple_slo\"
   * \"my_slo\":
@@ -192,13 +190,12 @@ pub fn compile_from_strings_test() {
     #(
       "happy path - time_slice SLO expression",
       #(
-        "Blueprints
-  * \"cpu_slo\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
-      indicators: {}
-    }
+        "\"cpu_slo\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
+    indicators: {}
+  }
 ",
         "Expectations for \"cpu_slo\"
   * \"cpu_availability\":
@@ -241,13 +238,12 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid expectations DSL",
       #(
-        "Blueprints
-  * \"api_availability\":
-    Requires {}
-    Provides {
-      evaluation: \"1\",
-      indicators: { numerator: \"1\", denominator: \"1\" }
-    }
+        "\"api_availability\":
+  Requires {}
+  Provides {
+    evaluation: \"1\",
+    indicators: { numerator: \"1\", denominator: \"1\" }
+  }
 ",
         "not valid caffeine syntax !!!",
         "playground/demo/service.caffeine",
@@ -259,13 +255,12 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - missing blueprint reference",
       #(
-        "Blueprints
-  * \"some_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"1\",
-      indicators: { numerator: \"1\", denominator: \"1\" }
-    }
+        "\"some_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"1\",
+    indicators: { numerator: \"1\", denominator: \"1\" }
+  }
 ",
         "Expectations for \"nonexistent_blueprint\"
   * \"my_slo\":
@@ -280,14 +275,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency reference (target does not exist)",
       #(
-        "Blueprints
-  * \"slo_with_deps\":
-    Requires {}
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      depends_on: { hard: [\"nonexistent.org.team.slo\"] }
-    }
+        "\"slo_with_deps\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
+    depends_on: { hard: [\"nonexistent.org.team.slo\"] }
+  }
 ",
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
@@ -305,14 +299,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency format (not 4 parts)",
       #(
-        "Blueprints
-  * \"slo_with_deps\":
-    Requires {}
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      depends_on: { hard: [\"invalid_format\"] }
-    }
+        "\"slo_with_deps\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
+    depends_on: { hard: [\"invalid_format\"] }
+  }
 ",
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
@@ -330,14 +323,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - self-reference in dependency",
       #(
-        "Blueprints
-  * \"slo_with_deps\":
-    Requires {}
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
-    }
+        "\"slo_with_deps\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
+    depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
+  }
 ",
         "Expectations for \"slo_with_deps\"
   * \"my_slo\":
@@ -381,15 +373,14 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "happy path - single Honeycomb SLO",
       #(
-        "Blueprints
-  * \"honeycomb_availability\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
+        "\"honeycomb_availability\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"HEATMAP(duration_ms)\"
     }
+  }
 ",
         "Expectations for \"honeycomb_availability\"
   * \"api_success_rate\":
@@ -416,15 +407,14 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
-        "Blueprints
-  * \"hc_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
+        "\"hc_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"HEATMAP(duration_ms)\"
     }
+  }
 ",
         "Expectations for \"hc_blueprint\"
   * \"hc_slo\":
@@ -465,30 +455,28 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
+      content: "\"dd_blueprint\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$env->env$}\",
+      denominator: \"sum:http.requests{$env->env$}\"
     }
+  }
 ",
     )
   let hc_source =
     SourceFile(
       path: "blueprints/honeycomb.caffeine",
-      content: "Blueprints
-  * \"hc_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
+      content: "\"hc_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"HEATMAP(duration_ms)\"
     }
+  }
 ",
     )
   let expectations = [
@@ -542,16 +530,15 @@ pub fn compile_from_strings_newrelic_test() {
     #(
       "happy path - single New Relic SLO",
       #(
-        "Blueprints
-  * \"newrelic_availability\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"good / valid\",
-      indicators: {
-        good: \"Transaction WHERE appName = 'payments' AND duration < 0.1\",
-        valid: \"Transaction WHERE appName = 'payments'\"
-      }
+        "\"newrelic_availability\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"good / valid\",
+    indicators: {
+      good: \"Transaction WHERE appName = 'payments' AND duration < 0.1\",
+      valid: \"Transaction WHERE appName = 'payments'\"
     }
+  }
 ",
         "Expectations for \"newrelic_availability\"
   * \"api_success_rate\":
@@ -579,16 +566,15 @@ pub fn compile_from_strings_newrelic_test() {
     #(
       "sad path - New Relic with invalid window (not 1, 7, or 28)",
       #(
-        "Blueprints
-  * \"nr_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"good / valid\",
-      indicators: {
-        good: \"Transaction WHERE duration < 0.1\",
-        valid: \"Transaction\"
-      }
+        "\"nr_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"good / valid\",
+    indicators: {
+      good: \"Transaction WHERE duration < 0.1\",
+      valid: \"Transaction\"
     }
+  }
 ",
         "Expectations for \"nr_blueprint\"
   * \"nr_slo\":
@@ -629,31 +615,29 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
+      content: "\"dd_blueprint\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$env->env$}\",
+      denominator: \"sum:http.requests{$env->env$}\"
     }
+  }
 ",
     )
   let nr_source =
     SourceFile(
       path: "blueprints/newrelic.caffeine",
-      content: "Blueprints
-  * \"nr_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"good / valid\",
-      indicators: {
-        good: \"Transaction WHERE duration < 0.1\",
-        valid: \"Transaction\"
-      }
+      content: "\"nr_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"good / valid\",
+    indicators: {
+      good: \"Transaction WHERE duration < 0.1\",
+      valid: \"Transaction\"
     }
+  }
 ",
     )
   let expectations = [
@@ -706,15 +690,14 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "happy path - single Dynatrace SLO",
       #(
-        "Blueprints
-  * \"dynatrace_availability\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
+        "\"dynatrace_availability\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"builtin:service.requestCount.server:splitBy()\"
     }
+  }
 ",
         "Expectations for \"dynatrace_availability\"
   * \"api_success_rate\":
@@ -740,15 +723,14 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
-        "Blueprints
-  * \"dt_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
+        "\"dt_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"builtin:service.requestCount.server:splitBy()\"
     }
+  }
 ",
         "Expectations for \"dt_blueprint\"
   * \"dt_slo\":
@@ -789,30 +771,28 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let dd_source =
     SourceFile(
       path: "blueprints/datadog.caffeine",
-      content: "Blueprints
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
+      content: "\"dd_blueprint\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$env->env$}\",
+      denominator: \"sum:http.requests{$env->env$}\"
     }
+  }
 ",
     )
   let dt_source =
     SourceFile(
       path: "blueprints/dynatrace.caffeine",
-      content: "Blueprints
-  * \"dt_blueprint\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
+      content: "\"dt_blueprint\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: {
+      sli: \"builtin:service.requestCount.server:splitBy()\"
     }
+  }
 ",
     )
   let expectations = [
@@ -862,13 +842,12 @@ Expectations for \"dt_blueprint\"
 pub fn compile_from_strings_dependency_graph_none_test() {
   let assert Ok(output) =
     compiler.compile_from_strings(
-      "Blueprints
-  * \"simple\":
-    Requires {}
-    Provides {
-      evaluation: \"good / total\",
-      indicators: { good: \"count:ok\", total: \"count:all\" }
-    }
+      "\"simple\":
+  Requires {}
+  Provides {
+    evaluation: \"good / total\",
+    indicators: { good: \"count:ok\", total: \"count:all\" }
+  }
 ",
       "Expectations for \"simple\"
   * \"my_slo\":
@@ -887,22 +866,20 @@ pub fn compile_from_strings_dependency_graph_none_test() {
 pub fn compile_from_strings_dependency_graph_some_test() {
   let assert Ok(output) =
     compiler.compile_from_strings(
-      "Blueprints
-  * \"tracked\":
-    Requires {}
-    Provides {
-      evaluation: \"good / total\",
-      indicators: { good: \"count:ok\", total: \"count:all\" },
-      depends_on: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
-    }
+      "\"tracked\":
+  Requires {}
+  Provides {
+    evaluation: \"good / total\",
+    indicators: { good: \"count:ok\", total: \"count:all\" },
+    depends_on: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
+  }
 
-Blueprints
-  * \"standalone\":
-    Requires {}
-    Provides {
-      evaluation: \"good / total\",
-      indicators: { good: \"count:ok\", total: \"count:all\" }
-    }
+\"standalone\":
+  Requires {}
+  Provides {
+    evaluation: \"good / total\",
+    indicators: { good: \"count:ok\", total: \"count:all\" }
+  }
 ",
       "Expectations for \"tracked\"
   * \"tracked_slo\":
@@ -938,16 +915,15 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/datadog.caffeine",
-        content: "Blueprints
-  * \"dd\":
-    Requires { env: String }
-    Provides {
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.ok{$env->env$}\",
-        denominator: \"sum:http.total{$env->env$}\"
-      }
+        content: "\"dd\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.ok{$env->env$}\",
+      denominator: \"sum:http.total{$env->env$}\"
     }
+  }
 ",
       ),
       vendor: vendor.Datadog,
@@ -956,13 +932,12 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/honeycomb.caffeine",
-        content: "Blueprints
-  * \"hc\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: { sli: \"HEATMAP(duration_ms)\" }
-    }
+        content: "\"hc\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: { sli: \"HEATMAP(duration_ms)\" }
+  }
 ",
       ),
       vendor: vendor.Honeycomb,
@@ -971,13 +946,12 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/dynatrace.caffeine",
-        content: "Blueprints
-  * \"dt\":
-    Requires {}
-    Provides {
-      evaluation: \"sli\",
-      indicators: { sli: \"builtin:service.requestCount.server:splitBy()\" }
-    }
+        content: "\"dt\":
+  Requires {}
+  Provides {
+    evaluation: \"sli\",
+    indicators: { sli: \"builtin:service.requestCount.server:splitBy()\" }
+  }
 ",
       ),
       vendor: vendor.Dynatrace,
@@ -986,16 +960,15 @@ pub fn compile_all_four_vendors_test() {
     VendorBlueprintSource(
       source: SourceFile(
         path: "blueprints/newrelic.caffeine",
-        content: "Blueprints
-  * \"nr\":
-    Requires {}
-    Provides {
-      evaluation: \"good / valid\",
-      indicators: {
-        good: \"Transaction WHERE duration < 0.1\",
-        valid: \"Transaction\"
-      }
+        content: "\"nr\":
+  Requires {}
+  Provides {
+    evaluation: \"good / valid\",
+    indicators: {
+      good: \"Transaction WHERE duration < 0.1\",
+      valid: \"Transaction\"
     }
+  }
 ",
       ),
       vendor: vendor.NewRelic,

@@ -1,3 +1,2 @@
-Blueprints
-  * "test":
-    Requires { env: String }
+"test":
+  Requires { env: String }

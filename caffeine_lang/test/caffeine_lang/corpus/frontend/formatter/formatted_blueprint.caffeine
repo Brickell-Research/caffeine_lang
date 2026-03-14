@@ -1,12 +1,11 @@
 _base (Provides): { vendor: "datadog" }
 
-Blueprints
-  * "api_availability" extends [_base]:
-    Requires { env: String, status: Boolean, threshold: Float }
-    Provides {
-      value: "numerator / denominator",
-      queries: {
-        numerator: "sum:http.requests{ok}",
-        denominator: "sum:http.requests{all}"
-      }
+"api_availability" extends [_base]:
+  Requires { env: String, status: Boolean, threshold: Float }
+  Provides {
+    value: "numerator / denominator",
+    queries: {
+      numerator: "sum:http.requests{ok}",
+      denominator: "sum:http.requests{all}"
     }
+  }

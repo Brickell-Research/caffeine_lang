@@ -5,11 +5,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files. */
+/** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files.
+ *  Blueprint items start with `"name":` at column 0 (no `*` prefix).
+ *  Non-expectations files are blueprint files. */
 export function extractBlueprintNames(text: string): string[] {
-  if (!text.includes("Blueprints")) return [];
+  if (text.includes("Expectations")) return [];
   const names: string[] = [];
-  const pattern = /\*\s+"([^"]+)"/;
+  const pattern = /^"([^"]+)"\s*(?:extends\s*\[|:)/;
   for (const line of text.split("\n")) {
     if (line.trimStart().startsWith("#")) continue;
     const match = pattern.exec(line);
@@ -18,14 +20,16 @@ export function extractBlueprintNames(text: string): string[] {
   return names;
 }
 
-/** Find the location of a blueprint item (e.g. * "name") within a blueprint file. */
+/** Find the location of a blueprint item (e.g. "name":) within a blueprint file.
+ *  Blueprint items start with `"name":` at column 0. */
 export function findBlueprintItemLocation(
   text: string,
   itemName: string,
 ): { line: number; col: number; nameLen: number } | null {
   const lines = text.split("\n");
+  const pattern = /^"([^"]+)"\s*(?:extends\s*\[|:)/;
   for (let i = 0; i < lines.length; i++) {
-    if (!/^\s*\*\s+"/.test(lines[i])) continue;
+    if (!pattern.test(lines[i])) continue;
     const nameIdx = lines[i].indexOf(`"${itemName}"`);
     if (nameIdx < 0) continue;
     return { line: i, col: nameIdx + 1, nameLen: itemName.length };

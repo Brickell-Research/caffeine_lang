@@ -1,4 +1,3 @@
-Blueprints
-  * "bad_blueprint"
-    Requires { env: String }
-    Provides {}
+"bad_blueprint"
+  Requires { env: String }
+  Provides {}

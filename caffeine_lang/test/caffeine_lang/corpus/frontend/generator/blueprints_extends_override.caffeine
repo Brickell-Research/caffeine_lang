@@ -1,6 +1,5 @@
 _base (Provides): { vendor: "datadog", value: "base_value" }
 
-Blueprints
-  * "api" extends [_base]:
-    Requires { env: String }
-    Provides { value: "overridden" }
+"api" extends [_base]:
+  Requires { env: String }
+  Provides { value: "overridden" }

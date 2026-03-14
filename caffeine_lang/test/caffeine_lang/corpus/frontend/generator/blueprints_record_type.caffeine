@@ -1,6 +1,5 @@
 _indicators (Type): { numerator: String, denominator: String }
 
-Blueprints
-  * "api":
-    Requires { indicators: _indicators, config: { env: String, count: Integer } }
-    Provides { vendor: "datadog", value: "x" }
+"api":
+  Requires { indicators: _indicators, config: { env: String, count: Integer } }
+  Provides { vendor: "datadog", value: "x" }

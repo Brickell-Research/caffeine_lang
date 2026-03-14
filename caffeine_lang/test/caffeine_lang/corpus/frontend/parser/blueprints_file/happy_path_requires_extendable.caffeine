@@ -1,6 +1,5 @@
 _common (Requires): { env: String, status: Boolean }
 
-Blueprints
-  * "api" extends [_common]:
-    Requires { threshold: Float }
-    Provides { vendor: "datadog" }
+"api" extends [_common]:
+  Requires { threshold: Float }
+  Provides { vendor: "datadog" }

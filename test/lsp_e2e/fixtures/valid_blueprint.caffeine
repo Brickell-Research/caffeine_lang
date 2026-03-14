@@ -1,8 +1,7 @@
-Blueprints
-  * "test_blueprint":
-    Requires { env: String, status: Boolean }
-    Provides {
-      indicators: { good: "query_good", total: "query_total" },
-      evaluation: "good / total",
-      threshold: 99.9%
-    }
+"test_blueprint":
+  Requires { env: String, status: Boolean }
+  Provides {
+    indicators: { good: "query_good", total: "query_total" },
+    evaluation: "good / total",
+    threshold: 99.9%
+  }

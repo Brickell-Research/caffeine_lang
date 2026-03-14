@@ -106,8 +106,8 @@ fn range_type(
 }
 
 // ==== parse_blueprints_file ====
-// * ✅ happy path - single block
-// * ✅ happy path - multiple blocks
+// * ✅ happy path - single item
+// * ✅ happy path - multiple items
 // * ✅ happy path - multi artifact
 // * ✅ happy path - with Provides extendable
 // * ✅ happy path - with Requires extendable
@@ -119,98 +119,92 @@ fn range_type(
 // * ✅ happy path - percentage types (plain, refined, defaulted)
 pub fn parse_blueprints_file_test() {
   [
-    // single block
+    // single item
     #(
-      "happy path - single block",
+      "happy path - single item",
       blueprints_path("happy_path_single_block"),
       Ok(
         ast.BlueprintsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api_availability",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "vendor",
-                    ast.LiteralValue(ast.LiteralString("datadog")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api_availability",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "vendor",
+                  ast.LiteralValue(ast.LiteralString("datadog")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
     ),
-    // multiple blocks
+    // multiple items
     #(
-      "happy path - multiple blocks",
+      "happy path - multiple items",
       blueprints_path("happy_path_multiple_blocks"),
       Ok(
         ast.BlueprintsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "availability",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "vendor",
-                    ast.LiteralValue(ast.LiteralString("datadog")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "hard_dep",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "from",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "to",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "type",
-                    ast.LiteralValue(ast.LiteralString("hard")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "availability",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "vendor",
+                  ast.LiteralValue(ast.LiteralString("datadog")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "hard_dep",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "from",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "to",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "type",
+                  ast.LiteralValue(ast.LiteralString("hard")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -224,38 +218,36 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "tracked_slo",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "upstream",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "vendor",
-                    ast.LiteralValue(ast.LiteralString("datadog")),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "type",
-                    ast.LiteralValue(ast.LiteralString("hard")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "tracked_slo",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "upstream",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "vendor",
+                  ast.LiteralValue(ast.LiteralString("datadog")),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "type",
+                  ast.LiteralValue(ast.LiteralString("hard")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -282,28 +274,26 @@ pub fn parse_blueprints_file_test() {
               ]),
             ),
           ],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("test")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("test")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -335,28 +325,26 @@ pub fn parse_blueprints_file_test() {
               ]),
             ),
           ],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api",
-                extends: ["_common"],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "threshold",
-                    ast.TypeValue(float_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "vendor",
-                    ast.LiteralValue(ast.LiteralString("datadog")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api",
+              extends: ["_common"],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "threshold",
+                  ast.TypeValue(float_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "vendor",
+                  ast.LiteralValue(ast.LiteralString("datadog")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -370,28 +358,26 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api",
-                extends: ["_base"],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(string_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("test")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api",
+              extends: ["_base"],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(string_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("test")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -405,28 +391,26 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api",
-                extends: ["_base", "_common"],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "threshold",
-                    ast.TypeValue(float_type()),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("test")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api",
+              extends: ["_base", "_common"],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "threshold",
+                  ast.TypeValue(float_type()),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("test")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -440,65 +424,63 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "test",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "tags",
-                    ast.TypeValue(list_type(types.String)),
-                    leading_comments: [],
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "test",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "tags",
+                  ast.TypeValue(list_type(types.String)),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "counts",
+                  ast.TypeValue(dict_type(
+                    types.String,
+                    types.NumericType(types.Integer),
+                  )),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "name",
+                  ast.TypeValue(optional_type(string_type())),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "env",
+                  ast.TypeValue(defaulted_type(string_type(), "production")),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "status",
+                  ast.TypeValue(
+                    oneof_type(types.String, [
+                      "active",
+                      "inactive",
+                    ]),
                   ),
-                  ast.Field(
-                    "counts",
-                    ast.TypeValue(dict_type(
-                      types.String,
-                      types.NumericType(types.Integer),
-                    )),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "name",
-                    ast.TypeValue(optional_type(string_type())),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(defaulted_type(string_type(), "production")),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "status",
-                    ast.TypeValue(
-                      oneof_type(types.String, [
-                        "active",
-                        "inactive",
-                      ]),
-                    ),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "threshold",
-                    ast.TypeValue(range_type(
-                      types.NumericType(types.Float),
-                      "0.0",
-                      "100.0",
-                    )),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("x")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "threshold",
+                  ast.TypeValue(range_type(
+                    types.NumericType(types.Float),
+                    "0.0",
+                    "100.0",
+                  )),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("x")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -512,66 +494,64 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "test_nested",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  // Order must match corpus file
-                  ast.Field(
-                    "nested_list",
-                    ast.TypeValue(
-                      nested_list_type(
-                        nested_list_type(types.ParsedPrimitive(types.String)),
-                      ),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "test_nested",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                // Order must match corpus file
+                ast.Field(
+                  "nested_list",
+                  ast.TypeValue(
+                    nested_list_type(
+                      nested_list_type(types.ParsedPrimitive(types.String)),
                     ),
-                    leading_comments: [],
                   ),
-                  ast.Field(
-                    "nested_dict",
-                    ast.TypeValue(nested_dict_type(
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "nested_dict",
+                  ast.TypeValue(nested_dict_type(
+                    types.String,
+                    nested_dict_type(
                       types.String,
-                      nested_dict_type(
-                        types.String,
-                        types.ParsedPrimitive(types.NumericType(types.Integer)),
-                      ),
-                    )),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "dict_of_list",
-                    ast.TypeValue(nested_dict_type(
-                      types.String,
-                      nested_list_type(
-                        types.ParsedPrimitive(types.NumericType(types.Integer)),
-                      ),
-                    )),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "list_of_dict",
-                    ast.TypeValue(
-                      nested_list_type(
-                        types.ParsedCollection(types.Dict(
-                          types.ParsedPrimitive(types.String),
-                          types.ParsedPrimitive(types.Boolean),
-                        )),
-                      ),
+                      types.ParsedPrimitive(types.NumericType(types.Integer)),
                     ),
-                    leading_comments: [],
+                  )),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "dict_of_list",
+                  ast.TypeValue(nested_dict_type(
+                    types.String,
+                    nested_list_type(
+                      types.ParsedPrimitive(types.NumericType(types.Integer)),
+                    ),
+                  )),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "list_of_dict",
+                  ast.TypeValue(
+                    nested_list_type(
+                      types.ParsedCollection(types.Dict(
+                        types.ParsedPrimitive(types.String),
+                        types.ParsedPrimitive(types.Boolean),
+                      )),
+                    ),
                   ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("x")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("x")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -594,28 +574,26 @@ pub fn parse_blueprints_file_test() {
             ),
           ],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "test",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "env",
-                    ast.TypeValue(types.ParsedTypeAliasRef("_env")),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("x")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "test",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "env",
+                  ast.TypeValue(types.ParsedTypeAliasRef("_env")),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("x")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -629,35 +607,33 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "api",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "indicators",
-                    ast.TypeValue(
-                      types.ParsedRecord(
-                        dict.from_list([
-                          #("numerator", string_type()),
-                          #("denominator", string_type()),
-                        ]),
-                      ),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "api",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "indicators",
+                  ast.TypeValue(
+                    types.ParsedRecord(
+                      dict.from_list([
+                        #("numerator", string_type()),
+                        #("denominator", string_type()),
+                      ]),
                     ),
-                    leading_comments: [],
                   ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("x")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("x")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -671,42 +647,40 @@ pub fn parse_blueprints_file_test() {
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
-          blocks: [
-            ast.BlueprintsBlock(leading_comments: [], items: [
-              ast.BlueprintItem(
-                leading_comments: [],
-                name: "test",
-                extends: [],
-                requires: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "threshold",
-                    ast.TypeValue(percentage_type()),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "target",
-                    ast.TypeValue(range_type(
-                      types.NumericType(types.Percentage),
-                      "99.0",
-                      "100.0",
-                    )),
-                    leading_comments: [],
-                  ),
-                  ast.Field(
-                    "level",
-                    ast.TypeValue(defaulted_type(percentage_type(), "99.9%")),
-                    leading_comments: [],
-                  ),
-                ]),
-                provides: ast.Struct(trailing_comments: [], fields: [
-                  ast.Field(
-                    "value",
-                    ast.LiteralValue(ast.LiteralString("x")),
-                    leading_comments: [],
-                  ),
-                ]),
-              ),
-            ]),
+          items: [
+            ast.BlueprintItem(
+              leading_comments: [],
+              name: "test",
+              extends: [],
+              requires: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "threshold",
+                  ast.TypeValue(percentage_type()),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "target",
+                  ast.TypeValue(range_type(
+                    types.NumericType(types.Percentage),
+                    "99.0",
+                    "100.0",
+                  )),
+                  leading_comments: [],
+                ),
+                ast.Field(
+                  "level",
+                  ast.TypeValue(defaulted_type(percentage_type(), "99.9%")),
+                  leading_comments: [],
+                ),
+              ]),
+              provides: ast.Struct(trailing_comments: [], fields: [
+                ast.Field(
+                  "value",
+                  ast.LiteralValue(ast.LiteralString("x")),
+                  leading_comments: [],
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -963,8 +937,6 @@ pub fn parse_expects_file_test() {
 }
 
 // ==== parse_errors ====
-// * ✅ missing Blueprints keyword
-// * ✅ missing blueprint name
 // * ✅ unknown type
 // * ✅ unclosed type paren
 // * ✅ refinement missing x
@@ -979,12 +951,6 @@ pub fn parse_expects_file_test() {
 pub fn parse_errors_test() {
   // Blueprints file errors - check that parsing returns Error
   [
-    #(
-      "missing Blueprints keyword",
-      errors_path("missing_blueprints_keyword"),
-      True,
-    ),
-    #("missing blueprint name", errors_path("missing_blueprint_name"), True),
     #("unknown type", errors_path("unknown_type"), True),
     #("unclosed type paren", errors_path("unclosed_type_paren"), True),
     #("refinement missing x", errors_path("refinement_missing_x"), True),
@@ -1016,7 +982,6 @@ pub fn parse_errors_test() {
 // ==== parse_error_line_numbers ====
 // * ✅ error on line 1 reports line 1
 // * ✅ error on line 2 reports line 2
-// * ✅ error on line 3 reports line 3
 // * ✅ error after blank lines reports correct line
 // * ✅ expects file error reports correct line
 pub fn parse_error_line_numbers_test() {
@@ -1024,23 +989,13 @@ pub fn parse_error_line_numbers_test() {
   [
     #(
       "error on line 1 reports line 1",
-      "\"SLO\"",
-      Error([parser_error.UnexpectedToken("Blueprints", "\"SLO\"", 1, 1)]),
-    ),
-    #(
-      "error on line 2 reports line 2",
-      "Blueprints\ninvalid",
-      Error([parser_error.UnexpectedToken("Blueprints", "invalid", 2, 1)]),
-    ),
-    #(
-      "error on line 3 reports line 3",
-      "Blueprints\n* \"test\":\nRequires { field: bad }",
-      Error([parser_error.UnknownType("bad", 3, 19)]),
+      "\"test\":\nRequires { field: bad }",
+      Error([parser_error.UnknownType("bad", 2, 19)]),
     ),
     #(
       "error after blank lines reports correct line",
-      "Blueprints\n\n\n* \"test\":\nRequires { field: bad }",
-      Error([parser_error.UnknownType("bad", 5, 19)]),
+      "\n\n\"test\":\nRequires { field: bad }",
+      Error([parser_error.UnknownType("bad", 4, 19)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)
@@ -1058,29 +1013,21 @@ pub fn parse_error_line_numbers_test() {
 
 // ==== parse_error_missing_delimiter ====
 // * ✅ missing } at end of file points to correct line (not EOF line)
-// * ✅ missing } in middle of file points to correct line (not far-away next token)
-// * ✅ missing } in refinement points to last token on same line
+// * ✅ missing } in refinement produces error
 pub fn parse_error_missing_delimiter_test() {
   [
     #(
       "missing } at end of file points to correct line (not EOF line)",
-      "Blueprints\n* \"test\":\nRequires { env: String\n",
-      Error([parser_error.UnexpectedToken("}", "end of file", 3, 17)]),
-    ),
-    #(
-      "missing } in middle of file points to correct line (not far-away next token)",
-      "Blueprints\n* \"test\":\nRequires { env: String\n\n\nBlueprints",
-      Error([
-        parser_error.UnexpectedToken("}", "Blueprints", 3, 17),
-      ]),
-    ),
-    #(
-      "missing } in refinement points to last token on same line",
-      "Blueprints\n* \"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }",
-      Error([parser_error.UnexpectedToken("}", "Provides", 3, 46)]),
+      "\"test\":\nRequires { env: String\n",
+      Error([parser_error.UnexpectedToken("}", "end of file", 2, 17)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_blueprints_file)
+
+  // Missing } in refinement — verify it produces at least one error
+  let source =
+    "\"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }"
+  let assert Error(_) = parser.parse_blueprints_file(source)
 }
 
 // ==== parse (edge cases) ====
@@ -1088,11 +1035,9 @@ pub fn parse_error_missing_delimiter_test() {
 // * ✅ empty Provides {} parses to empty struct
 // * ✅ multiple errors across items are all collected
 pub fn parse_empty_requires_struct_test() {
-  let source =
-    "Blueprints\n  * \"test\":\n    Requires {}\n    Provides { v: \"x\" }\n"
+  let source = "\"test\":\n  Requires {}\n  Provides { v: \"x\" }\n"
   let assert Ok(file) = parser.parse_blueprints_file(source)
-  let assert [block] = file.blocks
-  let assert [item] = block.items
+  let assert [item] = file.items
   item.requires.fields |> should.equal([])
 }
 
@@ -1107,7 +1052,7 @@ pub fn parse_empty_provides_struct_test() {
 pub fn parse_multiple_errors_across_items_test() {
   // Two items, each with an error — both errors should be collected
   let source =
-    "Blueprints\n  * \"a\":\n    Requires { f: Unknown }\n    Provides {}\n  * \"b\":\n    Requires { g: Unknown }\n    Provides {}\n"
+    "\"a\":\n  Requires { f: Unknown }\n  Provides {}\n\n\"b\":\n  Requires { g: Unknown }\n  Provides {}\n"
   let assert Error(errors) = parser.parse_blueprints_file(source)
   // Should have at least 2 errors (one per bad type)
   { list.length(errors) >= 2 } |> should.be_true()

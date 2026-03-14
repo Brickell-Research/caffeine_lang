@@ -41,9 +41,7 @@ fn find_in_blueprints(
     list.flatten([
       list.map(file.type_aliases, fn(ta) { ta.name }),
       list.map(file.extendables, fn(e) { e.name }),
-      list.flat_map(file.blocks, fn(b) {
-        list.map(b.items, fn(item) { item.name })
-      }),
+      list.map(file.items, fn(item) { item.name }),
     ])
   case list.find(all_names, fn(n) { n == name }) {
     Ok(_) -> find_name_location(content, name)

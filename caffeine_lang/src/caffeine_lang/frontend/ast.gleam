@@ -23,14 +23,14 @@ pub type Parsed
 /// Marker type for validated AST.
 pub type Validated
 
-/// A blueprints file containing type aliases, extendables, and blueprint blocks.
-/// Type aliases must come before extendables, which must come before blocks.
+/// A blueprints file containing type aliases, extendables, and blueprint items.
+/// Type aliases must come before extendables, which must come before items.
 /// The phantom `phase` parameter tracks whether the file has been validated.
 pub type BlueprintsFile(phase) {
   BlueprintsFile(
     type_aliases: List(TypeAlias),
     extendables: List(Extendable),
-    blocks: List(BlueprintsBlock),
+    items: List(BlueprintItem),
     trailing_comments: List(Comment),
   )
 }
@@ -61,7 +61,7 @@ pub fn promote_blueprints_file(file: BlueprintsFile(a)) -> BlueprintsFile(b) {
   BlueprintsFile(
     type_aliases: file.type_aliases,
     extendables: file.extendables,
-    blocks: file.blocks,
+    items: file.items,
     trailing_comments: file.trailing_comments,
   )
 }
@@ -108,11 +108,6 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 // =============================================================================
 // BLUEPRINT NODES
 // =============================================================================
-
-/// A block of blueprints for SLO artifacts.
-pub type BlueprintsBlock {
-  BlueprintsBlock(items: List(BlueprintItem), leading_comments: List(Comment))
-}
 
 /// A single blueprint item with name, extends, requires, and provides.
 pub type BlueprintItem {

@@ -170,7 +170,7 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
     [] -> option.None
     [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
-      case string.starts_with(trimmed, "* \"") {
+      case is_item_line(line_text, trimmed) {
         True -> extract_item_name(trimmed)
         False -> find_enclosing_item_loop(rest)
       }
@@ -208,13 +208,26 @@ fn find_enclosing_blueprint_ref_loop(
   }
 }
 
-/// Extract the item name from a line like `* "my_slo" extends [...]:` or `* "my_slo":`.
+/// Extract the item name from an item line. Handles both blueprint items
+/// (`"name":`) and expect items (`* "name":`).
 fn extract_item_name(trimmed: String) -> option.Option(String) {
-  // Drop `* "` prefix
-  let after = string.drop_start(trimmed, 3)
-  case string.split_once(after, "\"") {
-    Ok(#(name, _)) -> option.Some(name)
-    Error(_) -> option.None
+  case string.starts_with(trimmed, "* \"") {
+    // Expect item: drop `* "` prefix (3 chars)
+    True -> {
+      let after = string.drop_start(trimmed, 3)
+      case string.split_once(after, "\"") {
+        Ok(#(name, _)) -> option.Some(name)
+        Error(_) -> option.None
+      }
+    }
+    // Blueprint item: drop `"` prefix (1 char)
+    False -> {
+      let after = string.drop_start(trimmed, 1)
+      case string.split_once(after, "\"") {
+        Ok(#(name, _)) -> option.Some(name)
+        Error(_) -> option.None
+      }
+    }
   }
 }
 
@@ -226,7 +239,7 @@ fn blueprint_field_context(
   line: Int,
 ) -> option.Option(List(#(String, String))) {
   let item =
-    list.flat_map(file.blocks, fn(b) { b.items })
+    file.items
     |> list.find(fn(i) { i.name == item_name })
   case item {
     Error(_) -> option.None
@@ -351,10 +364,21 @@ fn is_in_requires_loop(lines: List(String)) -> Bool {
       let trimmed = string.trim(line_text)
       use <- bool.guard(string.starts_with(trimmed, "Requires"), True)
       use <- bool.guard(string.starts_with(trimmed, "Provides"), False)
-      use <- bool.guard(string.starts_with(trimmed, "* \""), False)
+      use <- bool.guard(is_item_line(line_text, trimmed), False)
       is_in_requires_loop(rest)
     }
   }
+}
+
+/// Check whether a line is an item header. Matches both blueprint items
+/// (`"name":` at column 0) and expect items (`* "name":` indented).
+/// Uses the raw line to check indent so quoted field names at deeper
+/// indentation are not mistaken for items.
+fn is_item_line(raw_line: String, trimmed: String) -> Bool {
+  // Expect items: `* "name"` at any indent
+  string.starts_with(trimmed, "* \"")
+  // Blueprint items: `"name"` at column 0 (no indentation)
+  || string.starts_with(raw_line, "\"")
 }
 
 /// Get existing provides field names for expects items.

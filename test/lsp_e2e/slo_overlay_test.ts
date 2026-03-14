@@ -125,33 +125,30 @@ describe("categorizeStatus", () => {
 
 describe("extractVendors", () => {
   test("derives vendor from datadog filename stem", () => {
-    const text = `Blueprints
-  * "api-latency":
-    Requires { env: String }
-    Provides { threshold: 99.9% }`;
+    const text = `"api-latency":
+  Requires { env: String }
+  Provides { threshold: 99.9% }`;
     const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("api-latency")).toBe("datadog");
   });
 
   test("derives vendor from honeycomb filename stem", () => {
-    const text = `Blueprints
-  * "p99-latency":
-    Requires { env: String }
-    Provides { threshold: 99.5% }`;
+    const text = `"p99-latency":
+  Requires { env: String }
+  Provides { threshold: 99.5% }`;
     const vendors = extractVendors(text, "file:///workspace/blueprints/honeycomb.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("p99-latency")).toBe("honeycomb");
   });
 
   test("maps all blueprint items to the filename vendor", () => {
-    const text = `Blueprints
-  * "dd-slo":
-    Requires { env: String }
-    Provides { threshold: 99.9% }
-  * "dd-slo-2":
-    Requires { env: String }
-    Provides { threshold: 99.5% }`;
+    const text = `"dd-slo":
+  Requires { env: String }
+  Provides { threshold: 99.9% }
+"dd-slo-2":
+  Requires { env: String }
+  Provides { threshold: 99.5% }`;
     const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(2);
     expect(vendors.get("dd-slo")).toBe("datadog");
@@ -159,10 +156,9 @@ describe("extractVendors", () => {
   });
 
   test("returns empty map for non-vendor filenames", () => {
-    const text = `Blueprints
-  * "item":
-    Requires { env: String }
-    Provides { threshold: 99.9% }`;
+    const text = `"item":
+  Requires { env: String }
+  Provides { threshold: 99.9% }`;
     const vendors = extractVendors(text, "file:///workspace/blueprints/custom.caffeine");
     expect(vendors.size).toBe(0);
   });
@@ -176,9 +172,8 @@ describe("extractVendors", () => {
   });
 
   test("returns empty map when no URI provided", () => {
-    const text = `Blueprints
-  * "item":
-    Provides { threshold: 99.9% }`;
+    const text = `"item":
+  Provides { threshold: 99.9% }`;
     const vendors = extractVendors(text);
     expect(vendors.size).toBe(0);
   });
@@ -188,11 +183,10 @@ describe("extractVendors", () => {
   });
 
   test("skips commented items", () => {
-    const text = `Blueprints
-  # * "commented-out":
-  #   Provides { threshold: 99.9% }
-  * "real":
-    Provides { threshold: 99.5% }`;
+    const text = `# "commented-out":
+#   Provides { threshold: 99.9% }
+"real":
+  Provides { threshold: 99.5% }`;
     const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("real")).toBe("datadog");
@@ -219,10 +213,9 @@ describe("extractExpectationPositions", () => {
   });
 
   test("returns empty for blueprint files", () => {
-    const text = `Blueprints
-  * "item":
-    Requires { env: String }
-    Provides { threshold: 99.9% }`;
+    const text = `"item":
+  Requires { env: String }
+  Provides { threshold: 99.9% }`;
     const positions = extractExpectationPositions(text);
     expect(positions.length).toBe(0);
   });

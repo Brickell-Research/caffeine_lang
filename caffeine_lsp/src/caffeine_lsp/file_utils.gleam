@@ -17,8 +17,8 @@ pub fn is_defined_symbol(content: String, name: String) -> Bool {
   case string.starts_with(name, "_") {
     // Extendables and type aliases start with _ and appear as "_name ("
     True -> string.contains(content, name <> " (")
-    // Item names appear as * "name"
-    False -> string.contains(content, "* \"" <> name <> "\"")
+    // Blueprint items appear as "name": at column 0, expect items as * "name":
+    False -> string.contains(content, "\"" <> name <> "\"")
   }
 }
 

@@ -24,12 +24,9 @@ pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw))
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
-  file.blocks
-  |> list.flat_map(fn(block) {
-    block.items
-    |> list.map(fn(item) {
-      generate_blueprint_item(item, extendables, type_aliases)
-    })
+  file.items
+  |> list.map(fn(item) {
+    generate_blueprint_item(item, extendables, type_aliases)
   })
 }
 

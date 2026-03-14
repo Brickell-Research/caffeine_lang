@@ -159,7 +159,7 @@ fn lookup_blueprint_item(
   word: String,
   file: ast.BlueprintsFile(ast.Parsed),
 ) -> Option(String) {
-  let items = list.flat_map(file.blocks, fn(b) { b.items })
+  let items = file.items
   case list.find(items, fn(i) { i.name == word }) {
     Ok(item) -> {
       let extends_info = case item.extends {
@@ -249,10 +249,8 @@ fn lookup_blueprint_field(
   file: ast.BlueprintsFile(ast.Parsed),
 ) -> Option(String) {
   let all_fields =
-    list.flat_map(file.blocks, fn(b) {
-      list.flat_map(b.items, fn(item) {
-        list.flatten([item.requires.fields, item.provides.fields])
-      })
+    list.flat_map(file.items, fn(item) {
+      list.flatten([item.requires.fields, item.provides.fields])
     })
   lookup_field_in_list(word, all_fields)
 }

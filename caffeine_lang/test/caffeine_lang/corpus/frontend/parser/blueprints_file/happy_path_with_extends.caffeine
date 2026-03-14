@@ -1,4 +1,3 @@
-Blueprints
-  * "api" extends [_base]:
-    Requires { env: String }
-    Provides { value: "test" }
+"api" extends [_base]:
+  Requires { env: String }
+  Provides { value: "test" }

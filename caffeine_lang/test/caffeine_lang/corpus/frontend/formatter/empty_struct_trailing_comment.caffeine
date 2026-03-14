@@ -2,7 +2,6 @@ _base (Provides): {
   # Empty extendable with only a comment
 }
 
-Blueprints
-  * "test" extends [_base]:
-    Requires { env: String }
-    Provides { value: "x" }
+"test" extends [_base]:
+  Requires { env: String }
+  Provides { value: "x" }

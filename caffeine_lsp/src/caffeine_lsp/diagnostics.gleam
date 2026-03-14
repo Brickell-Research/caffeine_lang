@@ -204,12 +204,9 @@ fn extract_relation_targets(parsed: file_utils.ParsedFile) -> List(String) {
 fn extract_relation_targets_from_blueprints(
   file: BlueprintsFile(Parsed),
 ) -> List(String) {
-  file.blocks
-  |> list.flat_map(fn(block) {
-    block.items
-    |> list.flat_map(fn(item) {
-      extract_relation_targets_from_struct(item.provides)
-    })
+  file.items
+  |> list.flat_map(fn(item) {
+    extract_relation_targets_from_struct(item.provides)
   })
 }
 
@@ -311,9 +308,7 @@ fn get_unused_warnings_blueprints(
     get_unused_extendable_warnings(
       content,
       file.extendables,
-      list.flat_map(file.blocks, fn(b) {
-        list.flat_map(b.items, fn(i) { i.extends })
-      }),
+      list.flat_map(file.items, fn(i) { i.extends }),
     )
   let alias_warnings =
     get_unused_alias_warnings(
@@ -392,11 +387,9 @@ fn collect_alias_refs_from_blueprint(
 ) -> set.Set(String) {
   // Refs from Requires fields in blueprint items
   let field_refs =
-    list.flat_map(file.blocks, fn(b) {
-      list.flat_map(b.items, fn(i) {
-        list.flat_map(i.requires.fields, fn(f) {
-          collect_alias_refs_from_value(f.value)
-        })
+    list.flat_map(file.items, fn(i) {
+      list.flat_map(i.requires.fields, fn(f) {
+        collect_alias_refs_from_value(f.value)
       })
     })
   // Refs from Requires extendable fields
@@ -466,28 +459,26 @@ pub fn get_dead_blueprint_diagnostics(
   case file_utils.parse(content) {
     Ok(file_utils.Blueprints(file)) -> {
       let referenced = set.from_list(all_referenced_blueprints)
-      list.flat_map(file.blocks, fn(block) {
-        list.filter_map(block.items, fn(item) {
-          case set.contains(referenced, item.name) {
-            True -> Error(Nil)
-            False ->
-              Ok({
-                let #(line, col) =
-                  position_utils.find_name_position(content, item.name)
-                  |> result.unwrap(#(0, 0))
-                Diagnostic(
-                  line: line,
-                  column: col,
-                  end_column: col + string.length(item.name),
-                  severity: DsWarning,
-                  message: "Blueprint '"
-                    <> item.name
-                    <> "' has no expectations in the workspace",
-                  code: DeadBlueprint,
-                )
-              })
-          }
-        })
+      list.filter_map(file.items, fn(item) {
+        case set.contains(referenced, item.name) {
+          True -> Error(Nil)
+          False ->
+            Ok({
+              let #(line, col) =
+                position_utils.find_name_position(content, item.name)
+                |> result.unwrap(#(0, 0))
+              Diagnostic(
+                line: line,
+                column: col,
+                end_column: col + string.length(item.name),
+                severity: DsWarning,
+                message: "Blueprint '"
+                  <> item.name
+                  <> "' has no expectations in the workspace",
+                code: DeadBlueprint,
+              )
+            })
+        }
       })
     }
     _ -> []

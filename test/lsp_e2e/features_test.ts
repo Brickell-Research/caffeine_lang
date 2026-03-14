@@ -39,9 +39,9 @@ test("hover on type keyword returns markdown content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { env: String, status: Boolean }"
-    // "String" starts at character 20
-    const result = await client.hover(uri, 2, 20);
+    // Line 1: "  Requires { env: String, status: Boolean }"
+    // "String" starts at character 18
+    const result = await client.hover(uri, 1, 18);
 
     expect(result !== null).toBeTruthy();
     expect(result.contents).toBeTruthy();
@@ -67,9 +67,9 @@ test("hover on field name returns content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 4: '      indicators: { good: "query_good", total: "query_total" },'
-    // "indicators" starts at character 6 (in Provides block)
-    const result = await client.hover(uri, 4, 6);
+    // Line 3: '    indicators: { good: "query_good", total: "query_total" },'
+    // "indicators" starts at character 4 (in Provides block)
+    const result = await client.hover(uri, 3, 4);
 
     expect(result !== null).toBeTruthy();
     expect(result.contents).toBeTruthy();
@@ -95,8 +95,8 @@ test("hover on whitespace returns null", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2, character 0 is leading whitespace
-    const result = await client.hover(uri, 2, 0);
+    // Line 1, character 0 is leading whitespace
+    const result = await client.hover(uri, 1, 0);
 
     expect(result).toBeNull();
   } finally {
@@ -119,9 +119,9 @@ test("completion in Requires block returns type keywords", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 2: "    Requires { env: String, status: Boolean }"
-    // Character 19 is the space after ":", should trigger type completions
-    const items = await client.completion(uri, 2, 19);
+    // Line 1: "  Requires { env: String, status: Boolean }"
+    // Character 17 is the space after ":", should trigger type completions
+    const items = await client.completion(uri, 1, 17);
 
     expect(Array.isArray(items)).toBeTruthy();
     expect(items.length > 0).toBeTruthy();

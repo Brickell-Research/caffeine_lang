@@ -60,11 +60,8 @@ fn find_in_blueprints(
   lines: List(String),
   name: String,
 ) -> List(TypeHierarchyItem) {
-  file.blocks
-  |> list.flat_map(fn(block) {
-    block.items
-    |> list.filter_map(fn(item) { match_blueprint_item(item, lines, name) })
-  })
+  file.items
+  |> list.filter_map(fn(item) { match_blueprint_item(item, lines, name) })
 }
 
 /// Return a hierarchy item if this blueprint item matches the name.

@@ -1,4 +1,3 @@
-Blueprints
-  * "api_availability":
-    Requires { env: String }
-    Provides { vendor: "datadog" }
+"api_availability":
+  Requires { env: String }
+  Provides { vendor: "datadog" }

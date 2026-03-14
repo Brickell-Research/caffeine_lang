@@ -1,6 +1,5 @@
 _rec (Type): { a: _rec }
 
-Blueprints
-  * "api":
-    Requires { data: _rec }
-    Provides { value: "x" }
+"api":
+  Requires { data: _rec }
+  Provides { value: "x" }
