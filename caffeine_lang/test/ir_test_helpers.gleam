@@ -2,7 +2,7 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
+import caffeine_lang/linker/artifacts.{Hard, SLO, Soft}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -40,7 +40,7 @@ pub fn make_slo_ir(
   )
 }
 
-/// Creates an IR with SLO and DependencyRelations artifacts.
+/// Creates an IR with SLO and dependency relations.
 pub fn make_ir_with_deps(
   org: String,
   team: String,
@@ -63,20 +63,25 @@ pub fn make_ir_with_deps(
     ),
     make_relations_value(hard_deps, soft_deps),
   ]
+  let depends_on =
+    option.Some(
+      dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
+    )
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: [SLO, DependencyRelations],
+    artifact_refs: [SLO],
     values: values,
-    artifact_data: ir.slo_with_dependency(
-      slo: make_test_slo_fields(threshold, dict.new()),
-      dependency: make_test_dependency_fields(hard_deps, soft_deps),
-    ),
+    artifact_data: ir.slo_only(make_test_slo_fields_with_deps(
+      threshold,
+      dict.new(),
+      depends_on,
+    )),
     vendor: option.Some(vendor.Datadog),
   )
 }
 
-/// Creates an IR with DependencyRelations only (no SLO artifact).
+/// Creates an SLO IR with dependency relations and a default threshold.
 pub fn make_deps_only_ir(
   org: String,
   team: String,
@@ -85,18 +90,23 @@ pub fn make_deps_only_ir(
   hard_deps hard_deps: List(String),
   soft_deps soft_deps: List(String),
 ) {
+  let depends_on =
+    option.Some(
+      dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
+    )
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
-    artifact_refs: [DependencyRelations],
+    artifact_refs: [SLO],
     values: [
       make_relations_value(hard_deps, soft_deps),
     ],
-    artifact_data: ir.dependency_only(make_test_dependency_fields(
-      hard_deps,
-      soft_deps,
+    artifact_data: ir.slo_only(make_test_slo_fields_with_deps(
+      99.9,
+      dict.new(),
+      depends_on,
     )),
-    vendor: option.None,
+    vendor: option.Some(vendor.Datadog),
   )
 }
 
@@ -212,12 +222,13 @@ pub fn make_vendor_slo_ir(
       evaluation: option.Some(evaluation),
       tags: [],
       runbook: option.None,
+      depends_on: option.None,
     )),
     vendor: option.Some(vendor_enum),
   )
 }
 
-/// Builds default SloFields for tests.
+/// Builds default SloFields for tests with no dependencies.
 fn make_test_slo_fields(
   threshold: Float,
   indicators: dict.Dict(String, String),
@@ -229,16 +240,25 @@ fn make_test_slo_fields(
     evaluation: option.None,
     tags: [],
     runbook: option.None,
+    depends_on: option.None,
   )
 }
 
-/// Builds DependencyFields for tests.
-fn make_test_dependency_fields(
-  hard_deps: List(String),
-  soft_deps: List(String),
-) -> ir.DependencyFields {
-  ir.DependencyFields(
-    relations: dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
+/// Builds SloFields for tests with dependency relations.
+fn make_test_slo_fields_with_deps(
+  threshold: Float,
+  indicators: dict.Dict(String, String),
+  depends_on: option.Option(
+    dict.Dict(artifacts.DependencyRelationType, List(String)),
+  ),
+) -> ir.SloFields {
+  ir.SloFields(
+    threshold: threshold,
+    indicators: indicators,
+    window_in_days: 30,
+    evaluation: option.None,
     tags: [],
+    runbook: option.None,
+    depends_on: depends_on,
   )
 }

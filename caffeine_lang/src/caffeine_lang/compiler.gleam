@@ -9,7 +9,6 @@ import caffeine_lang/codegen/honeycomb
 import caffeine_lang/codegen/newrelic
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/artifacts
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{
@@ -234,7 +233,10 @@ fn run_code_generation(
   let has_deps =
     resolved_irs
     |> list.any(fn(ir) {
-      list.contains(ir.artifact_refs, artifacts.DependencyRelations)
+      case ir.get_slo_fields(ir.artifact_data) {
+        option.Some(slo) -> option.is_some(slo.depends_on)
+        option.None -> False
+      }
     })
 
   let graph = case has_deps {

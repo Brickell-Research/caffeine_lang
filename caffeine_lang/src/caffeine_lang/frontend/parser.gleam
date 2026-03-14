@@ -344,59 +344,21 @@ fn parse_artifacts(
   state: ParserState,
 ) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
   case peek(state) {
-    token.LiteralString(name) -> {
-      use ref <- result.try(resolve_artifact_ref(name, state))
+    token.LiteralString("SLO") -> {
       let state = advance(state)
-      parse_artifacts_loop(state, [ref])
+      Ok(#([ast.ParsedSLO], state))
     }
+    token.LiteralString(name) ->
+      Error(parser_error.UnexpectedToken(
+        "\"SLO\"",
+        "\"" <> name <> "\"",
+        state.line,
+        state.column,
+      ))
     tok ->
       Error(parser_error.UnexpectedToken(
         "artifact name",
         token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
-fn parse_artifacts_loop(
-  state: ParserState,
-  acc: List(ParsedArtifactRef),
-) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolPlus -> {
-      let state = advance(state)
-      case peek(state) {
-        token.LiteralString(name) -> {
-          use ref <- result.try(resolve_artifact_ref(name, state))
-          let state = advance(state)
-          parse_artifacts_loop(state, [ref, ..acc])
-        }
-        tok ->
-          Error(parser_error.UnexpectedToken(
-            "artifact name",
-            token.to_string(tok),
-            state.line,
-            state.column,
-          ))
-      }
-    }
-    _ -> Ok(#(list.reverse(acc), state))
-  }
-}
-
-/// Resolves an artifact name string to a ParsedArtifactRef.
-fn resolve_artifact_ref(
-  name: String,
-  state: ParserState,
-) -> Result(ParsedArtifactRef, ParserError) {
-  case name {
-    "SLO" -> Ok(ast.ParsedSLO)
-    "DependencyRelations" -> Ok(ast.ParsedDependencyRelations)
-    _ ->
-      Error(parser_error.UnexpectedToken(
-        "\"SLO\" or \"DependencyRelations\"",
-        "\"" <> name <> "\"",
         state.line,
         state.column,
       ))

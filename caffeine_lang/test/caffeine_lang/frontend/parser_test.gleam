@@ -195,7 +195,7 @@ pub fn parse_blueprints_file_test() {
             ),
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: [ast.ParsedDependencyRelations],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -239,7 +239,7 @@ pub fn parse_blueprints_file_test() {
           blocks: [
             ast.BlueprintsBlock(
               leading_comments: [],
-              artifacts: [ast.ParsedSLO, ast.ParsedDependencyRelations],
+              artifacts: [ast.ParsedSLO],
               items: [
                 ast.BlueprintItem(
                   leading_comments: [],
@@ -1129,7 +1129,7 @@ pub fn parse_error_missing_delimiter_test() {
       Error([
         parser_error.UnexpectedToken("}", "Blueprints", 3, 17),
         parser_error.UnexpectedToken(
-          "\"SLO\" or \"DependencyRelations\"",
+          "\"SLO\"",
           "\"Other\"",
           6,
           16,

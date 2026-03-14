@@ -280,13 +280,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency reference (target does not exist)",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints for \"SLO\"
   * \"slo_with_deps\":
     Requires {}
     Provides {
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"nonexistent.org.team.slo\"] }
+      depends_on: { hard: [\"nonexistent.org.team.slo\"] }
     }
 ",
         "Expectations for \"slo_with_deps\"
@@ -305,13 +305,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - invalid dependency format (not 4 parts)",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints for \"SLO\"
   * \"slo_with_deps\":
     Requires {}
     Provides {
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"invalid_format\"] }
+      depends_on: { hard: [\"invalid_format\"] }
     }
 ",
         "Expectations for \"slo_with_deps\"
@@ -330,13 +330,13 @@ pub fn compile_from_strings_test() {
     #(
       "sad path - self-reference in dependency",
       #(
-        "Blueprints for \"SLO\" + \"DependencyRelations\"
+        "Blueprints for \"SLO\"
   * \"slo_with_deps\":
     Requires {}
     Provides {
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-      relations: { hard: [\"myorg.myteam.myservice.my_slo\"] }
+      depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
     }
 ",
         "Expectations for \"slo_with_deps\"
@@ -887,13 +887,13 @@ pub fn compile_from_strings_dependency_graph_none_test() {
 pub fn compile_from_strings_dependency_graph_some_test() {
   let assert Ok(output) =
     compiler.compile_from_strings(
-      "Blueprints for \"SLO\" + \"DependencyRelations\"
+      "Blueprints for \"SLO\"
   * \"tracked\":
     Requires {}
     Provides {
       evaluation: \"good / total\",
       indicators: { good: \"count:ok\", total: \"count:all\" },
-      relations: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
+      depends_on: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
     }
 
 Blueprints for \"SLO\"

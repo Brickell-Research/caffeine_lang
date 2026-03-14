@@ -1,6 +1,5 @@
 import caffeine_lang/linker/artifacts.{
-  type ArtifactType, type DependencyRelationType, DependencyRelations, Hard, SLO,
-  Soft,
+  type ArtifactType, type DependencyRelationType, Hard, SLO, Soft,
 }
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
@@ -10,13 +9,13 @@ import gleeunit/should
 import test_helpers
 
 // ==== standard_library ====
-// * ✅ returns two artifacts (SLO and DependencyRelations)
-// * ✅ artifact types match expected
+// * ✅ returns one artifact (SLO)
+// * ✅ artifact type matches expected
 pub fn standard_library_test() {
   let result = stdlib_artifacts.standard_library()
 
   [
-    #("returns two artifacts", list.length(result), 2),
+    #("returns one artifact", list.length(result), 1),
   ]
   |> test_helpers.table_test_1(fn(expected) { expected })
 
@@ -26,34 +25,25 @@ pub fn standard_library_test() {
 
   [
     #("contains SLO artifact", list.contains(types, "SLO"), True),
-    #(
-      "contains DependencyRelations artifact",
-      list.contains(types, "DependencyRelations"),
-      True,
-    ),
   ]
   |> test_helpers.table_test_1(fn(val) { val })
 }
 
 // ==== artifact_type_to_string ====
-// * ✅ SLO → "SLO"
-// * ✅ DependencyRelations → "DependencyRelations"
+// * ✅ SLO -> "SLO"
 pub fn artifact_type_to_string_test() {
   [
     #("SLO", SLO, "SLO"),
-    #("DependencyRelations", DependencyRelations, "DependencyRelations"),
   ]
   |> test_helpers.table_test_1(artifacts.artifact_type_to_string)
 }
 
 // ==== parse_artifact_type ====
-// * ✅ "SLO" → Ok(SLO)
-// * ✅ "DependencyRelations" → Ok(DependencyRelations)
-// * ❌ unknown → Error(Nil)
+// * ✅ "SLO" -> Ok(SLO)
+// * ❌ unknown -> Error(Nil)
 pub fn parse_artifact_type_test() {
   [
     #("SLO", "SLO", Ok(SLO)),
-    #("DependencyRelations", "DependencyRelations", Ok(DependencyRelations)),
     #("unknown", "Unknown", Error(Nil)),
     #("empty", "", Error(Nil)),
   ]
@@ -61,8 +51,8 @@ pub fn parse_artifact_type_test() {
 }
 
 // ==== relation_type_to_string ====
-// * ✅ Hard → "hard"
-// * ✅ Soft → "soft"
+// * ✅ Hard -> "hard"
+// * ✅ Soft -> "soft"
 pub fn relation_type_to_string_test() {
   [
     #("Hard", Hard, "hard"),
@@ -72,9 +62,9 @@ pub fn relation_type_to_string_test() {
 }
 
 // ==== parse_relation_type ====
-// * ✅ "hard" → Ok(Hard)
-// * ✅ "soft" → Ok(Soft)
-// * ❌ unknown → Error(Nil)
+// * ✅ "hard" -> Ok(Hard)
+// * ✅ "soft" -> Ok(Soft)
+// * ❌ unknown -> Error(Nil)
 pub fn parse_relation_type_test() {
   [
     #("hard", "hard", Ok(Hard)),
@@ -89,7 +79,7 @@ pub fn parse_relation_type_test() {
 // * ✅ artifact_type round-trips
 // * ✅ relation_type round-trips
 pub fn artifact_type_round_trip_test() {
-  [SLO, DependencyRelations]
+  [SLO]
   |> list.each(fn(t: ArtifactType) {
     artifacts.artifact_type_to_string(t)
     |> artifacts.parse_artifact_type
@@ -108,7 +98,7 @@ pub fn relation_type_round_trip_test() {
 
 // ==== params_to_types ====
 // * ✅ extracts types discarding descriptions
-// * ✅ empty dict → empty dict
+// * ✅ empty dict -> empty dict
 pub fn params_to_types_test() {
   let params =
     dict.from_list([

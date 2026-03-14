@@ -7,7 +7,7 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -67,6 +67,7 @@ pub fn resolve_intermediate_representations_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -115,6 +116,7 @@ pub fn resolve_intermediate_representations_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -164,6 +166,7 @@ pub fn resolve_intermediate_representations_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -214,6 +217,7 @@ pub fn resolve_intermediate_representations_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -298,6 +302,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       ),
@@ -360,6 +365,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       )),
@@ -425,6 +431,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       ),
@@ -488,6 +495,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.Some("time_slice(query > 2500000000 per 5m)"),
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       )),
@@ -548,6 +556,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       ),
@@ -604,6 +613,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       )),
@@ -683,6 +693,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       ),
@@ -758,6 +769,7 @@ pub fn resolve_indicators_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Datadog),
       )),
@@ -816,6 +828,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Honeycomb),
       ),
@@ -856,6 +869,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Honeycomb),
       )),
@@ -919,6 +933,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Dynatrace),
       ),
@@ -964,6 +979,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.Dynatrace),
       )),
@@ -1018,6 +1034,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Datadog),
     )
@@ -1060,6 +1077,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Honeycomb),
     )
@@ -1113,6 +1131,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -1153,6 +1172,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Honeycomb),
         ),
@@ -1200,6 +1220,7 @@ pub fn resolve_indicators_no_vendor_error_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.None,
     )
@@ -1263,6 +1284,7 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.NewRelic),
       ),
@@ -1312,74 +1334,13 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
           evaluation: option.None,
           tags: [],
           runbook: option.None,
+          depends_on: option.None,
         )),
         vendor: option.Some(vendor.NewRelic),
       )),
     ),
   ]
   |> test_helpers.table_test_1(semantic_analyzer.resolve_indicators)
-}
-
-// ==== resolve_intermediate_representations ====
-// * ✅ non-SLO artifact skips indicator resolution via promote
-pub fn resolve_intermediate_representations_non_slo_skip_test() {
-  let non_slo_ir =
-    ir.IntermediateRepresentation(
-      metadata: ir.IntermediateRepresentationMetaData(
-        friendly_label: identifiers.ExpectationLabel("Deps Only"),
-        org_name: identifiers.OrgName("test"),
-        service_name: identifiers.ServiceName("service"),
-        blueprint_name: identifiers.BlueprintName("test_blueprint"),
-        team_name: identifiers.TeamName("test_team"),
-        misc: dict.new(),
-      ),
-      unique_identifier: "deps_only",
-      artifact_refs: [DependencyRelations],
-      values: [],
-      artifact_data: ir.slo_only(ir.SloFields(
-        threshold: 0.0,
-        indicators: dict.new(),
-        window_in_days: 30,
-        evaluation: option.None,
-        tags: [],
-        runbook: option.None,
-      )),
-      vendor: option.None,
-    )
-
-  [
-    #(
-      "non-SLO artifact skips indicator resolution",
-      [non_slo_ir],
-      Ok([
-        ir.IntermediateRepresentation(
-          metadata: ir.IntermediateRepresentationMetaData(
-            friendly_label: identifiers.ExpectationLabel("Deps Only"),
-            org_name: identifiers.OrgName("test"),
-            service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
-            team_name: identifiers.TeamName("test_team"),
-            misc: dict.new(),
-          ),
-          unique_identifier: "deps_only",
-          artifact_refs: [DependencyRelations],
-          values: [],
-          artifact_data: ir.slo_only(ir.SloFields(
-            threshold: 0.0,
-            indicators: dict.new(),
-            window_in_days: 30,
-            evaluation: option.None,
-            tags: [],
-            runbook: option.None,
-          )),
-          vendor: option.None,
-        ),
-      ]),
-    ),
-  ]
-  |> test_helpers.table_test_1(
-    semantic_analyzer.resolve_intermediate_representations,
-  )
 }
 
 // ==== resolve_intermediate_representations ====
@@ -1405,6 +1366,7 @@ pub fn resolve_intermediate_representations_no_vendor_error_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.None,
     )

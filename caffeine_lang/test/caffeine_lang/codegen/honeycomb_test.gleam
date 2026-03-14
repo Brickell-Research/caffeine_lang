@@ -227,6 +227,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Honeycomb),
     )
@@ -341,6 +342,7 @@ pub fn generate_terraform_with_tags_test() {
         evaluation: option.Some("sli"),
         tags: [#("env", "production"), #("tier", "1")],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Honeycomb),
     )

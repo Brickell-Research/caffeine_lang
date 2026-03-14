@@ -1,7 +1,7 @@
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
-import caffeine_lang/linker/artifacts.{DependencyRelations, SLO}
+import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint, type Raw}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/types.{RecordType}
@@ -74,7 +74,7 @@ pub fn lower_blueprints_multi_artifact_test() {
 
   let assert Ok(bp) = list.first(blueprints)
   bp.name |> should.equal("tracked_slo")
-  bp.artifact_refs |> should.equal([SLO, DependencyRelations])
+  bp.artifact_refs |> should.equal([SLO])
   // Should have params from both requires and artifacts
   { dict.size(bp.params) > 0 } |> should.be_true
 }

@@ -1,5 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO}
+import caffeine_lang/linker/artifacts.{Hard}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, ir_to_identifier,
 }
@@ -8,11 +8,19 @@ import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/option
+import gleam/option.{type Option}
 import gleam/order
 import gleam/result
 import gleam/set.{type Set}
 import gleam/string
+
+/// Extracts depends_on from an IR's SloFields, if present.
+fn get_depends_on(
+  ir: IntermediateRepresentation(phase),
+) -> Option(Dict(artifacts.DependencyRelationType, List(String))) {
+  ir.get_slo_fields(ir.artifact_data)
+  |> option.then(fn(slo) { slo.depends_on })
+}
 
 /// Validates that all dependency relations reference existing expectations.
 ///
@@ -31,7 +39,7 @@ pub fn validate_dependency_relations(
   // Build an index of all valid expectation paths
   let expectation_index = build_expectation_index(irs)
 
-  // Validate each IR that has DependencyRelations (accumulate all errors)
+  // Validate each IR that has depends_on (accumulate all errors)
   use _ <- result.try(
     irs
     |> list.map(fn(ir) { validate_ir_dependencies(ir, expectation_index) })
@@ -45,10 +53,7 @@ pub fn validate_dependency_relations(
   // Validate hard dependency thresholds (accumulate all errors)
   use _ <- result.try(
     irs
-    |> list.filter(fn(ir) {
-      list.contains(ir.artifact_refs, DependencyRelations)
-      && list.contains(ir.artifact_refs, SLO)
-    })
+    |> list.filter(fn(ir) { option.is_some(get_depends_on(ir)) })
     |> list.map(fn(ir) {
       validate_single_ir_hard_thresholds(ir, expectation_index)
     })
@@ -78,22 +83,14 @@ fn validate_ir_dependencies(
   ir: IntermediateRepresentation(phase),
   expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
-  // Skip IRs that don't have DependencyRelations
-  use <- bool.guard(
-    when: !list.contains(ir.artifact_refs, DependencyRelations),
-    return: Ok(Nil),
-  )
+  // Skip IRs that don't have depends_on
+  let depends_on = get_depends_on(ir)
+  use <- bool.guard(when: option.is_none(depends_on), return: Ok(Nil))
 
   let self_path = ir_to_identifier(ir)
 
-  // Extract the relations from structured artifact data.
-  use dep <- result.try(
-    ir.get_dependency_fields(ir.artifact_data)
-    |> option.to_result(errors.semantic_analysis_dependency_validation_error(
-      msg: self_path <> " - missing dependency artifact data",
-    )),
-  )
-  let relations = dep.relations
+  // Extract the relations from SloFields.depends_on.
+  let assert option.Some(relations) = depends_on
 
   // Check for duplicates within each relation type (hard and soft independently)
   use _ <- result.try(check_for_duplicates_per_relation(relations, self_path))
@@ -216,17 +213,16 @@ fn dependency_ref_error(
 
 // ==== Circular dependency detection ====
 
-/// Builds a directed adjacency list from all IRs with DependencyRelations.
+/// Builds a directed adjacency list from all IRs with depends_on.
 fn build_adjacency_list(
   irs: List(IntermediateRepresentation(phase)),
 ) -> Dict(String, List(String)) {
   irs
-  |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.filter_map(fn(ir) {
-    case ir.get_dependency_fields(ir.artifact_data) {
-      option.Some(dep) -> {
+    case get_depends_on(ir) {
+      option.Some(relations) -> {
         let path = ir_to_identifier(ir)
-        let targets = get_all_dependency_targets(dep.relations)
+        let targets = get_all_dependency_targets(relations)
         Ok(#(path, targets))
       }
       option.None -> Error(Nil)
@@ -346,20 +342,17 @@ fn validate_single_ir_hard_thresholds(
   expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   let self_path = ir_to_identifier(ir)
-  use #(slo, dep) <- result.try(
-    case
-      ir.get_slo_fields(ir.artifact_data),
-      ir.get_dependency_fields(ir.artifact_data)
-    {
-      option.Some(slo), option.Some(dep) -> Ok(#(slo, dep))
-      _, _ ->
-        Error(errors.semantic_analysis_dependency_validation_error(
-          msg: self_path <> " - missing SLO or dependency artifact data",
-        ))
-    },
+  use slo <- result.try(
+    ir.get_slo_fields(ir.artifact_data)
+    |> option.to_result(errors.semantic_analysis_dependency_validation_error(
+      msg: self_path <> " - missing SLO artifact data",
+    )),
   )
   let source_threshold = slo.threshold
-  let hard_targets = dict.get(dep.relations, Hard) |> result.unwrap([])
+  let hard_targets = case slo.depends_on {
+    option.Some(relations) -> dict.get(relations, Hard) |> result.unwrap([])
+    option.None -> []
+  }
 
   let dep_thresholds =
     collect_hard_dep_thresholds(hard_targets, expectation_index)
@@ -396,10 +389,8 @@ fn validate_single_ir_hard_thresholds(
   }
 }
 
-/// Collects thresholds from hard dependency targets that have SLO artifacts.
-/// Skips targets that don't exist in the index or don't have SLO artifacts.
-/// Note: targets with SLO in artifact_refs but missing SLO data are skipped
-/// because the linker guarantees consistency between artifact_refs and artifact_data.
+/// Collects thresholds from hard dependency targets that have SLO fields.
+/// Skips targets that don't exist in the index or don't have SLO data.
 fn collect_hard_dep_thresholds(
   targets: List(String),
   expectation_index: Dict(String, IntermediateRepresentation(phase)),
@@ -409,10 +400,6 @@ fn collect_hard_dep_thresholds(
     case dict.get(expectation_index, target_path) {
       Error(Nil) -> Error(Nil)
       Ok(target_ir) -> {
-        use <- bool.guard(
-          when: !list.contains(target_ir.artifact_refs, SLO),
-          return: Error(Nil),
-        )
         case ir.get_slo_fields(target_ir.artifact_data) {
           option.None -> Error(Nil)
           option.Some(slo) -> Ok(#(target_path, slo.threshold))

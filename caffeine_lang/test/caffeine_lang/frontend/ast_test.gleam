@@ -66,15 +66,9 @@ pub fn literal_to_string_test() {
 
 // ==== parsed_artifact_ref_to_string ====
 // * ✅ ParsedSLO -> "SLO"
-// * ✅ ParsedDependencyRelations -> "DependencyRelations"
 pub fn parsed_artifact_ref_to_string_test() {
   [
     #("ParsedSLO -> SLO", ast.ParsedSLO, "SLO"),
-    #(
-      "ParsedDependencyRelations -> DependencyRelations",
-      ast.ParsedDependencyRelations,
-      "DependencyRelations",
-    ),
   ]
   |> test_helpers.table_test_1(ast.parsed_artifact_ref_to_string)
 }

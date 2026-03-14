@@ -125,21 +125,21 @@ pub fn extract_threshold_indexed(index: dict.Dict(String, ValueTuple)) -> Float 
 /// Extract dependency relations as a Dict of relation type to target list.
 /// String keys are parsed into DependencyRelationType; unknown keys are skipped.
 @internal
-pub fn extract_relations(
+pub fn extract_depends_on(
   values: List(ValueTuple),
 ) -> dict.Dict(DependencyRelationType, List(String)) {
   values
-  |> list.find(fn(vt) { vt.label == "relations" })
+  |> list.find(fn(vt) { vt.label == "depends_on" })
   |> extract_relations_from_value_tuple
 }
 
 /// Extract dependency relations from an indexed Dict of ValueTuples.
 @internal
-pub fn extract_relations_indexed(
+pub fn extract_depends_on_indexed(
   index: dict.Dict(String, ValueTuple),
 ) -> dict.Dict(DependencyRelationType, List(String)) {
   index
-  |> dict.get("relations")
+  |> dict.get("depends_on")
   |> extract_relations_from_value_tuple
 }
 

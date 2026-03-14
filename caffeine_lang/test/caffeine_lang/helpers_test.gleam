@@ -107,14 +107,6 @@ pub fn extract_threshold_test() {
   |> should.equal(95.0)
 }
 
-// ==== extract_relations ====
-// * ✅ present relations
-// * ✅ missing returns empty dict
-pub fn extract_relations_test() {
-  helpers.extract_relations([])
-  |> should.equal(dict.new())
-}
-
 // ==== extract_window_in_days ====
 // * ✅ present window
 // * ✅ missing returns default 30

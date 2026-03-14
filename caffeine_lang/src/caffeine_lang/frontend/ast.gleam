@@ -112,7 +112,6 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 /// A parsed artifact reference — the closed set of valid artifact types.
 pub type ParsedArtifactRef {
   ParsedSLO
-  ParsedDependencyRelations
 }
 
 /// Converts a ParsedArtifactRef to its canonical string representation.
@@ -120,7 +119,6 @@ pub type ParsedArtifactRef {
 pub fn parsed_artifact_ref_to_string(ref: ParsedArtifactRef) -> String {
   case ref {
     ParsedSLO -> "SLO"
-    ParsedDependencyRelations -> "DependencyRelations"
   }
 }
 

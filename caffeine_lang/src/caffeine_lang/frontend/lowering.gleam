@@ -92,7 +92,6 @@ fn generate_blueprint_item(
 fn lower_artifact_ref(ref: ParsedArtifactRef) -> ArtifactType {
   case ref {
     ast.ParsedSLO -> artifacts.SLO
-    ast.ParsedDependencyRelations -> artifacts.DependencyRelations
   }
 }
 

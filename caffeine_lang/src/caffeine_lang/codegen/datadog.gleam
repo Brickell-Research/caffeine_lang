@@ -271,9 +271,9 @@ pub fn ir_to_terraform_resource(
     }),
   )
 
-  // Build dependency relation tags if artifact refs include DependencyRelations.
-  let dependency_tags = case ir.get_dependency_fields(ir.artifact_data) {
-    option.Some(dep) -> build_dependency_tags(dep.relations)
+  // Build dependency relation tags from SloFields.depends_on.
+  let dependency_tags = case slo.depends_on {
+    option.Some(relations) -> build_dependency_tags(relations)
     option.None -> []
   }
 

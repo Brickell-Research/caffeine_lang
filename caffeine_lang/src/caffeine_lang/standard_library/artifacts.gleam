@@ -3,9 +3,7 @@
 /// hardcoded string. That's way more offensive. We will work towards a better state, just know that even
 /// in its existing offensive state right now (02/01/2026), it's much better than it was before.
 /// - Rob
-import caffeine_lang/linker/artifacts.{
-  type Artifact, Artifact, DependencyRelations, ParamInfo, SLO,
-}
+import caffeine_lang/linker/artifacts.{type Artifact, Artifact, ParamInfo, SLO}
 import caffeine_lang/types.{
   CollectionType, Defaulted, Dict, InclusiveRange, Integer, List as ListType,
   ModifierType, NumericType, Optional, Percentage, PrimitiveType, RecordType,
@@ -15,7 +13,7 @@ import gleam/dict
 
 /// Returns the hardcoded standard library artifacts.
 pub fn standard_library() -> List(Artifact) {
-  [slo_artifact(), dependency_relations_artifact()]
+  [slo_artifact()]
 }
 
 fn slo_artifact() -> Artifact {
@@ -82,25 +80,26 @@ fn slo_artifact() -> Artifact {
           description: "An optional runbook URL surfaced via the SLO description",
         ),
       ),
-    ]),
-  )
-}
-
-fn dependency_relations_artifact() -> Artifact {
-  Artifact(
-    type_: DependencyRelations,
-    description: "Declares soft and hard dependencies between services for dependency mapping.",
-    params: dict.from_list([
       #(
-        "relations",
+        "depends_on",
         ParamInfo(
-          type_: RecordType(
-            dict.from_list([
-              #("hard", CollectionType(ListType(PrimitiveType(StringType)))),
-              #("soft", CollectionType(ListType(PrimitiveType(StringType)))),
-            ]),
+          type_: ModifierType(
+            Optional(
+              RecordType(
+                dict.from_list([
+                  #(
+                    "hard",
+                    CollectionType(ListType(PrimitiveType(StringType))),
+                  ),
+                  #(
+                    "soft",
+                    CollectionType(ListType(PrimitiveType(StringType))),
+                  ),
+                ]),
+              ),
+            ),
           ),
-          description: "Map of dependency type to list of service names",
+          description: "Optional soft and hard dependency declarations for dependency mapping",
         ),
       ),
     ]),

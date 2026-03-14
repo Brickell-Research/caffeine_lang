@@ -366,6 +366,7 @@ pub fn ir_to_terraform_resource_missing_evaluation_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.NewRelic),
     )

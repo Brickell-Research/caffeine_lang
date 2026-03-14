@@ -2,7 +2,7 @@ import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{type Artifact, DependencyRelations, SLO}
+import caffeine_lang/linker/artifacts.{type Artifact, SLO}
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
@@ -239,33 +239,16 @@ fn resolve_values_for_tag(
 }
 
 /// Build structured artifact data from artifact refs and an indexed Dict of ValueTuples.
+/// Since artifact_refs always contains SLO, this builds SLO fields directly.
 fn build_artifact_data(
-  artifact_refs: List(artifacts.ArtifactType),
+  _artifact_refs: List(artifacts.ArtifactType),
   index: dict.Dict(String, helpers.ValueTuple),
 ) -> ir.ArtifactData {
-  let fields =
-    artifact_refs
-    |> list.map(fn(ref) {
-      case ref {
-        SLO -> #(SLO, ir.SloArtifactFields(build_slo_fields(index)))
-        DependencyRelations -> #(
-          DependencyRelations,
-          ir.DependencyArtifactFields(build_dependency_fields(index)),
-        )
-      }
-    })
-    |> dict.from_list
-
-  // Fallback: default to SLO if no artifacts matched.
-  let fields = case dict.is_empty(fields) {
-    True ->
-      dict.from_list([
-        #(SLO, ir.SloArtifactFields(build_slo_fields(index))),
-      ])
-    False -> fields
-  }
-
-  ir.ArtifactData(fields:)
+  ir.ArtifactData(
+    fields: dict.from_list([
+      #(SLO, ir.SloArtifactFields(build_slo_fields(index))),
+    ]),
+  )
 }
 
 /// Extract SLO-specific fields from an indexed Dict of ValueTuples.
@@ -288,6 +271,11 @@ fn build_slo_fields(
       }
     })
     |> result.unwrap(option.None)
+  let relations = helpers.extract_depends_on_indexed(index)
+  let depends_on = case dict.is_empty(relations) {
+    True -> option.None
+    False -> option.Some(relations)
+  }
 
   ir.SloFields(
     threshold: threshold,
@@ -296,15 +284,6 @@ fn build_slo_fields(
     evaluation: evaluation,
     tags: tags,
     runbook: runbook,
-  )
-}
-
-/// Extract dependency-specific fields from an indexed Dict of ValueTuples.
-fn build_dependency_fields(
-  index: dict.Dict(String, helpers.ValueTuple),
-) -> ir.DependencyFields {
-  ir.DependencyFields(
-    relations: helpers.extract_relations_indexed(index),
-    tags: helpers.extract_tags_indexed(index),
+    depends_on: depends_on,
   )
 }

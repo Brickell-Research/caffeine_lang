@@ -18,7 +18,6 @@ pub type Artifact {
 /// Types of supported artifacts.
 pub type ArtifactType {
   SLO
-  DependencyRelations
 }
 
 /// Extracts just the types from artifact params, discarding descriptions.
@@ -36,7 +35,6 @@ pub fn params_to_types(
 pub fn artifact_type_to_string(type_: ArtifactType) -> String {
   case type_ {
     SLO -> "SLO"
-    DependencyRelations -> "DependencyRelations"
   }
 }
 
@@ -45,7 +43,6 @@ pub fn artifact_type_to_string(type_: ArtifactType) -> String {
 pub fn parse_artifact_type(raw: String) -> Result(ArtifactType, Nil) {
   case raw {
     "SLO" -> Ok(SLO)
-    "DependencyRelations" -> Ok(DependencyRelations)
     _ -> Error(Nil)
   }
 }

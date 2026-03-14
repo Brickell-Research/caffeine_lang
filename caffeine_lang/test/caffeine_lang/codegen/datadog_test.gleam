@@ -4,7 +4,7 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, SLO, Soft}
+import caffeine_lang/linker/artifacts.{Hard, SLO, Soft}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, IntermediateRepresentation, SloFields,
 }
@@ -143,6 +143,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -211,6 +212,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -274,6 +276,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -331,6 +334,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -401,6 +405,7 @@ pub fn generate_terraform_test() {
             evaluation: option.Some("(good + partial) / total"),
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -454,6 +459,7 @@ pub fn generate_terraform_test() {
             ),
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -473,7 +479,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO, DependencyRelations],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -534,8 +540,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_with_dependency(
-            slo: ir.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -545,15 +550,11 @@ pub fn generate_terraform_test() {
               evaluation: option.None,
               tags: [],
               runbook: option.None,
-            ),
-            dependency: ir.DependencyFields(
-              relations: dict.from_list([
+              depends_on: option.Some(dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo", "storage_slo"]),
-              ]),
-              tags: [],
-            ),
-          ),
+              ])),
+          )),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -572,7 +573,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO, DependencyRelations],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -626,8 +627,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_with_dependency(
-            slo: ir.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -637,14 +637,10 @@ pub fn generate_terraform_test() {
               evaluation: option.None,
               tags: [],
               runbook: option.None,
-            ),
-            dependency: ir.DependencyFields(
-              relations: dict.from_list([
+              depends_on: option.Some(dict.from_list([
                 #(Hard, ["db_slo", "storage_slo"]),
-              ]),
-              tags: [],
-            ),
-          ),
+              ])),
+          )),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -663,7 +659,7 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO, DependencyRelations],
+          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -718,8 +714,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_with_dependency(
-            slo: ir.SloFields(
+          artifact_data: ir.slo_only(ir.SloFields(
               threshold: 99.9,
               indicators: dict.from_list([
                 #("numerator", "sum:http.requests{status:2xx}"),
@@ -729,15 +724,11 @@ pub fn generate_terraform_test() {
               evaluation: option.None,
               tags: [],
               runbook: option.None,
-            ),
-            dependency: ir.DependencyFields(
-              relations: dict.from_list([
+              depends_on: option.Some(dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo"]),
-              ]),
-              tags: [],
-            ),
-          ),
+              ])),
+          )),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -812,6 +803,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -892,6 +884,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [#("env", "prod"), #("tier", "1")],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -971,6 +964,7 @@ pub fn generate_terraform_test() {
             evaluation: option.None,
             tags: [#("team", "override_team")],
             runbook: option.None,
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -1045,6 +1039,7 @@ pub fn generate_terraform_test() {
             runbook: option.Some(
               "https://wiki.example.com/runbook/auth-latency",
             ),
+            depends_on: option.None,
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -1108,6 +1103,7 @@ pub fn resolve_indicators_missing_indicators_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Datadog),
     )
@@ -1148,6 +1144,7 @@ pub fn resolve_indicators_bad_decode_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Datadog),
     )
@@ -1200,6 +1197,7 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
         evaluation: option.None,
         tags: [],
         runbook: option.None,
+        depends_on: option.None,
       )),
       vendor: option.Some(vendor.Datadog),
     )

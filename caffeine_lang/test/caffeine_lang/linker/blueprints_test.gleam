@@ -1,6 +1,6 @@
 import caffeine_lang/errors
 import caffeine_lang/linker/artifacts.{
-  type Artifact, DependencyRelations, ParamInfo, SLO,
+  type Artifact, ParamInfo, SLO,
 }
 import caffeine_lang/linker/blueprints
 import caffeine_lang/types
@@ -32,60 +32,16 @@ fn artifacts() -> List(Artifact) {
   ]
 }
 
-fn multi_artifacts() -> List(Artifact) {
-  [
-    artifacts.Artifact(
-      type_: artifacts.SLO,
-      description: "",
-      params: dict.from_list([
-        #(
-          "threshold",
-          ParamInfo(
-            type_: types.PrimitiveType(types.NumericType(types.Float)),
-            description: "",
-          ),
-        ),
-        #(
-          "value",
-          ParamInfo(type_: types.PrimitiveType(types.String), description: ""),
-        ),
-      ]),
-    ),
-    artifacts.Artifact(
-      type_: artifacts.DependencyRelations,
-      description: "",
-      params: dict.from_list([
-        #(
-          "relationship",
-          ParamInfo(
-            type_: types.CollectionType(
-              types.List(types.PrimitiveType(types.String)),
-            ),
-            description: "",
-          ),
-        ),
-        #(
-          "isHard",
-          ParamInfo(type_: types.PrimitiveType(types.Boolean), description: ""),
-        ),
-      ]),
-    ),
-  ]
-}
-
 // ==== validate_blueprints ====
 // * ✅ happy path - empty list
 // * ✅ happy path - single valid blueprint merges artifact params
 // * ✅ happy path - multiple valid blueprints
 // * ✅ happy path - blueprint with no inputs (partial inputs allowed)
 // * ✅ happy path - empty params
-// * ✅ happy path - overlapping params with same type merge correctly
 // * ✅ duplicates - duplicate names rejected
 // * ✅ duplicates - cannot overshadow artifact params with blueprint params
 // * ✅ duplicates - duplicate artifact refs rejected
-// * ✅ semantic - unknown artifact in list
 // * ✅ empty - artifact_refs is empty list
-// * ✅ conflicting params - artifacts have same param name with different types
 // * ✅ input validation - extra input field rejected
 // * ✅ input validation - wrong type input value rejected
 pub fn validate_blueprints_test() {
@@ -199,28 +155,6 @@ pub fn validate_blueprints_test() {
     }
   })
 
-  // Happy path - overlapping params with same type merge correctly
-  [
-    #(
-      "overlapping params with same type merge correctly",
-      [
-        blueprints.Blueprint(
-          name: "tracked_slo",
-          artifact_refs: [SLO, DependencyRelations],
-          params: dict.new(),
-          inputs: dict.new(),
-        ),
-      ],
-      True,
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, multi_artifacts()) {
-      Ok(_) -> True
-      Error(_) -> False
-    }
-  })
-
   // Duplicate names
   [
     #(
@@ -295,54 +229,6 @@ pub fn validate_blueprints_test() {
     }
   })
 
-  // Conflicting params - artifacts have same param name with different types
-  [
-    #(
-      "conflicting params - artifacts have same param name with different types",
-      [
-        blueprints.Blueprint(
-          name: "conflicting",
-          artifact_refs: [SLO, DependencyRelations],
-          params: dict.new(),
-          inputs: dict.new(),
-        ),
-      ],
-      True,
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(bps) {
-    // Use custom artifacts with conflicting param types
-    let conflicting_artifacts = [
-      artifacts.Artifact(
-        type_: artifacts.SLO,
-        description: "",
-        params: dict.from_list([
-          #(
-            "shared_param",
-            ParamInfo(type_: types.PrimitiveType(types.String), description: ""),
-          ),
-        ]),
-      ),
-      artifacts.Artifact(
-        type_: artifacts.DependencyRelations,
-        description: "",
-        params: dict.from_list([
-          #(
-            "shared_param",
-            ParamInfo(
-              type_: types.PrimitiveType(types.Boolean),
-              description: "",
-            ),
-          ),
-        ]),
-      ),
-    ]
-    case blueprints.validate_blueprints(bps, conflicting_artifacts) {
-      Ok(_) -> False
-      Error(_) -> True
-    }
-  })
-
   // Extra input field
   [
     #(
@@ -392,34 +278,8 @@ pub fn validate_blueprints_test() {
 }
 
 // ==== artifact_refs validation ====
-// * ✅ happy path - multiple artifacts, params merged from both
 // * ✅ duplicate artifact refs rejected
 pub fn validate_blueprints_artifact_refs_test() {
-  // Happy path - multiple artifacts, params merged
-  [
-    #(
-      "multiple artifacts, params merged from both",
-      [
-        blueprints.Blueprint(
-          name: "tracked_slo",
-          artifact_refs: [SLO, DependencyRelations],
-          params: dict.new(),
-          inputs: dict.from_list([
-            #("value", value.StringValue("foobar")),
-            #("isHard", value.BoolValue(True)),
-          ]),
-        ),
-      ],
-      True,
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, multi_artifacts()) {
-      Ok(_) -> True
-      Error(_) -> False
-    }
-  })
-
   // Duplicate artifact refs
   [
     #(
@@ -439,6 +299,6 @@ pub fn validate_blueprints_artifact_refs_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, multi_artifacts())
+    blueprints.validate_blueprints(bps, artifacts())
   })
 }

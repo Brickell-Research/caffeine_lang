@@ -1,4 +1,4 @@
-import caffeine_lang/linker/artifacts.{DependencyRelations, Hard, Soft}
+import caffeine_lang/linker/artifacts.{Hard, Soft}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type Resolved, ir_to_identifier,
 }
@@ -56,21 +56,23 @@ fn build_node(ir: IntermediateRepresentation(Resolved)) -> String {
 /// Generates Mermaid edge declarations for hard and soft dependencies.
 fn build_edges(irs: List(IntermediateRepresentation(Resolved))) -> List(String) {
   irs
-  |> list.filter(fn(ir) { list.contains(ir.artifact_refs, DependencyRelations) })
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))
-    case ir.get_dependency_fields(ir.artifact_data) {
+    let depends_on =
+      ir.get_slo_fields(ir.artifact_data)
+      |> option.then(fn(slo) { slo.depends_on })
+    case depends_on {
       option.None -> []
-      option.Some(dep) -> {
+      option.Some(relations) -> {
         let hard_edges =
-          dict.get(dep.relations, Hard)
+          dict.get(relations, Hard)
           |> result.unwrap([])
           |> list.map(fn(target) {
             "    " <> source_id <> " -->|hard| " <> sanitize_id(target)
           })
 
         let soft_edges =
-          dict.get(dep.relations, Soft)
+          dict.get(relations, Soft)
           |> result.unwrap([])
           |> list.map(fn(target) {
             "    " <> source_id <> " -.->|soft| " <> sanitize_id(target)

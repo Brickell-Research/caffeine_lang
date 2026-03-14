@@ -635,60 +635,6 @@ pub fn validate_hard_dependency_thresholds_test() {
   ]
   |> test_helpers.table_test_1(validate_ok)
 
-  // Skip when source has no SLO artifact
-  [
-    #(
-      "skip when source has no SLO artifact",
-      [
-        ir_test_helpers.make_deps_only_ir(
-          "acme",
-          "platform",
-          "auth",
-          "login_slo",
-          hard_deps: ["acme.infra.db.query_slo"],
-          soft_deps: [],
-        ),
-        ir_test_helpers.make_slo_ir(
-          "acme",
-          "infra",
-          "db",
-          "query_slo",
-          threshold: 99.9,
-        ),
-      ],
-      Ok(Nil),
-    ),
-  ]
-  |> test_helpers.table_test_1(validate_ok)
-
-  // Skip when target has no SLO artifact
-  [
-    #(
-      "skip when target has no SLO artifact",
-      [
-        ir_test_helpers.make_ir_with_deps(
-          "acme",
-          "platform",
-          "auth",
-          "login_slo",
-          hard_deps: ["acme.infra.db.query_slo"],
-          soft_deps: [],
-          threshold: 99.99,
-        ),
-        ir_test_helpers.make_deps_only_ir(
-          "acme",
-          "infra",
-          "db",
-          "query_slo",
-          hard_deps: [],
-          soft_deps: [],
-        ),
-      ],
-      Ok(Nil),
-    ),
-  ]
-  |> test_helpers.table_test_1(validate_ok)
-
   // 2 hard deps, source below composite ceiling
   [
     #(
@@ -818,10 +764,10 @@ pub fn validate_hard_dependency_thresholds_test() {
     dependency_validator.validate_dependency_relations(irs)
   })
 
-  // Mix of hard deps with and without SLO (only SLO deps count in composite)
+  // Multiple hard deps, source below composite ceiling of all
   [
     #(
-      "mix of hard deps with and without SLO",
+      "multiple hard deps, source below composite ceiling",
       [
         ir_test_helpers.make_ir_with_deps(
           "acme",
@@ -833,7 +779,7 @@ pub fn validate_hard_dependency_thresholds_test() {
             "acme.infra.cache.redis_slo",
           ],
           soft_deps: [],
-          threshold: 99.9,
+          threshold: 99.8,
         ),
         ir_test_helpers.make_slo_ir(
           "acme",
@@ -842,13 +788,12 @@ pub fn validate_hard_dependency_thresholds_test() {
           "query_slo",
           threshold: 99.99,
         ),
-        ir_test_helpers.make_deps_only_ir(
+        ir_test_helpers.make_slo_ir(
           "acme",
           "infra",
           "cache",
           "redis_slo",
-          hard_deps: [],
-          soft_deps: [],
+          threshold: 99.9,
         ),
       ],
       Ok(Nil),
