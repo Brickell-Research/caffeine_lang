@@ -1,0 +1,80 @@
+lsp/workspace_parsers.ts
+  25b9d793179f81ec 87-95,97,99-102,104-107
+caffeine_lang/src/caffeine_lang/analysis/vendor.gleam
+  25b9d793179f81ec 2-3,16-17,25-42,45-59
+test/lsp_e2e/slo_overlay_test.ts
+  25b9d793179f81ec 3,119-124,127,131-132,137-138,140-142,147,152,154-155,158,161,163,166,170-175,178-180,183,186-187,190-199,225
+test/lsp_e2e/features_test.ts
+  25b9d793179f81ec 56,70-71,77,225-226
+caffeine_lang/src/caffeine_lang/linker/linker.gleam
+  25b9d793179f81ec 9,11,15-16,21,27-34,36-47,49,60-61
+caffeine_cli/src/caffeine_cli/compile_presenter.gleam
+  25b9d793179f81ec 4,19,31
+caffeine_lang/test/caffeine_lang/linker/expectations_test.gleam
+  25b9d793179f81ec 36,40,240,246
+lsp/workspace.ts
+  25b9d793179f81ec 30,71,203,267-269,271
+caffeine_lang/test/caffeine_lang/linker/ir_builder_test.gleam
+  25b9d793179f81ec 24-28,72-73,88,134,170,206,256,310,364,395,412,439,461,485,494,499,516,526,528
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  25b9d793179f81ec 69,91,111,358,1130-1132,1375,1668,1684,2526,2546,2687,2705,2793,2802
+caffeine_lang/src/caffeine_lang/compiler.gleam
+  25b9d793179f81ec 21-22,43,46,49,55-56,61,67,76,80,274,279-282,284-285,305-308,321
+caffeine_cli/src/caffeine_cli/file_discovery.gleam
+  25b9d793179f81ec 1,24-50
+caffeine_cli/src/caffeine_cli/handler.gleam
+  25b9d793179f81ec 10,69,77,84,137,144,147,176,183,244,250,262,273-276,278-297,319
+caffeine_lang/src/caffeine_lang/source_file.gleam
+  25b9d793179f81ec 1-2,16-19
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  25b9d793179f81ec 1,5-6,52-58,106,361-362,448-449,462-468,478-483,493-497,504,511-523,530-532,612-613,626-632,642-647,658-662,669,676-688,694-696,772-773,786-792,802-807,817-821,828,835-847,853-855,881,922,934,936-941,951-959,966-974,981-989,1000-1007,1036-1039
+test/lsp_e2e/fixtures/invalid_syntax.caffeine
+  25b9d793179f81ec 3-4
+caffeine_lang/src/caffeine_lang/standard_library/artifacts.gleam
+  25b9d793179f81ec 11
+caffeine_cli/test/caffeine_cli/handler_test.gleam
+  25b9d793179f81ec 19,32,50,59,68,85,98,107,116,125
+caffeine_lang/src/caffeine_lang/linker/ir_builder.gleam
+  25b9d793179f81ec 1,39,47-48,62,80-90,96-103
+caffeine_lang/test/caffeine_lang/linker/linker_test.gleam
+  25b9d793179f81ec 1,4,17-23,30-35,45,47,56-61,68-73,82,84
+test/lsp_e2e/fixtures/unformatted.caffeine
+  25b9d793179f81ec 3-4
+test/lsp_e2e/fixtures/quoted_field.caffeine
+  25b9d793179f81ec 4
+test/lsp_e2e/fixtures/with_extendable.caffeine
+  25b9d793179f81ec 1,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "84f571acd3da2cc3abd3f46b852752b2573f2088",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 751,
+      "total_deletions": 619,
+      "accepted_lines": 545,
+      "overriden_lines": 1
+    },
+    "956d688d64e81b65": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "faf1ee89-d8c4-4224-95a4-ae652e62a4c4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 314,
+      "total_deletions": 31,
+      "accepted_lines": 283,
+      "overriden_lines": 0
+    }
+  }
+}
