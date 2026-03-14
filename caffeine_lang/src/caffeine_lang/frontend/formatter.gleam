@@ -1,12 +1,12 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type Comment, type ExpectItem,
-  type ExpectsBlock, type ExpectsFile, type Extendable, type Field, type Literal,
-  type Parsed, type Struct, type TypeAlias, ExtendableProvides,
-  ExtendableRequires, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
-  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
-  Struct, TypeValue,
+  type Comment, type ExpectItem, type ExpectsBlock, type ExpectsFile,
+  type Extendable, type Field, type Literal, type MeasurementItem,
+  type MeasurementsFile, type Parsed, type Struct, type TypeAlias,
+  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
+  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
+  LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -23,6 +23,7 @@ import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -32,9 +33,9 @@ type FieldContext {
   LiteralFields
 }
 
-/// Format a Caffeine source file. Auto-detects whether it's a blueprints or expectations file.
+/// Format a Caffeine source file. Auto-detects whether it's a measurements or expectations file.
 /// Expectations files are detected by the presence of the Expectations keyword;
-/// all other files are treated as blueprints files.
+/// all other files are treated as measurements files.
 pub fn format(source: String) -> Result(String, String) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
@@ -59,15 +60,15 @@ pub fn format(source: String) -> Result(String, String) {
     }
     False -> {
       use parsed <- result.try(
-        parser.parse_blueprints_file(source)
+        parser.parse_measurements_file(source)
         |> result.map_error(fn(err) { "Parse error: " <> string.inspect(err) }),
       )
-      Ok(format_blueprints_file(parsed))
+      Ok(format_measurements_file(parsed))
     }
   }
 }
 
-fn format_blueprints_file(file: BlueprintsFile(Parsed)) -> String {
+fn format_measurements_file(file: MeasurementsFile(Parsed)) -> String {
   let sections: List(String) = []
 
   let sections = case file.type_aliases {
@@ -90,7 +91,7 @@ fn format_blueprints_file(file: BlueprintsFile(Parsed)) -> String {
     [] -> sections
     items ->
       list.append(sections, [
-        list.map(items, format_blueprint_item) |> string.join("\n\n"),
+        list.map(items, format_measurement_item) |> string.join("\n\n"),
       ])
   }
 
@@ -161,7 +162,10 @@ fn format_extendable(ext: Extendable) -> String {
 
 fn format_expects_block(block: ExpectsBlock) -> String {
   let comments = format_comments(block.leading_comments, "")
-  let header = "Expectations measured by \"" <> block.blueprint <> "\""
+  let header = case block.measurement {
+    option.Some(name) -> "Expectations measured by \"" <> name <> "\""
+    option.None -> "Unmeasured Expectations"
+  }
 
   let items =
     block.items
@@ -171,7 +175,7 @@ fn format_expects_block(block: ExpectsBlock) -> String {
   comments <> header <> "\n" <> items
 }
 
-fn format_blueprint_item(item: BlueprintItem) -> String {
+fn format_measurement_item(item: MeasurementItem) -> String {
   let comments = format_comments(item.leading_comments, "")
   let name_line =
     "\"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"

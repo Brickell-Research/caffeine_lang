@@ -2,6 +2,7 @@ import caffeine_lang/frontend/pipeline
 import caffeine_lang/source_file.{SourceFile}
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleeunit/should
 import simplifile
 
@@ -12,14 +13,14 @@ fn read_source_file(path: String) -> source_file.SourceFile(a) {
   SourceFile(path: path, content: content)
 }
 
-// ==== compile_blueprints ====
-// * ✅ simple blueprints source compiles to typed blueprints
-pub fn compile_blueprints_test() {
-  let source = read_source_file(corpus_dir <> "/simple_blueprints.caffeine")
-  let assert Ok(blueprints) = pipeline.compile_blueprints(source)
+// ==== compile_measurements ====
+// * ✅ simple measurements source compiles to typed measurements
+pub fn compile_measurements_test() {
+  let source = read_source_file(corpus_dir <> "/simple_measurements.caffeine")
+  let assert Ok(measurements) = pipeline.compile_measurements(source)
 
-  list.length(blueprints) |> should.equal(1)
-  let assert Ok(bp) = list.first(blueprints)
+  list.length(measurements) |> should.equal(1)
+  let assert Ok(bp) = list.first(measurements)
   bp.name |> should.equal("api_availability")
   { dict.size(bp.params) > 0 } |> should.be_true
   { dict.size(bp.inputs) > 0 } |> should.be_true
@@ -34,15 +35,15 @@ pub fn compile_expects_test() {
   list.length(expectations) |> should.equal(1)
   let assert Ok(exp) = list.first(expectations)
   exp.name |> should.equal("checkout_availability")
-  exp.blueprint_ref |> should.equal("api_availability")
+  exp.measurement_ref |> should.equal(option.Some("api_availability"))
   { dict.size(exp.inputs) > 0 } |> should.be_true
 }
 
-// ==== compile_blueprints error cases ====
+// ==== compile_measurements error cases ====
 // * ✅ invalid source returns parse error
-pub fn compile_blueprints_invalid_source_test() {
+pub fn compile_measurements_invalid_source_test() {
   let source = SourceFile(path: "test.caffeine", content: "not valid caffeine")
-  let result = pipeline.compile_blueprints(source)
+  let result = pipeline.compile_measurements(source)
   result |> should.be_error
 }
 

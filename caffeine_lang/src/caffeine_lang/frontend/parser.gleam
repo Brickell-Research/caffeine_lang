@@ -1,7 +1,8 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type Comment, type ExpectItem,
-  type ExpectsBlock, type ExpectsFile, type Extendable, type ExtendableKind,
-  type Field, type Literal, type Parsed, type Struct, type TypeAlias,
+  type Comment, type ExpectItem, type ExpectsBlock, type ExpectsFile,
+  type Extendable, type ExtendableKind, type Field, type Literal,
+  type MeasurementItem, type MeasurementsFile, type Parsed, type Struct,
+  type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -17,6 +18,7 @@ import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -32,11 +34,11 @@ type ParserState {
   )
 }
 
-/// Parses a blueprints file from source text.
+/// Parses a measurements file from source text.
 /// Returns all recoverable parse errors rather than stopping at the first one.
-pub fn parse_blueprints_file(
+pub fn parse_measurements_file(
   source: String,
-) -> Result(BlueprintsFile(Parsed), List(ParserError)) {
+) -> Result(MeasurementsFile(Parsed), List(ParserError)) {
   use tokens <- result.try(
     tokenizer.tokenize(source)
     |> result.map_error(fn(e) { [parser_error.TokenizerError(e)] }),
@@ -53,10 +55,10 @@ pub fn parse_blueprints_file(
     |> result.map_error(fn(e) { [e] }),
   )
   let #(items, errors, pending, _state) =
-    parse_blueprint_items_recovering(state, pending)
+    parse_measurement_items_recovering(state, pending)
   case errors {
     [] ->
-      Ok(ast.BlueprintsFile(
+      Ok(ast.MeasurementsFile(
         type_aliases:,
         extendables:,
         items:,
@@ -339,10 +341,10 @@ fn parse_extendable_kind(
 // BLUEPRINTS BLOCKS
 // =============================================================================
 
-fn parse_blueprint_item(
+fn parse_measurement_item(
   state: ParserState,
   leading_comments: List(Comment),
-) -> Result(#(BlueprintItem, ParserState), ParserError) {
+) -> Result(#(MeasurementItem, ParserState), ParserError) {
   use #(name, state) <- result.try(parse_string_literal(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
@@ -351,7 +353,13 @@ fn parse_blueprint_item(
   use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
   use #(provides, state) <- result.try(parse_literal_struct(state))
   Ok(#(
-    ast.BlueprintItem(name:, extends:, requires:, provides:, leading_comments:),
+    ast.MeasurementItem(
+      name:,
+      extends:,
+      requires:,
+      provides:,
+      leading_comments:,
+    ),
     state,
   ))
 }
@@ -388,10 +396,13 @@ fn parse_expect_item(
 // ERROR RECOVERY
 // =============================================================================
 
-/// Skip tokens until the next block boundary (Blueprints, Expectations, or EOF).
+/// Skip tokens until the next block boundary (Measurements, Expectations, Unmeasured, or EOF).
 fn skip_to_block_boundary(state: ParserState) -> ParserState {
   case peek(state) {
-    token.KeywordBlueprints | token.KeywordExpectations | token.EOF -> state
+    token.KeywordMeasurements
+    | token.KeywordExpectations
+    | token.KeywordUnmeasured
+    | token.EOF -> state
     _ -> skip_to_block_boundary(advance(state))
   }
 }
@@ -400,96 +411,67 @@ fn skip_to_block_boundary(state: ParserState) -> ParserState {
 fn skip_to_item_boundary(state: ParserState) -> ParserState {
   case peek(state) {
     token.SymbolStar
-    | token.KeywordBlueprints
+    | token.KeywordMeasurements
     | token.KeywordExpectations
+    | token.KeywordUnmeasured
     | token.EOF -> state
     _ -> skip_to_item_boundary(advance(state))
   }
 }
 
 /// Parse expects blocks with error recovery between blocks and items.
+/// Recognizes both `Expectations measured by "..."` and `Unmeasured Expectations` headers.
 fn parse_expects_blocks_recovering(
   state: ParserState,
   pending: List(Comment),
 ) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
-  blocks_recovering_loop(
-    state,
-    [],
-    [],
-    pending,
-    token.KeywordExpectations,
-    "Expectations",
-    parse_expects_block_recovering,
-  )
+  expects_blocks_loop(state, [], [], pending)
 }
 
-/// Generic block-level recovery loop parameterized by keyword and block parser.
-fn blocks_recovering_loop(
+/// Custom block-level recovery loop that matches either KeywordExpectations or KeywordUnmeasured.
+fn expects_blocks_loop(
   state: ParserState,
-  block_acc: List(block),
+  block_acc: List(ExpectsBlock),
   error_acc: List(ParserError),
   pending: List(Comment),
-  keyword: Token,
-  keyword_name: String,
-  parse_block: fn(ParserState, List(Comment)) ->
-    #(
-      Result(#(block, List(Comment)), ParserError),
-      List(ParserError),
-      ParserState,
-    ),
-) -> #(List(block), List(ParserError), List(Comment), ParserState) {
-  let tok = peek(state)
-  case tok {
+) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
+  case peek(state) {
     token.EOF -> #(list.reverse(block_acc), error_acc, pending, state)
-    _ -> {
-      case tok == keyword {
-        True -> {
-          let #(block_result, item_errors, state) = parse_block(state, pending)
-          let #(more_comments, state) = consume_comments(state)
-          case block_result {
-            Ok(#(block, trailing)) -> {
-              let next_pending = list.append(trailing, more_comments)
-              blocks_recovering_loop(
-                state,
-                [block, ..block_acc],
-                list.append(error_acc, item_errors),
-                next_pending,
-                keyword,
-                keyword_name,
-                parse_block,
-              )
-            }
-            Error(err) -> {
-              let state = skip_to_block_boundary(advance(state))
-              let #(next_pending, state) = consume_comments(state)
-              blocks_recovering_loop(
-                state,
-                block_acc,
-                list.append(error_acc, [err, ..item_errors]),
-                next_pending,
-                keyword,
-                keyword_name,
-                parse_block,
-              )
-            }
-          }
-        }
-        False -> {
-          let err =
-            parser_error.UnexpectedToken(
-              keyword_name,
-              token.to_string(tok),
-              state.line,
-              state.column,
-            )
-          #(
-            list.reverse(block_acc),
-            list.append(error_acc, [err]),
-            pending,
+    token.KeywordExpectations | token.KeywordUnmeasured -> {
+      let #(block_result, item_errors, state) =
+        parse_expects_block_recovering(state, pending)
+      let #(more_comments, state) = consume_comments(state)
+      case block_result {
+        Ok(#(block, trailing)) -> {
+          let next_pending = list.append(trailing, more_comments)
+          expects_blocks_loop(
             state,
+            [block, ..block_acc],
+            list.append(error_acc, item_errors),
+            next_pending,
+          )
+        }
+        Error(err) -> {
+          let state = skip_to_block_boundary(advance(state))
+          let #(next_pending, state) = consume_comments(state)
+          expects_blocks_loop(
+            state,
+            block_acc,
+            list.append(error_acc, [err, ..item_errors]),
+            next_pending,
           )
         }
       }
+    }
+    tok -> {
+      let err =
+        parser_error.UnexpectedToken(
+          "Expectations or Unmeasured Expectations",
+          token.to_string(tok),
+          state.line,
+          state.column,
+        )
+      #(list.reverse(block_acc), list.append(error_acc, [err]), pending, state)
     }
   }
 }
@@ -508,10 +490,39 @@ fn parse_expects_block_recovering(
     leading_comments,
     parse_expects_block_header,
     parse_expect_items_recovering,
-    fn(blueprint, items, comments) {
-      ast.ExpectsBlock(blueprint:, items:, leading_comments: comments)
+    fn(measurement, items, comments) {
+      ast.ExpectsBlock(measurement:, items:, leading_comments: comments)
     },
   )
+}
+
+/// Parse just the header of an expects block.
+/// Handles both `Expectations measured by "name"` and `Unmeasured Expectations`.
+fn parse_expects_block_header(
+  state: ParserState,
+) -> Result(#(option.Option(String), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordUnmeasured -> {
+      let state = advance(state)
+      use state <- result.try(expect(
+        state,
+        token.KeywordExpectations,
+        "Expectations",
+      ))
+      Ok(#(option.None, state))
+    }
+    _ -> {
+      use state <- result.try(expect(
+        state,
+        token.KeywordExpectations,
+        "Expectations",
+      ))
+      use state <- result.try(expect(state, token.KeywordMeasured, "measured"))
+      use state <- result.try(expect(state, token.KeywordBy, "by"))
+      use #(measurement, state) <- result.try(parse_string_literal(state))
+      Ok(#(option.Some(measurement), state))
+    }
+  }
 }
 
 /// Generic single-block recovery parameterized by header parser, item parser, and block constructor.
@@ -540,48 +551,33 @@ fn block_recovering(
   }
 }
 
-/// Parse just the header of an expects block (Expectations measured by "blueprint").
-fn parse_expects_block_header(
-  state: ParserState,
-) -> Result(#(String, ParserState), ParserError) {
-  use state <- result.try(expect(
-    state,
-    token.KeywordExpectations,
-    "Expectations",
-  ))
-  use state <- result.try(expect(state, token.KeywordMeasured, "measured"))
-  use state <- result.try(expect(state, token.KeywordBy, "by"))
-  use #(blueprint, state) <- result.try(parse_string_literal(state))
-  Ok(#(blueprint, state))
-}
-
-/// Parse blueprint items with recovery between items.
-/// Blueprint items start with a string literal name (no `*` prefix).
-fn parse_blueprint_items_recovering(
+/// Parse measurement items with recovery between items.
+/// Measurement items start with a string literal name (no `*` prefix).
+fn parse_measurement_items_recovering(
   state: ParserState,
   pending: List(Comment),
-) -> #(List(BlueprintItem), List(ParserError), List(Comment), ParserState) {
-  blueprint_items_loop(state, [], [], pending)
+) -> #(List(MeasurementItem), List(ParserError), List(Comment), ParserState) {
+  measurement_items_loop(state, [], [], pending)
 }
 
-/// Recovery loop for blueprint items, detecting boundaries by string literal tokens.
-fn blueprint_items_loop(
+/// Recovery loop for measurement items, detecting boundaries by string literal tokens.
+fn measurement_items_loop(
   state: ParserState,
-  items: List(BlueprintItem),
+  items: List(MeasurementItem),
   errors: List(ParserError),
   pending: List(Comment),
-) -> #(List(BlueprintItem), List(ParserError), List(Comment), ParserState) {
+) -> #(List(MeasurementItem), List(ParserError), List(Comment), ParserState) {
   case peek(state) {
     token.LiteralString(_) -> {
-      case parse_blueprint_item(state, pending) {
+      case parse_measurement_item(state, pending) {
         Ok(#(item, state)) -> {
           let #(next_pending, state) = consume_comments(state)
-          blueprint_items_loop(state, [item, ..items], errors, next_pending)
+          measurement_items_loop(state, [item, ..items], errors, next_pending)
         }
         Error(err) -> {
-          let state = skip_to_blueprint_item_boundary(advance(state))
+          let state = skip_to_measurement_item_boundary(advance(state))
           let #(next_pending, state) = consume_comments(state)
-          blueprint_items_loop(state, items, [err, ..errors], next_pending)
+          measurement_items_loop(state, items, [err, ..errors], next_pending)
         }
       }
     }
@@ -589,11 +585,11 @@ fn blueprint_items_loop(
   }
 }
 
-/// Skip tokens until the next blueprint item boundary (string literal or EOF).
-fn skip_to_blueprint_item_boundary(state: ParserState) -> ParserState {
+/// Skip tokens until the next measurement item boundary (string literal or EOF).
+fn skip_to_measurement_item_boundary(state: ParserState) -> ParserState {
   case peek(state) {
     token.LiteralString(_) | token.EOF -> state
-    _ -> skip_to_blueprint_item_boundary(advance(state))
+    _ -> skip_to_measurement_item_boundary(advance(state))
   }
 }
 

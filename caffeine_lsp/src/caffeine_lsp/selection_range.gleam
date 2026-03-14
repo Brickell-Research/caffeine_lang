@@ -35,7 +35,7 @@ pub fn get_selection_range(
   let file_range =
     SelectionRange(0, 0, total - 1, last_line_length(lines), NoParent)
 
-  // Find enclosing block (Blueprints/Expectations or extendable)
+  // Find enclosing block (Measurements/Expectations or extendable)
   let block_range = find_enclosing_block(lines, line, file_range)
 
   // Find enclosing item ("name": or * "name":)
@@ -89,7 +89,7 @@ fn find_block_start_loop(
       let is_block =
         indent == 0
         && {
-          string.starts_with(trimmed, "Blueprints ")
+          string.starts_with(trimmed, "Measurements ")
           || string.starts_with(trimmed, "Expectations ")
           || string.starts_with(trimmed, "_")
         }
@@ -128,7 +128,7 @@ fn find_enclosing_item(
 }
 
 /// Walk backwards (via reversed list) to find the enclosing item start.
-/// Matches both blueprint items (`"name":` at column 0) and expect items
+/// Matches both measurement items (`"name":` at column 0) and expect items
 /// (`* "name":` indented).
 fn find_item_start_loop(reversed: List(String), idx: Int) -> Int {
   case reversed {
@@ -203,13 +203,13 @@ fn trimmed_start_col(lines: List(String), idx: Int) -> Int {
   }
 }
 
-/// Check whether a line is an item header. Matches both blueprint items
+/// Check whether a line is an item header. Matches both measurement items
 /// (`"name":` at column 0) and expect items (`* "name":` indented).
 /// Uses the raw line to check indent so quoted field names at deeper
 /// indentation are not mistaken for items.
 fn is_item_line(raw_line: String, trimmed: String) -> Bool {
   // Expect items: `* "name"` at any indent
   string.starts_with(trimmed, "* \"")
-  // Blueprint items: `"name"` at column 0 (no indentation)
+  // Measurement items: `"name"` at column 0 (no indentation)
   || string.starts_with(raw_line, "\"")
 }

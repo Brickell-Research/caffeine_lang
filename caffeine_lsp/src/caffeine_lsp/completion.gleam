@@ -1,12 +1,14 @@
 import caffeine_lang/frontend/ast
-import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
+import caffeine_lang/linker/measurements.{
+  type Measurement, type MeasurementValidated,
+}
 import caffeine_lang/types.{type TypeMeta}
-import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
 import caffeine_lsp/lsp_types.{
   CikClass, CikField, CikKeyword, CikModule, CikVariable,
 }
+import caffeine_lsp/measurement_utils
 import gleam/bool
 import gleam/dict
 import gleam/list
@@ -26,23 +28,23 @@ pub type CompletionItem {
 }
 
 /// Returns a list of completion items, context-aware based on
-/// the cursor position in the document. Workspace blueprint names
-/// from other files are used for cross-file blueprint header completion.
-/// Validated blueprints enable field suggestions from blueprint Requires.
+/// the cursor position in the document. Workspace measurement names
+/// from other files are used for cross-file measurement header completion.
+/// Validated measurements enable field suggestions from measurement Requires.
 pub fn get_completions(
   content: String,
   line: Int,
   character: Int,
-  workspace_blueprint_names: List(String),
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  workspace_measurement_names: List(String),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> List(CompletionItem) {
   // Parse once and reuse across all completion paths.
   let parsed = file_utils.parse(content)
   let context =
-    get_context(content, parsed, line, character, validated_blueprints)
+    get_context(content, parsed, line, character, validated_measurements)
   case context {
-    BlueprintHeaderContext(prefix) ->
-      blueprint_header_completions(workspace_blueprint_names, prefix)
+    MeasurementHeaderContext(prefix) ->
+      measurement_header_completions(workspace_measurement_names, prefix)
     ExtendsContext(used) -> extends_completions(content, parsed, used)
     TypeContext -> type_completions(parsed)
     FieldContext(fields) -> field_completions(fields)
@@ -53,7 +55,7 @@ pub fn get_completions(
 // --- Context detection ---
 
 type CompletionContext {
-  BlueprintHeaderContext(prefix: String)
+  MeasurementHeaderContext(prefix: String)
   ExtendsContext(already_used: List(String))
   TypeContext
   FieldContext(available_fields: List(#(String, String)))
@@ -65,22 +67,22 @@ fn get_context(
   parsed: Result(file_utils.ParsedFile, a),
   line: Int,
   character: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> CompletionContext {
   let lines = string.split(content, "\n")
   case list.drop(lines, line) {
     [line_text, ..] -> {
       let before_cursor = string.slice(line_text, 0, character)
       let trimmed = string.trim(before_cursor)
-      case get_blueprint_header_prefix(trimmed) {
-        option.Some(prefix) -> BlueprintHeaderContext(prefix)
+      case get_measurement_header_prefix(trimmed) {
+        option.Some(prefix) -> MeasurementHeaderContext(prefix)
         option.None -> {
           use <- bool.guard(
             is_extends_context(trimmed),
             ExtendsContext(already_used: extract_used_extends(trimmed)),
           )
           use <- bool.guard(is_type_context(trimmed), TypeContext)
-          case get_field_context(parsed, lines, line, validated_blueprints) {
+          case get_field_context(parsed, lines, line, validated_measurements) {
             option.Some(fields) -> FieldContext(fields)
             option.None -> GeneralContext
           }
@@ -101,9 +103,9 @@ fn is_type_context(before: String) -> Bool {
   string.ends_with(string.trim(before), ":") || string.ends_with(before, "(")
 }
 
-/// Detect if cursor is inside a blueprint header reference, e.g.
+/// Detect if cursor is inside a measurement header reference, e.g.
 /// `Expectations measured by "api` → Some("api"), `Expectations measured by "` → Some("").
-fn get_blueprint_header_prefix(before: String) -> option.Option(String) {
+fn get_measurement_header_prefix(before: String) -> option.Option(String) {
   case string.split_once(before, "Expectations measured by \"") {
     Ok(#(_, after_quote)) ->
       // Only match if the closing quote hasn't been typed yet
@@ -133,21 +135,21 @@ fn get_field_context(
   parsed: Result(file_utils.ParsedFile, a),
   lines: List(String),
   line: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> option.Option(List(#(String, String))) {
   case find_enclosing_item(lines, line) {
     option.None -> option.None
     option.Some(item_name) ->
       case parsed {
-        Ok(file_utils.Blueprints(file)) ->
-          blueprint_field_context(file, item_name, lines, line)
+        Ok(file_utils.Measurements(file)) ->
+          measurement_field_context(file, item_name, lines, line)
         Ok(file_utils.Expects(file)) ->
           expects_field_context(
             file,
             item_name,
             lines,
             line,
-            validated_blueprints,
+            validated_measurements,
           )
         Error(_) -> option.None
       }
@@ -179,17 +181,17 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
 }
 
 /// Walk backwards from the cursor line to find the enclosing
-/// `Expectations measured by "name"` header and return the blueprint ref.
+/// `Expectations measured by "name"` header and return the measurement ref.
 @internal
-pub fn find_enclosing_blueprint_ref(
+pub fn find_enclosing_measurement_ref(
   lines: List(String),
   line: Int,
 ) -> option.Option(String) {
   let prefix = list.take(lines, line + 1) |> list.reverse
-  find_enclosing_blueprint_ref_loop(prefix)
+  find_enclosing_measurement_ref_loop(prefix)
 }
 
-fn find_enclosing_blueprint_ref_loop(
+fn find_enclosing_measurement_ref_loop(
   lines: List(String),
 ) -> option.Option(String) {
   case lines {
@@ -202,13 +204,13 @@ fn find_enclosing_blueprint_ref_loop(
             Ok(#(name, _)) -> option.Some(name)
             Error(_) -> option.None
           }
-        Error(_) -> find_enclosing_blueprint_ref_loop(rest)
+        Error(_) -> find_enclosing_measurement_ref_loop(rest)
       }
     }
   }
 }
 
-/// Extract the item name from an item line. Handles both blueprint items
+/// Extract the item name from an item line. Handles both measurement items
 /// (`"name":`) and expect items (`* "name":`).
 fn extract_item_name(trimmed: String) -> option.Option(String) {
   case string.starts_with(trimmed, "* \"") {
@@ -220,7 +222,7 @@ fn extract_item_name(trimmed: String) -> option.Option(String) {
         Error(_) -> option.None
       }
     }
-    // Blueprint item: drop `"` prefix (1 char)
+    // Measurement item: drop `"` prefix (1 char)
     False -> {
       let after = string.drop_start(trimmed, 1)
       case string.split_once(after, "\"") {
@@ -231,9 +233,9 @@ fn extract_item_name(trimmed: String) -> option.Option(String) {
   }
 }
 
-/// Collect available fields from extended extendables for a blueprint item.
-fn blueprint_field_context(
-  file: ast.BlueprintsFile(ast.Parsed),
+/// Collect available fields from extended extendables for a measurement item.
+fn measurement_field_context(
+  file: ast.MeasurementsFile(ast.Parsed),
   item_name: String,
   lines: List(String),
   line: Int,
@@ -257,14 +259,14 @@ fn blueprint_field_context(
   }
 }
 
-/// Collect available fields from extended extendables and blueprint
+/// Collect available fields from extended extendables and measurement
 /// remaining params for an expects item.
 fn expects_field_context(
   file: ast.ExpectsFile(ast.Parsed),
   item_name: String,
   lines: List(String),
   line: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> option.Option(List(#(String, String))) {
   let item =
     list.flat_map(file.blocks, fn(b) { b.items })
@@ -277,17 +279,17 @@ fn expects_field_context(
       let existing = existing_provides_fields(item.provides)
       let existing_set = set.from_list(existing)
 
-      // Add fields from the blueprint's Requires (remaining params).
-      let blueprint_fields =
-        blueprint_remaining_fields(lines, line, validated_blueprints)
+      // Add fields from the measurement's Requires (remaining params).
+      let measurement_fields =
+        measurement_remaining_fields(lines, line, validated_measurements)
       let extended_names = list.map(extended_fields, fn(f) { f.0 })
       let extended_set = set.from_list(extended_names)
 
-      // Merge: extendable fields + blueprint params not already in extendables
+      // Merge: extendable fields + measurement params not already in extendables
       let merged =
         list.append(
           extended_fields,
-          list.filter(blueprint_fields, fn(f) {
+          list.filter(measurement_fields, fn(f) {
             !set.contains(extended_set, f.0)
           }),
         )
@@ -301,19 +303,21 @@ fn expects_field_context(
   }
 }
 
-/// Look up the blueprint's remaining params and return as field name/type pairs.
-fn blueprint_remaining_fields(
+/// Look up the measurement's remaining params and return as field name/type pairs.
+fn measurement_remaining_fields(
   lines: List(String),
   line: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> List(#(String, String)) {
-  case find_enclosing_blueprint_ref(lines, line) {
+  case find_enclosing_measurement_ref(lines, line) {
     option.None -> []
-    option.Some(blueprint_ref) ->
-      case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
+    option.Some(measurement_ref) ->
+      case
+        list.find(validated_measurements, fn(b) { b.name == measurement_ref })
+      {
         Error(_) -> []
-        Ok(blueprint) ->
-          blueprint_utils.compute_remaining_params(blueprint)
+        Ok(measurement) ->
+          measurement_utils.compute_remaining_params(measurement)
           |> dict.to_list
           |> list.map(fn(pair) {
             #(pair.0, types.accepted_type_to_string(pair.1))
@@ -342,7 +346,7 @@ fn collect_extended_fields(
 fn existing_field_names_for_section(
   lines: List(String),
   line: Int,
-  item: ast.BlueprintItem,
+  item: ast.MeasurementItem,
 ) -> List(String) {
   case is_in_requires_section(lines, line) {
     True -> list.map(item.requires.fields, fn(f) { f.name })
@@ -370,14 +374,14 @@ fn is_in_requires_loop(lines: List(String)) -> Bool {
   }
 }
 
-/// Check whether a line is an item header. Matches both blueprint items
+/// Check whether a line is an item header. Matches both measurement items
 /// (`"name":` at column 0) and expect items (`* "name":` indented).
 /// Uses the raw line to check indent so quoted field names at deeper
 /// indentation are not mistaken for items.
 fn is_item_line(raw_line: String, trimmed: String) -> Bool {
   // Expect items: `* "name"` at any indent
   string.starts_with(trimmed, "* \"")
-  // Blueprint items: `"name"` at column 0 (no indentation)
+  // Measurement items: `"name"` at column 0 (no indentation)
   || string.starts_with(raw_line, "\"")
 }
 
@@ -388,18 +392,18 @@ fn existing_provides_fields(provides: ast.Struct) -> List(String) {
 
 // --- Completion generators ---
 
-/// Suggest blueprint names from the workspace, filtered by the typed prefix.
-fn blueprint_header_completions(
-  workspace_blueprint_names: List(String),
+/// Suggest measurement names from the workspace, filtered by the typed prefix.
+fn measurement_header_completions(
+  workspace_measurement_names: List(String),
   prefix: String,
 ) -> List(CompletionItem) {
-  workspace_blueprint_names
+  workspace_measurement_names
   |> list.filter(fn(name) { string.starts_with(name, prefix) })
   |> list.map(fn(name) {
     CompletionItem(
       name,
       lsp_types.completion_item_kind_to_int(CikModule),
-      "Blueprint",
+      "Measurement",
       option.None,
       option.None,
     )
@@ -422,7 +426,7 @@ fn type_completions(
 
   // Also add type aliases from the file
   let alias_items = case parsed {
-    Ok(file_utils.Blueprints(file)) -> type_alias_items(file.type_aliases)
+    Ok(file_utils.Measurements(file)) -> type_alias_items(file.type_aliases)
     _ -> []
   }
 
@@ -449,7 +453,7 @@ fn general_completions(
 
   // Add extendable and type alias names from file
   let file_items = case parsed {
-    Ok(file_utils.Blueprints(file)) ->
+    Ok(file_utils.Measurements(file)) ->
       list.flatten([
         extendable_items_from_list(file.extendables),
         type_alias_items(file.type_aliases),
@@ -498,7 +502,7 @@ fn extendable_items(
   parsed: Result(file_utils.ParsedFile, a),
 ) -> List(CompletionItem) {
   case parsed {
-    Ok(file_utils.Blueprints(file)) ->
+    Ok(file_utils.Measurements(file)) ->
       extendable_items_from_list(file.extendables)
     Ok(file_utils.Expects(file)) -> extendable_items_from_list(file.extendables)
     Error(_) -> extract_extendable_names_from_text(content)

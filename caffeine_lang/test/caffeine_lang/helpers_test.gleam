@@ -150,7 +150,7 @@ pub fn build_system_tag_pairs_test() {
       org_name: identifiers.OrgName("my_org"),
       team_name: identifiers.TeamName("my_team"),
       service_name: identifiers.ServiceName("my_service"),
-      blueprint_name: identifiers.BlueprintName("my_bp"),
+      measurement_name: identifiers.MeasurementName("my_bp"),
       friendly_label: identifiers.ExpectationLabel("my_label"),
       misc: dict.from_list([#("env", ["prod", "dev"])]),
     )
@@ -160,7 +160,7 @@ pub fn build_system_tag_pairs_test() {
   list.contains(result, #("org", "my_org")) |> should.be_true()
   list.contains(result, #("team", "my_team")) |> should.be_true()
   list.contains(result, #("service", "my_service")) |> should.be_true()
-  list.contains(result, #("blueprint", "my_bp")) |> should.be_true()
+  list.contains(result, #("measurement", "my_bp")) |> should.be_true()
   list.contains(result, #("expectation", "my_label")) |> should.be_true()
   // Hardcoded artifact tag
   list.contains(result, #("artifact", "SLO")) |> should.be_true()

@@ -1,6 +1,6 @@
 import caffeine_lang/errors
 import caffeine_lang/linker/artifacts.{type ParamInfo, ParamInfo}
-import caffeine_lang/linker/blueprints
+import caffeine_lang/linker/measurements
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
@@ -24,29 +24,29 @@ fn slo_params() -> dict.Dict(String, ParamInfo) {
   ])
 }
 
-// ==== validate_blueprints ====
+// ==== validate_measurements ====
 // * ✅ happy path - empty list
-// * ✅ happy path - single valid blueprint merges SLO params
-// * ✅ happy path - multiple valid blueprints
-// * ✅ happy path - blueprint with no inputs (partial inputs allowed)
+// * ✅ happy path - single valid measurement merges SLO params
+// * ✅ happy path - multiple valid measurements
+// * ✅ happy path - measurement with no inputs (partial inputs allowed)
 // * ✅ happy path - empty params
 // * ✅ duplicates - duplicate names rejected
-// * ✅ duplicates - cannot overshadow SLO params with blueprint params
+// * ✅ duplicates - cannot overshadow SLO params with measurement params
 // * ✅ input validation - extra input field rejected
 // * ✅ input validation - wrong type input value rejected
-pub fn validate_blueprints_test() {
+pub fn validate_measurements_test() {
   // Happy path - empty list
   [#("empty list", [], Ok([]))]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 
-  // Happy path - single valid blueprint, SLO params get merged in
+  // Happy path - single valid measurement, SLO params get merged in
   [
     #(
-      "single valid blueprint merges SLO params",
+      "single valid measurement merges SLO params",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
@@ -55,7 +55,7 @@ pub fn validate_blueprints_test() {
         ),
       ],
       Ok([
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
@@ -68,15 +68,15 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 
-  // No inputs - allowed since blueprints can provide partial inputs
+  // No inputs - allowed since measurements can provide partial inputs
   [
     #(
-      "blueprint with no inputs (partial inputs allowed)",
+      "measurement with no inputs (partial inputs allowed)",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "minimal",
           params: dict.new(),
           inputs: dict.new(),
@@ -86,18 +86,18 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, slo_params()) {
+    case measurements.validate_measurements(bps, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
   })
 
-  // Happy path - empty params (no blueprint-specific params, only SLO params)
+  // Happy path - empty params (no measurement-specific params, only SLO params)
   [
     #(
       "empty params",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "minimal_params",
           params: dict.new(),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
@@ -107,23 +107,23 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, slo_params()) {
+    case measurements.validate_measurements(bps, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
   })
 
-  // Happy path - multiple blueprints
+  // Happy path - multiple measurements
   [
     #(
-      "multiple valid blueprints",
+      "multiple valid measurements",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "first",
           params: dict.new(),
           inputs: dict.new(),
         ),
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "second",
           params: dict.new(),
           inputs: dict.new(),
@@ -133,7 +133,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, slo_params()) {
+    case measurements.validate_measurements(bps, slo_params()) {
       Ok(result) -> list.length(result) == 2
       Error(_) -> False
     }
@@ -144,33 +144,33 @@ pub fn validate_blueprints_test() {
     #(
       "duplicate names rejected",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.new(),
           inputs: dict.new(),
         ),
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.new(),
           inputs: dict.new(),
         ),
       ],
       Error(errors.LinkerDuplicateError(
-        msg: "Duplicate blueprint names: success_rate",
+        msg: "Duplicate measurement names: success_rate",
         context: errors.empty_context(),
       )),
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 
   // Overshadowing SLO params
   [
     #(
-      "cannot overshadow SLO params with blueprint params",
+      "cannot overshadow SLO params with measurement params",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.from_list([
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -179,13 +179,13 @@ pub fn validate_blueprints_test() {
         ),
       ],
       Error(errors.LinkerDuplicateError(
-        msg: "blueprint 'success_rate' - overshadowing inherited_params from artifact: threshold",
+        msg: "measurement 'success_rate' - overshadowing inherited_params from artifact: threshold",
         context: errors.empty_context(),
       )),
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 
   // Extra input field
@@ -193,7 +193,7 @@ pub fn validate_blueprints_test() {
     #(
       "extra input field rejected",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.new(),
           inputs: dict.from_list([
@@ -203,13 +203,13 @@ pub fn validate_blueprints_test() {
         ),
       ],
       Error(errors.LinkerValueValidationError(
-        msg: "Input validation errors: blueprint 'success_rate' - Extra keys in input: extra",
+        msg: "Input validation errors: measurement 'success_rate' - Extra keys in input: extra",
         context: errors.empty_context(),
       )),
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 
   // Wrong type input value
@@ -217,19 +217,19 @@ pub fn validate_blueprints_test() {
     #(
       "wrong type input value rejected",
       [
-        blueprints.Blueprint(
+        measurements.Measurement(
           name: "success_rate",
           params: dict.new(),
           inputs: dict.from_list([#("value", value.IntValue(123))]),
         ),
       ],
       Error(errors.LinkerValueValidationError(
-        msg: "Input validation errors: blueprint 'success_rate' - expected (String) received (Int) value (123) for (value)",
+        msg: "Input validation errors: measurement 'success_rate' - expected (String) received (Int) value (123) for (value)",
         context: errors.empty_context(),
       )),
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, slo_params())
+    measurements.validate_measurements(bps, slo_params())
   })
 }

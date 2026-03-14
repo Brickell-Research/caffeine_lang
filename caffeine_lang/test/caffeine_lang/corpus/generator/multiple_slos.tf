@@ -32,7 +32,7 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "org:org",
     "team:test_team",
     "service:team",
-    "blueprint:test_blueprint",
+    "measurement:test_measurement",
     "expectation:Auth Latency SLO",
     "artifact:SLO",
   ]
@@ -56,7 +56,7 @@ resource "datadog_service_level_objective" "org_team_api_availability_slo" {
     "org:org",
     "team:test_team",
     "service:team",
-    "blueprint:test_blueprint",
+    "measurement:test_measurement",
     "expectation:API Availability SLO",
     "artifact:SLO",
   ]

@@ -1,17 +1,18 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
+  type ExpectItem, type ExpectsFile, type MeasurementItem, type MeasurementsFile,
   type Parsed,
 }
 import caffeine_lsp/file_utils
 import caffeine_lsp/position_utils
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
-/// Whether the item is a blueprint (supertype) or expectation (subtype).
+/// Whether the item is a measurement (supertype) or expectation (subtype).
 pub type TypeHierarchyKind {
-  /// A blueprint item acts as a supertype.
-  BlueprintKind
+  /// A measurement item acts as a supertype.
+  MeasurementKind
   /// An expectation item acts as a subtype.
   ExpectationKind
 }
@@ -24,14 +25,14 @@ pub type TypeHierarchyItem {
     line: Int,
     col: Int,
     name_len: Int,
-    /// For expectations: the blueprint name they reference.
-    /// For blueprints: empty string.
-    blueprint: String,
+    /// For expectations: the measurement name they reference.
+    /// For measurements: empty string.
+    measurement: String,
   )
 }
 
 /// Prepare type hierarchy at cursor position. Returns items if cursor is on
-/// a blueprint item name or expect item name.
+/// a measurement item name or expect item name.
 pub fn prepare_type_hierarchy(
   content: String,
   line: Int,
@@ -48,25 +49,25 @@ pub fn prepare_type_hierarchy(
 fn find_hierarchy_item(content: String, name: String) -> List(TypeHierarchyItem) {
   let lines = string.split(content, "\n")
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> find_in_blueprints(file, lines, name)
+    Ok(file_utils.Measurements(file)) -> find_in_measurements(file, lines, name)
     Ok(file_utils.Expects(file)) -> find_in_expects(file, lines, name)
     Error(_) -> []
   }
 }
 
-/// Search blueprint items for a matching name.
-fn find_in_blueprints(
-  file: BlueprintsFile(Parsed),
+/// Search measurement items for a matching name.
+fn find_in_measurements(
+  file: MeasurementsFile(Parsed),
   lines: List(String),
   name: String,
 ) -> List(TypeHierarchyItem) {
   file.items
-  |> list.filter_map(fn(item) { match_blueprint_item(item, lines, name) })
+  |> list.filter_map(fn(item) { match_measurement_item(item, lines, name) })
 }
 
-/// Return a hierarchy item if this blueprint item matches the name.
-fn match_blueprint_item(
-  item: BlueprintItem,
+/// Return a hierarchy item if this measurement item matches the name.
+fn match_measurement_item(
+  item: MeasurementItem,
   lines: List(String),
   name: String,
 ) -> Result(TypeHierarchyItem, Nil) {
@@ -78,11 +79,11 @@ fn match_blueprint_item(
         |> result.unwrap(#(0, 0))
       Ok(TypeHierarchyItem(
         name: item.name,
-        kind: BlueprintKind,
+        kind: MeasurementKind,
         line: line,
         col: col,
         name_len: string.length(item.name),
-        blueprint: "",
+        measurement: "",
       ))
     }
   }
@@ -98,7 +99,7 @@ fn find_in_expects(
   |> list.flat_map(fn(block) {
     block.items
     |> list.filter_map(fn(item) {
-      match_expect_item(item, lines, name, block.blueprint)
+      match_expect_item(item, lines, name, block.measurement)
     })
   })
 }
@@ -108,7 +109,7 @@ fn match_expect_item(
   item: ExpectItem,
   lines: List(String),
   name: String,
-  blueprint: String,
+  measurement: option.Option(String),
 ) -> Result(TypeHierarchyItem, Nil) {
   case item.name == name {
     False -> Error(Nil)
@@ -122,7 +123,7 @@ fn match_expect_item(
         line: line,
         col: col,
         name_len: string.length(item.name),
-        blueprint: blueprint,
+        measurement: option.unwrap(measurement, ""),
       ))
     }
   }

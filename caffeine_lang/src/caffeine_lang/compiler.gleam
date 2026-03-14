@@ -9,15 +9,15 @@ import caffeine_lang/codegen/honeycomb
 import caffeine_lang/codegen/newrelic
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type Linked, type Resolved,
 }
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
+import caffeine_lang/linker/measurements
 import caffeine_lang/source_file.{
-  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
+  type ExpectationSource, type SourceFile, type VendorMeasurementSource,
   SourceFile,
 }
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
@@ -39,28 +39,28 @@ pub type CompilationOutput {
   )
 }
 
-/// Compiles blueprint sources and expectation sources into Terraform configuration.
+/// Compiles measurement sources and expectation sources into Terraform configuration.
 /// Pure function — all file reading happens before this function is called.
 pub fn compile(
-  blueprints: List(VendorBlueprintSource),
+  measurements: List(VendorMeasurementSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  use irs <- result.try(run_parse_and_link(blueprints, expectations))
+  use irs <- result.try(run_parse_and_link(measurements, expectations))
   use resolved_irs <- result.try(run_semantic_analysis(irs))
   run_code_generation(resolved_irs)
 }
 
 /// Compiles from source strings directly (no file I/O).
 /// Used for browser-based compilation. The vendor parameter specifies
-/// which vendor the blueprints belong to.
+/// which vendor the measurements belong to.
 pub fn compile_from_strings(
-  blueprints_source: String,
+  measurements_source: String,
   expectations_source: String,
   expectations_path: String,
   vendor vendor_string: String,
 ) -> Result(CompilationOutput, errors.CompilationError) {
   use irs <- result.try(parse_from_strings(
-    blueprints_source,
+    measurements_source,
     expectations_source,
     expectations_path,
     vendor_string,
@@ -72,11 +72,11 @@ pub fn compile_from_strings(
 // ==== Pipeline stages ====
 
 fn run_parse_and_link(
-  blueprints: List(VendorBlueprintSource),
+  measurements: List(VendorMeasurementSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   let slo_params = stdlib_artifacts.slo_params()
-  linker.link(blueprints, expectations, slo_params:)
+  linker.link(measurements, expectations, slo_params:)
 }
 
 fn run_semantic_analysis(
@@ -142,7 +142,11 @@ fn platform_for(v: vendor.Vendor) -> VendorPlatform {
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  let grouped = group_by_vendor(resolved_irs)
+  // Filter out unmeasured IRs (vendor = None) before grouping for codegen.
+  // Unmeasured IRs participate in dependency graphs but not Terraform generation.
+  let measured_irs =
+    list.filter(resolved_irs, fn(ir) { option.is_some(ir.vendor) })
+  let grouped = group_by_vendor(measured_irs)
 
   // Build active platform groups, defaulting to Datadog boilerplate if no IRs.
   let active_groups =
@@ -246,16 +250,14 @@ fn run_code_generation(
   ))
 }
 
-/// Groups IRs by their resolved vendor, sorted by unique_identifier within each group.
+/// Groups measured IRs by their resolved vendor, sorted by unique_identifier within each group.
+/// Only called with IRs that have a vendor (unmeasured IRs are filtered before this step).
 fn group_by_vendor(
   irs: List(IntermediateRepresentation(Resolved)),
 ) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation(Resolved))) {
   list.group(irs, fn(ir) {
-    case ir.vendor {
-      option.Some(v) -> v
-      // Non-SLO IRs default to Datadog for boilerplate.
-      option.None -> vendor.Datadog
-    }
+    let assert option.Some(v) = ir.vendor
+    v
   })
   |> dict.map_values(fn(_, group) {
     list.sort(group, fn(a, b) {
@@ -265,7 +267,7 @@ fn group_by_vendor(
 }
 
 fn parse_from_strings(
-  blueprints_source: String,
+  measurements_source: String,
   expectations_source: String,
   expectations_path: String,
   vendor_string: String,
@@ -280,10 +282,10 @@ fn parse_from_strings(
     )),
   )
 
-  use raw_blueprints <- result.try(
-    pipeline.compile_blueprints(SourceFile(
-      path: "browser/blueprints.caffeine",
-      content: blueprints_source,
+  use raw_measurements <- result.try(
+    pipeline.compile_measurements(SourceFile(
+      path: "browser/measurements.caffeine",
+      content: measurements_source,
     )),
   )
 
@@ -294,27 +296,29 @@ fn parse_from_strings(
     )),
   )
 
-  use validated_blueprints <- result.try(blueprints.validate_blueprints(
-    raw_blueprints,
+  use validated_measurements <- result.try(measurements.validate_measurements(
+    raw_measurements,
     slo_params,
   ))
 
   let vendor_lookup =
-    raw_blueprints
+    raw_measurements
     |> list.map(fn(bp) { #(bp.name, resolved_vendor) })
     |> dict.from_list
 
-  use expectations_blueprint_collection <- result.try(
+  use expectations_measurement_collection <- result.try(
     expectations.validate_expectations(
       raw_expectations,
-      validated_blueprints,
+      validated_measurements,
+      slo_params: slo_params,
       from: expectations_path,
     ),
   )
 
   ir_builder.build_all(
-    [#(expectations_blueprint_collection, expectations_path)],
+    [#(expectations_measurement_collection, expectations_path)],
     reserved_labels:,
     vendor_lookup:,
+    slo_params:,
   )
 }

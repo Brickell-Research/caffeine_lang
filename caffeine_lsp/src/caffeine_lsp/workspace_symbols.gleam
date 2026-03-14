@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Parsed, type TypeAlias,
+  type ExpectItem, type ExpectsFile, type Extendable, type MeasurementItem,
+  type MeasurementsFile, type Parsed, type TypeAlias,
 }
 import caffeine_lsp/file_utils
 import caffeine_lsp/lsp_types.{SkClass, SkTypeParameter, SkVariable}
@@ -15,19 +15,19 @@ pub type WorkspaceSymbol {
 }
 
 /// Return flat top-level symbols from source text for workspace symbol search.
-/// Includes type aliases, extendables, blueprint items, and expect items.
+/// Includes type aliases, extendables, measurement items, and expect items.
 /// Excludes fields and block wrappers.
 pub fn get_workspace_symbols(content: String) -> List(WorkspaceSymbol) {
   let lines = string.split(content, "\n")
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> blueprints_symbols(file, lines)
+    Ok(file_utils.Measurements(file)) -> measurements_symbols(file, lines)
     Ok(file_utils.Expects(file)) -> expects_symbols(file, lines)
     Error(_) -> []
   }
 }
 
-fn blueprints_symbols(
-  file: BlueprintsFile(Parsed),
+fn measurements_symbols(
+  file: MeasurementsFile(Parsed),
   lines: List(String),
 ) -> List(WorkspaceSymbol) {
   let alias_syms =
@@ -35,7 +35,7 @@ fn blueprints_symbols(
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let item_syms =
-    list.map(file.items, fn(item) { blueprint_item_symbol(item, lines) })
+    list.map(file.items, fn(item) { measurement_item_symbol(item, lines) })
   list.flatten([alias_syms, ext_syms, item_syms])
 }
 
@@ -78,8 +78,8 @@ fn extendable_symbol(ext: Extendable, lines: List(String)) -> WorkspaceSymbol {
   )
 }
 
-fn blueprint_item_symbol(
-  item: BlueprintItem,
+fn measurement_item_symbol(
+  item: MeasurementItem,
   lines: List(String),
 ) -> WorkspaceSymbol {
   let #(line, col) =

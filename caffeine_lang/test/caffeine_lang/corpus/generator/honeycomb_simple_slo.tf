@@ -39,7 +39,7 @@ resource "honeycombio_slo" "acme_payments_api_success_rate" {
     org = "acme"
     team = "platform"
     service = "payments"
-    blueprint = "trace-availability"
+    measurement = "trace-availability"
     expectation = "api-success-rate"
     artifact = "slo"
   }

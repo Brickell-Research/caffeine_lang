@@ -1,12 +1,13 @@
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
-import caffeine_lang/linker/blueprints.{type Blueprint, type Raw}
 import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/linker/measurements.{type Measurement, type Raw}
 import caffeine_lang/types.{RecordType}
 import caffeine_lang/value
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleam/set
 import gleeunit/should
 import simplifile
@@ -21,11 +22,11 @@ fn read_file(path: String) -> String {
   content
 }
 
-fn parse_and_lower_blueprints(file_name: String) -> List(Blueprint(Raw)) {
+fn parse_and_lower_measurements(file_name: String) -> List(Measurement(Raw)) {
   let content = lowering_path(file_name <> ".caffeine") |> read_file
-  let assert Ok(file) = parser.parse_blueprints_file(content)
-  let assert Ok(validated) = validator.validate_blueprints_file(file)
-  lowering.lower_blueprints(validated)
+  let assert Ok(file) = parser.parse_measurements_file(content)
+  let assert Ok(validated) = validator.validate_measurements_file(file)
+  lowering.lower_measurements(validated)
 }
 
 fn parse_and_lower_expects(file_name: String) -> List(Expectation) {
@@ -35,20 +36,20 @@ fn parse_and_lower_expects(file_name: String) -> List(Expectation) {
   lowering.lower_expectations(validated)
 }
 
-// ==== lower_blueprints ====
-// * ✅ simple blueprint produces correct name, params, inputs
-// * ✅ multi-artifact blueprint
-// * ✅ blueprint with extends (extendable flattening)
+// ==== lower_measurements ====
+// * ✅ simple measurement produces correct name, params, inputs
+// * ✅ multi-artifact measurement
+// * ✅ measurement with extends (extendable flattening)
 // * ✅ advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
 // * ✅ template variables are transformed ($var$ -> $$var$$)
 // * ✅ template var edge cases (multiple vars, unclosed, already escaped, multi .not, mixed)
 // * ✅ type aliases are resolved inline
 // * ✅ Defaulted with type alias (Defaulted containing refinement type from alias)
-pub fn lower_blueprints_simple_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_simple")
-  list.length(blueprints) |> should.equal(1)
+pub fn lower_measurements_simple_test() {
+  let measurements = parse_and_lower_measurements("measurements_simple")
+  list.length(measurements) |> should.equal(1)
 
-  let assert Ok(bp) = list.first(blueprints)
+  let assert Ok(bp) = list.first(measurements)
   bp.name |> should.equal("api_availability")
 
   dict.size(bp.params) |> should.equal(2)
@@ -67,20 +68,20 @@ pub fn lower_blueprints_simple_test() {
   vendor_str |> should.equal("datadog")
 }
 
-pub fn lower_blueprints_multi_artifact_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_multi_artifact")
-  list.length(blueprints) |> should.equal(1)
+pub fn lower_measurements_multi_artifact_test() {
+  let measurements = parse_and_lower_measurements("measurements_multi_artifact")
+  list.length(measurements) |> should.equal(1)
 
-  let assert Ok(bp) = list.first(blueprints)
+  let assert Ok(bp) = list.first(measurements)
   bp.name |> should.equal("tracked_slo")
 
   // Should have params from both requires and artifacts
   { dict.size(bp.params) > 0 } |> should.be_true
 }
 
-pub fn lower_blueprints_with_extends_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_with_extends")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_with_extends_test() {
+  let measurements = parse_and_lower_measurements("measurements_with_extends")
+  let assert Ok(bp) = list.first(measurements)
 
   bp.name |> should.equal("api")
 
@@ -94,9 +95,9 @@ pub fn lower_blueprints_with_extends_test() {
   vendor_str |> should.equal("datadog")
 }
 
-pub fn lower_blueprints_advanced_types_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_advanced_types")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_advanced_types_test() {
+  let measurements = parse_and_lower_measurements("measurements_advanced_types")
+  let assert Ok(bp) = list.first(measurements)
 
   // List(String)
   let assert Ok(tags_type) = dict.get(bp.params, "tags")
@@ -154,9 +155,10 @@ pub fn lower_blueprints_advanced_types_test() {
   )
 }
 
-pub fn lower_blueprints_defaulted_type_alias_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_defaulted_type_alias")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_defaulted_type_alias_test() {
+  let measurements =
+    parse_and_lower_measurements("measurements_defaulted_type_alias")
+  let assert Ok(bp) = list.first(measurements)
 
   // environment param should be Defaulted containing a resolved OneOf from _env alias
   let assert Ok(env_type) = dict.get(bp.params, "environment")
@@ -172,9 +174,9 @@ pub fn lower_blueprints_defaulted_type_alias_test() {
   )
 }
 
-pub fn lower_blueprints_template_vars_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_template_vars")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_template_vars_test() {
+  let measurements = parse_and_lower_measurements("measurements_template_vars")
+  let assert Ok(bp) = list.first(measurements)
 
   // Template vars should be transformed: $env->env$ -> $$env->env$$
   let assert Ok(value_val) = dict.get(bp.inputs, "value")
@@ -189,10 +191,10 @@ pub fn lower_blueprints_template_vars_test() {
   |> should.equal("sum:http.requests{$$env->env$$, $$status->status:not$$}")
 }
 
-pub fn lower_blueprints_template_vars_edge_cases_test() {
-  let blueprints =
-    parse_and_lower_blueprints("blueprints_template_vars_edge_cases")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_template_vars_edge_cases_test() {
+  let measurements =
+    parse_and_lower_measurements("measurements_template_vars_edge_cases")
+  let assert Ok(bp) = list.first(measurements)
 
   // Multiple variables in one string
   let assert Ok(multi_val) = dict.get(bp.inputs, "multi_var")
@@ -220,9 +222,9 @@ pub fn lower_blueprints_template_vars_edge_cases_test() {
   mixed_str |> should.equal("prefix $$var->attr$$ suffix")
 }
 
-pub fn lower_blueprints_type_alias_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_type_alias")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_type_alias_test() {
+  let measurements = parse_and_lower_measurements("measurements_type_alias")
+  let assert Ok(bp) = list.first(measurements)
 
   // _env alias should be resolved to OneOf(String, {"production", "staging"})
   let assert Ok(env_type) = dict.get(bp.params, "env")
@@ -262,13 +264,14 @@ pub fn lower_blueprints_type_alias_test() {
   )
 }
 
-// ==== lower_blueprints (percentage types) ====
+// ==== lower_measurements (percentage types) ====
 // * ✅ Percentage lowers to PrimitiveType(NumericType(Percentage))
 // * ✅ Percentage refinement range lowers correctly
 // * ✅ Defaulted(Percentage, 99.9%) lowers correctly
-pub fn lower_blueprints_percentage_types_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_percentage_types")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_percentage_types_test() {
+  let measurements =
+    parse_and_lower_measurements("measurements_percentage_types")
+  let assert Ok(bp) = list.first(measurements)
 
   // Plain Percentage
   let assert Ok(threshold_type) = dict.get(bp.params, "threshold")
@@ -309,7 +312,7 @@ pub fn lower_expectations_percentage_literal_test() {
 }
 
 // ==== lower_expectations ====
-// * ✅ simple expectation produces correct name, blueprint_ref, inputs
+// * ✅ simple expectation produces correct name, measurement_ref, inputs
 // * ✅ expectation with extends (extendable flattening)
 // * ✅ multiple extends (merge order: left to right, then item)
 pub fn lower_expectations_simple_test() {
@@ -318,7 +321,7 @@ pub fn lower_expectations_simple_test() {
 
   let assert Ok(exp) = list.first(expectations)
   exp.name |> should.equal("checkout")
-  exp.blueprint_ref |> should.equal("api_availability")
+  exp.measurement_ref |> should.equal(option.Some("api_availability"))
   dict.size(exp.inputs) |> should.equal(2)
 
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
@@ -335,7 +338,7 @@ pub fn lower_expectations_with_extends_test() {
   let assert Ok(exp) = list.first(expectations)
 
   exp.name |> should.equal("checkout")
-  exp.blueprint_ref |> should.equal("api_availability")
+  exp.measurement_ref |> should.equal(option.Some("api_availability"))
 
   // Should have merged fields from _defaults extendable + own provides
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
@@ -385,12 +388,12 @@ pub fn literal_to_dynamic_test() {
   { expectations != [] } |> should.be_true
 }
 
-// ==== lower_blueprints (record types) ====
+// ==== lower_measurements (record types) ====
 // * ✅ type alias resolves to RecordType
 // * ✅ inline record type resolves to RecordType
-pub fn lower_blueprints_record_type_test() {
-  let blueprints = parse_and_lower_blueprints("blueprints_record_type")
-  let assert Ok(bp) = list.first(blueprints)
+pub fn lower_measurements_record_type_test() {
+  let measurements = parse_and_lower_measurements("measurements_record_type")
+  let assert Ok(bp) = list.first(measurements)
 
   // _indicators alias should resolve to RecordType
   let assert Ok(indicators_type) = dict.get(bp.params, "indicators")

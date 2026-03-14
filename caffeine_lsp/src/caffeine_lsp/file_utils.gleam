@@ -1,5 +1,5 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintsFile, type ExpectsFile, type Parsed,
+  type ExpectsFile, type MeasurementsFile, type Parsed,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
@@ -7,7 +7,7 @@ import gleam/string
 
 /// Result of detecting and parsing a caffeine file.
 pub type ParsedFile {
-  Blueprints(BlueprintsFile(Parsed))
+  Measurements(MeasurementsFile(Parsed))
   Expects(ExpectsFile(Parsed))
 }
 
@@ -17,7 +17,7 @@ pub fn is_defined_symbol(content: String, name: String) -> Bool {
   case string.starts_with(name, "_") {
     // Extendables and type aliases start with _ and appear as "_name ("
     True -> string.contains(content, name <> " (")
-    // Blueprint items appear as "name": at column 0, expect items as * "name":
+    // Measurement items appear as "name": at column 0, expect items as * "name":
     False -> string.contains(content, "\"" <> name <> "\"")
   }
 }
@@ -32,14 +32,14 @@ pub fn parse(
       case parser.parse_expects_file(content) {
         Ok(file) -> Ok(Expects(file))
         Error(ex_errs) ->
-          case parser.parse_blueprints_file(content) {
-            Ok(file) -> Ok(Blueprints(file))
+          case parser.parse_measurements_file(content) {
+            Ok(file) -> Ok(Measurements(file))
             Error(bp_errs) -> Error(#(bp_errs, ex_errs))
           }
       }
     False ->
-      case parser.parse_blueprints_file(content) {
-        Ok(file) -> Ok(Blueprints(file))
+      case parser.parse_measurements_file(content) {
+        Ok(file) -> Ok(Measurements(file))
         Error(bp_errs) ->
           case parser.parse_expects_file(content) {
             Ok(file) -> Ok(Expects(file))

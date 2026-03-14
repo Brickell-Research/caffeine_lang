@@ -1,6 +1,6 @@
 /// Type-safe wrappers for string identifiers used in IR metadata.
 /// These non-opaque newtypes prevent accidental mixing of org, team, service,
-/// blueprint, and expectation names at construction boundaries while keeping
+/// measurement, and expectation names at construction boundaries while keeping
 /// unwrapping lightweight via pattern matching.
 /// Organization name identifier.
 pub type OrgName {
@@ -17,9 +17,9 @@ pub type ServiceName {
   ServiceName(value: String)
 }
 
-/// Blueprint name identifier.
-pub type BlueprintName {
-  BlueprintName(value: String)
+/// Measurement name identifier.
+pub type MeasurementName {
+  MeasurementName(value: String)
 }
 
 /// Expectation label identifier.

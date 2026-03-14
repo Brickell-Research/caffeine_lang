@@ -2,10 +2,10 @@
 
 import {
   get_definition,
-  get_blueprint_ref_at_position,
+  get_measurement_ref_at_position,
   get_relation_ref_with_range_at_position,
   get_references,
-  get_blueprint_name_at,
+  get_measurement_name_at,
   find_references_to_name,
   Some,
 } from "./gleam_imports.ts";
@@ -39,10 +39,10 @@ export async function handleDefinition(ctx: HandlerContext, params: any) {
       }];
     }
 
-    // Cross-file blueprint reference
-    const bpRef = get_blueprint_ref_at_position(text, params.position.line, params.position.character);
+    // Cross-file measurement reference
+    const bpRef = get_measurement_ref_at_position(text, params.position.line, params.position.character);
     if (bpRef instanceof Some) {
-      const target = await ctx.workspace.findCrossFileBlueprintDef(bpRef[0] as string);
+      const target = await ctx.workspace.findCrossFileMeasurementDef(bpRef[0] as string);
       if (target) {
         return [{
           uri: target.uri,
@@ -85,8 +85,8 @@ export async function handleReferences(ctx: HandlerContext, params: any) {
       range: range(r[0], r[1], r[0], r[1] + r[2]),
     }));
 
-    const blueprintName = get_blueprint_name_at(text, line, char) as string;
-    if (!blueprintName) return sameFileRefs;
+    const measurementName = get_measurement_name_at(text, line, char) as string;
+    if (!measurementName) return sameFileRefs;
 
     const crossFileRefs: typeof sameFileRefs = [];
     const searched = new Set<string>([params.textDocument.uri]);
@@ -96,7 +96,7 @@ export async function handleReferences(ctx: HandlerContext, params: any) {
       const otherText = await ctx.workspace.getFileContentAsync(uri);
       if (!otherText) continue;
       try {
-        const otherRefs = gleamArray(find_references_to_name(otherText, blueprintName) as GleamList);
+        const otherRefs = gleamArray(find_references_to_name(otherText, measurementName) as GleamList);
         for (const r of otherRefs) {
           crossFileRefs.push({ uri, range: range(r[0], r[1], r[0], r[1] + r[2]) });
         }

@@ -116,8 +116,8 @@ describe("categorizeStatus", () => {
 });
 
 // ==== extractVendors ====
-// * derives vendor from blueprint filename stem
-// * maps all blueprint items to the filename vendor
+// * derives vendor from measurement filename stem
+// * maps all measurement items to the filename vendor
 // * returns empty map for non-vendor filenames
 // * returns empty map for expects files
 // * returns empty map when no URI provided
@@ -128,7 +128,7 @@ describe("extractVendors", () => {
     const text = `"api-latency":
   Requires { env: String }
   Provides { threshold: 99.9% }`;
-    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
+    const vendors = extractVendors(text, "file:///workspace/measurements/datadog.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("api-latency")).toBe("datadog");
   });
@@ -137,19 +137,19 @@ describe("extractVendors", () => {
     const text = `"p99-latency":
   Requires { env: String }
   Provides { threshold: 99.5% }`;
-    const vendors = extractVendors(text, "file:///workspace/blueprints/honeycomb.caffeine");
+    const vendors = extractVendors(text, "file:///workspace/measurements/honeycomb.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("p99-latency")).toBe("honeycomb");
   });
 
-  test("maps all blueprint items to the filename vendor", () => {
+  test("maps all measurement items to the filename vendor", () => {
     const text = `"dd-slo":
   Requires { env: String }
   Provides { threshold: 99.9% }
 "dd-slo-2":
   Requires { env: String }
   Provides { threshold: 99.5% }`;
-    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
+    const vendors = extractVendors(text, "file:///workspace/measurements/datadog.caffeine");
     expect(vendors.size).toBe(2);
     expect(vendors.get("dd-slo")).toBe("datadog");
     expect(vendors.get("dd-slo-2")).toBe("datadog");
@@ -159,12 +159,12 @@ describe("extractVendors", () => {
     const text = `"item":
   Requires { env: String }
   Provides { threshold: 99.9% }`;
-    const vendors = extractVendors(text, "file:///workspace/blueprints/custom.caffeine");
+    const vendors = extractVendors(text, "file:///workspace/measurements/custom.caffeine");
     expect(vendors.size).toBe(0);
   });
 
   test("returns empty map for expects files", () => {
-    const text = `Expectations measured by "slo-blueprint"
+    const text = `Expectations measured by "slo-measurement"
   * "p99-latency":
     Provides { env: "production" }`;
     const vendors = extractVendors(text, "file:///workspace/org/team/service.caffeine");
@@ -179,7 +179,7 @@ describe("extractVendors", () => {
   });
 
   test("returns empty map for empty text", () => {
-    expect(extractVendors("", "file:///workspace/blueprints/datadog.caffeine").size).toBe(0);
+    expect(extractVendors("", "file:///workspace/measurements/datadog.caffeine").size).toBe(0);
   });
 
   test("skips commented items", () => {
@@ -187,7 +187,7 @@ describe("extractVendors", () => {
 #   Provides { threshold: 99.9% }
 "real":
   Provides { threshold: 99.5% }`;
-    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
+    const vendors = extractVendors(text, "file:///workspace/measurements/datadog.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("real")).toBe("datadog");
     expect(vendors.has("commented-out")).toBe(false);
@@ -201,7 +201,7 @@ describe("extractVendors", () => {
 
 describe("extractExpectationPositions", () => {
   test("finds expectation items with correct line numbers", () => {
-    const text = `Expectations measured by "my-blueprint"
+    const text = `Expectations measured by "my-measurement"
   * "first-item":
     Provides { env: "prod" }
   * "second-item":
@@ -212,7 +212,7 @@ describe("extractExpectationPositions", () => {
     expect(positions[1]).toEqual({ name: "second-item", line: 3 });
   });
 
-  test("returns empty for blueprint files", () => {
+  test("returns empty for measurement files", () => {
     const text = `"item":
   Requires { env: String }
   Provides { threshold: 99.9% }`;

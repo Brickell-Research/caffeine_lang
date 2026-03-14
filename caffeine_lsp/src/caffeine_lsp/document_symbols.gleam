@@ -1,6 +1,6 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Parsed, type TypeAlias,
+  type ExpectItem, type ExpectsFile, type Extendable, type Field,
+  type MeasurementItem, type MeasurementsFile, type Parsed, type TypeAlias,
 }
 import caffeine_lang/types
 import caffeine_lsp/file_utils
@@ -9,6 +9,7 @@ import caffeine_lsp/lsp_types.{
 }
 import caffeine_lsp/position_utils
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -29,14 +30,14 @@ pub type DocumentSymbol {
 pub fn get_symbols(content: String) -> List(DocumentSymbol) {
   let lines = string.split(content, "\n")
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> blueprints_file_symbols(file, lines)
+    Ok(file_utils.Measurements(file)) -> measurements_file_symbols(file, lines)
     Ok(file_utils.Expects(file)) -> expects_file_symbols(file, lines)
     Error(_) -> []
   }
 }
 
-fn blueprints_file_symbols(
-  file: BlueprintsFile(Parsed),
+fn measurements_file_symbols(
+  file: MeasurementsFile(Parsed),
   lines: List(String),
 ) -> List(DocumentSymbol) {
   let alias_syms =
@@ -44,7 +45,7 @@ fn blueprints_file_symbols(
   let ext_syms =
     list.map(file.extendables, fn(e) { extendable_symbol(e, lines) })
   let item_syms =
-    list.map(file.items, fn(item) { blueprint_item_symbol(item, lines) })
+    list.map(file.items, fn(item) { measurement_item_symbol(item, lines) })
   list.flatten([alias_syms, ext_syms, item_syms])
 }
 
@@ -57,7 +58,10 @@ fn expects_file_symbols(
   let #(block_syms, _) =
     list.fold(file.blocks, #([], 0), fn(acc, b) {
       let #(syms, search_from) = acc
-      let name = "Expectations measured by " <> b.blueprint
+      let name = case b.measurement {
+        option.Some(m) -> "Expectations measured by " <> m
+        option.None -> "Unmeasured Expectations"
+      }
       let children =
         list.map(b.items, fn(item) { expect_item_symbol(item, lines) })
       let sym = block_symbol("Expectations", lines, name, children, search_from)
@@ -122,8 +126,8 @@ fn block_symbol(
   )
 }
 
-fn blueprint_item_symbol(
-  item: BlueprintItem,
+fn measurement_item_symbol(
+  item: MeasurementItem,
   lines: List(String),
 ) -> DocumentSymbol {
   let #(line, col) =

@@ -1,12 +1,14 @@
 /// Frontend lowering for Caffeine AST.
-/// Converts validated AST to Blueprint and Expectation types for the compiler pipeline.
+/// Converts validated AST to Measurement and Expectation types for the compiler pipeline.
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Literal, type Struct, type TypeAlias,
+  type ExpectItem, type ExpectsFile, type Extendable, type Field, type Literal,
+  type MeasurementItem, type MeasurementsFile, type Struct, type TypeAlias,
   type Validated,
 }
-import caffeine_lang/linker/blueprints.{type Blueprint, type Raw, Blueprint}
 import caffeine_lang/linker/expectations.{type Expectation, Expectation}
+import caffeine_lang/linker/measurements.{
+  type Measurement, type Raw, Measurement,
+}
 import caffeine_lang/types.{
   type AcceptedTypes, type ParsedType, CollectionType, Defaulted, Dict,
   InclusiveRange, List, ModifierType, OneOf, Optional, ParsedCollection,
@@ -16,17 +18,20 @@ import caffeine_lang/types.{
 import caffeine_lang/value
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/option
 import gleam/string
 
-/// Lowers blueprints from a validated blueprints AST.
+/// Lowers measurements from a validated measurements AST.
 @internal
-pub fn lower_blueprints(file: BlueprintsFile(Validated)) -> List(Blueprint(Raw)) {
+pub fn lower_measurements(
+  file: MeasurementsFile(Validated),
+) -> List(Measurement(Raw)) {
   let type_aliases = build_type_alias_map(file.type_aliases)
   let extendables = build_extendable_map(file.extendables)
 
   file.items
   |> list.map(fn(item) {
-    generate_blueprint_item(item, extendables, type_aliases)
+    generate_measurement_item(item, extendables, type_aliases)
   })
 }
 
@@ -39,7 +44,7 @@ pub fn lower_expectations(file: ExpectsFile(Validated)) -> List(Expectation) {
   |> list.flat_map(fn(block) {
     block.items
     |> list.map(fn(item) {
-      generate_expect_item(item, block.blueprint, extendables)
+      generate_expect_item(item, block.measurement, extendables)
     })
   })
 }
@@ -61,31 +66,31 @@ fn build_type_alias_map(
   |> dict.from_list
 }
 
-/// Generates a single blueprint from an AST item.
-fn generate_blueprint_item(
-  item: BlueprintItem,
+/// Generates a single measurement from an AST item.
+fn generate_measurement_item(
+  item: MeasurementItem,
   extendables: Dict(String, Extendable),
   type_aliases: Dict(String, ParsedType),
-) -> Blueprint(Raw) {
+) -> Measurement(Raw) {
   let #(merged_requires, merged_provides) =
-    merge_blueprint_extends(item, extendables)
+    merge_measurement_extends(item, extendables)
 
   let params = struct_to_params(merged_requires, type_aliases)
   let inputs = struct_to_inputs(merged_provides)
 
-  Blueprint(name: item.name, params: params, inputs: inputs)
+  Measurement(name: item.name, params: params, inputs: inputs)
 }
 
 /// Generates a single expectation from an AST item.
 fn generate_expect_item(
   item: ExpectItem,
-  blueprint: String,
+  measurement: option.Option(String),
   extendables: Dict(String, Extendable),
 ) -> Expectation {
   let merged_provides = merge_expect_extends(item, extendables)
   let inputs = struct_to_inputs(merged_provides)
 
-  Expectation(name: item.name, blueprint_ref: blueprint, inputs: inputs)
+  Expectation(name: item.name, measurement_ref: measurement, inputs: inputs)
 }
 
 /// Collects fields from extended extendables matching a given kind.
@@ -103,10 +108,10 @@ fn collect_extended_fields(
   })
 }
 
-/// Merges extended fields into a blueprint item's requires and provides.
+/// Merges extended fields into a measurement item's requires and provides.
 /// Order: extended extendables left-to-right, then item's own fields (can override).
-fn merge_blueprint_extends(
-  item: BlueprintItem,
+fn merge_measurement_extends(
+  item: MeasurementItem,
   extendables: Dict(String, Extendable),
 ) -> #(Struct, Struct) {
   let requires_fields =

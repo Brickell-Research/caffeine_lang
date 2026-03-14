@@ -1,8 +1,9 @@
 /// Validation for Caffeine frontend AST.
 /// Handles extendable-related validation that must occur before JSON generation.
 import caffeine_lang/frontend/ast.{
-  type BlueprintItem, type BlueprintsFile, type ExpectItem, type ExpectsFile,
-  type Extendable, type Field, type Parsed, type TypeAlias, type Validated,
+  type ExpectItem, type ExpectsFile, type Extendable, type Field,
+  type MeasurementItem, type MeasurementsFile, type Parsed, type TypeAlias,
+  type Validated,
 }
 import caffeine_lang/types.{
   type ParsedType, type PrimitiveTypes, Boolean, Defaulted, Dict, InclusiveRange,
@@ -55,15 +56,15 @@ pub type ValidatorError {
   InvalidPercentageBounds(value: String, referenced_by: String)
 }
 
-/// Validates a blueprints file.
+/// Validates a measurements file.
 /// Checks for duplicate extendables, undefined extendable references,
 /// duplicate type aliases, circular type aliases, undefined type alias references,
 /// and that Dict key type aliases resolve to String-based types.
 /// Returns all independent validation errors instead of stopping at the first.
 @internal
-pub fn validate_blueprints_file(
-  file: BlueprintsFile(Parsed),
-) -> Result(BlueprintsFile(Validated), List(ValidatorError)) {
+pub fn validate_measurements_file(
+  file: MeasurementsFile(Parsed),
+) -> Result(MeasurementsFile(Validated), List(ValidatorError)) {
   let type_aliases = file.type_aliases
   let extendables = file.extendables
   let items = file.items
@@ -105,7 +106,7 @@ pub fn validate_blueprints_file(
         type_alias_names,
         type_alias_map,
       ),
-      validate_blueprint_items_type_refs(
+      validate_measurement_items_type_refs(
         items,
         type_alias_names,
         type_alias_map,
@@ -114,12 +115,12 @@ pub fn validate_blueprints_file(
 
   // Group D: extends validation (depends on extendable structural checks passing)
   let extends_errors =
-    validate_blueprint_items_extends(items, extendables) |> errors_to_list
+    validate_measurement_items_extends(items, extendables) |> errors_to_list
 
   let dependent_errors = list.append(type_ref_errors, extends_errors)
   use <- guard_errors(dependent_errors)
 
-  Ok(ast.promote_blueprints_file(file))
+  Ok(ast.promote_measurements_file(file))
 }
 
 /// Validates an expects file.
@@ -223,9 +224,9 @@ fn validate_extendables_are_provides(
   }
 }
 
-/// Validates extends references for blueprint items.
-fn validate_blueprint_items_extends(
-  items: List(BlueprintItem),
+/// Validates extends references for measurement items.
+fn validate_measurement_items_extends(
+  items: List(MeasurementItem),
   extendables: List(Extendable),
 ) -> Result(Nil, ValidatorError) {
   let extendable_names =
@@ -483,9 +484,9 @@ fn validate_extendables_type_refs(
   })
 }
 
-/// Validates type alias references in blueprint items.
-fn validate_blueprint_items_type_refs(
-  items: List(BlueprintItem),
+/// Validates type alias references in measurement items.
+fn validate_measurement_items_type_refs(
+  items: List(MeasurementItem),
   type_alias_names: set.Set(String),
   type_alias_map: List(#(String, ParsedType)),
 ) -> Result(Nil, ValidatorError) {

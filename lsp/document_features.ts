@@ -11,7 +11,7 @@ import {
   get_code_actions,
   ActionDiagnostic,
   QuotedFieldName,
-  BlueprintNotFound,
+  MeasurementNotFound,
   DependencyNotFound,
   NoDiagnosticCode,
   format,
@@ -50,7 +50,7 @@ export function handleHover(ctx: HandlerContext, params: any) {
       doc.getText(),
       params.position.line,
       params.position.character,
-      ctx.workspace.allValidatedBlueprints(),
+      ctx.workspace.allValidatedMeasurements(),
     );
     if (result instanceof Some) {
       return { contents: { kind: "markdown" as const, value: result[0] } };
@@ -68,10 +68,10 @@ export function handleCompletion(ctx: HandlerContext, params: any) {
   const text = doc.getText();
 
   try {
-    const blueprintNames = toList(ctx.workspace.allKnownBlueprints());
-    const validatedBlueprints = ctx.workspace.allValidatedBlueprints();
+    const measurementNames = toList(ctx.workspace.allKnownMeasurements());
+    const validatedMeasurements = ctx.workspace.allValidatedMeasurements();
     const items = gleamArray(
-      get_completions(text, params.position.line, params.position.character, blueprintNames, validatedBlueprints) as GleamList,
+      get_completions(text, params.position.line, params.position.character, measurementNames, validatedMeasurements) as GleamList,
     );
     return items.map((item) => ({
       label: item.label,
@@ -142,7 +142,7 @@ export function handleCodeAction(_ctx: HandlerContext, params: any) {
             d.range.end.character,
             d.message,
             d.code === "quoted-field-name" ? new QuotedFieldName()
-              : d.code === "blueprint-not-found" ? new BlueprintNotFound()
+              : d.code === "measurement-not-found" ? new MeasurementNotFound()
               : d.code === "dependency-not-found" ? new DependencyNotFound()
               : new NoDiagnosticCode(),
           ),
@@ -323,7 +323,7 @@ export function handleSignatureHelp(ctx: HandlerContext, params: any) {
       doc.getText(),
       params.position.line,
       params.position.character,
-      ctx.workspace.allValidatedBlueprints(),
+      ctx.workspace.allValidatedMeasurements(),
     );
     if (result instanceof Some) {
       const sig = result[0];
@@ -358,7 +358,7 @@ export function handleInlayHints(ctx: HandlerContext, params: any) {
         doc.getText(),
         params.range.start.line,
         params.range.end.line,
-        ctx.workspace.allValidatedBlueprints(),
+        ctx.workspace.allValidatedMeasurements(),
       ) as GleamList,
     );
     return hints.map((h: { line: number; column: number; label: string; kind: number; padding_left: boolean }) => ({

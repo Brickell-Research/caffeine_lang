@@ -1,5 +1,5 @@
 import caffeine_lang/frontend/ast.{
-  type BlueprintsFile, type ExpectsBlock, type ExpectsFile, type Parsed,
+  type ExpectsBlock, type ExpectsFile, type MeasurementsFile, type Parsed,
   type Struct, type Value, ExtendableRequires, TypeValue,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
@@ -22,14 +22,14 @@ import gleam/string
 /// Structured diagnostic codes for machine-readable identification.
 pub type DiagnosticCode {
   QuotedFieldName
-  BlueprintNotFound
+  MeasurementNotFound
   DependencyNotFound
   MissingRequiredFields
   TypeMismatch
   UnknownField
   UnusedExtendable
   UnusedTypeAlias
-  DeadBlueprint
+  DeadMeasurement
   NoDiagnosticCode
 }
 
@@ -37,14 +37,14 @@ pub type DiagnosticCode {
 pub fn diagnostic_code_to_string(code: DiagnosticCode) -> Option(String) {
   case code {
     QuotedFieldName -> option.Some("quoted-field-name")
-    BlueprintNotFound -> option.Some("blueprint-not-found")
+    MeasurementNotFound -> option.Some("measurement-not-found")
     DependencyNotFound -> option.Some("dependency-not-found")
     MissingRequiredFields -> option.Some("missing-required-fields")
     TypeMismatch -> option.Some("type-mismatch")
     UnknownField -> option.Some("unknown-field")
     UnusedExtendable -> option.Some("unused-extendable")
     UnusedTypeAlias -> option.Some("unused-type-alias")
-    DeadBlueprint -> option.Some("dead-blueprint")
+    DeadMeasurement -> option.Some("dead-measurement")
     NoDiagnosticCode -> option.None
   }
 }
@@ -62,10 +62,10 @@ pub type Diagnostic {
 }
 
 /// Run all diagnostic checks with a single parse pass.
-/// Combines validation, cross-file blueprint, and dependency diagnostics.
+/// Combines validation, cross-file measurement, and dependency diagnostics.
 pub fn get_all_diagnostics(
   content: String,
-  known_blueprints: List(String),
+  known_measurements: List(String),
   known_identifiers: List(String),
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
@@ -74,7 +74,7 @@ pub fn get_all_diagnostics(
   case parsed {
     Ok(file) -> {
       let cross_file_diags =
-        get_cross_file_from_parsed(content, file, known_blueprints)
+        get_cross_file_from_parsed(content, file, known_measurements)
       let dep_diags =
         get_dependency_from_parsed(content, file, known_identifiers)
       list.flatten([validation_diags, cross_file_diags, dep_diags])
@@ -84,7 +84,7 @@ pub fn get_all_diagnostics(
 }
 
 /// Analyze source text and return diagnostics.
-/// Tries to parse as blueprints first, then as expects.
+/// Tries to parse as measurements first, then as expects.
 /// If parsing succeeds, runs the validator for additional checks.
 pub fn get_diagnostics(content: String) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
@@ -97,9 +97,9 @@ fn get_diagnostics_from_parsed(
   parsed: Result(file_utils.ParsedFile, #(List(ParserError), List(ParserError))),
 ) -> List(Diagnostic) {
   case parsed {
-    Ok(file_utils.Blueprints(file)) ->
-      case validator.validate_blueprints_file(file) {
-        Ok(_) -> get_unused_warnings_blueprints(content, file)
+    Ok(file_utils.Measurements(file)) ->
+      case validator.validate_measurements_file(file) {
+        Ok(_) -> get_unused_warnings_measurements(content, file)
         Error(errs) -> list.map(errs, validator_error_to_diagnostic(content, _))
       }
     Ok(file_utils.Expects(file)) ->
@@ -113,56 +113,65 @@ fn get_diagnostics_from_parsed(
   }
 }
 
-/// Check blueprint references in an expects file against known workspace blueprints.
-/// Returns diagnostics for any blueprint refs not found in the known list.
+/// Check measurement references in an expects file against known workspace measurements.
+/// Returns diagnostics for any measurement refs not found in the known list.
 pub fn get_cross_file_diagnostics(
   content: String,
-  known_blueprints: List(String),
+  known_measurements: List(String),
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
   case file_utils.parse(content) {
-    Ok(parsed) -> get_cross_file_from_parsed(content, parsed, known_blueprints)
+    Ok(parsed) ->
+      get_cross_file_from_parsed(content, parsed, known_measurements)
     _ -> []
   }
 }
 
-/// Blueprint reference checks from a successfully parsed file.
+/// Measurement reference checks from a successfully parsed file.
 fn get_cross_file_from_parsed(
   content: String,
   parsed: file_utils.ParsedFile,
-  known_blueprints: List(String),
+  known_measurements: List(String),
 ) -> List(Diagnostic) {
   case parsed {
     file_utils.Expects(file) ->
       file.blocks
       |> list.filter_map(fn(block) {
-        check_blueprint_ref(content, block, known_blueprints)
+        check_measurement_ref(content, block, known_measurements)
       })
     _ -> []
   }
 }
 
-/// Check a single expects block's blueprint reference against known blueprints.
-fn check_blueprint_ref(
+/// Check a single expects block's measurement reference against known measurements.
+/// Unmeasured blocks (measurement = None) are skipped.
+fn check_measurement_ref(
   content: String,
   block: ExpectsBlock,
-  known_blueprints: List(String),
+  known_measurements: List(String),
 ) -> Result(Diagnostic, Nil) {
-  use <- bool.guard(
-    when: list.contains(known_blueprints, block.blueprint),
-    return: Error(Nil),
-  )
-  let #(line, col) =
-    position_utils.find_name_position(content, block.blueprint)
-    |> result.unwrap(#(0, 0))
-  Ok(Diagnostic(
-    line: line,
-    column: col,
-    end_column: col + string.length(block.blueprint),
-    severity: DsError,
-    message: "Blueprint '" <> block.blueprint <> "' not found in workspace",
-    code: BlueprintNotFound,
-  ))
+  case block.measurement {
+    option.None -> Error(Nil)
+    option.Some(measurement) -> {
+      use <- bool.guard(
+        when: list.contains(known_measurements, measurement),
+        return: Error(Nil),
+      )
+      let #(line, col) =
+        position_utils.find_name_position(content, measurement)
+        |> result.unwrap(#(0, 0))
+      Ok(Diagnostic(
+        line: line,
+        column: col,
+        end_column: col + string.length(measurement),
+        severity: DsError,
+        message: "Measurement '"
+          <> measurement
+          <> "' not found in workspace",
+        code: MeasurementNotFound,
+      ))
+    }
+  }
 }
 
 /// Check dependency relation targets against known expectation identifiers.
@@ -195,14 +204,14 @@ fn get_dependency_from_parsed(
 /// Extract all dependency target strings from relation fields in a parsed file.
 fn extract_relation_targets(parsed: file_utils.ParsedFile) -> List(String) {
   case parsed {
-    file_utils.Blueprints(file) ->
-      extract_relation_targets_from_blueprints(file)
+    file_utils.Measurements(file) ->
+      extract_relation_targets_from_measurements(file)
     file_utils.Expects(file) -> extract_relation_targets_from_expects(file)
   }
 }
 
-fn extract_relation_targets_from_blueprints(
-  file: BlueprintsFile(Parsed),
+fn extract_relation_targets_from_measurements(
+  file: MeasurementsFile(Parsed),
 ) -> List(String) {
   file.items
   |> list.flat_map(fn(item) {
@@ -299,10 +308,10 @@ fn name_diagnostic(
   )
 }
 
-/// Detect unused extendables and type aliases in a blueprints file.
-fn get_unused_warnings_blueprints(
+/// Detect unused extendables and type aliases in a measurements file.
+fn get_unused_warnings_measurements(
   content: String,
-  file: BlueprintsFile(Parsed),
+  file: MeasurementsFile(Parsed),
 ) -> List(Diagnostic) {
   let extendable_warnings =
     get_unused_extendable_warnings(
@@ -314,7 +323,7 @@ fn get_unused_warnings_blueprints(
     get_unused_alias_warnings(
       content,
       file.type_aliases,
-      collect_alias_refs_from_blueprint(file),
+      collect_alias_refs_from_measurement(file),
     )
   list.append(extendable_warnings, alias_warnings)
 }
@@ -380,12 +389,12 @@ fn get_unused_alias_warnings(
   })
 }
 
-/// Collect all type alias references from a blueprints file's Requires fields
+/// Collect all type alias references from a measurements file's Requires fields
 /// and from other type alias definitions (chained aliases).
-fn collect_alias_refs_from_blueprint(
-  file: BlueprintsFile(Parsed),
+fn collect_alias_refs_from_measurement(
+  file: MeasurementsFile(Parsed),
 ) -> set.Set(String) {
-  // Refs from Requires fields in blueprint items
+  // Refs from Requires fields in measurement items
   let field_refs =
     list.flat_map(file.items, fn(i) {
       list.flat_map(i.requires.fields, fn(f) {
@@ -450,15 +459,15 @@ fn collect_alias_refs_from_parsed_type(parsed_type: ParsedType) -> List(String) 
   }
 }
 
-/// Detect blueprints with no expectations across the workspace.
-pub fn get_dead_blueprint_diagnostics(
+/// Detect measurements with no expectations across the workspace.
+pub fn get_dead_measurement_diagnostics(
   content: String,
-  all_referenced_blueprints: List(String),
+  all_referenced_measurements: List(String),
 ) -> List(Diagnostic) {
   use <- bool.guard(when: string.trim(content) == "", return: [])
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> {
-      let referenced = set.from_list(all_referenced_blueprints)
+    Ok(file_utils.Measurements(file)) -> {
+      let referenced = set.from_list(all_referenced_measurements)
       list.filter_map(file.items, fn(item) {
         case set.contains(referenced, item.name) {
           True -> Error(Nil)
@@ -472,10 +481,10 @@ pub fn get_dead_blueprint_diagnostics(
                 column: col,
                 end_column: col + string.length(item.name),
                 severity: DsWarning,
-                message: "Blueprint '"
+                message: "Measurement '"
                   <> item.name
                   <> "' has no expectations in the workspace",
-                code: DeadBlueprint,
+                code: DeadMeasurement,
               )
             })
         }

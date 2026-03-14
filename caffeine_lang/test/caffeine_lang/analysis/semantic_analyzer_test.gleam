@@ -30,7 +30,7 @@ pub fn resolve_intermediate_representations_test() {
             friendly_label: identifiers.ExpectationLabel("SLO One"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -75,7 +75,7 @@ pub fn resolve_intermediate_representations_test() {
             friendly_label: identifiers.ExpectationLabel("SLO Two"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -125,7 +125,7 @@ pub fn resolve_intermediate_representations_test() {
             friendly_label: identifiers.ExpectationLabel("SLO One"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -172,7 +172,7 @@ pub fn resolve_intermediate_representations_test() {
             friendly_label: identifiers.ExpectationLabel("SLO Two"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -247,7 +247,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("Foo SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -306,7 +306,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("Foo SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -372,7 +372,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -433,7 +433,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -500,7 +500,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP SLO Refinement"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -556,7 +556,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP SLO Refinement"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -619,7 +619,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP is Reasonable"),
           org_name: identifiers.OrgName("member_growth"),
           service_name: identifiers.ServiceName("member_portal"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("member"),
           misc: dict.new(),
         ),
@@ -691,7 +691,7 @@ pub fn resolve_indicators_test() {
           friendly_label: identifiers.ExpectationLabel("LCP is Reasonable"),
           org_name: identifiers.OrgName("member_growth"),
           service_name: identifiers.ServiceName("member_portal"),
-          blueprint_name: identifiers.BlueprintName("lcp_p75_latency"),
+          measurement_name: identifiers.MeasurementName("lcp_p75_latency"),
           team_name: identifiers.TeamName("member"),
           misc: dict.new(),
         ),
@@ -784,7 +784,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("HC SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -824,7 +824,7 @@ pub fn resolve_indicators_honeycomb_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("HC SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -882,7 +882,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("DT SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -927,7 +927,7 @@ pub fn resolve_indicators_dynatrace_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("DT SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -981,7 +981,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         friendly_label: identifiers.ExpectationLabel("DD SLO"),
         org_name: identifiers.OrgName("test"),
         service_name: identifiers.ServiceName("service"),
-        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        measurement_name: identifiers.MeasurementName("test_measurement"),
         team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
@@ -1028,7 +1028,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
         friendly_label: identifiers.ExpectationLabel("HC SLO"),
         org_name: identifiers.OrgName("test"),
         service_name: identifiers.ServiceName("service"),
-        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        measurement_name: identifiers.MeasurementName("test_measurement"),
         team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
@@ -1074,7 +1074,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             friendly_label: identifiers.ExpectationLabel("DD SLO"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -1121,7 +1121,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
             friendly_label: identifiers.ExpectationLabel("HC SLO"),
             org_name: identifiers.OrgName("test"),
             service_name: identifiers.ServiceName("service"),
-            blueprint_name: identifiers.BlueprintName("test_blueprint"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
             team_name: identifiers.TeamName("test_team"),
             misc: dict.new(),
           ),
@@ -1165,7 +1165,7 @@ pub fn resolve_intermediate_representations_mixed_vendor_test() {
 }
 
 // ==== resolve_indicators ====
-// * ✅ error - no vendor resolved returns SemanticAnalysisTemplateResolutionError
+// * ✅ no vendor (unmeasured) passes through without resolution
 pub fn resolve_indicators_no_vendor_error_test() {
   let ir =
     ir.IntermediateRepresentation(
@@ -1173,7 +1173,7 @@ pub fn resolve_indicators_no_vendor_error_test() {
         friendly_label: identifiers.ExpectationLabel("No Vendor SLO"),
         org_name: identifiers.OrgName("test"),
         service_name: identifiers.ServiceName("service"),
-        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        measurement_name: identifiers.MeasurementName("test_measurement"),
         team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
@@ -1204,11 +1204,8 @@ pub fn resolve_indicators_no_vendor_error_test() {
       vendor: option.None,
     )
 
-  let assert Error(err) = semantic_analyzer.resolve_indicators(ir)
-  err
-  |> should.equal(errors.semantic_analysis_template_resolution_error(
-    msg: "expectation 'test.test_team.service.No Vendor SLO' - no vendor resolved",
-  ))
+  semantic_analyzer.resolve_indicators(ir)
+  |> should.be_ok()
 }
 
 // ==== resolve_indicators ====
@@ -1222,7 +1219,7 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("NR SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -1271,7 +1268,7 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
           friendly_label: identifiers.ExpectationLabel("NR SLO"),
           org_name: identifiers.OrgName("test"),
           service_name: identifiers.ServiceName("service"),
-          blueprint_name: identifiers.BlueprintName("test_blueprint"),
+          measurement_name: identifiers.MeasurementName("test_measurement"),
           team_name: identifiers.TeamName("test_team"),
           misc: dict.new(),
         ),
@@ -1329,7 +1326,7 @@ pub fn resolve_intermediate_representations_no_vendor_error_test() {
         friendly_label: identifiers.ExpectationLabel("Bad SLO"),
         org_name: identifiers.OrgName("test"),
         service_name: identifiers.ServiceName("service"),
-        blueprint_name: identifiers.BlueprintName("test_blueprint"),
+        measurement_name: identifiers.MeasurementName("test_measurement"),
         team_name: identifiers.TeamName("test_team"),
         misc: dict.new(),
       ),
@@ -1348,5 +1345,5 @@ pub fn resolve_intermediate_representations_no_vendor_error_test() {
     )
 
   semantic_analyzer.resolve_intermediate_representations([no_vendor_ir])
-  |> should.be_error()
+  |> should.be_ok()
 }

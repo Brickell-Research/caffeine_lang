@@ -32,8 +32,8 @@ test("hover on type keyword returns markdown content", async () => {
     await client.start();
     await client.initialize();
 
-    const uri = fixtureUri("valid_blueprint.caffeine");
-    const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
+    const text = await readFixture("valid_measurement.caffeine");
 
     const diagPromise = client.waitForDiagnostics(uri);
     client.openDocument(uri, text);
@@ -60,8 +60,8 @@ test("hover on field name returns content", async () => {
     await client.start();
     await client.initialize();
 
-    const uri = fixtureUri("valid_blueprint.caffeine");
-    const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
+    const text = await readFixture("valid_measurement.caffeine");
 
     const diagPromise = client.waitForDiagnostics(uri);
     client.openDocument(uri, text);
@@ -88,8 +88,8 @@ test("hover on whitespace returns null", async () => {
     await client.start();
     await client.initialize();
 
-    const uri = fixtureUri("valid_blueprint.caffeine");
-    const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
+    const text = await readFixture("valid_measurement.caffeine");
 
     const diagPromise = client.waitForDiagnostics(uri);
     client.openDocument(uri, text);
@@ -112,8 +112,8 @@ test("completion in Requires block returns type keywords", async () => {
     await client.start();
     await client.initialize();
 
-    const uri = fixtureUri("valid_blueprint.caffeine");
-    const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
+    const text = await readFixture("valid_measurement.caffeine");
 
     const diagPromise = client.waitForDiagnostics(uri);
     client.openDocument(uri, text);
@@ -136,17 +136,17 @@ test("completion in Requires block returns type keywords", async () => {
   }
 }, 30_000);
 
-// ==== completion_blueprint_names ====
-// * Completion at "measured by" position suggests blueprint names from workspace
-test("completion suggests blueprint names from workspace", async () => {
+// ==== completion_measurement_names ====
+// * Completion at "measured by" position suggests measurement names from workspace
+test("completion suggests measurement names from workspace", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    // Open the blueprint file so the server indexes it
-    const bpUri = fixtureUri("valid_blueprint.caffeine");
-    const bpText = await readFixture("valid_blueprint.caffeine");
+    // Open the measurement file so the server indexes it
+    const bpUri = fixtureUri("valid_measurement.caffeine");
+    const bpText = await readFixture("valid_measurement.caffeine");
     const bpDiagPromise = client.waitForDiagnostics(bpUri);
     client.openDocument(bpUri, bpText);
     await bpDiagPromise;
@@ -158,15 +158,15 @@ test("completion suggests blueprint names from workspace", async () => {
     client.openDocument(exUri, exText);
     await exDiagPromise;
 
-    // Line 0: 'Expectations measured by "test_blueprint"'
-    // Character 26 is right after the opening quote — triggers blueprint name completions
+    // Line 0: 'Expectations measured by "test_measurement"'
+    // Character 26 is right after the opening quote — triggers measurement name completions
     const items = await client.completion(exUri, 0, 26);
 
     expect(Array.isArray(items)).toBeTruthy();
     expect(items.length > 0).toBeTruthy();
 
     const labels = items.map((item: Record<string, unknown>) => item.label);
-    expect(labels.includes("test_blueprint")).toBeTruthy();
+    expect(labels.includes("test_measurement")).toBeTruthy();
   } finally {
     await client.shutdown();
   }
@@ -201,16 +201,16 @@ test("go-to-definition on extendable navigates to definition", async () => {
 }, 30_000);
 
 // ==== signature_help ====
-// * Signature help inside expectation Provides block returns blueprint params
-test("signature help returns blueprint parameters in expects Provides", async () => {
+// * Signature help inside expectation Provides block returns measurement params
+test("signature help returns measurement parameters in expects Provides", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    // Open blueprint first so server indexes it
-    const bpUri = fixtureUri("valid_blueprint.caffeine");
-    const bpText = await readFixture("valid_blueprint.caffeine");
+    // Open measurement first so server indexes it
+    const bpUri = fixtureUri("valid_measurement.caffeine");
+    const bpText = await readFixture("valid_measurement.caffeine");
     const bpDiagPromise = client.waitForDiagnostics(bpUri);
     client.openDocument(bpUri, bpText);
     await bpDiagPromise;
@@ -228,7 +228,7 @@ test("signature help returns blueprint parameters in expects Provides", async ()
 
     expect(result !== null).toBeTruthy();
     expect(result.signatures.length).toBeGreaterThan(0);
-    expect(result.signatures[0].label).toContain("test_blueprint");
+    expect(result.signatures[0].label).toContain("test_measurement");
     expect(result.signatures[0].parameters.length).toBeGreaterThan(0);
   } finally {
     await client.shutdown();
@@ -236,16 +236,16 @@ test("signature help returns blueprint parameters in expects Provides", async ()
 }, 30_000);
 
 // ==== inlay_hints ====
-// * Inlay hints in expects file show field types from blueprint
-test("inlay hints show field types from blueprint", async () => {
+// * Inlay hints in expects file show field types from measurement
+test("inlay hints show field types from measurement", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    // Open blueprint first
-    const bpUri = fixtureUri("valid_blueprint.caffeine");
-    const bpText = await readFixture("valid_blueprint.caffeine");
+    // Open measurement first
+    const bpUri = fixtureUri("valid_measurement.caffeine");
+    const bpText = await readFixture("valid_measurement.caffeine");
     const bpDiagPromise = client.waitForDiagnostics(bpUri);
     client.openDocument(bpUri, bpText);
     await bpDiagPromise;

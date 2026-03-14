@@ -1,9 +1,11 @@
 import caffeine_lang/frontend/ast
-import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
+import caffeine_lang/linker/measurements.{
+  type Measurement, type MeasurementValidated,
+}
 import caffeine_lang/types.{type ParsedType, type TypeMeta, ParsedTypeAliasRef}
-import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
 import caffeine_lsp/keyword_info
+import caffeine_lsp/measurement_utils
 import caffeine_lsp/position_utils
 import gleam/dict
 import gleam/int
@@ -16,12 +18,12 @@ pub fn get_hover(
   content: String,
   line: Int,
   character: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> Option(String) {
   let word = position_utils.extract_word_at(content, line, character)
   case word {
     "" -> option.None
-    w -> lookup_hover(w, content, validated_blueprints)
+    w -> lookup_hover(w, content, validated_measurements)
   }
 }
 
@@ -30,14 +32,15 @@ pub fn get_hover(
 fn lookup_hover(
   word: String,
   content: String,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> Option(String) {
   case list.find(types.all_type_metas(), fn(m: TypeMeta) { m.name == word }) {
     Ok(meta) -> option.Some(format_type_meta(meta))
     Error(_) ->
       case lookup_keyword(word) {
         option.Some(kw) -> option.Some(kw)
-        option.None -> lookup_user_defined(word, content, validated_blueprints)
+        option.None ->
+          lookup_user_defined(word, content, validated_measurements)
       }
   }
 }
@@ -67,18 +70,18 @@ fn lookup_keyword(word: String) -> Option(String) {
 fn lookup_user_defined(
   word: String,
   content: String,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> Option(String) {
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) ->
+    Ok(file_utils.Measurements(file)) ->
       lookup_extendable(word, file.extendables)
       |> option.lazy_or(fn() { lookup_type_alias(word, file.type_aliases) })
-      |> option.lazy_or(fn() { lookup_blueprint_item(word, file) })
-      |> option.lazy_or(fn() { lookup_blueprint_field(word, file) })
+      |> option.lazy_or(fn() { lookup_measurement_item(word, file) })
+      |> option.lazy_or(fn() { lookup_measurement_field(word, file) })
     Ok(file_utils.Expects(file)) ->
       lookup_extendable(word, file.extendables)
       |> option.lazy_or(fn() {
-        lookup_expect_item(word, file, validated_blueprints)
+        lookup_expect_item(word, file, validated_measurements)
       })
       |> option.lazy_or(fn() { lookup_expect_field(word, file) })
     Error(_) -> option.None
@@ -155,9 +158,9 @@ fn resolve_alias_chain(
   }
 }
 
-fn lookup_blueprint_item(
+fn lookup_measurement_item(
   word: String,
-  file: ast.BlueprintsFile(ast.Parsed),
+  file: ast.MeasurementsFile(ast.Parsed),
 ) -> Option(String) {
   let items = file.items
   case list.find(items, fn(i) { i.name == word }) {
@@ -171,7 +174,7 @@ fn lookup_blueprint_item(
       option.Some(
         "**"
         <> item.name
-        <> "** — Blueprint item"
+        <> "** — Measurement item"
         <> extends_info
         <> "\n\nRequires: "
         <> int.to_string(req_count)
@@ -187,25 +190,28 @@ fn lookup_blueprint_item(
 fn lookup_expect_item(
   word: String,
   file: ast.ExpectsFile(ast.Parsed),
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> Option(String) {
-  // Find the item and its enclosing block (for blueprint ref lookup).
+  // Find the item and its enclosing block (for measurement ref lookup).
   let found =
     list.find_map(file.blocks, fn(block) {
       case list.find(block.items, fn(i) { i.name == word }) {
-        Ok(item) -> Ok(#(item, block.blueprint))
+        Ok(item) -> Ok(#(item, block.measurement))
         Error(_) -> Error(Nil)
       }
     })
   case found {
-    Ok(#(item, blueprint_ref)) -> {
+    Ok(#(item, measurement_ref)) -> {
       let extends_info = case item.extends {
         [] -> ""
         exts -> "\n\nExtends: " <> string.join(exts, ", ")
       }
       let prov_count = list.length(item.provides.fields)
-      let requires_info =
-        format_blueprint_requires(blueprint_ref, validated_blueprints)
+      let requires_info = case measurement_ref {
+        option.Some(ref) ->
+          format_measurement_requires(ref, validated_measurements)
+        option.None -> ""
+      }
       option.Some(
         "**"
         <> item.name
@@ -221,15 +227,15 @@ fn lookup_expect_item(
   }
 }
 
-/// Format the blueprint's remaining Requires params for hover display.
-fn format_blueprint_requires(
-  blueprint_ref: String,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+/// Format the measurement's remaining Requires params for hover display.
+fn format_measurement_requires(
+  measurement_ref: String,
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> String {
-  case list.find(validated_blueprints, fn(b) { b.name == blueprint_ref }) {
+  case list.find(validated_measurements, fn(b) { b.name == measurement_ref }) {
     Error(_) -> ""
-    Ok(blueprint) -> {
-      let remaining = blueprint_utils.compute_remaining_params(blueprint)
+    Ok(measurement) -> {
+      let remaining = measurement_utils.compute_remaining_params(measurement)
       let params =
         dict.to_list(remaining)
         |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
@@ -238,15 +244,15 @@ fn format_blueprint_requires(
         })
       case params {
         [] -> ""
-        _ -> "\n\n**Blueprint Requires:**\n" <> string.join(params, "\n")
+        _ -> "\n\n**Measurement Requires:**\n" <> string.join(params, "\n")
       }
     }
   }
 }
 
-fn lookup_blueprint_field(
+fn lookup_measurement_field(
   word: String,
-  file: ast.BlueprintsFile(ast.Parsed),
+  file: ast.MeasurementsFile(ast.Parsed),
 ) -> Option(String) {
   let all_fields =
     list.flat_map(file.items, fn(item) {

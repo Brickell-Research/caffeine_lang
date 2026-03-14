@@ -1,7 +1,7 @@
 /**
  * LSP e2e tests for diagnostics and cross-file validation.
  *
- * Covers single-file diagnostics, cross-file blueprint validation,
+ * Covers single-file diagnostics, cross-file measurement validation,
  * document changes, document close, and error recovery.
  */
 
@@ -26,15 +26,15 @@ async function readFixture(name: string): Promise<string> {
 }
 
 // ==== single_file_valid ====
-// * Opens a valid blueprint file and verifies zero diagnostics
-test("diagnostics: valid blueprint produces zero diagnostics", async () => {
+// * Opens a valid measurement file and verifies zero diagnostics
+test("diagnostics: valid measurement produces zero diagnostics", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    const uri = fixtureUri("valid_blueprint.caffeine");
-    const text = await readFixture("valid_blueprint.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
+    const text = await readFixture("valid_measurement.caffeine");
 
     const diagPromise = client.waitForDiagnostics(uri);
     client.openDocument(uri, text);
@@ -63,8 +63,8 @@ test("diagnostics: valid expects file produces diagnostics response", async () =
 
     const diag = await diagPromise;
     expect(diag.uri).toBe(uri);
-    // Expects file references "test_blueprint" — without the blueprint file
-    // being in the workspace, this may produce a "Blueprint not found" diagnostic
+    // Expects file references "test_measurement" — without the measurement file
+    // being in the workspace, this may produce a "Measurement not found" diagnostic
     expect(diag.diagnostics !== undefined).toBeTruthy();
   } finally {
     await client.shutdown();
@@ -99,29 +99,29 @@ test("diagnostics: syntax error produces meaningful diagnostic", async () => {
   }
 }, 30_000);
 
-// ==== cross_file_blueprint_found ====
-// * Opens a blueprint and an expects file, verifies no "blueprint not found" error
-test("diagnostics: cross-file blueprint reference resolves when blueprint is open", async () => {
+// ==== cross_file_measurement_found ====
+// * Opens a measurement and an expects file, verifies no "measurement not found" error
+test("diagnostics: cross-file measurement reference resolves when measurement is open", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    // Open the blueprint file first so its names are indexed
-    const bpUri = fixtureUri("valid_blueprint.caffeine");
-    const bpText = await readFixture("valid_blueprint.caffeine");
+    // Open the measurement file first so its names are indexed
+    const bpUri = fixtureUri("valid_measurement.caffeine");
+    const bpText = await readFixture("valid_measurement.caffeine");
     const bpDiagPromise = client.waitForDiagnostics(bpUri);
     client.openDocument(bpUri, bpText);
     await bpDiagPromise;
 
-    // Now open the expects file that references "test_blueprint"
+    // Now open the expects file that references "test_measurement"
     const exUri = fixtureUri("valid_expects.caffeine");
     const exText = await readFixture("valid_expects.caffeine");
     const exDiagPromise = client.waitForDiagnostics(exUri);
     client.openDocument(exUri, exText);
     const exDiag = await exDiagPromise;
 
-    // Should have no "blueprint not found" diagnostics since the blueprint is open
+    // Should have no "measurement not found" diagnostics since the measurement is open
     const bpNotFoundDiags = exDiag.diagnostics.filter((d) =>
       d.message.includes("not found")
     );
@@ -149,7 +149,7 @@ test("diagnostics: document change updates diagnostics", async () => {
     expect(diag1.diagnostics.length > 0).toBeTruthy();
 
     // Change to valid content
-    const validText = await readFixture("valid_blueprint.caffeine");
+    const validText = await readFixture("valid_measurement.caffeine");
     const diagPromise2 = client.waitForDiagnostics(uri);
     client.changeDocument(uri, validText, 2);
     const diag2 = await diagPromise2;
@@ -197,7 +197,7 @@ test("diagnostics: error recovery clears diagnostics after fix", async () => {
     // Use a synthetic URI for a virtual document
     const uri = "file:///tmp/test_recovery.caffeine";
 
-    // Start with broken content (missing colon after blueprint name)
+    // Start with broken content (missing colon after measurement name)
     const broken = `"test"\n  Requires { v: String }\n  Provides { v: "x" }\n`;
     const diagPromise1 = client.waitForDiagnostics(uri);
     client.openDocument(uri, broken);

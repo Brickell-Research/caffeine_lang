@@ -1,4 +1,4 @@
-// Workspace state management — file tracking, blueprint/expectation indices.
+// Workspace state management — file tracking, measurement/expectation indices.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -7,15 +7,15 @@ import type { TextDocuments } from "vscode-languageserver/node.js";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
-  extractBlueprintNames,
-  extractReferencedBlueprintNames,
+  extractMeasurementNames,
+  extractReferencedMeasurementNames,
   extractExpectationIdentifiers,
   extractVendors,
-  findBlueprintItemLocation,
+  findMeasurementItemLocation,
   applyIndexUpdates,
 } from "./workspace_parsers.ts";
 
-import { compile_validated_blueprints, get_workspace_symbols, Ok, toList } from "./gleam_imports.ts";
+import { compile_validated_measurements, get_workspace_symbols, Ok, toList } from "./gleam_imports.ts";
 import type { GleamList } from "./helpers.ts";
 import { gleamArray } from "./helpers.ts";
 import { debug } from "./debug.ts";
@@ -23,17 +23,17 @@ import { debug } from "./debug.ts";
 export class WorkspaceIndex {
   root: string | null = null;
   files = new Set<string>();
-  blueprintIndex = new Map<string, Set<string>>();
-  referencedBlueprintIndex = new Map<string, Set<string>>();
+  measurementIndex = new Map<string, Set<string>>();
+  referencedMeasurementIndex = new Map<string, Set<string>>();
   expectationIndex = new Map<string, Map<string, string>>();
   /** Maps file URI → (item name → vendor string, e.g., "datadog").
-   *  Derived from blueprint filenames (e.g., datadog.caffeine → "datadog"). */
+   *  Derived from measurement filenames (e.g., datadog.caffeine → "datadog"). */
   vendorIndex = new Map<string, Map<string, string>>();
   // deno-lint-ignore no-explicit-any
-  validatedBlueprintsCache = new Map<string, any>();
+  validatedMeasurementsCache = new Map<string, any>();
   // deno-lint-ignore no-explicit-any
-  private _mergedValidatedBlueprints: any = null;
-  private _validatedBlueprintsDirty = true;
+  private _mergedValidatedMeasurements: any = null;
+  private _validatedMeasurementsDirty = true;
 
   /** Cached workspace symbols per file URI. */
   // deno-lint-ignore no-explicit-any
@@ -55,14 +55,14 @@ export class WorkspaceIndex {
     for (const uri of this.files) {
       const text = await this.getFileContentAsync(uri);
       if (text) {
-        const names = extractBlueprintNames(text);
+        const names = extractMeasurementNames(text);
         if (names.length > 0) {
-          this.blueprintIndex.set(uri, new Set(names));
-          this.tryCompileBlueprints(uri, text);
+          this.measurementIndex.set(uri, new Set(names));
+          this.tryCompileMeasurements(uri, text);
         }
-        const refBlueprints = extractReferencedBlueprintNames(text);
-        if (refBlueprints.length > 0) {
-          this.referencedBlueprintIndex.set(uri, new Set(refBlueprints));
+        const refMeasurements = extractReferencedMeasurementNames(text);
+        if (refMeasurements.length > 0) {
+          this.referencedMeasurementIndex.set(uri, new Set(refMeasurements));
         }
         const ids = extractExpectationIdentifiers(text, uri);
         if (ids.size > 0) {
@@ -118,10 +118,10 @@ export class WorkspaceIndex {
     }
   }
 
-  /** Collect all known blueprint names across the workspace. */
-  allKnownBlueprints(): string[] {
+  /** Collect all known measurement names across the workspace. */
+  allKnownMeasurements(): string[] {
     const names: string[] = [];
-    for (const set of this.blueprintIndex.values()) {
+    for (const set of this.measurementIndex.values()) {
       for (const name of set) {
         names.push(name);
       }
@@ -129,10 +129,10 @@ export class WorkspaceIndex {
     return names;
   }
 
-  /** Collect all referenced blueprint names across the workspace (from expects files). */
-  allReferencedBlueprints(): string[] {
+  /** Collect all referenced measurement names across the workspace (from expects files). */
+  allReferencedMeasurements(): string[] {
     const names: string[] = [];
-    for (const set of this.referencedBlueprintIndex.values()) {
+    for (const set of this.referencedMeasurementIndex.values()) {
       for (const name of set) {
         names.push(name);
       }
@@ -140,15 +140,15 @@ export class WorkspaceIndex {
     return names;
   }
 
-  /** Look up a cross-file blueprint definition by blueprint item name. */
-  async findCrossFileBlueprintDef(
-    blueprintItemName: string,
+  /** Look up a cross-file measurement definition by measurement item name. */
+  async findCrossFileMeasurementDef(
+    measurementItemName: string,
   ): Promise<{ uri: string; line: number; col: number; nameLen: number } | null> {
-    for (const [uri, names] of this.blueprintIndex) {
-      if (!names.has(blueprintItemName)) continue;
+    for (const [uri, names] of this.measurementIndex) {
+      if (!names.has(measurementItemName)) continue;
       const text = await this.getFileContentAsync(uri);
       if (!text) continue;
-      const loc = findBlueprintItemLocation(text, blueprintItemName);
+      const loc = findMeasurementItemLocation(text, measurementItemName);
       if (loc) return { uri, ...loc };
     }
     return null;
@@ -177,27 +177,27 @@ export class WorkspaceIndex {
       if (idMap.get(itemName) !== dottedId) continue;
       const text = await this.getFileContentAsync(uri);
       if (!text) continue;
-      const loc = findBlueprintItemLocation(text, itemName);
+      const loc = findMeasurementItemLocation(text, itemName);
       if (loc) return { uri, ...loc };
     }
     return null;
   }
 
-  /** Updates blueprint, expectation, and referenced blueprint indices for a file. Returns true if any changed. */
+  /** Updates measurement, expectation, and referenced measurement indices for a file. Returns true if any changed. */
   updateIndicesForFile(uri: string, text: string): boolean {
-    const changed = applyIndexUpdates(uri, text, this.blueprintIndex, this.expectationIndex);
+    const changed = applyIndexUpdates(uri, text, this.measurementIndex, this.expectationIndex);
     this.workspaceSymbolsCache.delete(uri);
-    if (this.blueprintIndex.has(uri)) {
-      this.tryCompileBlueprints(uri, text);
-    } else if (this.validatedBlueprintsCache.delete(uri)) {
-      this._validatedBlueprintsDirty = true;
+    if (this.measurementIndex.has(uri)) {
+      this.tryCompileMeasurements(uri, text);
+    } else if (this.validatedMeasurementsCache.delete(uri)) {
+      this._validatedMeasurementsDirty = true;
     }
-    // Update referenced blueprint index
-    const newRefs = extractReferencedBlueprintNames(text);
+    // Update referenced measurement index
+    const newRefs = extractReferencedMeasurementNames(text);
     if (newRefs.length > 0) {
-      this.referencedBlueprintIndex.set(uri, new Set(newRefs));
+      this.referencedMeasurementIndex.set(uri, new Set(newRefs));
     } else {
-      this.referencedBlueprintIndex.delete(uri);
+      this.referencedMeasurementIndex.delete(uri);
     }
     // Update vendor index
     const newVendors = extractVendors(text, uri);
@@ -209,49 +209,49 @@ export class WorkspaceIndex {
     return changed;
   }
 
-  /** Try to compile and validate blueprints from file content, caching the result. */
-  private tryCompileBlueprints(uri: string, text: string): void {
+  /** Try to compile and validate measurements from file content, caching the result. */
+  private tryCompileMeasurements(uri: string, text: string): void {
     try {
-      const result = compile_validated_blueprints(text);
+      const result = compile_validated_measurements(text);
       if (result instanceof Ok) {
-        this.validatedBlueprintsCache.set(uri, result[0]);
+        this.validatedMeasurementsCache.set(uri, result[0]);
       } else {
-        this.validatedBlueprintsCache.delete(uri);
+        this.validatedMeasurementsCache.delete(uri);
       }
     } catch {
-      this.validatedBlueprintsCache.delete(uri);
+      this.validatedMeasurementsCache.delete(uri);
     }
-    this._validatedBlueprintsDirty = true;
+    this._validatedMeasurementsDirty = true;
   }
 
   /** Remove a file from all indices. Returns true if any index was modified. */
   removeFile(uri: string): boolean {
     this.files.delete(uri);
     this.workspaceSymbolsCache.delete(uri);
-    const hadBlueprints = this.blueprintIndex.delete(uri);
-    const hadRefs = this.referencedBlueprintIndex.delete(uri);
+    const hadMeasurements = this.measurementIndex.delete(uri);
+    const hadRefs = this.referencedMeasurementIndex.delete(uri);
     const hadExpectations = this.expectationIndex.delete(uri);
     this.vendorIndex.delete(uri);
-    if (this.validatedBlueprintsCache.delete(uri)) {
-      this._validatedBlueprintsDirty = true;
+    if (this.validatedMeasurementsCache.delete(uri)) {
+      this._validatedMeasurementsDirty = true;
     }
-    return hadBlueprints || hadRefs || hadExpectations;
+    return hadMeasurements || hadRefs || hadExpectations;
   }
 
-  /** Collect all validated blueprints across the workspace as a single Gleam list. */
+  /** Collect all validated measurements across the workspace as a single Gleam list. */
   // deno-lint-ignore no-explicit-any
-  allValidatedBlueprints(): any {
-    if (!this._validatedBlueprintsDirty && this._mergedValidatedBlueprints) {
-      return this._mergedValidatedBlueprints;
+  allValidatedMeasurements(): any {
+    if (!this._validatedMeasurementsDirty && this._mergedValidatedMeasurements) {
+      return this._mergedValidatedMeasurements;
     }
     // deno-lint-ignore no-explicit-any
     const all: any[] = [];
-    for (const cached of this.validatedBlueprintsCache.values()) {
+    for (const cached of this.validatedMeasurementsCache.values()) {
       all.push(...gleamArray(cached as GleamList));
     }
-    this._mergedValidatedBlueprints = toList(all);
-    this._validatedBlueprintsDirty = false;
-    return this._mergedValidatedBlueprints;
+    this._mergedValidatedMeasurements = toList(all);
+    this._validatedMeasurementsDirty = false;
+    return this._mergedValidatedMeasurements;
   }
 
   /** Check whether any expectation in the workspace uses a given vendor. */
@@ -265,41 +265,41 @@ export class WorkspaceIndex {
   }
 
   /** Get the vendor for an item in a file, or null.
-   *  For blueprint items, looks up the vendor directly from the vendor index.
-   *  For expectation items, resolves through the referenced blueprint. */
+   *  For measurement items, looks up the vendor directly from the vendor index.
+   *  For expectation items, resolves through the referenced measurement. */
   getVendorForItem(uri: string, itemName: string): string | null {
-    // Direct vendor from blueprint file's vendor index
+    // Direct vendor from measurement file's vendor index
     const direct = this.vendorIndex.get(uri)?.get(itemName);
     if (direct) return direct;
 
-    // Resolve through blueprint: find which blueprint this expectation references
+    // Resolve through measurement: find which measurement this expectation references
     const text = this.documents.get(uri)?.getText();
     if (!text) return null;
-    const blueprintName = this.findBlueprintForExpectation(text, itemName);
-    if (!blueprintName) return null;
+    const measurementName = this.findMeasurementForExpectation(text, itemName);
+    if (!measurementName) return null;
 
-    // Look up the vendor from the blueprint's vendor index
+    // Look up the vendor from the measurement's vendor index
     for (const [bpUri, vendors] of this.vendorIndex) {
-      if (!this.blueprintIndex.has(bpUri)) continue;
-      const vendor = vendors.get(blueprintName);
+      if (!this.measurementIndex.has(bpUri)) continue;
+      const vendor = vendors.get(measurementName);
       if (vendor) return vendor;
     }
     return null;
   }
 
-  /** Find the blueprint name referenced by an expectation item.
+  /** Find the measurement name referenced by an expectation item.
    *  Looks for the nearest `Expectations measured by "name"` header above the item. */
-  private findBlueprintForExpectation(text: string, itemName: string): string | null {
+  private findMeasurementForExpectation(text: string, itemName: string): string | null {
     const lines = text.split("\n");
     const headerPattern = /Expectations\s+measured\s+by\s+"([^"]+)"/;
-    let currentBlueprint: string | null = null;
+    let currentMeasurement: string | null = null;
     for (const line of lines) {
       const headerMatch = headerPattern.exec(line);
       if (headerMatch) {
-        currentBlueprint = headerMatch[1];
+        currentMeasurement = headerMatch[1];
       }
-      if (currentBlueprint && line.includes(`"${itemName}"`)) {
-        return currentBlueprint;
+      if (currentMeasurement && line.includes(`"${itemName}"`)) {
+        return currentMeasurement;
       }
     }
     return null;

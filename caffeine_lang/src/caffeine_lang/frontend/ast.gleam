@@ -1,6 +1,7 @@
-/// AST for Caffeine blueprint and expectation files.
+/// AST for Caffeine measurement and expectation files.
 import caffeine_lang/types.{type ParsedType}
 import gleam/list
+import gleam/option.{type Option}
 import gleam/string
 
 // =============================================================================
@@ -23,14 +24,14 @@ pub type Parsed
 /// Marker type for validated AST.
 pub type Validated
 
-/// A blueprints file containing type aliases, extendables, and blueprint items.
+/// A measurements file containing type aliases, extendables, and measurement items.
 /// Type aliases must come before extendables, which must come before items.
 /// The phantom `phase` parameter tracks whether the file has been validated.
-pub type BlueprintsFile(phase) {
-  BlueprintsFile(
+pub type MeasurementsFile(phase) {
+  MeasurementsFile(
     type_aliases: List(TypeAlias),
     extendables: List(Extendable),
-    items: List(BlueprintItem),
+    items: List(MeasurementItem),
     trailing_comments: List(Comment),
   )
 }
@@ -55,10 +56,12 @@ pub type ExpectsFile(phase) {
   )
 }
 
-/// Promotes a BlueprintsFile to a new phantom phase by reconstructing all fields.
+/// Promotes a MeasurementsFile to a new phantom phase by reconstructing all fields.
 @internal
-pub fn promote_blueprints_file(file: BlueprintsFile(a)) -> BlueprintsFile(b) {
-  BlueprintsFile(
+pub fn promote_measurements_file(
+  file: MeasurementsFile(a),
+) -> MeasurementsFile(b) {
+  MeasurementsFile(
     type_aliases: file.type_aliases,
     extendables: file.extendables,
     items: file.items,
@@ -80,7 +83,7 @@ pub fn promote_expects_file(file: ExpectsFile(a)) -> ExpectsFile(b) {
 // EXTENDABLES
 // =============================================================================
 
-/// An extendable block that can be inherited by blueprints or expectations.
+/// An extendable block that can be inherited by measurements or expectations.
 pub type Extendable {
   Extendable(
     name: String,
@@ -109,9 +112,9 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 // BLUEPRINT NODES
 // =============================================================================
 
-/// A single blueprint item with name, extends, requires, and provides.
-pub type BlueprintItem {
-  BlueprintItem(
+/// A single measurement item with name, extends, requires, and provides.
+pub type MeasurementItem {
+  MeasurementItem(
     name: String,
     extends: List(String),
     requires: Struct,
@@ -124,10 +127,10 @@ pub type BlueprintItem {
 // EXPECTS NODES
 // =============================================================================
 
-/// A block of expectations for a blueprint.
+/// A block of expectations for a measurement.
 pub type ExpectsBlock {
   ExpectsBlock(
-    blueprint: String,
+    measurement: Option(String),
     items: List(ExpectItem),
     leading_comments: List(Comment),
   )

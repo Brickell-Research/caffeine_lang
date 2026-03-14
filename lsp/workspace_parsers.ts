@@ -1,14 +1,14 @@
 // Pure parsing utilities for Caffeine workspace files.
-// Stateless functions for extracting blueprint names, expectation identifiers,
+// Stateless functions for extracting measurement names, expectation identifiers,
 // and locating items within file text.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Extract blueprint item names from a file's text. Returns empty array for non-blueprint files.
- *  Blueprint items start with `"name":` at column 0 (no `*` prefix).
- *  Non-expectations files are blueprint files. */
-export function extractBlueprintNames(text: string): string[] {
+/** Extract measurement item names from a file's text. Returns empty array for non-measurement files.
+ *  Measurement items start with `"name":` at column 0 (no `*` prefix).
+ *  Non-expectations files are measurement files. */
+export function extractMeasurementNames(text: string): string[] {
   if (text.includes("Expectations")) return [];
   const names: string[] = [];
   const pattern = /^"([^"]+)"\s*(?:extends\s*\[|:)/;
@@ -20,9 +20,9 @@ export function extractBlueprintNames(text: string): string[] {
   return names;
 }
 
-/** Find the location of a blueprint item (e.g. "name":) within a blueprint file.
- *  Blueprint items start with `"name":` at column 0. */
-export function findBlueprintItemLocation(
+/** Find the location of a measurement item (e.g. "name":) within a measurement file.
+ *  Measurement items start with `"name":` at column 0. */
+export function findMeasurementItemLocation(
   text: string,
   itemName: string,
 ): { line: number; col: number; nameLen: number } | null {
@@ -37,8 +37,8 @@ export function findBlueprintItemLocation(
   return null;
 }
 
-/** Extract blueprint names referenced via `Expectations measured by "name"` headers. */
-export function extractReferencedBlueprintNames(text: string): string[] {
+/** Extract measurement names referenced via `Expectations measured by "name"` headers. */
+export function extractReferencedMeasurementNames(text: string): string[] {
   const names: string[] = [];
   const pattern = /Expectations\s+measured\s+by\s+"([^"]+)"/;
   for (const line of text.split("\n")) {
@@ -88,13 +88,13 @@ export function extractExpectationIdentifiers(
   return result;
 }
 
-/** Known vendor names that can appear as blueprint filename stems. */
+/** Known vendor names that can appear as measurement filename stems. */
 const KNOWN_VENDORS = new Set(["datadog", "honeycomb", "dynatrace", "newrelic"]);
 
-/** Derive vendor for blueprint items from the filename stem.
- *  Blueprint files are named after their vendor (e.g., datadog.caffeine).
+/** Derive vendor for measurement items from the filename stem.
+ *  Measurement files are named after their vendor (e.g., datadog.caffeine).
  *  Extracts item names from the file and maps each to the vendor derived
- *  from the filename. Returns an empty map for non-blueprint files or
+ *  from the filename. Returns an empty map for non-measurement files or
  *  when the filename stem is not a known vendor. */
 export function extractVendors(text: string, uri?: string): Map<string, string> {
   const result = new Map<string, string>();
@@ -105,8 +105,8 @@ export function extractVendors(text: string, uri?: string): Map<string, string> 
   const stem = filename.replace(/\.caffeine$/, "");
   if (!KNOWN_VENDORS.has(stem)) return result;
 
-  // Map each blueprint item to the derived vendor
-  const names = extractBlueprintNames(text);
+  // Map each measurement item to the derived vendor
+  const names = extractMeasurementNames(text);
   for (const name of names) {
     result.set(name, stem);
   }
@@ -114,17 +114,17 @@ export function extractVendors(text: string, uri?: string): Map<string, string> 
   return result;
 }
 
-/** Update blueprint and expectation indices for a file, mutating both maps in place. Returns true if either changed. */
+/** Update measurement and expectation indices for a file, mutating both maps in place. Returns true if either changed. */
 export function applyIndexUpdates(
   uri: string,
   text: string,
-  blueprintIndex: Map<string, Set<string>>,
+  measurementIndex: Map<string, Set<string>>,
   expectationIndex: Map<string, Map<string, string>>,
 ): boolean {
   let changed = false;
 
-  const newNames = extractBlueprintNames(text);
-  const oldNames = blueprintIndex.get(uri);
+  const newNames = extractMeasurementNames(text);
+  const oldNames = measurementIndex.get(uri);
   const namesChanged = !oldNames
     || oldNames.size !== newNames.length
     || newNames.some((n) => !oldNames.has(n));
@@ -132,9 +132,9 @@ export function applyIndexUpdates(
     changed = true;
   }
   if (newNames.length > 0) {
-    blueprintIndex.set(uri, new Set(newNames));
+    measurementIndex.set(uri, new Set(newNames));
   } else {
-    blueprintIndex.delete(uri);
+    measurementIndex.delete(uri);
   }
 
   const newIds = extractExpectationIdentifiers(text, uri);

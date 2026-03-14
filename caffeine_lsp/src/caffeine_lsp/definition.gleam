@@ -25,18 +25,19 @@ pub fn get_definition(
 /// Supports extendables (_name) and type aliases (_name (Type): ...).
 fn find_definition(content: String, name: String) -> Option(#(Int, Int, Int)) {
   case file_utils.parse(content) {
-    Ok(file_utils.Blueprints(file)) -> find_in_blueprints(file, content, name)
+    Ok(file_utils.Measurements(file)) ->
+      find_in_measurements(file, content, name)
     Ok(file_utils.Expects(file)) -> find_in_expects(file, content, name)
     Error(_) -> option.None
   }
 }
 
-fn find_in_blueprints(
-  file: ast.BlueprintsFile(ast.Parsed),
+fn find_in_measurements(
+  file: ast.MeasurementsFile(ast.Parsed),
   content: String,
   name: String,
 ) -> Option(#(Int, Int, Int)) {
-  // Check type aliases, extendables, then blueprint items
+  // Check type aliases, extendables, then measurement items
   let all_names =
     list.flatten([
       list.map(file.type_aliases, fn(ta) { ta.name }),
@@ -75,9 +76,9 @@ fn find_name_location(content: String, name: String) -> Option(#(Int, Int, Int))
   }
 }
 
-/// Returns the blueprint name if the cursor is on a blueprint reference
+/// Returns the measurement name if the cursor is on a measurement reference
 /// in an `Expectations measured by "name"` header, or None otherwise.
-pub fn get_blueprint_ref_at_position(
+pub fn get_measurement_ref_at_position(
   content: String,
   line: Int,
   character: Int,
@@ -87,7 +88,7 @@ pub fn get_blueprint_ref_at_position(
       let lines = string.split(content, "\n")
       case list.drop(lines, line) {
         [line_text, ..] ->
-          find_blueprint_ref_on_line(line_text, character, file.blocks)
+          find_measurement_ref_on_line(line_text, character, file.blocks)
         [] -> option.None
       }
     }
@@ -170,8 +171,9 @@ fn is_dependency_path(s: String) -> Bool {
   }
 }
 
-/// Check if the cursor is on a blueprint name within an Expectations header.
-fn find_blueprint_ref_on_line(
+/// Check if the cursor is on a measurement name within an Expectations header.
+/// Unmeasured blocks (measurement = None) are skipped.
+fn find_measurement_ref_on_line(
   line_text: String,
   character: Int,
   blocks: List(ExpectsBlock),
@@ -179,16 +181,21 @@ fn find_blueprint_ref_on_line(
   let prefix = "Expectations measured by \""
   use <- bool.guard(!string.contains(line_text, prefix), option.None)
   list.find_map(blocks, fn(block) {
-    let pattern = prefix <> block.blueprint <> "\""
-    use <- bool.guard(!string.contains(line_text, pattern), Error(Nil))
-    case string.split_once(line_text, prefix) {
-      Error(_) -> Error(Nil)
-      Ok(#(before, _)) -> {
-        let name_start = string.length(before) + string.length(prefix)
-        let name_end = name_start + string.length(block.blueprint)
-        case character >= name_start && character < name_end {
-          True -> Ok(block.blueprint)
-          False -> Error(Nil)
+    case block.measurement {
+      option.None -> Error(Nil)
+      option.Some(measurement) -> {
+        let pattern = prefix <> measurement <> "\""
+        use <- bool.guard(!string.contains(line_text, pattern), Error(Nil))
+        case string.split_once(line_text, prefix) {
+          Error(_) -> Error(Nil)
+          Ok(#(before, _)) -> {
+            let name_start = string.length(before) + string.length(prefix)
+            let name_end = name_start + string.length(measurement)
+            case character >= name_start && character < name_end {
+              True -> Ok(measurement)
+              False -> Error(Nil)
+            }
+          }
         }
       }
     }

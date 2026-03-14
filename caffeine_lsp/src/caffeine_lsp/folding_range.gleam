@@ -42,9 +42,9 @@ fn scan_ranges(
 fn is_foldable_start(trimmed: String, indent: Int) -> Bool {
   case indent {
     0 ->
-      // Top-level: Blueprints/Expectations blocks, extendables, section comments,
-      // and blueprint items ("name":)
-      string.starts_with(trimmed, "Blueprints ")
+      // Top-level: Measurements/Expectations blocks, extendables, section comments,
+      // and measurement items ("name":)
+      string.starts_with(trimmed, "Measurements ")
       || string.starts_with(trimmed, "Expectations ")
       || string.starts_with(trimmed, "_")
       || string.starts_with(trimmed, "##")

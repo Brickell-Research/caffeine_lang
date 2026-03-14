@@ -7,7 +7,7 @@ import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/frontend/formatter
-import caffeine_lang/source_file.{SourceFile, VendorBlueprintSource}
+import caffeine_lang/source_file.{SourceFile, VendorMeasurementSource}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
 import filepath
@@ -62,11 +62,11 @@ fn log_level_from_quiet(quiet: Bool) -> LogLevel {
 @internal
 pub fn compile_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
-    "Compile .caffeine blueprints and expectations to output",
+    "Compile .caffeine measurements and expectations to output",
   )
   use quiet <- glint.flag(quiet_flag())
   use target <- glint.flag(target_flag())
-  use blueprints_dir <- glint.named_arg("blueprints_dir")
+  use measurements_dir <- glint.named_arg("measurements_dir")
   use expectations_dir <- glint.named_arg("expectations_dir")
   use <- glint.unnamed_args(glint.MinArgs(0))
   use named, unnamed_args, flags <- glint.command()
@@ -74,7 +74,7 @@ pub fn compile_command() -> glint.Command(Result(Nil, String)) {
   let assert Ok(is_quiet) = quiet(flags)
   let assert Ok(target) = target(flags)
   let log_level = log_level_from_quiet(is_quiet)
-  let bp_dir = blueprints_dir(named)
+  let bp_dir = measurements_dir(named)
   let exp_dir = expectations_dir(named)
   let output_path = case unnamed_args {
     [path, ..] -> option.Some(path)
@@ -130,18 +130,18 @@ pub fn types_command() -> glint.Command(Result(Nil, String)) {
 @internal
 pub fn validate_command() -> glint.Command(Result(Nil, String)) {
   use <- glint.command_help(
-    "Validate .caffeine blueprints and expectations without writing output",
+    "Validate .caffeine measurements and expectations without writing output",
   )
   use quiet <- glint.flag(quiet_flag())
   use target <- glint.flag(target_flag())
-  use blueprints_dir <- glint.named_arg("blueprints_dir")
+  use measurements_dir <- glint.named_arg("measurements_dir")
   use expectations_dir <- glint.named_arg("expectations_dir")
   use named, _, flags <- glint.command()
 
   let assert Ok(is_quiet) = quiet(flags)
   let assert Ok(target) = target(flags)
   let log_level = log_level_from_quiet(is_quiet)
-  let bp_dir = blueprints_dir(named)
+  let bp_dir = measurements_dir(named)
   let exp_dir = expectations_dir(named)
 
   validate(bp_dir, exp_dir, target, log_level)
@@ -173,14 +173,14 @@ pub fn root_command() -> glint.Command(Result(Nil, String)) {
 // --- Business logic ---
 
 fn compile(
-  blueprints_dir: String,
+  measurements_dir: String,
   expectations_dir: String,
   output_path: Option(String),
   target: String,
   log_level: LogLevel,
 ) -> Result(Nil, String) {
   use output <- result.try(load_and_compile(
-    blueprints_dir,
+    measurements_dir,
     expectations_dir,
     target,
     log_level,
@@ -241,13 +241,13 @@ fn compile(
 }
 
 fn validate(
-  blueprints_dir: String,
+  measurements_dir: String,
   expectations_dir: String,
   target: String,
   log_level: LogLevel,
 ) -> Result(Nil, String) {
   use _output <- result.try(load_and_compile(
-    blueprints_dir,
+    measurements_dir,
     expectations_dir,
     target,
     log_level,
@@ -257,9 +257,9 @@ fn validate(
   Ok(Nil)
 }
 
-/// Discovers, reads, and compiles blueprint and expectation files.
+/// Discovers, reads, and compiles measurement and expectation files.
 fn load_and_compile(
-  blueprints_dir: String,
+  measurements_dir: String,
   expectations_dir: String,
   target: String,
   log_level: LogLevel,
@@ -270,24 +270,24 @@ fn load_and_compile(
     |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
 
-  // Discover and read blueprint sources
-  use blueprint_entries <- result.try(
-    file_discovery.get_blueprint_files(blueprints_dir)
+  // Discover and read measurement sources
+  use measurement_entries <- result.try(
+    file_discovery.get_measurement_files(measurements_dir)
     |> result.map_error(fn(err) { format_compilation_error(err) }),
   )
-  use blueprints <- result.try(
-    blueprint_entries
+  use measurements <- result.try(
+    measurement_entries
     |> list.map(fn(entry) {
       let #(path, v) = entry
       simplifile.read(path)
       |> result.map(fn(content) {
-        VendorBlueprintSource(
+        VendorMeasurementSource(
           source: SourceFile(path: path, content: content),
           vendor: v,
         )
       })
       |> result.map_error(fn(err) {
-        "Error reading blueprint file: "
+        "Error reading measurement file: "
         <> simplifile.describe_error(err)
         <> " ("
         <> path
@@ -316,7 +316,7 @@ fn load_and_compile(
 
   // Compile with presentation output
   compile_presenter.compile_with_output(
-    blueprints,
+    measurements,
     expectations,
     target,
     log_level,

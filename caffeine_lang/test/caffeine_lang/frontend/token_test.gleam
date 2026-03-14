@@ -12,7 +12,7 @@ import test_helpers
 pub fn to_string_test() {
   [
     // Keywords
-    #("keyword Blueprints", token.KeywordBlueprints, "Blueprints"),
+    #("keyword Measurements", token.KeywordMeasurements, "Measurements"),
     #("keyword Expectations", token.KeywordExpectations, "Expectations"),
     #("keyword measured", token.KeywordMeasured, "measured"),
     #("keyword by", token.KeywordBy, "by"),

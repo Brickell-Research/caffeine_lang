@@ -14,9 +14,9 @@ fn read_file(path: String) -> String {
   content
 }
 
-fn parse_blueprints(file_name: String) -> ast.BlueprintsFile(ast.Parsed) {
+fn parse_measurements(file_name: String) -> ast.MeasurementsFile(ast.Parsed) {
   let assert Ok(file) =
-    validator_path(file_name) |> read_file |> parser.parse_blueprints_file
+    validator_path(file_name) |> read_file |> parser.parse_measurements_file
   file
 }
 
@@ -26,7 +26,7 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
   file
 }
 
-// ==== validate_blueprints_file ====
+// ==== validate_measurements_file ====
 // ==== Happy Paths ====
 // * ✅ valid - extendables exist, no duplicates
 // * ✅ valid - no extendables at all
@@ -38,9 +38,9 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
 // * ❌ multiple items where one references non-existent extendable
 // * ❌ duplicate extendable reference in extends list
 // ==== Error Cases - Overshadowing ====
-// * ❌ blueprint requires field overshadows extendable requires field
-// * ❌ blueprint provides field overshadows extendable provides field
-// * ❌ blueprint requires field overshadows one of multiple extended extendables
+// * ❌ measurement requires field overshadows extendable requires field
+// * ❌ measurement provides field overshadows extendable provides field
+// * ❌ measurement requires field overshadows one of multiple extended extendables
 // ==== Error Cases - Name Collisions ====
 // * ❌ extendable name collides with type alias name
 // ==== Error Cases - Type Aliases ====
@@ -53,32 +53,32 @@ fn parse_expects(file_name: String) -> ast.ExpectsFile(ast.Parsed) {
 // * ❌ circular type alias three-level (_a → _b → _c → _a)
 // * ❌ circular type alias through List inner type
 // * ❌ undefined type alias in record field
-pub fn validate_blueprints_file_test() {
+pub fn validate_measurements_file_test() {
   // Happy paths
   [
     #(
       "valid - extendables exist, no duplicates",
-      parse_blueprints("blueprints_valid"),
+      parse_measurements("measurements_valid"),
       Ok(Nil),
     ),
     #(
       "valid - no extendables at all",
-      parse_blueprints("blueprints_no_extendables"),
+      parse_measurements("measurements_no_extendables"),
       Ok(Nil),
     ),
     #(
       "valid - type aliases with references in Requires",
-      parse_blueprints("blueprints_valid_type_alias"),
+      parse_measurements("measurements_valid_type_alias"),
       Ok(Nil),
     ),
     #(
       "valid - record type with type alias",
-      parse_blueprints("blueprints_valid_record_type"),
+      parse_measurements("measurements_valid_record_type"),
       Ok(Nil),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    case validator.validate_blueprints_file(file) {
+    case validator.validate_measurements_file(file) {
       Ok(_) -> Ok(Nil)
       Error(e) -> Error(e)
     }
@@ -88,19 +88,19 @@ pub fn validate_blueprints_file_test() {
   [
     #(
       "duplicate extendable names",
-      parse_blueprints("blueprints_duplicate_extendable"),
+      parse_measurements("measurements_duplicate_extendable"),
       Error([validator.DuplicateExtendable(name: "_base")]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Missing extendable reference
   [
     #(
       "extends references non-existent extendable",
-      parse_blueprints("blueprints_missing_extendable"),
+      parse_measurements("measurements_missing_extendable"),
       Error([
         validator.UndefinedExtendable(
           name: "_nonexistent",
@@ -111,14 +111,14 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Multiple items, one with missing extendable
   [
     #(
       "multiple items where one references non-existent extendable",
-      parse_blueprints("blueprints_multiple_items_one_missing"),
+      parse_measurements("measurements_multiple_items_one_missing"),
       Error([
         validator.UndefinedExtendable(
           name: "_nonexistent",
@@ -129,28 +129,28 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Duplicate extendable reference in extends list
   [
     #(
       "duplicate extendable reference in extends list",
-      parse_blueprints("blueprints_duplicate_extends_ref"),
+      parse_measurements("measurements_duplicate_extends_ref"),
       Error([
         validator.DuplicateExtendsReference(name: "_base", referenced_by: "api"),
       ]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Overshadowing - requires field shadows extendable requires field
   [
     #(
-      "blueprint requires field overshadows extendable requires field",
-      parse_blueprints("blueprints_overshadow_requires"),
+      "measurement requires field overshadows extendable requires field",
+      parse_measurements("measurements_overshadow_requires"),
       Error([
         validator.ExtendableOvershadowing(
           field_name: "env",
@@ -161,14 +161,14 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Overshadowing - provides field shadows extendable provides field
   [
     #(
-      "blueprint provides field overshadows extendable provides field",
-      parse_blueprints("blueprints_overshadow_provides"),
+      "measurement provides field overshadows extendable provides field",
+      parse_measurements("measurements_overshadow_provides"),
       Error([
         validator.ExtendableOvershadowing(
           field_name: "vendor",
@@ -179,14 +179,14 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Overshadowing - requires field shadows one of multiple extended extendables
   [
     #(
-      "blueprint requires field overshadows one of multiple extended extendables",
-      parse_blueprints("blueprints_overshadow_multiple_extends"),
+      "measurement requires field overshadows one of multiple extended extendables",
+      parse_measurements("measurements_overshadow_multiple_extends"),
       Error([
         validator.ExtendableOvershadowing(
           field_name: "threshold",
@@ -197,38 +197,38 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Extendable name collides with type alias name
   [
     #(
       "extendable name collides with type alias name",
-      parse_blueprints("blueprints_extendable_type_alias_collision"),
+      parse_measurements("measurements_extendable_type_alias_collision"),
       Error([validator.ExtendableTypeAliasNameCollision(name: "_env")]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Duplicate type alias
   [
     #(
       "duplicate type alias names",
-      parse_blueprints("blueprints_duplicate_type_alias"),
+      parse_measurements("measurements_duplicate_type_alias"),
       Error([validator.DuplicateTypeAlias(name: "_env")]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Undefined type alias reference
   [
     #(
       "undefined type alias reference",
-      parse_blueprints("blueprints_undefined_type_alias"),
+      parse_measurements("measurements_undefined_type_alias"),
       Error([
         validator.UndefinedTypeAlias(
           name: "_undefined",
@@ -239,14 +239,14 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Invalid Dict key type alias (non-String type)
   [
     #(
       "invalid Dict key type alias",
-      parse_blueprints("blueprints_invalid_dict_key_type_alias"),
+      parse_measurements("measurements_invalid_dict_key_type_alias"),
       Error([
         validator.InvalidDictKeyTypeAlias(
           alias_name: "_count",
@@ -257,68 +257,68 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Circular type alias in record field
   [
     #(
       "circular type alias in record field",
-      parse_blueprints("blueprints_circular_record_type_alias"),
+      parse_measurements("measurements_circular_record_type_alias"),
       Error([validator.CircularTypeAlias(name: "_rec", cycle: ["_rec"])]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Circular type alias two-level (_a → _b → _a)
   [
     #(
       "circular type alias two-level",
-      parse_blueprints("blueprints_circular_two_level"),
+      parse_measurements("measurements_circular_two_level"),
       Error([
         validator.CircularTypeAlias(name: "_a", cycle: ["_b", "_a"]),
       ]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Circular type alias three-level (_a → _b → _c → _a)
   [
     #(
       "circular type alias three-level",
-      parse_blueprints("blueprints_circular_three_level"),
+      parse_measurements("measurements_circular_three_level"),
       Error([
         validator.CircularTypeAlias(name: "_a", cycle: ["_c", "_b", "_a"]),
       ]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Circular type alias through List inner type
   [
     #(
       "circular type alias through List inner type",
-      parse_blueprints("blueprints_circular_through_list"),
+      parse_measurements("measurements_circular_through_list"),
       Error([
         validator.CircularTypeAlias(name: "_a", cycle: ["_b", "_a"]),
       ]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Undefined type alias in record field
   [
     #(
       "undefined type alias in record field",
-      parse_blueprints("blueprints_undefined_record_type_alias"),
+      parse_measurements("measurements_undefined_record_type_alias"),
       Error([
         validator.UndefinedTypeAlias(
           name: "_nope",
@@ -329,7 +329,7 @@ pub fn validate_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 }
 
@@ -478,7 +478,7 @@ pub fn validate_refinement_values_test() {
   [
     #(
       "refinement type mismatch",
-      parse_blueprints("blueprints_refinement_type_mismatch"),
+      parse_measurements("measurements_refinement_type_mismatch"),
       Error([
         validator.InvalidRefinementValue(
           value: "hello",
@@ -489,14 +489,14 @@ pub fn validate_refinement_values_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Refinement type mismatch - Float OneOf with string
   [
     #(
       "refinement type mismatch - Float OneOf with string",
-      parse_blueprints("blueprints_refinement_float_mismatch"),
+      parse_measurements("measurements_refinement_float_mismatch"),
       Error([
         validator.InvalidRefinementValue(
           value: "hello",
@@ -507,14 +507,14 @@ pub fn validate_refinement_values_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Refinement type mismatch - Boolean OneOf with invalid value
   [
     #(
       "refinement type mismatch - Boolean OneOf with invalid value",
-      parse_blueprints("blueprints_refinement_bool_mismatch"),
+      parse_measurements("measurements_refinement_bool_mismatch"),
       Error([
         validator.InvalidRefinementValue(
           value: "yes",
@@ -525,14 +525,14 @@ pub fn validate_refinement_values_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Refinement type mismatch - Integer InclusiveRange with string bounds
   [
     #(
       "refinement type mismatch - Integer InclusiveRange with string bounds",
-      parse_blueprints("blueprints_refinement_range_mismatch"),
+      parse_measurements("measurements_refinement_range_mismatch"),
       Error([
         validator.InvalidRefinementValue(
           value: "a",
@@ -543,20 +543,20 @@ pub fn validate_refinement_values_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 
   // Percentage bounds out of range
   [
     #(
       "percentage bounds out of range",
-      parse_blueprints("blueprints_percentage_bounds"),
+      parse_measurements("measurements_percentage_bounds"),
       Error([
         validator.InvalidPercentageBounds(value: "200.0", referenced_by: "test"),
       ]),
     ),
   ]
   |> test_helpers.table_test_1(fn(file) {
-    validator.validate_blueprints_file(file)
+    validator.validate_measurements_file(file)
   })
 }

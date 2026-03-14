@@ -76,7 +76,7 @@ test("formatting already-formatted file returns identity or no edits", async () 
 
     const { uri, text } = await openFixture(
       client,
-      "valid_blueprint.caffeine",
+      "valid_measurement.caffeine",
     );
 
     const edits = await client.formatting(uri);
@@ -93,15 +93,15 @@ test("formatting already-formatted file returns identity or no edits", async () 
 }, 30_000);
 
 // ==== semantic_tokens_returned ====
-// * Requests semantic tokens for a blueprint file, verifies data is returned
+// * Requests semantic tokens for a measurement file, verifies data is returned
 test("semantic tokens returns non-empty token data", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    await openFixture(client, "valid_blueprint.caffeine");
-    const uri = fixtureUri("valid_blueprint.caffeine");
+    await openFixture(client, "valid_measurement.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
 
     const result = await client.semanticTokens(uri);
 
@@ -132,15 +132,15 @@ test("semantic tokens returns non-empty token data", async () => {
 }, 30_000);
 
 // ==== document_symbols ====
-// * Requests document symbols for a blueprint file, verifies symbols are returned
-test("document symbols returns symbols for blueprint file", async () => {
+// * Requests document symbols for a measurement file, verifies symbols are returned
+test("document symbols returns symbols for measurement file", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
     await client.start();
     await client.initialize();
 
-    await openFixture(client, "valid_blueprint.caffeine");
-    const uri = fixtureUri("valid_blueprint.caffeine");
+    await openFixture(client, "valid_measurement.caffeine");
+    const uri = fixtureUri("valid_measurement.caffeine");
 
     const symbols = await client.documentSymbols(uri);
 
@@ -157,7 +157,7 @@ test("document symbols returns symbols for blueprint file", async () => {
       expect(symbol.selectionRange).toBeTruthy();
     }
 
-    // Blueprint items are top-level symbols with kind Class=5
+    // Measurement items are top-level symbols with kind Class=5
     const classSymbol = symbols.find(
       (s: { kind: number }) => s.kind === 5,
     );

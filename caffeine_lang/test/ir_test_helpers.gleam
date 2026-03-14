@@ -95,7 +95,7 @@ pub fn make_deps_only_ir(
   )
 }
 
-/// Constructs test metadata with a fixed blueprint name.
+/// Constructs test metadata with a fixed measurement name.
 fn make_test_metadata(
   org: String,
   team: String,
@@ -106,7 +106,7 @@ fn make_test_metadata(
     friendly_label: identifiers.ExpectationLabel(name),
     org_name: identifiers.OrgName(org),
     service_name: identifiers.ServiceName(service),
-    blueprint_name: identifiers.BlueprintName("test_blueprint"),
+    measurement_name: identifiers.MeasurementName("test_measurement"),
     team_name: identifiers.TeamName(team),
     misc: dict.new(),
   )
@@ -147,7 +147,7 @@ pub fn make_vendor_slo_ir(
   org: String,
   team: String,
   service: String,
-  blueprint: String,
+  measurement: String,
   threshold: Float,
   window_in_days: Int,
   evaluation: String,
@@ -160,7 +160,7 @@ pub fn make_vendor_slo_ir(
       friendly_label: identifiers.ExpectationLabel(friendly_label),
       org_name: identifiers.OrgName(org),
       service_name: identifiers.ServiceName(service),
-      blueprint_name: identifiers.BlueprintName(blueprint),
+      measurement_name: identifiers.MeasurementName(measurement),
       team_name: identifiers.TeamName(team),
       misc: dict.new(),
     ),

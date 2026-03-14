@@ -2,8 +2,8 @@ import caffeine_lang/analysis/vendor
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
 import caffeine_lang/source_file.{
-  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
-  SourceFile, VendorBlueprintSource,
+  type ExpectationSource, type SourceFile, type VendorMeasurementSource,
+  SourceFile, VendorMeasurementSource,
 }
 import gleam/list
 import gleam/option
@@ -49,11 +49,11 @@ fn read_expectations_dir(dir: String) -> List(SourceFile(ExpectationSource)) {
   |> list.map(read_source_file)
 }
 
-fn read_vendor_blueprint(
+fn read_vendor_measurement(
   path: String,
   v: vendor.Vendor,
-) -> VendorBlueprintSource {
-  VendorBlueprintSource(source: read_source_file(path), vendor: v)
+) -> VendorMeasurementSource {
+  VendorMeasurementSource(source: read_source_file(path), vendor: v)
 }
 
 // ==== compile ====
@@ -67,7 +67,7 @@ pub fn compile_test() {
     #(
       "happy path - none",
       #(
-        corpus_path("happy_path_no_expectations_blueprints.caffeine"),
+        corpus_path("happy_path_no_expectations_measurements.caffeine"),
         corpus_path("happy_path_no_expectations"),
       ),
       Ok(read_corpus("happy_path_no_expectations_output.tf")),
@@ -76,7 +76,7 @@ pub fn compile_test() {
     #(
       "happy path - single",
       #(
-        corpus_path("happy_path_single_blueprints.caffeine"),
+        corpus_path("happy_path_single_measurements.caffeine"),
         corpus_path("happy_path_single_expectations"),
       ),
       Ok(read_corpus("happy_path_single_output.tf")),
@@ -85,7 +85,7 @@ pub fn compile_test() {
     #(
       "happy path - multiple (3 SLOs across 2 teams)",
       #(
-        corpus_path("happy_path_multiple_blueprints.caffeine"),
+        corpus_path("happy_path_multiple_measurements.caffeine"),
         corpus_path("happy_path_multiple_expectations"),
       ),
       Ok(read_corpus("happy_path_multiple_output.tf")),
@@ -94,16 +94,16 @@ pub fn compile_test() {
     #(
       "happy path - type alias (E2E test with type alias in Requires)",
       #(
-        corpus_path("happy_path_type_alias_blueprints.caffeine"),
+        corpus_path("happy_path_type_alias_measurements.caffeine"),
         corpus_path("happy_path_type_alias_expectations"),
       ),
       Ok(read_corpus("happy_path_type_alias_output.tf")),
     ),
   ]
   |> test_helpers.table_test_1(fn(input) {
-    let #(input_blueprints_path, input_expectations_dir) = input
+    let #(input_measurements_path, input_expectations_dir) = input
     compiler.compile(
-      [read_vendor_blueprint(input_blueprints_path, vendor.Datadog)],
+      [read_vendor_measurement(input_measurements_path, vendor.Datadog)],
       read_expectations_dir(input_expectations_dir),
     )
     |> result.map(fn(output) { output.terraform })
@@ -125,9 +125,9 @@ fn contains_all_substrings(
 // * ✅ happy path - single expectation with templated queries
 // * ✅ happy path - path extraction (org/team/service from file path)
 // * ✅ happy path - time_slice SLO expression
-// * ✅ sad path   - invalid blueprint DSL
+// * ✅ sad path   - invalid measurement DSL
 // * ✅ sad path   - invalid expectations DSL
-// * ✅ sad path   - missing blueprint reference
+// * ✅ sad path   - missing measurement reference
 pub fn compile_from_strings_test() {
   // happy paths - check that output contains expected substrings
   [
@@ -220,9 +220,9 @@ pub fn compile_from_strings_test() {
       ),
       True,
     ),
-    // sad path - invalid blueprint DSL
+    // sad path - invalid measurement DSL
     #(
-      "sad path - invalid blueprint DSL",
+      "sad path - invalid measurement DSL",
       #(
         "this is not valid caffeine syntax !!!",
         "Expectations measured by \"x\"
@@ -251,18 +251,18 @@ pub fn compile_from_strings_test() {
       ),
       False,
     ),
-    // sad path - missing blueprint reference
+    // sad path - missing measurement reference
     #(
-      "sad path - missing blueprint reference",
+      "sad path - missing measurement reference",
       #(
-        "\"some_blueprint\":
+        "\"some_measurement\":
   Requires {}
   Provides {
     evaluation: \"1\",
     indicators: { numerator: \"1\", denominator: \"1\" }
   }
 ",
-        "Expectations measured by \"nonexistent_blueprint\"
+        "Expectations measured by \"nonexistent_measurement\"
   * \"my_slo\":
     Provides {}
 ",
@@ -345,10 +345,10 @@ pub fn compile_from_strings_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(input) {
-    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let #(measurements_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(
-        blueprints_src,
+        measurements_src,
         expectations_src,
         path,
         vendor: "datadog",
@@ -407,7 +407,7 @@ pub fn compile_from_strings_honeycomb_test() {
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
       #(
-        "\"hc_blueprint\":
+        "\"hc_measurement\":
   Requires {}
   Provides {
     evaluation: \"sli\",
@@ -416,7 +416,7 @@ pub fn compile_from_strings_honeycomb_test() {
     }
   }
 ",
-        "Expectations measured by \"hc_blueprint\"
+        "Expectations measured by \"hc_measurement\"
   * \"hc_slo\":
     Provides {
       threshold: 99.5%,
@@ -430,10 +430,10 @@ pub fn compile_from_strings_honeycomb_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(input) {
-    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let #(measurements_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(
-        blueprints_src,
+        measurements_src,
         expectations_src,
         path,
         vendor: "honeycomb",
@@ -454,8 +454,8 @@ pub fn compile_from_strings_honeycomb_test() {
 pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let dd_source =
     SourceFile(
-      path: "blueprints/datadog.caffeine",
-      content: "\"dd_blueprint\":
+      path: "measurements/datadog.caffeine",
+      content: "\"dd_measurement\":
   Requires { env: String }
   Provides {
     evaluation: \"numerator / denominator\",
@@ -468,8 +468,8 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
     )
   let hc_source =
     SourceFile(
-      path: "blueprints/honeycomb.caffeine",
-      content: "\"hc_blueprint\":
+      path: "measurements/honeycomb.caffeine",
+      content: "\"hc_measurement\":
   Requires {}
   Provides {
     evaluation: \"sli\",
@@ -482,7 +482,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations measured by \"dd_blueprint\"
+      content: "Expectations measured by \"dd_measurement\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -490,7 +490,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
       window_in_days: 30
     }
 
-Expectations measured by \"hc_blueprint\"
+Expectations measured by \"hc_measurement\"
   * \"hc_slo\":
     Provides {
       threshold: 99.5%,
@@ -503,8 +503,8 @@ Expectations measured by \"hc_blueprint\"
   let assert Ok(output) =
     compiler.compile(
       [
-        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
-        VendorBlueprintSource(source: hc_source, vendor: vendor.Honeycomb),
+        VendorMeasurementSource(source: dd_source, vendor: vendor.Datadog),
+        VendorMeasurementSource(source: hc_source, vendor: vendor.Honeycomb),
       ],
       expectations,
     )
@@ -566,7 +566,7 @@ pub fn compile_from_strings_newrelic_test() {
     #(
       "sad path - New Relic with invalid window (not 1, 7, or 28)",
       #(
-        "\"nr_blueprint\":
+        "\"nr_measurement\":
   Requires {}
   Provides {
     evaluation: \"good / valid\",
@@ -576,7 +576,7 @@ pub fn compile_from_strings_newrelic_test() {
     }
   }
 ",
-        "Expectations measured by \"nr_blueprint\"
+        "Expectations measured by \"nr_measurement\"
   * \"nr_slo\":
     Provides {
       threshold: 99.5%,
@@ -590,10 +590,10 @@ pub fn compile_from_strings_newrelic_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(input) {
-    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let #(measurements_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(
-        blueprints_src,
+        measurements_src,
         expectations_src,
         path,
         vendor: "newrelic",
@@ -614,8 +614,8 @@ pub fn compile_from_strings_newrelic_test() {
 pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let dd_source =
     SourceFile(
-      path: "blueprints/datadog.caffeine",
-      content: "\"dd_blueprint\":
+      path: "measurements/datadog.caffeine",
+      content: "\"dd_measurement\":
   Requires { env: String }
   Provides {
     evaluation: \"numerator / denominator\",
@@ -628,8 +628,8 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
     )
   let nr_source =
     SourceFile(
-      path: "blueprints/newrelic.caffeine",
-      content: "\"nr_blueprint\":
+      path: "measurements/newrelic.caffeine",
+      content: "\"nr_measurement\":
   Requires {}
   Provides {
     evaluation: \"good / valid\",
@@ -643,7 +643,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations measured by \"dd_blueprint\"
+      content: "Expectations measured by \"dd_measurement\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -651,7 +651,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
       window_in_days: 30
     }
 
-Expectations measured by \"nr_blueprint\"
+Expectations measured by \"nr_measurement\"
   * \"nr_slo\":
     Provides {
       threshold: 99.5%,
@@ -664,8 +664,8 @@ Expectations measured by \"nr_blueprint\"
   let assert Ok(output) =
     compiler.compile(
       [
-        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
-        VendorBlueprintSource(source: nr_source, vendor: vendor.NewRelic),
+        VendorMeasurementSource(source: dd_source, vendor: vendor.Datadog),
+        VendorMeasurementSource(source: nr_source, vendor: vendor.NewRelic),
       ],
       expectations,
     )
@@ -723,7 +723,7 @@ pub fn compile_from_strings_dynatrace_test() {
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
       #(
-        "\"dt_blueprint\":
+        "\"dt_measurement\":
   Requires {}
   Provides {
     evaluation: \"sli\",
@@ -732,7 +732,7 @@ pub fn compile_from_strings_dynatrace_test() {
     }
   }
 ",
-        "Expectations measured by \"dt_blueprint\"
+        "Expectations measured by \"dt_measurement\"
   * \"dt_slo\":
     Provides {
       threshold: 99.5%,
@@ -746,10 +746,10 @@ pub fn compile_from_strings_dynatrace_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(input) {
-    let #(blueprints_src, expectations_src, path, expected_substrings) = input
+    let #(measurements_src, expectations_src, path, expected_substrings) = input
     let result =
       compiler.compile_from_strings(
-        blueprints_src,
+        measurements_src,
         expectations_src,
         path,
         vendor: "dynatrace",
@@ -770,8 +770,8 @@ pub fn compile_from_strings_dynatrace_test() {
 pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let dd_source =
     SourceFile(
-      path: "blueprints/datadog.caffeine",
-      content: "\"dd_blueprint\":
+      path: "measurements/datadog.caffeine",
+      content: "\"dd_measurement\":
   Requires { env: String }
   Provides {
     evaluation: \"numerator / denominator\",
@@ -784,8 +784,8 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
     )
   let dt_source =
     SourceFile(
-      path: "blueprints/dynatrace.caffeine",
-      content: "\"dt_blueprint\":
+      path: "measurements/dynatrace.caffeine",
+      content: "\"dt_measurement\":
   Requires {}
   Provides {
     evaluation: \"sli\",
@@ -798,7 +798,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations measured by \"dd_blueprint\"
+      content: "Expectations measured by \"dd_measurement\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -806,7 +806,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
       window_in_days: 30
     }
 
-Expectations measured by \"dt_blueprint\"
+Expectations measured by \"dt_measurement\"
   * \"dt_slo\":
     Provides {
       threshold: 99.5%,
@@ -819,8 +819,8 @@ Expectations measured by \"dt_blueprint\"
   let assert Ok(output) =
     compiler.compile(
       [
-        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
-        VendorBlueprintSource(source: dt_source, vendor: vendor.Dynatrace),
+        VendorMeasurementSource(source: dd_source, vendor: vendor.Datadog),
+        VendorMeasurementSource(source: dt_source, vendor: vendor.Dynatrace),
       ],
       expectations,
     )
@@ -912,9 +912,9 @@ Expectations measured by \"standalone\"
 // * ✅ all four vendors in single compilation merge providers and variables
 pub fn compile_all_four_vendors_test() {
   let dd_source =
-    VendorBlueprintSource(
+    VendorMeasurementSource(
       source: SourceFile(
-        path: "blueprints/datadog.caffeine",
+        path: "measurements/datadog.caffeine",
         content: "\"dd\":
   Requires { env: String }
   Provides {
@@ -929,9 +929,9 @@ pub fn compile_all_four_vendors_test() {
       vendor: vendor.Datadog,
     )
   let hc_source =
-    VendorBlueprintSource(
+    VendorMeasurementSource(
       source: SourceFile(
-        path: "blueprints/honeycomb.caffeine",
+        path: "measurements/honeycomb.caffeine",
         content: "\"hc\":
   Requires {}
   Provides {
@@ -943,9 +943,9 @@ pub fn compile_all_four_vendors_test() {
       vendor: vendor.Honeycomb,
     )
   let dt_source =
-    VendorBlueprintSource(
+    VendorMeasurementSource(
       source: SourceFile(
-        path: "blueprints/dynatrace.caffeine",
+        path: "measurements/dynatrace.caffeine",
         content: "\"dt\":
   Requires {}
   Provides {
@@ -957,9 +957,9 @@ pub fn compile_all_four_vendors_test() {
       vendor: vendor.Dynatrace,
     )
   let nr_source =
-    VendorBlueprintSource(
+    VendorMeasurementSource(
       source: SourceFile(
-        path: "blueprints/newrelic.caffeine",
+        path: "measurements/newrelic.caffeine",
         content: "\"nr\":
   Requires {}
   Provides {

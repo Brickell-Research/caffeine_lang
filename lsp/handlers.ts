@@ -12,7 +12,7 @@ import type { TextDocument } from "vscode-languageserver-textdocument";
 
 import {
   get_all_diagnostics,
-  get_dead_blueprint_diagnostics,
+  get_dead_measurement_diagnostics,
   get_linker_diagnostics,
   token_types,
   toList,
@@ -122,25 +122,25 @@ function createDiagnosticScheduler(ctx: HandlerContext): DiagnosticScheduler {
 
   function revalidateAll() {
     debug(`revalidateAll: ${documents.all().length} open documents`);
-    const knownBlueprints = toList(workspace.allKnownBlueprints());
+    const knownMeasurements = toList(workspace.allKnownMeasurements());
     const knownExpectations = toList(workspace.allKnownExpectationIdentifiers());
-    const referencedBlueprints = toList(workspace.allReferencedBlueprints());
-    const validatedBlueprints = workspace.allValidatedBlueprints();
+    const referencedMeasurements = toList(workspace.allReferencedMeasurements());
+    const validatedMeasurements = workspace.allValidatedMeasurements();
     for (const doc of documents.all()) {
       try {
         const text = doc.getText();
         const frontendDiags = gleamArray(
-          get_all_diagnostics(text, knownBlueprints, knownExpectations) as GleamList,
+          get_all_diagnostics(text, knownMeasurements, knownExpectations) as GleamList,
         );
         const linkerDiags = gleamArray(
-          get_linker_diagnostics(text, validatedBlueprints) as GleamList,
+          get_linker_diagnostics(text, validatedMeasurements) as GleamList,
         );
-        const deadBlueprintDiags = gleamArray(
-          get_dead_blueprint_diagnostics(text, referencedBlueprints) as GleamList,
+        const deadMeasurementDiags = gleamArray(
+          get_dead_measurement_diagnostics(text, referencedMeasurements) as GleamList,
         );
         connection.sendDiagnostics({
           uri: doc.uri,
-          diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
+          diagnostics: [...frontendDiags, ...linkerDiags, ...deadMeasurementDiags].map(gleamDiagToLsp),
         });
       } catch (e) { debug(`revalidateAll(${doc.uri}): ${e}`); }
     }
@@ -191,7 +191,7 @@ function registerInitializeHandler(ctx: HandlerContext): void {
 
       try {
         await workspace.initializeFromRoot(rootUri);
-        debug(`initialize: indexed ${workspace.files.size} files, ${workspace.blueprintIndex.size} blueprint files, ${workspace.expectationIndex.size} expectation files`);
+        debug(`initialize: indexed ${workspace.files.size} files, ${workspace.measurementIndex.size} measurement files, ${workspace.expectationIndex.size} expectation files`);
         // Kick off SLO data fetch if Datadog expectations exist
         if (ctx.sloCache && workspace.hasVendor("datadog")) {
           debug("slo-overlay: Datadog expectations found, fetching SLO data");
@@ -272,25 +272,25 @@ function registerDiagnosticsHandler(
             const frontendDiags = gleamArray(
               get_all_diagnostics(
                 text,
-                toList(workspace.allKnownBlueprints()),
+                toList(workspace.allKnownMeasurements()),
                 toList(workspace.allKnownExpectationIdentifiers()),
               ) as GleamList,
             );
             const linkerDiags = gleamArray(
               get_linker_diagnostics(
                 text,
-                workspace.allValidatedBlueprints(),
+                workspace.allValidatedMeasurements(),
               ) as GleamList,
             );
-            const deadBlueprintDiags = gleamArray(
-              get_dead_blueprint_diagnostics(
+            const deadMeasurementDiags = gleamArray(
+              get_dead_measurement_diagnostics(
                 text,
-                toList(workspace.allReferencedBlueprints()),
+                toList(workspace.allReferencedMeasurements()),
               ) as GleamList,
             );
             connection.sendDiagnostics({
               uri,
-              diagnostics: [...frontendDiags, ...linkerDiags, ...deadBlueprintDiags].map(gleamDiagToLsp),
+              diagnostics: [...frontendDiags, ...linkerDiags, ...deadMeasurementDiags].map(gleamDiagToLsp),
             });
           } catch (e) {
             debug(`diagnostics(${uri}): ${e}`);
@@ -314,7 +314,7 @@ function registerDocumentCloseHandler(
     const uri = event.document.uri;
     connection.sendDiagnostics({ uri, diagnostics: [] });
 
-    const hadBlueprintsBefore = workspace.blueprintIndex.has(uri);
+    const hadMeasurementsBefore = workspace.measurementIndex.has(uri);
     const hadExpectationsBefore = workspace.expectationIndex.has(uri);
 
     (async () => {
@@ -329,9 +329,9 @@ function registerDocumentCloseHandler(
         workspace.removeFile(uri);
       }
 
-      const hasBlueprintsAfter = workspace.blueprintIndex.has(uri);
+      const hasMeasurementsAfter = workspace.measurementIndex.has(uri);
       const hasExpectationsAfter = workspace.expectationIndex.has(uri);
-      if (hadBlueprintsBefore || hasBlueprintsAfter || hadExpectationsBefore || hasExpectationsAfter) {
+      if (hadMeasurementsBefore || hasMeasurementsAfter || hadExpectationsBefore || hasExpectationsAfter) {
         scheduler.scheduleRevalidation();
       }
     })().catch((e) => { debug(`documentClose: ${e}`); });

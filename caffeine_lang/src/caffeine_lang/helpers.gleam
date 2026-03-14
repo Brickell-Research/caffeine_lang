@@ -1,6 +1,6 @@
 import caffeine_lang/constants
 import caffeine_lang/identifiers.{
-  type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
+  type ExpectationLabel, type MeasurementName, type OrgName, type ServiceName,
   type TeamName,
 }
 import caffeine_lang/linker/artifacts.{type DependencyRelationType}
@@ -258,7 +258,7 @@ pub fn build_system_tag_pairs(
   org_name org_name: OrgName,
   team_name team_name: TeamName,
   service_name service_name: ServiceName,
-  blueprint_name blueprint_name: BlueprintName,
+  measurement_name measurement_name: MeasurementName,
   friendly_label friendly_label: ExpectationLabel,
   misc misc: dict.Dict(String, List(String)),
 ) -> List(#(String, String)) {
@@ -268,7 +268,7 @@ pub fn build_system_tag_pairs(
     #("org", org_name.value),
     #("team", team_name.value),
     #("service", service_name.value),
-    #("blueprint", blueprint_name.value),
+    #("measurement", measurement_name.value),
     #("expectation", friendly_label.value),
     #("artifact", "SLO"),
   ]

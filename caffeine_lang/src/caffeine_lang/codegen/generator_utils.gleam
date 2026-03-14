@@ -38,7 +38,7 @@ pub fn render_terraform_config(
   render.render_config(config)
 }
 
-/// Build an HCL comment identifying the source blueprint and expectation.
+/// Build an HCL comment identifying the source measurement and expectation.
 @internal
 pub fn build_source_comment(
   metadata: IntermediateRepresentationMetaData,
@@ -51,8 +51,8 @@ pub fn build_source_comment(
   <> metadata.service_name.value
   <> "."
   <> metadata.friendly_label.value
-  <> " (blueprint: "
-  <> metadata.blueprint_name.value
+  <> " (measurement: "
+  <> metadata.measurement_name.value
   <> ")"
 }
 

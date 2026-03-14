@@ -14,14 +14,14 @@ fn read_file(path: String) -> String {
 }
 
 // ==== format ====
-// * ✅ formats unformatted blueprint to canonical output
+// * ✅ formats unformatted measurement to canonical output
 // * ✅ formats unformatted expects to canonical output
-// * ✅ already-formatted blueprint is unchanged
+// * ✅ already-formatted measurement is unchanged
 // * ✅ already-formatted expects is unchanged
 // * ✅ type alias formatted correctly
 // * ✅ complex types formatted correctly
 // ==== format (comments within blocks) ====
-// * ✅ comments within a single blueprint block
+// * ✅ comments within a single measurement block
 // * ✅ comments within a single expects block
 // * ✅ comments between fields in struct
 // * ✅ trailing comments inside struct
@@ -29,14 +29,14 @@ fn read_file(path: String) -> String {
 // * ✅ comments in extendable struct
 // ==== format (comments between blocks) ====
 // * ✅ comments between expects blocks
-// * ✅ comments between blueprint blocks
+// * ✅ comments between measurement blocks
 // * ✅ many consecutive comments between expects blocks
 // * ✅ multi-block expects with extendable and comments everywhere
-// * ✅ multi-block blueprints with comments between blocks
-// * ✅ comments between all section types (type alias, extendable, blueprint)
+// * ✅ multi-block measurements with comments between blocks
+// * ✅ comments between all section types (type alias, extendable, measurement)
 // * ✅ real-world sidekiq multi-block expects with comments
 // * ✅ extendable joining collapses blank lines between extendables
-// * ✅ record type blueprint formats correctly
+// * ✅ record type measurement formats correctly
 // * ✅ percentage types and literals format correctly
 // ==== format (80-column boundary) ====
 // * ✅ inline struct at 65 chars stays inline (65 + 14 = 79 < 80)
@@ -45,14 +45,14 @@ fn read_file(path: String) -> String {
 // * ✅ empty extendable struct with trailing comment preserves comment
 pub fn format_test() {
   [
-    #("unformatted_blueprint", "formatted_blueprint"),
+    #("unformatted_measurement", "formatted_measurement"),
     #("unformatted_expects", "formatted_expects"),
     #("already_formatted", "already_formatted"),
     #("formatted_expects", "formatted_expects"),
-    #("type_alias_blueprint", "type_alias_blueprint"),
+    #("type_alias_measurement", "type_alias_measurement"),
     #("complex_types", "complex_types"),
     // Comments within blocks
-    #("comments_blueprint", "comments_blueprint"),
+    #("comments_measurement", "comments_measurement"),
     #("comments_expects", "comments_expects"),
     #("comments_in_struct_fields", "comments_in_struct_fields"),
     #("comments_trailing_in_struct", "comments_trailing_in_struct"),
@@ -63,22 +63,25 @@ pub fn format_test() {
     #("comments_in_extendable_struct", "comments_in_extendable_struct"),
     // Comments between blocks
     #("comments_between_expects_blocks", "comments_between_expects_blocks"),
-    #("comments_between_blueprint_blocks", "comments_between_blueprint_blocks"),
+    #(
+      "comments_between_measurement_blocks",
+      "comments_between_measurement_blocks",
+    ),
     #("comments_many_consecutive", "comments_many_consecutive"),
     #(
       "comments_multi_expects_with_extendable",
       "comments_multi_expects_with_extendable",
     ),
-    #("comments_multi_blueprint_blocks", "comments_multi_blueprint_blocks"),
+    #("comments_multi_measurement_blocks", "comments_multi_measurement_blocks"),
     #(
-      "comments_all_section_types_blueprint",
-      "comments_all_section_types_blueprint",
+      "comments_all_section_types_measurement",
+      "comments_all_section_types_measurement",
     ),
     #("comments_sidekiq_real_world", "comments_sidekiq_real_world"),
     // Extendable joining (blank line between extendables is collapsed)
     #("unformatted_extendable_joining", "formatted_extendable_joining"),
     // Record types
-    #("record_type_blueprint", "record_type_blueprint"),
+    #("record_type_measurement", "record_type_measurement"),
     // Percentage types
     #("percentage_types", "percentage_types"),
     // 80-column boundary
@@ -99,23 +102,23 @@ pub fn format_test() {
 // * ✅ format(format(x)) == format(x) for all comment-heavy files
 pub fn format_idempotent_test() {
   [
-    "unformatted_blueprint",
+    "unformatted_measurement",
     "unformatted_expects",
-    "comments_blueprint",
+    "comments_measurement",
     "comments_expects",
     "comments_between_expects_blocks",
-    "comments_between_blueprint_blocks",
+    "comments_between_measurement_blocks",
     "comments_many_consecutive",
     "comments_in_struct_fields",
     "comments_trailing_in_struct",
     "comments_trailing_in_literal_struct",
     "comments_in_extendable_struct",
     "comments_multi_expects_with_extendable",
-    "comments_multi_blueprint_blocks",
-    "comments_all_section_types_blueprint",
+    "comments_multi_measurement_blocks",
+    "comments_all_section_types_measurement",
     "comments_sidekiq_real_world",
     "unformatted_extendable_joining",
-    "record_type_blueprint",
+    "record_type_measurement",
     "percentage_types",
     "boundary_80_col",
     "empty_struct_trailing_comment",

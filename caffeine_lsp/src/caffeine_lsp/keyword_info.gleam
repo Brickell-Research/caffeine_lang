@@ -7,20 +7,20 @@ pub type KeywordMeta {
 pub fn all_keywords() -> List(KeywordMeta) {
   [
     KeywordMeta(
-      name: "Blueprints",
-      description: "Declares a block of blueprint definitions for one or more artifacts.",
+      name: "Measurements",
+      description: "Declares a block of measurement definitions for one or more artifacts.",
     ),
     KeywordMeta(
       name: "Expectations",
-      description: "Declares a block of expectation definitions for a blueprint.",
+      description: "Declares a block of expectation definitions for a measurement.",
     ),
     KeywordMeta(
       name: "measured",
-      description: "Used with 'by' to specify which blueprint an expectations block targets.",
+      description: "Used with 'by' to specify which measurement an expectations block targets.",
     ),
     KeywordMeta(
       name: "by",
-      description: "Used with 'measured' to specify which blueprint an expectations block targets.",
+      description: "Used with 'measured' to specify which measurement an expectations block targets.",
     ),
     KeywordMeta(
       name: "extends",
@@ -28,11 +28,11 @@ pub fn all_keywords() -> List(KeywordMeta) {
     ),
     KeywordMeta(
       name: "Requires",
-      description: "Defines the typed parameters a blueprint requires as input.",
+      description: "Defines the typed parameters a measurement requires as input.",
     ),
     KeywordMeta(
       name: "Provides",
-      description: "Defines the values a blueprint or expectation provides as output.",
+      description: "Defines the values a measurement or expectation provides as output.",
     ),
     KeywordMeta(
       name: "Type",

@@ -8,7 +8,7 @@ import gleam/string
 
 /// Returns all reference locations as #(line, col, length) for the symbol
 /// under the cursor. Returns an empty list if the cursor is not on a
-/// defined symbol or blueprint name.
+/// defined symbol or measurement name.
 pub fn get_references(
   content: String,
   line: Int,
@@ -28,8 +28,8 @@ pub fn get_references(
         "" -> []
         name -> {
           let is_symbol = file_utils.is_defined_symbol(content, name)
-          let is_blueprint = is_blueprint_name(content, name)
-          use <- bool.guard(!is_symbol && !is_blueprint, [])
+          let is_measurement = is_measurement_name(content, name)
+          use <- bool.guard(!is_symbol && !is_measurement, [])
           let len = string.length(name)
           position_utils.find_all_name_positions(content, name)
           |> list.map(fn(pos) { #(pos.0, pos.1, len) })
@@ -39,10 +39,10 @@ pub fn get_references(
   }
 }
 
-/// Returns the blueprint name at the cursor position if it represents a
+/// Returns the measurement name at the cursor position if it represents a
 /// cross-file referable name, or an empty string otherwise.
 @internal
-pub fn get_blueprint_name_at(
+pub fn get_measurement_name_at(
   content: String,
   line: Int,
   character: Int,
@@ -51,7 +51,7 @@ pub fn get_blueprint_name_at(
   case word {
     "" -> ""
     name -> {
-      use <- bool.guard(!is_blueprint_name(content, name), "")
+      use <- bool.guard(!is_measurement_name(content, name), "")
       name
     }
   }
@@ -68,10 +68,10 @@ pub fn find_references_to_name(
   |> list.map(fn(pos) { #(pos.0, pos.1, len) })
 }
 
-/// Check whether a name appears in a blueprint-relevant quoted context.
-/// Matches blueprint items (`"name":` at column 0), expect items
-/// (`* "name"`), and blueprint references (`by "name"`).
-fn is_blueprint_name(content: String, name: String) -> Bool {
+/// Check whether a name appears in a measurement-relevant quoted context.
+/// Matches measurement items (`"name":` at column 0), expect items
+/// (`* "name"`), and measurement references (`by "name"`).
+fn is_measurement_name(content: String, name: String) -> Bool {
   string.contains(content, "\"" <> name <> "\":")
   || string.contains(content, "* \"" <> name <> "\"")
   || string.contains(content, "by \"" <> name <> "\"")

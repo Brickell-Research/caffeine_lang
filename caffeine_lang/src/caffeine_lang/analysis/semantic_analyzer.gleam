@@ -21,6 +21,7 @@ pub fn resolve_intermediate_representations(
 
 /// Resolves indicator templates in an intermediate representation.
 /// Dispatches to vendor-specific resolution; only Datadog uses template resolution.
+/// Unmeasured expectations (vendor = None) pass through without indicator resolution.
 @internal
 pub fn resolve_indicators(
   ir: IntermediateRepresentation(DepsValidated),
@@ -30,11 +31,6 @@ pub fn resolve_indicators(
     option.Some(vendor.Honeycomb)
     | option.Some(vendor.Dynatrace)
     | option.Some(vendor.NewRelic) -> Ok(ir.promote(ir))
-    option.None ->
-      Error(errors.semantic_analysis_template_resolution_error(
-        msg: "expectation '"
-        <> ir.ir_to_identifier(ir)
-        <> "' - no vendor resolved",
-      ))
+    option.None -> Ok(ir.promote(ir))
   }
 }

@@ -1,37 +1,37 @@
 /// Frontend pipeline for compiling .caffeine source files.
 /// Orchestrates the tokenizer, parser, validator, and lowering
-/// to transform .caffeine source into Blueprint and Expectation types.
+/// to transform .caffeine source into Measurement and Expectation types.
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/validator
-import caffeine_lang/linker/blueprints.{type Blueprint, type Raw}
 import caffeine_lang/linker/expectations.{type Expectation}
+import caffeine_lang/linker/measurements.{type Measurement, type Raw}
 import caffeine_lang/source_file.{
-  type BlueprintSource, type ExpectationSource, type SourceFile,
+  type ExpectationSource, type MeasurementSource, type SourceFile,
 }
 import gleam/list
 import gleam/result
 
-/// Compiles a blueprints .caffeine source to a list of raw (unvalidated) blueprints.
+/// Compiles a measurements .caffeine source to a list of raw (unvalidated) measurements.
 @internal
-pub fn compile_blueprints(
-  source: SourceFile(BlueprintSource),
-) -> Result(List(Blueprint(Raw)), CompilationError) {
+pub fn compile_measurements(
+  source: SourceFile(MeasurementSource),
+) -> Result(List(Measurement(Raw)), CompilationError) {
   use ast <- result.try(
-    parser.parse_blueprints_file(source.content)
+    parser.parse_measurements_file(source.content)
     |> result.map_error(fn(errs) {
       parser_errors_to_compilation_error(errs, source.path)
     }),
   )
   use validated <- result.try(
-    validator.validate_blueprints_file(ast)
+    validator.validate_measurements_file(ast)
     |> result.map_error(fn(errs) {
       validator_errors_to_compilation_error(errs, source.path)
     }),
   )
-  Ok(lowering.lower_blueprints(validated))
+  Ok(lowering.lower_measurements(validated))
 }
 
 /// Compiles an expects .caffeine source to a list of expectations.

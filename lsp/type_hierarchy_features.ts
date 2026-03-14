@@ -3,7 +3,7 @@
 import { SymbolKind } from "vscode-languageserver/node.js";
 import {
   prepare_type_hierarchy,
-  BlueprintKind,
+  MeasurementKind,
 } from "./gleam_imports.ts";
 
 import {
@@ -36,8 +36,8 @@ export function handleTypeHierarchyPrepare(ctx: HandlerContext, params: any) {
         range: r,
         selectionRange: r,
         data: {
-          kind: item.kind instanceof BlueprintKind ? "blueprint" : "expectation",
-          blueprint: item.blueprint,
+          kind: item.kind instanceof MeasurementKind ? "measurement" : "expectation",
+          measurement: item.measurement,
         },
       };
     });
@@ -52,21 +52,21 @@ export function handleTypeHierarchyPrepare(ctx: HandlerContext, params: any) {
 // deno-lint-ignore no-explicit-any
 export async function handleTypeHierarchySupertypes(ctx: HandlerContext, params: any) {
   const data = params.item?.data;
-  if (!data || data.kind !== "expectation" || !data.blueprint) return [];
+  if (!data || data.kind !== "expectation" || !data.measurement) return [];
 
   // deno-lint-ignore no-explicit-any
   const results: any[] = [];
   for (const uri of ctx.workspace.files) {
     const text = await ctx.workspace.getFileContentAsync(uri);
-    if (!text || !text.trimStart().startsWith("Blueprints")) continue;
-    if (!text.includes(`"${data.blueprint}"`)) continue;
+    if (!text || !text.trimStart().startsWith("Measurements")) continue;
+    if (!text.includes(`"${data.measurement}"`)) continue;
 
     for (const sym of ctx.workspace.getCachedWorkspaceSymbols(uri, text)) {
-      if (sym.name === data.blueprint && sym.kind === SymbolKind.Class) {
+      if (sym.name === data.measurement && sym.kind === SymbolKind.Class) {
         const r = range(sym.line, sym.col, sym.line, sym.col + sym.name_len);
         results.push({
           name: sym.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
-          data: { kind: "blueprint", blueprint: "" },
+          data: { kind: "measurement", measurement: "" },
         });
       }
     }
@@ -80,19 +80,19 @@ export async function handleTypeHierarchySupertypes(ctx: HandlerContext, params:
 // deno-lint-ignore no-explicit-any
 export async function handleTypeHierarchySubtypes(ctx: HandlerContext, params: any) {
   const data = params.item?.data;
-  if (!data || data.kind !== "blueprint") return [];
+  if (!data || data.kind !== "measurement") return [];
 
-  const blueprintName = params.item.name;
+  const measurementName = params.item.name;
   // deno-lint-ignore no-explicit-any
   const results: any[] = [];
 
   for (const uri of ctx.workspace.files) {
     const text = await ctx.workspace.getFileContentAsync(uri);
     if (!text || !text.trimStart().startsWith("Expectations")) continue;
-    if (!text.includes(`"${blueprintName}"`)) continue;
+    if (!text.includes(`"${measurementName}"`)) continue;
 
     try {
-      collectSubtypesFromFile(text, blueprintName, uri, results);
+      collectSubtypesFromFile(text, measurementName, uri, results);
     } catch (e) { debug(`typeHierarchySubtypes: ${e}`); }
   }
 
@@ -100,7 +100,7 @@ export async function handleTypeHierarchySubtypes(ctx: HandlerContext, params: a
 }
 
 // deno-lint-ignore no-explicit-any
-function collectSubtypesFromFile(text: string, blueprintName: string, uri: string, results: any[]): void {
+function collectSubtypesFromFile(text: string, measurementName: string, uri: string, results: any[]): void {
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const match = lines[i].match(/^\s*\*\s+"([^"]+)"/);
@@ -109,11 +109,11 @@ function collectSubtypesFromFile(text: string, blueprintName: string, uri: strin
     for (const item of gleamArray(
       prepare_type_hierarchy(text, i, lines[i].indexOf(itemName)) as GleamList,
     )) {
-      if (item.blueprint === blueprintName) {
+      if (item.measurement === measurementName) {
         const r = range(item.line, item.col, item.line, item.col + item.name_len);
         results.push({
           name: item.name, kind: SymbolKind.Class, uri, range: r, selectionRange: r,
-          data: { kind: "expectation", blueprint: blueprintName },
+          data: { kind: "expectation", measurement: measurementName },
         });
       }
     }

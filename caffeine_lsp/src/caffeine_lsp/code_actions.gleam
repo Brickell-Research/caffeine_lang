@@ -56,14 +56,14 @@ fn diagnostic_to_action(
         Error(_) -> Error(Nil)
       }
     }
-    diagnostics.BlueprintNotFound -> Error(Nil)
+    diagnostics.MeasurementNotFound -> Error(Nil)
     diagnostics.DependencyNotFound -> Error(Nil)
     diagnostics.MissingRequiredFields -> Error(Nil)
     diagnostics.TypeMismatch -> Error(Nil)
     diagnostics.UnknownField -> Error(Nil)
     diagnostics.UnusedExtendable -> Error(Nil)
     diagnostics.UnusedTypeAlias -> Error(Nil)
-    diagnostics.DeadBlueprint -> Error(Nil)
+    diagnostics.DeadMeasurement -> Error(Nil)
     NoDiagnosticCode -> Error(Nil)
   }
 }

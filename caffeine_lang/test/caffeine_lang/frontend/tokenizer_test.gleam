@@ -15,7 +15,7 @@ fn tokenize_tokens(
 }
 
 // ==== tokenize_keywords ====
-// * ✅ Blueprints keyword
+// * ✅ Measurements keyword
 // * ✅ Expects keyword
 // * ✅ measured keyword
 // * ✅ by keyword
@@ -28,9 +28,9 @@ fn tokenize_tokens(
 pub fn tokenize_keywords_test() {
   [
     #(
-      "Blueprints keyword",
-      "Blueprints",
-      Ok([token.KeywordBlueprints, token.EOF]),
+      "Measurements keyword",
+      "Measurements",
+      Ok([token.KeywordMeasurements, token.EOF]),
     ),
     #(
       "Expects keyword",
@@ -292,15 +292,15 @@ pub fn tokenize_comments_test() {
   |> test_helpers.table_test_1(tokenize_tokens)
 }
 
-// ==== tokenize_blueprint_header ====
+// ==== tokenize_measurement_header ====
 // * ✅ single artifact header
-pub fn tokenize_blueprint_header_test() {
+pub fn tokenize_measurement_header_test() {
   [
     #(
       "single artifact header",
-      "Blueprints",
+      "Measurements",
       Ok([
-        token.KeywordBlueprints,
+        token.KeywordMeasurements,
         token.EOF,
       ]),
     ),
@@ -370,10 +370,10 @@ pub fn tokenize_extendable_test() {
   |> test_helpers.table_test_1(tokenize_tokens)
 }
 
-// ==== tokenize_blueprint_item ====
+// ==== tokenize_measurement_item ====
 // * ✅ item with extends
 // * ✅ item without extends
-pub fn tokenize_blueprint_item_test() {
+pub fn tokenize_measurement_item_test() {
   [
     #(
       "item with extends",
@@ -551,11 +551,11 @@ pub fn tokenize_errors_test() {
 }
 
 // ==== tokenize_multiline ====
-// * ✅ full blueprint structure
+// * ✅ full measurement structure
 pub fn tokenize_multiline_test() {
   [
     #(
-      "full blueprint structure",
+      "full measurement structure",
       "\"api\":\n  Requires { env: String }",
       Ok([
         token.LiteralString("api"),

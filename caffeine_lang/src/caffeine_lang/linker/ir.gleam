@@ -4,7 +4,7 @@
 import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/identifiers.{
-  type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
+  type ExpectationLabel, type MeasurementName, type OrgName, type ServiceName,
   type TeamName,
 }
 import caffeine_lang/linker/artifacts.{type DependencyRelationType}
@@ -55,7 +55,7 @@ pub type IntermediateRepresentationMetaData {
     friendly_label: ExpectationLabel,
     org_name: OrgName,
     service_name: ServiceName,
-    blueprint_name: BlueprintName,
+    measurement_name: MeasurementName,
     team_name: TeamName,
     /// Metadata specific to any given expectation.
     misc: dict.Dict(String, List(String)),

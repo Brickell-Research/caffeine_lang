@@ -414,8 +414,9 @@ fn read_identifier_loop(source: String, acc: List(String)) -> #(String, String) 
 
 fn keyword_or_identifier(word: String) -> Token {
   case word {
-    "Blueprints" -> token.KeywordBlueprints
+    "Measurements" -> token.KeywordMeasurements
     "Expectations" -> token.KeywordExpectations
+    "Unmeasured" -> token.KeywordUnmeasured
     "measured" -> token.KeywordMeasured
     "by" -> token.KeywordBy
     "extends" -> token.KeywordExtends

@@ -87,7 +87,7 @@ fn classify_token(
 ) -> Result(#(Int, Int), Nil) {
   case tok {
     // Keywords
-    token.KeywordBlueprints -> Ok(#(stt_keyword, 10))
+    token.KeywordMeasurements -> Ok(#(stt_keyword, 10))
     token.KeywordExpectations -> Ok(#(stt_keyword, 12))
     token.KeywordMeasured -> Ok(#(stt_keyword, 8))
     token.KeywordBy -> Ok(#(stt_keyword, 2))

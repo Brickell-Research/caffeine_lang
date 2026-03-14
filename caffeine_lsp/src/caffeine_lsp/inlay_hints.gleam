@@ -1,14 +1,17 @@
 /// Inlay hints for expectation fields.
 /// Shows type annotations next to field names in expectation Provides blocks,
-/// based on the blueprint's required parameter types.
+/// based on the measurement's required parameter types.
 import caffeine_lang/frontend/ast
-import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
+import caffeine_lang/linker/measurements.{
+  type Measurement, type MeasurementValidated,
+}
 import caffeine_lang/types.{type AcceptedTypes, Defaulted, ModifierType}
-import caffeine_lsp/blueprint_utils
 import caffeine_lsp/file_utils
+import caffeine_lsp/measurement_utils
 import caffeine_lsp/position_utils
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/option
 import gleam/string
 
 /// A single inlay hint to display in the editor.
@@ -28,14 +31,14 @@ pub fn get_inlay_hints(
   content: String,
   start_line: Int,
   end_line: Int,
-  validated_blueprints: List(Blueprint(BlueprintValidated)),
+  validated_measurements: List(Measurement(MeasurementValidated)),
 ) -> List(InlayHint) {
   case file_utils.parse(content) {
     Ok(file_utils.Expects(file)) -> {
       let lines = string.split(content, "\n")
-      let blueprint_index =
-        blueprint_utils.index_blueprints(validated_blueprints)
-      get_expects_hints(lines, file, start_line, end_line, blueprint_index)
+      let measurement_index =
+        measurement_utils.index_measurements(validated_measurements)
+      get_expects_hints(lines, file, start_line, end_line, measurement_index)
     }
     _ -> []
   }
@@ -47,18 +50,22 @@ fn get_expects_hints(
   file: ast.ExpectsFile(ast.Parsed),
   start_line: Int,
   end_line: Int,
-  blueprint_index: Dict(String, Blueprint(BlueprintValidated)),
+  measurement_index: Dict(String, Measurement(MeasurementValidated)),
 ) -> List(InlayHint) {
   list.flat_map(file.blocks, fn(block) {
-    case dict.get(blueprint_index, block.blueprint) {
-      Error(_) -> []
-      Ok(blueprint) -> {
-        let remaining_params =
-          blueprint_utils.compute_remaining_params(blueprint)
-        list.flat_map(block.items, fn(item) {
-          get_item_hints(lines, item, remaining_params, start_line, end_line)
-        })
-      }
+    case block.measurement {
+      option.None -> []
+      option.Some(measurement_name) ->
+        case dict.get(measurement_index, measurement_name) {
+          Error(_) -> []
+          Ok(measurement) -> {
+            let remaining_params =
+              measurement_utils.compute_remaining_params(measurement)
+            list.flat_map(block.items, fn(item) {
+              get_item_hints(lines, item, remaining_params, start_line, end_line)
+            })
+          }
+        }
     }
   })
 }

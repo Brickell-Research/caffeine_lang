@@ -1,7 +1,7 @@
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/errors
 import caffeine_lang/source_file.{
-  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
+  type ExpectationSource, type SourceFile, type VendorMeasurementSource,
 }
 import gleam/io
 import gleam/list
@@ -16,7 +16,7 @@ pub type LogLevel {
 
 /// Compiles with ANSI progress output around the pure compiler call.
 pub fn compile_with_output(
-  blueprints: List(VendorBlueprintSource),
+  measurements: List(VendorMeasurementSource),
   expectations: List(SourceFile(ExpectationSource)),
   target: String,
   log_level: LogLevel,
@@ -28,7 +28,7 @@ pub fn compile_with_output(
   )
   log(log_level, "")
 
-  use output <- result.try(case compiler.compile(blueprints, expectations) {
+  use output <- result.try(case compiler.compile(measurements, expectations) {
     Ok(output) -> {
       log(log_level, "  " <> ansi.green("✓ Compilation succeeded"))
       Ok(output)

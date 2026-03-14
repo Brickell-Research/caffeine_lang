@@ -24,7 +24,7 @@ pub fn resolve_vendor(vendor_str: String) -> Result(Vendor, Nil) {
 }
 
 /// Extracts the vendor from a file path by using the filename stem.
-/// For example, "blueprints/datadog.caffeine" resolves to Ok(Datadog).
+/// For example, "measurements/datadog.caffeine" resolves to Ok(Datadog).
 @internal
 pub fn resolve_vendor_from_path(path: String) -> Result(Vendor, Nil) {
   path

@@ -3,22 +3,22 @@
 
 export {
   get_all_diagnostics,
-  get_dead_blueprint_diagnostics,
+  get_dead_measurement_diagnostics,
   diagnostic_code_to_string,
   QuotedFieldName,
-  BlueprintNotFound,
+  MeasurementNotFound,
   DependencyNotFound,
   MissingRequiredFields,
   TypeMismatch,
   UnknownField,
   UnusedExtendable,
   UnusedTypeAlias,
-  DeadBlueprint,
+  DeadMeasurement,
   NoDiagnosticCode,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/diagnostics.mjs";
 
 export {
-  compile_validated_blueprints,
+  compile_validated_measurements,
   get_linker_diagnostics,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/linker_diagnostics.mjs";
 
@@ -41,7 +41,7 @@ export { get_symbols } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/c
 
 export {
   get_definition,
-  get_blueprint_ref_at_position,
+  get_measurement_ref_at_position,
   get_relation_ref_with_range_at_position,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/definition.mjs";
 
@@ -56,7 +56,7 @@ export { get_highlights } from "../caffeine_lsp/build/dev/javascript/caffeine_ls
 
 export {
   get_references,
-  get_blueprint_name_at,
+  get_measurement_name_at,
   find_references_to_name,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/references.mjs";
 
@@ -75,7 +75,7 @@ export { get_workspace_symbols } from "../caffeine_lsp/build/dev/javascript/caff
 
 export {
   prepare_type_hierarchy,
-  BlueprintKind,
+  MeasurementKind,
 } from "../caffeine_lsp/build/dev/javascript/caffeine_lsp/caffeine_lsp/type_hierarchy.mjs";
 
 export { version } from "../caffeine_lsp/build/dev/javascript/caffeine_lang/caffeine_lang/constants.mjs";

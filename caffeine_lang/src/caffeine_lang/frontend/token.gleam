@@ -5,8 +5,9 @@ pub type PositionedToken {
 
 /// A token produced by the tokenizer.
 pub type Token {
-  KeywordBlueprints
+  KeywordMeasurements
   KeywordExpectations
+  KeywordUnmeasured
   KeywordMeasured
   KeywordBy
   KeywordExtends
@@ -55,8 +56,9 @@ pub type Token {
 /// Convert token to string for error messages.
 pub fn to_string(tok: Token) -> String {
   case tok {
-    KeywordBlueprints -> "Blueprints"
+    KeywordMeasurements -> "Measurements"
     KeywordExpectations -> "Expectations"
+    KeywordUnmeasured -> "Unmeasured"
     KeywordMeasured -> "measured"
     KeywordBy -> "by"
     KeywordExtends -> "extends"

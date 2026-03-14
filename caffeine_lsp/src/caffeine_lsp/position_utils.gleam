@@ -350,7 +350,7 @@ fn find_block_end_loop(
 }
 
 /// Find the 0-indexed line number where an item named `item_name` appears.
-/// Matches both blueprint items (`"name":` at column 0) and expect items
+/// Matches both measurement items (`"name":` at column 0) and expect items
 /// (`* "name":` with indentation). Returns `fallback` if not found.
 @internal
 pub fn find_item_start_line(
@@ -358,11 +358,11 @@ pub fn find_item_start_line(
   item_name: String,
   fallback: Int,
 ) -> Int {
-  let blueprint_pattern = "\"" <> item_name <> "\""
+  let measurement_pattern = "\"" <> item_name <> "\""
   let expect_pattern = "* \"" <> item_name <> "\""
   find_item_start_line_loop(
     lines,
-    blueprint_pattern,
+    measurement_pattern,
     expect_pattern,
     0,
     fallback,
@@ -371,7 +371,7 @@ pub fn find_item_start_line(
 
 fn find_item_start_line_loop(
   lines: List(String),
-  blueprint_pattern: String,
+  measurement_pattern: String,
   expect_pattern: String,
   idx: Int,
   fallback: Int,
@@ -381,14 +381,14 @@ fn find_item_start_line_loop(
     [line, ..rest] -> {
       let trimmed = string.trim(line)
       case
-        string.starts_with(trimmed, blueprint_pattern)
+        string.starts_with(trimmed, measurement_pattern)
         || string.starts_with(trimmed, expect_pattern)
       {
         True -> idx
         False ->
           find_item_start_line_loop(
             rest,
-            blueprint_pattern,
+            measurement_pattern,
             expect_pattern,
             idx + 1,
             fallback,

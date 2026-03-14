@@ -165,7 +165,7 @@ fn build_tags(ir: IntermediateRepresentation(Resolved)) -> hcl.Expr {
       org_name: ir.metadata.org_name,
       team_name: ir.metadata.team_name,
       service_name: ir.metadata.service_name,
-      blueprint_name: ir.metadata.blueprint_name,
+      measurement_name: ir.metadata.measurement_name,
       friendly_label: ir.metadata.friendly_label,
       misc: ir.metadata.misc,
     )

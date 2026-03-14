@@ -21,11 +21,11 @@ pub fn get_caffeine_files(
   })
 }
 
-/// Discovers vendor-named blueprint files in a blueprints directory.
+/// Discovers vendor-named measurement files in a measurements directory.
 /// Each .caffeine file must be named after a known vendor (e.g., datadog.caffeine).
 /// Returns a list of (file_path, Vendor) pairs.
 @internal
-pub fn get_blueprint_files(
+pub fn get_measurement_files(
   directory: String,
 ) -> Result(List(#(String, Vendor)), CompilationError) {
   use items <- result.try(read_directory_or_error(directory))
@@ -39,7 +39,7 @@ pub fn get_blueprint_files(
       Ok(v) -> Ok(#(path, v))
       Error(Nil) ->
         Error(errors.LinkerParseError(
-          msg: "unrecognized vendor in blueprint filename: '"
+          msg: "unrecognized vendor in measurement filename: '"
             <> name
             <> "' (expected datadog, honeycomb, dynatrace, or newrelic)",
           context: errors.empty_context(),

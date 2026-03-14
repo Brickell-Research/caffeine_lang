@@ -4,14 +4,15 @@ import caffeine_lang/frontend/parser_error
 import caffeine_lang/types
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleam/set
 import gleeunit/should
 import simplifile
 import test_helpers
 
 // ==== Helpers ====
-fn blueprints_path(file_name: String) {
-  "test/caffeine_lang/corpus/frontend/parser/blueprints_file/"
+fn measurements_path(file_name: String) {
+  "test/caffeine_lang/corpus/frontend/parser/measurements_file/"
   <> file_name
   <> ".caffeine"
 }
@@ -105,7 +106,7 @@ fn range_type(
   ))
 }
 
-// ==== parse_blueprints_file ====
+// ==== parse_measurements_file ====
 // * ✅ happy path - single item
 // * ✅ happy path - multiple items
 // * ✅ happy path - multi artifact
@@ -117,19 +118,19 @@ fn range_type(
 // * ✅ happy path - nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
 // * ✅ happy path - record type
 // * ✅ happy path - percentage types (plain, refined, defaulted)
-pub fn parse_blueprints_file_test() {
+pub fn parse_measurements_file_test() {
   [
     // single item
     #(
       "happy path - single item",
-      blueprints_path("happy_path_single_block"),
+      measurements_path("happy_path_single_block"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api_availability",
               extends: [],
@@ -155,14 +156,14 @@ pub fn parse_blueprints_file_test() {
     // multiple items
     #(
       "happy path - multiple items",
-      blueprints_path("happy_path_multiple_blocks"),
+      measurements_path("happy_path_multiple_blocks"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "availability",
               extends: [],
@@ -181,7 +182,7 @@ pub fn parse_blueprints_file_test() {
                 ),
               ]),
             ),
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "hard_dep",
               extends: [],
@@ -212,14 +213,14 @@ pub fn parse_blueprints_file_test() {
     // multi artifact
     #(
       "happy path - multi artifact",
-      blueprints_path("happy_path_multi_artifact"),
+      measurements_path("happy_path_multi_artifact"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "tracked_slo",
               extends: [],
@@ -255,9 +256,9 @@ pub fn parse_blueprints_file_test() {
     // with extendable
     #(
       "happy path - with Provides extendable",
-      blueprints_path("happy_path_with_extendable"),
+      measurements_path("happy_path_with_extendable"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [
@@ -275,7 +276,7 @@ pub fn parse_blueprints_file_test() {
             ),
           ],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api",
               extends: [],
@@ -301,9 +302,9 @@ pub fn parse_blueprints_file_test() {
     // with Requires extendable
     #(
       "happy path - with Requires extendable",
-      blueprints_path("happy_path_requires_extendable"),
+      measurements_path("happy_path_requires_extendable"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [
@@ -326,7 +327,7 @@ pub fn parse_blueprints_file_test() {
             ),
           ],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api",
               extends: ["_common"],
@@ -352,14 +353,14 @@ pub fn parse_blueprints_file_test() {
     // with extends
     #(
       "happy path - with extends",
-      blueprints_path("happy_path_with_extends"),
+      measurements_path("happy_path_with_extends"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api",
               extends: ["_base"],
@@ -385,14 +386,14 @@ pub fn parse_blueprints_file_test() {
     // multiple extends
     #(
       "happy path - multiple extends",
-      blueprints_path("happy_path_multiple_extends"),
+      measurements_path("happy_path_multiple_extends"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api",
               extends: ["_base", "_common"],
@@ -418,14 +419,14 @@ pub fn parse_blueprints_file_test() {
     // advanced types (List, Dict, Optional, Defaulted, OneOf, Range)
     #(
       "happy path - advanced types",
-      blueprints_path("happy_path_advanced_types"),
+      measurements_path("happy_path_advanced_types"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "test",
               extends: [],
@@ -488,14 +489,14 @@ pub fn parse_blueprints_file_test() {
     // nested collections (List(List), Dict(Dict), Dict(List), List(Dict))
     #(
       "happy path - nested collections",
-      blueprints_path("happy_path_nested_collections"),
+      measurements_path("happy_path_nested_collections"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "test_nested",
               extends: [],
@@ -559,9 +560,9 @@ pub fn parse_blueprints_file_test() {
     // type alias
     #(
       "happy path - type alias",
-      blueprints_path("happy_path_type_alias"),
+      measurements_path("happy_path_type_alias"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [
             ast.TypeAlias(
@@ -575,7 +576,7 @@ pub fn parse_blueprints_file_test() {
           ],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "test",
               extends: [],
@@ -601,14 +602,14 @@ pub fn parse_blueprints_file_test() {
     // record type
     #(
       "happy path - record type",
-      blueprints_path("happy_path_record_type"),
+      measurements_path("happy_path_record_type"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "api",
               extends: [],
@@ -641,14 +642,14 @@ pub fn parse_blueprints_file_test() {
     // percentage types (plain, refined, defaulted)
     #(
       "happy path - percentage types",
-      blueprints_path("happy_path_percentage_types"),
+      measurements_path("happy_path_percentage_types"),
       Ok(
-        ast.BlueprintsFile(
+        ast.MeasurementsFile(
           trailing_comments: [],
           type_aliases: [],
           extendables: [],
           items: [
-            ast.BlueprintItem(
+            ast.MeasurementItem(
               leading_comments: [],
               name: "test",
               extends: [],
@@ -687,7 +688,7 @@ pub fn parse_blueprints_file_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(file_path) {
-    parser.parse_blueprints_file(read_file(file_path))
+    parser.parse_measurements_file(read_file(file_path))
   })
 }
 
@@ -708,7 +709,7 @@ pub fn parse_expects_file_test() {
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
           ast.ExpectsBlock(
             leading_comments: [],
-            blueprint: "api_availability",
+            measurement: option.Some("api_availability"),
             items: [
               ast.ExpectItem(
                 leading_comments: [],
@@ -740,7 +741,7 @@ pub fn parse_expects_file_test() {
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
           ast.ExpectsBlock(
             leading_comments: [],
-            blueprint: "api_availability",
+            measurement: option.Some("api_availability"),
             items: [
               ast.ExpectItem(
                 leading_comments: [],
@@ -756,7 +757,7 @@ pub fn parse_expects_file_test() {
               ),
             ],
           ),
-          ast.ExpectsBlock(leading_comments: [], blueprint: "latency", items: [
+          ast.ExpectsBlock(leading_comments: [], measurement: option.Some("latency"), items: [
             ast.ExpectItem(
               leading_comments: [],
               name: "checkout_p99",
@@ -802,7 +803,7 @@ pub fn parse_expects_file_test() {
           blocks: [
             ast.ExpectsBlock(
               leading_comments: [],
-              blueprint: "api_availability",
+              measurement: option.Some("api_availability"),
               items: [
                 ast.ExpectItem(
                   leading_comments: [],
@@ -830,7 +831,7 @@ pub fn parse_expects_file_test() {
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
           ast.ExpectsBlock(
             leading_comments: [],
-            blueprint: "api_availability",
+            measurement: option.Some("api_availability"),
             items: [
               ast.ExpectItem(
                 leading_comments: [],
@@ -860,7 +861,7 @@ pub fn parse_expects_file_test() {
       expects_path("happy_path_complex_literals"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
-          ast.ExpectsBlock(leading_comments: [], blueprint: "test", items: [
+          ast.ExpectsBlock(leading_comments: [], measurement: option.Some("test"), items: [
             ast.ExpectItem(
               leading_comments: [],
               name: "item",
@@ -911,7 +912,7 @@ pub fn parse_expects_file_test() {
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
           ast.ExpectsBlock(
             leading_comments: [],
-            blueprint: "api_availability",
+            measurement: option.Some("api_availability"),
             items: [
               ast.ExpectItem(
                 leading_comments: [],
@@ -949,7 +950,7 @@ pub fn parse_expects_file_test() {
 // * ✅ missing dict value type
 // * ✅ expects with Requires
 pub fn parse_errors_test() {
-  // Blueprints file errors - check that parsing returns Error
+  // Measurements file errors - check that parsing returns Error
   [
     #("unknown type", errors_path("unknown_type"), True),
     #("unclosed type paren", errors_path("unclosed_type_paren"), True),
@@ -963,7 +964,7 @@ pub fn parse_errors_test() {
     #("missing dict value type", errors_path("missing_dict_value_type"), True),
   ]
   |> test_helpers.table_test_1(fn(file_path) {
-    case parser.parse_blueprints_file(read_file(file_path)) {
+    case parser.parse_measurements_file(read_file(file_path)) {
       Error(_) -> True
       Ok(_) -> False
     }
@@ -985,7 +986,7 @@ pub fn parse_errors_test() {
 // * ✅ error after blank lines reports correct line
 // * ✅ expects file error reports correct line
 pub fn parse_error_line_numbers_test() {
-  // Blueprints file errors
+  // Measurements file errors
   [
     #(
       "error on line 1 reports line 1",
@@ -998,14 +999,14 @@ pub fn parse_error_line_numbers_test() {
       Error([parser_error.UnknownType("bad", 4, 19)]),
     ),
   ]
-  |> test_helpers.table_test_1(parser.parse_blueprints_file)
+  |> test_helpers.table_test_1(parser.parse_measurements_file)
 
   // Expects file errors
   [
     #(
       "expects file error reports correct line",
       "Expectations measured by \"test\"\ninvalid",
-      Error([parser_error.UnexpectedToken("Expectations", "invalid", 2, 1)]),
+      Error([parser_error.UnexpectedToken("Expectations or Unmeasured Expectations", "invalid", 2, 1)]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_expects_file)
@@ -1022,12 +1023,12 @@ pub fn parse_error_missing_delimiter_test() {
       Error([parser_error.UnexpectedToken("}", "end of file", 2, 17)]),
     ),
   ]
-  |> test_helpers.table_test_1(parser.parse_blueprints_file)
+  |> test_helpers.table_test_1(parser.parse_measurements_file)
 
   // Missing } in refinement — verify it produces at least one error
   let source =
     "\"test\":\nRequires { env: String { x | x in { \"a\", \"b\" }\n\nProvides { v: \"y\" }"
-  let assert Error(_) = parser.parse_blueprints_file(source)
+  let assert Error(_) = parser.parse_measurements_file(source)
 }
 
 // ==== parse (edge cases) ====
@@ -1036,7 +1037,7 @@ pub fn parse_error_missing_delimiter_test() {
 // * ✅ multiple errors across items are all collected
 pub fn parse_empty_requires_struct_test() {
   let source = "\"test\":\n  Requires {}\n  Provides { v: \"x\" }\n"
-  let assert Ok(file) = parser.parse_blueprints_file(source)
+  let assert Ok(file) = parser.parse_measurements_file(source)
   let assert [item] = file.items
   item.requires.fields |> should.equal([])
 }
@@ -1054,7 +1055,7 @@ pub fn parse_multiple_errors_across_items_test() {
   // Two items, each with an error — both errors should be collected
   let source =
     "\"a\":\n  Requires { f: Unknown }\n  Provides {}\n\n\"b\":\n  Requires { g: Unknown }\n  Provides {}\n"
-  let assert Error(errors) = parser.parse_blueprints_file(source)
+  let assert Error(errors) = parser.parse_measurements_file(source)
   // Should have at least 2 errors (one per bad type)
   { list.length(errors) >= 2 } |> should.be_true()
 }

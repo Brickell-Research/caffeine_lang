@@ -31,7 +31,7 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "caffeine_version:{{VERSION}}",
     "org:org",
     "service:team",
-    "blueprint:test_blueprint",
+    "measurement:test_measurement",
     "expectation:Auth Latency SLO",
     "artifact:SLO",
     "team:override_team",
