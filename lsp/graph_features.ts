@@ -101,6 +101,15 @@ export function handleDependencyGraph(ctx: HandlerContext): GraphData {
   return { nodes, edges };
 }
 
+/** Handle `caffeine/findExpectation` — locates an expectation by dotted ID.
+ *  Returns { uri, line, col } or null. */
+export async function handleFindExpectation(
+  ctx: HandlerContext,
+  params: { id: string },
+): Promise<{ uri: string; line: number; col: number } | null> {
+  return ctx.workspace.findExpectationByIdentifier(params.id);
+}
+
 /** Handle `caffeine/applyDependencyEdit` — modifies .caffeine source to add/remove a dependency.
  *  Returns { success: boolean, error?: string }. */
 export async function handleApplyDependencyEdit(

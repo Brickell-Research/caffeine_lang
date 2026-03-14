@@ -62,6 +62,7 @@ import {
 
 import {
   handleDependencyGraph,
+  handleFindExpectation,
   handleApplyDependencyEdit,
 } from "./graph_features.ts";
 
@@ -117,6 +118,7 @@ export function registerHandlers(ctx: HandlerContext): void {
 
   // Custom graph topology requests
   ctx.connection.onRequest("caffeine/dependencyGraph", () => handleDependencyGraph(ctx));
+  ctx.connection.onRequest("caffeine/findExpectation", (params) => handleFindExpectation(ctx, params));
   ctx.connection.onRequest("caffeine/applyDependencyEdit", (params) => handleApplyDependencyEdit(ctx, params));
 
   ctx.documents.listen(ctx.connection);
