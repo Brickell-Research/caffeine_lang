@@ -165,9 +165,7 @@ fn check_measurement_ref(
         column: col,
         end_column: col + string.length(measurement),
         severity: DsError,
-        message: "Measurement '"
-          <> measurement
-          <> "' not found in workspace",
+        message: "Measurement '" <> measurement <> "' not found in workspace",
         code: MeasurementNotFound,
       ))
     }

@@ -167,8 +167,7 @@ fn build_unmeasured(
   reserved_labels: Set(String),
   unmeasured_params: dict.Dict(String, AcceptedTypes),
 ) -> ir.IntermediateRepresentation(ir.Linked) {
-  let value_tuples =
-    build_value_tuples(expectation.inputs, unmeasured_params)
+  let value_tuples = build_value_tuples(expectation.inputs, unmeasured_params)
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name

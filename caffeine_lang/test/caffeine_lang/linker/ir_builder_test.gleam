@@ -89,10 +89,7 @@ pub fn build_all_test() {
     let assert Ok([ir]) =
       ir_builder.build_all(
         [
-          #(
-            [#(expectation, option.Some(measurement))],
-            "org/team/service.json",
-          ),
+          #([#(expectation, option.Some(measurement))], "org/team/service.json"),
         ],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
@@ -427,10 +424,7 @@ pub fn build_all_test() {
     let assert Ok([ir]) =
       ir_builder.build_all(
         [
-          #(
-            [#(expectation, option.Some(measurement))],
-            "org/team/svc.json",
-          ),
+          #([#(expectation, option.Some(measurement))], "org/team/svc.json"),
         ],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),

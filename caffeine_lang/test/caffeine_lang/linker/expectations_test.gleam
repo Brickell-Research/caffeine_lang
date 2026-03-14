@@ -82,7 +82,12 @@ pub fn validate_expectations_test() {
   // Happy path - empty list
   [#("empty expectations list", [], Ok([]))]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 
   // Happy path - single expectation paired with measurement
@@ -120,7 +125,12 @@ pub fn validate_expectations_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 
   // Happy path - expectation with defaulted param, input omitted is fine
@@ -207,7 +217,12 @@ pub fn validate_expectations_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 
   // Invalid measurement ref - references non-existent measurement
@@ -285,7 +300,12 @@ pub fn validate_expectations_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 
   // Extra input field
@@ -309,7 +329,12 @@ pub fn validate_expectations_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 
   // Wrong type input value
@@ -332,6 +357,11 @@ pub fn validate_expectations_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(exps) {
-    expectations.validate_expectations(exps, measurements(), slo_params: stdlib_artifacts.slo_params(), from: source_path)
+    expectations.validate_expectations(
+      exps,
+      measurements(),
+      slo_params: stdlib_artifacts.slo_params(),
+      from: source_path,
+    )
   })
 }

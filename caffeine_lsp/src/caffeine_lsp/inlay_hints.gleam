@@ -62,7 +62,13 @@ fn get_expects_hints(
             let remaining_params =
               measurement_utils.compute_remaining_params(measurement)
             list.flat_map(block.items, fn(item) {
-              get_item_hints(lines, item, remaining_params, start_line, end_line)
+              get_item_hints(
+                lines,
+                item,
+                remaining_params,
+                start_line,
+                end_line,
+              )
             })
           }
         }

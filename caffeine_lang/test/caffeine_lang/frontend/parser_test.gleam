@@ -757,20 +757,24 @@ pub fn parse_expects_file_test() {
               ),
             ],
           ),
-          ast.ExpectsBlock(leading_comments: [], measurement: option.Some("latency"), items: [
-            ast.ExpectItem(
-              leading_comments: [],
-              name: "checkout_p99",
-              extends: [],
-              provides: ast.Struct(trailing_comments: [], fields: [
-                ast.Field(
-                  "threshold_ms",
-                  ast.LiteralValue(ast.LiteralInteger(500)),
-                  leading_comments: [],
-                ),
-              ]),
-            ),
-          ]),
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.Some("latency"),
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "checkout_p99",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold_ms",
+                    ast.LiteralValue(ast.LiteralInteger(500)),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
         ]),
       ),
     ),
@@ -861,46 +865,50 @@ pub fn parse_expects_file_test() {
       expects_path("happy_path_complex_literals"),
       Ok(
         ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
-          ast.ExpectsBlock(leading_comments: [], measurement: option.Some("test"), items: [
-            ast.ExpectItem(
-              leading_comments: [],
-              name: "item",
-              extends: [],
-              provides: ast.Struct(trailing_comments: [], fields: [
-                ast.Field(
-                  "tags",
-                  ast.LiteralValue(
-                    ast.LiteralList([
-                      ast.LiteralString("a"),
-                      ast.LiteralString("b"),
-                    ]),
-                  ),
-                  leading_comments: [],
-                ),
-                ast.Field(
-                  "config",
-                  ast.LiteralValue(
-                    ast.LiteralStruct(
-                      [
-                        ast.Field(
-                          "key",
-                          ast.LiteralValue(ast.LiteralString("value")),
-                          leading_comments: [],
-                        ),
-                      ],
-                      [],
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.Some("test"),
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "item",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "tags",
+                    ast.LiteralValue(
+                      ast.LiteralList([
+                        ast.LiteralString("a"),
+                        ast.LiteralString("b"),
+                      ]),
                     ),
+                    leading_comments: [],
                   ),
-                  leading_comments: [],
-                ),
-                ast.Field(
-                  "enabled",
-                  ast.LiteralValue(ast.LiteralFalse),
-                  leading_comments: [],
-                ),
-              ]),
-            ),
-          ]),
+                  ast.Field(
+                    "config",
+                    ast.LiteralValue(
+                      ast.LiteralStruct(
+                        [
+                          ast.Field(
+                            "key",
+                            ast.LiteralValue(ast.LiteralString("value")),
+                            leading_comments: [],
+                          ),
+                        ],
+                        [],
+                      ),
+                    ),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "enabled",
+                    ast.LiteralValue(ast.LiteralFalse),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
         ]),
       ),
     ),
@@ -1006,7 +1014,14 @@ pub fn parse_error_line_numbers_test() {
     #(
       "expects file error reports correct line",
       "Expectations measured by \"test\"\ninvalid",
-      Error([parser_error.UnexpectedToken("Expectations or Unmeasured Expectations", "invalid", 2, 1)]),
+      Error([
+        parser_error.UnexpectedToken(
+          "Expectations or Unmeasured Expectations",
+          "invalid",
+          2,
+          1,
+        ),
+      ]),
     ),
   ]
   |> test_helpers.table_test_1(parser.parse_expects_file)

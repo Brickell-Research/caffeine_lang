@@ -4,7 +4,6 @@
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
 import caffeine_lang/constants
-import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 

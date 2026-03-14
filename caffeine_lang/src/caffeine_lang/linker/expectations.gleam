@@ -136,7 +136,8 @@ fn validate_unmeasured_expectations(
   let path_prefix = org <> "." <> team <> "." <> service <> "."
 
   // Filter slo_params to only the allowed unmeasured params.
-  let allowed_keys = set.from_list(["threshold", "window_in_days", "depends_on"])
+  let allowed_keys =
+    set.from_list(["threshold", "window_in_days", "depends_on"])
   let restricted_params =
     slo_params
     |> dict.filter(fn(key, _) { set.contains(allowed_keys, key) })
