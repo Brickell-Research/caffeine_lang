@@ -1,6 +1,6 @@
 # Caffeine Language Specification
 
-**Version:** 0.1.0 (Draft)
+**Version:** 5.0.0
 
 ---
 
@@ -8,17 +8,15 @@
 
 | Term | Definition |
 |------|------------|
-| **Artifact** | A base schema defining what parameters exist and their types. Artifacts live in the compiler's standard library and cannot be defined by users. Example: an `SLO` artifact defines that all SLOs need a threshold, window, and queries. |
-| **Blueprint** | A partially-configured artifact. Blueprints fix some values and declare which parameters users must provide. Defined in `blueprints.caffeine`. Example: an `api_availability` blueprint might fix the query structure but require users to specify `env` and `threshold`. |
-| **Expectation** | A fully-configured blueprint with all required values provided. Defined in `expectations/**/*.caffeine`. Example: `checkout_availability` extends `api_availability` and provides `env: "production"`, `threshold: 99.95`. |
-| **Extendable** | A reusable block of values (prefixed with `_`) that can be inherited by blueprints or expectations to reduce repetition. |
+| **Measurement** | A reusable SLO template that declares required parameters and provides query structure. Defined in measurement files (e.g., `datadog.caffeine`). Replaces the former "Blueprint" concept. |
+| **Expectation** | A fully-configured SLO instance. Can be "measured" (backed by a measurement) or "unmeasured" (standalone with minimal fields). Defined in expectation files (`expectations/**/*.caffeine`). |
+| **Extendable** | A reusable block of values (prefixed with `_`) that can be inherited by measurements or expectations to reduce repetition. |
 | **Type Alias** | A named, reusable refined type (prefixed with `_`) that can be referenced in type positions. Inlined at compile time. |
+| **Vendor** | The observability platform. Derived from the measurement filename (e.g., `datadog.caffeine` implies Datadog). Supported: Datadog, Honeycomb, Dynatrace, NewRelic. |
 
 ---
 
 ## Design Principles
-
-Caffeine is guided by these core principles:
 
 | Principle | Description |
 |-----------|-------------|
@@ -30,21 +28,18 @@ Caffeine is guided by these core principles:
 
 ---
 
-## Three-Tier Hierarchy
+## Two File Types
 
-| Tier | Location | Purpose |
-|------|----------|---------|
-| **Artifact** | stdlib (compiler-internal) | Base schema with typed parameters |
-| **Blueprint** | `blueprints.caffeine` | Partially instantiated artifact |
-| **Expectation** | `expectations/**/*.caffeine` | Fully instantiated blueprint |
+| File Type | Purpose | Example Filename |
+|-----------|---------|------------------|
+| **Measurements** | SLO templates with required params and query definitions | `datadog.caffeine`, `honeycomb.caffeine` |
+| **Expectations** | Concrete SLO instances referencing measurements | `expectations/acme/payments/checkout.caffeine` |
 
-**Note:** Artifacts are defined exclusively in the compiler's stdlib and are not part of the user-facing DSL. Users reference artifacts by name in `Blueprints` blocks but cannot define new artifacts.
+The vendor is derived from the measurement filename. A file contains **either** measurements **or** expectations, never both.
 
 ---
 
 ## Notation
-
-This specification uses the following conventions:
 
 | Notation | Meaning |
 |----------|---------|
@@ -61,118 +56,126 @@ This specification uses the following conventions:
 
 ## BNF Grammar
 
-**Notes:**
-- Artifacts are defined in the compiler stdlib only and are not part of this grammar
-- A file contains **either** blueprints **or** expectations, never both
-
 ```bnf
-# A file contains EITHER blueprints OR expectations, never both
-<file>              ::= <blueprints_file> | <expects_file>
+# A file contains EITHER measurements OR expectations, never both
+<file>                  ::= <measurements_file> | <expects_file>
 
-<blueprints_file>   ::= { <type_alias> } { <blueprint_extendable> } <blueprints_block> { <blueprints_block> }
+# ---- Measurements File ----
 
-<expects_file>      ::= { <expects_extendable> } <expects_block> { <expects_block> }
+<measurements_file>     ::= { <type_alias> }
+                            { <measurement_extendable> }
+                            { <measurement_item> }
 
-<type_alias>           ::= "_" IDENTIFIER "(Type)" ":" <refinement_type>
+<type_alias>            ::= "_" IDENTIFIER "(Type)" ":" <refinement_type>
 
-<blueprint_extendable> ::= "_" IDENTIFIER ( "(Requires)" | "(Provides)" ) ":" <struct>
+<measurement_extendable> ::= "_" IDENTIFIER ( "(Requires)" | "(Provides)" ) ":" <struct>
 
-<expects_extendable>   ::= "_" IDENTIFIER "(Provides)" ":" <struct>
+<measurement_item>      ::= STRING ":" <newline>
+                            <indent> [ "extends" <extend_list> <newline> ]
+                            <indent> <requires_line> <newline>
+                            <indent> <provides_line>
 
-<blueprints_block>  ::= "Blueprints" "for" <artifact_list> <newline>
-                        { <blueprint_item> }
+# ---- Expectations File ----
 
-<artifact_list>     ::= STRING { "+" STRING }
+<expects_file>          ::= { <expects_extendable> }
+                            { <expects_block> }
 
-<expects_block>     ::= "Expects" "for" STRING <newline>
-                        { <expect_item> }
+<expects_extendable>    ::= "_" IDENTIFIER "(Provides)" ":" <struct>
 
-<blueprint_item>    ::= "*" STRING [ "extends" <extend_list> ] ":" <newline>
-                        <indent> <requires_line>
-                        <indent> <provides_line>
+<expects_block>         ::= <measured_block> | <unmeasured_block>
 
-<expect_item>       ::= "*" STRING [ "extends" <extend_list> ] ":" <newline>
-                        <indent> <provides_line>
+<measured_block>        ::= "Expectations" "measured" "by" STRING <newline>
+                            { <expect_item> }
 
-<extend_list>       ::= "[" IDENTIFIER { "," IDENTIFIER } "]"
+<unmeasured_block>      ::= "Unmeasured" "Expectations" <newline>
+                            { <expect_item> }
 
-<requires_line>     ::= "Requires" <struct>
+<expect_item>           ::= "*" STRING [ "extends" <extend_list> ] ":" <newline>
+                            <indent> <provides_line>
 
-<provides_line>     ::= "Provides" <struct>
+# ---- Shared Grammar ----
 
-<struct>            ::= "{" [ <field_list> ] "}"
+<extend_list>           ::= "[" IDENTIFIER { "," IDENTIFIER } "]"
 
-<field_list>        ::= <field> { "," <field> } [ "," ]
+<requires_line>         ::= "Requires" <struct>
 
-<field>             ::= IDENTIFIER ":" <value>
+<provides_line>         ::= "Provides" <struct>
 
-<value>             ::= <literal> | <type> | <struct>
+<struct>                ::= "{" [ <field_list> ] "}"
 
-<literal>           ::= STRING | NUMBER | BOOLEAN | <list> | <struct>
+<field_list>            ::= <field> { "," <field> } [ "," ]
 
-<list>              ::= "[" [ <literal> { "," <literal> } ] "]"
+<field>                 ::= IDENTIFIER ":" <value>
 
-<type>              ::= <primitive_type>
-                      | <type_alias_ref>
-                      | <collection_type>
-                      | <modifier_type>
-                      | <refinement_type>
+<value>                 ::= <literal> | <type> | <struct>
 
-<primitive_type>    ::= "String" | "Integer" | "Float" | "Boolean" | "URL"
+<literal>               ::= STRING | NUMBER | PERCENTAGE | BOOLEAN | <list> | <struct>
+
+<list>                  ::= "[" [ <literal> { "," <literal> } ] "]"
+
+<type>                  ::= <primitive_type>
+                          | <type_alias_ref>
+                          | <collection_type>
+                          | <modifier_type>
+                          | <refinement_type>
+
+<primitive_type>        ::= "String" | "Integer" | "Float" | "Boolean" | "URL"
 
 # Type alias reference: refers to a previously defined type alias
-<type_alias_ref>    ::= "_" IDENTIFIER
+<type_alias_ref>        ::= "_" IDENTIFIER
 
 # Collections: inner types can be primitives, type aliases, or nested collections
-<collection_type>   ::= "List" "(" <collection_inner> ")"
-                      | "Dict" "(" <dict_key_type> "," <collection_inner> ")"
+<collection_type>       ::= "List" "(" <collection_inner> ")"
+                          | "Dict" "(" <dict_key_type> "," <collection_inner> ")"
 
-<dict_key_type>     ::= <primitive_type> | <type_alias_ref>
+<dict_key_type>         ::= <primitive_type> | <type_alias_ref>
 
-<collection_inner>  ::= <primitive_type> | <type_alias_ref> | <collection_type>
+<collection_inner>      ::= <primitive_type> | <type_alias_ref> | <collection_type>
 
 # Modifiers: inner types can be primitives, type aliases, or collections
-<modifier_type>     ::= "Optional" "(" <modifier_inner> ")"
-                      | "Defaulted" "(" <modifier_inner> "," <default_value> ")"
+<modifier_type>         ::= "Optional" "(" <modifier_inner> ")"
+                          | "Defaulted" "(" <modifier_inner> "," <default_value> ")"
 
-<modifier_inner>    ::= <primitive_type> | <type_alias_ref> | <collection_type>
+<modifier_inner>        ::= <primitive_type> | <type_alias_ref> | <collection_type>
 
-<refinement_type>   ::= <oneof_type> | <range_type>
+<refinement_type>       ::= <oneof_type> | <range_type>
 
 # OneOf: supports String, Integer, Float (not Boolean), and Defaulted variants
-<oneof_type>        ::= <oneof_inner> "{" "x" "|" "x" "in" "{" <oneof_value> { "," <oneof_value> } "}" "}"
+<oneof_type>            ::= <oneof_inner> "{" "x" "|" "x" "in" "{" <oneof_value> { "," <oneof_value> } "}" "}"
 
-<oneof_inner>       ::= "String" | "Integer" | "Float"
-                      | "Defaulted" "(" <oneof_inner> "," <default_value> ")"
+<oneof_inner>           ::= "String" | "Integer" | "Float"
+                          | "Defaulted" "(" <oneof_inner> "," <default_value> ")"
 
-<oneof_value>       ::= STRING | NUMBER
+<oneof_value>           ::= STRING | NUMBER
 
 # InclusiveRange: supports Integer, Float only (not Defaulted)
-<range_type>        ::= <range_inner> "{" "x" "|" "x" "in" "(" NUMBER ".." NUMBER ")" "}"
+<range_type>            ::= <range_inner> "{" "x" "|" "x" "in" "(" NUMBER ".." NUMBER ")" "}"
 
-<range_inner>       ::= "Integer" | "Float"
+<range_inner>           ::= "Integer" | "Float"
 
-<default_value>     ::= NUMBER | STRING
+<default_value>         ::= NUMBER | STRING | PERCENTAGE
 
-<comment>           ::= "#" TEXT <newline>
+<comment>               ::= "#" TEXT <newline>
+<section_comment>       ::= "##" TEXT <newline>
 
 # Tokens
-STRING              ::= '"' { CHARACTER } '"'
-IDENTIFIER          ::= ( LETTER | "_" ) { LETTER | DIGIT | "_" }
-NUMBER              ::= INTEGER | FLOAT
-INTEGER             ::= [ "-" ] DIGIT { DIGIT }
-FLOAT               ::= [ "-" ] DIGIT { DIGIT } "." DIGIT { DIGIT }
-BOOLEAN             ::= "true" | "false"
+STRING                  ::= '"' { CHARACTER } '"'
+IDENTIFIER              ::= ( LETTER | "_" ) { LETTER | DIGIT | "_" }
+NUMBER                  ::= INTEGER | FLOAT
+INTEGER                 ::= [ "-" ] DIGIT { DIGIT }
+FLOAT                   ::= [ "-" ] DIGIT { DIGIT } "." DIGIT { DIGIT }
+PERCENTAGE              ::= FLOAT "%"
+BOOLEAN                 ::= "true" | "false"
 
 # Whitespace and structure
-<newline>           ::= "\n" | "\r\n"
-<indent>            ::= "  " | "\t"
+<newline>               ::= "\n" | "\r\n"
+<indent>                ::= "  " | "\t"
 
 # Character classes
-LETTER              ::= "a".."z" | "A".."Z"
-DIGIT               ::= "0".."9"
-CHARACTER           ::= <any Unicode character except '"' and newline>
-TEXT                ::= { <any character except newline> }
+LETTER                  ::= "a".."z" | "A".."Z"
+DIGIT                   ::= "0".."9"
+CHARACTER               ::= <any Unicode character except '"' and newline>
+TEXT                    ::= { <any character except newline> }
 ```
 
 ---
@@ -183,17 +186,19 @@ TEXT                ::= { <any character except newline> }
 
 ```caffeine
 # Single-line comment
+## Section header comment
 ```
 
 ### Literals
 
 ```caffeine
-"string"      # double quotes only, single line
-42            # integer
-3.14          # float
-true false    # bool
-[1, 2, 3]     # list
-{a: 1}        # dict (keys are always strings, no quotes needed)
+"string"        # double quotes only, single line
+42              # integer
+3.14            # float
+99.9%           # percentage (used for thresholds)
+true false      # bool
+[1, 2, 3]       # list
+{a: 1}          # struct (keys are unquoted identifiers)
 ```
 
 ---
@@ -210,6 +215,24 @@ See [Errors](caffeine_errors.md) for error categories and message format.
 
 ---
 
+## SLO Parameters
+
+Every SLO (measured or unmeasured) has these built-in parameters:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `threshold` | Percentage | Yes | -- | SLO target (e.g., `99.9%`) |
+| `window_in_days` | Integer (1-90) | No | `30` | Rolling window for SLO evaluation |
+| `evaluation` | String | Measured only | -- | Formula referencing indicator names (e.g., `"numerator / denominator"`) |
+| `indicators` | Dict(String, String) | Measured only | -- | Named query strings for the vendor |
+| `tags` | Optional Dict(String, String) | No | -- | User-defined tags on the SLO resource |
+| `runbook` | Optional URL | No | -- | Link to operational runbook |
+| `depends_on` | Optional Record | No | -- | Dependency references (see below) |
+
+**Unmeasured expectations** may only provide: `threshold`, `window_in_days`, and `depends_on`.
+
+---
+
 ## Type Aliases
 
 Reusable refined types that can be referenced in type positions.
@@ -217,18 +240,16 @@ Reusable refined types that can be referenced in type positions.
 **Rules:**
 - Must start with `_` prefix
 - Must specify kind: `(Type)`
-- Must be at top of file (before extendables and blocks)
+- Must be at top of file (before extendables and items/blocks)
 - File-scoped only (cannot reference across files)
 - Can only alias refined primitive types (no chaining/inheritance)
-- Inlined at compile time (do not appear in JSON output)
+- Inlined at compile time
 
 **Definition:**
 ```caffeine
 _env (Type): String { x | x in { prod, staging, dev } }
-_vendor (Type): String { x | x in { datadog, prometheus } }
 _threshold (Type): Float { x | x in ( 0.0..100.0 ) }
 _window (Type): Integer { x | x in { 7, 30, 90 } }
-_relation (Type): String { x | x in { hard, soft } }
 ```
 
 **Usage in Types:**
@@ -243,97 +264,89 @@ env: Optional(_env)
 # In collections
 tags: List(_env)
 config: Dict(_env, String)
-dependencies: Dict(_relation, List(String))
 ```
 
 **Usage in Extendables:**
 ```caffeine
 _env (Type): String { x | x in { prod, staging, dev } }
-_common (Requires): { env: Defaulted(_env, "prod"), vendor: _vendor }
-```
-
-**Compilation:**
-Type aliases are fully inlined during compilation. For example:
-
-```caffeine
-_env (Type): String { x | x in { prod, staging, dev } }
-Requires { env: Defaulted(_env, "prod") }
-```
-
-Compiles to JSON as:
-```json
-{
-  "params": {
-    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)"
-  }
-}
+_common (Requires): { env: Defaulted(_env, "prod") }
 ```
 
 ---
 
 ## Extendables
 
-Reusable value blocks that can be extended by blueprints or expectations.
+Reusable value blocks that can be inherited by measurements or expectations.
 
 **Rules:**
 - Must start with `_` prefix
 - Must specify kind: `(Requires)` for type definitions, `(Provides)` for value definitions
-- Must appear after type aliases but before any `Blueprints` or `Expects for`
+- Must appear after type aliases but before measurement items or expectation blocks
 - File-scoped only (cannot reference across files)
 - Can reference type aliases defined in the same file
 
-**In Blueprints:**
+**In Measurements:**
 ```caffeine
 _common (Requires): { env: String, status: Boolean }
-_base_slo (Provides): { vendor: "datadog" }
+_base_slo (Provides): { threshold: 99.9% }
 ```
 
 **In Expectations:**
 ```caffeine
 _defaults (Provides): { env: "production", window_in_days: 30 }
-_strict (Provides): { threshold: 99.99, window_in_days: 7 }
+_strict (Provides): { threshold: 99.99%, window_in_days: 7 }
 ```
 
 **Note:** Expectations only use `(Provides)` extendables since they only provide values, never types.
 
 ---
 
-## Blueprints
+## Measurements
 
-### Single Artifact
+Measurements are SLO templates defined at the top level of a measurement file. Each measurement has a name, an optional `extends` clause, a `Requires` block (parameter types), and a `Provides` block (fixed values including query structure).
 
 ```caffeine
-Blueprints
-  * "<blueprint_name>":
-    Requires { <required_params> }
-    Provides { <provided_values> }
+"<measurement_name>":
+  Requires { <required_params> }
+  Provides { <provided_values> }
 ```
 
-### Multi-Artifact
-
-A blueprint can implement multiple artifacts using `+`. Params from all artifacts are merged.
+With extends:
 
 ```caffeine
-Blueprints
-  * "<blueprint_name>":
-    Requires { <params_from_both_artifacts> }
-    Provides { <values_for_both_artifacts> }
+"<measurement_name>":
+  extends [_extendable, ...]
+  Requires { <required_params> }
+  Provides { <provided_values> }
 ```
 
 **Structure:**
-- `* "name":` or `* "name" extends [...]:` on its own line
-- `Requires` and `Provides` lines must be indented below the name line
-- `Requires` declares params expectations must provide (types only)
-- `Provides` declares values the blueprint fixes (values only)
-- For multi-artifact, params must not conflict across artifacts
+- Items are top-level (no header block, no `*` bullet prefix)
+- Name on its own line, followed by a colon
+- Optional `extends` clause on the next indented line
+- `Requires` and `Provides` lines are indented below the name
+- `Requires` declares params that expectations must provide (types only)
+- `Provides` declares values the measurement fixes (values only)
+- `evaluation` and `indicators` are provided within the `Provides` block
+
+**Vendor resolution:** The vendor is determined by the measurement filename:
+- `datadog.caffeine` -- Datadog
+- `honeycomb.caffeine` -- Honeycomb
+- `dynatrace.caffeine` -- Dynatrace
+- `newrelic.caffeine` -- NewRelic
 
 ---
 
 ## Expectations
 
+Expectations are concrete SLO instances. They come in two forms:
+
+### Measured Expectations
+
+Backed by a measurement template. The measurement provides query structure; the expectation fills in parameter values.
+
 ```caffeine
-Expects for "<BlueprintName>"
-  ## Section Header
+Expectations measured by "<measurement_name>"
   * "<expectation_name>":
     Provides { <values> }
 
@@ -341,61 +354,98 @@ Expects for "<BlueprintName>"
     Provides { <values> }
 ```
 
+### Unmeasured Expectations
+
+Standalone SLOs with no measurement backing. Only `threshold`, `window_in_days`, and `depends_on` are permitted.
+
+```caffeine
+Unmeasured Expectations
+  * "<expectation_name>":
+    Provides { threshold: 99.5%, window_in_days: 30 }
+```
+
 **Structure:**
+- Blocks start with `Expectations measured by "<name>"` or `Unmeasured Expectations`
+- Items are prefixed with `*`
 - `* "name":` or `* "name" extends [...]:` on its own line
 - `Provides` line must be indented below the name line
-- `Provides` provides all remaining required values
+- Section comments (`##`) can be used within blocks
 
 ---
 
-## Expectation References
+## Dependencies
 
-Some artifacts (like `DependencyRelation`) have params that reference other expectations. References use the format:
+Dependencies between SLOs are declared via the `depends_on` field. Both `hard` and `soft` lists are optional within the record.
 
+```caffeine
+depends_on: {
+  hard: ["org.team.service.name"],
+  soft: ["org.team.service.name"]
+}
+```
+
+**Reference format:**
 ```
 ORG_DIRECTORY.TEAM_NAME.SERVICE_NAME.EXPECTATION_NAME
 ```
 
+**Validation:**
+- All referenced targets must exist in the compiled expectation set
+- Circular dependency chains are rejected
+- Hard dependency threshold ceiling: a hard dependency's threshold cannot exceed its dependent's threshold
+
 **Examples:**
 
 ```caffeine
-Provides {
-  relations: {
-    hard: ["acme.payments.checkout.payment_availability"],
-    soft: ["acme.recommendations.main.recs_availability"]
-  }
+# Hard dependencies only
+depends_on: { hard: ["acme.payments.checkout.payment_availability"] }
+
+# Soft dependencies only
+depends_on: { soft: ["acme.recommendations.main.recs_availability"] }
+
+# Both
+depends_on: {
+  hard: ["acme.payments.checkout.payment_availability"],
+  soft: ["acme.recommendations.main.recs_availability"]
 }
 ```
-
-**Validation:**
-- References are validated at compile time
-- Circular dependencies are rejected by the compiler
 
 ---
 
 ## Template Variables
 
-Used in blueprint query strings for value interpolation.
+Used in measurement indicator query strings for value interpolation at compile time.
 
 ```caffeine
-$$var$$             # raw value: inserts value directly
-$$var->attr$$       # key-value: produces attr:value
-$$var->attr:not$$   # negated: produces !attr:value
+$$var$$                 # raw value: inserts value directly
+$$var->attr$$           # key-value: produces attr:value
+$$var->attr:not$$       # negated: produces !attr:value
 ```
+
+**Delimiter:** Template variables are enclosed in `$...$` pairs within query strings.
 
 **Examples:**
 
 ```caffeine
-"sum:requests{$$env->env$$, $$status->status:not$$}"    # env:production, !status:true
-"threshold < $$threshold$$"                             # threshold < 99.9
-"service:$$service->service$$"                          # service:checkout
+# In a measurement's indicators
+indicators: {
+  numerator: "sum:http.requests{$env->env$, $status->status:not$}",
+  denominator: "sum:http.requests{$env->env$}"
+}
+
+# Raw substitution
+"threshold < $$threshold$$"           # threshold < 99.9
+
+# Different variable and attribute names
+"$$environment->env$$"                # variable 'environment', produces attr 'env'
 ```
 
-When variable and attribute names differ:
+When an expectation provides `env: "production"` and `status: "5xx"`:
+- `$env->env$` resolves to `env:production`
+- `$status->status:not$` resolves to `!status:5xx`
 
-```caffeine
-$$environment->env$$    # variable 'environment', produces attr 'env'
-```
+For list values, key-value templates produce `IN` syntax:
+- `$env->env$` with `env: ["prod", "staging"]` resolves to `env IN (prod, staging)`
 
 ---
 
@@ -403,251 +453,110 @@ $$environment->env$$    # variable 'environment', produces attr 'env'
 
 | Keyword | Meaning | Used In |
 |---------|---------|---------|
-| `Requires` | Params needed from expectations (types only) | Blueprints only |
-| `Provides` | Values given (literals only) | Blueprints & Expectations |
+| `Requires` | Params needed from expectations (types only) | Measurements only |
+| `Provides` | Values given (literals only) | Measurements and Expectations |
+| `extends` | Inherit from extendables | Measurements and Expectations |
+| `Expectations measured by` | Block header referencing a measurement | Expectations files |
+| `Unmeasured Expectations` | Block header for standalone SLOs | Expectations files |
 
 ---
 
 ## Full Example
 
-### blueprints.caffeine
+### datadog.caffeine (Measurements File)
 
 ```caffeine
 # Type Aliases
 _env (Type): String { x | x in { prod, staging, dev } }
-_threshold (Type): Float { x | x in ( 0.0..100.0 ) }
-_window (Type): Integer { x | x in { 7, 30, 90 } }
-_relation (Type): String { x | x in { hard, soft } }
 
 # Extendables
-_base_slo (Provides): { vendor: "datadog" }
-_common (Requires): { env: Defaulted(_env, "prod"), window_in_days: Defaulted(_window, 30) }
+_common (Requires): { env: Defaulted(_env, "prod") }
+_defaults (Provides): { threshold: 99.9% }
 
-Blueprints
-  ## API Availability
-  * "api_availability" extends [_base_slo, _common]:
-    Requires {
-      status: Boolean,
-      threshold: _threshold
+## API Availability
+"api_availability":
+  extends [_common]
+  Requires {
+    status: Boolean
+  }
+  Provides {
+    threshold: 99.9%,
+    evaluation: "numerator / denominator",
+    indicators: {
+      numerator: "sum:http.requests{$env->env$, $status->status:not$}",
+      denominator: "sum:http.requests{$env->env$}"
     }
-    Provides {
-      value: "numerator / denominator",
-      queries: {
-        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
-        denominator: "sum:http.requests{$$env->env$$}"
-      }
-    }
+  }
 
-  ## Latency
-  * "latency" extends [_common]:
-    Requires {
-      service: String,
-      threshold_ms: Integer,
-      threshold: _threshold
+## Latency
+"latency":
+  extends [_common]
+  Requires {
+    service: String,
+    threshold_ms: Integer
+  }
+  Provides {
+    threshold: 99.0%,
+    evaluation: "time_slice(latency < $$threshold_ms$$ per 5m)",
+    indicators: {
+      latency: "avg:http.latency{$env->env$, $service->service$}"
     }
-    Provides {
-      vendor: "datadog",
-      value: "time_slice(latency < $$threshold_ms$$ per 5m)",
-      queries: {
-        latency: "avg:http.latency{$$env->env$$, $$service->service$$}"
-      }
-    }
-
-  ## Service with Dependencies
-  * "service_with_deps" extends [_base_slo, _common]:
-    Requires {
-      status: Boolean,
-      threshold: _threshold,
-      dependencies: Dict(_relation, List(String))
-    }
-    Provides {
-      value: "numerator / denominator",
-      queries: {
-        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
-        denominator: "sum:http.requests{$$env->env$$}"
-      }
-    }
-
-Blueprints
-  ## Hard Dependency
-  * "hard_dependency":
-    Requires { from: String, to: String }
-    Provides { type: "hard", error_budget_share: 0.5 }
-
-  ## Soft Dependency
-  * "soft_dependency":
-    Requires { from: String, to: String }
-    Provides { type: "soft", error_budget_share: 0.1 }
-
-Blueprints
-  ## SLO with Upstream Tracking
-  * "tracked_slo" extends [_base_slo]:
-    Requires {
-      env: String,
-      status: Boolean,
-      upstream: String,
-      threshold: Float { x | x in ( 0.0..100.0 ) },
-      window_in_days: Integer
-    }
-    Provides {
-      value: "numerator / denominator",
-      queries: {
-        numerator: "sum:http.requests{$$env->env$$, $$status->status:not$$}",
-        denominator: "sum:http.requests{$$env->env$$}"
-      },
-      type: "hard"
-    }
+  }
 ```
 
-### expectations/acme/payments/checkout.caffeine
+### expectations/acme/payments/checkout.caffeine (Expectations File)
 
 ```caffeine
 # Extendables
-_defaults (Provides): { env: "production", window_in_days: 30 }
-_strict (Provides): { window_in_days: 7, threshold: 99.99 }
+_defaults (Provides): { env: "production" }
+_strict (Provides): { threshold: 99.99%, window_in_days: 7 }
 
-Expects for "api_availability"
+Expectations measured by "api_availability"
   ## Core Services
   * "checkout_availability" extends [_defaults]:
-    Provides { threshold: 99.95, status: true }
+    Provides { threshold: 99.95%, status: true }
 
   * "payment_availability" extends [_defaults]:
-    Provides { threshold: 99.99, status: true }
+    Provides { threshold: 99.99%, status: true }
 
   * "inventory_availability" extends [_defaults]:
-    Provides { threshold: 99.9, status: true }
+    Provides { threshold: 99.9%, status: true }
 
-Expects for "latency"
+Expectations measured by "latency"
   ## Response Times
   * "checkout_p99" extends [_defaults]:
-    Provides { threshold: 99.0, service: "checkout", threshold_ms: 500 }
+    Provides { threshold: 99.0%, service: "checkout", threshold_ms: 500 }
 
-Expects for "tracked_slo"
-  ## Frontend with Upstream Awareness
-  * "frontend_availability" extends [_defaults]:
+Unmeasured Expectations
+  ## Third-Party Dependencies
+  * "third_party_gateway":
+    Provides { threshold: 99.5%, window_in_days: 30 }
+
+  * "cdn_availability":
     Provides {
-      threshold: 99.9,
-      status: true,
-      relations: {
-        hard: ["acme.payments.checkout.checkout_availability"]
+      threshold: 99.9%,
+      depends_on: {
+        hard: ["acme.payments.checkout.checkout_availability"],
+        soft: ["acme.payments.checkout.inventory_availability"]
       }
     }
 ```
 
 ---
 
-## JSON Output
+## Compilation Output
 
-### Single-Artifact Blueprint
+Caffeine compiles to Terraform HCL targeting vendor-specific SLO resources. The output includes:
 
-Type aliases are fully inlined in JSON output:
+- **Terraform resources**: One `datadog_service_level_objective` (or equivalent) per expectation
+- **Provider configuration**: Vendor-specific provider and variable blocks
+- **Dependency graph**: DOT-format graph of SLO dependency relationships
+- **Warnings**: Non-fatal issues (e.g., tag overshadowing)
 
-```json
-{
-  "name": "api_availability",
-  "artifact_refs": ["SLO"],
-  "params": {
-    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)",
-    "window_in_days": "Defaulted(Integer { x | x in { 7, 30, 90 } }, 30)",
-    "status": "Boolean",
-    "threshold": "Float { x | x in ( 0.0..100.0 ) }"
-  },
-  "inputs": {
-    "vendor": "datadog",
-    "value": "numerator / denominator",
-    "queries": {
-      "numerator": "sum:http.requests{$$env->env$$, $$status->status:not$$}",
-      "denominator": "sum:http.requests{$$env->env$$}"
-    }
-  }
-}
-```
-
-### Blueprint with Dict Type Alias Keys
-
-```json
-{
-  "name": "service_with_deps",
-  "artifact_refs": ["SLO"],
-  "params": {
-    "env": "Defaulted(String { x | x in { prod, staging, dev } }, prod)",
-    "window_in_days": "Defaulted(Integer { x | x in { 7, 30, 90 } }, 30)",
-    "status": "Boolean",
-    "threshold": "Float { x | x in ( 0.0..100.0 ) }",
-    "dependencies": "Dict(String { x | x in { hard, soft } }, List(String))"
-  },
-  "inputs": {
-    "vendor": "datadog",
-    "value": "numerator / denominator",
-    "queries": { ... }
-  }
-}
-```
-
-### Multi-Artifact Blueprint
-
-```json
-{
-  "name": "tracked_slo",
-  "artifact_refs": ["SLO", "DependencyRelation"],
-  "params": {
-    "env": "String",
-    "status": "Boolean",
-    "upstream": "String",
-    "threshold": "Float { x | x in ( 0.0..100.0 ) }",
-    "window_in_days": "Integer"
-  },
-  "inputs": {
-    "vendor": "datadog",
-    "value": "numerator / denominator",
-    "queries": { ... },
-    "type": "hard"
-  }
-}
-```
-
-### Expectation
-
-```json
-{
-  "name": "checkout_availability",
-  "blueprint_ref": "api_availability",
-  "inputs": {
-    "threshold": 99.95,
-    "window_in_days": 30,
-    "env": "production",
-    "status": true
-  }
-}
-```
-
-### Expectation with Dependencies
-
-```json
-{
-  "name": "frontend_availability",
-  "blueprint_ref": "tracked_slo",
-  "inputs": {
-    "threshold": 99.9,
-    "status": true,
-    "relations": {
-      "hard": ["acme.payments.checkout.checkout_availability"]
-    }
-  }
-}
-```
+Template variables in indicator queries are resolved at compile time by substituting expectation values into measurement query templates.
 
 ---
 
 ## Internals
 
-See [Internals](caffeine_internals.md) for details on how Caffeine compiles to JSON (extendable inlining, merge order).
-
----
-
-## Future
-
-| Feature | Description |
-|---------|-------------|
-| **IDE/LSP support** | Language server for autocomplete, validation, and hover documentation |
-| **Dependency visualization** | `caffeine graph` command to visualize expectation dependencies |
+See [Internals](caffeine_internals.md) for details on compilation pipeline (extendable inlining, merge order, vendor resolution).

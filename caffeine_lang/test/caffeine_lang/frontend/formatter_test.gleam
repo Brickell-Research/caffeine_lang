@@ -38,6 +38,8 @@ fn read_file(path: String) -> String {
 // * ✅ extendable joining collapses blank lines between extendables
 // * ✅ record type measurement formats correctly
 // * ✅ percentage types and literals format correctly
+// ==== format (unmeasured expectations) ====
+// * ✅ formats unformatted unmeasured expects to canonical output
 // ==== format (80-column boundary) ====
 // * ✅ inline struct at 65 chars stays inline (65 + 14 = 79 < 80)
 // * ✅ multiline struct at 66 chars goes multiline (66 + 14 = 80, not < 80)
@@ -84,6 +86,8 @@ pub fn format_test() {
     #("record_type_measurement", "record_type_measurement"),
     // Percentage types
     #("percentage_types", "percentage_types"),
+    // Unmeasured expectations
+    #("unformatted_unmeasured_expects", "formatted_unmeasured_expects"),
     // 80-column boundary
     #("boundary_80_col", "boundary_80_col"),
     // Empty struct with trailing comment
@@ -120,6 +124,7 @@ pub fn format_idempotent_test() {
     "unformatted_extendable_joining",
     "record_type_measurement",
     "percentage_types",
+    "unformatted_unmeasured_expects",
     "boundary_80_col",
     "empty_struct_trailing_comment",
   ]

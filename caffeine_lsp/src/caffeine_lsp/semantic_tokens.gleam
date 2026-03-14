@@ -87,7 +87,6 @@ fn classify_token(
 ) -> Result(#(Int, Int), Nil) {
   case tok {
     // Keywords
-    token.KeywordMeasurements -> Ok(#(stt_keyword, 10))
     token.KeywordExpectations -> Ok(#(stt_keyword, 12))
     token.KeywordMeasured -> Ok(#(stt_keyword, 8))
     token.KeywordBy -> Ok(#(stt_keyword, 2))
@@ -153,7 +152,6 @@ fn classify_token(
     token.SymbolPipe -> Ok(#(stt_operator, 1))
     token.SymbolDotDot -> Ok(#(stt_operator, 2))
     token.SymbolEquals -> Ok(#(stt_operator, 1))
-    token.SymbolPlus -> Ok(#(stt_operator, 1))
 
     // Colon — type annotation operator
     token.SymbolColon -> Ok(#(stt_operator, 1))

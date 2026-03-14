@@ -1039,3 +1039,205 @@ Expectations measured by \"nr\"
   // No deps -> graph is None
   output.dependency_graph |> should.equal(option.None)
 }
+
+// ==== compile (unmeasured expectations) ====
+// * ✅ unmeasured-only expectations produce no vendor-specific Terraform resources
+// * ✅ mixed measured + unmeasured: unmeasured produce no resources, measured produce resources
+// * ✅ unmeasured expectations with depends_on appear in dependency graph
+// * ✅ unmeasured expectations reject unknown keys (only threshold, window_in_days, depends_on)
+
+/// Unmeasured expectations alone should compile successfully but produce
+/// no vendor-specific resources (only boilerplate).
+pub fn compile_unmeasured_only_test() {
+  let dd_source =
+    VendorMeasurementSource(
+      source: SourceFile(
+        path: "measurements/datadog.caffeine",
+        content: "\"api_availability\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.ok{$env->env$}\",
+      denominator: \"sum:http.total{$env->env$}\"
+    }
+  }
+",
+      ),
+      vendor: vendor.Datadog,
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Unmeasured Expectations
+  * \"third_party_auth\":
+    Provides { threshold: 99.9%, window_in_days: 30 }
+",
+    ),
+  ]
+
+  let assert Ok(output) = compiler.compile([dd_source], expectations)
+
+  // No vendor-specific resources should be generated for unmeasured expectations.
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_false()
+  output.terraform
+  |> string.contains("third_party_auth")
+  |> should.be_false()
+
+  // No dependency graph since no depends_on.
+  output.dependency_graph |> should.equal(option.None)
+}
+
+/// Mixed: measured expectations produce Terraform resources, unmeasured do not.
+pub fn compile_mixed_measured_unmeasured_test() {
+  let dd_source =
+    VendorMeasurementSource(
+      source: SourceFile(
+        path: "measurements/datadog.caffeine",
+        content: "\"api_availability\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.ok{$env->env$}\",
+      denominator: \"sum:http.total{$env->env$}\"
+    }
+  }
+",
+      ),
+      vendor: vendor.Datadog,
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations measured by \"api_availability\"
+  * \"checkout_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Unmeasured Expectations
+  * \"third_party_auth\":
+    Provides { threshold: 99.5%, window_in_days: 30 }
+",
+    ),
+  ]
+
+  let assert Ok(output) = compiler.compile([dd_source], expectations)
+
+  // Measured expectation should generate a Terraform resource.
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_true()
+  output.terraform
+  |> string.contains("checkout_slo")
+  |> should.be_true()
+
+  // Unmeasured expectation should NOT generate a Terraform resource.
+  output.terraform
+  |> string.contains("third_party_auth")
+  |> should.be_false()
+}
+
+/// Unmeasured expectations with depends_on should appear in the dependency graph.
+pub fn compile_unmeasured_with_depends_on_in_graph_test() {
+  let dd_source =
+    VendorMeasurementSource(
+      source: SourceFile(
+        path: "measurements/datadog.caffeine",
+        content: "\"api_availability\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.ok\",
+      denominator: \"sum:http.total\"
+    }
+  }
+",
+      ),
+      vendor: vendor.Datadog,
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations measured by \"api_availability\"
+  * \"checkout_slo\":
+    Provides {
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Unmeasured Expectations
+  * \"third_party_auth\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 30,
+      depends_on: {
+        hard: [\"acme.platform.payments.checkout_slo\"]
+      }
+    }
+",
+    ),
+  ]
+
+  let assert Ok(output) = compiler.compile([dd_source], expectations)
+
+  // Dependency graph should be generated since unmeasured has depends_on.
+  output.dependency_graph |> should.be_some()
+  let assert option.Some(graph) = output.dependency_graph
+  graph |> string.contains("third_party_auth") |> should.be_true()
+  graph |> string.contains("checkout_slo") |> should.be_true()
+  graph |> string.contains("-->|hard|") |> should.be_true()
+
+  // Measured expectation generates a Terraform resource.
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_true()
+
+  // Unmeasured expectation does NOT generate a Terraform resource.
+  output.terraform
+  |> string.contains("\"third_party_auth\"")
+  |> should.be_false()
+}
+
+/// Unmeasured expectations should reject unknown keys (only threshold, window_in_days, depends_on allowed).
+pub fn compile_unmeasured_rejects_unknown_keys_test() {
+  let dd_source =
+    VendorMeasurementSource(
+      source: SourceFile(
+        path: "measurements/datadog.caffeine",
+        content: "\"api_availability\":
+  Requires {}
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.ok\",
+      denominator: \"sum:http.total\"
+    }
+  }
+",
+      ),
+      vendor: vendor.Datadog,
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Unmeasured Expectations
+  * \"bad_expectation\":
+    Provides {
+      threshold: 99.9%,
+      window_in_days: 30,
+      env: \"production\"
+    }
+",
+    ),
+  ]
+
+  let result = compiler.compile([dd_source], expectations)
+  result |> should.be_error()
+}

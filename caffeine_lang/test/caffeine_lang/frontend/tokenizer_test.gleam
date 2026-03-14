@@ -15,7 +15,6 @@ fn tokenize_tokens(
 }
 
 // ==== tokenize_keywords ====
-// * ✅ Measurements keyword
 // * ✅ Expects keyword
 // * ✅ measured keyword
 // * ✅ by keyword
@@ -27,11 +26,6 @@ fn tokenize_tokens(
 // * ✅ x keyword
 pub fn tokenize_keywords_test() {
   [
-    #(
-      "Measurements keyword",
-      "Measurements",
-      Ok([token.KeywordMeasurements, token.EOF]),
-    ),
     #(
       "Expects keyword",
       "Expectations",
@@ -219,7 +213,6 @@ pub fn tokenize_identifiers_test() {
 // * ✅ colon
 // * ✅ comma
 // * ✅ star
-// * ✅ plus
 // * ✅ pipe
 // * ✅ dot dot
 pub fn tokenize_symbols_test() {
@@ -233,7 +226,6 @@ pub fn tokenize_symbols_test() {
     #("colon", ":", Ok([token.SymbolColon, token.EOF])),
     #("comma", ",", Ok([token.SymbolComma, token.EOF])),
     #("star", "*", Ok([token.SymbolStar, token.EOF])),
-    #("plus", "+", Ok([token.SymbolPlus, token.EOF])),
     #("pipe", "|", Ok([token.SymbolPipe, token.EOF])),
     #("dot dot", "..", Ok([token.SymbolDotDot, token.EOF])),
   ]
@@ -287,22 +279,6 @@ pub fn tokenize_comments_test() {
       "comment with newline",
       "# comment\n",
       Ok([token.CommentLine(" comment"), token.WhitespaceNewline, token.EOF]),
-    ),
-  ]
-  |> test_helpers.table_test_1(tokenize_tokens)
-}
-
-// ==== tokenize_measurement_header ====
-// * ✅ single artifact header
-pub fn tokenize_measurement_header_test() {
-  [
-    #(
-      "single artifact header",
-      "Measurements",
-      Ok([
-        token.KeywordMeasurements,
-        token.EOF,
-      ]),
     ),
   ]
   |> test_helpers.table_test_1(tokenize_tokens)

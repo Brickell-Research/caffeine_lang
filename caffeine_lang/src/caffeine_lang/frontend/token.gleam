@@ -5,7 +5,6 @@ pub type PositionedToken {
 
 /// A token produced by the tokenizer.
 pub type Token {
-  KeywordMeasurements
   KeywordExpectations
   KeywordUnmeasured
   KeywordMeasured
@@ -41,7 +40,6 @@ pub type Token {
   SymbolColon
   SymbolComma
   SymbolStar
-  SymbolPlus
   SymbolPipe
   SymbolEquals
   SymbolDotDot
@@ -56,7 +54,6 @@ pub type Token {
 /// Convert token to string for error messages.
 pub fn to_string(tok: Token) -> String {
   case tok {
-    KeywordMeasurements -> "Measurements"
     KeywordExpectations -> "Expectations"
     KeywordUnmeasured -> "Unmeasured"
     KeywordMeasured -> "measured"
@@ -92,7 +89,6 @@ pub fn to_string(tok: Token) -> String {
     SymbolColon -> ":"
     SymbolComma -> ","
     SymbolStar -> "*"
-    SymbolPlus -> "+"
     SymbolPipe -> "|"
     SymbolEquals -> "="
     SymbolDotDot -> ".."

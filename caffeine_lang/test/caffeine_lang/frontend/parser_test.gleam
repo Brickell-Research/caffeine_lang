@@ -699,6 +699,9 @@ pub fn parse_measurements_file_test() {
 // * ✅ happy path - with extends
 // * ✅ happy path - list and struct literals
 // * ✅ happy path - percentage literal
+// * ✅ happy path - unmeasured expectations
+// * ✅ happy path - mixed measured and unmeasured expectations
+// * ✅ happy path - depends_on with hard and soft dependencies
 pub fn parse_expects_file_test() {
   [
     // single block
@@ -930,6 +933,187 @@ pub fn parse_expects_file_test() {
                   ast.Field(
                     "threshold",
                     ast.LiteralValue(ast.LiteralPercentage(99.9)),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
+        ]),
+      ),
+    ),
+    // unmeasured expectations
+    #(
+      "happy path - unmeasured expectations",
+      expects_path("happy_path_unmeasured"),
+      Ok(
+        ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.None,
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "third_party_auth",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.9)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "window_in_days",
+                    ast.LiteralValue(ast.LiteralInteger(30)),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
+        ]),
+      ),
+    ),
+    // mixed measured and unmeasured expectations
+    #(
+      "happy path - mixed measured and unmeasured expectations",
+      expects_path("happy_path_mixed_measured_unmeasured"),
+      Ok(
+        ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.Some("api_availability"),
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "checkout_slo",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.95)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "env",
+                    ast.LiteralValue(ast.LiteralString("production")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.None,
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "payment_gateway",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.5)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "window_in_days",
+                    ast.LiteralValue(ast.LiteralInteger(30)),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ],
+          ),
+        ]),
+      ),
+    ),
+    // depends_on with hard and soft dependencies
+    #(
+      "happy path - depends_on with hard and soft dependencies",
+      expects_path("happy_path_depends_on"),
+      Ok(
+        ast.ExpectsFile(trailing_comments: [], extendables: [], blocks: [
+          ast.ExpectsBlock(
+            leading_comments: [],
+            measurement: option.Some("api_slo"),
+            items: [
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "checkout_slo",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.9)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "depends_on",
+                    ast.LiteralValue(
+                      ast.LiteralStruct(
+                        [
+                          ast.Field(
+                            "hard",
+                            ast.LiteralValue(
+                              ast.LiteralList([
+                                ast.LiteralString(
+                                  "acme.platform.auth.login_slo",
+                                ),
+                              ]),
+                            ),
+                            leading_comments: [],
+                          ),
+                        ],
+                        [],
+                      ),
+                    ),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+              ast.ExpectItem(
+                leading_comments: [],
+                name: "payment_slo",
+                extends: [],
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.LiteralValue(ast.LiteralPercentage(99.5)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "depends_on",
+                    ast.LiteralValue(
+                      ast.LiteralStruct(
+                        [
+                          ast.Field(
+                            "hard",
+                            ast.LiteralValue(
+                              ast.LiteralList([
+                                ast.LiteralString(
+                                  "acme.platform.auth.login_slo",
+                                ),
+                              ]),
+                            ),
+                            leading_comments: [],
+                          ),
+                          ast.Field(
+                            "soft",
+                            ast.LiteralValue(
+                              ast.LiteralList([
+                                ast.LiteralString(
+                                  "acme.platform.cache.redis_slo",
+                                ),
+                              ]),
+                            ),
+                            leading_comments: [],
+                          ),
+                        ],
+                        [],
+                      ),
+                    ),
                     leading_comments: [],
                   ),
                 ]),

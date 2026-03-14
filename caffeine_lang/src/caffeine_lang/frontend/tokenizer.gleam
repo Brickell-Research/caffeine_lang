@@ -127,7 +127,6 @@ fn tokenize_loop(
         ":" -> emit_token(state, rest, token.SymbolColon, acc)
         "," -> emit_token(state, rest, token.SymbolComma, acc)
         "*" -> emit_token(state, rest, token.SymbolStar, acc)
-        "+" -> emit_token(state, rest, token.SymbolPlus, acc)
         "|" -> emit_token(state, rest, token.SymbolPipe, acc)
         "=" -> emit_token(state, rest, token.SymbolEquals, acc)
         "." -> {
@@ -414,7 +413,6 @@ fn read_identifier_loop(source: String, acc: List(String)) -> #(String, String) 
 
 fn keyword_or_identifier(word: String) -> Token {
   case word {
-    "Measurements" -> token.KeywordMeasurements
     "Expectations" -> token.KeywordExpectations
     "Unmeasured" -> token.KeywordUnmeasured
     "measured" -> token.KeywordMeasured

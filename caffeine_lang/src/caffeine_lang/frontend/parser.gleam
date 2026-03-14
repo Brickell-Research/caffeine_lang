@@ -338,7 +338,7 @@ fn parse_extendable_kind(
 }
 
 // =============================================================================
-// BLUEPRINTS BLOCKS
+// MEASUREMENT ITEMS
 // =============================================================================
 
 fn parse_measurement_item(
@@ -396,13 +396,10 @@ fn parse_expect_item(
 // ERROR RECOVERY
 // =============================================================================
 
-/// Skip tokens until the next block boundary (Measurements, Expectations, Unmeasured, or EOF).
+/// Skip tokens until the next block boundary (Expectations, Unmeasured, or EOF).
 fn skip_to_block_boundary(state: ParserState) -> ParserState {
   case peek(state) {
-    token.KeywordMeasurements
-    | token.KeywordExpectations
-    | token.KeywordUnmeasured
-    | token.EOF -> state
+    token.KeywordExpectations | token.KeywordUnmeasured | token.EOF -> state
     _ -> skip_to_block_boundary(advance(state))
   }
 }
@@ -411,7 +408,6 @@ fn skip_to_block_boundary(state: ParserState) -> ParserState {
 fn skip_to_item_boundary(state: ParserState) -> ParserState {
   case peek(state) {
     token.SymbolStar
-    | token.KeywordMeasurements
     | token.KeywordExpectations
     | token.KeywordUnmeasured
     | token.EOF -> state

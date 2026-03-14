@@ -664,14 +664,8 @@ pub fn parse_refinement_type(
   case raw |> string.split_once("{") {
     Ok(#(typ, rest)) -> {
       let trimmed_typ = typ |> string.trim
-      case trimmed_typ {
-        // TODO: fix, this is terrible
-        "Boolean" | "Dict" | "List" | "Optional" -> Error(Nil)
-        _ -> {
-          use parsed_typ <- result.try(parse_inner(trimmed_typ))
-          do_parse_refinement(parsed_typ, trimmed_typ, rest, validate_set_value)
-        }
-      }
+      use parsed_typ <- result.try(parse_inner(trimmed_typ))
+      do_parse_refinement(parsed_typ, trimmed_typ, rest, validate_set_value)
     }
     _ -> Error(Nil)
   }

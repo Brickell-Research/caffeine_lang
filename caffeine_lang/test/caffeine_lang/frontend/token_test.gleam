@@ -12,7 +12,6 @@ import test_helpers
 pub fn to_string_test() {
   [
     // Keywords
-    #("keyword Measurements", token.KeywordMeasurements, "Measurements"),
     #("keyword Expectations", token.KeywordExpectations, "Expectations"),
     #("keyword measured", token.KeywordMeasured, "measured"),
     #("keyword by", token.KeywordBy, "by"),
@@ -47,7 +46,6 @@ pub fn to_string_test() {
     #("symbol colon", token.SymbolColon, ":"),
     #("symbol comma", token.SymbolComma, ","),
     #("symbol star", token.SymbolStar, "*"),
-    #("symbol plus", token.SymbolPlus, "+"),
     #("symbol pipe", token.SymbolPipe, "|"),
     #("symbol equals", token.SymbolEquals, "="),
     #("symbol dot dot", token.SymbolDotDot, ".."),
