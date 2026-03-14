@@ -1,4 +1,4 @@
-Expectations for "api_availability_with_type_alias"
+Expectations measured by "api_availability_with_type_alias"
   * "checkout_availability_type_alias":
     Provides {
       env: "production",

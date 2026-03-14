@@ -17,7 +17,8 @@ fn tokenize_tokens(
 // ==== tokenize_keywords ====
 // * ✅ Blueprints keyword
 // * ✅ Expects keyword
-// * ✅ for keyword
+// * ✅ measured keyword
+// * ✅ by keyword
 // * ✅ extends keyword
 // * ✅ Requires keyword
 // * ✅ Provides keyword
@@ -36,7 +37,8 @@ pub fn tokenize_keywords_test() {
       "Expectations",
       Ok([token.KeywordExpectations, token.EOF]),
     ),
-    #("for keyword", "for", Ok([token.KeywordFor, token.EOF])),
+    #("measured keyword", "measured", Ok([token.KeywordMeasured, token.EOF])),
+    #("by keyword", "by", Ok([token.KeywordBy, token.EOF])),
     #("extends keyword", "extends", Ok([token.KeywordExtends, token.EOF])),
     #("Requires keyword", "Requires", Ok([token.KeywordRequires, token.EOF])),
     #("Provides keyword", "Provides", Ok([token.KeywordProvides, token.EOF])),
@@ -312,10 +314,11 @@ pub fn tokenize_expects_header_test() {
   [
     #(
       "expects header line",
-      "Expectations for \"api_availability\"",
+      "Expectations measured by \"api_availability\"",
       Ok([
         token.KeywordExpectations,
-        token.KeywordFor,
+        token.KeywordMeasured,
+        token.KeywordBy,
         token.LiteralString("api_availability"),
         token.EOF,
       ]),
@@ -640,16 +643,16 @@ pub fn tokenize_edge_cases_test() {
 // * ✅ column numbers advance within a line
 // * ✅ positions reset to column 1 on new line
 pub fn tokenize_position_tracking_test() {
-  // "Requires\nfor"
+  // "Requires\nmeasured"
   // Line 1: Requires (col 1), Newline (col 9)
-  // Line 2: for (col 1), EOF (col 4)
-  let assert Ok(tokens) = tokenizer.tokenize("Requires\nfor")
+  // Line 2: measured (col 1), EOF (col 9)
+  let assert Ok(tokens) = tokenizer.tokenize("Requires\nmeasured")
   tokens
   |> should.equal([
     token.PositionedToken(token.KeywordRequires, 1, 1),
     token.PositionedToken(token.WhitespaceNewline, 1, 9),
-    token.PositionedToken(token.KeywordFor, 2, 1),
-    token.PositionedToken(token.EOF, 2, 4),
+    token.PositionedToken(token.KeywordMeasured, 2, 1),
+    token.PositionedToken(token.EOF, 2, 9),
   ])
 }
 

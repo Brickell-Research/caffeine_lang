@@ -137,7 +137,7 @@ test("completion in Requires block returns type keywords", async () => {
 }, 30_000);
 
 // ==== completion_blueprint_names ====
-// * Completion at "for" position suggests blueprint names from workspace
+// * Completion at "measured by" position suggests blueprint names from workspace
 test("completion suggests blueprint names from workspace", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
@@ -158,9 +158,9 @@ test("completion suggests blueprint names from workspace", async () => {
     client.openDocument(exUri, exText);
     await exDiagPromise;
 
-    // Line 0: 'Expectations for "test_blueprint"'
-    // Character 18 is right after the opening quote — triggers blueprint name completions
-    const items = await client.completion(exUri, 0, 18);
+    // Line 0: 'Expectations measured by "test_blueprint"'
+    // Character 26 is right after the opening quote — triggers blueprint name completions
+    const items = await client.completion(exUri, 0, 26);
 
     expect(Array.isArray(items)).toBeTruthy();
     expect(items.length > 0).toBeTruthy();

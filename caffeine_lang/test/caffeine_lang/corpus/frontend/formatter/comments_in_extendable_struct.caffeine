@@ -5,6 +5,6 @@ _defaults (Provides): {
   window_in_days: 7
 }
 
-Expectations for "slo"
+Expectations measured by "slo"
   * "item" extends [_defaults]:
     Provides { service: "api" }

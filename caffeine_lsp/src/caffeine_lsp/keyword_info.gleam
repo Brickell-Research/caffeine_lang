@@ -15,8 +15,12 @@ pub fn all_keywords() -> List(KeywordMeta) {
       description: "Declares a block of expectation definitions for a blueprint.",
     ),
     KeywordMeta(
-      name: "for",
-      description: "Specifies which artifacts a blueprint block targets.",
+      name: "measured",
+      description: "Used with 'by' to specify which blueprint an expectations block targets.",
+    ),
+    KeywordMeta(
+      name: "by",
+      description: "Used with 'measured' to specify which blueprint an expectations block targets.",
     ),
     KeywordMeta(
       name: "extends",

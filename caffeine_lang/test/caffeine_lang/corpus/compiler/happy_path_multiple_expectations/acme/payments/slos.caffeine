@@ -1,4 +1,4 @@
-Expectations for "api_availability"
+Expectations measured by "api_availability"
   * "checkout_availability":
     Provides {
       env: "production",
@@ -7,7 +7,7 @@ Expectations for "api_availability"
       window_in_days: 30
     }
 
-Expectations for "api_latency_p99"
+Expectations measured by "api_latency_p99"
   * "checkout_latency_p99":
     Provides {
       env: "production",

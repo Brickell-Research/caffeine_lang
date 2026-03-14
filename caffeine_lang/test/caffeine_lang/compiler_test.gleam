@@ -145,7 +145,7 @@ pub fn compile_from_strings_test() {
     }
   }
 ",
-        "Expectations for \"api_availability\"
+        "Expectations measured by \"api_availability\"
   * \"checkout_availability\":
     Provides {
       env: \"production\",
@@ -174,7 +174,7 @@ pub fn compile_from_strings_test() {
     indicators: { numerator: \"count:test\", denominator: \"count:test\" }
   }
 ",
-        "Expectations for \"simple_slo\"
+        "Expectations measured by \"simple_slo\"
   * \"my_slo\":
     Provides {
       threshold: 99.0%,
@@ -197,7 +197,7 @@ pub fn compile_from_strings_test() {
     indicators: {}
   }
 ",
-        "Expectations for \"cpu_slo\"
+        "Expectations measured by \"cpu_slo\"
   * \"cpu_availability\":
     Provides {
       env: \"production\",
@@ -225,7 +225,7 @@ pub fn compile_from_strings_test() {
       "sad path - invalid blueprint DSL",
       #(
         "this is not valid caffeine syntax !!!",
-        "Expectations for \"x\"
+        "Expectations measured by \"x\"
   * \"y\":
     Provides {}
 ",
@@ -262,7 +262,7 @@ pub fn compile_from_strings_test() {
     indicators: { numerator: \"1\", denominator: \"1\" }
   }
 ",
-        "Expectations for \"nonexistent_blueprint\"
+        "Expectations measured by \"nonexistent_blueprint\"
   * \"my_slo\":
     Provides {}
 ",
@@ -283,7 +283,7 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"nonexistent.org.team.slo\"] }
   }
 ",
-        "Expectations for \"slo_with_deps\"
+        "Expectations measured by \"slo_with_deps\"
   * \"my_slo\":
     Provides {
       threshold: 99.0%,
@@ -307,7 +307,7 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"invalid_format\"] }
   }
 ",
-        "Expectations for \"slo_with_deps\"
+        "Expectations measured by \"slo_with_deps\"
   * \"my_slo\":
     Provides {
       threshold: 99.0%,
@@ -331,7 +331,7 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
   }
 ",
-        "Expectations for \"slo_with_deps\"
+        "Expectations measured by \"slo_with_deps\"
   * \"my_slo\":
     Provides {
       threshold: 99.0%,
@@ -382,7 +382,7 @@ pub fn compile_from_strings_honeycomb_test() {
     }
   }
 ",
-        "Expectations for \"honeycomb_availability\"
+        "Expectations measured by \"honeycomb_availability\"
   * \"api_success_rate\":
     Provides {
       env: \"production\",
@@ -416,7 +416,7 @@ pub fn compile_from_strings_honeycomb_test() {
     }
   }
 ",
-        "Expectations for \"hc_blueprint\"
+        "Expectations measured by \"hc_blueprint\"
   * \"hc_slo\":
     Provides {
       threshold: 99.5%,
@@ -482,7 +482,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations for \"dd_blueprint\"
+      content: "Expectations measured by \"dd_blueprint\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -490,7 +490,7 @@ pub fn compile_mixed_vendors_datadog_honeycomb_test() {
       window_in_days: 30
     }
 
-Expectations for \"hc_blueprint\"
+Expectations measured by \"hc_blueprint\"
   * \"hc_slo\":
     Provides {
       threshold: 99.5%,
@@ -540,7 +540,7 @@ pub fn compile_from_strings_newrelic_test() {
     }
   }
 ",
-        "Expectations for \"newrelic_availability\"
+        "Expectations measured by \"newrelic_availability\"
   * \"api_success_rate\":
     Provides {
       env: \"production\",
@@ -576,7 +576,7 @@ pub fn compile_from_strings_newrelic_test() {
     }
   }
 ",
-        "Expectations for \"nr_blueprint\"
+        "Expectations measured by \"nr_blueprint\"
   * \"nr_slo\":
     Provides {
       threshold: 99.5%,
@@ -643,7 +643,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations for \"dd_blueprint\"
+      content: "Expectations measured by \"dd_blueprint\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -651,7 +651,7 @@ pub fn compile_mixed_vendors_datadog_newrelic_test() {
       window_in_days: 30
     }
 
-Expectations for \"nr_blueprint\"
+Expectations measured by \"nr_blueprint\"
   * \"nr_slo\":
     Provides {
       threshold: 99.5%,
@@ -699,7 +699,7 @@ pub fn compile_from_strings_dynatrace_test() {
     }
   }
 ",
-        "Expectations for \"dynatrace_availability\"
+        "Expectations measured by \"dynatrace_availability\"
   * \"api_success_rate\":
     Provides {
       threshold: 99.5%,
@@ -732,7 +732,7 @@ pub fn compile_from_strings_dynatrace_test() {
     }
   }
 ",
-        "Expectations for \"dt_blueprint\"
+        "Expectations measured by \"dt_blueprint\"
   * \"dt_slo\":
     Provides {
       threshold: 99.5%,
@@ -798,7 +798,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations for \"dd_blueprint\"
+      content: "Expectations measured by \"dd_blueprint\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -806,7 +806,7 @@ pub fn compile_mixed_vendors_datadog_dynatrace_test() {
       window_in_days: 30
     }
 
-Expectations for \"dt_blueprint\"
+Expectations measured by \"dt_blueprint\"
   * \"dt_slo\":
     Provides {
       threshold: 99.5%,
@@ -849,7 +849,7 @@ pub fn compile_from_strings_dependency_graph_none_test() {
     indicators: { good: \"count:ok\", total: \"count:all\" }
   }
 ",
-      "Expectations for \"simple\"
+      "Expectations measured by \"simple\"
   * \"my_slo\":
     Provides {
       threshold: 99.0%,
@@ -881,14 +881,14 @@ pub fn compile_from_strings_dependency_graph_some_test() {
     indicators: { good: \"count:ok\", total: \"count:all\" }
   }
 ",
-      "Expectations for \"tracked\"
+      "Expectations measured by \"tracked\"
   * \"tracked_slo\":
     Provides {
       threshold: 99.0%,
       window_in_days: 30
     }
 
-Expectations for \"standalone\"
+Expectations measured by \"standalone\"
   * \"standalone_slo\":
     Provides {
       threshold: 99.9%,
@@ -977,7 +977,7 @@ pub fn compile_all_four_vendors_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations for \"dd\"
+      content: "Expectations measured by \"dd\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -985,21 +985,21 @@ pub fn compile_all_four_vendors_test() {
       window_in_days: 30
     }
 
-Expectations for \"hc\"
+Expectations measured by \"hc\"
   * \"hc_slo\":
     Provides {
       threshold: 99.5%,
       window_in_days: 14
     }
 
-Expectations for \"dt\"
+Expectations measured by \"dt\"
   * \"dt_slo\":
     Provides {
       threshold: 99.5%,
       window_in_days: 30
     }
 
-Expectations for \"nr\"
+Expectations measured by \"nr\"
   * \"nr_slo\":
     Provides {
       threshold: 99.0%,

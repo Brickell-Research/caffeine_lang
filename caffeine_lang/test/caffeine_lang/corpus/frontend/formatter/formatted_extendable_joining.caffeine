@@ -4,6 +4,6 @@ _defaults (Provides): { window_in_days: 30 }
 _service (Provides): { service_name: "api" }
 
 ## SLO Expectations
-Expectations for "availability"
+Expectations measured by "availability"
   * "api" extends [_defaults, _service]:
     Provides { threshold: 99.95 }

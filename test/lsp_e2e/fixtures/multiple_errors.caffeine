@@ -1,7 +1,7 @@
-Expectations for "nonexistent_blueprint_aaa"
+Expectations measured by "nonexistent_blueprint_aaa"
   * "item_one":
     Provides { threshold: 99.9 }
 
-Expectations for "nonexistent_blueprint_bbb"
+Expectations measured by "nonexistent_blueprint_bbb"
   * "item_two":
     Provides { threshold: 99.5 }

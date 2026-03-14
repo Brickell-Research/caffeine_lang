@@ -1,4 +1,4 @@
-Expectations for "test_blueprint"
+Expectations measured by "test_blueprint"
   * "test_expectation":
     Provides {
       env: "production",

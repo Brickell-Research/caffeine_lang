@@ -378,7 +378,7 @@ export function handleInlayHints(ctx: HandlerContext, params: any) {
 /** Extract expectation item names and their line positions from an expects file. */
 export function extractExpectationPositions(text: string): Array<{ name: string; line: number }> {
   const results: Array<{ name: string; line: number }> = [];
-  if (!text.includes("Expectations for")) return results;
+  if (!text.includes("Expectations measured by")) return results;
 
   const lines = text.split("\n");
   const pattern = /\*\s+"([^"]+)"/;

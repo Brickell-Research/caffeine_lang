@@ -1,5 +1,5 @@
 _defaults (Provides): { threshold: 99.9 }
 
-Expectations for "test_blueprint"
+Expectations measured by "test_blueprint"
   * "checkout" extends [_defaults]:
     Provides { env: "production" }

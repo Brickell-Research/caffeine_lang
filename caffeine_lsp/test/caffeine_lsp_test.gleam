@@ -209,7 +209,7 @@ pub fn invalid_extendable_kind_expects_diagnostic_test() {
   let source =
     "_base (Requires): { env: String }
 
-Expectations for \"api_availability\"
+Expectations measured by \"api_availability\"
   * \"checkout\":
     Provides { status: true }
 "
@@ -227,7 +227,7 @@ Expectations for \"api_availability\"
 pub fn valid_expects_no_diagnostics_test() {
   // An expects file without extendables is correctly detected and validated.
   let source =
-    "Expectations for \"api_availability\"
+    "Expectations measured by \"api_availability\"
   * \"checkout\":
     Provides { status: true }
 "
@@ -294,7 +294,7 @@ pub fn hover_empty_space_returns_none_test() {
 
 pub fn hover_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case hover.get_hover(source, 0, 2, []) {
     option.Some(markdown) -> {
       { string.contains(markdown, "_defaults") } |> should.be_true()
@@ -392,7 +392,7 @@ pub fn document_symbols_type_alias_test() {
 
 pub fn document_symbols_expects_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let symbols = document_symbols.get_symbols(source)
   { symbols != [] } |> should.be_true()
 }
@@ -483,7 +483,7 @@ pub fn semantic_tokens_with_comment_test() {
 pub fn semantic_tokens_boolean_as_keyword_test() {
   // "true" appears as a literal in Provides
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let tokens = semantic_tokens.get_semantic_tokens(source)
   // Find a token with length 4 (true) and type 0 (keyword)
   let has_true_keyword = find_token_with_type_and_length(tokens, 0, 4)
@@ -527,7 +527,7 @@ fn find_token_loop(tokens: List(Int), token_type: Int, length: Int) -> Bool {
 
 pub fn definition_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   // Hover on _defaults in extends list (line 3)
   case definition.get_definition(source, 3, 25) {
     option.Some(#(line, _col, _len)) -> {
@@ -584,31 +584,31 @@ pub fn definition_empty_space_test() {
 
 pub fn blueprint_ref_on_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on 'a' of api_availability (col 18)
-  definition.get_blueprint_ref_at_position(source, 0, 18)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on 'a' of api_availability (col 26)
+  definition.get_blueprint_ref_at_position(source, 0, 26)
   |> should.equal(option.Some("api_availability"))
 }
 
 pub fn blueprint_ref_middle_of_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on '_' between api and availability (col 21)
-  definition.get_blueprint_ref_at_position(source, 0, 21)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on '_' between api and availability (col 29)
+  definition.get_blueprint_ref_at_position(source, 0, 29)
   |> should.equal(option.Some("api_availability"))
 }
 
 pub fn blueprint_ref_last_char_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on last 'y' of api_availability (col 33)
-  definition.get_blueprint_ref_at_position(source, 0, 33)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on last 'y' of api_availability (col 41)
+  definition.get_blueprint_ref_at_position(source, 0, 41)
   |> should.equal(option.Some("api_availability"))
 }
 
 pub fn blueprint_ref_on_keyword_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "Expectations" (col 5)
   definition.get_blueprint_ref_at_position(source, 0, 5)
   |> should.equal(option.None)
@@ -616,31 +616,31 @@ pub fn blueprint_ref_on_keyword_returns_none_test() {
 
 pub fn blueprint_ref_on_for_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on "for" (col 14)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "measured" (col 14)
   definition.get_blueprint_ref_at_position(source, 0, 14)
   |> should.equal(option.None)
 }
 
 pub fn blueprint_ref_on_quote_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on opening quote (col 17)
-  definition.get_blueprint_ref_at_position(source, 0, 17)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on opening quote (col 25)
+  definition.get_blueprint_ref_at_position(source, 0, 25)
   |> should.equal(option.None)
 }
 
 pub fn blueprint_ref_past_closing_quote_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on closing quote (col 34)
-  definition.get_blueprint_ref_at_position(source, 0, 34)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on closing quote (col 42)
+  definition.get_blueprint_ref_at_position(source, 0, 42)
   |> should.equal(option.None)
 }
 
 pub fn blueprint_ref_on_item_line_returns_none_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   // Cursor on item line (line 1)
   definition.get_blueprint_ref_at_position(source, 1, 7)
   |> should.equal(option.None)
@@ -648,9 +648,9 @@ pub fn blueprint_ref_on_item_line_returns_none_test() {
 
 pub fn blueprint_ref_multiple_blocks_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { threshold: 99.95 }\n\nExpectations for \"latency\"\n  * \"checkout_p99\":\n    Provides { threshold_ms: 500 }\n"
-  // Cursor on "latency" in second block (line 4, col 18)
-  definition.get_blueprint_ref_at_position(source, 4, 18)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { threshold: 99.95 }\n\nExpectations measured by \"latency\"\n  * \"checkout_p99\":\n    Provides { threshold_ms: 500 }\n"
+  // Cursor on "latency" in second block (line 4, col 26)
+  definition.get_blueprint_ref_at_position(source, 4, 26)
   |> should.equal(option.Some("latency"))
 }
 
@@ -675,7 +675,7 @@ pub fn blueprint_ref_blueprints_file_returns_none_test() {
 
 pub fn relation_ref_on_valid_path_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on 'o' of org.team.svc.dep (col 36)
   definition.get_relation_ref_at_position(source, 2, 36)
   |> should.equal(option.Some("org.team.svc.dep"))
@@ -683,7 +683,7 @@ pub fn relation_ref_on_valid_path_test() {
 
 pub fn relation_ref_middle_of_path_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on 't' of team (col 40)
   definition.get_relation_ref_at_position(source, 2, 40)
   |> should.equal(option.Some("org.team.svc.dep"))
@@ -691,7 +691,7 @@ pub fn relation_ref_middle_of_path_test() {
 
 pub fn relation_ref_outside_quotes_returns_none_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on '[' (col 34) — outside quotes
   definition.get_relation_ref_at_position(source, 2, 34)
   |> should.equal(option.None)
@@ -699,7 +699,7 @@ pub fn relation_ref_outside_quotes_returns_none_test() {
 
 pub fn relation_ref_non_dependency_string_returns_none_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
   // Cursor inside "not_a_path" — not a 4-segment dotted path
   definition.get_relation_ref_at_position(source, 2, 23)
   |> should.equal(option.None)
@@ -779,7 +779,8 @@ pub fn find_name_position_not_found_test() {
 }
 
 pub fn find_name_position_empty_name_test() {
-  let content = "Expectations for \"\"\n  * \"slo\":\n    Provides { x: true }"
+  let content =
+    "Expectations measured by \"\"\n  * \"slo\":\n    Provides { x: true }"
   // Empty name must not hang (JS target: split_once matches empty string at pos 0)
   position_utils.find_name_position(content, "")
   |> should.equal(Error(Nil))
@@ -858,7 +859,7 @@ pub fn find_block_end_stops_at_dedent_test() {
 // * ✅ matches exact pattern with quotes
 pub fn find_item_start_line_found_test() {
   let lines = [
-    "Expectations for \"test\"",
+    "Expectations measured by \"test\"",
     "  * \"api\":",
     "    Provides { x: 1 }",
     "  * \"web\":",
@@ -872,7 +873,7 @@ pub fn find_item_start_line_found_test() {
 }
 
 pub fn find_item_start_line_not_found_test() {
-  let lines = ["Expectations for \"test\"", "  * \"api\":"]
+  let lines = ["Expectations measured by \"test\"", "  * \"api\":"]
   position_utils.find_item_start_line(lines, "missing", 42)
   |> should.equal(42)
 }
@@ -890,7 +891,7 @@ pub fn find_item_start_line_partial_match_test() {
 pub fn find_enclosing_item_found_test() {
   let lines =
     string.split(
-      "Expectations for \"test\"\n  * \"my_slo\":\n    Provides { x: 1 }",
+      "Expectations measured by \"test\"\n  * \"my_slo\":\n    Provides { x: 1 }",
       "\n",
     )
   // Cursor on line 2 (Provides line), should find "my_slo"
@@ -899,7 +900,7 @@ pub fn find_enclosing_item_found_test() {
 }
 
 pub fn find_enclosing_item_none_test() {
-  let lines = string.split("Expectations for \"test\"", "\n")
+  let lines = string.split("Expectations measured by \"test\"", "\n")
   completion.find_enclosing_item(lines, 0)
   |> should.equal(option.None)
 }
@@ -910,7 +911,7 @@ pub fn find_enclosing_item_none_test() {
 pub fn find_enclosing_blueprint_ref_found_test() {
   let lines =
     string.split(
-      "Expectations for \"my_blueprint\"\n  * \"item\":\n    Provides { x: 1 }",
+      "Expectations measured by \"my_blueprint\"\n  * \"item\":\n    Provides { x: 1 }",
       "\n",
     )
   completion.find_enclosing_blueprint_ref(lines, 2)
@@ -938,7 +939,7 @@ pub fn file_utils_parse_blueprints_test() {
 
 pub fn file_utils_parse_expectations_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
   case file_utils.parse(source) {
     Ok(file_utils.Expects(_)) -> should.be_true(True)
     _ -> should.fail()
@@ -956,12 +957,13 @@ pub fn file_utils_parse_invalid_test() {
 
 pub fn keyword_info_all_keywords_test() {
   let keywords = keyword_info.all_keywords()
-  list.length(keywords) |> should.equal(7)
+  list.length(keywords) |> should.equal(8)
 
   let names = list.map(keywords, fn(k) { k.name })
   list.contains(names, "Blueprints") |> should.be_true()
   list.contains(names, "Expectations") |> should.be_true()
-  list.contains(names, "for") |> should.be_true()
+  list.contains(names, "measured") |> should.be_true()
+  list.contains(names, "by") |> should.be_true()
   list.contains(names, "extends") |> should.be_true()
   list.contains(names, "Requires") |> should.be_true()
   list.contains(names, "Provides") |> should.be_true()
@@ -1012,7 +1014,7 @@ pub fn find_all_name_positions_skips_partial_test() {
 
 pub fn highlight_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let highlights = highlight.get_highlights(source, 0, 2)
   // Should find _defaults at definition (line 0) and usage (line 3)
   { list.length(highlights) >= 2 } |> should.be_true()
@@ -1050,7 +1052,7 @@ pub fn highlight_empty_space_returns_empty_test() {
 
 pub fn references_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let refs = references.get_references(source, 0, 2)
   { list.length(refs) >= 2 } |> should.be_true()
 }
@@ -1085,16 +1087,16 @@ pub fn references_blueprint_item_test() {
 
 pub fn references_expects_blueprint_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on "api_availability" (line 0, col 18)
-  let refs = references.get_references(source, 0, 18)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "api_availability" (line 0, col 26)
+  let refs = references.get_references(source, 0, 26)
   { list.length(refs) >= 1 }
   |> should.be_true()
 }
 
 // ==== get_blueprint_name_at ====
 // * returns item name when cursor is on blueprint item
-// * returns blueprint name when cursor is on Expectations for header
+// * returns blueprint name when cursor is on Expectations measured by header
 // * returns empty string when cursor is on keyword
 // * returns empty string when cursor is on field value
 
@@ -1108,9 +1110,9 @@ pub fn get_blueprint_name_at_item_name_test() {
 
 pub fn get_blueprint_name_at_expects_header_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
-  // Cursor on "api_availability" (line 0, col 18)
-  references.get_blueprint_name_at(source, 0, 18)
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "api_availability" (line 0, col 26)
+  references.get_blueprint_name_at(source, 0, 26)
   |> should.equal("api_availability")
 }
 
@@ -1124,7 +1126,7 @@ pub fn get_blueprint_name_at_keyword_test() {
 
 pub fn get_blueprint_name_at_field_value_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
   // Cursor on "true" -- this is a field value, not a blueprint name
   references.get_blueprint_name_at(source, 2, 22)
   |> should.equal("")
@@ -1136,15 +1138,15 @@ pub fn get_blueprint_name_at_field_value_test() {
 
 pub fn find_references_to_name_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let refs = references.find_references_to_name(source, "api_availability")
   refs
-  |> should.equal([#(0, 18, 16)])
+  |> should.equal([#(0, 26, 16)])
 }
 
 pub fn find_references_to_name_not_found_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
   references.find_references_to_name(source, "missing")
   |> should.equal([])
 }
@@ -1162,7 +1164,7 @@ pub fn find_references_to_name_not_found_test() {
 
 pub fn prepare_rename_valid_symbol_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   case rename.prepare_rename(source, 0, 2) {
     option.Some(#(0, 0, 9)) -> should.be_true(True)
     _ -> should.fail()
@@ -1178,7 +1180,7 @@ pub fn prepare_rename_keyword_returns_none_test() {
 
 pub fn get_rename_edits_all_locations_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let edits = rename.get_rename_edits(source, 0, 2)
   { list.length(edits) >= 2 } |> should.be_true()
 }
@@ -1208,7 +1210,7 @@ pub fn folding_ranges_blueprints_test() {
 
 pub fn folding_ranges_expects_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let ranges = folding_range.get_folding_ranges(source)
   { ranges != [] } |> should.be_true()
 }
@@ -1297,7 +1299,7 @@ fn find_outermost(sr: SelectionRange) -> SelectionRange {
 
 pub fn linked_editing_range_extendable_test() {
   let source =
-    "_defaults (Provides): { env: \"production\" }\n\nExpectations for \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
+    "_defaults (Provides): { env: \"production\" }\n\nExpectations measured by \"api\"\n  * \"checkout\" extends [_defaults]:\n    Provides { status: true }\n"
   let ranges = linked_editing_range.get_linked_editing_ranges(source, 0, 2)
   { list.length(ranges) >= 2 } |> should.be_true()
 }
@@ -1334,7 +1336,7 @@ pub fn hover_blueprint_item_test() {
 
 pub fn hover_expect_item_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
   case hover.get_hover(source, 1, 7, []) {
     option.Some(md) -> {
       { string.contains(md, "checkout") } |> should.be_true()
@@ -1391,14 +1393,14 @@ pub fn extends_completion_filters_used_test() {
 
 pub fn cross_file_known_blueprint_no_diagnostics_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   diagnostics.get_cross_file_diagnostics(source, ["api_availability"])
   |> should.equal([])
 }
 
 pub fn cross_file_unknown_blueprint_returns_diagnostic_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let diags =
     diagnostics.get_cross_file_diagnostics(source, ["other_blueprint"])
   case diags {
@@ -1426,7 +1428,7 @@ pub fn cross_file_empty_content_returns_empty_test() {
 
 pub fn cross_file_multiple_blocks_mixed_test() {
   let source =
-    "Expectations for \"known_bp\"\n  * \"item1\":\n    Provides { a: true }\n\nExpectations for \"unknown_bp\"\n  * \"item2\":\n    Provides { b: false }\n"
+    "Expectations measured by \"known_bp\"\n  * \"item1\":\n    Provides { a: true }\n\nExpectations measured by \"unknown_bp\"\n  * \"item2\":\n    Provides { b: false }\n"
   let diags = diagnostics.get_cross_file_diagnostics(source, ["known_bp"])
   case diags {
     [diag] -> {
@@ -1439,7 +1441,7 @@ pub fn cross_file_multiple_blocks_mixed_test() {
 
 pub fn cross_file_empty_known_list_reports_all_test() {
   let source =
-    "Expectations for \"my_blueprint\"\n  * \"item\":\n    Provides { status: true }\n"
+    "Expectations measured by \"my_blueprint\"\n  * \"item\":\n    Provides { status: true }\n"
   let diags = diagnostics.get_cross_file_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1460,7 +1462,7 @@ pub fn cross_file_empty_known_list_reports_all_test() {
 
 pub fn dependency_known_target_no_diagnostics_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   diagnostics.get_cross_file_dependency_diagnostics(source, [
     "org.team.svc.dep",
   ])
@@ -1469,7 +1471,7 @@ pub fn dependency_known_target_no_diagnostics_test() {
 
 pub fn dependency_unknown_target_returns_diagnostic_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1489,14 +1491,14 @@ pub fn dependency_empty_content_returns_empty_test() {
 
 pub fn dependency_no_relations_returns_empty_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { status: true }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { status: true }\n"
   diagnostics.get_cross_file_dependency_diagnostics(source, [])
   |> should.equal([])
 }
 
 pub fn dependency_multiple_mixed_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"known.t.s.dep\", \"unknown.t.s.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"known.t.s.dep\", \"unknown.t.s.dep\"] } }\n"
   let diags =
     diagnostics.get_cross_file_dependency_diagnostics(source, [
       "known.t.s.dep",
@@ -1512,7 +1514,7 @@ pub fn dependency_multiple_mixed_test() {
 
 pub fn dependency_duplicate_targets_single_diagnostic_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.t.s.dep\"], soft: [\"org.t.s.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.t.s.dep\"], soft: [\"org.t.s.dep\"] } }\n"
   let diags = diagnostics.get_cross_file_dependency_diagnostics(source, [])
   case diags {
     [diag] -> {
@@ -1542,14 +1544,14 @@ pub fn all_diagnostics_empty_content_test() {
 
 pub fn all_diagnostics_valid_expects_known_blueprint_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   diagnostics.get_all_diagnostics(source, ["api_availability"], [])
   |> should.equal([])
 }
 
 pub fn all_diagnostics_unknown_blueprint_test() {
   let source =
-    "Expectations for \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
+    "Expectations measured by \"api_availability\"\n  * \"checkout\":\n    Provides { status: true }\n"
   let diags = diagnostics.get_all_diagnostics(source, [], [])
   let has_bp_not_found =
     list.any(diags, fn(d) {
@@ -1561,7 +1563,7 @@ pub fn all_diagnostics_unknown_blueprint_test() {
 
 pub fn all_diagnostics_unknown_dependency_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   let diags = diagnostics.get_all_diagnostics(source, ["bp"], [])
   let has_dep_not_found =
     list.any(diags, fn(d) {
@@ -1574,7 +1576,7 @@ pub fn all_diagnostics_unknown_dependency_test() {
 pub fn all_diagnostics_combines_all_checks_test() {
   // Expects file with validation error (undefined extendable), unknown blueprint, and unknown dep
   let source =
-    "Expectations for \"unknown_bp\"\n  * \"item\" extends [_nonexistent]:\n    Provides { env: \"staging\", relations: { hard: [\"org.t.s.dep\"] } }\n"
+    "Expectations measured by \"unknown_bp\"\n  * \"item\" extends [_nonexistent]:\n    Provides { env: \"staging\", relations: { hard: [\"org.t.s.dep\"] } }\n"
   let diags = diagnostics.get_all_diagnostics(source, [], [])
   // Should have validation error (undefined extendable), blueprint not found, and dependency not found
   let has_undefined =
@@ -1637,7 +1639,7 @@ _base (Requires): { env: String }
 
 pub fn workspace_symbols_expects_test() {
   let source =
-    "Expectations for \"api_availability\"
+    "Expectations measured by \"api_availability\"
   * \"checkout\":
     Provides { status: true }
   * \"payments\":
@@ -1721,7 +1723,7 @@ pub fn type_hierarchy_blueprint_item_test() {
 
 pub fn type_hierarchy_expect_item_test() {
   let source =
-    "Expectations for \"api_availability\"
+    "Expectations measured by \"api_availability\"
   * \"checkout\":
     Provides { status: true }
 "
@@ -1770,7 +1772,7 @@ pub fn type_hierarchy_field_name_returns_empty_test() {
 
 pub fn type_hierarchy_multiple_expects_blocks_test() {
   let source =
-    "Expectations for \"bp_one\"\n  * \"item_a\":\n    Provides { status: true }\n\nExpectations for \"bp_two\"\n  * \"item_b\":\n    Provides { active: false }\n"
+    "Expectations measured by \"bp_one\"\n  * \"item_a\":\n    Provides { status: true }\n\nExpectations measured by \"bp_two\"\n  * \"item_b\":\n    Provides { active: false }\n"
   let items = type_hierarchy.prepare_type_hierarchy(source, 5, 7)
   case items {
     [item] -> {
@@ -1786,19 +1788,19 @@ pub fn type_hierarchy_multiple_expects_blocks_test() {
 // ==========================================================================
 
 // ==== blueprint header completion ====
-// * suggests workspace blueprint names when cursor is after Expectations for "
+// * suggests workspace blueprint names when cursor is after Expectations measured by "
 // * filters suggestions by partial prefix
 // * returns empty when no workspace names provided
 // * does not trigger after closing quote
 
 pub fn blueprint_header_completion_suggests_names_test() {
-  let source = "Expectations for \""
-  // Cursor right after the opening quote (line 0, col 19)
+  let source = "Expectations measured by \""
+  // Cursor right after the opening quote (line 0, col 26)
   let items =
     completion.get_completions(
       source,
       0,
-      19,
+      26,
       ["api_availability", "latency_slo"],
       [],
     )
@@ -1808,13 +1810,13 @@ pub fn blueprint_header_completion_suggests_names_test() {
 }
 
 pub fn blueprint_header_completion_filters_by_prefix_test() {
-  let source = "Expectations for \"api"
-  // Cursor after "api" (line 0, col 22)
+  let source = "Expectations measured by \"api"
+  // Cursor after "api" (line 0, col 29)
   let items =
     completion.get_completions(
       source,
       0,
-      22,
+      29,
       ["api_availability", "latency_slo"],
       [],
     )
@@ -1824,16 +1826,16 @@ pub fn blueprint_header_completion_filters_by_prefix_test() {
 }
 
 pub fn blueprint_header_completion_empty_without_names_test() {
-  let source = "Expectations for \""
-  let items = completion.get_completions(source, 0, 19, [], [])
+  let source = "Expectations measured by \""
+  let items = completion.get_completions(source, 0, 26, [], [])
   items |> should.equal([])
 }
 
 pub fn blueprint_header_completion_not_after_closing_quote_test() {
-  let source = "Expectations for \"api_availability\""
+  let source = "Expectations measured by \"api_availability\""
   // Cursor after the closing quote — should NOT be in header context
   let items =
-    completion.get_completions(source, 0, 36, ["api_availability", "other"], [])
+    completion.get_completions(source, 0, 44, ["api_availability", "other"], [])
   let labels = list.map(items, fn(i) { i.label })
   // Should fall through to general context, not blueprint header
   list.contains(labels, "api_availability") |> should.be_false()
@@ -1871,7 +1873,7 @@ pub fn compile_validated_blueprints_expects_file_test() {
   // An expects-format file now parses as an empty blueprints file via error
   // recovery (the blueprints parser skips unrecognized tokens and finds no items).
   let source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -1909,7 +1911,7 @@ pub fn linker_diagnostics_all_correct_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -1934,7 +1936,7 @@ pub fn linker_diagnostics_missing_required_field_test() {
 
   // Missing 'env' and 'status' — both are required remaining params
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
     }
@@ -1965,7 +1967,7 @@ pub fn linker_diagnostics_unknown_field_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\",
@@ -1997,7 +1999,7 @@ pub fn linker_diagnostics_type_mismatch_test() {
 
   // Providing an integer for 'threshold' which expects Percentage (float)
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\",
@@ -2030,7 +2032,7 @@ pub fn linker_diagnostics_optional_defaulted_omitted_test() {
 
   // Omitting optional fields (tags, runbook) and defaulted field (window_in_days) — no errors
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2055,7 +2057,7 @@ pub fn linker_diagnostics_unknown_blueprint_ref_test() {
 
   // Blueprint ref "nonexistent" does not match — handled elsewhere, no linker diagnostic
   let ex_source =
-    "Expectations for \"nonexistent\"
+    "Expectations measured by \"nonexistent\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2067,7 +2069,7 @@ pub fn linker_diagnostics_unknown_blueprint_ref_test() {
 
 pub fn linker_diagnostics_empty_blueprints_test() {
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2100,7 +2102,7 @@ pub fn blueprint_aware_completion_suggests_params_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2149,7 +2151,7 @@ pub fn blueprint_aware_completion_unknown_blueprint_test() {
   // This expects file references "nonexistent" which doesn't match any blueprint
   // No blueprint params should appear, falls through to general context
   let ex_source =
-    "Expectations for \"nonexistent\"
+    "Expectations measured by \"nonexistent\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2188,7 +2190,7 @@ pub fn signature_help_in_provides_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2221,7 +2223,7 @@ pub fn signature_help_active_parameter_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2250,7 +2252,7 @@ pub fn signature_help_none_for_blueprints_test() {
 
 pub fn signature_help_none_outside_item_test() {
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
 "
   signature_help.get_signature_help(ex_source, 0, 5, [])
   |> should.equal(option.None)
@@ -2280,7 +2282,7 @@ pub fn inlay_hints_shows_types_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2320,7 +2322,7 @@ pub fn inlay_hints_no_match_no_hints_test() {
 
   // Blueprint ref "nonexistent" doesn't match
   let ex_source =
-    "Expectations for \"nonexistent\"
+    "Expectations measured by \"nonexistent\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2344,7 +2346,7 @@ pub fn inlay_hints_respects_range_test() {
     linker_diagnostics.compile_validated_blueprints(bp_source)
 
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2371,7 +2373,7 @@ pub fn inlay_hints_duplicate_field_names_test() {
 
   // Two items both have an "env" field — hints should point to correct lines
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2412,7 +2414,7 @@ pub fn linker_diagnostics_type_mismatch_includes_actual_type_test() {
   let assert Ok(blueprints) =
     linker_diagnostics.compile_validated_blueprints(bp_source)
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: 42
@@ -2448,7 +2450,7 @@ pub fn inlay_hints_shows_default_values_test() {
   let assert Ok(blueprints) =
     linker_diagnostics.compile_validated_blueprints(bp_source)
   let ex_source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
       env: \"prod\"
@@ -2590,7 +2592,7 @@ pub fn hover_expect_item_shows_blueprint_requires_test() {
   let assert Ok(blueprints) =
     linker_diagnostics.compile_validated_blueprints(bp_source)
   let source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides { env: \"prod\" }
 "
@@ -2622,7 +2624,7 @@ pub fn field_completion_snippet_test() {
   let assert Ok(blueprints) =
     linker_diagnostics.compile_validated_blueprints(bp_source)
   let source =
-    "Expectations for \"my_slo\"
+    "Expectations measured by \"my_slo\"
   * \"checkout\":
     Provides {
 
@@ -2763,7 +2765,7 @@ pub fn find_defined_symbol_positions_extendable_test() {
 
 pub fn find_defined_symbol_positions_item_name_test() {
   let content =
-    "\"api_avail\":\n  Requires {}\n  Provides {}\n\nExpectations for \"api_avail\"\n  * \"my_slo\":\n    Provides {}\n"
+    "\"api_avail\":\n  Requires {}\n  Provides {}\n\nExpectations measured by \"api_avail\"\n  * \"my_slo\":\n    Provides {}\n"
   // Cursor on 'api_avail' at line 0, col 1 (inside quotes of the item name)
   let result = position_utils.find_defined_symbol_positions(content, 0, 1)
   // Should find the blueprint item name and the expectations reference
@@ -2786,7 +2788,7 @@ pub fn find_defined_symbol_positions_non_symbol_test() {
 
 pub fn relation_ref_with_range_valid_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on 'o' of org.team.svc.dep
   case definition.get_relation_ref_with_range_at_position(source, 2, 36) {
     option.Some(#(ref, start_col)) -> {
@@ -2800,7 +2802,7 @@ pub fn relation_ref_with_range_valid_test() {
 
 pub fn relation_ref_with_range_outside_quotes_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { relations: { hard: [\"org.team.svc.dep\"] } }\n"
   // Line 2, cursor on '[' — outside quotes
   definition.get_relation_ref_with_range_at_position(source, 2, 34)
   |> should.equal(option.None)
@@ -2808,7 +2810,7 @@ pub fn relation_ref_with_range_outside_quotes_test() {
 
 pub fn relation_ref_with_range_non_dotted_test() {
   let source =
-    "Expectations for \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
+    "Expectations measured by \"bp\"\n  * \"item\":\n    Provides { tags: [\"not_a_path\"] }\n"
   // Cursor inside "not_a_path" — not 4-segment dotted
   definition.get_relation_ref_with_range_at_position(source, 2, 23)
   |> should.equal(option.None)

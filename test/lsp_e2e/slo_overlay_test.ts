@@ -164,7 +164,7 @@ describe("extractVendors", () => {
   });
 
   test("returns empty map for expects files", () => {
-    const text = `Expectations for "slo-blueprint"
+    const text = `Expectations measured by "slo-blueprint"
   * "p99-latency":
     Provides { env: "production" }`;
     const vendors = extractVendors(text, "file:///workspace/org/team/service.caffeine");
@@ -201,7 +201,7 @@ describe("extractVendors", () => {
 
 describe("extractExpectationPositions", () => {
   test("finds expectation items with correct line numbers", () => {
-    const text = `Expectations for "my-blueprint"
+    const text = `Expectations measured by "my-blueprint"
   * "first-item":
     Provides { env: "prod" }
   * "second-item":
@@ -225,7 +225,7 @@ describe("extractExpectationPositions", () => {
   });
 
   test("skips commented items", () => {
-    const text = `Expectations for "bp"
+    const text = `Expectations measured by "bp"
   * "active":
     Provides { env: "prod" }
   # * "commented":

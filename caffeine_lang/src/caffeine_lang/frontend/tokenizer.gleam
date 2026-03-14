@@ -416,7 +416,8 @@ fn keyword_or_identifier(word: String) -> Token {
   case word {
     "Blueprints" -> token.KeywordBlueprints
     "Expectations" -> token.KeywordExpectations
-    "for" -> token.KeywordFor
+    "measured" -> token.KeywordMeasured
+    "by" -> token.KeywordBy
     "extends" -> token.KeywordExtends
     "Requires" -> token.KeywordRequires
     "Provides" -> token.KeywordProvides

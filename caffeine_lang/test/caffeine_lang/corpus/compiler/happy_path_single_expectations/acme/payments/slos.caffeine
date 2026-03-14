@@ -1,4 +1,4 @@
-Expectations for "api_availability"
+Expectations measured by "api_availability"
   * "checkout_availability":
     Provides {
       env: "production",

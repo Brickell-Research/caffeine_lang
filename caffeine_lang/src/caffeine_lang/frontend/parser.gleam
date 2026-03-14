@@ -540,7 +540,7 @@ fn block_recovering(
   }
 }
 
-/// Parse just the header of an expects block (Expectations for "blueprint").
+/// Parse just the header of an expects block (Expectations measured by "blueprint").
 fn parse_expects_block_header(
   state: ParserState,
 ) -> Result(#(String, ParserState), ParserError) {
@@ -549,7 +549,8 @@ fn parse_expects_block_header(
     token.KeywordExpectations,
     "Expectations",
   ))
-  use state <- result.try(expect(state, token.KeywordFor, "for"))
+  use state <- result.try(expect(state, token.KeywordMeasured, "measured"))
+  use state <- result.try(expect(state, token.KeywordBy, "by"))
   use #(blueprint, state) <- result.try(parse_string_literal(state))
   Ok(#(blueprint, state))
 }

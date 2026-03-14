@@ -57,7 +57,7 @@ fn expects_file_symbols(
   let #(block_syms, _) =
     list.fold(file.blocks, #([], 0), fn(acc, b) {
       let #(syms, search_from) = acc
-      let name = "Expectations for " <> b.blueprint
+      let name = "Expectations measured by " <> b.blueprint
       let children =
         list.map(b.items, fn(item) { expect_item_symbol(item, lines) })
       let sym = block_symbol("Expectations", lines, name, children, search_from)

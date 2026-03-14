@@ -89,7 +89,8 @@ fn classify_token(
     // Keywords
     token.KeywordBlueprints -> Ok(#(stt_keyword, 10))
     token.KeywordExpectations -> Ok(#(stt_keyword, 12))
-    token.KeywordFor -> Ok(#(stt_keyword, 3))
+    token.KeywordMeasured -> Ok(#(stt_keyword, 8))
+    token.KeywordBy -> Ok(#(stt_keyword, 2))
     token.KeywordExtends -> Ok(#(stt_keyword, 7))
     token.KeywordRequires -> Ok(#(stt_keyword, 8))
     token.KeywordProvides -> Ok(#(stt_keyword, 8))

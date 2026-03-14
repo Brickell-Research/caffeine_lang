@@ -2,7 +2,7 @@
 _common_sidekiq (Provides): { threshold: 99.9, window_in_days: 7, service_name: "rotom-sidekiq" }
 
 ## Success Rate SLOs
-Expectations for "sidekiq_job_success_rate"
+Expectations measured by "sidekiq_job_success_rate"
   # Sync Jobs
   ## Purpose: ensure data is in sync
   * "Bulk Sync Job Success Rate" extends [_common_sidekiq]:
@@ -20,7 +20,7 @@ Expectations for "sidekiq_job_success_rate"
     }
 
 ##  === Latency SLOs ===
-Expectations for "sidekiq_job_latency_within_10_minutes"
+Expectations measured by "sidekiq_job_latency_within_10_minutes"
   # Track Event Jobs
   ## Purpose: send events
   * "Track Event Job Latency" extends [_common_sidekiq]:
@@ -30,7 +30,7 @@ Expectations for "sidekiq_job_latency_within_10_minutes"
     }
 
 ##  === Latency SLOs (1 Hour) ===
-Expectations for "sidekiq_job_latency_within_1_hour"
+Expectations measured by "sidekiq_job_latency_within_1_hour"
   # Sync Jobs
   ## Purpose: ensure data is in sync
   * "Bulk Sync Job Latency" extends [_common_sidekiq]:

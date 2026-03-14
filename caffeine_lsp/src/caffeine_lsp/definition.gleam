@@ -76,7 +76,7 @@ fn find_name_location(content: String, name: String) -> Option(#(Int, Int, Int))
 }
 
 /// Returns the blueprint name if the cursor is on a blueprint reference
-/// in an `Expectations for "name"` header, or None otherwise.
+/// in an `Expectations measured by "name"` header, or None otherwise.
 pub fn get_blueprint_ref_at_position(
   content: String,
   line: Int,
@@ -176,7 +176,7 @@ fn find_blueprint_ref_on_line(
   character: Int,
   blocks: List(ExpectsBlock),
 ) -> Option(String) {
-  let prefix = "Expectations for \""
+  let prefix = "Expectations measured by \""
   use <- bool.guard(!string.contains(line_text, prefix), option.None)
   list.find_map(blocks, fn(block) {
     let pattern = prefix <> block.blueprint <> "\""

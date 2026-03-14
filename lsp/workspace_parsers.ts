@@ -37,10 +37,10 @@ export function findBlueprintItemLocation(
   return null;
 }
 
-/** Extract blueprint names referenced via `Expectations for "name"` headers. */
+/** Extract blueprint names referenced via `Expectations measured by "name"` headers. */
 export function extractReferencedBlueprintNames(text: string): string[] {
   const names: string[] = [];
-  const pattern = /Expectations\s+for\s+"([^"]+)"/;
+  const pattern = /Expectations\s+measured\s+by\s+"([^"]+)"/;
   for (const line of text.split("\n")) {
     if (line.trimStart().startsWith("#")) continue;
     const match = pattern.exec(line);
@@ -65,7 +65,7 @@ export function extractExpectationIdentifiers(
   uri: string,
 ): Map<string, string> {
   const result = new Map<string, string>();
-  if (!text.includes("Expectations for")) return result;
+  if (!text.includes("Expectations measured by")) return result;
 
   let filePath: string;
   try {

@@ -161,7 +161,7 @@ fn format_extendable(ext: Extendable) -> String {
 
 fn format_expects_block(block: ExpectsBlock) -> String {
   let comments = format_comments(block.leading_comments, "")
-  let header = "Expectations for \"" <> block.blueprint <> "\""
+  let header = "Expectations measured by \"" <> block.blueprint <> "\""
 
   let items =
     block.items

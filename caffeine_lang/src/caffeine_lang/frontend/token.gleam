@@ -7,7 +7,8 @@ pub type PositionedToken {
 pub type Token {
   KeywordBlueprints
   KeywordExpectations
-  KeywordFor
+  KeywordMeasured
+  KeywordBy
   KeywordExtends
   KeywordRequires
   KeywordProvides
@@ -56,7 +57,8 @@ pub fn to_string(tok: Token) -> String {
   case tok {
     KeywordBlueprints -> "Blueprints"
     KeywordExpectations -> "Expectations"
-    KeywordFor -> "for"
+    KeywordMeasured -> "measured"
+    KeywordBy -> "by"
     KeywordExtends -> "extends"
     KeywordRequires -> "Requires"
     KeywordProvides -> "Provides"

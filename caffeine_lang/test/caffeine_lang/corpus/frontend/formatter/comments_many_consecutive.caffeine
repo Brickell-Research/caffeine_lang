@@ -1,4 +1,4 @@
-Expectations for "slo_a"
+Expectations measured by "slo_a"
   * "item_a":
     Provides { threshold: 99.9 }
 
@@ -7,6 +7,6 @@ Expectations for "slo_a"
 ## Section Comment
 # Comment 3
 # Comment 4
-Expectations for "slo_b"
+Expectations measured by "slo_b"
   * "item_b":
     Provides { threshold: 99.95 }

@@ -70,9 +70,9 @@ pub fn find_references_to_name(
 
 /// Check whether a name appears in a blueprint-relevant quoted context.
 /// Matches blueprint items (`"name":` at column 0), expect items
-/// (`* "name"`), and blueprint references (`for "name"`).
+/// (`* "name"`), and blueprint references (`by "name"`).
 fn is_blueprint_name(content: String, name: String) -> Bool {
   string.contains(content, "\"" <> name <> "\":")
   || string.contains(content, "* \"" <> name <> "\"")
-  || string.contains(content, "for \"" <> name <> "\"")
+  || string.contains(content, "by \"" <> name <> "\"")
 }

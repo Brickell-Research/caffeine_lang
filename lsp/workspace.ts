@@ -288,10 +288,10 @@ export class WorkspaceIndex {
   }
 
   /** Find the blueprint name referenced by an expectation item.
-   *  Looks for the nearest `Expectations for "name"` header above the item. */
+   *  Looks for the nearest `Expectations measured by "name"` header above the item. */
   private findBlueprintForExpectation(text: string, itemName: string): string | null {
     const lines = text.split("\n");
-    const headerPattern = /Expectations\s+for\s+"([^"]+)"/;
+    const headerPattern = /Expectations\s+measured\s+by\s+"([^"]+)"/;
     let currentBlueprint: string | null = null;
     for (const line of lines) {
       const headerMatch = headerPattern.exec(line);

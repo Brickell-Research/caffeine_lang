@@ -1,4 +1,4 @@
-Expectations for "test"
+Expectations measured by "test"
   * "item":
     Provides {
       tags: ["a", "b", "c"],

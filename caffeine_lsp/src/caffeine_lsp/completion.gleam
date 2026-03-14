@@ -102,9 +102,9 @@ fn is_type_context(before: String) -> Bool {
 }
 
 /// Detect if cursor is inside a blueprint header reference, e.g.
-/// `Expectations for "api` → Some("api"), `Expectations for "` → Some("").
+/// `Expectations measured by "api` → Some("api"), `Expectations measured by "` → Some("").
 fn get_blueprint_header_prefix(before: String) -> option.Option(String) {
-  case string.split_once(before, "Expectations for \"") {
+  case string.split_once(before, "Expectations measured by \"") {
     Ok(#(_, after_quote)) ->
       // Only match if the closing quote hasn't been typed yet
       case string.contains(after_quote, "\"") {
@@ -179,7 +179,7 @@ fn find_enclosing_item_loop(lines: List(String)) -> option.Option(String) {
 }
 
 /// Walk backwards from the cursor line to find the enclosing
-/// `Expectations for "name"` header and return the blueprint ref.
+/// `Expectations measured by "name"` header and return the blueprint ref.
 @internal
 pub fn find_enclosing_blueprint_ref(
   lines: List(String),
@@ -196,7 +196,7 @@ fn find_enclosing_blueprint_ref_loop(
     [] -> option.None
     [line_text, ..rest] -> {
       let trimmed = string.trim(line_text)
-      case string.split_once(trimmed, "Expectations for \"") {
+      case string.split_once(trimmed, "Expectations measured by \"") {
         Ok(#(_, after)) ->
           case string.split_once(after, "\"") {
             Ok(#(name, _)) -> option.Some(name)
