@@ -1,0 +1,45 @@
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_unmeasured_expects.caffeine
+  25b9d793179f81ec 1-3
+CLAUDE.md
+  25b9d793179f81ec 3,11,37,41,44-48,51,53,59,61,65,95-99,102,106,108,115-119,122-140
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_mixed_measured_unmeasured.caffeine
+  25b9d793179f81ec 1-7
+caffeine_lang/src/caffeine_lang/types.gleam
+  25b9d793179f81ec 668
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_unmeasured.caffeine
+  25b9d793179f81ec 1-3
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_unmeasured_expects.caffeine
+  25b9d793179f81ec 1-3
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  25b9d793179f81ec 702-704,945-1125
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  25b9d793179f81ec 341
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  25b9d793179f81ec 1042-1243
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_depends_on.caffeine
+  25b9d793179f81ec 1-14
+caffeine_lang/test/caffeine_lang/frontend/formatter_test.gleam
+  25b9d793179f81ec 41-42,89-90,127
+docs/caffeine_spec.md
+  25b9d793179f81ec 3,11-13,15,31,33-36,38,60-67,69,71,73-76,78,80-81,83,85,87,90-91,96,98,100,102,104,106,108,110,112,114,116-120,122,156,159,167,189,198,201,218-230,232-233,243,246,272,279,284,288,291,297,304,306,309,314,317-320,324-336,342-347,349,357-364,368-369,372,376,378,380-385,387,392-395,400-407,409,417,425-426,430-434,436-437,439-440,443-445,447-449,456-460,466,473-478,480,482-487,489,491-493,495-496,499-502,504,507,511-512,514,517,520,523,525,528,530-535,537-540,547,549,551-554,556,562
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "3c16b16f8ef950b03d8386260e526f53389c8b16",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 746,
+      "total_deletions": 426,
+      "accepted_lines": 695,
+      "overriden_lines": 0
+    }
+  }
+}
