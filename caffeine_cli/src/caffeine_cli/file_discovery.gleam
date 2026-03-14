@@ -1,3 +1,4 @@
+import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import filepath
 import gleam/bool
@@ -17,6 +18,33 @@ pub fn get_caffeine_files(
   top_level_items
   |> list.try_fold([], fn(accumulated_files, item_name) {
     process_top_level_item(base_directory, item_name, accumulated_files)
+  })
+}
+
+/// Discovers vendor-named blueprint files in a blueprints directory.
+/// Each .caffeine file must be named after a known vendor (e.g., datadog.caffeine).
+/// Returns a list of (file_path, Vendor) pairs.
+@internal
+pub fn get_blueprint_files(
+  directory: String,
+) -> Result(List(#(String, Vendor)), CompilationError) {
+  use items <- result.try(read_directory_or_error(directory))
+
+  items
+  |> list.filter(fn(name) { string.ends_with(name, ".caffeine") })
+  |> list.try_map(fn(name) {
+    let path = filepath.join(directory, name)
+    let stem = filepath.strip_extension(name)
+    case vendor.resolve_vendor(stem) {
+      Ok(v) -> Ok(#(path, v))
+      Error(Nil) ->
+        Error(errors.LinkerParseError(
+          msg: "unrecognized vendor in blueprint filename: '"
+            <> name
+            <> "' (expected datadog, honeycomb, dynatrace, or newrelic)",
+          context: errors.empty_context(),
+        ))
+    }
   })
 }
 

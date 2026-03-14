@@ -66,7 +66,7 @@ pub fn invalid_syntax_produces_diagnostic_test() {
 
 pub fn duplicate_extendable_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
+    "_base (Provides): {}
 _base (Requires): { env: String }
 
 Blueprints for \"SLO\"
@@ -88,7 +88,7 @@ Blueprints for \"SLO\"
 
 pub fn undefined_extendable_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
+    "_base (Provides): {}
 
 Blueprints for \"SLO\"
   * \"api\" extends [_base, _nonexistent]:
@@ -108,7 +108,7 @@ Blueprints for \"SLO\"
 
 pub fn duplicate_extends_reference_diagnostic_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }
+    "_base (Provides): {}
 
 Blueprints for \"SLO\"
   * \"api\" extends [_base, _base]:
@@ -355,7 +355,7 @@ pub fn completion_type_context_test() {
 
 pub fn completion_includes_extendables_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Provides): {}\n\nBlueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   let items = completion.get_completions(source, 4, 0, [], [])
   let has_base = list.any(items, fn(item) { item.label == "_base" })
   has_base |> should.be_true()
@@ -1127,9 +1127,9 @@ pub fn get_blueprint_name_at_keyword_test() {
 
 pub fn get_blueprint_name_at_field_value_test() {
   let source =
-    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { vendor: \"datadog\" }\n"
-  // Cursor on "datadog" -- this is a field value, not a blueprint name
-  references.get_blueprint_name_at(source, 2, 26)
+    "Expectations for \"api\"\n  * \"checkout\":\n    Provides { status: true }\n"
+  // Cursor on "true" -- this is a field value, not a blueprint name
+  references.get_blueprint_name_at(source, 2, 22)
   |> should.equal("")
 }
 
@@ -1372,7 +1372,7 @@ pub fn hover_field_name_test() {
 
 pub fn extends_completion_filters_used_test() {
   let source =
-    "_base (Provides): { vendor: \"datadog\" }\n_auth (Provides): { token: \"x\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
+    "_base (Provides): {}\n_auth (Provides): { token: \"x\" }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_base, _auth]:\n    Requires { env: String }\n    Provides { value: \"x\" }\n"
   // Cursor inside "extends [_base, _auth]" at position after "_base, "
   // Line 4: "  * "api" extends [_base, _auth]:"
   // Position 28 is right after the comma+space, before _auth
@@ -1665,7 +1665,7 @@ pub fn workspace_symbols_no_fields_test() {
     "Blueprints for \"SLO\"
   * \"api\":
     Requires { env: String, threshold: Float }
-    Provides { value: \"x\", vendor: \"datadog\" }
+    Provides { value: \"x\" }
 "
   let symbols = workspace_symbols.get_workspace_symbols(source)
   let names = list.map(symbols, fn(s) { s.name })
@@ -1681,7 +1681,7 @@ pub fn workspace_symbols_invalid_source_test() {
 pub fn workspace_symbols_kind_values_test() {
   let source =
     "_env (Type): String { x | x in { \"prod\" } }
-_base (Provides): { vendor: \"datadog\" }
+_base (Provides): {}
 
 Blueprints for \"SLO\"
   * \"api\":
@@ -1864,7 +1864,6 @@ pub fn compile_validated_blueprints_valid_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -1910,7 +1909,6 @@ pub fn linker_diagnostics_all_correct_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -1936,7 +1934,6 @@ pub fn linker_diagnostics_missing_required_field_test() {
   * \"my_slo\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -1970,7 +1967,6 @@ pub fn linker_diagnostics_unknown_field_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2004,7 +2000,6 @@ pub fn linker_diagnostics_type_mismatch_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\"
     }
@@ -2038,7 +2033,6 @@ pub fn linker_diagnostics_optional_defaulted_omitted_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2065,7 +2059,6 @@ pub fn linker_diagnostics_unknown_blueprint_ref_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"q\", total: \"q\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2113,7 +2106,6 @@ pub fn blueprint_aware_completion_suggests_params_test() {
   * \"my_slo\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2162,7 +2154,6 @@ pub fn blueprint_aware_completion_unknown_blueprint_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2205,7 +2196,6 @@ pub fn signature_help_in_provides_test() {
   * \"my_slo\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2240,7 +2230,6 @@ pub fn signature_help_active_parameter_test() {
   * \"my_slo\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2302,7 +2291,6 @@ pub fn inlay_hints_shows_types_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2344,7 +2332,6 @@ pub fn inlay_hints_no_match_no_hints_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2371,7 +2358,6 @@ pub fn inlay_hints_respects_range_test() {
   * \"my_slo\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2399,7 +2385,6 @@ pub fn inlay_hints_duplicate_field_names_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2445,7 +2430,6 @@ pub fn linker_diagnostics_type_mismatch_includes_actual_type_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\"
     }
@@ -2482,7 +2466,6 @@ pub fn inlay_hints_shows_default_values_test() {
   * \"my_slo\":
     Requires { env: Defaulted(String, \"production\") }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2540,7 +2523,7 @@ Blueprints for \"SLO\"
 
 pub fn unused_extendable_warning_test() {
   let source =
-    "_unused (Provides): { vendor: \"datadog\" }
+    "_unused (Provides): {}
 
 Blueprints for \"SLO\"
   * \"api\":
@@ -2560,7 +2543,7 @@ Blueprints for \"SLO\"
 
 pub fn used_extendable_no_warning_test() {
   let source =
-    "_defaults (Provides): { vendor: \"datadog\" }
+    "_defaults (Provides): {}
 
 Blueprints for \"SLO\"
   * \"api\" extends [_defaults]:
@@ -2632,7 +2615,6 @@ pub fn hover_expect_item_shows_blueprint_requires_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\",
       threshold: 99.9%
@@ -2667,7 +2649,6 @@ pub fn field_completion_snippet_test() {
   * \"my_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       indicators: { good: \"query_good\", total: \"query_total\" },
       evaluation: \"good / total\"
     }
@@ -2703,7 +2684,7 @@ pub fn dead_blueprint_detected_test() {
     "Blueprints for \"SLO\"
   * \"api\":
     Requires { env: String }
-    Provides { vendor: \"datadog\", indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
+    Provides { indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
 "
   let diags = diagnostics.get_dead_blueprint_diagnostics(source, [])
   case diags {
@@ -2721,7 +2702,7 @@ pub fn referenced_blueprint_no_dead_warning_test() {
     "Blueprints for \"SLO\"
   * \"api\":
     Requires { env: String }
-    Provides { vendor: \"datadog\", indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
+    Provides { indicators: { good: \"q\", total: \"t\" }, evaluation: \"good / total\" }
 "
   diagnostics.get_dead_blueprint_diagnostics(source, ["api"])
   |> should.equal([])
@@ -2809,7 +2790,7 @@ pub fn find_all_quoted_string_positions_same_line_twice_test() {
 
 pub fn find_defined_symbol_positions_extendable_test() {
   let content =
-    "_defaults (Requires): { env: String }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires {}\n    Provides { vendor: \"datadog\" }\n"
+    "_defaults (Requires): { env: String }\n\nBlueprints for \"SLO\"\n  * \"api\" extends [_defaults]:\n    Requires {}\n    Provides {}\n"
   // Cursor on '_defaults' at line 0, col 1
   let result = position_utils.find_defined_symbol_positions(content, 0, 1)
   // Should find occurrences at definition (line 0) and reference (line 3)
@@ -2818,7 +2799,7 @@ pub fn find_defined_symbol_positions_extendable_test() {
 
 pub fn find_defined_symbol_positions_item_name_test() {
   let content =
-    "Blueprints for \"SLO\"\n  * \"api_avail\":\n    Requires {}\n    Provides { vendor: \"datadog\" }\n\nExpectations for \"api_avail\"\n  * \"my_slo\":\n    Provides {}\n"
+    "Blueprints for \"SLO\"\n  * \"api_avail\":\n    Requires {}\n    Provides {}\n\nExpectations for \"api_avail\"\n  * \"my_slo\":\n    Provides {}\n"
   // Cursor on 'api_avail' at line 1, col 6
   let result = position_utils.find_defined_symbol_positions(content, 1, 6)
   // Should find the blueprint item name and the expectations reference
@@ -2826,7 +2807,8 @@ pub fn find_defined_symbol_positions_item_name_test() {
 }
 
 pub fn find_defined_symbol_positions_non_symbol_test() {
-  let content = "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n"
+  let content =
+    "Blueprints for \"SLO\"\n  * \"api\":\n    Requires { env: String }\n"
   // Cursor on 'env' — not a defined symbol (not _name or * "name")
   position_utils.find_defined_symbol_positions(content, 2, 16)
   |> should.equal([])

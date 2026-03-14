@@ -73,7 +73,10 @@ pub fn render(error: CompilationError, color_mode: ColorMode) -> String {
 }
 
 /// Renders a list of CompilationErrors with ANSI color codes.
-pub fn render_all(errors: List(CompilationError), color_mode: ColorMode) -> String {
+pub fn render_all(
+  errors: List(CompilationError),
+  color_mode: ColorMode,
+) -> String {
   errors
   |> list.map(render(_, color_mode))
   |> string.join("\n\n")

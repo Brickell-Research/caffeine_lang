@@ -27,7 +27,7 @@ export class WorkspaceIndex {
   referencedBlueprintIndex = new Map<string, Set<string>>();
   expectationIndex = new Map<string, Map<string, string>>();
   /** Maps file URI → (item name → vendor string, e.g., "datadog").
-   *  Covers both blueprint items and expectation items that have vendor in Provides. */
+   *  Derived from blueprint filenames (e.g., datadog.caffeine → "datadog"). */
   vendorIndex = new Map<string, Map<string, string>>();
   // deno-lint-ignore no-explicit-any
   validatedBlueprintsCache = new Map<string, any>();
@@ -68,7 +68,7 @@ export class WorkspaceIndex {
         if (ids.size > 0) {
           this.expectationIndex.set(uri, ids);
         }
-        const vendors = extractVendors(text);
+        const vendors = extractVendors(text, uri);
         if (vendors.size > 0) {
           this.vendorIndex.set(uri, vendors);
         }
@@ -200,7 +200,7 @@ export class WorkspaceIndex {
       this.referencedBlueprintIndex.delete(uri);
     }
     // Update vendor index
-    const newVendors = extractVendors(text);
+    const newVendors = extractVendors(text, uri);
     if (newVendors.size > 0) {
       this.vendorIndex.set(uri, newVendors);
     } else {
@@ -264,11 +264,11 @@ export class WorkspaceIndex {
     return false;
   }
 
-  /** Get the vendor for an expectation item in a file, or null.
-   *  First checks if the expectation itself provides a vendor,
-   *  then resolves through its blueprint. */
+  /** Get the vendor for an item in a file, or null.
+   *  For blueprint items, looks up the vendor directly from the vendor index.
+   *  For expectation items, resolves through the referenced blueprint. */
   getVendorForItem(uri: string, itemName: string): string | null {
-    // Direct vendor in expectation's Provides
+    // Direct vendor from blueprint file's vendor index
     const direct = this.vendorIndex.get(uri)?.get(itemName);
     if (direct) return direct;
 

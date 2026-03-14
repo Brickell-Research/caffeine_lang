@@ -84,67 +84,27 @@ export function extractExpectationIdentifiers(
   return result;
 }
 
-/** Extract vendor values from a file's text.
- *  Works for both blueprints and expects files — looks for `vendor: "value"`
- *  in Provides blocks and extendable definitions. Resolves `extends [_name]`
- *  chains so items inheriting vendor through extendables are included.
- *  Returns a Map from item name to vendor string (e.g., "datadog"). */
-export function extractVendors(text: string): Map<string, string> {
+/** Known vendor names that can appear as blueprint filename stems. */
+const KNOWN_VENDORS = new Set(["datadog", "honeycomb", "dynatrace", "newrelic"]);
+
+/** Derive vendor for blueprint items from the filename stem.
+ *  Blueprint files are named after their vendor (e.g., datadog.caffeine).
+ *  Extracts item names from the file and maps each to the vendor derived
+ *  from the filename. Returns an empty map for non-blueprint files or
+ *  when the filename stem is not a known vendor. */
+export function extractVendors(text: string, uri?: string): Map<string, string> {
   const result = new Map<string, string>();
-  const lines = text.split("\n");
+  if (!uri) return result;
 
-  const extendablePattern = /^_(\w+)\s+\(Provides\)\s*:/;
-  const itemPattern = /\*\s+"([^"]+)"/;
-  const extendsPattern = /extends\s+\[([^\]]+)\]/;
-  const vendorPattern = /vendor\s*:\s*"([^"]+)"/;
+  // Derive vendor from filename stem
+  const filename = uri.split("/").pop() ?? "";
+  const stem = filename.replace(/\.caffeine$/, "");
+  if (!KNOWN_VENDORS.has(stem)) return result;
 
-  // Phase 1: Parse extendable vendors, item direct vendors, and extends lists
-  const extendableVendors = new Map<string, string>();
-  const itemExtends = new Map<string, string[]>();
-  let currentContext: string | null = null;
-  let inExtendable = false;
-
-  for (const line of lines) {
-    if (line.trimStart().startsWith("#")) continue;
-
-    const extMatch = extendablePattern.exec(line.trimStart());
-    if (extMatch) {
-      currentContext = `_${extMatch[1]}`;
-      inExtendable = true;
-    }
-
-    const itemMatch = itemPattern.exec(line);
-    if (itemMatch) {
-      currentContext = itemMatch[1];
-      inExtendable = false;
-      const extList = extendsPattern.exec(line);
-      if (extList) {
-        itemExtends.set(currentContext, extList[1].split(",").map((s) => s.trim()));
-      }
-    }
-
-    if (currentContext) {
-      const vendorMatch = vendorPattern.exec(line);
-      if (vendorMatch) {
-        if (inExtendable) {
-          extendableVendors.set(currentContext, vendorMatch[1]);
-        } else {
-          result.set(currentContext, vendorMatch[1]);
-        }
-      }
-    }
-  }
-
-  // Phase 2: Resolve extends chains — inherited vendor for items without a direct one
-  for (const [item, extNames] of itemExtends) {
-    if (result.has(item)) continue;
-    for (const extName of extNames) {
-      const vendor = extendableVendors.get(extName);
-      if (vendor) {
-        result.set(item, vendor);
-        break;
-      }
-    }
+  // Map each blueprint item to the derived vendor
+  const names = extractBlueprintNames(text);
+  for (const name of names) {
+    result.set(name, stem);
   }
 
   return result;

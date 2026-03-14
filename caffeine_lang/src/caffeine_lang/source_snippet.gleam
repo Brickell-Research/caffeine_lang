@@ -36,9 +36,7 @@ pub fn extract_snippet(
   // Extract and format context lines.
   let context_lines =
     context
-    |> list.map(fn(pair) {
-      format_line(pair.0, pair.1, gutter_width)
-    })
+    |> list.map(fn(pair) { format_line(pair.0, pair.1, gutter_width) })
 
   // Build marker line.
   let span_width = case end_column {

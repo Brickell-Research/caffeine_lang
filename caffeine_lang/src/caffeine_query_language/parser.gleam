@@ -173,7 +173,13 @@ fn find_substring_position_loop(
     when: string.slice(haystack, pos, needle_len) == needle,
     return: option.Some(pos),
   )
-  find_substring_position_loop(haystack, needle, pos + 1, needle_len, haystack_len)
+  find_substring_position_loop(
+    haystack,
+    needle,
+    pos + 1,
+    needle_len,
+    haystack_len,
+  )
 }
 
 /// Splits on "per" keyword, returning (threshold_str, interval_str).
@@ -275,8 +281,7 @@ fn is_balanced_parens_loop(
 ) -> Bool {
   use <- bool.guard(when: pos >= input_len, return: count == 0)
   let new_count = count_parens(count, input, pos)
-  let does_not_close_too_early =
-    !{ { new_count == 0 } && pos != input_len - 1 }
+  let does_not_close_too_early = !{ { new_count == 0 } && pos != input_len - 1 }
 
   does_not_close_too_early
   && is_balanced_parens_loop(input, pos + 1, new_count, input_len)

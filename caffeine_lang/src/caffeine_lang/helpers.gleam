@@ -116,9 +116,7 @@ pub fn extract_threshold(values: List(ValueTuple)) -> Float {
 
 /// Extract the threshold from an indexed Dict of ValueTuples.
 @internal
-pub fn extract_threshold_indexed(
-  index: dict.Dict(String, ValueTuple),
-) -> Float {
+pub fn extract_threshold_indexed(index: dict.Dict(String, ValueTuple)) -> Float {
   let assert Ok(threshold) =
     extract_value_indexed(index, "threshold", value.extract_percentage)
   threshold

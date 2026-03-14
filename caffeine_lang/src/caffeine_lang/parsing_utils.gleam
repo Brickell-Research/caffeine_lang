@@ -19,11 +19,9 @@ pub fn extract_paren_content(raw: String) -> Result(String, Nil) {
     Error(_) -> Error(Nil)
     Ok(#(_, after_open)) -> {
       // Find the matching close paren by tracking nesting depth
-      use #(content, rest) <- result.try(find_matching_close_paren(
-        after_open,
-        1,
-        [],
-      ))
+      use #(content, rest) <- result.try(
+        find_matching_close_paren(after_open, 1, []),
+      )
       // If there's non-whitespace content after the closing paren,
       // this is likely a refinement type and we should fail
       case string.trim(rest) {
@@ -43,8 +41,7 @@ fn find_matching_close_paren(
 ) -> Result(#(String, String), Nil) {
   case string.pop_grapheme(s) {
     Error(_) -> Error(Nil)
-    Ok(#("(", rest)) ->
-      find_matching_close_paren(rest, depth + 1, ["(", ..acc])
+    Ok(#("(", rest)) -> find_matching_close_paren(rest, depth + 1, ["(", ..acc])
     Ok(#(")", rest)) -> {
       case depth {
         1 -> Ok(#(string.concat(list.reverse(acc)), rest))

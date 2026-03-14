@@ -33,7 +33,8 @@ pub fn get_inlay_hints(
   case file_utils.parse(content) {
     Ok(file_utils.Expects(file)) -> {
       let lines = string.split(content, "\n")
-      let blueprint_index = blueprint_utils.index_blueprints(validated_blueprints)
+      let blueprint_index =
+        blueprint_utils.index_blueprints(validated_blueprints)
       get_expects_hints(lines, file, start_line, end_line, blueprint_index)
     }
     _ -> []

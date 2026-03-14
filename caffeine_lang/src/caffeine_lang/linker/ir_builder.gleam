@@ -1,4 +1,4 @@
-import caffeine_lang/analysis/vendor
+import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
@@ -21,14 +21,12 @@ import gleam/set.{type Set}
 
 /// Derives the set of reserved labels from standard library artifacts.
 /// Reserved labels are artifact param keys that are consumed into structured
-/// fields and should not appear in misc metadata tags. The "vendor" param is
-/// excluded because it is intentionally surfaced as a tag.
+/// fields and should not appear in misc metadata tags.
 @internal
 pub fn reserved_labels_from_artifacts(artifacts: List(Artifact)) -> Set(String) {
   artifacts
   |> list.flat_map(fn(artifact) { dict.keys(artifact.params) })
   |> set.from_list
-  |> set.delete("vendor")
 }
 
 /// Build intermediate representations from validated expectations across multiple files.
@@ -38,11 +36,17 @@ pub fn build_all(
     #(List(#(Expectation, Blueprint(BlueprintValidated))), String),
   ),
   reserved_labels reserved_labels: Set(String),
+  vendor_lookup vendor_lookup: dict.Dict(String, Vendor),
 ) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
   expectations_with_paths
   |> list.map(fn(pair) {
     let #(expectations_blueprint_collection, file_path) = pair
-    build(expectations_blueprint_collection, file_path, reserved_labels)
+    build(
+      expectations_blueprint_collection,
+      file_path,
+      reserved_labels,
+      vendor_lookup,
+    )
   })
   |> errors.from_results()
   |> result.map(list.flatten)
@@ -55,6 +59,7 @@ fn build(
   ),
   file_path: String,
   reserved_labels: Set(String),
+  vendor_lookup: dict.Dict(String, Vendor),
 ) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
   let #(org, team, service) = helpers.extract_path_prefix(file_path)
 
@@ -70,15 +75,32 @@ fn build(
     let index = helpers.index_value_tuples(value_tuples)
     let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
     let unique_name = org <> "_" <> service <> "_" <> expectation.name
-    let artifact_data =
-      build_artifact_data(blueprint.artifact_refs, index)
+    let artifact_data = build_artifact_data(blueprint.artifact_refs, index)
 
-    // Resolve vendor from value tuples: required for SLO artifacts, None for dependency-only.
-    use resolved_vendor <- result.try(resolve_vendor_from_values(
-      index,
-      blueprint.artifact_refs,
-      org <> "." <> team <> "." <> service <> "." <> expectation.name,
-    ))
+    // Resolve vendor from lookup: required for SLO artifacts, None for dependency-only.
+    let has_slo = list.contains(blueprint.artifact_refs, SLO)
+    let resolved_vendor = case has_slo {
+      False -> Ok(option.None)
+      True ->
+        case dict.get(vendor_lookup, blueprint.name) {
+          Ok(v) -> Ok(option.Some(v))
+          Error(Nil) ->
+            Error(errors.linker_vendor_resolution_error(
+              msg: "expectation '"
+              <> org
+              <> "."
+              <> team
+              <> "."
+              <> service
+              <> "."
+              <> expectation.name
+              <> "' - blueprint '"
+              <> blueprint.name
+              <> "' has no associated vendor",
+            ))
+        }
+    }
+    use resolved_vendor <- result.try(resolved_vendor)
 
     Ok(ir.IntermediateRepresentation(
       metadata: ir.IntermediateRepresentationMetaData(
@@ -96,47 +118,6 @@ fn build(
       vendor: resolved_vendor,
     ))
   })
-}
-
-/// Resolves the vendor from an indexed Dict of ValueTuples at IR construction time.
-/// SLO artifacts require a vendor; dependency-only artifacts get None.
-fn resolve_vendor_from_values(
-  index: dict.Dict(String, helpers.ValueTuple),
-  artifact_refs: List(artifacts.ArtifactType),
-  identifier: String,
-) -> Result(option.Option(vendor.Vendor), CompilationError) {
-  let has_slo = list.contains(artifact_refs, SLO)
-  use <- bool.guard(when: !has_slo, return: Ok(option.None))
-
-  let vendor_value = dict.get(index, "vendor")
-
-  case vendor_value {
-    Error(Nil) ->
-      Error(errors.linker_vendor_resolution_error(
-        msg: "expectation '" <> identifier <> "' - missing 'vendor' field",
-      ))
-    Ok(vt) ->
-      case value.extract_string(vt.value) {
-        Error(_) ->
-          Error(errors.linker_vendor_resolution_error(
-            msg: "expectation '"
-            <> identifier
-            <> "' - 'vendor' field is not a string",
-          ))
-        Ok(vendor_string) ->
-          case vendor.resolve_vendor(vendor_string) {
-            Ok(v) -> Ok(option.Some(v))
-            Error(_) ->
-              Error(errors.linker_vendor_resolution_error(
-                msg: "expectation '"
-                <> identifier
-                <> "' - unknown vendor '"
-                <> vendor_string
-                <> "'",
-              ))
-          }
-      }
-  }
 }
 
 /// Build value tuples from merged inputs and params.

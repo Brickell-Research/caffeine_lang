@@ -38,7 +38,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability_type
     "artifact:SLO",
     "env:production",
     "status:true",
-    "vendor:datadog",
   ]
   type = "metric"
 

@@ -6,26 +6,47 @@ import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/source_file.{
-  type BlueprintSource, type ExpectationSource, type SourceFile,
+  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
 }
+import gleam/dict
 import gleam/list
 import gleam/result
 
-/// Links a blueprint and expectation sources into intermediate representations.
+/// Links blueprint sources and expectation sources into intermediate representations.
+/// Each blueprint source is paired with a vendor derived from its filename.
 /// All file reading happens before this function is called — it operates purely
 /// on in-memory source content.
 @internal
 pub fn link(
-  blueprint: SourceFile(BlueprintSource),
+  blueprints: List(VendorBlueprintSource),
   expectation_sources: List(SourceFile(ExpectationSource)),
   artifacts artifacts: List(Artifact),
 ) -> Result(List(IntermediateRepresentation(Linked)), CompilationError) {
   let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
 
-  // Compile blueprints .caffeine source, then validate
-  use raw_blueprints <- result.try(pipeline.compile_blueprints(blueprint))
+  // Compile each vendor blueprint source and pair blueprints with their vendor.
+  use compiled_pairs <- result.try(
+    blueprints
+    |> list.map(fn(vbs) {
+      pipeline.compile_blueprints(vbs.source)
+      |> result.map(fn(raw_bps) { #(raw_bps, vbs.vendor) })
+    })
+    |> errors.from_results(),
+  )
+
+  // Flatten all raw blueprints and build vendor lookup.
+  let all_raw_blueprints = compiled_pairs |> list.flat_map(fn(pair) { pair.0 })
+  let vendor_lookup =
+    compiled_pairs
+    |> list.flat_map(fn(pair) {
+      let #(raw_bps, v) = pair
+      list.map(raw_bps, fn(bp) { #(bp.name, v) })
+    })
+    |> dict.from_list
+
+  // Validate all blueprints together (enforces global uniqueness).
   use validated_blueprints <- result.try(blueprints.validate_blueprints(
-    raw_blueprints,
+    all_raw_blueprints,
     artifacts,
   ))
 
@@ -34,7 +55,11 @@ pub fn link(
     validated_blueprints,
   ))
 
-  ir_builder.build_all(expectations_with_paths, reserved_labels:)
+  ir_builder.build_all(
+    expectations_with_paths,
+    reserved_labels:,
+    vendor_lookup:,
+  )
 }
 
 fn parse_expectation_sources(

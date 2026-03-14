@@ -1,6 +1,6 @@
 /**
  * Unit tests for SLO overlay pure functions — tag parsing, status
- * categorization, vendor extraction, expectation positions, formatting.
+ * categorization, filename-based vendor derivation, expectation positions, formatting.
  */
 
 import { expect, test, describe } from "bun:test";
@@ -116,142 +116,87 @@ describe("categorizeStatus", () => {
 });
 
 // ==== extractVendors ====
-// * extracts vendor from blueprint Provides
-// * extracts vendor from expects Provides
-// * handles multiple items with different vendors
-// * resolves vendor through extends chain
-// * resolves vendor through multiple extends (first wins)
-// * direct vendor overrides extended vendor
-// * skips comments
-// * returns empty map for files without vendors
+// * derives vendor from blueprint filename stem
+// * maps all blueprint items to the filename vendor
+// * returns empty map for non-vendor filenames
+// * returns empty map for expects files
+// * returns empty map when no URI provided
+// * returns empty map for empty text
 
 describe("extractVendors", () => {
-  test("extracts vendor from blueprint Provides", () => {
+  test("derives vendor from datadog filename stem", () => {
     const text = `Blueprints for "SLO"
   * "api-latency":
     Requires { env: String }
-    Provides {
-      vendor: "datadog",
-      threshold: 99.9%
-    }`;
-    const vendors = extractVendors(text);
+    Provides { threshold: 99.9% }`;
+    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("api-latency")).toBe("datadog");
   });
 
-  test("extracts vendor from expects Provides", () => {
-    const text = `Expectations for "slo-blueprint"
+  test("derives vendor from honeycomb filename stem", () => {
+    const text = `Blueprints for "SLO"
   * "p99-latency":
-    Provides {
-      vendor: "honeycomb",
-      env: "production"
-    }`;
-    const vendors = extractVendors(text);
+    Requires { env: String }
+    Provides { threshold: 99.5% }`;
+    const vendors = extractVendors(text, "file:///workspace/blueprints/honeycomb.caffeine");
     expect(vendors.size).toBe(1);
     expect(vendors.get("p99-latency")).toBe("honeycomb");
   });
 
-  test("handles multiple items with different vendors", () => {
+  test("maps all blueprint items to the filename vendor", () => {
     const text = `Blueprints for "SLO"
   * "dd-slo":
     Requires { env: String }
-    Provides {
-      vendor: "datadog",
-      threshold: 99.9%
-    }
-  * "hc-slo":
+    Provides { threshold: 99.9% }
+  * "dd-slo-2":
     Requires { env: String }
-    Provides {
-      vendor: "honeycomb",
-      threshold: 99.5%
-    }`;
-    const vendors = extractVendors(text);
+    Provides { threshold: 99.5% }`;
+    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(2);
     expect(vendors.get("dd-slo")).toBe("datadog");
-    expect(vendors.get("hc-slo")).toBe("honeycomb");
+    expect(vendors.get("dd-slo-2")).toBe("datadog");
   });
 
-  test("skips commented lines", () => {
+  test("returns empty map for non-vendor filenames", () => {
     const text = `Blueprints for "SLO"
-  # * "commented-out":
-  #   Provides { vendor: "datadog" }
-  * "real":
-    Provides { vendor: "honeycomb" }`;
-    const vendors = extractVendors(text);
-    expect(vendors.size).toBe(1);
-    expect(vendors.get("real")).toBe("honeycomb");
-    expect(vendors.has("commented-out")).toBe(false);
-  });
-
-  test("returns empty map for file without vendors", () => {
-    const text = `Blueprints for "SLO"
-  * "no-vendor":
+  * "item":
     Requires { env: String }
+    Provides { threshold: 99.9% }`;
+    const vendors = extractVendors(text, "file:///workspace/blueprints/custom.caffeine");
+    expect(vendors.size).toBe(0);
+  });
+
+  test("returns empty map for expects files", () => {
+    const text = `Expectations for "slo-blueprint"
+  * "p99-latency":
+    Provides { env: "production" }`;
+    const vendors = extractVendors(text, "file:///workspace/org/team/service.caffeine");
+    expect(vendors.size).toBe(0);
+  });
+
+  test("returns empty map when no URI provided", () => {
+    const text = `Blueprints for "SLO"
+  * "item":
     Provides { threshold: 99.9% }`;
     const vendors = extractVendors(text);
     expect(vendors.size).toBe(0);
   });
 
   test("returns empty map for empty text", () => {
-    expect(extractVendors("").size).toBe(0);
+    expect(extractVendors("", "file:///workspace/blueprints/datadog.caffeine").size).toBe(0);
   });
 
-  test("resolves vendor through single extends", () => {
-    const text = `_defaults (Provides): { vendor: "datadog" }
-
-Expectations for "test_blueprint"
-  * "checkout" extends [_defaults]:
-    Provides { threshold: 99.9 }`;
-    const vendors = extractVendors(text);
+  test("skips commented items", () => {
+    const text = `Blueprints for "SLO"
+  # * "commented-out":
+  #   Provides { threshold: 99.9% }
+  * "real":
+    Provides { threshold: 99.5% }`;
+    const vendors = extractVendors(text, "file:///workspace/blueprints/datadog.caffeine");
     expect(vendors.size).toBe(1);
-    expect(vendors.get("checkout")).toBe("datadog");
-  });
-
-  test("resolves vendor through extends in blueprint file", () => {
-    const text = `_base (Provides): { vendor: "datadog" }
-
-Blueprints for "SLO"
-  * "api-latency" extends [_base]:
-    Requires { env: String }
-    Provides { threshold: 99.9% }`;
-    const vendors = extractVendors(text);
-    expect(vendors.size).toBe(1);
-    expect(vendors.get("api-latency")).toBe("datadog");
-  });
-
-  test("resolves vendor from first matching extends", () => {
-    const text = `_no_vendor (Provides): { threshold: 99.0 }
-_dd (Provides): { vendor: "datadog" }
-
-Expectations for "bp"
-  * "item" extends [_no_vendor, _dd]:
-    Provides { env: "prod" }`;
-    const vendors = extractVendors(text);
-    expect(vendors.get("item")).toBe("datadog");
-  });
-
-  test("direct vendor overrides extended vendor", () => {
-    const text = `_base (Provides): { vendor: "datadog" }
-
-Expectations for "bp"
-  * "item" extends [_base]:
-    Provides { vendor: "honeycomb" }`;
-    const vendors = extractVendors(text);
-    expect(vendors.get("item")).toBe("honeycomb");
-  });
-
-  test("handles multi-line extendable definition", () => {
-    const text = `_base (Provides): {
-  vendor: "datadog",
-  window_in_days: 30
-}
-
-Blueprints for "SLO"
-  * "api" extends [_base]:
-    Requires { env: String }
-    Provides { threshold: 99.9% }`;
-    const vendors = extractVendors(text);
-    expect(vendors.get("api")).toBe("datadog");
+    expect(vendors.get("real")).toBe("datadog");
+    expect(vendors.has("commented-out")).toBe(false);
   });
 });
 
@@ -277,7 +222,7 @@ describe("extractExpectationPositions", () => {
     const text = `Blueprints for "SLO"
   * "item":
     Requires { env: String }
-    Provides { vendor: "datadog" }`;
+    Provides { threshold: 99.9% }`;
     const positions = extractExpectationPositions(text);
     expect(positions.length).toBe(0);
   });

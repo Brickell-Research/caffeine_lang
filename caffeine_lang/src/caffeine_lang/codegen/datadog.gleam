@@ -32,13 +32,11 @@ pub fn resolve_indicators(
   use indicators_value_tuple <- result.try(
     ir.values
     |> list.find(fn(vt) { vt.label == "indicators" })
-    |> result.replace_error(
-      errors.semantic_analysis_template_resolution_error(
-        msg: "expectation '"
-        <> ir_to_identifier(ir)
-        <> "' - missing 'indicators' field in IR",
-      ),
-    ),
+    |> result.replace_error(errors.semantic_analysis_template_resolution_error(
+      msg: "expectation '"
+      <> ir_to_identifier(ir)
+      <> "' - missing 'indicators' field in IR",
+    )),
   )
 
   use indicators_dict <- result.try(
@@ -60,13 +58,11 @@ pub fn resolve_indicators(
     |> dict.to_list
     |> list.try_map(fn(pair) {
       let #(key, indicator) = pair
-      use resolved <- result.map(
-        templatizer.parse_and_resolve_query_template(
-          indicator,
-          ir.values,
-          from: identifier,
-        ),
-      )
+      use resolved <- result.map(templatizer.parse_and_resolve_query_template(
+        indicator,
+        ir.values,
+        from: identifier,
+      ))
       #(key, resolved)
     }),
   )
@@ -82,10 +78,7 @@ pub fn resolve_indicators(
   let new_indicators_value_tuple =
     helpers.ValueTuple(
       "indicators",
-      CollectionType(Dict(
-        PrimitiveType(StringType),
-        PrimitiveType(StringType),
-      )),
+      CollectionType(Dict(PrimitiveType(StringType), PrimitiveType(StringType))),
       resolved_indicators_value,
     )
 

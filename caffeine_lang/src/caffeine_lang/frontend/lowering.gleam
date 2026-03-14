@@ -299,20 +299,18 @@ fn transform_template_vars(s: String) -> String {
   transform_template_vars_loop(s, [])
 }
 
-fn transform_template_vars_loop(
-  remaining: String,
-  acc: List(String),
-) -> String {
+fn transform_template_vars_loop(remaining: String, acc: List(String)) -> String {
   case string.split_once(remaining, "$") {
     Ok(#(before, after)) -> {
       // Check if this is an escaped $$ (already transformed)
       case string.starts_with(after, "$") {
         True -> {
           // Skip escaped $$, keep both dollars
-          transform_template_vars_loop(
-            string.drop_start(after, 1),
-            ["$$", before, ..acc],
-          )
+          transform_template_vars_loop(string.drop_start(after, 1), [
+            "$$",
+            before,
+            ..acc
+          ])
         }
         False -> {
           // Found single $, now find the closing $
@@ -320,10 +318,13 @@ fn transform_template_vars_loop(
             Ok(#(var_content, rest)) -> {
               // Transform the variable content: .not -> :not
               let transformed = string.replace(var_content, ".not", ":not")
-              transform_template_vars_loop(
-                rest,
-                ["$$", transformed, "$$", before, ..acc],
-              )
+              transform_template_vars_loop(rest, [
+                "$$",
+                transformed,
+                "$$",
+                before,
+                ..acc
+              ])
             }
             Error(Nil) -> {
               // No closing $, just append as-is

@@ -53,7 +53,7 @@ test("hover on type keyword returns markdown content", async () => {
 }, 30_000);
 
 // ==== hover_on_field_name ====
-// * Hover over "vendor" field name returns content
+// * Hover over "indicators" field name returns content
 test("hover on field name returns content", async () => {
   const client = new LspTestClient(ROOT_DIR);
   try {
@@ -67,14 +67,14 @@ test("hover on field name returns content", async () => {
     client.openDocument(uri, text);
     await diagPromise;
 
-    // Line 4: '      vendor: "datadog",'
-    // "vendor" starts at character 6 (in Provides block)
+    // Line 4: '      indicators: { good: "query_good", total: "query_total" },'
+    // "indicators" starts at character 6 (in Provides block)
     const result = await client.hover(uri, 4, 6);
 
     expect(result !== null).toBeTruthy();
     expect(result.contents).toBeTruthy();
     expect(result.contents.kind).toBe("markdown");
-    expect(result.contents.value.includes("vendor")).toBeTruthy();
+    expect(result.contents.value.includes("indicators")).toBeTruthy();
   } finally {
     await client.shutdown();
   }
@@ -222,8 +222,8 @@ test("signature help returns blueprint parameters in expects Provides", async ()
     client.openDocument(exUri, exText);
     await exDiagPromise;
 
-    // Line 3: '      vendor: "datadog",'
-    // Cursor on "vendor" field line
+    // Line 3: '      env: "production",'
+    // Cursor on "env" field line
     const result = await client.signatureHelp(exUri, 3, 10);
 
     expect(result !== null).toBeTruthy();

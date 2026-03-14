@@ -1159,8 +1159,7 @@ pub fn parse_empty_requires_struct_test() {
 }
 
 pub fn parse_empty_provides_struct_test() {
-  let source =
-    "Expectations for \"bp\"\n  * \"test\":\n    Provides {}\n"
+  let source = "Expectations for \"bp\"\n  * \"test\":\n    Provides {}\n"
   let assert Ok(file) = parser.parse_expects_file(source)
   let assert [block] = file.blocks
   let assert [item] = block.items

@@ -110,7 +110,5 @@ pub fn render_all_plain_multiple_test() {
       context: errors.empty_context(),
     )
   error_renderer.render_all_plain([err1, err2])
-  |> should.equal(
-    "error[E100]: parse failure\n\nerror[E301]: link failure",
-  )
+  |> should.equal("error[E100]: parse failure\n\nerror[E301]: link failure")
 }

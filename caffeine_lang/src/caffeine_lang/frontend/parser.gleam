@@ -513,7 +513,11 @@ fn blocks_recovering_loop(
   keyword: Token,
   keyword_name: String,
   parse_block: fn(ParserState, List(Comment)) ->
-    #(Result(#(block, List(Comment)), ParserError), List(ParserError), ParserState),
+    #(
+      Result(#(block, List(Comment)), ParserError),
+      List(ParserError),
+      ParserState,
+    ),
 ) -> #(List(block), List(ParserError), List(Comment), ParserState) {
   let tok = peek(state)
   case tok {
@@ -521,8 +525,7 @@ fn blocks_recovering_loop(
     _ -> {
       case tok == keyword {
         True -> {
-          let #(block_result, item_errors, state) =
-            parse_block(state, pending)
+          let #(block_result, item_errors, state) = parse_block(state, pending)
           let #(more_comments, state) = consume_comments(state)
           case block_result {
             Ok(#(block, trailing)) -> {
@@ -587,11 +590,7 @@ fn parse_blueprints_block_recovering(
     parse_blueprints_block_header,
     parse_blueprint_items_recovering,
     fn(artifacts, items, comments) {
-      ast.BlueprintsBlock(
-        artifacts:,
-        items:,
-        leading_comments: comments,
-      )
+      ast.BlueprintsBlock(artifacts:, items:, leading_comments: comments)
     },
   )
 }

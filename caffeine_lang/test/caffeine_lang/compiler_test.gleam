@@ -1,7 +1,9 @@
+import caffeine_lang/analysis/vendor
 import caffeine_lang/compiler.{type CompilationOutput}
 import caffeine_lang/constants
 import caffeine_lang/source_file.{
-  type ExpectationSource, type SourceFile, SourceFile,
+  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
+  SourceFile, VendorBlueprintSource,
 }
 import gleam/list
 import gleam/option
@@ -45,6 +47,13 @@ fn find_caffeine_files(dir: String) -> List(String) {
 fn read_expectations_dir(dir: String) -> List(SourceFile(ExpectationSource)) {
   find_caffeine_files(dir)
   |> list.map(read_source_file)
+}
+
+fn read_vendor_blueprint(
+  path: String,
+  v: vendor.Vendor,
+) -> VendorBlueprintSource {
+  VendorBlueprintSource(source: read_source_file(path), vendor: v)
 }
 
 // ==== compile ====
@@ -94,7 +103,7 @@ pub fn compile_test() {
   |> test_helpers.table_test_1(fn(input) {
     let #(input_blueprints_path, input_expectations_dir) = input
     compiler.compile(
-      read_source_file(input_blueprints_path),
+      [read_vendor_blueprint(input_blueprints_path, vendor.Datadog)],
       read_expectations_dir(input_expectations_dir),
     )
     |> result.map(fn(output) { output.terraform })
@@ -130,7 +139,6 @@ pub fn compile_from_strings_test() {
   * \"api_availability\":
     Requires { env: String, status: Boolean }
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: {
         numerator: \"sum:http.requests{$env->env$ AND $status->status.not$}\",
@@ -164,7 +172,6 @@ pub fn compile_from_strings_test() {
   * \"simple_slo\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" }
     }
@@ -189,7 +196,6 @@ pub fn compile_from_strings_test() {
   * \"cpu_slo\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       evaluation: \"time_slice(avg:system.cpu.user{$env->env$} > 99.5 per 300s)\",
       indicators: {}
     }
@@ -239,7 +245,6 @@ pub fn compile_from_strings_test() {
   * \"api_availability\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"1\",
       indicators: { numerator: \"1\", denominator: \"1\" }
     }
@@ -258,7 +263,6 @@ pub fn compile_from_strings_test() {
   * \"some_blueprint\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"1\",
       indicators: { numerator: \"1\", denominator: \"1\" }
     }
@@ -280,7 +284,6 @@ pub fn compile_from_strings_test() {
   * \"slo_with_deps\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"nonexistent.org.team.slo\"] }
@@ -306,7 +309,6 @@ pub fn compile_from_strings_test() {
   * \"slo_with_deps\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"invalid_format\"] }
@@ -332,7 +334,6 @@ pub fn compile_from_strings_test() {
   * \"slo_with_deps\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: { numerator: \"count:test\", denominator: \"count:test\" },
       relations: { hard: [\"myorg.myteam.myservice.my_slo\"] }
@@ -354,7 +355,12 @@ pub fn compile_from_strings_test() {
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings(
+        blueprints_src,
+        expectations_src,
+        path,
+        vendor: "datadog",
+      )
     case expected_substrings {
       [] ->
         case result {
@@ -368,7 +374,6 @@ pub fn compile_from_strings_test() {
 
 // ==== compile_from_strings (Honeycomb) ====
 // * ✅ happy path - single Honeycomb SLO
-// * ✅ happy path - mixed vendors (Datadog + Honeycomb)
 // * ✅ sad path   - Honeycomb with invalid window (out of 1-90 range)
 pub fn compile_from_strings_honeycomb_test() {
   [
@@ -380,7 +385,6 @@ pub fn compile_from_strings_honeycomb_test() {
   * \"honeycomb_availability\":
     Requires { env: String }
     Provides {
-      vendor: \"honeycomb\",
       evaluation: \"sli\",
       indicators: {
         sli: \"HEATMAP(duration_ms)\"
@@ -408,57 +412,6 @@ pub fn compile_from_strings_honeycomb_test() {
       ),
       True,
     ),
-    // happy path - mixed vendors (Datadog + Honeycomb)
-    #(
-      "happy path - mixed vendors (Datadog + Honeycomb)",
-      #(
-        "Blueprints for \"SLO\"
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
-    }
-  * \"hc_blueprint\":
-    Requires {}
-    Provides {
-      vendor: \"honeycomb\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"HEATMAP(duration_ms)\"
-      }
-    }
-",
-        "Expectations for \"dd_blueprint\"
-  * \"dd_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-
-Expectations for \"hc_blueprint\"
-  * \"hc_slo\":
-    Provides {
-      threshold: 99.5%,
-      window_in_days: 14
-    }
-",
-        "acme/platform/payments.caffeine",
-        [
-          "datadog_service_level_objective",
-          "honeycombio_slo",
-          "honeycombio_derived_column",
-          "var.datadog_api_key",
-          "var.honeycomb_api_key",
-        ],
-      ),
-      True,
-    ),
     // sad path - Honeycomb with invalid window (out of 1-90 range)
     #(
       "sad path - Honeycomb with invalid window (out of 1-90 range)",
@@ -467,7 +420,6 @@ Expectations for \"hc_blueprint\"
   * \"hc_blueprint\":
     Requires {}
     Provides {
-      vendor: \"honeycomb\",
       evaluation: \"sli\",
       indicators: {
         sli: \"HEATMAP(duration_ms)\"
@@ -490,7 +442,12 @@ Expectations for \"hc_blueprint\"
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings(
+        blueprints_src,
+        expectations_src,
+        path,
+        vendor: "honeycomb",
+      )
     case expected_substrings {
       [] ->
         case result {
@@ -502,9 +459,82 @@ Expectations for \"hc_blueprint\"
   })
 }
 
+// ==== compile (mixed vendors) ====
+// * ✅ happy path - mixed vendors (Datadog + Honeycomb)
+pub fn compile_mixed_vendors_datadog_honeycomb_test() {
+  let dd_source =
+    SourceFile(
+      path: "blueprints/datadog.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+",
+    )
+  let hc_source =
+    SourceFile(
+      path: "blueprints/honeycomb.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"hc_blueprint\":
+    Requires {}
+    Provides {
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"HEATMAP(duration_ms)\"
+      }
+    }
+",
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Expectations for \"hc_blueprint\"
+  * \"hc_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 14
+    }
+",
+    ),
+  ]
+
+  let assert Ok(output) =
+    compiler.compile(
+      [
+        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
+        VendorBlueprintSource(source: hc_source, vendor: vendor.Honeycomb),
+      ],
+      expectations,
+    )
+
+  [
+    "datadog_service_level_objective",
+    "honeycombio_slo",
+    "honeycombio_derived_column",
+    "var.datadog_api_key",
+    "var.honeycomb_api_key",
+  ]
+  |> list.each(fn(s) {
+    output.terraform |> string.contains(s) |> should.be_true()
+  })
+}
+
 // ==== compile_from_strings (New Relic) ====
 // * ✅ happy path - single New Relic SLO
-// * ✅ happy path - mixed vendors (Datadog + New Relic)
 // * ✅ sad path   - New Relic with invalid window (not 1, 7, or 28)
 pub fn compile_from_strings_newrelic_test() {
   [
@@ -516,7 +546,6 @@ pub fn compile_from_strings_newrelic_test() {
   * \"newrelic_availability\":
     Requires { env: String }
     Provides {
-      vendor: \"newrelic\",
       evaluation: \"good / valid\",
       indicators: {
         good: \"Transaction WHERE appName = 'payments' AND duration < 0.1\",
@@ -546,57 +575,6 @@ pub fn compile_from_strings_newrelic_test() {
       ),
       True,
     ),
-    // happy path - mixed vendors (Datadog + New Relic)
-    #(
-      "happy path - mixed vendors (Datadog + New Relic)",
-      #(
-        "Blueprints for \"SLO\"
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
-    }
-  * \"nr_blueprint\":
-    Requires {}
-    Provides {
-      vendor: \"newrelic\",
-      evaluation: \"good / valid\",
-      indicators: {
-        good: \"Transaction WHERE duration < 0.1\",
-        valid: \"Transaction\"
-      }
-    }
-",
-        "Expectations for \"dd_blueprint\"
-  * \"dd_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-
-Expectations for \"nr_blueprint\"
-  * \"nr_slo\":
-    Provides {
-      threshold: 99.5%,
-      window_in_days: 7
-    }
-",
-        "acme/platform/payments.caffeine",
-        [
-          "datadog_service_level_objective",
-          "newrelic_service_level",
-          "var.datadog_api_key",
-          "var.newrelic_api_key",
-        ],
-      ),
-      True,
-    ),
     // sad path - New Relic with invalid window (not 1, 7, or 28)
     #(
       "sad path - New Relic with invalid window (not 1, 7, or 28)",
@@ -605,7 +583,6 @@ Expectations for \"nr_blueprint\"
   * \"nr_blueprint\":
     Requires {}
     Provides {
-      vendor: \"newrelic\",
       evaluation: \"good / valid\",
       indicators: {
         good: \"Transaction WHERE duration < 0.1\",
@@ -629,7 +606,12 @@ Expectations for \"nr_blueprint\"
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings(
+        blueprints_src,
+        expectations_src,
+        path,
+        vendor: "newrelic",
+      )
     case expected_substrings {
       [] ->
         case result {
@@ -641,9 +623,82 @@ Expectations for \"nr_blueprint\"
   })
 }
 
+// ==== compile (mixed vendors: Datadog + New Relic) ====
+// * ✅ happy path - mixed vendors (Datadog + New Relic)
+pub fn compile_mixed_vendors_datadog_newrelic_test() {
+  let dd_source =
+    SourceFile(
+      path: "blueprints/datadog.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+",
+    )
+  let nr_source =
+    SourceFile(
+      path: "blueprints/newrelic.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"nr_blueprint\":
+    Requires {}
+    Provides {
+      evaluation: \"good / valid\",
+      indicators: {
+        good: \"Transaction WHERE duration < 0.1\",
+        valid: \"Transaction\"
+      }
+    }
+",
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Expectations for \"nr_blueprint\"
+  * \"nr_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 7
+    }
+",
+    ),
+  ]
+
+  let assert Ok(output) =
+    compiler.compile(
+      [
+        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
+        VendorBlueprintSource(source: nr_source, vendor: vendor.NewRelic),
+      ],
+      expectations,
+    )
+
+  [
+    "datadog_service_level_objective",
+    "newrelic_service_level",
+    "var.datadog_api_key",
+    "var.newrelic_api_key",
+  ]
+  |> list.each(fn(s) {
+    output.terraform |> string.contains(s) |> should.be_true()
+  })
+}
+
 // ==== compile_from_strings (Dynatrace) ====
 // * ✅ happy path - single Dynatrace SLO
-// * ✅ happy path - mixed vendors (Datadog + Dynatrace)
 // * ✅ sad path   - Dynatrace with invalid window (out of 1-90 range)
 pub fn compile_from_strings_dynatrace_test() {
   [
@@ -655,7 +710,6 @@ pub fn compile_from_strings_dynatrace_test() {
   * \"dynatrace_availability\":
     Requires {}
     Provides {
-      vendor: \"dynatrace\",
       evaluation: \"sli\",
       indicators: {
         sli: \"builtin:service.requestCount.server:splitBy()\"
@@ -682,56 +736,6 @@ pub fn compile_from_strings_dynatrace_test() {
       ),
       True,
     ),
-    // happy path - mixed vendors (Datadog + Dynatrace)
-    #(
-      "happy path - mixed vendors (Datadog + Dynatrace)",
-      #(
-        "Blueprints for \"SLO\"
-  * \"dd_blueprint\":
-    Requires { env: String }
-    Provides {
-      vendor: \"datadog\",
-      evaluation: \"numerator / denominator\",
-      indicators: {
-        numerator: \"sum:http.requests{$env->env$}\",
-        denominator: \"sum:http.requests{$env->env$}\"
-      }
-    }
-  * \"dt_blueprint\":
-    Requires {}
-    Provides {
-      vendor: \"dynatrace\",
-      evaluation: \"sli\",
-      indicators: {
-        sli: \"builtin:service.requestCount.server:splitBy()\"
-      }
-    }
-",
-        "Expectations for \"dd_blueprint\"
-  * \"dd_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-
-Expectations for \"dt_blueprint\"
-  * \"dt_slo\":
-    Provides {
-      threshold: 99.5%,
-      window_in_days: 14
-    }
-",
-        "acme/platform/payments.caffeine",
-        [
-          "datadog_service_level_objective",
-          "dynatrace_slo_v2",
-          "var.datadog_api_key",
-          "var.dynatrace_api_token",
-        ],
-      ),
-      True,
-    ),
     // sad path - Dynatrace with invalid window (out of 1-90 range)
     #(
       "sad path - Dynatrace with invalid window (out of 1-90 range)",
@@ -740,7 +744,6 @@ Expectations for \"dt_blueprint\"
   * \"dt_blueprint\":
     Requires {}
     Provides {
-      vendor: \"dynatrace\",
       evaluation: \"sli\",
       indicators: {
         sli: \"builtin:service.requestCount.server:splitBy()\"
@@ -763,7 +766,12 @@ Expectations for \"dt_blueprint\"
   |> test_helpers.table_test_1(fn(input) {
     let #(blueprints_src, expectations_src, path, expected_substrings) = input
     let result =
-      compiler.compile_from_strings(blueprints_src, expectations_src, path)
+      compiler.compile_from_strings(
+        blueprints_src,
+        expectations_src,
+        path,
+        vendor: "dynatrace",
+      )
     case expected_substrings {
       [] ->
         case result {
@@ -772,6 +780,79 @@ Expectations for \"dt_blueprint\"
         }
       _ -> contains_all_substrings(result, expected_substrings)
     }
+  })
+}
+
+// ==== compile (mixed vendors: Datadog + Dynatrace) ====
+// * ✅ happy path - mixed vendors (Datadog + Dynatrace)
+pub fn compile_mixed_vendors_datadog_dynatrace_test() {
+  let dd_source =
+    SourceFile(
+      path: "blueprints/datadog.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"dd_blueprint\":
+    Requires { env: String }
+    Provides {
+      evaluation: \"numerator / denominator\",
+      indicators: {
+        numerator: \"sum:http.requests{$env->env$}\",
+        denominator: \"sum:http.requests{$env->env$}\"
+      }
+    }
+",
+    )
+  let dt_source =
+    SourceFile(
+      path: "blueprints/dynatrace.caffeine",
+      content: "Blueprints for \"SLO\"
+  * \"dt_blueprint\":
+    Requires {}
+    Provides {
+      evaluation: \"sli\",
+      indicators: {
+        sli: \"builtin:service.requestCount.server:splitBy()\"
+      }
+    }
+",
+    )
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations for \"dd_blueprint\"
+  * \"dd_slo\":
+    Provides {
+      env: \"production\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+
+Expectations for \"dt_blueprint\"
+  * \"dt_slo\":
+    Provides {
+      threshold: 99.5%,
+      window_in_days: 14
+    }
+",
+    ),
+  ]
+
+  let assert Ok(output) =
+    compiler.compile(
+      [
+        VendorBlueprintSource(source: dd_source, vendor: vendor.Datadog),
+        VendorBlueprintSource(source: dt_source, vendor: vendor.Dynatrace),
+      ],
+      expectations,
+    )
+
+  [
+    "datadog_service_level_objective",
+    "dynatrace_slo_v2",
+    "var.datadog_api_key",
+    "var.dynatrace_api_token",
+  ]
+  |> list.each(fn(s) {
+    output.terraform |> string.contains(s) |> should.be_true()
   })
 }
 
@@ -785,7 +866,6 @@ pub fn compile_from_strings_dependency_graph_none_test() {
   * \"simple\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"good / total\",
       indicators: { good: \"count:ok\", total: \"count:all\" }
     }
@@ -798,6 +878,7 @@ pub fn compile_from_strings_dependency_graph_none_test() {
     }
 ",
       "acme/platform/payments.caffeine",
+      vendor: "datadog",
     )
 
   output.dependency_graph |> should.equal(option.None)
@@ -810,7 +891,6 @@ pub fn compile_from_strings_dependency_graph_some_test() {
   * \"tracked\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"good / total\",
       indicators: { good: \"count:ok\", total: \"count:all\" },
       relations: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
@@ -820,7 +900,6 @@ Blueprints for \"SLO\"
   * \"standalone\":
     Requires {}
     Provides {
-      vendor: \"datadog\",
       evaluation: \"good / total\",
       indicators: { good: \"count:ok\", total: \"count:all\" }
     }
@@ -840,6 +919,7 @@ Expectations for \"standalone\"
     }
 ",
       "acme/platform/payments.caffeine",
+      vendor: "datadog",
     )
 
   // Has DependencyRelations -> graph should be Some with Mermaid content
@@ -851,43 +931,65 @@ Expectations for \"standalone\"
   graph |> string.contains("-->|hard|") |> should.be_true()
 }
 
-// ==== compile_from_strings (all four vendors) ====
+// ==== compile (all four vendors) ====
 // * ✅ all four vendors in single compilation merge providers and variables
-pub fn compile_from_strings_all_four_vendors_test() {
-  let assert Ok(output) =
-    compiler.compile_from_strings(
-      "Blueprints for \"SLO\"
+pub fn compile_all_four_vendors_test() {
+  let dd_source =
+    VendorBlueprintSource(
+      source: SourceFile(
+        path: "blueprints/datadog.caffeine",
+        content: "Blueprints for \"SLO\"
   * \"dd\":
     Requires { env: String }
     Provides {
-      vendor: \"datadog\",
       evaluation: \"numerator / denominator\",
       indicators: {
         numerator: \"sum:http.ok{$env->env$}\",
         denominator: \"sum:http.total{$env->env$}\"
       }
     }
-
+",
+      ),
+      vendor: vendor.Datadog,
+    )
+  let hc_source =
+    VendorBlueprintSource(
+      source: SourceFile(
+        path: "blueprints/honeycomb.caffeine",
+        content: "Blueprints for \"SLO\"
   * \"hc\":
     Requires {}
     Provides {
-      vendor: \"honeycomb\",
       evaluation: \"sli\",
       indicators: { sli: \"HEATMAP(duration_ms)\" }
     }
-
+",
+      ),
+      vendor: vendor.Honeycomb,
+    )
+  let dt_source =
+    VendorBlueprintSource(
+      source: SourceFile(
+        path: "blueprints/dynatrace.caffeine",
+        content: "Blueprints for \"SLO\"
   * \"dt\":
     Requires {}
     Provides {
-      vendor: \"dynatrace\",
       evaluation: \"sli\",
       indicators: { sli: \"builtin:service.requestCount.server:splitBy()\" }
     }
-
+",
+      ),
+      vendor: vendor.Dynatrace,
+    )
+  let nr_source =
+    VendorBlueprintSource(
+      source: SourceFile(
+        path: "blueprints/newrelic.caffeine",
+        content: "Blueprints for \"SLO\"
   * \"nr\":
     Requires {}
     Provides {
-      vendor: \"newrelic\",
       evaluation: \"good / valid\",
       indicators: {
         good: \"Transaction WHERE duration < 0.1\",
@@ -895,7 +997,14 @@ pub fn compile_from_strings_all_four_vendors_test() {
       }
     }
 ",
-      "Expectations for \"dd\"
+      ),
+      vendor: vendor.NewRelic,
+    )
+
+  let expectations = [
+    SourceFile(
+      path: "acme/platform/payments.caffeine",
+      content: "Expectations for \"dd\"
   * \"dd_slo\":
     Provides {
       env: \"production\",
@@ -924,20 +1033,35 @@ Expectations for \"nr\"
       window_in_days: 7
     }
 ",
-      "acme/platform/payments.caffeine",
-    )
+    ),
+  ]
+
+  let assert Ok(output) =
+    compiler.compile([dd_source, hc_source, dt_source, nr_source], expectations)
 
   // All four vendor resources present
-  output.terraform |> string.contains("datadog_service_level_objective") |> should.be_true()
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_true()
   output.terraform |> string.contains("honeycombio_slo") |> should.be_true()
   output.terraform |> string.contains("dynatrace_slo_v2") |> should.be_true()
-  output.terraform |> string.contains("newrelic_service_level") |> should.be_true()
+  output.terraform
+  |> string.contains("newrelic_service_level")
+  |> should.be_true()
 
   // All four providers present
-  output.terraform |> string.contains("var.datadog_api_key") |> should.be_true()
-  output.terraform |> string.contains("var.honeycomb_api_key") |> should.be_true()
-  output.terraform |> string.contains("var.dynatrace_api_token") |> should.be_true()
-  output.terraform |> string.contains("var.newrelic_api_key") |> should.be_true()
+  output.terraform
+  |> string.contains("var.datadog_api_key")
+  |> should.be_true()
+  output.terraform
+  |> string.contains("var.honeycomb_api_key")
+  |> should.be_true()
+  output.terraform
+  |> string.contains("var.dynatrace_api_token")
+  |> should.be_true()
+  output.terraform
+  |> string.contains("var.newrelic_api_key")
+  |> should.be_true()
 
   // No deps -> graph is None
   output.dependency_graph |> should.equal(option.None)

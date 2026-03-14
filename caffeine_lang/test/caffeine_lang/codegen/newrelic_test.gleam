@@ -224,10 +224,7 @@ pub fn generate_terraform_multiple_slos_test() {
       7,
       "good / valid",
       [
-        #(
-          "good",
-          "Transaction WHERE appName = 'payments' AND duration < 0.1",
-        ),
+        #("good", "Transaction WHERE appName = 'payments' AND duration < 0.1"),
         #("valid", "Transaction WHERE appName = 'payments'"),
       ],
     )

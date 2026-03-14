@@ -63,8 +63,7 @@ pub fn get_slo_fields_test() {
   ir.get_slo_fields(ir.slo_only(slo))
   |> should.equal(option.Some(slo))
 
-  let dep =
-    ir.DependencyFields(relations: dict.new(), tags: [])
+  let dep = ir.DependencyFields(relations: dict.new(), tags: [])
   ir.get_slo_fields(ir.dependency_only(dep))
   |> should.equal(option.None)
 }
@@ -187,9 +186,7 @@ pub fn update_slo_fields_test() {
     )
   let both = ir.slo_with_dependency(slo: slo, dependency: dep)
   let updated_both =
-    ir.update_slo_fields(both, fn(s) {
-      ir.SloFields(..s, threshold: 95.0)
-    })
+    ir.update_slo_fields(both, fn(s) { ir.SloFields(..s, threshold: 95.0) })
   ir.get_dependency_fields(updated_both) |> should.equal(option.Some(dep))
   let assert option.Some(updated_slo2) = ir.get_slo_fields(updated_both)
   updated_slo2.threshold |> should.equal(95.0)
@@ -197,9 +194,7 @@ pub fn update_slo_fields_test() {
   // No-op when no SLO present
   let dep_only = ir.dependency_only(dep)
   let unchanged =
-    ir.update_slo_fields(dep_only, fn(s) {
-      ir.SloFields(..s, threshold: 0.0)
-    })
+    ir.update_slo_fields(dep_only, fn(s) { ir.SloFields(..s, threshold: 0.0) })
   ir.get_slo_fields(unchanged) |> should.equal(option.None)
   ir.get_dependency_fields(unchanged) |> should.equal(option.Some(dep))
 }

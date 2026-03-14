@@ -2,7 +2,6 @@ Blueprints for "SLO"
   * "api_availability":
     Requires { env: String, service: String }
     Provides {
-      vendor: "datadog",
       evaluation: "numerator / denominator",
       indicators: {
         numerator: "sum:http.requests{$env->env$,$service->service$,!status:5xx}",
@@ -12,7 +11,6 @@ Blueprints for "SLO"
   * "api_latency_p99":
     Requires { env: String { x | x in { "staging", "production" } }, service: String }
     Provides {
-      vendor: "datadog",
       evaluation: "numerator / denominator",
       indicators: {
         numerator: "sum:http.latency.p99{$env->env$,$service->service$,le:500}",

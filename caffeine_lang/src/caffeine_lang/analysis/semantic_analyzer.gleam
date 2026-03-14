@@ -37,8 +37,7 @@ pub fn resolve_indicators(
     option.Some(vendor.Datadog) -> datadog.resolve_indicators(ir)
     option.Some(vendor.Honeycomb)
     | option.Some(vendor.Dynatrace)
-    | option.Some(vendor.NewRelic) ->
-      Ok(ir.promote(ir))
+    | option.Some(vendor.NewRelic) -> Ok(ir.promote(ir))
     option.None ->
       Error(errors.semantic_analysis_template_resolution_error(
         msg: "expectation '"

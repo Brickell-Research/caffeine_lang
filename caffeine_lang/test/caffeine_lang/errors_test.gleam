@@ -414,10 +414,12 @@ pub fn to_message_test() {
   errors.to_message(errors.frontend_parse_error(msg: "hello"))
   |> should.equal("hello")
 
-  errors.to_message(errors.CompilationErrors(errors: [
-    errors.frontend_parse_error(msg: "first"),
-    errors.linker_parse_error(msg: "second"),
-  ]))
+  errors.to_message(
+    errors.CompilationErrors(errors: [
+      errors.frontend_parse_error(msg: "first"),
+      errors.linker_parse_error(msg: "second"),
+    ]),
+  )
   |> should.equal("first\nsecond")
 }
 
@@ -446,7 +448,5 @@ pub fn from_results_test() {
     Error(err2),
   ]
   errors.from_results(results_multi_error)
-  |> should.equal(
-    Error(errors.CompilationErrors(errors: [err1, err2])),
-  )
+  |> should.equal(Error(errors.CompilationErrors(errors: [err1, err2])))
 }

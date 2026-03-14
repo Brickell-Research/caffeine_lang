@@ -727,11 +727,7 @@ pub fn tokenize_standalone_cr_test() {
 // * ✅ equals sign tokenized as SymbolEquals
 pub fn tokenize_equals_sign_test() {
   [
-    #(
-      "standalone equals",
-      "=",
-      Ok([token.SymbolEquals, token.EOF]),
-    ),
+    #("standalone equals", "=", Ok([token.SymbolEquals, token.EOF])),
     #(
       "equals in context",
       "{ x = 1 }",

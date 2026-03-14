@@ -109,11 +109,7 @@ pub fn extract_float_test() {
 // * ✅ returns Error for non-percentage
 pub fn extract_percentage_test() {
   [
-    #(
-      "extracts from PercentageValue",
-      PercentageValue(99.9),
-      Ok(99.9),
-    ),
+    #("extracts from PercentageValue", PercentageValue(99.9), Ok(99.9)),
     #("returns Error for FloatValue", FloatValue(99.9), Error(Nil)),
     #("returns Error for non-percentage", IntValue(1), Error(Nil)),
   ]

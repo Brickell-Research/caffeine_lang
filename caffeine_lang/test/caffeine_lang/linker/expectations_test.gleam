@@ -1,4 +1,3 @@
-import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
@@ -16,7 +15,10 @@ fn blueprints() -> List(blueprints.Blueprint(blueprints.BlueprintValidated)) {
       name: "success_rate",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("percentile", types.PrimitiveType(types.NumericType(types.Percentage))),
+        #(
+          "percentile",
+          types.PrimitiveType(types.NumericType(types.Percentage)),
+        ),
       ]),
       inputs: dict.from_list([]),
     ),
@@ -31,11 +33,11 @@ fn blueprints_with_inputs() -> List(
       name: "success_rate_with_defaults",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("vendor", types.PrimitiveType(types.String)),
+        #("env", types.PrimitiveType(types.String)),
         #("threshold", types.PrimitiveType(types.NumericType(types.Percentage))),
       ]),
       inputs: dict.from_list([
-        #("vendor", value.StringValue(constants.vendor_datadog)),
+        #("env", value.StringValue("production")),
       ]),
     ),
   ]
@@ -99,7 +101,9 @@ pub fn validate_expectations_test() {
           expectations.Expectation(
             name: "my_expectation",
             blueprint_ref: "success_rate",
-            inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
+            inputs: dict.from_list([
+              #("percentile", value.PercentageValue(99.9)),
+            ]),
           ),
           blueprints.Blueprint(
             name: "success_rate",
@@ -233,13 +237,13 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           blueprint_ref: "success_rate_with_defaults",
           inputs: dict.from_list([
-            #("vendor", value.StringValue("honeycomb")),
+            #("env", value.StringValue("staging")),
             #("threshold", value.PercentageValue(99.9)),
           ]),
         ),
       ],
       Error(errors.LinkerDuplicateError(
-        msg: "expectation 'org.team.service.my_expectation' - overshadowing inputs from blueprint: vendor",
+        msg: "expectation 'org.team.service.my_expectation' - overshadowing inputs from blueprint: env",
         context: errors.empty_context(),
       )),
     ),

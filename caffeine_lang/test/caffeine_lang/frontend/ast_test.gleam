@@ -104,11 +104,7 @@ pub fn value_to_string_test() {
       ast.LiteralValue(ast.LiteralInteger(42)),
       "42",
     ),
-    #(
-      "LiteralValue(True) -> true",
-      ast.LiteralValue(ast.LiteralTrue),
-      "true",
-    ),
+    #("LiteralValue(True) -> true", ast.LiteralValue(ast.LiteralTrue), "true"),
   ]
   |> test_helpers.table_test_1(ast.value_to_string)
 }

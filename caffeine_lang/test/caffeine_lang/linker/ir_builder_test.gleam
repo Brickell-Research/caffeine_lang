@@ -1,5 +1,4 @@
 import caffeine_lang/analysis/vendor
-import caffeine_lang/constants
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 import caffeine_lang/linker/artifacts.{SLO}
@@ -20,6 +19,11 @@ import test_helpers
 /// Standard reserved labels set for tests.
 fn test_reserved_labels() {
   ir_builder.reserved_labels_from_artifacts(stdlib_artifacts.standard_library())
+}
+
+/// Standard vendor lookup for tests (maps "test_blueprint" to Datadog).
+fn test_vendor_lookup() {
+  dict.from_list([#("test_blueprint", vendor.Datadog)])
 }
 
 // ==== extract_path_prefix ====
@@ -63,7 +67,11 @@ pub fn extract_path_prefix_test() {
 // * ✅ misc metadata populated from string values (excluding filtered keys)
 pub fn build_all_test() {
   // empty list returns empty list
-  ir_builder.build_all([], reserved_labels: test_reserved_labels())
+  ir_builder.build_all(
+    [],
+    reserved_labels: test_reserved_labels(),
+    vendor_lookup: test_vendor_lookup(),
+  )
   |> should.equal(Ok([]))
 
   // single expectation builds correct IR
@@ -77,6 +85,7 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/service.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
     ir.metadata.friendly_label
     |> should.equal(identifiers.ExpectationLabel("my_test"))
@@ -96,11 +105,6 @@ pub fn build_all_test() {
         label: "threshold",
         typ: types.PrimitiveType(types.NumericType(types.Float)),
         value: value.PercentageValue(99.9),
-      ),
-      helpers.ValueTuple(
-        label: "vendor",
-        typ: types.PrimitiveType(types.String),
-        value: value.StringValue(constants.vendor_datadog),
       ),
     ])
   }
@@ -127,6 +131,7 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(exp1, blueprint), #(exp2, blueprint)], "org/team/service.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     result |> list.length |> should.equal(2)
@@ -162,6 +167,7 @@ pub fn build_all_test() {
           #([#(exp2, blueprint)], "org/team/file2.json"),
         ],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     result |> list.length |> should.equal(2)
@@ -177,7 +183,6 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_refs: [SLO],
         params: dict.from_list([
-          #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -188,7 +193,6 @@ pub fn build_all_test() {
           ),
         ]),
         inputs: dict.from_list([
-          #("vendor", value.StringValue(constants.vendor_datadog)),
           #("threshold", value.PercentageValue(99.9)),
         ]),
       )
@@ -199,10 +203,11 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/svc.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     ir.values
-    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
+    |> list.filter(fn(vt) { vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -227,7 +232,6 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_refs: [SLO],
         params: dict.from_list([
-          #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -239,7 +243,6 @@ pub fn build_all_test() {
           ),
         ]),
         inputs: dict.from_list([
-          #("vendor", value.StringValue(constants.vendor_datadog)),
           #("threshold", value.PercentageValue(99.9)),
         ]),
       )
@@ -250,10 +253,11 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/svc.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     ir.values
-    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
+    |> list.filter(fn(vt) { vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -279,7 +283,6 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_refs: [SLO],
         params: dict.from_list([
-          #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
           #(
@@ -294,7 +297,6 @@ pub fn build_all_test() {
           ),
         ]),
         inputs: dict.from_list([
-          #("vendor", value.StringValue(constants.vendor_datadog)),
           #("threshold", value.PercentageValue(99.9)),
         ]),
       )
@@ -305,10 +307,11 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/svc.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     ir.values
-    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
+    |> list.filter(fn(vt) { vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -337,7 +340,6 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_refs: [SLO],
         params: dict.from_list([
-          #("vendor", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("from_blueprint", types.PrimitiveType(types.String)),
           #(
@@ -346,7 +348,6 @@ pub fn build_all_test() {
           ),
         ]),
         inputs: dict.from_list([
-          #("vendor", value.StringValue(constants.vendor_datadog)),
           #("threshold", value.PercentageValue(99.9)),
           #("from_blueprint", value.StringValue("blueprint_value")),
         ]),
@@ -360,10 +361,11 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/svc.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     ir.values
-    |> list.filter(fn(vt) { vt.label != "vendor" && vt.label != "threshold" })
+    |> list.filter(fn(vt) { vt.label != "threshold" })
     |> list.sort(fn(a, b) { string.compare(a.label, b.label) })
     |> should.equal([
       helpers.ValueTuple(
@@ -386,14 +388,11 @@ pub fn build_all_test() {
         name: "test_blueprint",
         artifact_refs: [SLO],
         params: dict.from_list([
-          #("vendor", types.PrimitiveType(types.String)),
           #("env", types.PrimitiveType(types.String)),
           #("region", types.PrimitiveType(types.String)),
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         ]),
-        inputs: dict.from_list([
-          #("vendor", value.StringValue(constants.vendor_datadog)),
-        ]),
+        inputs: dict.new(),
       )
     let expectation =
       expectations.Expectation(
@@ -410,6 +409,7 @@ pub fn build_all_test() {
       ir_builder.build_all(
         [#([#(expectation, blueprint)], "org/team/svc.json")],
         reserved_labels: test_reserved_labels(),
+        vendor_lookup: test_vendor_lookup(),
       )
 
     // misc should contain string values but NOT threshold or non-strings
@@ -418,7 +418,6 @@ pub fn build_all_test() {
       dict.from_list([
         #("env", ["production"]),
         #("region", ["us-east-1"]),
-        #("vendor", [constants.vendor_datadog]),
       ]),
     )
   }
@@ -431,16 +430,13 @@ pub fn build_all_list_misc_test() {
       name: "test_blueprint",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("vendor", types.PrimitiveType(types.String)),
         #(
           "job_name",
           types.CollectionType(types.List(types.PrimitiveType(types.String))),
         ),
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
       ]),
-      inputs: dict.from_list([
-        #("vendor", value.StringValue(constants.vendor_datadog)),
-      ]),
+      inputs: dict.new(),
     )
   let expectation =
     expectations.Expectation(
@@ -462,13 +458,13 @@ pub fn build_all_list_misc_test() {
     ir_builder.build_all(
       [#([#(expectation, blueprint)], "org/team/svc.json")],
       reserved_labels: test_reserved_labels(),
+      vendor_lookup: test_vendor_lookup(),
     )
 
   ir.metadata.misc
   |> should.equal(
     dict.from_list([
       #("job_name", ["deploy-prod", "deploy-demo"]),
-      #("vendor", [constants.vendor_datadog]),
     ]),
   )
 }
@@ -480,16 +476,13 @@ pub fn build_all_optional_none_misc_test() {
       name: "test_blueprint",
       artifact_refs: [SLO],
       params: dict.from_list([
-        #("vendor", types.PrimitiveType(types.String)),
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         #(
           "env",
           types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
         ),
       ]),
-      inputs: dict.from_list([
-        #("vendor", value.StringValue(constants.vendor_datadog)),
-      ]),
+      inputs: dict.new(),
     )
   let expectation =
     make_expectation("my_test", [#("threshold", value.PercentageValue(1.0))])
@@ -498,11 +491,12 @@ pub fn build_all_optional_none_misc_test() {
     ir_builder.build_all(
       [#([#(expectation, blueprint)], "org/team/svc.json")],
       reserved_labels: test_reserved_labels(),
+      vendor_lookup: test_vendor_lookup(),
     )
 
   // Optional(None) should be excluded from misc (threshold is filtered by label)
   ir.metadata.misc
-  |> should.equal(dict.from_list([#("vendor", [constants.vendor_datadog])]))
+  |> should.equal(dict.new())
 }
 
 // ==== Helpers ====
@@ -519,26 +513,19 @@ fn make_blueprint(
   blueprints.Blueprint(
     name: name,
     artifact_refs: [SLO],
-    params: [
-      #("vendor", types.PrimitiveType(types.String)),
-      ..{
-        params
-        |> list.map(fn(p) {
-          let #(label, typ) = p
-          #(
-            label,
-            types.PrimitiveType(case typ {
-              FloatType -> types.NumericType(types.Float)
-              StringType -> types.String
-            }),
-          )
-        })
-      }
-    ]
+    params: params
+      |> list.map(fn(p) {
+        let #(label, typ) = p
+        #(
+          label,
+          types.PrimitiveType(case typ {
+            FloatType -> types.NumericType(types.Float)
+            StringType -> types.String
+          }),
+        )
+      })
       |> dict.from_list,
-    inputs: dict.from_list([
-      #("vendor", value.StringValue(constants.vendor_datadog)),
-    ]),
+    inputs: dict.new(),
   )
 }
 

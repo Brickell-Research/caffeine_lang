@@ -1,3 +1,5 @@
+import caffeine_lang/analysis/vendor.{type Vendor}
+
 /// Marker type for blueprint source files.
 pub type BlueprintSource
 
@@ -10,4 +12,9 @@ pub type ExpectationSource
 /// extraction (org/team/service from directory structure).
 pub type SourceFile(kind) {
   SourceFile(path: String, content: String)
+}
+
+/// A blueprint source file paired with its vendor, derived from the filename.
+pub type VendorBlueprintSource {
+  VendorBlueprintSource(source: SourceFile(BlueprintSource), vendor: Vendor)
 }

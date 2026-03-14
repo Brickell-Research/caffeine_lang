@@ -400,10 +400,7 @@ fn read_identifier(source: String) -> #(String, String) {
   read_identifier_loop(source, [])
 }
 
-fn read_identifier_loop(
-  source: String,
-  acc: List(String),
-) -> #(String, String) {
+fn read_identifier_loop(source: String, acc: List(String)) -> #(String, String) {
   case string.pop_grapheme(source) {
     Ok(#(char, rest)) -> {
       case is_identifier_char(char) {

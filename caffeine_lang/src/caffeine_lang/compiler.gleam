@@ -18,7 +18,8 @@ import caffeine_lang/linker/ir.{
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
 import caffeine_lang/source_file.{
-  type BlueprintSource, type ExpectationSource, type SourceFile, SourceFile,
+  type ExpectationSource, type SourceFile, type VendorBlueprintSource,
+  SourceFile,
 }
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import gleam/dict
@@ -39,28 +40,31 @@ pub type CompilationOutput {
   )
 }
 
-/// Compiles a blueprint and expectation sources into Terraform configuration.
+/// Compiles blueprint sources and expectation sources into Terraform configuration.
 /// Pure function — all file reading happens before this function is called.
 pub fn compile(
-  blueprint: SourceFile(BlueprintSource),
+  blueprints: List(VendorBlueprintSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  use irs <- result.try(run_parse_and_link(blueprint, expectations))
+  use irs <- result.try(run_parse_and_link(blueprints, expectations))
   use resolved_irs <- result.try(run_semantic_analysis(irs))
   run_code_generation(resolved_irs)
 }
 
 /// Compiles from source strings directly (no file I/O).
-/// Used for browser-based compilation.
+/// Used for browser-based compilation. The vendor parameter specifies
+/// which vendor the blueprints belong to.
 pub fn compile_from_strings(
   blueprints_source: String,
   expectations_source: String,
   expectations_path: String,
+  vendor vendor_string: String,
 ) -> Result(CompilationOutput, errors.CompilationError) {
   use irs <- result.try(parse_from_strings(
     blueprints_source,
     expectations_source,
     expectations_path,
+    vendor_string,
   ))
   use resolved_irs <- result.try(run_semantic_analysis(irs))
   run_code_generation(resolved_irs)
@@ -69,11 +73,11 @@ pub fn compile_from_strings(
 // ==== Pipeline stages ====
 
 fn run_parse_and_link(
-  blueprint: SourceFile(BlueprintSource),
+  blueprints: List(VendorBlueprintSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
-  linker.link(blueprint, expectations, artifacts:)
+  linker.link(blueprints, expectations, artifacts:)
 }
 
 fn run_semantic_analysis(
@@ -267,9 +271,17 @@ fn parse_from_strings(
   blueprints_source: String,
   expectations_source: String,
   expectations_path: String,
+  vendor_string: String,
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
   let artifacts = stdlib_artifacts.standard_library()
   let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
+
+  use resolved_vendor <- result.try(
+    vendor.resolve_vendor(vendor_string)
+    |> result.replace_error(errors.linker_vendor_resolution_error(
+      msg: "unknown vendor '" <> vendor_string <> "'",
+    )),
+  )
 
   use raw_blueprints <- result.try(
     pipeline.compile_blueprints(SourceFile(
@@ -290,6 +302,11 @@ fn parse_from_strings(
     artifacts,
   ))
 
+  let vendor_lookup =
+    raw_blueprints
+    |> list.map(fn(bp) { #(bp.name, resolved_vendor) })
+    |> dict.from_list
+
   use expectations_blueprint_collection <- result.try(
     expectations.validate_expectations(
       raw_expectations,
@@ -301,5 +318,6 @@ fn parse_from_strings(
   ir_builder.build_all(
     [#(expectations_blueprint_collection, expectations_path)],
     reserved_labels:,
+    vendor_lookup:,
   )
 }

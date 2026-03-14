@@ -2137,10 +2137,7 @@ pub fn validate_value_test() {
     #(
       "Refinement dispatch",
       #(
-        RefinementType(OneOf(
-          PrimitiveType(String),
-          set.from_list(["a", "b"]),
-        )),
+        RefinementType(OneOf(PrimitiveType(String), set.from_list(["a", "b"]))),
         value.StringValue("a"),
       ),
       True,
@@ -2616,11 +2613,7 @@ pub fn record_is_optional_or_defaulted_test() {
 // * ✅ ParsedRecord → formatted record
 pub fn parsed_type_to_string_test() {
   [
-    #(
-      "ParsedPrimitive String",
-      ParsedPrimitive(String),
-      "String",
-    ),
+    #("ParsedPrimitive String", ParsedPrimitive(String), "String"),
     #(
       "ParsedPrimitive Integer",
       ParsedPrimitive(NumericType(Integer)),
@@ -2651,10 +2644,7 @@ pub fn parsed_type_to_string_test() {
     ),
     #(
       "ParsedRefinement OneOf",
-      ParsedRefinement(OneOf(
-        ParsedPrimitive(String),
-        set.from_list(["a", "b"]),
-      )),
+      ParsedRefinement(OneOf(ParsedPrimitive(String), set.from_list(["a", "b"]))),
       "String { x | x in { a, b } }",
     ),
     #(
@@ -2666,17 +2656,15 @@ pub fn parsed_type_to_string_test() {
       )),
       "Integer { x | x in ( 0..100 ) }",
     ),
-    #(
-      "ParsedTypeAliasRef",
-      ParsedTypeAliasRef("_env"),
-      "_env",
-    ),
+    #("ParsedTypeAliasRef", ParsedTypeAliasRef("_env"), "_env"),
     #(
       "ParsedRecord",
-      ParsedRecord(dict.from_list([
-        #("name", ParsedPrimitive(String)),
-        #("count", ParsedPrimitive(NumericType(Integer))),
-      ])),
+      ParsedRecord(
+        dict.from_list([
+          #("name", ParsedPrimitive(String)),
+          #("count", ParsedPrimitive(NumericType(Integer))),
+        ]),
+      ),
       "{ count: Integer, name: String }",
     ),
   ]
@@ -2725,10 +2713,12 @@ pub fn try_each_inner_parsed_test() {
 
   // ParsedRecord calls f on each field type
   types.try_each_inner_parsed(
-    ParsedRecord(dict.from_list([
-      #("a", ParsedPrimitive(String)),
-      #("b", ParsedPrimitive(NumericType(Integer))),
-    ])),
+    ParsedRecord(
+      dict.from_list([
+        #("a", ParsedPrimitive(String)),
+        #("b", ParsedPrimitive(NumericType(Integer))),
+      ]),
+    ),
     always_ok,
   )
   |> should.equal(Ok(Nil))

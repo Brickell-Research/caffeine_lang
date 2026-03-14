@@ -38,7 +38,6 @@ resource "datadog_service_level_objective" "acme_slos_auth_service_availability"
     "artifact:SLO",
     "env:production",
     "service:auth-service",
-    "vendor:datadog",
   ]
   type = "metric"
 
@@ -66,7 +65,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
     "artifact:SLO",
     "env:production",
     "service:checkout-api",
-    "vendor:datadog",
   ]
   type = "metric"
 
@@ -94,7 +92,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
     "artifact:SLO",
     "env:production",
     "service:checkout-api",
-    "vendor:datadog",
   ]
   type = "metric"
 

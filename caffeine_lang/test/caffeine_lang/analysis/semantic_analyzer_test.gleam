@@ -1250,9 +1250,7 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
                 ),
                 #(
                   "valid",
-                  value.StringValue(
-                    "FROM Transaction SELECT count(*)",
-                  ),
+                  value.StringValue("FROM Transaction SELECT count(*)"),
                 ),
               ]),
             ),
@@ -1301,9 +1299,7 @@ pub fn resolve_indicators_newrelic_passthrough_test() {
                 ),
                 #(
                   "valid",
-                  value.StringValue(
-                    "FROM Transaction SELECT count(*)",
-                  ),
+                  value.StringValue("FROM Transaction SELECT count(*)"),
                 ),
               ]),
             ),
