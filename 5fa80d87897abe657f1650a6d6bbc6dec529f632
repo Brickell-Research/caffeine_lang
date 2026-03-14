@@ -1,0 +1,162 @@
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_trailing_in_literal_struct.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_percentage_literal.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_extends_override.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations/acme/payments/slos.caffeine
+  25b9d793179f81ec 1
+caffeine_lsp/src/caffeine_lsp/document_symbols.gleam
+  25b9d793179f81ec 60
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_expects.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_overshadow_provides.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_in_extendable_struct.caffeine
+  25b9d793179f81ec 8
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_multiple_extends.caffeine
+  25b9d793179f81ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_simple.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_missing_extendable.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_no_extendables.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_expectations/acme/platform/slos.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_with_extendable.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_many_consecutive.caffeine
+  25b9d793179f81ec 1,10
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_trailing_in_struct.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_in_struct_fields.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_duplicate_extendable.caffeine
+  25b9d793179f81ec 4
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  25b9d793179f81ec 419-420
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  25b9d793179f81ec 1007,1046
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  25b9d793179f81ec 148,177,200,228,265,286,310,334,385,419,485,493,543,579,646,654,702,735,801,809,852,884,891,980,988,995,1002
+caffeine_lang/test/caffeine_lang/corpus/frontend/pipeline/simple_expects.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_extendable_joining.caffeine
+  25b9d793179f81ec 7
+caffeine_lang/test/caffeine_lang/frontend/tokenizer_test.gleam
+  25b9d793179f81ec 20-21,40-41,317,320-321,646,648-649,654-655
+test/lsp_e2e/features_test.ts
+  25b9d793179f81ec 140,161-163
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_multi_expects_with_extendable.caffeine
+  25b9d793179f81ec 5,17,24
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_with_extends.caffeine
+  25b9d793179f81ec 3
+lsp/workspace.ts
+  25b9d793179f81ec 291,294
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_extendable_joining.caffeine
+  25b9d793179f81ec 8
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  25b9d793179f81ec 543,552-553
+caffeine_lang/test/caffeine_lang/frontend/token_test.gleam
+  25b9d793179f81ec 17-18
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_single_block.caffeine
+  25b9d793179f81ec 1
+lsp/workspace_parsers.ts
+  25b9d793179f81ec 40,43,68
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_requires_extendable.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_expects.caffeine
+  25b9d793179f81ec 2
+caffeine_lsp/src/caffeine_lsp/completion.gleam
+  25b9d793179f81ec 105,107,182,199
+test/lsp_e2e/fixtures/with_extendable.caffeine
+  25b9d793179f81ec 3
+test/lsp_e2e/fixtures/multiple_errors.caffeine
+  25b9d793179f81ec 1,5
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  25b9d793179f81ec 164
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_percentage_literal.caffeine
+  25b9d793179f81ec 1
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  25b9d793179f81ec 212,230,297,395,486,530,587-589,595-597,603-605,611,619-620,627-629,635-637,643,651-653,678,686,694,702,783,862,876,894,903,914,942,960,965-966,1017,1055,1090-1092,1099,1113-1115,1129,1141,1144,1149,1167,1183,1213,1302,1339,1396,1403,1431,1444,1465,1474,1494,1501,1517,1547,1554,1566,1579,1642,1726,1775,1791,1797-1798,1803,1813-1814,1819,1829-1830,1835,1838,1876,1914,1939,1970,2002,2035,2060,2072,2105,2154,2193,2226,2255,2285,2325,2349,2376,2417,2453,2595,2627,2768,2791,2805,2813
+test/lsp_e2e/fixtures/valid_expects.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_complex_literals.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_full_example.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_duplicate_extends_ref.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_sidekiq_real_world.caffeine
+  25b9d793179f81ec 5,23,33
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_between_expects_blocks.caffeine
+  25b9d793179f81ec 2,12,19
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_expects.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_multiple_items_one_missing.caffeine
+  25b9d793179f81ec 3
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_multiple_blocks.caffeine
+  25b9d793179f81ec 1,5
+test/lsp_e2e/slo_overlay_test.ts
+  25b9d793179f81ec 167,204,228
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_complex_literals.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/src/caffeine_lang/frontend/token.gleam
+  25b9d793179f81ec 10-11,60-61
+caffeine_lsp/src/caffeine_lsp/references.gleam
+  25b9d793179f81ec 73,77
+caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam
+  25b9d793179f81ec 92-93
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/expects_with_requires.caffeine
+  25b9d793179f81ec 1
+caffeine_lsp/src/caffeine_lsp/keyword_info.gleam
+  25b9d793179f81ec 18-23
+lsp/document_features.ts
+  25b9d793179f81ec 381
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_with_extends.caffeine
+  25b9d793179f81ec 1
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_type_alias_expectations/acme/payments/slos.caffeine
+  25b9d793179f81ec 1
+caffeine_lsp/src/caffeine_lsp/definition.gleam
+  25b9d793179f81ec 79,179
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_expectations/acme/payments/slos.caffeine
+  25b9d793179f81ec 1,10
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_valid.caffeine
+  25b9d793179f81ec 4
+caffeine_lang/test/caffeine_lang/linker/linker_test.gleam
+  25b9d793179f81ec 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "5fa80d87897abe657f1650a6d6bbc6dec529f632",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 302,
+      "total_deletions": 288,
+      "accepted_lines": 249,
+      "overriden_lines": 0
+    },
+    "370aef972b687e67": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3eceb944-7707-4ab5-9b9b-8676392c3e30",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 913,
+      "overriden_lines": 0
+    }
+  }
+}
