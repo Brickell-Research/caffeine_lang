@@ -27,7 +27,7 @@ pub fn is_defined_symbol(content: String, name: String) -> Bool {
 pub fn parse(
   content: String,
 ) -> Result(ParsedFile, #(List(ParserError), List(ParserError))) {
-  case string.starts_with(string.trim_start(content), "Expectations") {
+  case is_expects_content(content) {
     True ->
       case parser.parse_expects_file(content) {
         Ok(file) -> Ok(Expects(file))
@@ -47,4 +47,13 @@ pub fn parse(
           }
       }
   }
+}
+
+/// Detect expects file content by scanning for markers unique to expects files.
+/// Checks for "Expectations measured by" or "Unmeasured Expectations" which
+/// cannot appear in measurement files. Handles expects files that start with
+/// extendables, comments, or unmeasured blocks.
+fn is_expects_content(content: String) -> Bool {
+  string.contains(content, "Expectations measured by")
+  || string.contains(content, "Unmeasured Expectations")
 }

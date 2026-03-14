@@ -203,9 +203,8 @@ pub fn invalid_dict_key_type_alias_diagnostic_test() {
 }
 
 pub fn invalid_extendable_kind_expects_diagnostic_test() {
-  // When an expects file starts with an extendable, file_utils.parse detects
-  // it as a measurements file (where Requires extendables are valid).
-  // The extendable is unused, producing an "unused" warning instead.
+  // An expects file starting with a Requires extendable should be detected
+  // as an expects file and produce an InvalidExtendableKind error.
   let source =
     "_base (Requires): { env: String }
 
@@ -216,9 +215,9 @@ Expectations measured by \"api_availability\"
   let diags = diagnostics.get_diagnostics(source)
   case diags {
     [diag] -> {
-      diag.severity |> should.equal(lsp_types.DsWarning)
-      diag.message
-      |> should.equal("Extendable '_base' is defined but never used")
+      diag.severity |> should.equal(lsp_types.DsError)
+      { string.contains(diag.message, "_base") } |> should.be_true()
+      { string.contains(diag.message, "must be Provides") } |> should.be_true()
     }
     _ -> should.fail()
   }
@@ -2496,6 +2495,9 @@ _my_env (Type): _env
 // * ✅ warns on unused type alias
 // * ✅ no warning when extendable is used
 // * ✅ no warning when type alias is used
+// * ✅ warns on unused extendable in expects file starting with extendable
+// * ✅ no warning when extendable used in expects file starting with extendable
+// * ✅ no warning when extendable used in unmeasured expects file
 
 pub fn unused_extendable_warning_test() {
   let source =
@@ -2572,6 +2574,49 @@ _defaults (Requires): { environment: Defaulted(_env, \"production\") }
 "
   diagnostics.get_diagnostics(source)
   |> list.filter(fn(d) { d.code == diagnostics.UnusedTypeAlias })
+  |> should.equal([])
+}
+
+pub fn unused_extendable_in_expects_file_warning_test() {
+  let source =
+    "_unused (Provides): { window_in_days: 30 }
+
+Expectations measured by \"api_availability\"
+  * \"checkout\":
+    Provides { threshold: 99.9% }
+"
+  let diags = diagnostics.get_diagnostics(source)
+  case diags {
+    [diag] -> {
+      diag.severity |> should.equal(lsp_types.DsWarning)
+      string.contains(diag.message, "_unused") |> should.be_true()
+      string.contains(diag.message, "never used") |> should.be_true()
+    }
+    _ -> should.fail()
+  }
+}
+
+pub fn used_extendable_in_expects_file_no_warning_test() {
+  let source =
+    "_defaults (Provides): { window_in_days: 30 }
+
+Expectations measured by \"api_availability\"
+  * \"checkout\" extends [_defaults]:
+    Provides { threshold: 99.9% }
+"
+  diagnostics.get_diagnostics(source)
+  |> should.equal([])
+}
+
+pub fn used_extendable_in_unmeasured_expects_no_warning_test() {
+  let source =
+    "_defaults (Provides): { window_in_days: 30 }
+
+Unmeasured Expectations
+  * \"checkout\" extends [_defaults]:
+    Provides { threshold: 99.9% }
+"
+  diagnostics.get_diagnostics(source)
   |> should.equal([])
 }
 
