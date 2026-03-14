@@ -1,7 +1,5 @@
 import caffeine_lang/errors
-import caffeine_lang/linker/artifacts.{
-  type Artifact, ParamInfo, SLO,
-}
+import caffeine_lang/linker/artifacts.{type Artifact, ParamInfo, SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/types
 import caffeine_lang/value

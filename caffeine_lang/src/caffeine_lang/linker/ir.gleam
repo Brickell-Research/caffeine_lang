@@ -7,7 +7,9 @@ import caffeine_lang/identifiers.{
   type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
   type TeamName,
 }
-import caffeine_lang/linker/artifacts.{type ArtifactType, type DependencyRelationType, SLO}
+import caffeine_lang/linker/artifacts.{
+  type ArtifactType, type DependencyRelationType, SLO,
+}
 import gleam/dict
 import gleam/option.{type Option}
 

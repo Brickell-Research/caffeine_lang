@@ -1128,12 +1128,7 @@ pub fn parse_error_missing_delimiter_test() {
       "Blueprints for \"SLO\"\n* \"test\":\nRequires { env: String\n\n\nBlueprints for \"Other\"",
       Error([
         parser_error.UnexpectedToken("}", "Blueprints", 3, 17),
-        parser_error.UnexpectedToken(
-          "\"SLO\"",
-          "\"Other\"",
-          6,
-          16,
-        ),
+        parser_error.UnexpectedToken("\"SLO\"", "\"Other\"", 6, 16),
       ]),
     ),
     #(

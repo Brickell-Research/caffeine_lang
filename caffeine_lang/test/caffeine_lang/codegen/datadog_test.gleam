@@ -541,19 +541,21 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: ir.slo_only(ir.SloFields(
-              threshold: 99.9,
-              indicators: dict.from_list([
-                #("numerator", "sum:http.requests{status:2xx}"),
-                #("denominator", "sum:http.requests{*}"),
-              ]),
-              window_in_days: 30,
-              evaluation: option.None,
-              tags: [],
-              runbook: option.None,
-              depends_on: option.Some(dict.from_list([
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+            depends_on: option.Some(
+              dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo", "storage_slo"]),
-              ])),
+              ]),
+            ),
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -628,18 +630,20 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: ir.slo_only(ir.SloFields(
-              threshold: 99.9,
-              indicators: dict.from_list([
-                #("numerator", "sum:http.requests{status:2xx}"),
-                #("denominator", "sum:http.requests{*}"),
-              ]),
-              window_in_days: 30,
-              evaluation: option.None,
-              tags: [],
-              runbook: option.None,
-              depends_on: option.Some(dict.from_list([
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+            depends_on: option.Some(
+              dict.from_list([
                 #(Hard, ["db_slo", "storage_slo"]),
-              ])),
+              ]),
+            ),
           )),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -715,19 +719,21 @@ pub fn generate_terraform_test() {
             ),
           ],
           artifact_data: ir.slo_only(ir.SloFields(
-              threshold: 99.9,
-              indicators: dict.from_list([
-                #("numerator", "sum:http.requests{status:2xx}"),
-                #("denominator", "sum:http.requests{*}"),
-              ]),
-              window_in_days: 30,
-              evaluation: option.None,
-              tags: [],
-              runbook: option.None,
-              depends_on: option.Some(dict.from_list([
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+            depends_on: option.Some(
+              dict.from_list([
                 #(Soft, ["cache_slo", "logging_slo"]),
                 #(Hard, ["db_slo"]),
-              ])),
+              ]),
+            ),
           )),
           vendor: option.Some(vendor.Datadog),
         ),

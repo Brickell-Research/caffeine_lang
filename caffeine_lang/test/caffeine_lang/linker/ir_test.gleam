@@ -143,8 +143,6 @@ pub fn update_slo_fields_test() {
   // No-op when no SLO present
   let empty_data = ir.ArtifactData(fields: dict.new())
   let unchanged =
-    ir.update_slo_fields(empty_data, fn(s) {
-      ir.SloFields(..s, threshold: 0.0)
-    })
+    ir.update_slo_fields(empty_data, fn(s) { ir.SloFields(..s, threshold: 0.0) })
   ir.get_slo_fields(unchanged) |> should.equal(option.None)
 }

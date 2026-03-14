@@ -64,9 +64,7 @@ pub fn make_ir_with_deps(
     make_relations_value(hard_deps, soft_deps),
   ]
   let depends_on =
-    option.Some(
-      dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
-    )
+    option.Some(dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]))
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),
@@ -91,9 +89,7 @@ pub fn make_deps_only_ir(
   soft_deps soft_deps: List(String),
 ) {
   let depends_on =
-    option.Some(
-      dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]),
-    )
+    option.Some(dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]))
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
     unique_identifier: make_unique_id(org, service, name),

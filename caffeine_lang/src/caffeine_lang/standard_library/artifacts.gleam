@@ -89,11 +89,19 @@ fn slo_artifact() -> Artifact {
                 dict.from_list([
                   #(
                     "hard",
-                    CollectionType(ListType(PrimitiveType(StringType))),
+                    ModifierType(
+                      Optional(
+                        CollectionType(ListType(PrimitiveType(StringType))),
+                      ),
+                    ),
                   ),
                   #(
                     "soft",
-                    CollectionType(ListType(PrimitiveType(StringType))),
+                    ModifierType(
+                      Optional(
+                        CollectionType(ListType(PrimitiveType(StringType))),
+                      ),
+                    ),
                   ),
                 ]),
               ),
