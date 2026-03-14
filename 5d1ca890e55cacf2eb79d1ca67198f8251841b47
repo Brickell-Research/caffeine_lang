@@ -1,0 +1,97 @@
+caffeine_lang/test/caffeine_lang/linker/blueprints_test.gleam
+  25b9d793179f81ec 2,11,23-24,29,34,41,44,47,71,89,95,110,136,165,168,171,188,212,233
+caffeine_cli/src/caffeine_cli/handler.gleam
+  25b9d793179f81ec 408-409
+caffeine_lang/src/caffeine_lang/linker/linker.gleam
+  25b9d793179f81ec 3,23,25,50
+caffeine_lang/src/caffeine_lang/linker/ir_builder.gleam
+  25b9d793179f81ec 5,22,27,78,111
+caffeine_lang/test/caffeine_lang/codegen/datadog_test.gleam
+  25b9d793179f81ec 135,203,266,323,392,447,536,624,712,792,872,951,1023,1091,1131,1183
+caffeine_lang/src/caffeine_lang/codegen/dynatrace.gleam
+  25b9d793179f81ec 92
+caffeine_lang/test/caffeine_lang/linker/ir_test.gleam
+  25b9d793179f81ec 28,48-57,60-67,70-71,89
+caffeine_lang/test/caffeine_lang/helpers_test.gleam
+  25b9d793179f81ec 145,165
+caffeine_lang/test/caffeine_lang/codegen/honeycomb_test.gleam
+  25b9d793179f81ec 7,222,336
+caffeine_lang/test/caffeine_lang/frontend/lowering_test.gleam
+  25b9d793179f81ec 53,76
+caffeine_cli/src/caffeine_cli/display.gleam
+  25b9d793179f81ec 1,27,30,33,35,52
+caffeine_cli/test/caffeine_cli/display_test.gleam
+  25b9d793179f81ec 2,9-10,15-16,22,25-26,30
+caffeine_lang/test/caffeine_lang/corpus/generator/honeycomb_simple_slo.tf
+  25b9d793179f81ec 44
+caffeine_lsp/src/caffeine_lsp/document_symbols.gleam
+  25b9d793179f81ec 49
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  25b9d793179f81ec 165
+caffeine_lang/test/caffeine_lang/linker/ir_builder_test.gleam
+  25b9d793179f81ec 20
+caffeine_lang/test/caffeine_lang/codegen/newrelic_test.gleam
+  25b9d793179f81ec 7,361
+caffeine_lang/src/caffeine_lang/standard_library/artifacts.gleam
+  25b9d793179f81ec 6,14-15,21,23,31,33-35,37,45,47,52,54,63,66,68,73,75,87,90,95,99,103,106
+caffeine_lang/src/caffeine_lang/frontend/lowering.gleam
+  25b9d793179f81ec 79
+caffeine_lang/test/caffeine_lang/analysis/semantic_analyzer_test.gleam
+  25b9d793179f81ec 10,62,110,157,207,293,352,420,481,543,597,678,748,811,851,914,959,1013,1055,1106,1148,1195,1258,1307,1338
+caffeine_lang/test/caffeine_lang/linker/linker_test.gleam
+  25b9d793179f81ec 47,63,84
+caffeine_lang/src/caffeine_lang/codegen/honeycomb.gleam
+  25b9d793179f81ec 91,174-175
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  25b9d793179f81ec 112
+caffeine_lang/src/caffeine_lang/compiler.gleam
+  25b9d793179f81ec 78-79,235,273-274,299
+caffeine_lang/src/caffeine_lang/helpers.gleam
+  25b9d793179f81ec 273
+caffeine_lang/test/caffeine_lang/codegen/dynatrace_test.gleam
+  25b9d793179f81ec 7,271
+caffeine_lang/src/caffeine_lang/codegen/dependency_graph.gleam
+  25b9d793179f81ec 61
+caffeine_lang/src/caffeine_lang/codegen/newrelic.gleam
+  25b9d793179f81ec 113
+caffeine_lang/src/caffeine_lang/linker/blueprints.gleam
+  25b9d793179f81ec 2,27,32,41-42,46-50,52,54,59,62,64,73,75-76,78
+caffeine_lang/src/caffeine_lang/codegen/datadog.gleam
+  25b9d793179f81ec 133,139-140,148,241
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  25b9d793179f81ec 134,173,198,242,304,478,554,640,679
+caffeine_lang/src/caffeine_lang/analysis/dependency_validator.gleam
+  25b9d793179f81ec 17,344,386-387,396
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  25b9d793179f81ec 343,553,605,608,612
+caffeine_lang/test/ir_test_helpers.gleam
+  25b9d793179f81ec 37,202
+caffeine_lang/test/caffeine_lang/linker/artifacts_test.gleam
+  25b9d793179f81ec 9-12,15
+caffeine_lsp/src/caffeine_lsp/linker_diagnostics.gleam
+  25b9d793179f81ec 33
+caffeine_lang/src/caffeine_lang/analysis/semantic_analyzer.gleam
+  25b9d793179f81ec 18
+caffeine_lang/src/caffeine_lang/linker/ir.gleam
+  25b9d793179f81ec 10,46,74,91,93-94,96-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "5d1ca890e55cacf2eb79d1ca67198f8251841b47",
+  "prompts": {
+    "25b9d793179f81ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80725944-236c-4e4b-b156-d98443b9eab1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 459,
+      "total_deletions": 1006,
+      "accepted_lines": 237,
+      "overriden_lines": 0
+    }
+  }
+}
