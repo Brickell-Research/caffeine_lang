@@ -110,11 +110,7 @@ pub fn ir_to_terraform_resource(
   let identifier = ir_to_identifier(ir)
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract structured SLO fields from IR.
-  use slo <- result.try(generator_utils.require_slo_fields(
-    ir,
-    vendor: constants.vendor_newrelic,
-  ))
+  let slo = ir.slo
 
   // Extract the evaluation expression, then resolve it through the CQL pipeline.
   use evaluation_expr <- result.try(generator_utils.require_evaluation(

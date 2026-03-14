@@ -14,12 +14,11 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 
-/// Extracts depends_on from an IR's SloFields, if present.
+/// Extracts depends_on from an IR's SloFields.
 fn get_depends_on(
   ir: IntermediateRepresentation(phase),
 ) -> Option(Dict(artifacts.DependencyRelationType, List(String))) {
-  ir.get_slo_fields(ir.artifact_data)
-  |> option.then(fn(slo) { slo.depends_on })
+  ir.slo.depends_on
 }
 
 /// Validates that all dependency relations reference existing expectations.
@@ -342,12 +341,7 @@ fn validate_single_ir_hard_thresholds(
   expectation_index: Dict(String, IntermediateRepresentation(phase)),
 ) -> Result(Nil, CompilationError) {
   let self_path = ir_to_identifier(ir)
-  use slo <- result.try(
-    ir.get_slo_fields(ir.artifact_data)
-    |> option.to_result(errors.semantic_analysis_dependency_validation_error(
-      msg: self_path <> " - missing SLO artifact data",
-    )),
-  )
+  let slo = ir.slo
   let source_threshold = slo.threshold
   let hard_targets = case slo.depends_on {
     option.Some(relations) -> dict.get(relations, Hard) |> result.unwrap([])
@@ -389,8 +383,8 @@ fn validate_single_ir_hard_thresholds(
   }
 }
 
-/// Collects thresholds from hard dependency targets that have SLO fields.
-/// Skips targets that don't exist in the index or don't have SLO data.
+/// Collects thresholds from hard dependency targets.
+/// Skips targets that don't exist in the index.
 fn collect_hard_dep_thresholds(
   targets: List(String),
   expectation_index: Dict(String, IntermediateRepresentation(phase)),
@@ -399,12 +393,7 @@ fn collect_hard_dep_thresholds(
   |> list.filter_map(fn(target_path) {
     case dict.get(expectation_index, target_path) {
       Error(Nil) -> Error(Nil)
-      Ok(target_ir) -> {
-        case ir.get_slo_fields(target_ir.artifact_data) {
-          option.None -> Error(Nil)
-          option.Some(slo) -> Ok(#(target_path, slo.threshold))
-        }
-      }
+      Ok(target_ir) -> Ok(#(target_path, target_ir.slo.threshold))
     }
   })
 }

@@ -1,6 +1,6 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/artifacts.{type Artifact}
+import caffeine_lang/linker/artifacts.{type ParamInfo}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
@@ -20,9 +20,9 @@ import gleam/result
 pub fn link(
   blueprints: List(VendorBlueprintSource),
   expectation_sources: List(SourceFile(ExpectationSource)),
-  artifacts artifacts: List(Artifact),
+  slo_params slo_params: dict.Dict(String, ParamInfo),
 ) -> Result(List(IntermediateRepresentation(Linked)), CompilationError) {
-  let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
+  let reserved_labels = ir_builder.reserved_labels(slo_params)
 
   // Compile each vendor blueprint source and pair blueprints with their vendor.
   use compiled_pairs <- result.try(
@@ -47,7 +47,7 @@ pub fn link(
   // Validate all blueprints together (enforces global uniqueness).
   use validated_blueprints <- result.try(blueprints.validate_blueprints(
     all_raw_blueprints,
-    artifacts,
+    slo_params,
   ))
 
   use expectations_with_paths <- result.try(parse_expectation_sources(

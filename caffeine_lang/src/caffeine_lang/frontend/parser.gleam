@@ -1,8 +1,8 @@
 import caffeine_lang/frontend/ast.{
   type BlueprintItem, type BlueprintsBlock, type BlueprintsFile, type Comment,
   type ExpectItem, type ExpectsBlock, type ExpectsFile, type Extendable,
-  type ExtendableKind, type Field, type Literal, type Parsed,
-  type ParsedArtifactRef, type Struct, type TypeAlias,
+  type ExtendableKind, type Field, type Literal, type Parsed, type Struct,
+  type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -340,13 +340,12 @@ fn parse_extendable_kind(
 // BLUEPRINTS BLOCKS
 // =============================================================================
 
-fn parse_artifacts(
-  state: ParserState,
-) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
+/// Validates the artifact name is "SLO" and advances state.
+fn parse_artifacts(state: ParserState) -> Result(ParserState, ParserError) {
   case peek(state) {
     token.LiteralString("SLO") -> {
       let state = advance(state)
-      Ok(#([ast.ParsedSLO], state))
+      Ok(state)
     }
     token.LiteralString(name) ->
       Error(parser_error.UnexpectedToken(
@@ -551,8 +550,8 @@ fn parse_blueprints_block_recovering(
     leading_comments,
     parse_blueprints_block_header,
     parse_blueprint_items_recovering,
-    fn(artifacts, items, comments) {
-      ast.BlueprintsBlock(artifacts:, items:, leading_comments: comments)
+    fn(_, items, comments) {
+      ast.BlueprintsBlock(items:, leading_comments: comments)
     },
   )
 }
@@ -603,14 +602,14 @@ fn block_recovering(
   }
 }
 
-/// Parse just the header of a blueprints block (Blueprints for "artifact").
+/// Parse just the header of a blueprints block (Blueprints for "SLO").
 fn parse_blueprints_block_header(
   state: ParserState,
-) -> Result(#(List(ParsedArtifactRef), ParserState), ParserError) {
+) -> Result(#(Nil, ParserState), ParserError) {
   use state <- result.try(expect(state, token.KeywordBlueprints, "Blueprints"))
   use state <- result.try(expect(state, token.KeywordFor, "for"))
-  use #(artifacts, state) <- result.try(parse_artifacts(state))
-  Ok(#(artifacts, state))
+  use state <- result.try(parse_artifacts(state))
+  Ok(#(Nil, state))
 }
 
 /// Parse just the header of an expects block (Expectations for "blueprint").

@@ -46,11 +46,7 @@ fn blueprints_file_symbols(
   let #(block_syms, _) =
     list.fold(file.blocks, #([], 0), fn(acc, b) {
       let #(syms, search_from) = acc
-      let name =
-        "Blueprints for "
-        <> b.artifacts
-        |> list.map(ast.parsed_artifact_ref_to_string)
-        |> string.join(", ")
+      let name = "Blueprints for SLO"
       let children =
         list.map(b.items, fn(item) { blueprint_item_symbol(item, lines) })
       let sym = block_symbol("Blueprints", lines, name, children, search_from)

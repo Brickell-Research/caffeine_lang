@@ -64,15 +64,6 @@ pub fn literal_to_string_test() {
   |> test_helpers.table_test_1(ast.literal_to_string)
 }
 
-// ==== parsed_artifact_ref_to_string ====
-// * ✅ ParsedSLO -> "SLO"
-pub fn parsed_artifact_ref_to_string_test() {
-  [
-    #("ParsedSLO -> SLO", ast.ParsedSLO, "SLO"),
-  ]
-  |> test_helpers.table_test_1(ast.parsed_artifact_ref_to_string)
-}
-
 // ==== value_to_string ====
 // * ✅ TypeValue delegates to parsed_type_to_string
 // * ✅ LiteralValue delegates to literal_to_string

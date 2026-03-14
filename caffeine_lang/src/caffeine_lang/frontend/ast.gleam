@@ -106,33 +106,12 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 }
 
 // =============================================================================
-// ARTIFACT REFS
-// =============================================================================
-
-/// A parsed artifact reference — the closed set of valid artifact types.
-pub type ParsedArtifactRef {
-  ParsedSLO
-}
-
-/// Converts a ParsedArtifactRef to its canonical string representation.
-@internal
-pub fn parsed_artifact_ref_to_string(ref: ParsedArtifactRef) -> String {
-  case ref {
-    ParsedSLO -> "SLO"
-  }
-}
-
-// =============================================================================
 // BLUEPRINT NODES
 // =============================================================================
 
-/// A block of blueprints for one or more artifacts.
+/// A block of blueprints for SLO artifacts.
 pub type BlueprintsBlock {
-  BlueprintsBlock(
-    artifacts: List(ParsedArtifactRef),
-    items: List(BlueprintItem),
-    leading_comments: List(Comment),
-  )
+  BlueprintsBlock(items: List(BlueprintItem), leading_comments: List(Comment))
 }
 
 /// A single blueprint item with name, extends, requires, and provides.

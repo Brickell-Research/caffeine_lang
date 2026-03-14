@@ -1,7 +1,6 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir_builder
@@ -18,7 +17,7 @@ import test_helpers
 
 /// Standard reserved labels set for tests.
 fn test_reserved_labels() {
-  ir_builder.reserved_labels_from_artifacts(stdlib_artifacts.standard_library())
+  ir_builder.reserved_labels(stdlib_artifacts.slo_params())
 }
 
 /// Standard vendor lookup for tests (maps "test_blueprint" to Datadog).
@@ -95,7 +94,6 @@ pub fn build_all_test() {
     ir.metadata.blueprint_name
     |> should.equal(identifiers.BlueprintName("test_blueprint"))
     ir.unique_identifier |> should.equal("org_service_my_test")
-    ir.artifact_refs |> should.equal([SLO])
     ir.vendor |> should.equal(option.Some(vendor.Datadog))
     // Check values contain expected tuples (order-independent)
     ir.values
@@ -181,7 +179,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
@@ -230,7 +227,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
@@ -281,7 +277,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("required", types.PrimitiveType(types.NumericType(types.Float))),
@@ -338,7 +333,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           #("from_blueprint", types.PrimitiveType(types.String)),
@@ -386,7 +380,6 @@ pub fn build_all_test() {
     let blueprint =
       blueprints.Blueprint(
         name: "test_blueprint",
-        artifact_refs: [SLO],
         params: dict.from_list([
           #("env", types.PrimitiveType(types.String)),
           #("region", types.PrimitiveType(types.String)),
@@ -428,7 +421,6 @@ pub fn build_all_list_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: [SLO],
       params: dict.from_list([
         #(
           "job_name",
@@ -474,7 +466,6 @@ pub fn build_all_optional_none_misc_test() {
   let blueprint =
     blueprints.Blueprint(
       name: "test_blueprint",
-      artifact_refs: [SLO],
       params: dict.from_list([
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         #(
@@ -512,7 +503,6 @@ fn make_blueprint(
 ) -> blueprints.Blueprint(blueprints.BlueprintValidated) {
   blueprints.Blueprint(
     name: name,
-    artifact_refs: [SLO],
     params: params
       |> list.map(fn(p) {
         let #(label, typ) = p

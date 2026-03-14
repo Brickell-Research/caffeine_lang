@@ -2,11 +2,9 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{SLO}
 import caffeine_lang/linker/ir.{
   type DepsValidated, type IntermediateRepresentation, type Resolved,
 }
-import gleam/bool
 import gleam/list
 import gleam/option
 
@@ -17,13 +15,7 @@ pub fn resolve_intermediate_representations(
   irs: List(IntermediateRepresentation(DepsValidated)),
 ) -> Result(List(IntermediateRepresentation(Resolved)), CompilationError) {
   irs
-  |> list.map(fn(ir) {
-    use <- bool.guard(
-      when: !list.contains(ir.artifact_refs, SLO),
-      return: Ok(ir.promote(ir)),
-    )
-    resolve_indicators(ir)
-  })
+  |> list.map(resolve_indicators)
   |> errors.from_results()
 }
 

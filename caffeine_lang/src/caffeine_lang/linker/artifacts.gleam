@@ -6,20 +6,6 @@ pub type ParamInfo {
   ParamInfo(type_: AcceptedTypes, description: String)
 }
 
-/// A reusable artifact template with named parameters.
-pub type Artifact {
-  Artifact(
-    type_: ArtifactType,
-    description: String,
-    params: dict.Dict(String, ParamInfo),
-  )
-}
-
-/// Types of supported artifacts.
-pub type ArtifactType {
-  SLO
-}
-
 /// Extracts just the types from artifact params, discarding descriptions.
 /// Useful when downstream code only needs type information.
 @internal
@@ -28,23 +14,6 @@ pub fn params_to_types(
 ) -> dict.Dict(String, AcceptedTypes) {
   params
   |> dict.map_values(fn(_, param_info) { param_info.type_ })
-}
-
-/// Converts an ArtifactType to its corresponding string representation.
-@internal
-pub fn artifact_type_to_string(type_: ArtifactType) -> String {
-  case type_ {
-    SLO -> "SLO"
-  }
-}
-
-/// Parses a string into an ArtifactType, returning Error(Nil) for unknown types.
-@internal
-pub fn parse_artifact_type(raw: String) -> Result(ArtifactType, Nil) {
-  case raw {
-    "SLO" -> Ok(SLO)
-    _ -> Error(Nil)
-  }
 }
 
 /// Types of dependency relationships between expectations.

@@ -1,39 +1,33 @@
 import caffeine_cli/display
-import caffeine_lang/linker/artifacts.{Artifact, ParamInfo}
+import caffeine_lang/linker/artifacts.{ParamInfo}
 import caffeine_lang/types.{TypeMeta}
 import gleam/dict
 import gleam/string
 import gleeunit/should
 import test_helpers
 
-// ==== pretty_print_artifact ====
-// * ✅ includes artifact name
-// * ✅ includes artifact description
+// ==== pretty_print_slo_params ====
+// * ✅ includes SLO name
 // * ✅ includes param names
 // * ✅ includes param descriptions
 // * ✅ includes param types
 // * ✅ includes param status (required/optional/default)
-pub fn pretty_print_artifact_test() {
-  let artifact =
-    Artifact(
-      type_: artifacts.SLO,
-      description: "Test artifact description",
-      params: dict.from_list([
-        #(
-          "my_param",
-          ParamInfo(
-            type_: types.PrimitiveType(types.String),
-            description: "My param description",
-          ),
+pub fn pretty_print_slo_params_test() {
+  let params =
+    dict.from_list([
+      #(
+        "my_param",
+        ParamInfo(
+          type_: types.PrimitiveType(types.String),
+          description: "My param description",
         ),
-      ]),
-    )
-  let output = display.pretty_print_artifact(artifact)
+      ),
+    ])
+  let output = display.pretty_print_slo_params(params)
 
   // Verify all expected content is present in the output
   [
-    #("includes artifact name", "SLO", True),
-    #("includes artifact description", "Test artifact description", True),
+    #("includes SLO name", "SLO", True),
     #("includes param names", "my_param", True),
     #("includes param descriptions", "My param description", True),
     #("includes param types", "String", True),

@@ -4,7 +4,7 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{SLO}
+
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -190,7 +190,6 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         misc: dict.new(),
       ),
       unique_identifier: "acme_payments_no_eval",
-      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -220,7 +219,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
           ),
         ),
       ],
-      artifact_data: ir.slo_only(ir.SloFields(
+      slo: ir.SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 30,
@@ -228,7 +227,7 @@ pub fn ir_to_terraform_resources_missing_evaluation_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
-      )),
+      ),
       vendor: option.Some(vendor.Honeycomb),
     )
 
@@ -300,7 +299,6 @@ pub fn generate_terraform_with_tags_test() {
         misc: dict.new(),
       ),
       unique_identifier: "acme_payments_tagged",
-      artifact_refs: [SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -335,7 +333,7 @@ pub fn generate_terraform_with_tags_test() {
           ),
         ),
       ],
-      artifact_data: ir.slo_only(ir.SloFields(
+      slo: ir.SloFields(
         threshold: 99.5,
         indicators: dict.from_list([#("sli", "LT($\"status_code\", 500)")]),
         window_in_days: 14,
@@ -343,7 +341,7 @@ pub fn generate_terraform_with_tags_test() {
         tags: [#("env", "production"), #("tier", "1")],
         runbook: option.None,
         depends_on: option.None,
-      )),
+      ),
       vendor: option.Some(vendor.Honeycomb),
     )
 

@@ -30,7 +30,7 @@ pub fn compile_validated_blueprints(
   use raw <- result.try(
     pipeline.compile_blueprints(source) |> result.replace_error(Nil),
   )
-  blueprints.validate_blueprints(raw, stdlib_artifacts.standard_library())
+  blueprints.validate_blueprints(raw, stdlib_artifacts.slo_params())
   |> result.replace_error(Nil)
 }
 

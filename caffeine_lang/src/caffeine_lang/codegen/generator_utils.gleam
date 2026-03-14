@@ -94,21 +94,6 @@ pub fn build_description(
   }
 }
 
-/// Extract SLO fields from IR, returning a codegen error if missing.
-@internal
-pub fn require_slo_fields(
-  ir: IntermediateRepresentation(phase),
-  vendor vendor_name: String,
-) -> Result(SloFields, CompilationError) {
-  ir.get_slo_fields(ir.artifact_data)
-  |> option.to_result(resolution_error(
-    vendor: vendor_name,
-    msg: "expectation '"
-      <> ir_to_identifier(ir)
-      <> "' - missing SLO artifact data",
-  ))
-}
-
 /// Extract evaluation expression from SLO fields, returning a codegen error if missing.
 @internal
 pub fn require_evaluation(

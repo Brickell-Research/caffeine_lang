@@ -2,7 +2,7 @@ import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{type Artifact, SLO}
+import caffeine_lang/linker/artifacts.{type ParamInfo}
 import caffeine_lang/linker/blueprints.{type Blueprint, type BlueprintValidated}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
@@ -19,13 +19,13 @@ import gleam/option
 import gleam/result
 import gleam/set.{type Set}
 
-/// Derives the set of reserved labels from standard library artifacts.
-/// Reserved labels are artifact param keys that are consumed into structured
+/// Derives the set of reserved labels from SLO params.
+/// Reserved labels are param keys that are consumed into structured
 /// fields and should not appear in misc metadata tags.
 @internal
-pub fn reserved_labels_from_artifacts(artifacts: List(Artifact)) -> Set(String) {
-  artifacts
-  |> list.flat_map(fn(artifact) { dict.keys(artifact.params) })
+pub fn reserved_labels(params: dict.Dict(String, ParamInfo)) -> Set(String) {
+  params
+  |> dict.keys
   |> set.from_list
 }
 
@@ -75,30 +75,25 @@ fn build(
     let index = helpers.index_value_tuples(value_tuples)
     let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
     let unique_name = org <> "_" <> service <> "_" <> expectation.name
-    let artifact_data = build_artifact_data(blueprint.artifact_refs, index)
+    let slo = build_slo_fields(index)
 
-    // Resolve vendor from lookup: required for SLO artifacts, None for dependency-only.
-    let has_slo = list.contains(blueprint.artifact_refs, SLO)
-    let resolved_vendor = case has_slo {
-      False -> Ok(option.None)
-      True ->
-        case dict.get(vendor_lookup, blueprint.name) {
-          Ok(v) -> Ok(option.Some(v))
-          Error(Nil) ->
-            Error(errors.linker_vendor_resolution_error(
-              msg: "expectation '"
-              <> org
-              <> "."
-              <> team
-              <> "."
-              <> service
-              <> "."
-              <> expectation.name
-              <> "' - blueprint '"
-              <> blueprint.name
-              <> "' has no associated vendor",
-            ))
-        }
+    // Resolve vendor from lookup.
+    let resolved_vendor = case dict.get(vendor_lookup, blueprint.name) {
+      Ok(v) -> Ok(option.Some(v))
+      Error(Nil) ->
+        Error(errors.linker_vendor_resolution_error(
+          msg: "expectation '"
+          <> org
+          <> "."
+          <> team
+          <> "."
+          <> service
+          <> "."
+          <> expectation.name
+          <> "' - blueprint '"
+          <> blueprint.name
+          <> "' has no associated vendor",
+        ))
     }
     use resolved_vendor <- result.try(resolved_vendor)
 
@@ -112,9 +107,8 @@ fn build(
         misc: misc_metadata,
       ),
       unique_identifier: unique_name,
-      artifact_refs: blueprint.artifact_refs,
       values: value_tuples,
-      artifact_data: artifact_data,
+      slo: slo,
       vendor: resolved_vendor,
     ))
   })
@@ -236,19 +230,6 @@ fn resolve_values_for_tag(
       }
     }
   }
-}
-
-/// Build structured artifact data from artifact refs and an indexed Dict of ValueTuples.
-/// Since artifact_refs always contains SLO, this builds SLO fields directly.
-fn build_artifact_data(
-  _artifact_refs: List(artifacts.ArtifactType),
-  index: dict.Dict(String, helpers.ValueTuple),
-) -> ir.ArtifactData {
-  ir.ArtifactData(
-    fields: dict.from_list([
-      #(SLO, ir.SloArtifactFields(build_slo_fields(index))),
-    ]),
-  )
 }
 
 /// Extract SLO-specific fields from an indexed Dict of ValueTuples.

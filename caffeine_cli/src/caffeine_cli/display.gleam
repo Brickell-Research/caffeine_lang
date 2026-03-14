@@ -1,4 +1,4 @@
-import caffeine_lang/linker/artifacts.{type Artifact}
+import caffeine_lang/linker/artifacts.{type ParamInfo}
 import caffeine_lang/types.{
   type AcceptedTypes, type TypeMeta, Defaulted, ModifierType, OneOf, Optional,
   RefinementType,
@@ -24,14 +24,16 @@ pub fn pretty_print_category(
   header <> "\n\n" <> type_entries
 }
 
-/// Pretty-prints an artifact showing its type, description, and parameters.
-pub fn pretty_print_artifact(artifact: Artifact) -> String {
+/// Pretty-prints SLO params showing name, description, and type details.
+pub fn pretty_print_slo_params(params: dict.Dict(String, ParamInfo)) -> String {
   let header =
-    ansi.bold(ansi.cyan(artifacts.artifact_type_to_string(artifact.type_)))
+    ansi.bold(ansi.cyan("SLO"))
     <> ": "
-    <> ansi.dim("\"" <> artifact.description <> "\"")
-  let params =
-    artifact.params
+    <> ansi.dim(
+      "\"A Service Level Objective that monitors a metric query against a threshold over a rolling window.\"",
+    )
+  let param_lines =
+    params
     |> dict.to_list
     |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
     |> list.map(fn(pair) {
@@ -47,7 +49,7 @@ pub fn pretty_print_artifact(artifact: Artifact) -> String {
     })
     |> string.join("\n")
 
-  header <> "\n\n" <> params
+  header <> "\n\n" <> param_lines
 }
 
 /// Returns the status of a parameter: "required", "optional", or "default: <value>".

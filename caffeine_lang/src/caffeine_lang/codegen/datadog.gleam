@@ -130,17 +130,14 @@ pub fn resolve_indicators(
       }
     })
 
-  // Also update the structured artifact_data with resolved values.
+  // Also update the structured slo fields with resolved values.
   let resolved_indicators_dict = resolved_indicators |> dict.from_list
   let resolved_eval = case resolved_evaluation_tuple {
     option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
-    option.None ->
-      ir.get_slo_fields(ir.artifact_data)
-      |> option.map(fn(slo) { slo.evaluation })
-      |> option.unwrap(option.None)
+    option.None -> ir.slo.evaluation
   }
-  let new_artifact_data =
-    ir.update_slo_fields(ir.artifact_data, fn(slo) {
+  let new_ir =
+    ir.map_slo(IntermediateRepresentation(..ir, values: new_values), fn(slo) {
       SloFields(
         ..slo,
         indicators: resolved_indicators_dict,
@@ -148,13 +145,7 @@ pub fn resolve_indicators(
       )
     })
 
-  Ok(
-    IntermediateRepresentation(
-      ..ir,
-      values: new_values,
-      artifact_data: new_artifact_data,
-    ),
-  )
+  Ok(ir.promote(new_ir))
 }
 
 /// Default evaluation expression used when no explicit evaluation is provided.
@@ -247,11 +238,7 @@ pub fn ir_to_terraform_resource(
 ) -> Result(#(terraform.Resource, List(String)), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract structured SLO fields from IR.
-  use slo <- result.try(generator_utils.require_slo_fields(
-    ir,
-    vendor: constants.vendor_datadog,
-  ))
+  let slo = ir.slo
   let threshold = slo.threshold
   let window_in_days = slo.window_in_days
   let indicators = slo.indicators
@@ -288,7 +275,6 @@ pub fn ir_to_terraform_resource(
       service_name: ir.metadata.service_name,
       blueprint_name: ir.metadata.blueprint_name,
       friendly_label: ir.metadata.friendly_label,
-      artifact_refs: ir.artifact_refs,
       misc: ir.metadata.misc,
     )
     |> list.append(dependency_tags)

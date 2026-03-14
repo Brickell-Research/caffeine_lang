@@ -4,7 +4,7 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{Hard, SLO, Soft}
+import caffeine_lang/linker/artifacts.{Hard, Soft}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, IntermediateRepresentation, SloFields,
 }
@@ -99,7 +99,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -133,7 +132,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -144,7 +143,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -163,7 +162,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -202,7 +200,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{env:production,status:2xx}"),
@@ -213,7 +211,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -232,7 +230,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -266,7 +263,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -277,7 +274,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
         ir.IntermediateRepresentation(
@@ -290,7 +287,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/api/availability_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -324,7 +320,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.5,
             indicators: dict.from_list([
               #("numerator", "sum:api.requests{!status:5xx}"),
@@ -335,7 +331,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -354,7 +350,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/composite_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -394,7 +389,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("good", "sum:http.requests{status:2xx}"),
@@ -406,7 +401,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -425,7 +420,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/time_slice_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -450,7 +444,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.new(),
             window_in_days: 30,
@@ -460,7 +454,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -479,7 +473,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -540,7 +533,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -556,7 +549,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo", "storage_slo"]),
               ]),
             ),
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -575,7 +568,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -629,7 +621,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -644,7 +636,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo", "storage_slo"]),
               ]),
             ),
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -663,7 +655,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -718,7 +709,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -734,7 +725,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo"]),
               ]),
             ),
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -753,7 +744,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -799,7 +789,7 @@ pub fn generate_terraform_test() {
               value.DictValue(dict.from_list([])),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -810,7 +800,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -829,7 +819,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -880,7 +869,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -891,7 +880,7 @@ pub fn generate_terraform_test() {
             tags: [#("env", "prod"), #("tier", "1")],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -910,7 +899,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -960,7 +948,7 @@ pub fn generate_terraform_test() {
               ),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -971,7 +959,7 @@ pub fn generate_terraform_test() {
             tags: [#("team", "override_team")],
             runbook: option.None,
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -990,7 +978,6 @@ pub fn generate_terraform_test() {
             misc: dict.new(),
           ),
           unique_identifier: "org/team/auth/latency_slo",
-          artifact_refs: [SLO],
           values: [
             helpers.ValueTuple(
               "vendor",
@@ -1033,7 +1020,7 @@ pub fn generate_terraform_test() {
               value.StringValue("https://wiki.example.com/runbook/auth-latency"),
             ),
           ],
-          artifact_data: ir.slo_only(ir.SloFields(
+          slo: ir.SloFields(
             threshold: 99.9,
             indicators: dict.from_list([
               #("numerator", "sum:http.requests{status:2xx}"),
@@ -1046,7 +1033,7 @@ pub fn generate_terraform_test() {
               "https://wiki.example.com/runbook/auth-latency",
             ),
             depends_on: option.None,
-          )),
+          ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
@@ -1094,7 +1081,6 @@ pub fn resolve_indicators_missing_indicators_test() {
         misc: dict.new(),
       ),
       unique_identifier: "org_svc_test",
-      artifact_refs: [artifacts.SLO],
       values: [
         helpers.ValueTuple(
           "vendor",
@@ -1102,7 +1088,7 @@ pub fn resolve_indicators_missing_indicators_test() {
           value.StringValue(constants.vendor_datadog),
         ),
       ],
-      artifact_data: ir.slo_only(SloFields(
+      slo: SloFields(
         threshold: 99.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1110,7 +1096,7 @@ pub fn resolve_indicators_missing_indicators_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
-      )),
+      ),
       vendor: option.Some(vendor.Datadog),
     )
 
@@ -1135,7 +1121,6 @@ pub fn resolve_indicators_bad_decode_test() {
         misc: dict.new(),
       ),
       unique_identifier: "org_svc_test",
-      artifact_refs: [artifacts.SLO],
       values: [
         helpers.ValueTuple(
           "indicators",
@@ -1143,7 +1128,7 @@ pub fn resolve_indicators_bad_decode_test() {
           value.IntValue(42),
         ),
       ],
-      artifact_data: ir.slo_only(SloFields(
+      slo: SloFields(
         threshold: 99.0,
         indicators: dict.new(),
         window_in_days: 30,
@@ -1151,7 +1136,7 @@ pub fn resolve_indicators_bad_decode_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
-      )),
+      ),
       vendor: option.Some(vendor.Datadog),
     )
 
@@ -1176,7 +1161,6 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
         misc: dict.new(),
       ),
       unique_identifier: "org_svc_test",
-      artifact_refs: [artifacts.SLO],
       values: [
         helpers.ValueTuple(
           "indicators",
@@ -1196,7 +1180,7 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
           value.IntValue(99),
         ),
       ],
-      artifact_data: ir.slo_only(SloFields(
+      slo: SloFields(
         threshold: 99.0,
         indicators: dict.from_list([#("numerator", "count:test")]),
         window_in_days: 30,
@@ -1204,7 +1188,7 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
-      )),
+      ),
       vendor: option.Some(vendor.Datadog),
     )
 

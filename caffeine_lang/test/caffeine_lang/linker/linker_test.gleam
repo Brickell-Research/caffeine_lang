@@ -44,7 +44,7 @@ pub fn link_happy_path_test() {
     linker.link(
       blueprints,
       expectations,
-      artifacts: stdlib_artifacts.standard_library(),
+      slo_params: stdlib_artifacts.slo_params(),
     )
   result |> should.be_ok()
 
@@ -60,7 +60,7 @@ pub fn link_invalid_blueprint_test() {
     ),
   ]
   let result =
-    linker.link(blueprints, [], artifacts: stdlib_artifacts.standard_library())
+    linker.link(blueprints, [], slo_params: stdlib_artifacts.slo_params())
   result |> should.be_error()
 }
 
@@ -81,7 +81,7 @@ pub fn link_invalid_expectation_test() {
     linker.link(
       blueprints,
       [bad_expectation],
-      artifacts: stdlib_artifacts.standard_library(),
+      slo_params: stdlib_artifacts.slo_params(),
     )
   result |> should.be_error()
 }

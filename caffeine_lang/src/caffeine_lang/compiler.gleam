@@ -75,8 +75,8 @@ fn run_parse_and_link(
   blueprints: List(VendorBlueprintSource),
   expectations: List(SourceFile(ExpectationSource)),
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
-  let artifacts = stdlib_artifacts.standard_library()
-  linker.link(blueprints, expectations, artifacts:)
+  let slo_params = stdlib_artifacts.slo_params()
+  linker.link(blueprints, expectations, slo_params:)
 }
 
 fn run_semantic_analysis(
@@ -232,12 +232,7 @@ fn run_code_generation(
   // Dependency graph is only useful when relations exist.
   let has_deps =
     resolved_irs
-    |> list.any(fn(ir) {
-      case ir.get_slo_fields(ir.artifact_data) {
-        option.Some(slo) -> option.is_some(slo.depends_on)
-        option.None -> False
-      }
-    })
+    |> list.any(fn(ir) { option.is_some(ir.slo.depends_on) })
 
   let graph = case has_deps {
     True -> option.Some(dependency_graph.generate(resolved_irs))
@@ -275,8 +270,8 @@ fn parse_from_strings(
   expectations_path: String,
   vendor_string: String,
 ) -> Result(List(IntermediateRepresentation(Linked)), errors.CompilationError) {
-  let artifacts = stdlib_artifacts.standard_library()
-  let reserved_labels = ir_builder.reserved_labels_from_artifacts(artifacts)
+  let slo_params = stdlib_artifacts.slo_params()
+  let reserved_labels = ir_builder.reserved_labels(slo_params)
 
   use resolved_vendor <- result.try(
     vendor.resolve_vendor(vendor_string)
@@ -301,7 +296,7 @@ fn parse_from_strings(
 
   use validated_blueprints <- result.try(blueprints.validate_blueprints(
     raw_blueprints,
-    artifacts,
+    slo_params,
   ))
 
   let vendor_lookup =

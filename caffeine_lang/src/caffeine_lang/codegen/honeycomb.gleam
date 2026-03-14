@@ -88,11 +88,7 @@ pub fn ir_to_terraform_resources(
 ) -> Result(List(terraform.Resource), CompilationError) {
   let resource_name = common.sanitize_terraform_identifier(ir.unique_identifier)
 
-  // Extract structured SLO fields from IR.
-  use slo <- result.try(generator_utils.require_slo_fields(
-    ir,
-    vendor: constants.vendor_honeycomb,
-  ))
+  let slo = ir.slo
   let threshold = slo.threshold
   let window_in_days = slo.window_in_days
   let indicators = slo.indicators
@@ -171,16 +167,12 @@ fn build_tags(ir: IntermediateRepresentation(Resolved)) -> hcl.Expr {
       service_name: ir.metadata.service_name,
       blueprint_name: ir.metadata.blueprint_name,
       friendly_label: ir.metadata.friendly_label,
-      artifact_refs: [],
       misc: ir.metadata.misc,
     )
     |> collapse_multi_value_tags
 
-  // Build user-provided tags from structured artifact data.
-  let user_tag_pairs = case ir.get_slo_fields(ir.artifact_data) {
-    option.Some(slo) -> slo.tags
-    option.None -> []
-  }
+  // Build user-provided tags from structured SLO data.
+  let user_tag_pairs = ir.slo.tags
 
   let all_tags =
     list.append(system_tag_pairs, user_tag_pairs)

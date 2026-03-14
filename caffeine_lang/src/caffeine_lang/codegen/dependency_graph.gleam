@@ -58,10 +58,7 @@ fn build_edges(irs: List(IntermediateRepresentation(Resolved))) -> List(String) 
   irs
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))
-    let depends_on =
-      ir.get_slo_fields(ir.artifact_data)
-      |> option.then(fn(slo) { slo.depends_on })
-    case depends_on {
+    case ir.slo.depends_on {
       option.None -> []
       option.Some(relations) -> {
         let hard_edges =

@@ -405,9 +405,8 @@ fn artifacts_catalog(log_level: LogLevel) -> Result(Nil, String) {
   compile_presenter.log(log_level, string.repeat("=", 16))
   compile_presenter.log(log_level, "")
 
-  stdlib_artifacts.standard_library()
-  |> list.map(display.pretty_print_artifact)
-  |> string.join("\n\n")
+  stdlib_artifacts.slo_params()
+  |> display.pretty_print_slo_params
   |> compile_presenter.log(log_level, _)
 
   compile_presenter.log(log_level, "")

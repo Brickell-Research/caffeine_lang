@@ -7,9 +7,7 @@ import caffeine_lang/identifiers.{
   type BlueprintName, type ExpectationLabel, type OrgName, type ServiceName,
   type TeamName,
 }
-import caffeine_lang/linker/artifacts.{
-  type ArtifactType, type DependencyRelationType, SLO,
-}
+import caffeine_lang/linker/artifacts.{type DependencyRelationType}
 import gleam/dict
 import gleam/option.{type Option}
 
@@ -35,16 +33,6 @@ pub type SloFields {
   )
 }
 
-/// Artifact-specific data stored as a dict from artifact type to fields.
-pub type ArtifactData {
-  ArtifactData(fields: dict.Dict(ArtifactType, ArtifactFields))
-}
-
-/// Wrapper for artifact-specific field data.
-pub type ArtifactFields {
-  SloArtifactFields(SloFields)
-}
-
 /// Internal representation of a parsed expectation with metadata and values.
 /// The phantom type parameter `phase` tracks pipeline progress:
 /// - `Linked`: freshly built by the linker
@@ -54,9 +42,8 @@ pub type IntermediateRepresentation(phase) {
   IntermediateRepresentation(
     metadata: IntermediateRepresentationMetaData,
     unique_identifier: String,
-    artifact_refs: List(ArtifactType),
     values: List(ValueTuple),
-    artifact_data: ArtifactData,
+    slo: SloFields,
     vendor: Option(Vendor),
   )
 }
@@ -83,9 +70,8 @@ pub fn promote(
   IntermediateRepresentation(
     metadata: ir.metadata,
     unique_identifier: ir.unique_identifier,
-    artifact_refs: ir.artifact_refs,
     values: ir.values,
-    artifact_data: ir.artifact_data,
+    slo: ir.slo,
     vendor: ir.vendor,
   )
 }
@@ -102,34 +88,11 @@ pub fn ir_to_identifier(ir: IntermediateRepresentation(phase)) -> String {
   <> ir.metadata.friendly_label.value
 }
 
-/// Extract SloFields from ArtifactData, if present.
+/// Update SloFields within an IR using a transformation function.
 @internal
-pub fn get_slo_fields(data: ArtifactData) -> Option(SloFields) {
-  case dict.get(data.fields, SLO) {
-    Ok(SloArtifactFields(slo)) -> option.Some(slo)
-    _ -> option.None
-  }
-}
-
-/// Creates ArtifactData containing SLO fields.
-@internal
-pub fn slo_only(slo: SloFields) -> ArtifactData {
-  ArtifactData(fields: dict.from_list([#(SLO, SloArtifactFields(slo))]))
-}
-
-/// Update SloFields within ArtifactData using a transformation function.
-@internal
-pub fn update_slo_fields(
-  data: ArtifactData,
+pub fn map_slo(
+  ir: IntermediateRepresentation(a),
   updater: fn(SloFields) -> SloFields,
-) -> ArtifactData {
-  case dict.get(data.fields, SLO) {
-    Ok(SloArtifactFields(slo)) ->
-      ArtifactData(fields: dict.insert(
-        data.fields,
-        SLO,
-        SloArtifactFields(updater(slo)),
-      ))
-    _ -> data
-  }
+) -> IntermediateRepresentation(a) {
+  IntermediateRepresentation(..ir, slo: updater(ir.slo))
 }

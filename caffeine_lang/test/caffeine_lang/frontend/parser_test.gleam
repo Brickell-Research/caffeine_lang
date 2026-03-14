@@ -129,31 +129,27 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api_availability",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "vendor",
-                      ast.LiteralValue(ast.LiteralString("datadog")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api_availability",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "vendor",
+                    ast.LiteralValue(ast.LiteralString("datadog")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -168,61 +164,53 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "availability",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "vendor",
-                      ast.LiteralValue(ast.LiteralString("datadog")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "hard_dep",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "from",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "to",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "type",
-                      ast.LiteralValue(ast.LiteralString("hard")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "availability",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "vendor",
+                    ast.LiteralValue(ast.LiteralString("datadog")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "hard_dep",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "from",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "to",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "type",
+                    ast.LiteralValue(ast.LiteralString("hard")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -237,41 +225,37 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "tracked_slo",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "upstream",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "vendor",
-                      ast.LiteralValue(ast.LiteralString("datadog")),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "type",
-                      ast.LiteralValue(ast.LiteralString("hard")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "tracked_slo",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "upstream",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "vendor",
+                    ast.LiteralValue(ast.LiteralString("datadog")),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "type",
+                    ast.LiteralValue(ast.LiteralString("hard")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -299,31 +283,27 @@ pub fn parse_blueprints_file_test() {
             ),
           ],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("test")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("test")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -356,31 +336,27 @@ pub fn parse_blueprints_file_test() {
             ),
           ],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api",
-                  extends: ["_common"],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "threshold",
-                      ast.TypeValue(float_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "vendor",
-                      ast.LiteralValue(ast.LiteralString("datadog")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api",
+                extends: ["_common"],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.TypeValue(float_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "vendor",
+                    ast.LiteralValue(ast.LiteralString("datadog")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -395,31 +371,27 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api",
-                  extends: ["_base"],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(string_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("test")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api",
+                extends: ["_base"],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(string_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("test")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -434,31 +406,27 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api",
-                  extends: ["_base", "_common"],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "threshold",
-                      ast.TypeValue(float_type()),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("test")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api",
+                extends: ["_base", "_common"],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.TypeValue(float_type()),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("test")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -473,68 +441,64 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "test",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "tags",
-                      ast.TypeValue(list_type(types.String)),
-                      leading_comments: [],
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "test",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "tags",
+                    ast.TypeValue(list_type(types.String)),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "counts",
+                    ast.TypeValue(dict_type(
+                      types.String,
+                      types.NumericType(types.Integer),
+                    )),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "name",
+                    ast.TypeValue(optional_type(string_type())),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(defaulted_type(string_type(), "production")),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "status",
+                    ast.TypeValue(
+                      oneof_type(types.String, [
+                        "active",
+                        "inactive",
+                      ]),
                     ),
-                    ast.Field(
-                      "counts",
-                      ast.TypeValue(dict_type(
-                        types.String,
-                        types.NumericType(types.Integer),
-                      )),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "name",
-                      ast.TypeValue(optional_type(string_type())),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(defaulted_type(string_type(), "production")),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "status",
-                      ast.TypeValue(
-                        oneof_type(types.String, [
-                          "active",
-                          "inactive",
-                        ]),
-                      ),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "threshold",
-                      ast.TypeValue(range_type(
-                        types.NumericType(types.Float),
-                        "0.0",
-                        "100.0",
-                      )),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("x")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "threshold",
+                    ast.TypeValue(range_type(
+                      types.NumericType(types.Float),
+                      "0.0",
+                      "100.0",
+                    )),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("x")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -549,69 +513,65 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "test_nested",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    // Order must match corpus file
-                    ast.Field(
-                      "nested_list",
-                      ast.TypeValue(
-                        nested_list_type(
-                          nested_list_type(types.ParsedPrimitive(types.String)),
-                        ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "test_nested",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  // Order must match corpus file
+                  ast.Field(
+                    "nested_list",
+                    ast.TypeValue(
+                      nested_list_type(
+                        nested_list_type(types.ParsedPrimitive(types.String)),
                       ),
-                      leading_comments: [],
                     ),
-                    ast.Field(
-                      "nested_dict",
-                      ast.TypeValue(nested_dict_type(
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "nested_dict",
+                    ast.TypeValue(nested_dict_type(
+                      types.String,
+                      nested_dict_type(
                         types.String,
-                        nested_dict_type(
-                          types.String,
-                          types.ParsedPrimitive(types.NumericType(types.Integer)),
-                        ),
-                      )),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "dict_of_list",
-                      ast.TypeValue(nested_dict_type(
-                        types.String,
-                        nested_list_type(
-                          types.ParsedPrimitive(types.NumericType(types.Integer)),
-                        ),
-                      )),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "list_of_dict",
-                      ast.TypeValue(
-                        nested_list_type(
-                          types.ParsedCollection(types.Dict(
-                            types.ParsedPrimitive(types.String),
-                            types.ParsedPrimitive(types.Boolean),
-                          )),
-                        ),
+                        types.ParsedPrimitive(types.NumericType(types.Integer)),
                       ),
-                      leading_comments: [],
+                    )),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "dict_of_list",
+                    ast.TypeValue(nested_dict_type(
+                      types.String,
+                      nested_list_type(
+                        types.ParsedPrimitive(types.NumericType(types.Integer)),
+                      ),
+                    )),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "list_of_dict",
+                    ast.TypeValue(
+                      nested_list_type(
+                        types.ParsedCollection(types.Dict(
+                          types.ParsedPrimitive(types.String),
+                          types.ParsedPrimitive(types.Boolean),
+                        )),
+                      ),
                     ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("x")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("x")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -635,31 +595,27 @@ pub fn parse_blueprints_file_test() {
           ],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "test",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "env",
-                      ast.TypeValue(types.ParsedTypeAliasRef("_env")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("x")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "test",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "env",
+                    ast.TypeValue(types.ParsedTypeAliasRef("_env")),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("x")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -674,38 +630,34 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "api",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "indicators",
-                      ast.TypeValue(
-                        types.ParsedRecord(
-                          dict.from_list([
-                            #("numerator", string_type()),
-                            #("denominator", string_type()),
-                          ]),
-                        ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "api",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "indicators",
+                    ast.TypeValue(
+                      types.ParsedRecord(
+                        dict.from_list([
+                          #("numerator", string_type()),
+                          #("denominator", string_type()),
+                        ]),
                       ),
-                      leading_comments: [],
                     ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("x")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("x")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),
@@ -720,45 +672,41 @@ pub fn parse_blueprints_file_test() {
           type_aliases: [],
           extendables: [],
           blocks: [
-            ast.BlueprintsBlock(
-              leading_comments: [],
-              artifacts: [ast.ParsedSLO],
-              items: [
-                ast.BlueprintItem(
-                  leading_comments: [],
-                  name: "test",
-                  extends: [],
-                  requires: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "threshold",
-                      ast.TypeValue(percentage_type()),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "target",
-                      ast.TypeValue(range_type(
-                        types.NumericType(types.Percentage),
-                        "99.0",
-                        "100.0",
-                      )),
-                      leading_comments: [],
-                    ),
-                    ast.Field(
-                      "level",
-                      ast.TypeValue(defaulted_type(percentage_type(), "99.9%")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                  provides: ast.Struct(trailing_comments: [], fields: [
-                    ast.Field(
-                      "value",
-                      ast.LiteralValue(ast.LiteralString("x")),
-                      leading_comments: [],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
+            ast.BlueprintsBlock(leading_comments: [], items: [
+              ast.BlueprintItem(
+                leading_comments: [],
+                name: "test",
+                extends: [],
+                requires: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "threshold",
+                    ast.TypeValue(percentage_type()),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "target",
+                    ast.TypeValue(range_type(
+                      types.NumericType(types.Percentage),
+                      "99.0",
+                      "100.0",
+                    )),
+                    leading_comments: [],
+                  ),
+                  ast.Field(
+                    "level",
+                    ast.TypeValue(defaulted_type(percentage_type(), "99.9%")),
+                    leading_comments: [],
+                  ),
+                ]),
+                provides: ast.Struct(trailing_comments: [], fields: [
+                  ast.Field(
+                    "value",
+                    ast.LiteralValue(ast.LiteralString("x")),
+                    leading_comments: [],
+                  ),
+                ]),
+              ),
+            ]),
           ],
         ),
       ),

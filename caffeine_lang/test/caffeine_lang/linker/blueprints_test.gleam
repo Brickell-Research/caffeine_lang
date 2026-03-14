@@ -1,5 +1,5 @@
 import caffeine_lang/errors
-import caffeine_lang/linker/artifacts.{type Artifact, ParamInfo, SLO}
+import caffeine_lang/linker/artifacts.{type ParamInfo, ParamInfo}
 import caffeine_lang/linker/blueprints
 import caffeine_lang/types
 import caffeine_lang/value
@@ -8,55 +8,46 @@ import gleam/list
 import test_helpers
 
 // ==== Helpers ====
-fn artifacts() -> List(Artifact) {
-  [
-    artifacts.Artifact(
-      type_: artifacts.SLO,
-      description: "",
-      params: dict.from_list([
-        #(
-          "threshold",
-          ParamInfo(
-            type_: types.PrimitiveType(types.NumericType(types.Float)),
-            description: "",
-          ),
-        ),
-        #(
-          "value",
-          ParamInfo(type_: types.PrimitiveType(types.String), description: ""),
-        ),
-      ]),
+fn slo_params() -> dict.Dict(String, ParamInfo) {
+  dict.from_list([
+    #(
+      "threshold",
+      ParamInfo(
+        type_: types.PrimitiveType(types.NumericType(types.Float)),
+        description: "",
+      ),
     ),
-  ]
+    #(
+      "value",
+      ParamInfo(type_: types.PrimitiveType(types.String), description: ""),
+    ),
+  ])
 }
 
 // ==== validate_blueprints ====
 // * ✅ happy path - empty list
-// * ✅ happy path - single valid blueprint merges artifact params
+// * ✅ happy path - single valid blueprint merges SLO params
 // * ✅ happy path - multiple valid blueprints
 // * ✅ happy path - blueprint with no inputs (partial inputs allowed)
 // * ✅ happy path - empty params
 // * ✅ duplicates - duplicate names rejected
-// * ✅ duplicates - cannot overshadow artifact params with blueprint params
-// * ✅ duplicates - duplicate artifact refs rejected
-// * ✅ empty - artifact_refs is empty list
+// * ✅ duplicates - cannot overshadow SLO params with blueprint params
 // * ✅ input validation - extra input field rejected
 // * ✅ input validation - wrong type input value rejected
 pub fn validate_blueprints_test() {
   // Happy path - empty list
   [#("empty list", [], Ok([]))]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
+    blueprints.validate_blueprints(bps, slo_params())
   })
 
-  // Happy path - single valid blueprint, artifact params get merged in
+  // Happy path - single valid blueprint, SLO params get merged in
   [
     #(
-      "single valid blueprint merges artifact params",
+      "single valid blueprint merges SLO params",
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
@@ -66,7 +57,6 @@ pub fn validate_blueprints_test() {
       Ok([
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.from_list([
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
@@ -78,7 +68,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
+    blueprints.validate_blueprints(bps, slo_params())
   })
 
   // No inputs - allowed since blueprints can provide partial inputs
@@ -88,7 +78,6 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "minimal",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -97,20 +86,19 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, artifacts()) {
+    case blueprints.validate_blueprints(bps, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
   })
 
-  // Happy path - empty params (no blueprint-specific params, only artifact params)
+  // Happy path - empty params (no blueprint-specific params, only SLO params)
   [
     #(
       "empty params",
       [
         blueprints.Blueprint(
           name: "minimal_params",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
         ),
@@ -119,7 +107,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, artifacts()) {
+    case blueprints.validate_blueprints(bps, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
@@ -132,13 +120,11 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "first",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
         blueprints.Blueprint(
           name: "second",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -147,7 +133,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, artifacts()) {
+    case blueprints.validate_blueprints(bps, slo_params()) {
       Ok(result) -> list.length(result) == 2
       Error(_) -> False
     }
@@ -160,13 +146,11 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.new(),
         ),
@@ -178,17 +162,16 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
+    blueprints.validate_blueprints(bps, slo_params())
   })
 
-  // Overshadowing artifact params
+  // Overshadowing SLO params
   [
     #(
-      "cannot overshadow artifact params with blueprint params",
+      "cannot overshadow SLO params with blueprint params",
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.from_list([
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
@@ -202,29 +185,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
-  })
-
-  // Empty artifact_refs list
-  [
-    #(
-      "artifact_refs is empty list",
-      [
-        blueprints.Blueprint(
-          name: "no_artifacts",
-          artifact_refs: [],
-          params: dict.new(),
-          inputs: dict.new(),
-        ),
-      ],
-      True,
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case blueprints.validate_blueprints(bps, artifacts()) {
-      Ok(_) -> True
-      Error(_) -> False
-    }
+    blueprints.validate_blueprints(bps, slo_params())
   })
 
   // Extra input field
@@ -234,7 +195,6 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([
             #("value", value.StringValue("foobar")),
@@ -249,7 +209,7 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
+    blueprints.validate_blueprints(bps, slo_params())
   })
 
   // Wrong type input value
@@ -259,7 +219,6 @@ pub fn validate_blueprints_test() {
       [
         blueprints.Blueprint(
           name: "success_rate",
-          artifact_refs: [SLO],
           params: dict.new(),
           inputs: dict.from_list([#("value", value.IntValue(123))]),
         ),
@@ -271,32 +230,6 @@ pub fn validate_blueprints_test() {
     ),
   ]
   |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
-  })
-}
-
-// ==== artifact_refs validation ====
-// * ✅ duplicate artifact refs rejected
-pub fn validate_blueprints_artifact_refs_test() {
-  // Duplicate artifact refs
-  [
-    #(
-      "duplicate artifact refs rejected",
-      [
-        blueprints.Blueprint(
-          name: "success_rate",
-          artifact_refs: [SLO, SLO],
-          params: dict.new(),
-          inputs: dict.new(),
-        ),
-      ],
-      Error(errors.LinkerDuplicateError(
-        msg: "blueprint 'success_rate' - duplicate artifact references: SLO",
-        context: errors.empty_context(),
-      )),
-    ),
-  ]
-  |> test_helpers.table_test_1(fn(bps) {
-    blueprints.validate_blueprints(bps, artifacts())
+    blueprints.validate_blueprints(bps, slo_params())
   })
 }

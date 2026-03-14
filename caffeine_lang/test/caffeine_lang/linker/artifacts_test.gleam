@@ -1,6 +1,4 @@
-import caffeine_lang/linker/artifacts.{
-  type ArtifactType, type DependencyRelationType, Hard, SLO, Soft,
-}
+import caffeine_lang/linker/artifacts.{type DependencyRelationType, Hard, Soft}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
 import gleam/dict
@@ -8,46 +6,15 @@ import gleam/list
 import gleeunit/should
 import test_helpers
 
-// ==== standard_library ====
-// * ✅ returns one artifact (SLO)
-// * ✅ artifact type matches expected
-pub fn standard_library_test() {
-  let result = stdlib_artifacts.standard_library()
+// ==== slo_params ====
+// * ✅ returns expected number of params
+pub fn slo_params_test() {
+  let result = stdlib_artifacts.slo_params()
 
   [
-    #("returns one artifact", list.length(result), 1),
+    #("returns seven params", dict.size(result), 7),
   ]
   |> test_helpers.table_test_1(fn(expected) { expected })
-
-  let types =
-    result
-    |> list.map(fn(a) { artifacts.artifact_type_to_string(a.type_) })
-
-  [
-    #("contains SLO artifact", list.contains(types, "SLO"), True),
-  ]
-  |> test_helpers.table_test_1(fn(val) { val })
-}
-
-// ==== artifact_type_to_string ====
-// * ✅ SLO -> "SLO"
-pub fn artifact_type_to_string_test() {
-  [
-    #("SLO", SLO, "SLO"),
-  ]
-  |> test_helpers.table_test_1(artifacts.artifact_type_to_string)
-}
-
-// ==== parse_artifact_type ====
-// * ✅ "SLO" -> Ok(SLO)
-// * ❌ unknown -> Error(Nil)
-pub fn parse_artifact_type_test() {
-  [
-    #("SLO", "SLO", Ok(SLO)),
-    #("unknown", "Unknown", Error(Nil)),
-    #("empty", "", Error(Nil)),
-  ]
-  |> test_helpers.table_test_1(artifacts.parse_artifact_type)
 }
 
 // ==== relation_type_to_string ====
@@ -76,17 +43,7 @@ pub fn parse_relation_type_test() {
 }
 
 // ==== parse/to_string round trips ====
-// * ✅ artifact_type round-trips
 // * ✅ relation_type round-trips
-pub fn artifact_type_round_trip_test() {
-  [SLO]
-  |> list.each(fn(t: ArtifactType) {
-    artifacts.artifact_type_to_string(t)
-    |> artifacts.parse_artifact_type
-    |> should.equal(Ok(t))
-  })
-}
-
 pub fn relation_type_round_trip_test() {
   [Hard, Soft]
   |> list.each(fn(t: DependencyRelationType) {
