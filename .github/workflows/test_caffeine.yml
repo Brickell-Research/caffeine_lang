@@ -28,7 +28,7 @@ jobs:
         rebar3-version: '3.25.0'
 
     - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
@@ -51,7 +51,7 @@ jobs:
 
     - name: Save Gleam cache
       if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
@@ -83,7 +83,7 @@ jobs:
         node-version: '20'
 
     - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
@@ -106,7 +106,7 @@ jobs:
 
     - name: Save Gleam cache
       if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
@@ -141,7 +141,7 @@ jobs:
       run: bun install
 
     - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
@@ -157,7 +157,7 @@ jobs:
 
     - name: Save Gleam cache
       if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: |
           ~/.cache/gleam
