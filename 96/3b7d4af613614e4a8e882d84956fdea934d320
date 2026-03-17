@@ -1,0 +1,47 @@
+caffeine_lang/src/caffeine_lang/frontend/lowering.gleam
+  8094817ce04b17ec 20,86-87,93-96,101-122,124-133,139-154,156-167,169
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_guarantees_unmeasured.caffeine
+  8094817ce04b17ec 1-3
+caffeine_lang/src/caffeine_lang/frontend/token.gleam
+  8094817ce04b17ec 20-29,84-93
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  8094817ce04b17ec 139,145,162-193
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_guarantees.caffeine
+  8094817ce04b17ec 1-10
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  8094817ce04b17ec 428-437
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_guarantees_below.caffeine
+  8094817ce04b17ec 1-3
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_guarantees_comparators.caffeine
+  8094817ce04b17ec 1-9
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 196-201,204-207,209-259
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 706-709,1157-1258,1265-1278
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_guarantees_simple.caffeine
+  8094817ce04b17ec 1-4
+caffeine_lang/test/caffeine_lang/frontend/formatter_test.gleam
+  8094817ce04b17ec 97-98,135
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 382,387-401,410,412,420-424,426-437,440-475,477-548,550-589,591,1102,1106-1114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "963b7d4af613614e4a8e882d84956fdea934d320",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 569,
+      "total_deletions": 11,
+      "accepted_lines": 551,
+      "overriden_lines": 4
+    }
+  }
+}
