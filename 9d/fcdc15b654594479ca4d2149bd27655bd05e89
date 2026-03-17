@@ -1,0 +1,71 @@
+caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam
+  8094817ce04b17ec 96
+caffeine_lsp/src/caffeine_lsp/keyword_info.gleam
+  8094817ce04b17ec 35-39
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  8094817ce04b17ec 423
+caffeine_lang/src/caffeine_lang/frontend/token.gleam
+  8094817ce04b17ec 15,80
+test/lsp_e2e/fixtures/quoted_field.caffeine
+  8094817ce04b17ec 3
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 170-171,173
+caffeine_lsp/src/caffeine_lsp/diagnostics.gleam
+  8094817ce04b17ec 216
+caffeine_lang/test/caffeine_lang/frontend/lowering_test.gleam
+  8094817ce04b17ec 92
+caffeine_lang/src/caffeine_lang/frontend/lowering.gleam
+  8094817ce04b17ec 223,225,230
+caffeine_lsp/src/caffeine_lsp/completion.gleam
+  8094817ce04b17ec 362
+test/lsp_e2e/fixtures/valid_measurement.caffeine
+  8094817ce04b17ec 3
+test/lsp_e2e/fixtures/unformatted.caffeine
+  8094817ce04b17ec 3
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  8094817ce04b17ec 115,121
+caffeine_lsp/src/caffeine_lsp/folding_range.gleam
+  8094817ce04b17ec 56,58
+test/lsp_e2e/fixtures/invalid_syntax.caffeine
+  8094817ce04b17ec 3
+test/lsp_e2e/stability_test.ts
+  8094817ce04b17ec 37,77,122
+test/lsp_e2e/features_test.ts
+  8094817ce04b17ec 71
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  8094817ce04b17ec 484,710,961,971,1230,1236,1249,1252,2762,2764
+test/lsp_e2e/diagnostics_test.ts
+  8094817ce04b17ec 201,208
+caffeine_lang/test/caffeine_lang/frontend/tokenizer_test.gleam
+  8094817ce04b17ec 405,407,411,413
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 144,177,201,239,290,341,374,407,477,548,590,630,677,1275,1281,1284,1301
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 352-353,359,975
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_measurement.caffeine
+  8094817ce04b17ec 5
+caffeine_lsp/src/caffeine_lsp/selection_range.gleam
+  8094817ce04b17ec 176
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  8094817ce04b17ec 248
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "9dfcdc15b654594479ca4d2149bd27655bd05e89",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 72,
+      "total_deletions": 60,
+      "accepted_lines": 70,
+      "overriden_lines": 0
+    }
+  }
+}
