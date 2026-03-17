@@ -1,0 +1,49 @@
+lsp/workspace_parsers.ts
+  8094817ce04b17ec 78
+caffeine_lsp/src/caffeine_lsp/folding_range.gleam
+  8094817ce04b17ec 54
+test/lsp_e2e/slo_overlay_test.ts
+  8094817ce04b17ec 231
+test/lsp_e2e/stability_test.ts
+  8094817ce04b17ec 35,42,75,122
+lsp/document_features.ts
+  8094817ce04b17ec 384
+caffeine_lsp/src/caffeine_lsp/file_utils.gleam
+  8094817ce04b17ec 20
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 406,409,609
+caffeine_lsp/src/caffeine_lsp/completion.gleam
+  8094817ce04b17ec 214,216,224,370,374-375
+test/lsp_e2e/features_test.ts
+  8094817ce04b17ec 190-192,290,292
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 192
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  8094817ce04b17ec 532,1375
+caffeine_lsp/src/caffeine_lsp/selection_range.gleam
+  8094817ce04b17ec 132,207,211-212
+caffeine_lsp/src/caffeine_lsp/position_utils.gleam
+  8094817ce04b17ec 354,361,367,375
+caffeine_lsp/src/caffeine_lsp/references.gleam
+  8094817ce04b17ec 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "8fb682e7530cb46865fa0170a77f6e9104860356",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 49,
+      "total_deletions": 68,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    }
+  }
+}
