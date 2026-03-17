@@ -1,0 +1,33 @@
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_depends_on.caffeine
+  8094817ce04b17ec 3-5,7-10
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  8094817ce04b17ec 57,151-157,298-307,309-313
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 1043,1058-1061,1076-1083
+caffeine_lsp/src/caffeine_lsp/diagnostics.gleam
+  8094817ce04b17ec 620-628
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  8094817ce04b17ec 1177-1178,1181,1189
+caffeine_lang/src/caffeine_lang/frontend/pipeline.gleam
+  8094817ce04b17ec 170-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "2bba7720eb7c6b87ac4c250bcac78cfa496e0404",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 64,
+      "total_deletions": 75,
+      "accepted_lines": 60,
+      "overriden_lines": 1
+    }
+  }
+}
