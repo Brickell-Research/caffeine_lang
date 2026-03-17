@@ -33,7 +33,7 @@ jobs:
       uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
       with:
         otp-version: '27'
-        gleam-version: '1.15.0'
+        gleam-version: '1.14.0'
         rebar3-version: '3.25.0'
 
     - name: Setup Bun
