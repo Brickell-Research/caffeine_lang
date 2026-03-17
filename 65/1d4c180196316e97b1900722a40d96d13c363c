@@ -1,0 +1,147 @@
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_multi_expects_with_extendable.caffeine
+  8094817ce04b17ec 8,14,21,28
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_no_extendables.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_with_extendable.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_many_consecutive.caffeine
+  8094817ce04b17ec 2,10
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_multiple_items_one_missing.caffeine
+  8094817ce04b17ec 4,7
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_sidekiq_real_world.caffeine
+  8094817ce04b17ec 8,17,27,37
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_guarantees_comparators.caffeine
+  8094817ce04b17ec 2,4,6,8
+caffeine_lsp/src/caffeine_lsp/type_hierarchy.gleam
+  8094817ce04b17ec 120
+caffeine_lang/test/caffeine_lang/linker/linker_test.gleam
+  8094817ce04b17ec 77
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_multiple_extends.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_in_struct_fields.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_duplicate_extendable.caffeine
+  8094817ce04b17ec 5
+caffeine_lsp/src/caffeine_lsp/diagnostics.gleam
+  8094817ce04b17ec 2,138-140,146-147,150,153,335
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_percentage_literal.caffeine
+  8094817ce04b17ec 2
+caffeine_lsp/src/caffeine_lsp/file_utils.gleam
+  8094817ce04b17ec 53-55,57-58
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_expectations/acme/payments/slos.caffeine
+  8094817ce04b17ec 2,9
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/expects_with_requires.caffeine
+  8094817ce04b17ec 3
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  8094817ce04b17ec 211-213,229-231,296,395,486,530-532,587-589,595-597,603-605,611-612,619-621,627-629,635-637,643-645,651-653,678-680,686-688,694-696,702,704,783,862-867,870,873,877,895,898-899,904,915,918,943,1018,1056,1091-1093,1100,1114-1116,1130,1142,1145,1150,1168,1184,1214,1303,1340-1341,1397,1404,1432,1445,1466,1475,1495,1502,1518,1548,1555,1567,1580,1643-1648,1728-1730,1732,1777-1778,1792-1793,1799-1800,1805,1815-1816,1821,1831-1832,1838,1841,1876,1885,1934-1935,1962-1963,1994-1995,2050-2051,2095-2098,2102-2103,2144-2147,2151,2183-2184,2190-2191,2215-2216,2222-2223,2244,2314-2315,2338-2339,2364-2365,2370,2378,2382-2383,2406-2407,2573-2574,2591-2592,2602-2603,2627-2629,2631,2659-2661,2665,2800,2823-2825,2829,2837-2839,2845,2847
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_simple.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/compiler_test.gleam
+  8094817ce04b17ec 148-149,175-176,194-195,220-221,256-257,276-277,296-297,316-317,363-364,395-396,457-458,463-464,509-510,543-544,606-607,609-610,612-613,656-657,685-686,747-748,753-754,792-793,820-821,823-824,908-909,914-915,917-918,920-921,986-987,1028-1029,1034-1035,1078-1079,1131
+caffeine_lang/src/caffeine_lang/frontend/lowering.gleam
+  8094817ce04b17ec 45,82,85,91
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_multiple_blocks.caffeine
+  8094817ce04b17ec 2,5
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_mixed_measured_unmeasured.caffeine
+  8094817ce04b17ec 2
+caffeine_lsp/src/caffeine_lsp/completion.gleam
+  8094817ce04b17ec 106-107,109,184,201
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_single_expectations/acme/payments/slos.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_expects.caffeine
+  8094817ce04b17ec 4,8
+caffeine_lsp/src/caffeine_lsp/hover.gleam
+  8094817ce04b17ec 195,202,261
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_overshadow_provides.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  8094817ce04b17ec 49,54,77
+caffeine_lsp/src/caffeine_lsp/definition.gleam
+  8094817ce04b17ec 62,78,89,176-177,181,183,185-186
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_trailing_in_struct.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 86-87,89,697,700
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_valid.caffeine
+  8094817ce04b17ec 5,9
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_trailing_in_literal_struct.caffeine
+  8094817ce04b17ec 2,6,8
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_depends_on.caffeine
+  8094817ce04b17ec 4,9
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_missing_extendable.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_extends_override.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_with_extends.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_duplicate_extends_ref.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 717-718,728,735-736,746-747,757,761,771,778-779,810-811,821,834-835,845,852-853,863-864,874,899-900,902-905,907-908,918-919,929,941-942,964-965,975,982-983,985,1007-1008,1019,1023-1024,1026-1034,1036-1038,1041-1048,1058-1059,1067-1080,1090-1091,1109-1110,1112,1122-1123,1145-1146,1176,1247,1251,1292,1294
+caffeine_lsp/src/caffeine_lsp/document_symbols.gleam
+  8094817ce04b17ec 55-57
+caffeine_lang/test/caffeine_lang/corpus/frontend/validator/expects_requires_extendable.caffeine
+  8094817ce04b17ec 4
+caffeine_lsp/src/caffeine_lsp/workspace_symbols.gleam
+  8094817ce04b17ec 49
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_assumes.caffeine
+  8094817ce04b17ec 5
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_between_expects_blocks.caffeine
+  8094817ce04b17ec 4,8,13,19
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  8094817ce04b17ec 135
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_single_block.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_expects.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 47,113,115-118,177,179,201,203,251,254
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_multiple_expectations/acme/platform/slos.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/compiler/happy_path_type_alias_expectations/acme/payments/slos.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_complex_literals.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/comments_in_extendable_struct.caffeine
+  8094817ce04b17ec 9
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_with_extends.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_extendable_joining.caffeine
+  8094817ce04b17ec 9
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_complex_literals.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/unformatted_expects.caffeine
+  8094817ce04b17ec 4
+caffeine_lang/test/caffeine_lang/corpus/frontend/pipeline/simple_expects.caffeine
+  8094817ce04b17ec 2
+caffeine_lsp/src/caffeine_lsp/inlay_hints.gleam
+  8094817ce04b17ec 47,55-56
+caffeine_lang/test/caffeine_lang/corpus/frontend/generator/expects_percentage_literal.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_assumes.caffeine
+  8094817ce04b17ec 5
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/expects_file/happy_path_full_example.caffeine
+  8094817ce04b17ec 5,9
+caffeine_lang/test/caffeine_lang/corpus/frontend/formatter/formatted_extendable_joining.caffeine
+  8094817ce04b17ec 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "651d4c180196316e97b1900722a40d96d13c363c",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 1001,
+      "total_deletions": 1435,
+      "accepted_lines": 484,
+      "overriden_lines": 1
+    }
+  }
+}
