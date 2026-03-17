@@ -1,0 +1,59 @@
+test/lsp_e2e/fixtures/valid_measurement.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/src/caffeine_lang/frontend/validator.gleam
+  8094817ce04b17ec 218
+test/lsp_e2e/fixtures/invalid_syntax.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/src/caffeine_lang/frontend/token.gleam
+  8094817ce04b17ec 13,77
+test/lsp_e2e/fixtures/unformatted.caffeine
+  8094817ce04b17ec 2
+caffeine_lang/test/caffeine_lang/frontend/tokenizer_test.gleam
+  8094817ce04b17ec 623,629,653,658
+test/lsp_e2e/diagnostics_test.ts
+  8094817ce04b17ec 201,208
+caffeine_lang/src/caffeine_lang/frontend/tokenizer.gleam
+  8094817ce04b17ec 421
+caffeine_lang/src/caffeine_lang/frontend/ast.gleam
+  8094817ce04b17ec 98,106,115,120
+test/lsp_e2e/slo_overlay_test.ts
+  8094817ce04b17ec 129,138,147,150,160,220
+caffeine_lsp/src/caffeine_lsp/semantic_tokens.gleam
+  8094817ce04b17ec 94
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 150,170
+test/lsp_e2e/fixtures/quoted_field.caffeine
+  8094817ce04b17ec 2
+test/lsp_e2e/features_test.ts
+  8094817ce04b17ec 42-44,108-109,122-124
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 1237,1242,1268,1283,1287
+caffeine_lang/test/caffeine_lang/frontend/ast_test.gleam
+  8094817ce04b17ec 6,10
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 317,327,350-351,358,379
+test/lsp_e2e/stability_test.ts
+  8094817ce04b17ec 36,76,122
+caffeine_lsp/test/caffeine_lsp_test.gleam
+  8094817ce04b17ec 206,267,544-545
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "b4336720dc3262932768b070761c3b127ea821d0",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 60,
+      "total_deletions": 60,
+      "accepted_lines": 56,
+      "overriden_lines": 0
+    }
+  }
+}
