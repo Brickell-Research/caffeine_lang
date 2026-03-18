@@ -1,0 +1,35 @@
+caffeine_lang/test/caffeine_lang/corpus/frontend/parser/errors/missing_item_colon.caffeine
+  8094817ce04b17ec 1
+caffeine_lang/src/caffeine_lang/frontend/formatter.gleam
+  8094817ce04b17ec 195
+caffeine_lang/test/caffeine_lang/frontend/pipeline_test.gleam
+  8094817ce04b17ec 24,38
+test/lsp_e2e/fixtures/invalid_syntax.caffeine
+  8094817ce04b17ec 1
+test/lsp_e2e/diagnostics_test.ts
+  8094817ce04b17ec 201,208
+caffeine_lang/src/caffeine_lang/frontend/parser.gleam
+  8094817ce04b17ec 140-147,299-302,311,357,560,673,681,698,701,773-788
+caffeine_lang/test/caffeine_lang/frontend/parser_test.gleam
+  8094817ce04b17ec 1232,1236-1237,1241-1242,1245-1250,1272-1273,1276-1281,1285,1294,1302,1311
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "d0861f703fb8bdb9426f1ed358e563a4fae22f9a",
+  "prompts": {
+    "8094817ce04b17ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a5bbe15d-856d-4ebc-b5c9-ce25a3566de1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 68,
+      "total_deletions": 33,
+      "accepted_lines": 67,
+      "overriden_lines": 0
+    }
+  }
+}
