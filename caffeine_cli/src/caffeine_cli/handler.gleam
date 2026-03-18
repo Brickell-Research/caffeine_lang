@@ -11,6 +11,7 @@ import caffeine_lang/source_file.{SourceFile, VendorMeasurementSource}
 import caffeine_lang/standard_library/artifacts as stdlib_artifacts
 import caffeine_lang/types
 import filepath
+import gleam/bool
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
@@ -67,18 +68,10 @@ pub fn help_text() -> String {
   )
 }
 
-// --- Log level helper ---
-
-fn log_level_from_quiet(quiet: Bool) -> LogLevel {
-  case quiet {
-    True -> compile_presenter.Minimal
-    False -> compile_presenter.Verbose
-  }
-}
-
-// --- Public command functions ---
+// --- Command functions ---
 
 /// Run the compile command.
+@internal
 pub fn run_compile(
   quiet: Bool,
   target: String,
@@ -101,6 +94,7 @@ pub fn run_compile(
 }
 
 /// Run the validate command.
+@internal
 pub fn run_validate(
   quiet: Bool,
   target: String,
@@ -108,10 +102,7 @@ pub fn run_validate(
 ) -> Result(Nil, String) {
   use #(measurements_dir, expectations_dir) <- result.try(case positional {
     [m, e, ..] -> Ok(#(m, e))
-    _ ->
-      Error(
-        "Usage: caffeine validate <measurements_dir> <expectations_dir>",
-      )
+    _ -> Error("Usage: caffeine validate <measurements_dir> <expectations_dir>")
   })
 
   use target <- result.try(validate_target(target))
@@ -120,6 +111,7 @@ pub fn run_validate(
 }
 
 /// Run the format command.
+@internal
 pub fn run_format(
   quiet: Bool,
   check_only: Bool,
@@ -135,37 +127,41 @@ pub fn run_format(
 }
 
 /// Run the artifacts command.
+@internal
 pub fn run_artifacts(quiet: Bool) -> Result(Nil, String) {
   artifacts_catalog(log_level_from_quiet(quiet))
 }
 
 /// Run the types command.
+@internal
 pub fn run_types(quiet: Bool) -> Result(Nil, String) {
   types_catalog(log_level_from_quiet(quiet))
 }
 
 /// Run the lsp command.
+@internal
 pub fn run_lsp() -> Result(Nil, String) {
   Error(
     "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
   )
 }
 
-// --- Flag validation ---
+// --- Private functions ---
+
+fn log_level_from_quiet(quiet: Bool) -> LogLevel {
+  use <- bool.guard(quiet, compile_presenter.Minimal)
+  compile_presenter.Verbose
+}
 
 fn validate_target(target: String) -> Result(String, String) {
   case target {
     "terraform" | "opentofu" -> Ok(target)
     _ ->
       Error(
-        "Invalid target: "
-        <> target
-        <> ". Must be one of: terraform, opentofu",
+        "Invalid target: " <> target <> ". Must be one of: terraform, opentofu",
       )
   }
 }
-
-// --- Business logic ---
 
 fn compile(
   measurements_dir: String,
@@ -447,7 +443,6 @@ fn types_catalog(log_level: LogLevel) -> Result(Nil, String) {
   Ok(Nil)
 }
 
-/// Formats a CompilationError using the error presenter with color support.
 fn format_compilation_error(err: errors.CompilationError) -> String {
   let color_mode = color.detect_color_mode()
   let errs = errors.to_list(err)
