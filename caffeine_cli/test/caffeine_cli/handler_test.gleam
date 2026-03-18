@@ -6,9 +6,9 @@ import gleeunit/should
 // * ✅ successful compile returns Ok
 // * ✅ compile with nonexistent measurement file returns Error
 // * ✅ compile with nonexistent expectations dir returns Error
-// * ✅ --help returns Ok (glint handles help)
+// * ✅ --help returns Ok
 // * ✅ --version returns Ok
-// * ✅ no arguments returns Ok (glint shows help)
+// * ✅ no arguments returns Ok (shows help)
 // * ✅ --target terraform returns Ok
 // * ✅ --target opentofu returns Ok
 // * ✅ --target invalid returns Error

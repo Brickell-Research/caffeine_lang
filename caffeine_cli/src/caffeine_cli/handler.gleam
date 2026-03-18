@@ -15,36 +15,56 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 import gleam/string
-import glint
-import glint/constraint
 import simplifile
-
-// --- Flag definitions ---
-
-fn quiet_flag() -> glint.Flag(Bool) {
-  glint.bool_flag("quiet")
-  |> glint.flag_default(False)
-  |> glint.flag_help("Suppress compilation progress output")
-}
-
-fn check_flag() -> glint.Flag(Bool) {
-  glint.bool_flag("check")
-  |> glint.flag_default(False)
-  |> glint.flag_help("Check formatting without modifying files")
-}
-
-fn target_flag() -> glint.Flag(String) {
-  glint.string_flag("target")
-  |> glint.flag_default("terraform")
-  |> glint.flag_help("Code generation target: terraform or opentofu")
-  |> glint.flag_constraint(constraint.one_of(["terraform", "opentofu"]))
-}
 
 // --- Version ---
 
 /// Returns the version string for `--version` output.
 pub fn version_string() -> String {
   "caffeine " <> constants.version <> " (Brickell Research)"
+}
+
+// --- Help text ---
+
+/// Returns the top-level help text.
+pub fn help_text() -> String {
+  string.join(
+    [
+      "caffeine - A compiler for generating reliability artifacts from service expectation definitions.",
+      "",
+      "Version: " <> constants.version,
+      "",
+      "USAGE:",
+      "  caffeine <command> [flags] [arguments]",
+      "",
+      "COMMANDS:",
+      "  compile <measurements_dir> <expectations_dir> [output_path]",
+      "    Compile .caffeine measurements and expectations to output",
+      "",
+      "  validate <measurements_dir> <expectations_dir>",
+      "    Validate .caffeine measurements and expectations without writing output",
+      "",
+      "  format <path>",
+      "    Format .caffeine files",
+      "",
+      "  artifacts",
+      "    List available artifacts from the standard library",
+      "",
+      "  types",
+      "    Show the type system reference with all supported types",
+      "",
+      "  lsp",
+      "    Start the Language Server Protocol server",
+      "",
+      "FLAGS:",
+      "  --quiet       Suppress compilation progress output",
+      "  --check       Check formatting without modifying files (format only)",
+      "  --target      Code generation target: terraform or opentofu (default: terraform)",
+      "  -v, --version Show version information",
+      "  --help        Show this help message",
+    ],
+    "\n",
+  )
 }
 
 // --- Log level helper ---
@@ -56,118 +76,93 @@ fn log_level_from_quiet(quiet: Bool) -> LogLevel {
   }
 }
 
-// --- Command builders ---
+// --- Public command functions ---
 
-/// Builds the compile subcommand.
-@internal
-pub fn compile_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "Compile .caffeine measurements and expectations to output",
+/// Run the compile command.
+pub fn run_compile(
+  quiet: Bool,
+  target: String,
+  positional: List(String),
+) -> Result(Nil, String) {
+  use #(measurements_dir, expectations_dir, output_path) <- result.try(
+    case positional {
+      [m, e, o, ..] -> Ok(#(m, e, option.Some(o)))
+      [m, e] -> Ok(#(m, e, option.None))
+      _ ->
+        Error(
+          "Usage: caffeine compile <measurements_dir> <expectations_dir> [output_path]",
+        )
+    },
   )
-  use quiet <- glint.flag(quiet_flag())
-  use target <- glint.flag(target_flag())
-  use measurements_dir <- glint.named_arg("measurements_dir")
-  use expectations_dir <- glint.named_arg("expectations_dir")
-  use <- glint.unnamed_args(glint.MinArgs(0))
-  use named, unnamed_args, flags <- glint.command()
 
-  let assert Ok(is_quiet) = quiet(flags)
-  let assert Ok(target) = target(flags)
-  let log_level = log_level_from_quiet(is_quiet)
-  let bp_dir = measurements_dir(named)
-  let exp_dir = expectations_dir(named)
-  let output_path = case unnamed_args {
-    [path, ..] -> option.Some(path)
-    [] -> option.None
-  }
-
-  compile(bp_dir, exp_dir, output_path, target, log_level)
+  use target <- result.try(validate_target(target))
+  let log_level = log_level_from_quiet(quiet)
+  compile(measurements_dir, expectations_dir, output_path, target, log_level)
 }
 
-/// Builds the format subcommand.
-@internal
-pub fn format_command_builder() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help("Format .caffeine files")
-  use quiet <- glint.flag(quiet_flag())
-  use check <- glint.flag(check_flag())
-  use path <- glint.named_arg("path")
-  use named, _, flags <- glint.command()
+/// Run the validate command.
+pub fn run_validate(
+  quiet: Bool,
+  target: String,
+  positional: List(String),
+) -> Result(Nil, String) {
+  use #(measurements_dir, expectations_dir) <- result.try(case positional {
+    [m, e, ..] -> Ok(#(m, e))
+    _ ->
+      Error(
+        "Usage: caffeine validate <measurements_dir> <expectations_dir>",
+      )
+  })
 
-  let assert Ok(is_quiet) = quiet(flags)
-  let assert Ok(check_only) = check(flags)
-  let log_level = log_level_from_quiet(is_quiet)
-
-  format_command(path(named), check_only, log_level)
+  use target <- result.try(validate_target(target))
+  let log_level = log_level_from_quiet(quiet)
+  validate(measurements_dir, expectations_dir, target, log_level)
 }
 
-/// Builds the artifacts subcommand.
-@internal
-pub fn artifacts_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "List available artifacts from the standard library",
-  )
-  use quiet <- glint.flag(quiet_flag())
-  use _, _, flags <- glint.command()
+/// Run the format command.
+pub fn run_format(
+  quiet: Bool,
+  check_only: Bool,
+  positional: List(String),
+) -> Result(Nil, String) {
+  use path <- result.try(case positional {
+    [p, ..] -> Ok(p)
+    _ -> Error("Usage: caffeine format <path>")
+  })
 
-  let assert Ok(is_quiet) = quiet(flags)
-  artifacts_catalog(log_level_from_quiet(is_quiet))
+  let log_level = log_level_from_quiet(quiet)
+  format_command(path, check_only, log_level)
 }
 
-/// Builds the types subcommand.
-@internal
-pub fn types_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "Show the type system reference with all supported types",
-  )
-  use quiet <- glint.flag(quiet_flag())
-  use _, _, flags <- glint.command()
-
-  let assert Ok(is_quiet) = quiet(flags)
-  types_catalog(log_level_from_quiet(is_quiet))
+/// Run the artifacts command.
+pub fn run_artifacts(quiet: Bool) -> Result(Nil, String) {
+  artifacts_catalog(log_level_from_quiet(quiet))
 }
 
-/// Builds the validate subcommand.
-@internal
-pub fn validate_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "Validate .caffeine measurements and expectations without writing output",
-  )
-  use quiet <- glint.flag(quiet_flag())
-  use target <- glint.flag(target_flag())
-  use measurements_dir <- glint.named_arg("measurements_dir")
-  use expectations_dir <- glint.named_arg("expectations_dir")
-  use named, _, flags <- glint.command()
-
-  let assert Ok(is_quiet) = quiet(flags)
-  let assert Ok(target) = target(flags)
-  let log_level = log_level_from_quiet(is_quiet)
-  let bp_dir = measurements_dir(named)
-  let exp_dir = expectations_dir(named)
-
-  validate(bp_dir, exp_dir, target, log_level)
+/// Run the types command.
+pub fn run_types(quiet: Bool) -> Result(Nil, String) {
+  types_catalog(log_level_from_quiet(quiet))
 }
 
-/// Builds the lsp subcommand.
-@internal
-pub fn lsp_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help("Start the Language Server Protocol server")
-  use _, _, _ <- glint.command()
-
+/// Run the lsp command.
+pub fn run_lsp() -> Result(Nil, String) {
   Error(
     "LSP mode requires the compiled binary (main.mjs intercepts this argument)",
   )
 }
 
-/// Builds the root command for version display.
-@internal
-pub fn root_command() -> glint.Command(Result(Nil, String)) {
-  use <- glint.command_help(
-    "A compiler for generating reliability artifacts from service expectation definitions.\n\nVersion: "
-    <> constants.version,
-  )
-  use _, _, _ <- glint.command()
+// --- Flag validation ---
 
-  Ok(Nil)
+fn validate_target(target: String) -> Result(String, String) {
+  case target {
+    "terraform" | "opentofu" -> Ok(target)
+    _ ->
+      Error(
+        "Invalid target: "
+        <> target
+        <> ". Must be one of: terraform, opentofu",
+      )
+  }
 }
 
 // --- Business logic ---
