@@ -12,7 +12,9 @@ pub fn levenshtein(a: String, b: String) -> Int {
   let b_len = list.length(b_graphemes)
 
   // Initial row: [0, 1, 2, ..., b_len]
-  let initial_row = list.range(0, b_len)
+  // Build [0, 1, 2, ..., b_len] by iterating downward and prepending.
+  let initial_row =
+    int.range(from: b_len, to: -1, with: [], run: fn(acc, i) { [i, ..acc] })
 
   let result_row =
     list.index_fold(a_graphemes, initial_row, fn(prev_row, a_char, i) {

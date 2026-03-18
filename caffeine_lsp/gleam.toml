@@ -7,7 +7,7 @@ target = "erlang"
 
 [dependencies]
 caffeine_lang = { path = "../caffeine_lang" }
-gleam_stdlib = ">= 0.63.0 and < 1.0.2"
+gleam_stdlib = ">= 0.70.0 and < 1.0.2"
 
-[dev-dependencies]
+[dev_dependencies]
 gleeunit = ">= 1.0.2"

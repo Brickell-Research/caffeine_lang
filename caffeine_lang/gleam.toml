@@ -11,12 +11,12 @@ links = [
 target = "erlang"
 
 [dependencies]
-gleam_stdlib = ">= 0.63.0 and < 1.0.2"
+gleam_stdlib = ">= 0.70.0 and < 1.0.2"
 terra_madre = ">=0.0.6"
 
-[dev-dependencies]
+[dev_dependencies]
 gleeunit = ">= 1.0.2"
-simplifile = ">= 2.3.0 and < 3.0.0"
+simplifile = ">= 2.4.0 and < 3.0.0"
 
 # Public API: compiler, errors, source_file
 # Everything else is internal (hidden from Hex docs, still importable by monorepo siblings)
