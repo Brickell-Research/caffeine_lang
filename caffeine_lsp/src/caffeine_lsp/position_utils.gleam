@@ -369,6 +369,26 @@ pub fn find_item_start_line(
   )
 }
 
+/// Find the 0-indexed line number where an item named `item_name` appears,
+/// starting the search from `from_line`. Returns `fallback` if not found.
+@internal
+pub fn find_item_start_line_from(
+  lines: List(String),
+  item_name: String,
+  from_line: Int,
+  fallback: Int,
+) -> Int {
+  let measurement_pattern = "\"" <> item_name <> "\""
+  let expect_pattern = "* \"" <> item_name <> "\""
+  find_item_start_line_loop(
+    list.drop(lines, from_line),
+    measurement_pattern,
+    expect_pattern,
+    from_line,
+    fallback,
+  )
+}
+
 fn find_item_start_line_loop(
   lines: List(String),
   measurement_pattern: String,
