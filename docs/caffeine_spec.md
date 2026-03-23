@@ -1,6 +1,6 @@
 # Caffeine Language Specification
 
-**Version:** 5.0.4
+**Version:** 5.0.5
 
 ---
 
