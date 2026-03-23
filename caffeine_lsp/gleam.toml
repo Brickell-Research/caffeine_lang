@@ -3,7 +3,7 @@ version = "0.1.0"
 description = "Language Server Protocol implementation for the Caffeine language."
 licences = ["GPL-3.0"]
 
-target = "erlang"
+target = "javascript"
 
 [dependencies]
 caffeine_lang = { path = "../caffeine_lang" }
