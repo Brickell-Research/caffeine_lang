@@ -38,19 +38,19 @@ pub fn main() {
 pub fn run(args: List(String)) -> Result(Nil, String) {
   let parsed = parse_args(args)
 
-  use <- bool.guard(
+  use <- bool.lazy_guard(
     has_flag(parsed.flags, "version") || has_flag(parsed.flags, "v"),
-    {
+    fn() {
       io.println(handler.version_string())
       Ok(Nil)
     },
   )
 
-  use <- bool.guard(
+  use <- bool.lazy_guard(
     has_flag(parsed.flags, "help")
       || has_flag(parsed.flags, "h")
       || parsed.command == "",
-    {
+    fn() {
       io.println(handler.help_text())
       Ok(Nil)
     },
