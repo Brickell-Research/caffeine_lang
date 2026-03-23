@@ -401,8 +401,6 @@ export function formatSloLensTitle(slo: { sli_value: number; target: number; err
 
 // deno-lint-ignore no-explicit-any
 export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloStatusCache | null) {
-  if (!sloCache) return [];
-
   const doc = ctx.documents.get(params.textDocument.uri);
   if (!doc) return [];
 
@@ -418,6 +416,14 @@ export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloSt
     const vendor = ctx.workspace.getVendorForItem(uri, item.name);
     if (vendor !== "datadog") continue;
 
+    if (!sloCache) {
+      lenses.push({
+        range: range(item.line, 0, item.line, 0),
+        command: { title: "Add DD_API_KEY + DD_APP_KEY to .env to see SLO status", command: "" },
+      });
+      continue;
+    }
+
     const dottedId = ctx.workspace.getDottedIdForItem(uri, item.name);
     if (!dottedId) continue;
 
@@ -432,7 +438,7 @@ export function handleCodeLens(ctx: HandlerContext, params: any, sloCache: SloSt
         lenses.push({ range: range(item.line, 0, item.line, 0), command });
       }
     } else {
-      const title = sloCache.hasData ? "SLO not found in Datadog" : "SLO data loading...";
+      const title = sloCache.hasFetched ? "SLO not found in Datadog" : "SLO data loading...";
       lenses.push({
         range: range(item.line, 0, item.line, 0),
         command: { title, command: "" },

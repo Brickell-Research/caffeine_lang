@@ -35,6 +35,16 @@ export class SloStatusCache {
     return this.data.size > 0;
   }
 
+  /** Whether at least one fetch has completed (data may still be empty). */
+  get hasFetched(): boolean {
+    return this.lastFetchMs > 0;
+  }
+
+  /** Update credentials (e.g. after loading a .env file). */
+  updateCredentials(credentials: DatadogCredentials): void {
+    this.credentials = credentials;
+  }
+
   /** Whether the cache is stale (past TTL). */
   get isStale(): boolean {
     return Date.now() - this.lastFetchMs > this.ttlMs;

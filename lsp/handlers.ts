@@ -168,16 +168,21 @@ function registerInitializeHandler(ctx: HandlerContext): void {
     if (rootUri) {
       debug(`initialize: root=${rootUri}`);
 
-      // Load .env from workspace root (only sets vars not already in process.env)
+      // Load .env from workspace root (overrides existing env vars)
       const rootPath = rootUri.startsWith("file://")
         ? fileURLToPath(rootUri)
         : rootUri;
       loadEnvFile(rootPath);
 
-      // Lazily create SLO cache if credentials became available from .env
-      if (!ctx.sloCache) {
-        const creds = getDatadogCredentials();
-        if (creds) {
+      // Create or update the SLO cache with credentials from the (now-loaded) env.
+      // This handles the case where VS Code was launched with stale/missing credentials
+      // but the workspace .env has the correct ones.
+      const creds = getDatadogCredentials();
+      if (creds) {
+        if (ctx.sloCache) {
+          debug("slo-overlay: updating credentials from .env");
+          ctx.sloCache.updateCredentials(creds);
+        } else {
           debug("slo-overlay: Datadog credentials found via .env");
           ctx.sloCache = new SloStatusCache(creds);
           ctx.sloCache.onDidRefresh(() => {

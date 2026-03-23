@@ -78,6 +78,9 @@ function ddHeaders(credentials: DatadogCredentials): Record<string, string> {
   };
 }
 
+/** Timeout for individual Datadog API requests (10 seconds). */
+const REQUEST_TIMEOUT_MS = 10_000;
+
 /** Fetch all caffeine-managed SLOs from Datadog.
  *  Two-phase: list SLOs by tag to get IDs/thresholds, then fetch history for SLI values.
  *  Returns a Map from dotted identifier to SloStatus array (one per timeframe window). */
@@ -91,10 +94,11 @@ export async function fetchCaffeineSlos(
   try {
     // Phase 1: List caffeine-managed SLOs to get IDs, tags, and thresholds
     const listUrl = `${baseUrl}/api/v1/slo?tags_query=managed_by:caffeine&limit=1000`;
-    const listResponse = await fetch(listUrl, { headers });
+    const listResponse = await fetch(listUrl, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
 
     if (!listResponse.ok) {
-      debug(`datadog: list failed ${listResponse.status} ${listResponse.statusText}`);
+      const body = await listResponse.text().catch(() => "(unreadable)");
+      debug(`datadog: list failed ${listResponse.status} ${listResponse.statusText}: ${body}`);
       return result;
     }
 
@@ -147,7 +151,7 @@ export async function fetchCaffeineSlos(
         const fromTs = nowSec - maxSeconds;
 
         const historyUrl = `${baseUrl}/api/v1/slo/${item.id}/history?from_ts=${fromTs}&to_ts=${nowSec}`;
-        const resp = await fetch(historyUrl, { headers });
+        const resp = await fetch(historyUrl, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
         if (!resp.ok) {
           debug(`datadog: history ${item.id} failed ${resp.status}`);
           return;

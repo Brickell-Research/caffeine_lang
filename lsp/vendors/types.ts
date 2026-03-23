@@ -21,7 +21,7 @@ export interface DatadogCredentials {
   site: string;
 }
 
-/** Load a .env file into process.env. Only sets vars not already defined. */
+/** Load a .env file into process.env. Values from the file override existing env vars. */
 export function loadEnvFile(dir: string): void {
   const envPath = path.join(dir, ".env");
   let content: string;
@@ -41,9 +41,7 @@ export function loadEnvFile(dir: string): void {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    process.env[key] = value;
   }
 }
 
