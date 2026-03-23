@@ -36,6 +36,18 @@ pub fn find_name_position_after_line(
   find_in_lines(lines, name, start_line)
 }
 
+/// Find the first whole-word occurrence of `name` starting from `from_line`
+/// in pre-split `lines`. Avoids re-splitting content on every call.
+/// Returns Error(Nil) if not found.
+@internal
+pub fn find_name_in_lines_from(
+  lines: List(String),
+  name: String,
+  from_line: Int,
+) -> Result(#(Int, Int), Nil) {
+  find_in_lines(list.drop(lines, from_line), name, from_line)
+}
+
 /// Find all 0-indexed (line, col) positions of whole-word occurrences of a name.
 pub fn find_all_name_positions(
   content: String,

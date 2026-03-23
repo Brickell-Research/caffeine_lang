@@ -324,7 +324,7 @@ describe("SloStatusCache", () => {
 
 // ==== loadEnvFile ====
 // * loads key=value pairs into process.env
-// * does not override existing env vars
+// * overrides existing env vars (workspace .env takes precedence)
 // * strips quotes from values
 // * ignores comments and blank lines
 
@@ -349,12 +349,12 @@ describe("loadEnvFile", () => {
     });
   });
 
-  test("does not override existing env vars", () => {
+  test("overrides existing env vars (workspace .env takes precedence)", () => {
     const key = `__CAFFEINE_TEST_${Date.now()}_B`;
     process.env[key] = "original";
     withTempEnv(`${key}=overwritten`, (dir) => {
       loadEnvFile(dir);
-      expect(process.env[key]).toBe("original");
+      expect(process.env[key]).toBe("overwritten");
       delete process.env[key];
     });
   });

@@ -39,6 +39,7 @@ pub fn compile_validated_measurements(
 
 /// Returns linker-level diagnostics for an expects file.
 /// Validates each expectation's inputs against its referenced measurement.
+/// Lines are split once and threaded through the fold to avoid O(n²) re-splitting.
 pub fn get_linker_diagnostics(
   content: String,
   all_validated_measurements: List(Measurement(MeasurementValidated)),
@@ -49,27 +50,25 @@ pub fn get_linker_diagnostics(
     Ok(expectations) -> {
       let measurement_index =
         measurement_utils.index_measurements(all_validated_measurements)
-      let #(diagnostics, _) =
+      let lines = string.split(content, "\n")
+      let #(diagnostics_rev, _) =
         list.fold(expectations, #([], 0), fn(acc, expectation) {
-          let #(diags_so_far, search_from) = acc
+          let #(diags_rev, search_from) = acc
           let anchor_line =
-            position_utils.find_name_position_after_line(
-              content,
+            position_utils.find_name_in_lines_from(
+              lines,
               expectation.name,
               search_from,
             )
             |> result.map(fn(pos) { pos.0 })
             |> result.unwrap(search_from)
           let new_diags =
-            check_expectation(
-              content,
-              expectation,
-              measurement_index,
-              anchor_line,
-            )
-          #(list.append(diags_so_far, new_diags), anchor_line + 1)
+            check_expectation(lines, expectation, measurement_index, anchor_line)
+          let updated_rev =
+            list.fold(new_diags, diags_rev, fn(a, d) { [d, ..a] })
+          #(updated_rev, anchor_line + 1)
         })
-      diagnostics
+      list.reverse(diagnostics_rev)
     }
   }
 }
@@ -77,7 +76,7 @@ pub fn get_linker_diagnostics(
 /// Check a single expectation against an indexed Dict of measurements.
 /// Unmeasured expectations (measurement_ref = None) produce no diagnostics.
 fn check_expectation(
-  content: String,
+  lines: List(String),
   expectation: Expectation,
   measurement_index: dict.Dict(String, Measurement(MeasurementValidated)),
   anchor_line: Int,
@@ -86,7 +85,7 @@ fn check_expectation(
     option.None -> []
     option.Some(ref) ->
       check_measured_expectation(
-        content,
+        lines,
         expectation,
         measurement_index,
         anchor_line,
@@ -97,7 +96,7 @@ fn check_expectation(
 
 /// Check a measured expectation against an indexed Dict of measurements.
 fn check_measured_expectation(
-  content: String,
+  lines: List(String),
   expectation: Expectation,
   measurement_index: dict.Dict(String, Measurement(MeasurementValidated)),
   anchor_line: Int,
@@ -109,24 +108,9 @@ fn check_measured_expectation(
       let remaining_params =
         measurement_utils.compute_remaining_params(measurement)
       list.flatten([
-        check_missing_required(
-          content,
-          expectation,
-          remaining_params,
-          anchor_line,
-        ),
-        check_unknown_fields(
-          content,
-          expectation,
-          remaining_params,
-          anchor_line,
-        ),
-        check_type_mismatches(
-          content,
-          expectation,
-          remaining_params,
-          anchor_line,
-        ),
+        check_missing_required(lines, expectation, remaining_params, anchor_line),
+        check_unknown_fields(lines, expectation, remaining_params, anchor_line),
+        check_type_mismatches(lines, expectation, remaining_params, anchor_line),
       ])
     }
   }
@@ -134,7 +118,7 @@ fn check_measured_expectation(
 
 /// Check for required fields missing from the expectation.
 fn check_missing_required(
-  content: String,
+  lines: List(String),
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
   anchor_line: Int,
@@ -152,8 +136,8 @@ fn check_missing_required(
     [] -> []
     _ -> {
       let #(line, col) =
-        position_utils.find_name_position_after_line(
-          content,
+        position_utils.find_name_in_lines_from(
+          lines,
           expectation.name,
           anchor_line,
         )
@@ -175,7 +159,7 @@ fn check_missing_required(
 
 /// Check for fields in the expectation that don't exist in the measurement.
 fn check_unknown_fields(
-  content: String,
+  lines: List(String),
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
   anchor_line: Int,
@@ -189,7 +173,7 @@ fn check_unknown_fields(
   unknown_keys
   |> list.map(fn(key) {
     let #(line, col) =
-      position_utils.find_name_position_after_line(content, key, anchor_line)
+      position_utils.find_name_in_lines_from(lines, key, anchor_line)
       |> result.unwrap(#(0, 0))
     Diagnostic(
       line: line,
@@ -204,7 +188,7 @@ fn check_unknown_fields(
 
 /// Check type mismatches between expectation values and measurement param types.
 fn check_type_mismatches(
-  content: String,
+  lines: List(String),
   expectation: Expectation,
   remaining_params: dict.Dict(String, AcceptedTypes),
   anchor_line: Int,
@@ -220,11 +204,7 @@ fn check_type_mismatches(
           Ok(_) -> Error(Nil)
           Error(_) -> {
             let #(line, col) =
-              position_utils.find_name_position_after_line(
-                content,
-                key,
-                anchor_line,
-              )
+              position_utils.find_name_in_lines_from(lines, key, anchor_line)
               |> result.unwrap(#(0, 0))
             let message =
               "Expected "
