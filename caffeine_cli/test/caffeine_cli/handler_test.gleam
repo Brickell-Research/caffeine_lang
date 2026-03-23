@@ -34,13 +34,13 @@ pub fn cli_exit_code_test() {
   ])
   |> should.be_error()
 
-  caffeine_cli.run(["--help"])
+  caffeine_cli.run_with_output(["--help"], fn(_) { Nil })
   |> should.be_ok()
 
-  caffeine_cli.run(["--version"])
+  caffeine_cli.run_with_output(["--version"], fn(_) { Nil })
   |> should.be_ok()
 
-  caffeine_cli.run([])
+  caffeine_cli.run_with_output([], fn(_) { Nil })
   |> should.be_ok()
 
   caffeine_cli.run([

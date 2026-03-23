@@ -36,12 +36,21 @@ pub fn main() {
 
 /// Entry point for Erlang escript compatibility and testing.
 pub fn run(args: List(String)) -> Result(Nil, String) {
+  run_with_output(args, io.println)
+}
+
+/// Run with a custom output function. Useful for testing to suppress stdout.
+@internal
+pub fn run_with_output(
+  args: List(String),
+  output: fn(String) -> Nil,
+) -> Result(Nil, String) {
   let parsed = parse_args(args)
 
   use <- bool.lazy_guard(
     has_flag(parsed.flags, "version") || has_flag(parsed.flags, "v"),
     fn() {
-      io.println(handler.version_string())
+      output(handler.version_string())
       Ok(Nil)
     },
   )
@@ -51,7 +60,7 @@ pub fn run(args: List(String)) -> Result(Nil, String) {
       || has_flag(parsed.flags, "h")
       || parsed.command == "",
     fn() {
-      io.println(handler.help_text())
+      output(handler.help_text())
       Ok(Nil)
     },
   )
