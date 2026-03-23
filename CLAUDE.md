@@ -1,6 +1,22 @@
 # Caffeine
 
-Caffeine is a DSL compiler that generates reliability SLOs (Terraform for Datadog, Honeycomb, Dynatrace, NewRelic) from service expectation definitions. Written in Gleam, targeting Erlang.
+Caffeine is a DSL compiler that generates reliability SLOs (Terraform for Datadog, Honeycomb, Dynatrace, NewRelic) from service expectation definitions. Written in Gleam, compiled to JavaScript and packaged with Bun.
+
+## Architecture Philosophy
+
+**Three packages, three roles:**
+
+- `caffeine_lang` — the pure compiler core. No I/O, no side effects, no knowledge of files or the outside world. Just data-in, data-out transformations. This is where all language intelligence lives.
+- `caffeine_lsp` — the LSP intelligence layer. Also pure Gleam, also no direct I/O. Wraps `caffeine_lang` to answer editor questions (diagnostics, hover, completions, etc.). The TypeScript wrapper (`lsp_server.ts`) is only a transport layer — it handles stdin/stdout JSON-RPC framing via `vscode-languageserver-node` and delegates all smarts to compiled Gleam.
+- `caffeine_cli` — the thin I/O wrapper. Handles filesystem reads/writes, user-facing output, and argument parsing. Orchestrates `caffeine_lang`. No compiler logic here.
+
+**I/O at the edges only:** `caffeine_lang` is deliberately side-effect-free. `caffeine_cli` and the TypeScript LSP wrapper are the only places that touch the filesystem or stdio. This makes the core easy to test, easy to reason about, and easy to target multiple runtimes.
+
+**Pipeline = typed transformations:** The compilation pipeline is a chain of pure functions, each producing a typed output that is the input to the next. The `IntermediateRepresentation` uses phantom types to track which phase it's in (`Linked` → `DepsValidated` → `Resolved`), making invalid state unrepresentable.
+
+**JS/Bun is the production target:** Gleam compiles to both Erlang and JavaScript. Tests must pass on both (Erlang for correctness, JS for deployment parity). Production binaries are built with `bun build --compile`. Bun was chosen over Deno/Node because Bun's JavaScriptCore engine has tail-call optimization — essential since Gleam has no loops, only tail recursion. This decision is considered settled; don't revisit unless there's a compelling new reason.
+
+**LSP transport is not our code:** The TypeScript LSP server does zero custom JSON-RPC work. `vscode-languageserver-node` handles all framing, parsing, and dispatch. Our TypeScript is a thin bridge: receive message → call Gleam function → return result.
 
 ## Project Structure
 
@@ -141,4 +157,4 @@ Everything is an SLO. There is no separate `ArtifactType` or `ArtifactData` wrap
 
 ## Release
 
-Releases are triggered by git tags (`v*`). The CI workflow compiles cross-platform binaries via Deno, publishes to GitHub Releases, Hex.pm, Homebrew tap, and updates the website's browser bundle.
+Releases are triggered by git tags (`v*`). The CI workflow compiles cross-platform binaries via Bun (`bun build --compile`), publishes to GitHub Releases, Hex.pm, Homebrew tap, and updates the website's browser bundle. Bun is used (not Deno/Node) because it uses JavaScriptCore which supports TCO — critical since Gleam has no loops, only tail recursion.
