@@ -1,3 +1,0 @@
-"test_measurement":
-  Requires { "env": String }
-  Provides {}

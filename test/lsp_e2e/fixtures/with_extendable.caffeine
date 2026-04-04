@@ -1,5 +1,0 @@
-_defaults (Provides): { threshold: 99.9 }
-
-Expectations measured by "test_measurement"
-  * "checkout" extends [_defaults]:
-    Provides { env: "production" }

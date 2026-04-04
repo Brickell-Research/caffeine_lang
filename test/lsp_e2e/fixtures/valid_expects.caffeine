@@ -1,6 +1,0 @@
-Expectations measured by "test_measurement"
-  * "test_expectation":
-    Provides {
-      env: "production",
-      status: true
-    }

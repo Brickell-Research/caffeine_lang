@@ -1,3 +1,0 @@
-"test_measurement" :
-  Requires   {   env:  String,    threshold:  Float   }
-  Provides   {   threshold:  99.9   }

@@ -1,2 +1,0 @@
-#!/bin/bash
-exec bun run /Users/rdurst/BrickellResearch/caffeine/main.mjs "$@"

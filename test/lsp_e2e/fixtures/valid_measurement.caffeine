@@ -1,7 +1,0 @@
-"test_measurement":
-  Requires { env: String, status: Boolean }
-  Provides {
-    indicators: { good: "query_good", total: "query_total" },
-    evaluation: "good / total",
-    threshold: 99.9%
-  }
