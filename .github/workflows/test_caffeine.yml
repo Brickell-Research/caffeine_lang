@@ -21,7 +21,7 @@ jobs:
         persist-credentials: false
 
     - name: Setup BEAM (Erlang + Gleam + rebar3)
-      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
+      uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1
       with:
         otp-version: '27'
         gleam-version: '1.15.1'
@@ -61,7 +61,7 @@ jobs:
         persist-credentials: false
 
     - name: Setup BEAM (Erlang + Gleam + rebar3)
-      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
+      uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1
       with:
         otp-version: '27'
         gleam-version: '1.15.1'
