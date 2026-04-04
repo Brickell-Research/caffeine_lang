@@ -139,3 +139,6 @@ caffeine.xz
 # Local directories
 examples/*
 output/*
+
+# token-lens
+flame.html
