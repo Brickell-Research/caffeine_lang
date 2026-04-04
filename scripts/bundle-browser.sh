@@ -7,21 +7,19 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="${1:-$PROJECT_DIR/dist}"
-BUILD_DIR="$PROJECT_DIR/caffeine_lang/build/dev/javascript/caffeine_lang/caffeine_lang"
+BUILD_DIR="$PROJECT_DIR/build/dev/javascript/caffeine_lang/caffeine_lang"
 
 echo "Building Caffeine for browser..."
 
 # Ensure JavaScript build is up to date
-cd "$PROJECT_DIR/caffeine_lang" || exit 1
+cd "$PROJECT_DIR" || exit 1
 gleam build --target=javascript
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-# Bundle with esbuild — simplifile (dev-dependency) is never in the import
-# graph from compile_from_strings, so no node: shims are needed.
+# Bundle with esbuild
 echo "Bundling with esbuild..."
-cd "$PROJECT_DIR" || exit 1
 bunx esbuild "$BUILD_DIR/compiler.mjs" \
   --bundle \
   --format=esm \
