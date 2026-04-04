@@ -1,144 +1,26 @@
-# General artifacts
+# Build artifacts
+build/
+/dist/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
-*~
-.project
-.settings
-.idea
-*.iml
-*.ipr
-*.iws
-.classpath
-.vscode/
-*.sublime-*
 
-# Log files
-*.log
-/log/*
-!/log/.keep
-/tmp/*
-!/tmp/.keep
+# Gleam / Erlang
+/deps*
+_build/*
 
-# Environment files
+# Environment
 .env
 .env.*
 !.env.example
 
-# Build artifacts
-build/
-/dist/
-/out/
-
-# OS specific
-Thumbs.db
-Desktop.ini
-
-# Node.js (if switching to JS/TS)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Python (if switching to Python)
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-ENV/
-
-# Rust (keeping since you have rust_caffeine)
-/target/
-Cargo.lock
-**/*.rs.bk
-
-# Documentation build artifacts
-docs/*.html
-docs/_site/
-_site/
-
-# Temporary files
+# Temporary
 *.tmp
-*.temp
 *.bak
-*.backup
-*.orig
-
-# IDE specific
-.idea/
-*.swp
-*.swo
-.vscode/
-.history/
-
-# Cache directories
-.cache/
-.pytest_cache/
-.mypy_cache/
-
-# Coverage reports
-coverage/
-*.cover
-.coverage
-htmlcov/
-
-# Package manager directories
-.npm/
-.yarn/
-
-# Miscellaneous
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-.Spotlight-V100
-.Trashes
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Scribble/Racket documentation build files
-docs/caffeine_lang/
-docs/compiled/
-
-# Keep important files
-!.gitkeep
-!README.md
-!LICENSE
-!CNAME
-
-
-# Terraform
-.terraform
-terraform.tfstate
-main.tf
-variables.tf
-providers.tf
-.terraform.lock.hcl
-
-/deps*
-_build/*
-
-# Nix
-result*
-
-# JavaScript
-node_modules/
-package-lock.json
-package.json
-yarn.lock
-caffeine
-caffeine.zip
-caffeine.xz
-
-# Local directories
-examples/*
-output/*
-
-# token-lens
-flame.html
