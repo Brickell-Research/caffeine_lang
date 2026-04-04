@@ -1,50 +1,49 @@
-# Caffeine
+# Caffeine Lang
 
-Caffeine is a DSL compiler that generates reliability SLOs (Terraform for Datadog, Honeycomb, Dynatrace, NewRelic) from service expectation definitions. Written in Gleam, compiled to JavaScript and packaged with Bun.
+`caffeine_lang` is the pure compiler core for the Caffeine DSL — a language that generates reliability SLOs (Terraform for Datadog, Honeycomb, Dynatrace, NewRelic) from service expectation definitions. Written in Gleam, published to Hex.pm.
+
+The CLI, LSP, binary packaging, and release infrastructure live in the separate [`caffeine` repo](https://github.com/Brickell-Research/caffeine).
 
 ## Architecture Philosophy
 
-**Three packages, three roles:**
-
-- `caffeine_lang` — the pure compiler core. No I/O, no side effects, no knowledge of files or the outside world. Just data-in, data-out transformations. This is where all language intelligence lives.
-- `caffeine_lsp` — the LSP intelligence layer. Also pure Gleam, also no direct I/O. Wraps `caffeine_lang` to answer editor questions (diagnostics, hover, completions, etc.). The TypeScript wrapper (`lsp_server.ts`) is only a transport layer — it handles stdin/stdout JSON-RPC framing via `vscode-languageserver-node` and delegates all smarts to compiled Gleam.
-- `caffeine_cli` — the thin I/O wrapper. Handles filesystem reads/writes, user-facing output, and argument parsing. Orchestrates `caffeine_lang`. No compiler logic here.
-
-**I/O at the edges only:** `caffeine_lang` is deliberately side-effect-free. `caffeine_cli` and the TypeScript LSP wrapper are the only places that touch the filesystem or stdio. This makes the core easy to test, easy to reason about, and easy to target multiple runtimes.
+**Pure core, no I/O:** `caffeine_lang` is deliberately side-effect-free. No filesystem access, no stdio, no knowledge of the outside world. Just data-in, data-out transformations. This is where all language intelligence lives. I/O happens only at the edges — in `caffeine_cli` and the TypeScript LSP transport layer, both of which live in the `caffeine` repo.
 
 **Pipeline = typed transformations:** The compilation pipeline is a chain of pure functions, each producing a typed output that is the input to the next. The `IntermediateRepresentation` uses phantom types to track which phase it's in (`Linked` → `DepsValidated` → `Resolved`), making invalid state unrepresentable.
 
-**JS/Bun is the production target:** Gleam compiles to both Erlang and JavaScript. Tests must pass on both (Erlang for correctness, JS for deployment parity). Production binaries are built with `bun build --compile`. Bun was chosen over Deno/Node because Bun's JavaScriptCore engine has tail-call optimization — essential since Gleam has no loops, only tail recursion. This decision is considered settled; don't revisit unless there's a compelling new reason.
-
-**LSP transport is not our code:** The TypeScript LSP server does zero custom JSON-RPC work. `vscode-languageserver-node` handles all framing, parsing, and dispatch. Our TypeScript is a thin bridge: receive message → call Gleam function → return result.
+**JS/Bun is the production target:** Gleam compiles to both Erlang and JavaScript. Tests must pass on both (Erlang for correctness, JS for deployment parity). Bun was chosen over Deno/Node because Bun's JavaScriptCore engine has tail-call optimization — essential since Gleam has no loops, only tail recursion. This decision is considered settled; don't revisit unless there's a compelling new reason.
 
 ## Project Structure
 
-Gleam monorepo with three packages:
+Gleam package (compiler core library):
 
-- `caffeine_lang/` - Core compiler library (tokenizer, parser, validator, semantic analyzer, code generator)
-- `caffeine_lsp/` - Language Server Protocol implementation (diagnostics, hover, completion, formatting, semantic tokens, go-to-definition, code actions)
-- `caffeine_cli/` - CLI wrapping the compiler and LSP (`compile`, `validate`, `format`, `artifacts`, `types`, `lsp`)
+- `src/caffeine_lang/` - Core compiler library (tokenizer, parser, validator, semantic analyzer, code generator)
+- `test/` - Test suite mirroring `src/` directory structure
 
 ## Commands
 
 ```bash
-make build        # Build all three packages
-make test         # Run tests for all packages (Erlang target)
-make lint         # Check formatting (gleam format --check)
-make lint-fix     # Fix formatting
-make ci           # lint + build + test
-make watch        # Auto-test on file changes (uses fswatch)
-make watch-js     # Auto-test with JavaScript target
+gleam build                    # Build the package
+gleam test                     # Run tests (Erlang target)
+gleam test --target javascript # Run tests (JavaScript target)
+gleam format --check .         # Check formatting
+gleam format .                 # Fix formatting
 ```
 
-To test a single package: `cd caffeine_lang && gleam test`
+Via Makefile:
+
+```bash
+make build    # gleam build
+make test     # gleam test (Erlang target)
+make lint     # gleam format --check
+make lint-fix # gleam format
+make ci       # lint + build + test + test-js
+make watch    # Auto-test on file changes (uses fswatch)
+make watch-js # Auto-test with JavaScript target
+```
 
 IMPORTANT: Tests must pass on both Erlang and JavaScript targets. Always verify with:
 ```bash
-cd caffeine_lang && gleam test && gleam test --target javascript
-cd caffeine_lsp && gleam test && gleam test --target javascript
-cd caffeine_cli && gleam test && gleam test --target javascript
+gleam test && gleam test --target javascript
 ```
 
 ## Compilation Pipeline
@@ -98,9 +97,9 @@ Key points:
 ## Testing
 
 - Framework: gleeunit
-- Test files mirror `src/` directory structure
+- Test files mirror `src/` directory structure under `test/`
 - Use `test_helpers.array_based_test_executor_*` for parameterized tests
-- Corpus-based tests in `test/caffeine_lang/corpus/` and `test/caffeine_cli/corpus/` for snapshot-style comparisons
+- Corpus-based tests in `test/caffeine_lang/corpus/` for snapshot-style comparisons
 - Formatter tests verify idempotency: `format(format(x)) == format(x)`
 - Test comments: `// ==== function_name ====` headers with `// * ✅ case` descriptions
 
@@ -116,12 +115,6 @@ Key points:
 - `CQLResolverError`, `CQLParserError`
 
 Errors carry an `ErrorContext` with optional identifier, source_path, source_content, location, and suggestion. Errors are prefixed with file paths and identifiers as they bubble up via `errors.prefix_error`.
-
-## LSP
-
-The LSP server (`caffeine_lsp/src/caffeine_lsp/server.gleam`) maintains a `ServerState` with open document text. Features: diagnostics, hover, completion (context-aware with `:` and `[` triggers), document symbols, semantic tokens, go-to-definition, code actions (quickfix), references, rename, signature help, inlay hints, and formatting. Dual runtime support (Erlang + JS/Deno) via FFI bindings.
-
-The LSP detects file type by checking if content starts with `Expectations` (expects file) or otherwise treats it as a measurements file. Diagnostic codes include `MeasurementNotFound`, `DependencyNotFound`, `MissingRequiredFields`, `TypeMismatch`, `UnknownField`, `QuotedFieldName`, and `UnusedExtendable`.
 
 ## Language Features
 
@@ -145,16 +138,6 @@ Everything is an SLO. There is no separate `ArtifactType` or `ArtifactData` wrap
 - `SloFields`: Contains `threshold`, `indicators`, `window_in_days`, `evaluation`, `tags`, `runbook`, and `depends_on` (optional dict of DependencyRelationType -> list of references)
 - Unmeasured IRs have `vendor: None` and are filtered out before Terraform generation but included in dependency graph generation
 
-## CLI
-
-- `compile <measurements_dir> <expectations_dir> [output_path]`: Compiles measurements and expectations to Terraform. The measurements directory contains vendor-named `.caffeine` files (e.g., `datadog.caffeine`, `honeycomb.caffeine`). The expectations directory uses fixed three-level depth (org/team/service/file.caffeine)
-- `validate <measurements_dir> <expectations_dir>`: Validates without writing output
-- `format <path>`: Format `.caffeine` files (with `--check` for CI)
-- `artifacts`: List SLO params from the standard library
-- `types`: Show the type system reference
-- `lsp`: Start the LSP server
-- Flags: `--quiet` (suppress progress), `--check` (format check mode), `--target terraform|opentofu`, `--version`/`-v`
-
 ## Release
 
-Releases are triggered by git tags (`v*`). The CI workflow compiles cross-platform binaries via Bun (`bun build --compile`), publishes to GitHub Releases, Hex.pm, Homebrew tap, and updates the website's browser bundle. Bun is used (not Deno/Node) because it uses JavaScriptCore which supports TCO — critical since Gleam has no loops, only tail recursion.
+Releases are triggered by git tags (`v*`). The CI workflow publishes to Hex.pm and updates the website's browser bundle. The compiled CLI binaries and LSP server are released from the separate `caffeine` repo.
