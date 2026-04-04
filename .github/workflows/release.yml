@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g., v1.0.2)'
+        description: 'Tag to release (e.g., v5.1.0)'
         required: true
         type: string
 
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   release:
-    name: Build and Release
+    name: Publish to Hex + Update Website
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -26,7 +26,6 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
         ref: ${{ inputs.tag || github.ref }}
-        fetch-depth: 0
         persist-credentials: false
 
     - name: Setup BEAM (Erlang + Gleam)
@@ -41,169 +40,17 @@ jobs:
       with:
         bun-version: "latest"
 
-    - name: Install npm dependencies
-      run: bun install
-
-    - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          caffeine_lang/build
-          caffeine_lsp/build
-          caffeine_cli/build
-        key: ${{ runner.os }}-gleam-release-${{ hashFiles('caffeine_lang/manifest.toml', 'caffeine_lsp/manifest.toml', 'caffeine_cli/manifest.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-gleam-release-
-          ${{ runner.os }}-gleam-
-
-    - name: Build Gleam to JavaScript
-      run: |
-        cd caffeine_lsp && gleam build --target javascript
-        cd ../caffeine_cli && gleam build --target javascript
-
-    - name: Extract version from gleam.toml
+    - name: Extract version
       id: version
       run: |
-        VERSION=$(grep '^version' caffeine_lang/gleam.toml | sed 's/version = "\(.*\)"/\1/')
+        VERSION=$(grep '^version' gleam.toml | sed 's/version = "\(.*\)"/\1/')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        echo "Extracted version: $VERSION"
+        echo "Publishing caffeine_lang v${VERSION}"
 
-    - name: Generate release notes
-      id: release_notes
-      env:
-        VERSION: ${{ steps.version.outputs.version }}
+    - name: Run tests before publishing
       run: |
-        mkdir -p dist
-        # Find the previous tag
-        PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
-        if [ -z "$PREV_TAG" ]; then
-          echo "No previous tag found, using basic release notes"
-          echo "## What's New in Caffeine v${VERSION}" > dist/release-notes.md
-        else
-          echo "Generating release notes: ${TAG} <- ${PREV_TAG}"
-          ./scripts/generate-release-notes.sh "$TAG" "$PREV_TAG" > dist/release-notes.md
-        fi
-        echo "Release notes:"
-        cat dist/release-notes.md
-
-    - name: Compile binaries for all platforms
-      env:
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        mkdir -p dist
-        DIST_DIR="$(pwd)/dist"
-
-        echo "Bun version: $(bun --version)"
-        echo "Output directory: $DIST_DIR"
-
-        # Linux x64
-        echo "Building Linux x64..."
-        bun build --compile --target=bun-linux-x64 \
-          --outfile "$DIST_DIR/caffeine-${VERSION}-linux-x64" main.mjs
-
-        # Linux ARM64
-        echo "Building Linux ARM64..."
-        bun build --compile --target=bun-linux-arm64 \
-          --outfile "$DIST_DIR/caffeine-${VERSION}-linux-arm64" main.mjs
-
-        # macOS x64
-        echo "Building macOS x64..."
-        bun build --compile --target=bun-darwin-x64 \
-          --outfile "$DIST_DIR/caffeine-${VERSION}-macos-x64" main.mjs
-
-        # macOS ARM64 (Apple Silicon)
-        echo "Building macOS ARM64..."
-        bun build --compile --target=bun-darwin-arm64 \
-          --outfile "$DIST_DIR/caffeine-${VERSION}-macos-arm64" main.mjs
-
-        # Windows x64
-        echo "Building Windows x64..."
-        bun build --compile --target=bun-windows-x64 \
-          --outfile "$DIST_DIR/caffeine-${VERSION}-windows-x64.exe" main.mjs
-
-        echo "All binaries built successfully"
-        ls -la dist/
-
-    - name: Smoke test Linux x64 binary
-      env:
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        ./dist/caffeine-${VERSION}-linux-x64 --help | head -5
-
-    - name: Create archives
-      env:
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        cd dist
-        # Linux archives
-        tar -czvf caffeine-${VERSION}-linux-x64.tar.gz caffeine-${VERSION}-linux-x64
-        tar -czvf caffeine-${VERSION}-linux-arm64.tar.gz caffeine-${VERSION}-linux-arm64
-
-        # macOS archives
-        tar -czvf caffeine-${VERSION}-macos-x64.tar.gz caffeine-${VERSION}-macos-x64
-        tar -czvf caffeine-${VERSION}-macos-arm64.tar.gz caffeine-${VERSION}-macos-arm64
-
-        # Windows archive
-        zip caffeine-${VERSION}-windows-x64.zip caffeine-${VERSION}-windows-x64.exe
-
-    - name: Generate SHA256 checksums
-      env:
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        cd dist
-        sha256sum \
-          caffeine-${VERSION}-linux-x64.tar.gz \
-          caffeine-${VERSION}-linux-arm64.tar.gz \
-          caffeine-${VERSION}-macos-x64.tar.gz \
-          caffeine-${VERSION}-macos-arm64.tar.gz \
-          caffeine-${VERSION}-windows-x64.zip \
-          > caffeine-${VERSION}-checksums.sha256
-
-        echo "Generated checksums:"
-        cat caffeine-${VERSION}-checksums.sha256
-
-    - name: Check if release exists
-      id: check_release
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        if gh release view "$TAG" &>/dev/null; then
-          echo "exists=true" >> "$GITHUB_OUTPUT"
-          echo "Release $TAG already exists - skipping"
-        else
-          echo "exists=false" >> "$GITHUB_OUTPUT"
-          echo "Release $TAG does not exist - will create"
-        fi
-
-    - name: Create Release
-      if: steps.check_release.outputs.exists == 'false'
-      uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
-      with:
-        tag_name: ${{ env.TAG }}
-        body_path: dist/release-notes.md
-        files: |
-          dist/caffeine-${{ steps.version.outputs.version }}-linux-x64.tar.gz
-          dist/caffeine-${{ steps.version.outputs.version }}-linux-arm64.tar.gz
-          dist/caffeine-${{ steps.version.outputs.version }}-macos-x64.tar.gz
-          dist/caffeine-${{ steps.version.outputs.version }}-macos-arm64.tar.gz
-          dist/caffeine-${{ steps.version.outputs.version }}-windows-x64.zip
-          dist/caffeine-${{ steps.version.outputs.version }}-checksums.sha256
-
-    - name: Send release email
-      if: steps.check_release.outputs.exists == 'false'
-      continue-on-error: true
-      env:
-        NOTIFICATIONS_API_KEY: ${{ secrets.NOTIFICATIONS_API_KEY }}
-        NOTIFICATIONS_URL: ${{ secrets.NOTIFICATIONS_URL }}
-      run: |
-        VERSION="${TAG#v}"
-        BODY=$(cat dist/release-notes.md)
-        curl -s -X POST "${NOTIFICATIONS_URL}/send-blast" \
-          -H "X-API-Key: ${NOTIFICATIONS_API_KEY}" \
-          -H "Content-Type: application/json" \
-          -d "$(jq -n --arg subject "Caffeine v${VERSION} Released" --arg body "$BODY" '{subject: $subject, body: $body}')"
-        echo "Release email sent (or attempted)"
+        gleam test
+        gleam test --target javascript
 
     - name: Publish to Hex
       env:
@@ -211,86 +58,7 @@ jobs:
         VERSION: ${{ steps.version.outputs.version }}
       run: |
         echo "Publishing caffeine_lang v${VERSION} to Hex..."
-        cd caffeine_lang
         gleam publish --yes
-
-    - name: Update Homebrew formula
-      env:
-        HOMEBREW_TAP_TOKEN: ${{ secrets.GH_TOKEN }}
-        VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        # Calculate SHA256 for each platform from the archives we just created
-        SHA_MACOS_X64=$(sha256sum dist/caffeine-${VERSION}-macos-x64.tar.gz | cut -d' ' -f1)
-        SHA_MACOS_ARM64=$(sha256sum dist/caffeine-${VERSION}-macos-arm64.tar.gz | cut -d' ' -f1)
-        SHA_LINUX_X64=$(sha256sum dist/caffeine-${VERSION}-linux-x64.tar.gz | cut -d' ' -f1)
-
-        echo "SHA256 checksums:"
-        echo "  macos-x64:   $SHA_MACOS_X64"
-        echo "  macos-arm64: $SHA_MACOS_ARM64"
-        echo "  linux-x64:   $SHA_LINUX_X64"
-
-        # Clone the tap repository
-        git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/brickell-research/homebrew-caffeine.git" tap
-        cd tap
-
-        # Generate the formula file matching existing style
-        cat > Formula/caffeine_lang.rb << 'FORMULA_END'
-        class CaffeineLang < Formula
-          desc "Caffeine programming language"
-          homepage "https://caffeine-lang.run"
-          license "GPL-3.0-only"
-        FORMULA_END
-
-        # Append version (needs variable expansion)
-        sed -i "s/license \"GPL-3.0-only\"/license \"GPL-3.0-only\"\n  version \"${VERSION}\"/" Formula/caffeine_lang.rb
-
-        cat >> Formula/caffeine_lang.rb << FORMULA_END
-
-          # Platform-specific downloads
-          if OS.mac? && Hardware::CPU.intel?
-            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-x64.tar.gz"
-            sha256 "${SHA_MACOS_X64}"
-          elsif OS.mac? && Hardware::CPU.arm?
-            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-macos-arm64.tar.gz"
-            sha256 "${SHA_MACOS_ARM64}"
-          elsif OS.linux? && Hardware::CPU.intel?
-            url "https://github.com/Brickell-Research/caffeine_lang/releases/download/v${VERSION}/caffeine-${VERSION}-linux-x64.tar.gz"
-            sha256 "${SHA_LINUX_X64}"
-          end
-
-          def install
-            # The binary name includes version and platform, rename to just "caffeine"
-            if OS.mac? && Hardware::CPU.intel?
-              bin.install "caffeine-#{version}-macos-x64" => "caffeine"
-            elsif OS.mac? && Hardware::CPU.arm?
-              bin.install "caffeine-#{version}-macos-arm64" => "caffeine"
-            elsif OS.linux? && Hardware::CPU.intel?
-              bin.install "caffeine-#{version}-linux-x64" => "caffeine"
-            end
-          end
-
-          test do
-            system "#{bin}/caffeine"
-          end
-        end
-        FORMULA_END
-
-        # Fix indentation (remove leading spaces from heredoc)
-        sed -i 's/^        //' Formula/caffeine_lang.rb
-
-        # Configure git
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-        # Commit and push (only if there are changes)
-        git add Formula/caffeine_lang.rb
-        if git diff --cached --quiet; then
-          echo "Homebrew formula already up to date"
-        else
-          git commit -m "Update caffeine_lang to ${VERSION}"
-          git push origin main
-          echo "Homebrew formula updated to version ${VERSION}"
-        fi
 
     - name: Build browser bundle
       run: ./scripts/bundle-browser.sh
@@ -300,34 +68,27 @@ jobs:
         WEBSITE_TOKEN: ${{ secrets.GH_TOKEN }}
         VERSION: ${{ steps.version.outputs.version }}
       run: |
-        # Clone the website repository
         git clone "https://x-access-token:${WEBSITE_TOKEN}@github.com/Brickell-Research/caffeine_lang_website.git" website
         cd website
 
-        # Copy the browser bundle
         cp ../dist/caffeine-browser.js static/js/
 
-        # Update version.gleam
         cat > src/version.gleam << EOF
-        // Auto-generated by scripts/fetch_version.sh - do not edit manually
+        // Auto-generated by release workflow - do not edit manually
         pub const latest_version = "v${VERSION}"
         EOF
         sed -i 's/^        //' src/version.gleam
 
-        # Rebuild the website
         gleam deps download
         gleam run -m build
 
-        # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        # Commit and push (only if there are changes)
         git add static/js/caffeine-browser.js src/version.gleam docs/
         if git diff --cached --quiet; then
           echo "Website already up to date"
         else
           git commit -m "Update Caffeine compiler to ${VERSION}"
           git push origin main
-          echo "Website compiler updated to version ${VERSION}"
         fi
