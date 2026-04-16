@@ -1,0 +1,20 @@
+.github/workflows/test_caffeine.yml
+  h_bf999c3f841c45 26-28,66-68,73
+README.md
+  h_bf999c3f841c45 25
+gleam.toml
+  h_bf999c3f841c45 2
+.github/workflows/release.yml
+  h_bf999c3f841c45 6,10,30,34-37,42,49,54,62,65,73,75,81,84,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "5ac590293a2ae613a401f0378a3d8146d48a87ec",
+  "prompts": {},
+  "humans": {
+    "h_bf999c3f841c45": {
+      "author": "robertDurst"
+    }
+  }
+}
