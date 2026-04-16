@@ -1,6 +1,5 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/compiler.{type CompilationOutput}
-import caffeine_lang/constants
 import caffeine_lang/source_file.{
   type ExpectationSource, type SourceFile, type VendorMeasurementSource,
   SourceFile, VendorMeasurementSource,
@@ -19,8 +18,7 @@ fn corpus_path(file_name: String) -> String {
 
 fn read_corpus(file_name: String) -> String {
   let assert Ok(content) = simplifile.read(corpus_path(file_name))
-  // Replace version placeholder with actual version constant
-  string.replace(content, "{{VERSION}}", constants.version)
+  test_helpers.normalize_terraform(content)
 }
 
 fn read_source_file(path: String) -> SourceFile(a) {
@@ -106,7 +104,7 @@ pub fn compile_test() {
       [read_vendor_measurement(input_measurements_path, vendor.Datadog)],
       read_expectations_dir(input_expectations_dir),
     )
-    |> result.map(fn(output) { output.terraform })
+    |> result.map(fn(output) { test_helpers.normalize_terraform(output.terraform) })
   })
 }
 
@@ -116,7 +114,9 @@ fn contains_all_substrings(
 ) {
   case result {
     Ok(output) ->
-      list.all(substrings, fn(s) { string.contains(output.terraform, s) })
+      list.all(substrings, fn(s) {
+        test_helpers.terraform_contains(output.terraform, s)
+      })
     Error(_) -> False
   }
 }

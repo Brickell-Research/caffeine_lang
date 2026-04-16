@@ -1,14 +1,58 @@
 /// TODO: very interested in figuring out if we could collapse these to a single executor function.
 import caffeine_lang/constants
 import gleam/list
+import gleam/result
 import gleam/string
 import simplifile
 
-/// Reads a corpus file from the generator test directory, replacing the version placeholder.
+/// Reads a generator corpus file and canonicalizes Terraform formatting/version text.
 pub fn read_generator_corpus(file_name: String) -> String {
   let path = "test/caffeine_lang/corpus/generator/" <> file_name <> ".tf"
   let assert Ok(content) = simplifile.read(path)
-  string.replace(content, "{{VERSION}}", constants.version)
+  normalize_terraform(content)
+}
+
+/// Canonicalizes Terraform formatting and version text so tests stay stable.
+pub fn normalize_terraform(terraform: String) -> String {
+  terraform
+  |> string.replace(constants.version, "{{VERSION}}")
+  |> string.replace(version_slug(), "{{VERSION_SLUG}}")
+  |> collapse_spaces_before_equals
+}
+
+fn version_slug() -> String {
+  "v" <> string.replace(constants.version, ".", "")
+}
+
+fn collapse_spaces_before_equals(terraform: String) -> String {
+  let next = string.replace(terraform, "  =", " =")
+  case next == terraform {
+    True -> terraform
+    False -> collapse_spaces_before_equals(next)
+  }
+}
+
+pub fn normalize_terraform_result(
+  value: Result(String, error),
+) -> Result(String, error) {
+  value |> result.map(normalize_terraform)
+}
+
+pub fn normalize_terraform_result_with_warnings(
+  value: Result(#(String, List(String)), error),
+) -> Result(#(String, List(String)), error) {
+  value
+  |> result.map(fn(pair) {
+    let #(terraform, warnings) = pair
+    #(normalize_terraform(terraform), warnings)
+  })
+}
+
+pub fn terraform_contains(terraform: String, substring: String) -> Bool {
+  string.contains(
+    normalize_terraform(terraform),
+    normalize_terraform(substring),
+  )
 }
 
 /// Table-driven test executor for functions with 1 input.

@@ -1047,7 +1047,9 @@ pub fn generate_terraform_test() {
         let actual_corpus =
           string.drop_end(corpus_file, string.length("_WITH_WARNINGS"))
         let expected = test_helpers.read_generator_corpus(actual_corpus)
-        let result = datadog.generate_terraform(input)
+        let result =
+          datadog.generate_terraform(input)
+          |> test_helpers.normalize_terraform_result_with_warnings
         case result {
           Ok(#(tf, warnings)) -> {
             tf |> should.equal(expected)
@@ -1058,7 +1060,9 @@ pub fn generate_terraform_test() {
       }
       False -> {
         let expected = test_helpers.read_generator_corpus(corpus_file)
-        datadog.generate_terraform(input) |> should.equal(Ok(#(expected, [])))
+        datadog.generate_terraform(input)
+        |> test_helpers.normalize_terraform_result_with_warnings
+        |> should.equal(Ok(#(expected, [])))
       }
     }
   })

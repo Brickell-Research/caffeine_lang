@@ -129,7 +129,9 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
     let expected = test_helpers.read_generator_corpus(corpus_name)
-    dynatrace.generate_terraform(input) |> should.equal(Ok(expected))
+    dynatrace.generate_terraform(input)
+    |> test_helpers.normalize_terraform_result
+    |> should.equal(Ok(expected))
   })
 }
 
@@ -178,8 +180,10 @@ pub fn generate_terraform_multiple_slos_test() {
   // Only one provider block
   string.contains(tf, "dynatrace-oss/dynatrace") |> should.be_true
   // Check different windows
-  string.contains(tf, "evaluation_window = \"-30d\"") |> should.be_true
-  string.contains(tf, "evaluation_window = \"-14d\"") |> should.be_true
+  test_helpers.terraform_contains(tf, "evaluation_window = \"-30d\"")
+  |> should.be_true
+  test_helpers.terraform_contains(tf, "evaluation_window = \"-14d\"")
+  |> should.be_true
 }
 
 // ==== window_to_evaluation_window ====

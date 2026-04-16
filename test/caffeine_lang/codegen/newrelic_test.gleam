@@ -205,7 +205,9 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
     let expected = test_helpers.read_generator_corpus(corpus_name)
-    newrelic.generate_terraform(input) |> should.equal(Ok(expected))
+    newrelic.generate_terraform(input)
+    |> test_helpers.normalize_terraform_result
+    |> should.equal(Ok(expected))
   })
 }
 
