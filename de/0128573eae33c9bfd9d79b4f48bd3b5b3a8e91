@@ -1,0 +1,31 @@
+caffeine_cli/caffeine-dev.sh
+  bccd2ad51e40c36c 5
+watch.sh
+  bccd2ad51e40c36c 13
+.github/workflows/release.yml
+  bccd2ad51e40c36c 14-16,21-22,30,33,40,66,71-72,79,88-89,131-132,137-138,153-154,174,177,183,185,213,222,235,304,307
+.github/workflows/test_caffeine.yml
+  bccd2ad51e40c36c 9-11,22,50-59,70,103-112,123,130,148-157
+scripts/bundle-browser.sh
+  bccd2ad51e40c36c 15,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "de0128573eae33c9bfd9d79b4f48bd3b5b3a8e91",
+  "prompts": {
+    "bccd2ad51e40c36c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c566c8d8-c902-4827-b266-c34540dbc0f4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "messages": [],
+      "total_additions": 90,
+      "total_deletions": 46,
+      "accepted_lines": 70,
+      "overriden_lines": 0
+    }
+  }
+}
