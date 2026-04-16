@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
@@ -15,82 +15,82 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      with:
-        persist-credentials: false
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
-    - name: Setup BEAM (Erlang + Gleam + rebar3)
-      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
-      with:
-        otp-version: '27'
-        gleam-version: '1.15.1'
-        rebar3-version: '3.25.0'
+      - name: Setup BEAM (Erlang + Gleam + rebar3)
+        uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
+        with:
+          otp-version: "27"
+          gleam-version: "1.15.4"
+          rebar3-version: "3.25.0"
 
-    - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-gleam-erlang-
-          ${{ runner.os }}-gleam-
+      - name: Restore Gleam dependency cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gleam-erlang-
+            ${{ runner.os }}-gleam-
 
-    - name: Test caffeine_lang
-      run: gleam test
+      - name: Test caffeine_lang
+        run: gleam test
 
-    - name: Save Gleam cache
-      if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
+      - name: Save Gleam cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-erlang-${{ hashFiles('manifest.toml') }}
 
   test-javascript:
     name: Test JavaScript Target
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      with:
-        persist-credentials: false
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
-    - name: Setup BEAM (Erlang + Gleam + rebar3)
-      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
-      with:
-        otp-version: '27'
-        gleam-version: '1.15.1'
-        rebar3-version: '3.25.0'
+      - name: Setup BEAM (Erlang + Gleam + rebar3)
+        uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1
+        with:
+          otp-version: "27"
+          gleam-version: "1.15.4"
+          rebar3-version: "3.25.0"
 
-    - name: Setup Node.js
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: "20"
 
-    - name: Restore Gleam dependency cache
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-gleam-js-
-          ${{ runner.os }}-gleam-
+      - name: Restore Gleam dependency cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gleam-js-
+            ${{ runner.os }}-gleam-
 
-    - name: Test caffeine_lang (JavaScript)
-      run: gleam test --target javascript
+      - name: Test caffeine_lang (JavaScript)
+        run: gleam test --target javascript
 
-    - name: Save Gleam cache
-      if: github.event_name == 'push'
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: |
-          ~/.cache/gleam
-          build
-        key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
+      - name: Save Gleam cache
+        if: github.event_name == 'push'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/gleam
+            build
+          key: ${{ runner.os }}-gleam-js-${{ hashFiles('manifest.toml') }}
