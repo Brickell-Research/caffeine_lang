@@ -22,7 +22,7 @@ The pure compiler core for the [Caffeine](https://caffeine-lang.run) DSL — gen
 ```toml
 # gleam.toml
 [dependencies]
-caffeine_lang = ">= 5.0.8 and < 6.0.0"
+caffeine_lang = ">= 5.0.10 and < 6.0.0"
 ```
 
 ```gleam
