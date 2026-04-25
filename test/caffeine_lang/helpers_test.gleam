@@ -40,33 +40,34 @@ pub fn map_reference_to_referrer_over_collection_test() {
 // * ✅ returns Error for missing label
 // * ✅ returns Error for extractor failure
 pub fn extract_value_test() {
-  let values = [
-    helpers.ValueTuple(
-      "name",
-      types.PrimitiveType(types.String),
-      value.StringValue("hello"),
-    ),
-    helpers.ValueTuple(
-      "count",
-      types.PrimitiveType(types.NumericType(types.Integer)),
-      value.IntValue(42),
-    ),
-  ]
+  let index =
+    helpers.index_value_tuples([
+      helpers.ValueTuple(
+        "name",
+        types.PrimitiveType(types.String),
+        value.StringValue("hello"),
+      ),
+      helpers.ValueTuple(
+        "count",
+        types.PrimitiveType(types.NumericType(types.Integer)),
+        value.IntValue(42),
+      ),
+    ])
 
   // extracts value by label
-  helpers.extract_value(values, "name", value.extract_string)
+  helpers.extract_value(index, "name", value.extract_string)
   |> should.equal(Ok("hello"))
 
   // extracts value with different extractor
-  helpers.extract_value(values, "count", value.extract_int)
+  helpers.extract_value(index, "count", value.extract_int)
   |> should.equal(Ok(42))
 
   // returns Error for missing label
-  helpers.extract_value(values, "missing", value.extract_string)
+  helpers.extract_value(index, "missing", value.extract_string)
   |> should.equal(Error(Nil))
 
   // returns Error for extractor failure (wrong extractor for type)
-  helpers.extract_value(values, "count", value.extract_string)
+  helpers.extract_value(index, "count", value.extract_string)
   |> should.equal(Error(Nil))
 }
 
@@ -91,52 +92,36 @@ pub fn extract_path_prefix_test() {
   |> test_helpers.table_test_1(helpers.extract_path_prefix)
 }
 
-// ==== extract_threshold ====
-// * ✅ present threshold value
-// Threshold is a required param; missing case is a structural invariant violation.
-pub fn extract_threshold_test() {
-  let with_threshold = [
-    helpers.ValueTuple(
-      "threshold",
-      types.PrimitiveType(types.NumericType(types.Float)),
-      value.PercentageValue(95.0),
-    ),
-  ]
-  helpers.extract_threshold(with_threshold)
-  |> should.equal(95.0)
-}
-
 // ==== extract_window_in_days ====
 // * ✅ present window
 // * ✅ missing returns default 30
 pub fn extract_window_in_days_test() {
-  let with_window = [
-    helpers.ValueTuple(
-      "window_in_days",
-      types.PrimitiveType(types.NumericType(types.Integer)),
-      value.IntValue(7),
-    ),
-  ]
+  let with_window =
+    helpers.index_value_tuples([
+      helpers.ValueTuple(
+        "window_in_days",
+        types.PrimitiveType(types.NumericType(types.Integer)),
+        value.IntValue(7),
+      ),
+    ])
   helpers.extract_window_in_days(with_window)
   |> should.equal(7)
 
-  helpers.extract_window_in_days([])
+  helpers.extract_window_in_days(dict.new())
   |> should.equal(30)
 }
 
 // ==== extract_indicators ====
-// * ✅ present indicators
 // * ✅ missing returns empty dict
 pub fn extract_indicators_test() {
-  helpers.extract_indicators([])
+  helpers.extract_indicators(dict.new())
   |> should.equal(dict.new())
 }
 
 // ==== extract_tags ====
-// * ✅ present tags (sorted by key)
 // * ✅ missing returns empty list
 pub fn extract_tags_test() {
-  helpers.extract_tags([])
+  helpers.extract_tags(dict.new())
   |> should.equal([])
 }
 

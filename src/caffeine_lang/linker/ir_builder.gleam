@@ -324,16 +324,16 @@ fn build_slo_fields(
   index: dict.Dict(String, helpers.ValueTuple),
 ) -> ir.SloFields {
   let threshold =
-    helpers.extract_value_indexed(index, "threshold", value.extract_percentage)
+    helpers.extract_value(index, "threshold", value.extract_percentage)
     |> result.unwrap(helpers.default_threshold_percentage)
-  let indicators = helpers.extract_indicators_indexed(index)
-  let window_in_days = helpers.extract_window_in_days_indexed(index)
+  let indicators = helpers.extract_indicators(index)
+  let window_in_days = helpers.extract_window_in_days(index)
   let evaluation =
-    helpers.extract_value_indexed(index, "evaluation", value.extract_string)
+    helpers.extract_value(index, "evaluation", value.extract_string)
     |> option.from_result
-  let tags = helpers.extract_tags_indexed(index)
+  let tags = helpers.extract_tags(index)
   let runbook =
-    helpers.extract_value_indexed(index, "runbook", fn(v) {
+    helpers.extract_value(index, "runbook", fn(v) {
       case v {
         value.NilValue -> Ok(option.None)
         value.StringValue(s) -> Ok(option.Some(s))
@@ -341,7 +341,7 @@ fn build_slo_fields(
       }
     })
     |> result.unwrap(option.None)
-  let relations = helpers.extract_depends_on_indexed(index)
+  let relations = helpers.extract_depends_on(index)
   let depends_on = case dict.is_empty(relations) {
     True -> option.None
     False -> option.Some(relations)
