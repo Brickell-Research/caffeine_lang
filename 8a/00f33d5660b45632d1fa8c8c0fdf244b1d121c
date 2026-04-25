@@ -1,0 +1,18 @@
+gleam.toml
+  h_bf999c3f841c45 2
+README.md
+  h_bf999c3f841c45 25
+src/caffeine_lang/constants.gleam
+  h_bf999c3f841c45 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "8a00f33d5660b45632d1fa8c8c0fdf244b1d121c",
+  "prompts": {},
+  "humans": {
+    "h_bf999c3f841c45": {
+      "author": "robertDurst"
+    }
+  }
+}
