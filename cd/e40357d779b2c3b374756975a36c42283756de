@@ -1,0 +1,27 @@
+src/caffeine_lang/linker/ir_builder.gleam
+  343070cf5350578a 327,329-330,332,334,336,344
+test/caffeine_lang/helpers_test.gleam
+  343070cf5350578a 43-55,58,62,66,70,99-106,110,117,124
+src/caffeine_lang/helpers.gleam
+  343070cf5350578a 72-74,87,99,145,148,154,165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "cde40357d779b2c3b374756975a36c42283756de",
+  "prompts": {
+    "343070cf5350578a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "feef9422-85ef-404a-af8a-c13bd14f9265",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 132,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
