@@ -1,0 +1,32 @@
+gleam.toml
+  h_bf999c3f841c45 2
+README.md
+  h_bf999c3f841c45 25
+src/caffeine_lang/constants.gleam
+  h_bf999c3f841c45 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "654daf20907b39e8b021b3d4a1249d8421f618e5",
+  "prompts": {
+    "e1e1ac07eed484f4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "13a65ade-384a-4815-b61f-9175ff545690",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 17,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_bf999c3f841c45": {
+      "author": "robertDurst"
+    }
+  }
+}
