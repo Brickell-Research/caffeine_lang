@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/newrelic
+import caffeine_lang/codegen/platforms
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
@@ -51,7 +52,7 @@ fn make_newrelic_ir(
 // * ✅ includes newrelic provider requirement
 // * ✅ version constraint is ~> 3.0
 pub fn terraform_settings_test() {
-  let settings = newrelic.terraform_settings()
+  let settings = platforms.terraform_settings(platforms.for_vendor(vendor.NewRelic))
 
   dict.get(settings.required_providers, "newrelic")
   |> should.be_ok
@@ -66,7 +67,7 @@ pub fn terraform_settings_test() {
 // * ✅ provider name is newrelic
 // * ✅ uses variable references for account_id, api_key, and region
 pub fn provider_test() {
-  let provider = newrelic.provider()
+  let provider = platforms.provider(platforms.for_vendor(vendor.NewRelic))
 
   provider.name |> should.equal("newrelic")
   provider.alias |> should.equal(option.None)
@@ -82,7 +83,7 @@ pub fn provider_test() {
 // * ✅ includes newrelic_region variable (string, default "US")
 // * ✅ includes newrelic_entity_guid variable (string, not sensitive)
 pub fn variables_test() {
-  let vars = newrelic.variables()
+  let vars = platforms.for_vendor(vendor.NewRelic).variables
 
   list.length(vars) |> should.equal(4)
 
@@ -205,9 +206,9 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
     let expected = test_helpers.read_generator_corpus(corpus_name)
-    newrelic.generate_terraform(input)
-    |> test_helpers.normalize_terraform_result
-    |> should.equal(Ok(expected))
+    platforms.generate_terraform(platforms.for_vendor(vendor.NewRelic), input)
+    |> test_helpers.normalize_terraform_result_with_warnings
+    |> should.equal(Ok(#(expected, [])))
   })
 }
 
@@ -247,9 +248,9 @@ pub fn generate_terraform_multiple_slos_test() {
       ],
     )
 
-  let result = newrelic.generate_terraform([ir1, ir2])
+  let result = platforms.generate_terraform(platforms.for_vendor(vendor.NewRelic), [ir1, ir2])
   result |> should.be_ok
-  let assert Ok(tf) = result
+  let assert Ok(#(tf, _)) = result
 
   // Both resources should be present
   string.contains(

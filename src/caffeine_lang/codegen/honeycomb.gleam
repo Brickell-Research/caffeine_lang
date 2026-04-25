@@ -12,19 +12,6 @@ import terra_madre/common
 import terra_madre/hcl
 import terra_madre/terraform
 
-/// Generate Terraform HCL from a list of Honeycomb IntermediateRepresentations.
-pub fn generate_terraform(
-  irs: List(IntermediateRepresentation(Resolved)),
-) -> Result(String, CompilationError) {
-  generator_utils.generate_terraform(
-    irs,
-    settings: terraform_settings(),
-    provider: provider(),
-    variables: variables(),
-    generate_resources: generate_resources,
-  )
-}
-
 /// Generate only the Terraform resources for Honeycomb IRs (no config/provider).
 @internal
 pub fn generate_resources(
@@ -34,50 +21,6 @@ pub fn generate_resources(
     irs,
     mapper: ir_to_terraform_resources,
   )
-}
-
-/// Terraform settings block with required Honeycomb provider.
-@internal
-pub fn terraform_settings() -> terraform.TerraformSettings {
-  generator_utils.build_terraform_settings(
-    provider_name: constants.provider_honeycombio,
-    source: "honeycombio/honeycombio",
-    version: "~> 0.31",
-  )
-}
-
-/// Honeycomb provider configuration using variables for credentials.
-@internal
-pub fn provider() -> terraform.Provider {
-  generator_utils.build_provider(
-    name: constants.provider_honeycombio,
-    attributes: [#("api_key", hcl.ref("var.honeycomb_api_key"))],
-  )
-}
-
-/// Variables for Honeycomb API credentials and dataset.
-@internal
-pub fn variables() -> List(terraform.Variable) {
-  [
-    terraform.Variable(
-      name: "honeycomb_api_key",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Honeycomb API key"),
-      sensitive: option.Some(True),
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "honeycomb_dataset",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Honeycomb dataset slug"),
-      sensitive: option.None,
-      nullable: option.None,
-      validation: [],
-    ),
-  ]
 }
 
 /// Convert a single IntermediateRepresentation to Honeycomb Terraform Resources.

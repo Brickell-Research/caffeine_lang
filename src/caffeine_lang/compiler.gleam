@@ -1,12 +1,9 @@
 import caffeine_lang/analysis/dependency_validator
 import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
-import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
-import caffeine_lang/codegen/dynatrace
 import caffeine_lang/codegen/generator_utils
-import caffeine_lang/codegen/honeycomb
-import caffeine_lang/codegen/newrelic
+import caffeine_lang/codegen/platforms
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/expectations
@@ -88,57 +85,6 @@ fn run_semantic_analysis(
   semantic_analyzer.resolve_intermediate_representations(validated_irs)
 }
 
-/// Vendor-specific platform configuration bundling code generation
-/// and Terraform boilerplate.
-type VendorPlatform {
-  VendorPlatform(
-    vendor: vendor.Vendor,
-    generate_resources: fn(List(IntermediateRepresentation(Resolved))) ->
-      Result(#(List(terraform.Resource), List(String)), errors.CompilationError),
-    terraform_settings: terraform.TerraformSettings,
-    provider: terraform.Provider,
-    variables: List(terraform.Variable),
-  )
-}
-
-/// Returns the platform configuration for a given vendor.
-fn platform_for(v: vendor.Vendor) -> VendorPlatform {
-  case v {
-    vendor.Datadog ->
-      VendorPlatform(
-        vendor: vendor.Datadog,
-        generate_resources: datadog.generate_resources,
-        terraform_settings: datadog.terraform_settings(),
-        provider: datadog.provider(),
-        variables: datadog.variables(),
-      )
-    vendor.Honeycomb ->
-      VendorPlatform(
-        vendor: vendor.Honeycomb,
-        generate_resources: honeycomb.generate_resources,
-        terraform_settings: honeycomb.terraform_settings(),
-        provider: honeycomb.provider(),
-        variables: honeycomb.variables(),
-      )
-    vendor.Dynatrace ->
-      VendorPlatform(
-        vendor: vendor.Dynatrace,
-        generate_resources: dynatrace.generate_resources,
-        terraform_settings: dynatrace.terraform_settings(),
-        provider: dynatrace.provider(),
-        variables: dynatrace.variables(),
-      )
-    vendor.NewRelic ->
-      VendorPlatform(
-        vendor: vendor.NewRelic,
-        generate_resources: newrelic.generate_resources,
-        terraform_settings: newrelic.terraform_settings(),
-        provider: newrelic.provider(),
-        variables: newrelic.variables(),
-      )
-  }
-}
-
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
@@ -152,9 +98,9 @@ fn run_code_generation(
   let active_groups =
     grouped
     |> dict.to_list
-    |> list.map(fn(pair) { #(platform_for(pair.0), pair.1) })
+    |> list.map(fn(pair) { #(platforms.for_vendor(pair.0), pair.1) })
   let active_groups = case list.is_empty(active_groups) {
-    True -> [#(platform_for(vendor.Datadog), [])]
+    True -> [#(platforms.for_vendor(vendor.Datadog), [])]
     False -> active_groups
   }
 
@@ -168,14 +114,12 @@ fn run_code_generation(
       use #(vendor_resources, vendor_warnings) <- result.try(
         platform.generate_resources(irs),
       )
+      let settings = platforms.terraform_settings(platform)
       Ok(#(
         list.append(resources, vendor_resources),
         list.append(warnings, vendor_warnings),
-        list.append(
-          req_provs,
-          dict.to_list(platform.terraform_settings.required_providers),
-        ),
-        list.append(provs, [platform.provider]),
+        list.append(req_provs, dict.to_list(settings.required_providers)),
+        list.append(provs, [platforms.provider(platform)]),
         list.append(vars, platform.variables),
       ))
     }),

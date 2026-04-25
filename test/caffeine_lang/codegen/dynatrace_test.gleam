@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/dynatrace
+import caffeine_lang/codegen/platforms
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
@@ -51,7 +52,7 @@ fn make_dynatrace_ir(
 // * ✅ includes dynatrace provider requirement
 // * ✅ version constraint is ~> 1.0
 pub fn terraform_settings_test() {
-  let settings = dynatrace.terraform_settings()
+  let settings = platforms.terraform_settings(platforms.for_vendor(vendor.Dynatrace))
 
   dict.get(settings.required_providers, "dynatrace")
   |> should.be_ok
@@ -66,7 +67,7 @@ pub fn terraform_settings_test() {
 // * ✅ provider name is dynatrace
 // * ✅ uses variable references for dt_env_url and dt_api_token
 pub fn provider_test() {
-  let provider = dynatrace.provider()
+  let provider = platforms.provider(platforms.for_vendor(vendor.Dynatrace))
 
   provider.name |> should.equal("dynatrace")
   provider.alias |> should.equal(option.None)
@@ -79,7 +80,7 @@ pub fn provider_test() {
 // * ✅ includes dynatrace_env_url variable (not sensitive)
 // * ✅ includes dynatrace_api_token variable (sensitive)
 pub fn variables_test() {
-  let vars = dynatrace.variables()
+  let vars = platforms.for_vendor(vendor.Dynatrace).variables
 
   list.length(vars) |> should.equal(2)
 
@@ -129,9 +130,9 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
     let expected = test_helpers.read_generator_corpus(corpus_name)
-    dynatrace.generate_terraform(input)
-    |> test_helpers.normalize_terraform_result
-    |> should.equal(Ok(expected))
+    platforms.generate_terraform(platforms.for_vendor(vendor.Dynatrace), input)
+    |> test_helpers.normalize_terraform_result_with_warnings
+    |> should.equal(Ok(#(expected, [])))
   })
 }
 
@@ -168,9 +169,9 @@ pub fn generate_terraform_multiple_slos_test() {
       [#("sli", "builtin:service.response.time:splitBy()")],
     )
 
-  let result = dynatrace.generate_terraform([ir1, ir2])
+  let result = platforms.generate_terraform(platforms.for_vendor(vendor.Dynatrace), [ir1, ir2])
   result |> should.be_ok
-  let assert Ok(tf) = result
+  let assert Ok(#(tf, _)) = result
 
   // Both resources should be present
   string.contains(tf, "\"dynatrace_slo_v2\" \"acme_payments_api_success\"")

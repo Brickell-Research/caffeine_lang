@@ -14,19 +14,6 @@ import terra_madre/common
 import terra_madre/hcl
 import terra_madre/terraform
 
-/// Generate Terraform HCL from a list of New Relic IntermediateRepresentations.
-pub fn generate_terraform(
-  irs: List(IntermediateRepresentation(Resolved)),
-) -> Result(String, CompilationError) {
-  generator_utils.generate_terraform(
-    irs,
-    settings: terraform_settings(),
-    provider: provider(),
-    variables: variables(),
-    generate_resources: generate_resources,
-  )
-}
-
 /// Generate only the Terraform resources for New Relic IRs (no config/provider).
 @internal
 pub fn generate_resources(
@@ -36,69 +23,6 @@ pub fn generate_resources(
     irs,
     mapper: ir_to_terraform_resource,
   )
-}
-
-/// Terraform settings block with required New Relic provider.
-@internal
-pub fn terraform_settings() -> terraform.TerraformSettings {
-  generator_utils.build_terraform_settings(
-    provider_name: constants.provider_newrelic,
-    source: "newrelic/newrelic",
-    version: "~> 3.0",
-  )
-}
-
-/// New Relic provider configuration using variables for credentials.
-@internal
-pub fn provider() -> terraform.Provider {
-  generator_utils.build_provider(name: constants.provider_newrelic, attributes: [
-    #("account_id", hcl.ref("var.newrelic_account_id")),
-    #("api_key", hcl.ref("var.newrelic_api_key")),
-    #("region", hcl.ref("var.newrelic_region")),
-  ])
-}
-
-/// Variables for New Relic account ID, API key, and region.
-@internal
-pub fn variables() -> List(terraform.Variable) {
-  [
-    terraform.Variable(
-      name: "newrelic_account_id",
-      type_constraint: option.Some(hcl.Identifier("number")),
-      default: option.None,
-      description: option.Some("New Relic account ID"),
-      sensitive: option.None,
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "newrelic_api_key",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("New Relic API key"),
-      sensitive: option.Some(True),
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "newrelic_region",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.Some(hcl.StringLiteral("US")),
-      description: option.Some("New Relic region"),
-      sensitive: option.None,
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "newrelic_entity_guid",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("New Relic entity GUID"),
-      sensitive: option.None,
-      nullable: option.None,
-      validation: [],
-    ),
-  ]
 }
 
 /// Convert a single IntermediateRepresentation to a New Relic Terraform Resource.

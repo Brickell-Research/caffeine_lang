@@ -155,21 +155,6 @@ const default_evaluation = "numerator / denominator"
 /// Includes provider configuration and variables.
 /// Note: Datadog does not use generator_utils.generate_terraform because it
 /// returns warnings alongside the HCL string.
-pub fn generate_terraform(
-  irs: List(IntermediateRepresentation(Resolved)),
-) -> Result(#(String, List(String)), CompilationError) {
-  use #(resources, warnings) <- result.try(generate_resources(irs))
-  Ok(#(
-    generator_utils.render_terraform_config(
-      resources: resources,
-      settings: terraform_settings(),
-      providers: [provider()],
-      variables: variables(),
-    ),
-    warnings,
-  ))
-}
-
 /// Generate only the Terraform resources for Datadog IRs (no config/provider).
 @internal
 pub fn generate_resources(
@@ -184,50 +169,6 @@ pub fn generate_resources(
   |> result.map(fn(pair) {
     #(list.reverse(pair.0), list.flatten(list.reverse(pair.1)))
   })
-}
-
-/// Terraform settings block with required Datadog provider.
-@internal
-pub fn terraform_settings() -> terraform.TerraformSettings {
-  generator_utils.build_terraform_settings(
-    provider_name: constants.provider_datadog,
-    source: "DataDog/datadog",
-    version: "~> 3.0",
-  )
-}
-
-/// Datadog provider configuration using variables for credentials.
-@internal
-pub fn provider() -> terraform.Provider {
-  generator_utils.build_provider(name: constants.provider_datadog, attributes: [
-    #("api_key", hcl.ref("var.datadog_api_key")),
-    #("app_key", hcl.ref("var.datadog_app_key")),
-  ])
-}
-
-/// Variables for Datadog API credentials.
-@internal
-pub fn variables() -> List(terraform.Variable) {
-  [
-    terraform.Variable(
-      name: "datadog_api_key",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Datadog API key"),
-      sensitive: option.Some(True),
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "datadog_app_key",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Datadog Application key"),
-      sensitive: option.Some(True),
-      nullable: option.None,
-      validation: [],
-    ),
-  ]
 }
 
 /// Convert a single IntermediateRepresentation to a Terraform Resource.

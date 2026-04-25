@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/honeycomb
+import caffeine_lang/codegen/platforms
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
@@ -51,7 +52,7 @@ fn make_honeycomb_ir(
 // * ✅ includes honeycombio provider requirement
 // * ✅ version constraint is ~> 0.31
 pub fn terraform_settings_test() {
-  let settings = honeycomb.terraform_settings()
+  let settings = platforms.terraform_settings(platforms.for_vendor(vendor.Honeycomb))
 
   // Check that honeycombio provider is required
   dict.get(settings.required_providers, "honeycombio")
@@ -69,7 +70,7 @@ pub fn terraform_settings_test() {
 // * ✅ uses variable reference for api_key
 // * ✅ does not have app_key (unlike Datadog)
 pub fn provider_test() {
-  let provider = honeycomb.provider()
+  let provider = platforms.provider(platforms.for_vendor(vendor.Honeycomb))
 
   provider.name |> should.equal("honeycombio")
   provider.alias |> should.equal(option.None)
@@ -85,7 +86,7 @@ pub fn provider_test() {
 // * ✅ includes honeycomb_api_key variable (sensitive)
 // * ✅ includes honeycomb_dataset variable (not sensitive)
 pub fn variables_test() {
-  let vars = honeycomb.variables()
+  let vars = platforms.for_vendor(vendor.Honeycomb).variables
 
   // Should have 2 variables
   list.length(vars) |> should.equal(2)
@@ -133,9 +134,9 @@ pub fn generate_terraform_test() {
   |> list.each(fn(pair) {
     let #(input, corpus_name) = pair
     let expected = test_helpers.read_generator_corpus(corpus_name)
-    honeycomb.generate_terraform(input)
-    |> test_helpers.normalize_terraform_result
-    |> should.equal(Ok(expected))
+    platforms.generate_terraform(platforms.for_vendor(vendor.Honeycomb), input)
+    |> test_helpers.normalize_terraform_result_with_warnings
+    |> should.equal(Ok(#(expected, [])))
   })
 }
 
@@ -271,9 +272,9 @@ pub fn generate_terraform_multiple_slos_test() {
       [#("sli", "HEATMAP(duration_ms)")],
     )
 
-  let result = honeycomb.generate_terraform([ir1, ir2])
+  let result = platforms.generate_terraform(platforms.for_vendor(vendor.Honeycomb), [ir1, ir2])
   result |> should.be_ok
-  let assert Ok(tf) = result
+  let assert Ok(#(tf, _)) = result
 
   // Both derived columns and SLOs should be present
   string.contains(tf, "acme_payments_api_success_sli") |> should.be_true
@@ -347,9 +348,9 @@ pub fn generate_terraform_with_tags_test() {
       vendor: option.Some(vendor.Honeycomb),
     )
 
-  let result = honeycomb.generate_terraform([ir])
+  let result = platforms.generate_terraform(platforms.for_vendor(vendor.Honeycomb), [ir])
   result |> should.be_ok
-  let assert Ok(tf) = result
+  let assert Ok(#(tf, _)) = result
 
   // User tags should appear sanitized in the output
   string.contains(tf, "env") |> should.be_true

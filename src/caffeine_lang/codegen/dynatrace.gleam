@@ -10,19 +10,6 @@ import terra_madre/common
 import terra_madre/hcl
 import terra_madre/terraform
 
-/// Generate Terraform HCL from a list of Dynatrace IntermediateRepresentations.
-pub fn generate_terraform(
-  irs: List(IntermediateRepresentation(Resolved)),
-) -> Result(String, CompilationError) {
-  generator_utils.generate_terraform(
-    irs,
-    settings: terraform_settings(),
-    provider: provider(),
-    variables: variables(),
-    generate_resources: generate_resources,
-  )
-}
-
 /// Generate only the Terraform resources for Dynatrace IRs (no config/provider).
 @internal
 pub fn generate_resources(
@@ -32,53 +19,6 @@ pub fn generate_resources(
     irs,
     mapper: ir_to_terraform_resource,
   )
-}
-
-/// Terraform settings block with required Dynatrace provider.
-@internal
-pub fn terraform_settings() -> terraform.TerraformSettings {
-  generator_utils.build_terraform_settings(
-    provider_name: constants.provider_dynatrace,
-    source: "dynatrace-oss/dynatrace",
-    version: "~> 1.0",
-  )
-}
-
-/// Dynatrace provider configuration using variables for credentials.
-@internal
-pub fn provider() -> terraform.Provider {
-  generator_utils.build_provider(
-    name: constants.provider_dynatrace,
-    attributes: [
-      #("dt_env_url", hcl.ref("var.dynatrace_env_url")),
-      #("dt_api_token", hcl.ref("var.dynatrace_api_token")),
-    ],
-  )
-}
-
-/// Variables for Dynatrace environment URL and API token.
-@internal
-pub fn variables() -> List(terraform.Variable) {
-  [
-    terraform.Variable(
-      name: "dynatrace_env_url",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Dynatrace environment URL"),
-      sensitive: option.None,
-      nullable: option.None,
-      validation: [],
-    ),
-    terraform.Variable(
-      name: "dynatrace_api_token",
-      type_constraint: option.Some(hcl.Identifier("string")),
-      default: option.None,
-      description: option.Some("Dynatrace API token"),
-      sensitive: option.Some(True),
-      nullable: option.None,
-      validation: [],
-    ),
-  ]
 }
 
 /// Convert a single IntermediateRepresentation to a Dynatrace Terraform Resource.

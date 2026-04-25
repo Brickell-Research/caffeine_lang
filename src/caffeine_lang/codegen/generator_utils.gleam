@@ -209,25 +209,3 @@ pub fn generate_resources_multi(
   |> result.map(fn(lists) { #(list.flatten(lists), []) })
 }
 
-/// Generate Terraform HCL by assembling resources, settings, provider, and variables.
-/// Discards warnings from resource generation. Suitable for vendors whose
-/// `generate_terraform` returns `Result(String, CompilationError)`.
-@internal
-pub fn generate_terraform(
-  irs: List(IntermediateRepresentation(phase)),
-  settings settings: TerraformSettings,
-  provider provider: Provider,
-  variables variables: List(Variable),
-  generate_resources generate_resources: fn(
-    List(IntermediateRepresentation(phase)),
-  ) ->
-    Result(#(List(Resource), List(String)), CompilationError),
-) -> Result(String, CompilationError) {
-  use #(resources, _warnings) <- result.try(generate_resources(irs))
-  Ok(render_terraform_config(
-    resources: resources,
-    settings: settings,
-    providers: [provider],
-    variables: variables,
-  ))
-}

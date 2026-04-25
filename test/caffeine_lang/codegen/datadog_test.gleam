@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
+import caffeine_lang/codegen/platforms
 import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
@@ -24,7 +25,7 @@ import test_helpers
 // * ✅ includes Datadog provider requirement
 // * ✅ version constraint is ~> 3.0
 pub fn terraform_settings_test() {
-  let settings = datadog.terraform_settings()
+  let settings = platforms.terraform_settings(platforms.for_vendor(vendor.Datadog))
 
   // Check that datadog provider is required
   dict.get(settings.required_providers, constants.vendor_datadog)
@@ -41,7 +42,7 @@ pub fn terraform_settings_test() {
 // * ✅ provider name is datadog
 // * ✅ uses variable references for credentials
 pub fn provider_test() {
-  let provider = datadog.provider()
+  let provider = platforms.provider(platforms.for_vendor(vendor.Datadog))
 
   provider.name |> should.equal(constants.vendor_datadog)
   provider.alias |> should.equal(option.None)
@@ -56,7 +57,7 @@ pub fn provider_test() {
 // * ✅ includes datadog_app_key variable
 // * ✅ variables are marked as sensitive
 pub fn variables_test() {
-  let vars = datadog.variables()
+  let vars = platforms.for_vendor(vendor.Datadog).variables
 
   // Should have 2 variables
   list.length(vars) |> should.equal(2)
@@ -1048,7 +1049,7 @@ pub fn generate_terraform_test() {
           string.drop_end(corpus_file, string.length("_WITH_WARNINGS"))
         let expected = test_helpers.read_generator_corpus(actual_corpus)
         let result =
-          datadog.generate_terraform(input)
+          platforms.generate_terraform(platforms.for_vendor(vendor.Datadog), input)
           |> test_helpers.normalize_terraform_result_with_warnings
         case result {
           Ok(#(tf, warnings)) -> {
@@ -1060,7 +1061,7 @@ pub fn generate_terraform_test() {
       }
       False -> {
         let expected = test_helpers.read_generator_corpus(corpus_file)
-        datadog.generate_terraform(input)
+        platforms.generate_terraform(platforms.for_vendor(vendor.Datadog), input)
         |> test_helpers.normalize_terraform_result_with_warnings
         |> should.equal(Ok(#(expected, [])))
       }
