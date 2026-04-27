@@ -1,0 +1,30 @@
+src/caffeine_lang/codegen/generator_utils.gleam
+  521b625004451df9 116-117
+README.md
+  h_bf999c3f841c45 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "e6f55be0398d160d37869f99580b4fe8e3c2e4ef",
+  "prompts": {
+    "521b625004451df9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fdeaab5-807a-486e-a253-37c11bda0a60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 1115,
+      "accepted_lines": 2,
+      "overriden_lines": 1
+    }
+  },
+  "humans": {
+    "h_bf999c3f841c45": {
+      "author": "robertDurst"
+    }
+  }
+}
