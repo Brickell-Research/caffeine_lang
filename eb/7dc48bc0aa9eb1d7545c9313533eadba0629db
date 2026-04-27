@@ -1,0 +1,55 @@
+test/caffeine_lang/helpers_test.gleam
+  521b625004451df9 85-89
+src/caffeine_lang/codegen/datadog.gleam
+  521b625004451df9 2
+src/caffeine_query_language/parser.gleam
+  521b625004451df9 241-244
+src/caffeine_lang/frontend/lowering.gleam
+  521b625004451df9 287-290
+src/caffeine_lang/helpers.gleam
+  521b625004451df9 145
+test/caffeine_lang/linker/ir_builder_test.gleam
+  521b625004451df9 39-42,48-56
+src/caffeine_lang/string_distance.gleam
+  521b625004451df9 71-74
+gleam.toml
+  521b625004451df9 28
+src/caffeine_lang/codegen/dependency_graph.gleam
+  521b625004451df9 57-59
+src/caffeine_lang/position_utils.gleam
+  521b625004451df9 30-34
+src/caffeine_lang/errors.gleam
+  521b625004451df9 120-122
+src/caffeine_lang/frontend/tokenizer.gleam
+  521b625004451df9 15-17,404-407
+src/caffeine_lang/analysis/templatizer.gleam
+  521b625004451df9 285-288
+test/caffeine_lang/codegen/datadog_test.gleam
+  521b625004451df9 28-29,1053-1056,1068-1071
+src/caffeine_lang/frontend/validator.gleam
+  521b625004451df9 668-670
+test/caffeine_lang/frontend/parser_test.gleam
+  521b625004451df9 83-86
+test/caffeine_lang/compiler_test.gleam
+  521b625004451df9 107-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "eb7dc48bc0aa9eb1d7545c9313533eadba0629db",
+  "prompts": {
+    "521b625004451df9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fdeaab5-807a-486e-a253-37c11bda0a60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 1,
+      "accepted_lines": 183,
+      "overriden_lines": 0
+    }
+  }
+}
