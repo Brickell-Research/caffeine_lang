@@ -80,7 +80,10 @@ fn optional_type(inner: types.ParsedType) -> types.ParsedType {
   types.ParsedModifier(types.Optional(inner))
 }
 
-fn defaulted_type(inner: types.ParsedType, default: String) -> types.ParsedType {
+fn defaulted_type(
+  inner: types.ParsedType,
+  default: String,
+) -> types.ParsedType {
   types.ParsedModifier(types.Defaulted(inner, default))
 }
 

@@ -1,4 +1,5 @@
 import caffeine_lang/analysis/templatizer
+import caffeine_lang/codegen/datadog_cql
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
@@ -12,7 +13,6 @@ import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
 import caffeine_lang/value
-import caffeine_query_language/generator as cql_generator
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -187,8 +187,8 @@ pub fn ir_to_terraform_resource(
   let runbook = slo.runbook
 
   // Parse the evaluation expression using CQL and get HCL blocks.
-  use cql_generator.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
-    cql_generator.resolve_slo_to_hcl(evaluation_expr, indicators)
+  use datadog_cql.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
+    datadog_cql.resolve_slo_to_hcl(evaluation_expr, indicators)
     |> result.map_error(fn(err) {
       errors.generator_slo_query_resolution_error(
         msg: "expectation '"
@@ -272,8 +272,8 @@ pub fn ir_to_terraform_resource(
     ])
 
   let type_str = case slo_type {
-    cql_generator.TimeSliceSlo -> "time_slice"
-    cql_generator.MetricSlo -> "metric"
+    datadog_cql.TimeSliceSlo -> "time_slice"
+    datadog_cql.MetricSlo -> "metric"
   }
 
   let base_attributes = [

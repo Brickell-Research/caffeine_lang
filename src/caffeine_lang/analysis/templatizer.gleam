@@ -282,7 +282,10 @@ pub fn resolve_template(
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw string value.
 @internal
-pub fn resolve_string_value(template: TemplateVariable, value: String) -> String {
+pub fn resolve_string_value(
+  template: TemplateVariable,
+  value: String,
+) -> String {
   let attr = template.datadog_attr
   case template.template_type {
     Raw -> value

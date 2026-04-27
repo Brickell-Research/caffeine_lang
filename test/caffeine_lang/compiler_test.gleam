@@ -104,7 +104,9 @@ pub fn compile_test() {
       [read_vendor_measurement(input_measurements_path, vendor.Datadog)],
       read_expectations_dir(input_expectations_dir),
     )
-    |> result.map(fn(output) { test_helpers.normalize_terraform(output.terraform) })
+    |> result.map(fn(output) {
+      test_helpers.normalize_terraform(output.terraform)
+    })
   })
 }
 

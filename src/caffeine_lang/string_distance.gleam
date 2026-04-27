@@ -68,7 +68,10 @@ fn build_row_loop(
 
 /// Returns the closest match from a list of candidates, if within threshold.
 /// Threshold: distance <= max(2, ceil(length(target) * 0.4)).
-pub fn closest_match(target: String, candidates: List(String)) -> Option(String) {
+pub fn closest_match(
+  target: String,
+  candidates: List(String),
+) -> Option(String) {
   let target_len = string.length(target)
   let threshold =
     int.max(2, float.truncate(int.to_float(target_len) *. 0.4 +. 0.99))

@@ -284,7 +284,10 @@ fn transform_template_vars(s: String) -> String {
   transform_template_vars_loop(s, [])
 }
 
-fn transform_template_vars_loop(remaining: String, acc: List(String)) -> String {
+fn transform_template_vars_loop(
+  remaining: String,
+  acc: List(String),
+) -> String {
   case string.split_once(remaining, "$") {
     Ok(#(before, after)) -> {
       // Check if this is an escaped $$ (already transformed)

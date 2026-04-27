@@ -117,7 +117,9 @@ pub fn semantic_analysis_dependency_validation_error(
 }
 
 /// Creates a GeneratorSloQueryResolutionError with empty context.
-pub fn generator_slo_query_resolution_error(msg msg: String) -> CompilationError {
+pub fn generator_slo_query_resolution_error(
+  msg msg: String,
+) -> CompilationError {
   GeneratorSloQueryResolutionError(msg:, context: empty_context())
 }
 

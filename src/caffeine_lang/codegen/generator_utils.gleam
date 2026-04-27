@@ -207,4 +207,3 @@ pub fn generate_resources_multi(
   |> list.try_map(mapper)
   |> result.map(fn(lists) { #(list.flatten(lists), []) })
 }
-
