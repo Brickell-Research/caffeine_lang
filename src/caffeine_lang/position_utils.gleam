@@ -27,7 +27,11 @@ fn find_in_lines(
 
 /// Searches for `name` as a whole word within `line`, starting from `offset`.
 /// Returns Ok(column) as 0-indexed offset on match, Error(Nil) if not found.
-fn find_whole_word(line: String, name: String, offset: Int) -> Result(Int, Nil) {
+fn find_whole_word(
+  line: String,
+  name: String,
+  offset: Int,
+) -> Result(Int, Nil) {
   case string.split_once(line, name) {
     Error(_) -> Error(Nil)
     Ok(#(before, after)) -> {

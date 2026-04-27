@@ -54,7 +54,9 @@ fn build_node(ir: IntermediateRepresentation(Resolved)) -> String {
 }
 
 /// Generates Mermaid edge declarations for hard and soft dependencies.
-fn build_edges(irs: List(IntermediateRepresentation(Resolved))) -> List(String) {
+fn build_edges(
+  irs: List(IntermediateRepresentation(Resolved)),
+) -> List(String) {
   irs
   |> list.flat_map(fn(ir) {
     let source_id = sanitize_id(ir_to_identifier(ir))

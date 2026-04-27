@@ -25,6 +25,7 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 "caffeine_lang/analysis/templatizer" = true
 # Code generation (vendor-specific internals)
 "caffeine_lang/codegen/datadog" = true
+"caffeine_lang/codegen/datadog_cql" = true
 "caffeine_lang/codegen/dependency_graph" = true
 "caffeine_lang/codegen/generator_utils" = true
 # Frontend (internal helpers)

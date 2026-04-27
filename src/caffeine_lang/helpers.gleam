@@ -142,9 +142,7 @@ fn extract_relations_from_value_tuple(
 
 /// Extract the window_in_days from an indexed Dict, falling back to the default.
 @internal
-pub fn extract_window_in_days(
-  index: dict.Dict(String, ValueTuple),
-) -> Int {
+pub fn extract_window_in_days(index: dict.Dict(String, ValueTuple)) -> Int {
   extract_value(index, "window_in_days", value.extract_int)
   |> result.unwrap(default_window_in_days)
 }

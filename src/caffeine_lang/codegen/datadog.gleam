@@ -1,4 +1,5 @@
 import caffeine_lang/analysis/templatizer
+import caffeine_lang/codegen/datadog_cql
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
@@ -12,7 +13,6 @@ import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
 import caffeine_lang/value
-import caffeine_lang/codegen/datadog_cql
 import gleam/dict
 import gleam/int
 import gleam/list

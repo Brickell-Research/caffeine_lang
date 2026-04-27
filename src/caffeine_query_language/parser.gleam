@@ -238,7 +238,10 @@ fn parse_interval(input: String) -> Result(Float, String) {
         len >= 3 && string.slice(trimmed, len - 2, 2) == "ms"
       {
         True -> #("ms", string.slice(trimmed, 0, len - 2))
-        False -> #(string.slice(trimmed, len - 1, 1), string.slice(trimmed, 0, len - 1))
+        False -> #(
+          string.slice(trimmed, len - 1, 1),
+          string.slice(trimmed, 0, len - 1),
+        )
       }
 
       use multiplier <- result.try(case unit {

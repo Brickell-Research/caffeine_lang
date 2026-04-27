@@ -82,11 +82,11 @@ pub fn extract_path_prefix_test() {
       "examples/org/platform_team/authentication.caffeine",
       #("org", "platform_team", "authentication"),
     ),
-    #("path ending in .json", "examples/org/platform_team/auth.json", #(
-      "org",
-      "platform_team",
-      "auth",
-    )),
+    #(
+      "path ending in .json",
+      "examples/org/platform_team/auth.json",
+      #("org", "platform_team", "auth"),
+    ),
     #("path ending in .caffeine", "a/b/c", #("a", "b", "c")),
   ]
   |> test_helpers.table_test_1(helpers.extract_path_prefix)

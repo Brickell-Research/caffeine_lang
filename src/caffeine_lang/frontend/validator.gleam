@@ -665,7 +665,9 @@ fn validate_refinement_values(
 }
 
 /// Extracts the primitive type from a ParsedType, unwrapping Defaulted modifiers.
-fn extract_primitive_from_parsed(typ: ParsedType) -> Result(PrimitiveTypes, Nil) {
+fn extract_primitive_from_parsed(
+  typ: ParsedType,
+) -> Result(PrimitiveTypes, Nil) {
   case typ {
     ParsedPrimitive(primitive) -> Ok(primitive)
     ParsedModifier(Defaulted(inner, _)) -> extract_primitive_from_parsed(inner)

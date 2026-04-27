@@ -12,7 +12,9 @@ type TokenizerState {
 }
 
 /// Tokenizes source text into a list of positioned tokens.
-pub fn tokenize(source: String) -> Result(List(PositionedToken), TokenizerError) {
+pub fn tokenize(
+  source: String,
+) -> Result(List(PositionedToken), TokenizerError) {
   let state = TokenizerState(source:, line: 1, column: 1, at_line_start: True)
   tokenize_loop(state, [])
   |> result.map(list.reverse)
@@ -399,7 +401,10 @@ fn read_identifier(source: String) -> #(String, String) {
   read_identifier_loop(source, [])
 }
 
-fn read_identifier_loop(source: String, acc: List(String)) -> #(String, String) {
+fn read_identifier_loop(
+  source: String,
+  acc: List(String),
+) -> #(String, String) {
   case string.pop_grapheme(source) {
     Ok(#(char, rest)) -> {
       case is_identifier_char(char) {
