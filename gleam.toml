@@ -26,10 +26,7 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 # Code generation (vendor-specific internals)
 "caffeine_lang/codegen/datadog" = true
 "caffeine_lang/codegen/dependency_graph" = true
-"caffeine_lang/codegen/dynatrace" = true
 "caffeine_lang/codegen/generator_utils" = true
-"caffeine_lang/codegen/honeycomb" = true
-"caffeine_lang/codegen/newrelic" = true
 # Frontend (internal helpers)
 "caffeine_lang/frontend/lowering" = true
 # Linker (internal orchestration)

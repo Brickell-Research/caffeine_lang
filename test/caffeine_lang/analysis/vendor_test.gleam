@@ -12,21 +12,6 @@ pub fn resolve_vendor_test() {
       constants.vendor_datadog,
       Ok(vendor.Datadog),
     ),
-    #(
-      "known vendors resolve to Ok - honeycomb",
-      constants.vendor_honeycomb,
-      Ok(vendor.Honeycomb),
-    ),
-    #(
-      "known vendors resolve to Ok - dynatrace",
-      constants.vendor_dynatrace,
-      Ok(vendor.Dynatrace),
-    ),
-    #(
-      "known vendors resolve to Ok - newrelic",
-      constants.vendor_newrelic,
-      Ok(vendor.NewRelic),
-    ),
     #("unknown vendor returns Error", "unknown_vendor", Error(Nil)),
   ]
   |> test_helpers.table_test_1(vendor.resolve_vendor)

@@ -3,11 +3,14 @@ import gleam/list
 import gleam/string
 
 /// Supported monitoring and observability platform vendors.
+///
+/// Currently only Datadog has a generator implementation. The enum exists
+/// as the extension point for additional vendors: adding one requires a
+/// variant here, a generator module under `codegen/`, a `Platform`
+/// constructor in `codegen/platforms.gleam`, and a vendor constant in
+/// `constants.gleam`.
 pub type Vendor {
   Datadog
-  Honeycomb
-  Dynatrace
-  NewRelic
 }
 
 /// Parses a vendor string and returns the corresponding Vendor type.
@@ -16,9 +19,6 @@ pub type Vendor {
 pub fn resolve_vendor(vendor_str: String) -> Result(Vendor, Nil) {
   case vendor_str {
     v if v == constants.vendor_datadog -> Ok(Datadog)
-    v if v == constants.vendor_honeycomb -> Ok(Honeycomb)
-    v if v == constants.vendor_dynatrace -> Ok(Dynatrace)
-    v if v == constants.vendor_newrelic -> Ok(NewRelic)
     _ -> Error(Nil)
   }
 }
@@ -37,9 +37,6 @@ pub fn resolve_vendor_from_path(path: String) -> Result(Vendor, Nil) {
 pub fn vendor_to_string(v: Vendor) -> String {
   case v {
     Datadog -> constants.vendor_datadog
-    Honeycomb -> constants.vendor_honeycomb
-    Dynatrace -> constants.vendor_dynatrace
-    NewRelic -> constants.vendor_newrelic
   }
 }
 
