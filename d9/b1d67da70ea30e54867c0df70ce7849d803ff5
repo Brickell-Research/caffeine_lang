@@ -1,0 +1,27 @@
+src/caffeine_lang/codegen/datadog_cql.gleam
+  521b625004451df9 1-210
+test/caffeine_lang/codegen/datadog_cql_test.gleam
+  521b625004451df9 1-129
+src/caffeine_lang/codegen/datadog.gleam
+  521b625004451df9 190-191,275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "d9b1d67da70ea30e54867c0df70ce7849d803ff5",
+  "prompts": {
+    "521b625004451df9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2fdeaab5-807a-486e-a253-37c11bda0a60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst",
+      "messages": [],
+      "total_additions": 484,
+      "total_deletions": 368,
+      "accepted_lines": 482,
+      "overriden_lines": 0
+    }
+  }
+}
