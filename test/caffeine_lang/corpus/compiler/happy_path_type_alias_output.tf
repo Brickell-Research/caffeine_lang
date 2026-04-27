@@ -35,7 +35,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability_type
     "service:slos",
     "measurement:api_availability_with_type_alias",
     "expectation:checkout_availability_type_alias",
-    "artifact:SLO",
     "env:production",
     "status:true",
   ]

@@ -41,7 +41,6 @@ resource "honeycombio_slo" "acme_payments_api_success_rate" {
     service         = "payments"
     measurement     = "trace-availability"
     expectation     = "api-success-rate"
-    artifact        = "slo"
   }
   target_percentage = 99.5
   time_period       = 14

@@ -127,7 +127,6 @@ pub fn extract_tags_test() {
 
 // ==== build_system_tag_pairs ====
 // * ✅ includes all required system tags
-// * ✅ includes hardcoded artifact tag
 // * ✅ includes misc tags sorted
 pub fn build_system_tag_pairs_test() {
   let result =
@@ -147,8 +146,6 @@ pub fn build_system_tag_pairs_test() {
   list.contains(result, #("service", "my_service")) |> should.be_true()
   list.contains(result, #("measurement", "my_bp")) |> should.be_true()
   list.contains(result, #("expectation", "my_label")) |> should.be_true()
-  // Hardcoded artifact tag
-  list.contains(result, #("artifact", "SLO")) |> should.be_true()
   // Misc tags (sorted)
   list.contains(result, #("env", "dev")) |> should.be_true()
   list.contains(result, #("env", "prod")) |> should.be_true()

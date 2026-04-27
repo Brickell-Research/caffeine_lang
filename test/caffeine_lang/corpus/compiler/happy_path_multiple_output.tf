@@ -35,7 +35,6 @@ resource "datadog_service_level_objective" "acme_slos_auth_service_availability"
     "service:slos",
     "measurement:api_availability",
     "expectation:auth_service_availability",
-    "artifact:SLO",
     "env:production",
     "service:auth-service",
   ]
@@ -62,7 +61,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
     "service:slos",
     "measurement:api_availability",
     "expectation:checkout_availability",
-    "artifact:SLO",
     "env:production",
     "service:checkout-api",
   ]
@@ -89,7 +87,6 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
     "service:slos",
     "measurement:api_latency_p99",
     "expectation:checkout_latency_p99",
-    "artifact:SLO",
     "env:production",
     "service:checkout-api",
   ]

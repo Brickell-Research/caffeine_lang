@@ -33,7 +33,6 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "service:team",
     "measurement:test_measurement",
     "expectation:Auth Latency SLO",
-    "artifact:SLO",
     "team:override_team",
   ]
   type = "metric"

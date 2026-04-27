@@ -197,7 +197,6 @@ pub fn build_system_tag_pairs(
     #("service", service_name.value),
     #("measurement", measurement_name.value),
     #("expectation", friendly_label.value),
-    #("artifact", "SLO"),
   ]
   |> list.append(
     misc
