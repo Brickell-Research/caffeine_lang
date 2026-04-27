@@ -178,12 +178,10 @@ pub fn error_code_for(error: CompilationError) -> ErrorCode {
 }
 
 /// Maps a vendor string to its codegen error code.
+/// New vendors should be assigned a unique number in the 5xx range.
 fn vendor_to_error_code(vendor: String) -> ErrorCode {
   case vendor {
     v if v == constants.vendor_datadog -> ErrorCode("codegen", 502)
-    v if v == constants.vendor_honeycomb -> ErrorCode("codegen", 503)
-    v if v == constants.vendor_dynatrace -> ErrorCode("codegen", 504)
-    v if v == constants.vendor_newrelic -> ErrorCode("codegen", 505)
     _ -> ErrorCode("codegen", 500)
   }
 }

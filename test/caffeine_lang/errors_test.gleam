@@ -212,9 +212,6 @@ pub fn smart_constructors_test() {
 
 // ==== error_code_for - all vendor codes ====
 // * ✅ Datadog → E502
-// * ✅ Honeycomb → E503
-// * ✅ Dynatrace → E504
-// * ✅ New Relic → E505
 // * ✅ Unknown vendor → E500
 pub fn error_code_for_all_vendors_test() {
   [
@@ -226,33 +223,6 @@ pub fn error_code_for_all_vendors_test() {
         context: errors.empty_context(),
       ),
       ErrorCode("codegen", 502),
-    ),
-    #(
-      "Honeycomb",
-      errors.GeneratorTerraformResolutionError(
-        vendor: constants.vendor_honeycomb,
-        msg: "x",
-        context: errors.empty_context(),
-      ),
-      ErrorCode("codegen", 503),
-    ),
-    #(
-      "Dynatrace",
-      errors.GeneratorTerraformResolutionError(
-        vendor: constants.vendor_dynatrace,
-        msg: "x",
-        context: errors.empty_context(),
-      ),
-      ErrorCode("codegen", 504),
-    ),
-    #(
-      "New Relic",
-      errors.GeneratorTerraformResolutionError(
-        vendor: constants.vendor_newrelic,
-        msg: "x",
-        context: errors.empty_context(),
-      ),
-      ErrorCode("codegen", 505),
     ),
     #(
       "Unknown vendor",
