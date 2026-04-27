@@ -113,12 +113,11 @@ pub fn require_evaluation(
 }
 
 /// Maps a vendor constant to a human-friendly display name.
+/// Falls back to the raw string for unrecognized vendors so new variants
+/// surface readably in error messages even before they are registered here.
 fn vendor_display_name(vendor: String) -> String {
   case vendor {
     "datadog" -> "Datadog"
-    "honeycomb" -> "Honeycomb"
-    "dynatrace" -> "Dynatrace"
-    "newrelic" -> "New Relic"
     other -> other
   }
 }

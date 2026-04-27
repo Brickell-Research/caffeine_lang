@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Gleam](https://img.shields.io/badge/Gleam-FFAFF3?style=for-the-badge&logo=gleam&logoColor=black)](https://gleam.run/)
 
-The pure compiler core for the [Caffeine](https://caffeine-lang.run) DSL — generates reliability SLOs (Terraform for Datadog, Honeycomb, Dynatrace, NewRelic) from service expectation definitions.
+The pure compiler core for the [Caffeine](https://caffeine-lang.run) DSL. It generates reliability SLOs (Terraform for Datadog) from service expectation definitions. The vendor abstraction (`Vendor` enum, `Platform` registry, multi-vendor compiler dispatch) is in place so additional vendors can be added by registering a new `Platform` and generator module.
 
 </div>
 
