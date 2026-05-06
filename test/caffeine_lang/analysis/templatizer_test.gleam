@@ -4,8 +4,10 @@ import caffeine_lang/helpers
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
+import gleam/list
 import gleam/option
 import gleam/set
+import gleam/string
 import test_helpers
 
 // ==== Cleanup Empty Template Artifacts ====
@@ -1081,4 +1083,52 @@ pub fn resolve_list_value_test() {
     ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_list_value)
+}
+
+// ==== Detect @-prefixed attrs ====
+// Datadog metric filters strip `@` from log facets when generating log-based
+// metrics, so `@type:foo` and `@type IN (...)` are rejected with a 400. The
+// detector finds these in resolved query strings so the codegen can emit a
+// compile-time warning.
+pub fn detect_at_prefixed_attrs_test() {
+  [
+    #("no @ anywhere returns empty", "sum:http.requests{env:prod}", []),
+    #("scalar @attr:value", "sum:metric{@type:success}.as_count()", ["@type"]),
+    #(
+      "list @attr IN (...)",
+      "sum:app.events.hits{env:prod AND @type IN (Foo::Bar::ok, Foo::Baz::ok)}.as_count()",
+      ["@type"],
+    ),
+    #("negated scalar !@attr:value", "sum:metric{!@severity:debug}.as_count()", [
+      "@severity",
+    ]),
+    #(
+      "negated list @attr NOT IN (...)",
+      "sum:metric{@type NOT IN (a, b)}.as_count()",
+      ["@type"],
+    ),
+    #(
+      "email-like values are not flagged (preceded by alphanum)",
+      "sum:metric{owner:user@example.com}.as_count()",
+      [],
+    ),
+    #(
+      "bare `@` not followed by identifier is ignored",
+      "sum:metric{tag:@}.as_count()",
+      [],
+    ),
+    #(
+      "multiple distinct @-prefixed attrs",
+      "sum:metric{@type:foo AND @severity:bar}.as_count()",
+      ["@severity", "@type"],
+    ),
+    #(
+      "duplicate @-prefixed attr is deduplicated",
+      "sum:metric{@type:foo OR @type:bar}.as_count()",
+      ["@type"],
+    ),
+  ]
+  |> test_helpers.table_test_1(fn(query) {
+    templatizer.detect_at_prefixed_attrs(query) |> list.sort(string.compare)
+  })
 }

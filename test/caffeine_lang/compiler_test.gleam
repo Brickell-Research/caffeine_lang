@@ -283,6 +283,36 @@ pub fn compile_from_strings_test() {
       ),
       True,
     ),
+    // List(String) values with colons render bare in `IN (...)` (issue #84):
+    // Datadog's metric query parser accepts `tag IN (foo::bar, baz::qux)` —
+    // neither quoting nor escaping is required for `:` inside list elements.
+    #(
+      "happy path - list of strings with colons stays bare in IN clause",
+      #(
+        "\"event_success\":
+  Requires { env: String, event_types: List(String) }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:app.events.hits{$env->env$ AND $type->event_types$}.as_count()\",
+      denominator: \"sum:app.events.hits{$env->env$}.as_count()\"
+    }
+  }
+",
+        "Expectations measured by \"event_success\"
+  * \"pipeline_success\":
+    Provides {
+      env: \"prod\",
+      event_types: [\"Foo::Bar::ok\", \"Foo::Baz::ok\"],
+      threshold: 99.9%,
+      window_in_days: 7
+    }
+",
+        "acme/payments/slos.caffeine",
+        ["type IN (Foo::Bar::ok, Foo::Baz::ok)"],
+      ),
+      True,
+    ),
     // sad path - invalid measurement DSL
     #(
       "sad path - invalid measurement DSL",
@@ -425,6 +455,48 @@ pub fn compile_from_strings_test() {
       _ -> contains_all_substrings(result, expected_substrings)
     }
   })
+}
+
+// ==== compile_from_strings (warnings) ====
+// Datadog metric filters strip `@` from log facets when generating log-based
+// metrics, so `@type:foo` is rejected with a 400. The compiler surfaces this
+// as a warning so users see it before `terraform apply` (issue #84).
+pub fn compile_from_strings_warns_on_at_prefixed_attrs_test() {
+  let measurements_src =
+    "\"event_success\":
+  Requires { env: String, event_types: List(String) }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:app.events.hits{$env->env$ AND $@type->event_types$}.as_count()\",
+      denominator: \"sum:app.events.hits{$env->env$}.as_count()\"
+    }
+  }
+"
+
+  let expectations_src =
+    "Expectations measured by \"event_success\"
+  * \"pipeline_success\":
+    Provides {
+      env: \"prod\",
+      event_types: [\"Foo::Bar::ok\"],
+      threshold: 99.9%,
+      window_in_days: 7
+    }
+"
+
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      measurements_src,
+      expectations_src,
+      "acme/payments/slos.caffeine",
+      vendor: "datadog",
+    )
+
+  let has_at_warning =
+    output.warnings
+    |> list.any(fn(w) { string.contains(w, "@type") })
+  has_at_warning |> should.be_true()
 }
 
 // ==== compile_from_strings (dependency graph) ====

@@ -231,7 +231,7 @@ pub fn ir_to_terraform_resource(
   let overlapping_keys = set.intersection(system_tag_keys, user_tag_keys)
 
   // Collect warnings about overshadowing and filter out overshadowed system tags.
-  let #(final_system_tag_pairs, warnings) = case
+  let #(final_system_tag_pairs, overshadowing_warnings) = case
     set.size(overlapping_keys) > 0
   {
     True -> {
@@ -252,6 +252,29 @@ pub fn ir_to_terraform_resource(
     }
     False -> #(system_tag_pairs, [])
   }
+
+  // Warn about `@`-prefixed attributes in indicator/evaluation queries.
+  // Datadog rejects these because log-based metrics expose log facet `@type`
+  // as the bare metric tag `type` — querying `@type:foo` 400s.
+  let at_prefixed_attrs =
+    indicators
+    |> dict.values
+    |> list.append([evaluation_expr])
+    |> list.flat_map(templatizer.detect_at_prefixed_attrs)
+    |> list.unique
+  let at_prefix_warnings =
+    at_prefixed_attrs
+    |> list.sort(string.compare)
+    |> list.map(fn(attr) {
+      ir_to_identifier(ir)
+      <> " - query references '"
+      <> attr
+      <> "' which Datadog rejects in metric SLO filters; use bare '"
+      <> string.drop_start(attr, 1)
+      <> "' instead (Datadog strips '@' from log-based metric attribute names)"
+    })
+
+  let warnings = list.append(overshadowing_warnings, at_prefix_warnings)
 
   let tags =
     list.append(final_system_tag_pairs, user_tag_pairs)
