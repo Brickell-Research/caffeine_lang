@@ -1,0 +1,28 @@
+src/caffeine_lang/analysis/templatizer.gleam
+  s_1bf5222fd8ed4d::t_91d1263aa0bbe6 379-422
+src/caffeine_lang/codegen/datadog.gleam
+  s_1bf5222fd8ed4d::t_abc0f69760a043 234,256-277
+test/caffeine_lang/analysis/templatizer_test.gleam
+  s_1bf5222fd8ed4d::t_378eee57deec96 1096,1102-1104
+  s_1bf5222fd8ed4d::t_4986158b2e6eb7 7,10
+  s_1bf5222fd8ed4d::t_8e40b0a90cf83d 1087-1095,1097-1101,1105-1134
+test/caffeine_lang/compiler_test.gleam
+  s_1bf5222fd8ed4d::t_8eedf74c0cdc61 286-315
+  s_1bf5222fd8ed4d::t_7623ea5caaf16c 460-501
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "8a60dcddf3ff0c489dbc295cf11f6e8d46cf517e",
+  "prompts": {},
+  "sessions": {
+    "s_1bf5222fd8ed4d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d287965-850f-4399-9e27-47c690a7ffc5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
