@@ -130,6 +130,7 @@ fn format_comments(comments: List(Comment), indent: String) -> String {
         case c {
           ast.LineComment(text) -> indent <> "#" <> text <> "\n"
           ast.SectionComment(text) -> indent <> "##" <> text <> "\n"
+          ast.DocComment(text) -> indent <> "###" <> text <> "\n"
         }
       })
       |> string.concat

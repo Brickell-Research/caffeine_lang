@@ -185,6 +185,7 @@ pub fn ir_to_terraform_resource(
   let indicators = slo.indicators
   let evaluation_expr = slo.evaluation |> option.unwrap(default_evaluation)
   let runbook = slo.runbook
+  let description = slo.description
 
   // Parse the evaluation expression using CQL and get HCL blocks.
   use datadog_cql.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
@@ -282,11 +283,8 @@ pub fn ir_to_terraform_resource(
     #("tags", tags),
   ]
 
-  let attributes = case runbook {
-    option.Some(url) -> [
-      #("description", hcl.StringLiteral("[Runbook](" <> url <> ")")),
-      ..base_attributes
-    ]
+  let attributes = case build_description_expr(description, runbook) {
+    option.Some(desc_expr) -> [#("description", desc_expr), ..base_attributes]
     option.None -> base_attributes
   }
 
@@ -301,6 +299,30 @@ pub fn ir_to_terraform_resource(
     ),
     warnings,
   ))
+}
+
+/// Combine the SLO description (from `###` doc comments) with the runbook
+/// link, if either is present. Multi-line descriptions render as an HCL
+/// heredoc; single-line descriptions render as a plain string literal.
+fn build_description_expr(
+  description: option.Option(String),
+  runbook: option.Option(String),
+) -> option.Option(hcl.Expr) {
+  let runbook_link = option.map(runbook, fn(url) { "[Runbook](" <> url <> ")" })
+  let combined = case description, runbook_link {
+    option.None, option.None -> option.None
+    option.Some(d), option.None -> option.Some(d)
+    option.None, option.Some(r) -> option.Some(r)
+    option.Some(d), option.Some(r) -> option.Some(d <> "\n\n" <> r)
+  }
+  option.map(combined, description_text_to_expr)
+}
+
+fn description_text_to_expr(text: String) -> hcl.Expr {
+  case string.contains(text, "\n") {
+    True -> hcl.Heredoc("EOT", True, [hcl.LiteralPart(text <> "\n")])
+    False -> hcl.StringLiteral(text)
+  }
 }
 
 /// Build dependency relation tag pairs from the relations dict.

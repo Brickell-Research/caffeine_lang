@@ -419,6 +419,7 @@ pub fn build_all_test() {
           #("region", value.StringValue("us-east-1")),
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        description: option.None,
       )
 
     let assert Ok([ir]) =
@@ -470,6 +471,7 @@ pub fn build_all_list_misc_test() {
         ),
         #("threshold", value.PercentageValue(99.9)),
       ]),
+      description: option.None,
     )
 
   let assert Ok([ir]) =
@@ -555,5 +557,6 @@ fn make_expectation(
     name: name,
     measurement_ref: option.Some("test_measurement"),
     inputs: dict.from_list(inputs),
+    description: option.None,
   )
 }

@@ -60,7 +60,7 @@ pub fn map_slo_test() {
   // Applies transformation
   let updated =
     ir.map_slo(test_ir, fn(s) {
-      ir.SloFields(..s, threshold: 99.9, tags: [#("env", "prod")])
+      ir.SloFields(..s, threshold: 99.9, tags: [#("env", "prod")], description: option.None)
     })
   updated.slo.threshold |> should.equal(99.9)
   updated.slo.tags |> should.equal([#("env", "prod")])
@@ -84,6 +84,7 @@ pub fn slo_with_depends_on_test() {
           #(Soft, ["e.f.g.h"]),
         ]),
       ),
+      description: option.None,
     )
 
   let assert option.Some(relations) = slo.depends_on

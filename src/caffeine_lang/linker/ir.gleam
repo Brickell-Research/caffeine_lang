@@ -21,6 +21,10 @@ pub type DepsValidated
 pub type Resolved
 
 /// Structured SLO artifact fields extracted from raw values.
+///
+/// `description` is the SLO description text (sourced from `###` doc comments
+/// preceding the expectation in the source file). Datadog codegen renders it
+/// into the `description` attribute, optionally combined with the runbook link.
 pub type SloFields {
   SloFields(
     threshold: Float,
@@ -30,6 +34,7 @@ pub type SloFields {
     tags: List(#(String, String)),
     runbook: Option(String),
     depends_on: Option(dict.Dict(DependencyRelationType, List(String))),
+    description: Option(String),
   )
 }
 

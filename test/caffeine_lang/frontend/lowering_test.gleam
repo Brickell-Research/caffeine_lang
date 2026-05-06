@@ -374,6 +374,29 @@ pub fn lower_expectations_multiple_extends_test() {
   status_bool |> should.be_true
 }
 
+// ==== lower_expectations (doc comments) ====
+// * ✅ ### lines join with \n into description
+// * ✅ leading single space after ### stripped
+// * ✅ trailing whitespace per line stripped
+// * ✅ ## section comments and # line comments are ignored
+// * ✅ no doc comments → description is None
+pub fn lower_expectations_doc_comments_test() {
+  let expectations = parse_and_lower_expects("expects_with_doc_comments")
+
+  let assert [checkout, payment] = expectations
+
+  checkout.name |> should.equal("checkout")
+  checkout.description
+  |> should.equal(
+    option.Some(
+      "Tracks the checkout flow availability.\n   Owner: payments team.",
+    ),
+  )
+
+  payment.name |> should.equal("payment")
+  payment.description |> should.equal(option.None)
+}
+
 // ==== literal_to_value ====
 // * ✅ string
 // * ✅ integer

@@ -207,6 +207,7 @@ pub fn make_vendor_slo_ir(
       tags: [],
       runbook: option.None,
       depends_on: option.None,
+      description: option.None,
     ),
     vendor: option.Some(vendor_enum),
   )
@@ -225,6 +226,7 @@ fn make_test_slo_fields(
     tags: [],
     runbook: option.None,
     depends_on: option.None,
+    description: option.None,
   )
 }
 
@@ -244,5 +246,6 @@ fn make_test_slo_fields_with_deps(
     tags: [],
     runbook: option.None,
     depends_on: depends_on,
+    description: option.None,
   )
 }

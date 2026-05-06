@@ -262,7 +262,10 @@ pub fn tokenize_whitespace_test() {
 // ==== tokenize_comments ====
 // * ✅ line comment
 // * ✅ section comment
+// * ✅ doc comment
 // * ✅ comment with newline
+// * ✅ four hashes treated as doc comment with leading hash in body
+// * ✅ empty comments at EOF
 pub fn tokenize_comments_test() {
   [
     #(
@@ -276,10 +279,27 @@ pub fn tokenize_comments_test() {
       Ok([token.CommentSection(" API Availability"), token.EOF]),
     ),
     #(
+      "doc comment",
+      "### SLO description text",
+      Ok([token.CommentDoc(" SLO description text"), token.EOF]),
+    ),
+    #(
       "comment with newline",
       "# comment\n",
       Ok([token.CommentLine(" comment"), token.WhitespaceNewline, token.EOF]),
     ),
+    #(
+      "four hashes",
+      "#### body",
+      Ok([token.CommentDoc("# body"), token.EOF]),
+    ),
+    #("empty line comment at EOF", "#", Ok([token.CommentLine(""), token.EOF])),
+    #(
+      "empty section comment at EOF",
+      "##",
+      Ok([token.CommentSection(""), token.EOF]),
+    ),
+    #("empty doc comment at EOF", "###", Ok([token.CommentDoc(""), token.EOF])),
   ]
   |> test_helpers.table_test_1(tokenize_tokens)
 }

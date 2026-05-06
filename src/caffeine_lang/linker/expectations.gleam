@@ -17,11 +17,15 @@ import gleam/string
 /// An Expectation is a concrete implementation of an Artifact + Measurement.
 /// Unmeasured expectations have `measurement_ref: option.None` and skip codegen
 /// but participate in dependency validation and graph generation.
+///
+/// `description` carries the joined text of `###` doc comments that immediately
+/// preceded the source `*` entry. It flows into the Datadog SLO `description`.
 pub type Expectation {
   Expectation(
     name: String,
     measurement_ref: Option(String),
     inputs: dict.Dict(String, Value),
+    description: Option(String),
   )
 }
 

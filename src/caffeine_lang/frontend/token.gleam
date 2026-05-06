@@ -47,6 +47,7 @@ pub type Token {
   WhitespaceIndent(Int)
   CommentLine(String)
   CommentSection(String)
+  CommentDoc(String)
   Identifier(String)
   EOF
 }
@@ -96,6 +97,7 @@ pub fn to_string(tok: Token) -> String {
     WhitespaceIndent(_) -> "indent"
     CommentLine(_) -> "comment"
     CommentSection(_) -> "section comment"
+    CommentDoc(_) -> "doc comment"
     Identifier(name) -> name
     EOF -> "end of file"
   }

@@ -71,18 +71,37 @@ fn tokenize_loop(
         "#" -> {
           case string.pop_grapheme(rest) {
             Ok(#("#", after_hash)) -> {
-              let #(comment_text, remaining) = read_until_newline(after_hash)
-              tokenize_loop(
-                advance(state, remaining, 2 + string.length(comment_text)),
-                [
-                  token.PositionedToken(
-                    token.CommentSection(comment_text),
-                    state.line,
-                    state.column,
-                  ),
-                  ..acc
-                ],
-              )
+              case string.pop_grapheme(after_hash) {
+                Ok(#("#", after_third_hash)) -> {
+                  let #(comment_text, remaining) =
+                    read_until_newline(after_third_hash)
+                  tokenize_loop(
+                    advance(state, remaining, 3 + string.length(comment_text)),
+                    [
+                      token.PositionedToken(
+                        token.CommentDoc(comment_text),
+                        state.line,
+                        state.column,
+                      ),
+                      ..acc
+                    ],
+                  )
+                }
+                _ -> {
+                  let #(comment_text, remaining) = read_until_newline(after_hash)
+                  tokenize_loop(
+                    advance(state, remaining, 2 + string.length(comment_text)),
+                    [
+                      token.PositionedToken(
+                        token.CommentSection(comment_text),
+                        state.line,
+                        state.column,
+                      ),
+                      ..acc
+                    ],
+                  )
+                }
+              }
             }
             _ -> {
               let #(comment_text, remaining) = read_until_newline(rest)

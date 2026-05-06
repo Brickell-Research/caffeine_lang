@@ -99,6 +99,7 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
+          description: option.None,
         ),
       ],
       Ok([
@@ -109,6 +110,7 @@ pub fn validate_expectations_test() {
             inputs: dict.from_list([
               #("percentile", value.PercentageValue(99.9)),
             ]),
+            description: option.None,
           ),
           option.Some(measurements.Measurement(
             name: "success_rate",
@@ -142,6 +144,7 @@ pub fn validate_expectations_test() {
           name: "my_expectation_with_defaulted",
           measurement_ref: option.Some("success_rate_with_defaulted"),
           inputs: dict.from_list([#("threshold", value.PercentageValue(99.9))]),
+          description: option.None,
         ),
       ],
       True,
@@ -170,11 +173,13 @@ pub fn validate_expectations_test() {
           name: "first_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
+          description: option.None,
         ),
         expectations.Expectation(
           name: "second_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(95.0))]),
+          description: option.None,
         ),
       ],
       True,
@@ -203,11 +208,13 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
+          description: option.None,
         ),
         expectations.Expectation(
           name: "my_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(95.0))]),
+          description: option.None,
         ),
       ],
       Error(errors.LinkerDuplicateError(
@@ -234,6 +241,7 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           measurement_ref: option.Some("nonexistent_measurement"),
           inputs: dict.from_list([#("percentile", value.PercentageValue(99.9))]),
+          description: option.None,
         ),
       ],
       False,
@@ -265,6 +273,7 @@ pub fn validate_expectations_test() {
             #("env", value.StringValue("staging")),
             #("threshold", value.PercentageValue(99.9)),
           ]),
+          description: option.None,
         ),
       ],
       Error(errors.LinkerDuplicateError(
@@ -291,6 +300,7 @@ pub fn validate_expectations_test() {
           name: "my_expectation",
           measurement_ref: option.Some("success_rate"),
           inputs: dict.new(),
+          description: option.None,
         ),
       ],
       Error(errors.LinkerValueValidationError(
@@ -320,6 +330,7 @@ pub fn validate_expectations_test() {
             #("percentile", value.PercentageValue(99.9)),
             #("extra", value.StringValue("bad")),
           ]),
+          description: option.None,
         ),
       ],
       Error(errors.LinkerValueValidationError(
@@ -348,6 +359,7 @@ pub fn validate_expectations_test() {
           inputs: dict.from_list([
             #("percentile", value.StringValue("not a float")),
           ]),
+          description: option.None,
         ),
       ],
       Error(errors.LinkerValueValidationError(
