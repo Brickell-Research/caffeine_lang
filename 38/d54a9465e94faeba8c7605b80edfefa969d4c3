@@ -1,0 +1,35 @@
+src/caffeine_lang/frontend/parser.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 1271
+test/caffeine_lang/frontend/lowering_test.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 390-392
+test/caffeine_lang/linker/ir_test.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 63-68
+test/caffeine_lang/analysis/templatizer_test.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 730-732,749-751,782-784
+test/caffeine_lang/corpus/generator/slo_with_multiline_description.tf
+  s_f7083f7745f55b::t_f79aea841bf5de 40
+test/caffeine_lang/corpus/generator/slo_with_description.tf
+  s_f7083f7745f55b::t_632bbd0a9b53fd 37
+test/caffeine_lang/corpus/generator/slo_with_description_and_runbook.tf
+  s_f7083f7745f55b::t_058402e24fb79d 42
+test/caffeine_lang/frontend/tokenizer_test.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 291
+src/caffeine_lang/frontend/tokenizer.gleam
+  s_f7083f7745f55b::t_1d10df5764cec5 91-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "38d54a9465e94faeba8c7605b80edfefa969d4c3",
+  "prompts": {},
+  "sessions": {
+    "s_f7083f7745f55b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39ada26-c176-427f-8667-0fbe3e64dd41",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
