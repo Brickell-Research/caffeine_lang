@@ -1,0 +1,87 @@
+src/caffeine_lang/frontend/lowering.gleam
+  s_fc52722e9307a4::t_e673f149f3c98a 4-6
+  s_fc52722e9307a4::t_9ba8a31b9c450e 92,94-127
+test/caffeine_lang/frontend/formatter_test.gleam
+  s_fc52722e9307a4::t_92cd6290e13ee6 114
+  s_fc52722e9307a4::t_02db074405687e 59
+src/caffeine_lang/frontend/token.gleam
+  s_fc52722e9307a4::t_b4f047ae2f99f9 100
+  s_fc52722e9307a4::t_91cf997486a6e7 50
+src/caffeine_lang/frontend/ast.gleam
+  s_fc52722e9307a4::t_b22483ad36eecf 15-18
+test/caffeine_lang/linker/expectations_test.gleam
+  s_fc52722e9307a4::t_022cbc47434b63 102,113,147,176,182,211,217,244,276,303,333,362
+test/caffeine_lang/linker/ir_builder_test.gleam
+  s_fc52722e9307a4::t_96e322eb513ed0 422,474,560
+test/caffeine_lang/frontend/tokenizer_test.gleam
+  s_fc52722e9307a4::t_2dbe7881002633 265,267-268,281-285,291-302
+test/caffeine_lang/corpus/generator/slo_with_description.tf
+  s_fc52722e9307a4::t_51090c989b48a5 1-49
+src/caffeine_lang/codegen/datadog.gleam
+  s_fc52722e9307a4::t_17bfe86c66f0b7 188
+  s_fc52722e9307a4::t_41ccf45c86953a 286-287
+  s_fc52722e9307a4::t_16fcd4acfa3903 304-327
+test/caffeine_lang/corpus/generator/slo_with_description_and_runbook.tf
+  s_fc52722e9307a4::t_c2afb2074c8c3a 1-54
+test/caffeine_lang/analysis/semantic_analyzer_test.gleam
+  s_fc52722e9307a4::t_ca9854b72a8b26 69,118,168,219,304,367,433,497,558,615,695,771,816,848
+test/caffeine_lang/corpus/frontend/generator/expects_with_doc_comments.caffeine
+  s_fc52722e9307a4::t_4afb8b856cb28c 1-10
+src/caffeine_lang/frontend/formatter.gleam
+  s_fc52722e9307a4::t_7c980e73d5c96c 133
+src/caffeine_lang/frontend/parser.gleam
+  s_fc52722e9307a4::t_f05cefdb1fff7c 120-121
+test/caffeine_lang/frontend/lowering_test.gleam
+  s_fc52722e9307a4::t_a06514dd4d57e8 377-399
+src/caffeine_lang/linker/expectations.gleam
+  s_fc52722e9307a4::t_c44a0dc65be27e 20-22,28
+test/caffeine_lang/linker/ir_test.gleam
+  s_fc52722e9307a4::t_ca9854b72a8b26 63,87
+test/caffeine_lang/corpus/generator/slo_with_multiline_description.tf
+  s_fc52722e9307a4::t_a0cd0b873e10b8 1-52
+src/caffeine_lang/linker/ir.gleam
+  s_fc52722e9307a4::t_5e5b05e5b47da5 24-27,37
+src/caffeine_lang/linker/ir_builder.gleam
+  s_fc52722e9307a4::t_a5689c5d0c7056 361
+  s_fc52722e9307a4::t_baccf2fa45b6a9 174
+  s_fc52722e9307a4::t_503e909484574f 122
+  s_fc52722e9307a4::t_ef949864d334b2 323-324,327
+src/caffeine_lang/frontend/tokenizer.gleam
+  s_fc52722e9307a4::t_afc0cc90795634 74-104
+test/ir_test_helpers.gleam
+  s_fc52722e9307a4::t_ca9854b72a8b26 210,229,249
+test/caffeine_lang/codegen/datadog_test.gleam
+  s_fc52722e9307a4::t_ca9854b72a8b26 148,217,281,339,410,464,560,648,738,814,895,975,1050,1324,1365,1418
+  s_fc52722e9307a4::t_7060df2f8ac3b8 1057-1256
+test/caffeine_lang/corpus/frontend/formatter/comments_doc_expects.caffeine
+  s_fc52722e9307a4::t_b3616e8856accc 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "b06a5741ee0361cf1c1c281038bbbd9c0f47b034",
+  "prompts": {
+    "0995af0f70063afc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c4d8f98e-ef6d-40a9-9bd2-0b639f41fc4f",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>",
+      "total_additions": 15,
+      "total_deletions": 6,
+      "accepted_lines": 1,
+      "overriden_lines": 4
+    }
+  },
+  "sessions": {
+    "s_fc52722e9307a4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b459d368-2f5a-45a5-b106-c55fc03d292e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
