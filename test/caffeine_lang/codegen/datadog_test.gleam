@@ -145,6 +145,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -213,6 +214,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -276,6 +278,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -333,6 +336,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -403,6 +407,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -456,6 +461,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -551,6 +557,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo", "storage_slo"]),
               ]),
             ),
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -638,6 +645,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo", "storage_slo"]),
               ]),
             ),
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -727,6 +735,7 @@ pub fn generate_terraform_test() {
                 #(Hard, ["db_slo"]),
               ]),
             ),
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -802,6 +811,7 @@ pub fn generate_terraform_test() {
             tags: [],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -882,6 +892,7 @@ pub fn generate_terraform_test() {
             tags: [#("env", "prod"), #("tier", "1")],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -961,6 +972,7 @@ pub fn generate_terraform_test() {
             tags: [#("team", "override_team")],
             runbook: option.None,
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
@@ -1035,11 +1047,212 @@ pub fn generate_terraform_test() {
               "https://wiki.example.com/runbook/auth-latency",
             ),
             depends_on: option.None,
+            description: option.None,
           ),
           vendor: option.Some(vendor.Datadog),
         ),
       ],
       "slo_with_runbook",
+    ),
+    // SLO with description from ### doc comments (single-line, no runbook).
+    #(
+      [
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
+            team_name: identifiers.TeamName("test_team"),
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              types.PrimitiveType(types.String),
+              value.StringValue(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              types.PrimitiveType(types.NumericType(types.Float)),
+              value.PercentageValue(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              types.PrimitiveType(types.NumericType(types.Integer)),
+              value.IntValue(30),
+            ),
+            helpers.ValueTuple(
+              "indicators",
+              types.CollectionType(types.Dict(
+                types.PrimitiveType(types.String),
+                types.PrimitiveType(types.String),
+              )),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
+            ),
+          ],
+          slo: ir.SloFields(
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+            depends_on: option.None,
+            description: option.Some(
+              "Tracks auth latency over a rolling 30-day window.",
+            ),
+          ),
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_description",
+    ),
+    // SLO with multi-line description; renders as an HCL heredoc.
+    #(
+      [
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
+            team_name: identifiers.TeamName("test_team"),
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              types.PrimitiveType(types.String),
+              value.StringValue(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              types.PrimitiveType(types.NumericType(types.Float)),
+              value.PercentageValue(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              types.PrimitiveType(types.NumericType(types.Integer)),
+              value.IntValue(30),
+            ),
+            helpers.ValueTuple(
+              "indicators",
+              types.CollectionType(types.Dict(
+                types.PrimitiveType(types.String),
+                types.PrimitiveType(types.String),
+              )),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
+            ),
+          ],
+          slo: ir.SloFields(
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.None,
+            depends_on: option.None,
+            description: option.Some(
+              "Tracks auth latency over a rolling 30-day window.\nOwned by the platform team.",
+            ),
+          ),
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_multiline_description",
+    ),
+    // SLO with both description and runbook; combines into a single heredoc.
+    #(
+      [
+        ir.IntermediateRepresentation(
+          metadata: ir.IntermediateRepresentationMetaData(
+            friendly_label: identifiers.ExpectationLabel("Auth Latency SLO"),
+            org_name: identifiers.OrgName("org"),
+            service_name: identifiers.ServiceName("team"),
+            measurement_name: identifiers.MeasurementName("test_measurement"),
+            team_name: identifiers.TeamName("test_team"),
+            misc: dict.new(),
+          ),
+          unique_identifier: "org/team/auth/latency_slo",
+          values: [
+            helpers.ValueTuple(
+              "vendor",
+              types.PrimitiveType(types.String),
+              value.StringValue(constants.vendor_datadog),
+            ),
+            helpers.ValueTuple(
+              "threshold",
+              types.PrimitiveType(types.NumericType(types.Float)),
+              value.PercentageValue(99.9),
+            ),
+            helpers.ValueTuple(
+              "window_in_days",
+              types.PrimitiveType(types.NumericType(types.Integer)),
+              value.IntValue(30),
+            ),
+            helpers.ValueTuple(
+              "indicators",
+              types.CollectionType(types.Dict(
+                types.PrimitiveType(types.String),
+                types.PrimitiveType(types.String),
+              )),
+              value.DictValue(
+                dict.from_list([
+                  #(
+                    "numerator",
+                    value.StringValue("sum:http.requests{status:2xx}"),
+                  ),
+                  #("denominator", value.StringValue("sum:http.requests{*}")),
+                ]),
+              ),
+            ),
+          ],
+          slo: ir.SloFields(
+            threshold: 99.9,
+            indicators: dict.from_list([
+              #("numerator", "sum:http.requests{status:2xx}"),
+              #("denominator", "sum:http.requests{*}"),
+            ]),
+            window_in_days: 30,
+            evaluation: option.None,
+            tags: [],
+            runbook: option.Some(
+              "https://wiki.example.com/runbook/auth-latency",
+            ),
+            depends_on: option.None,
+            description: option.Some(
+              "Tracks auth latency over a rolling 30-day window.\nOwned by the platform team.",
+            ),
+          ),
+          vendor: option.Some(vendor.Datadog),
+        ),
+      ],
+      "slo_with_description_and_runbook",
     ),
   ]
   |> list.each(fn(pair) {
@@ -1108,6 +1321,7 @@ pub fn resolve_indicators_missing_indicators_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
+        description: option.None,
       ),
       vendor: option.Some(vendor.Datadog),
     )
@@ -1148,6 +1362,7 @@ pub fn resolve_indicators_bad_decode_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
+        description: option.None,
       ),
       vendor: option.Some(vendor.Datadog),
     )
@@ -1200,6 +1415,7 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
         tags: [],
         runbook: option.None,
         depends_on: option.None,
+        description: option.None,
       ),
       vendor: option.Some(vendor.Datadog),
     )

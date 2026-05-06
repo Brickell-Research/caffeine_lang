@@ -119,7 +119,7 @@ fn build_measured(
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name
-  let slo = build_slo_fields(index)
+  let slo = build_slo_fields(index, expectation.description)
 
   // Resolve vendor from lookup.
   let resolved_vendor = case dict.get(vendor_lookup, measurement.name) {
@@ -171,7 +171,7 @@ fn build_unmeasured(
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name
-  let slo = build_slo_fields(index)
+  let slo = build_slo_fields(index, expectation.description)
 
   ir.IntermediateRepresentation(
     metadata: ir.IntermediateRepresentationMetaData(
@@ -320,8 +320,11 @@ fn resolve_values_for_tag(
 
 /// Extract SLO-specific fields from an indexed Dict of ValueTuples.
 /// Threshold defaults to the standard default when not present (e.g. unmeasured expectations).
+/// `description` is sourced from the expectation's leading doc comments, not
+/// from value tuples.
 fn build_slo_fields(
   index: dict.Dict(String, helpers.ValueTuple),
+  description: option.Option(String),
 ) -> ir.SloFields {
   let threshold =
     helpers.extract_value(index, "threshold", value.extract_percentage)
@@ -355,5 +358,6 @@ fn build_slo_fields(
     tags: tags,
     runbook: runbook,
     depends_on: depends_on,
+    description: description,
   )
 }

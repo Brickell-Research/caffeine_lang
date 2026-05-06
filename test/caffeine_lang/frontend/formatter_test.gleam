@@ -56,6 +56,7 @@ pub fn format_test() {
     // Comments within blocks
     #("comments_measurement", "comments_measurement"),
     #("comments_expects", "comments_expects"),
+    #("comments_doc_expects", "comments_doc_expects"),
     #("comments_in_struct_fields", "comments_in_struct_fields"),
     #("comments_trailing_in_struct", "comments_trailing_in_struct"),
     #(
@@ -110,6 +111,7 @@ pub fn format_idempotent_test() {
     "unformatted_expects",
     "comments_measurement",
     "comments_expects",
+    "comments_doc_expects",
     "comments_between_expects_blocks",
     "comments_between_measurement_blocks",
     "comments_many_consecutive",

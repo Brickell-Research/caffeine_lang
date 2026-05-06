@@ -117,6 +117,8 @@ fn consume_comments_loop(
       consume_comments_loop(advance(state), [ast.LineComment(text), ..acc])
     token.CommentSection(text) ->
       consume_comments_loop(advance(state), [ast.SectionComment(text), ..acc])
+    token.CommentDoc(text) ->
+      consume_comments_loop(advance(state), [ast.DocComment(text), ..acc])
     _ -> #(list.reverse(acc), state)
   }
 }

@@ -1,9 +1,9 @@
 /// Frontend lowering for Caffeine AST.
 /// Converts validated AST to Measurement and Expectation types for the compiler pipeline.
 import caffeine_lang/frontend/ast.{
-  type ExpectItem, type ExpectsFile, type Extendable, type Field, type Literal,
-  type MeasurementItem, type MeasurementsFile, type Struct, type TypeAlias,
-  type Validated,
+  type Comment, type ExpectItem, type ExpectsFile, type Extendable, type Field,
+  type Literal, type MeasurementItem, type MeasurementsFile, type Struct,
+  type TypeAlias, type Validated,
 }
 import caffeine_lang/linker/expectations.{type Expectation, Expectation}
 import caffeine_lang/linker/measurements.{
@@ -89,8 +89,42 @@ fn generate_expect_item(
 ) -> Expectation {
   let merged_provides = merge_expect_extends(item, extendables)
   let inputs = struct_to_inputs(merged_provides)
+  let description = extract_doc_description(item.leading_comments)
 
-  Expectation(name: item.name, measurement_ref: measurement, inputs: inputs)
+  Expectation(
+    name: item.name,
+    measurement_ref: measurement,
+    inputs: inputs,
+    description: description,
+  )
+}
+
+/// Extracts `###` doc-comment text from a node's leading comments and joins
+/// the lines with `\n`. Returns `None` when no doc comments are present.
+/// Each line drops a single leading space (the universal `### ` form) and
+/// rstrips trailing whitespace. `#` and `##` comments are ignored — they're
+/// treated as section headers / inline notes, not SLO descriptions.
+fn extract_doc_description(comments: List(Comment)) -> option.Option(String) {
+  let lines =
+    comments
+    |> list.filter_map(fn(c) {
+      case c {
+        ast.DocComment(text) -> Ok(strip_doc_comment_text(text))
+        _ -> Error(Nil)
+      }
+    })
+  case lines {
+    [] -> option.None
+    _ -> option.Some(string.join(lines, "\n"))
+  }
+}
+
+fn strip_doc_comment_text(text: String) -> String {
+  let stripped = case string.starts_with(text, " ") {
+    True -> string.drop_start(text, 1)
+    False -> text
+  }
+  string.trim_end(stripped)
 }
 
 /// Collects fields from extended extendables matching a given kind.

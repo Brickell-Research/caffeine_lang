@@ -12,6 +12,10 @@ import gleam/string
 pub type Comment {
   LineComment(text: String)
   SectionComment(text: String)
+  /// A `###`-prefixed doc comment. When attached to an `ExpectItem`'s
+  /// `leading_comments`, the text becomes the SLO description in the Datadog
+  /// Terraform output.
+  DocComment(text: String)
 }
 
 // =============================================================================
