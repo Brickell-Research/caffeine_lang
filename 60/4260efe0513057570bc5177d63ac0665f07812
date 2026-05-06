@@ -1,0 +1,72 @@
+test/caffeine_lang/compiler_test.gleam
+  s_54606f52f04bb3::t_1c9cfd9f732605 239,267
+  s_54606f52f04bb3::t_866a6260c4408e 225-238,240-266,268-284
+test/caffeine_lang/corpus/generator/complex_expression.tf
+  s_54606f52f04bb3::t_88531b273e7f14 36
+test/caffeine_lang/corpus/generator/resolved_time_slice_expression.tf
+  s_54606f52f04bb3::t_0f4665ea657258 36
+test/caffeine_lang/corpus/generator/slo_with_both_dependencies.tf
+  s_54606f52f04bb3::t_f178598b1ae89f 37-38
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+test/caffeine_lang/types_test.gleam
+  s_54606f52f04bb3::t_df524f7771c5f4 2066-2067,2069,2073-2105
+test/caffeine_lang/corpus/generator/slo_with_empty_tags.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+test/caffeine_lang/corpus/generator/slo_with_tags.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+test/caffeine_lang/corpus/generator/slo_with_hard_dependency_only.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+  s_54606f52f04bb3::t_f178598b1ae89f 37
+test/caffeine_lang/corpus/generator/slo_with_runbook.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 37
+test/caffeine_lang/corpus/generator/slo_with_mixed_dependencies.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+  s_54606f52f04bb3::t_f178598b1ae89f 38
+test/caffeine_lang/corpus/generator/slo_with_overshadowing_tags.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 35
+src/caffeine_lang/analysis/templatizer.gleam
+  s_54606f52f04bb3::t_ea23c818703568 34
+  s_54606f52f04bb3::t_58b6545b62d8b1 293-294,311-345
+src/caffeine_lang/types.gleam
+  s_54606f52f04bb3::t_2ddbc0c267f91a 1565
+  s_54606f52f04bb3::t_ac94a5998592e0 1566
+  s_54606f52f04bb3::t_1f44d023fc38a0 896-897,903-928
+  s_54606f52f04bb3::t_82becafbbf0d87 1531-1537,1544-1564,1567-1580
+test/caffeine_lang/corpus/generator/multiple_slos.tf
+  s_54606f52f04bb3::t_4f48c749e64fcd 59
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+test/caffeine_lang/corpus/generator/simple_slo.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+src/caffeine_lang/linker/ir_builder.gleam
+  s_54606f52f04bb3::t_f6d4463c52d55e 317
+  s_54606f52f04bb3::t_776913b481eddc 314-316,318-319
+src/caffeine_lang/parsing_utils.gleam
+  s_54606f52f04bb3::t_6ba3dd2f42f099 10
+  s_54606f52f04bb3::t_33b5b3fa7048f1 80,97,106,115,124,128-148,150-157,164
+test/caffeine_lang/analysis/templatizer_test.gleam
+  s_54606f52f04bb3::t_0204cf152aa0d7 717-790
+  s_54606f52f04bb3::t_e4746fec25a9e8 820-876
+  s_54606f52f04bb3::t_b13e48106ce64c 928-956
+src/caffeine_lang/codegen/datadog.gleam
+  s_54606f52f04bb3::t_16b976665fc7b5 257-259
+test/caffeine_lang/corpus/generator/resolved_templates.tf
+  s_54606f52f04bb3::t_9d2a6c6406f4d6 36
+src/caffeine_lang/frontend/parser.gleam
+  s_54606f52f04bb3::t_89c8f24b32dcce 1256-1259,1268-1271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "604260efe0513057570bc5177d63ac0665f07812",
+  "prompts": {},
+  "sessions": {
+    "s_54606f52f04bb3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "26823d59-19bf-4baa-bf2a-eae15433273a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
