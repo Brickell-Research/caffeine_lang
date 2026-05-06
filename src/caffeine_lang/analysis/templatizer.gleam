@@ -322,9 +322,14 @@ pub fn resolve_list_value(
 }
 
 /// Wraps a value in double quotes when it contains characters that would otherwise
-/// be ambiguous to the Datadog query/tag parser (colons, whitespace, commas,
-/// parentheses). Embedded double quotes are escaped. Values containing wildcards
-/// (`*`) are intentionally left unquoted so wildcard semantics are preserved.
+/// be ambiguous to the Datadog query/tag parser (whitespace, commas, parentheses).
+/// Embedded double quotes are escaped. Values containing wildcards (`*`) are
+/// intentionally left unquoted so wildcard semantics are preserved.
+///
+/// Colons are NOT a quoting trigger: Datadog's metric query parser greedily
+/// consumes everything up to the next delimiter after `tag:`, so `tag:foo::bar`
+/// parses as the tag value `foo::bar`. Wrapping such values in quotes (e.g.
+/// `tag:"foo::bar"`) is rejected with a 400.
 @internal
 pub fn quote_for_datadog(value: String) -> String {
   case needs_datadog_quoting(value) {
@@ -337,8 +342,7 @@ fn needs_datadog_quoting(value: String) -> Bool {
   case string.contains(value, "*") {
     True -> False
     False ->
-      string.contains(value, ":")
-      || string.contains(value, " ")
+      string.contains(value, " ")
       || string.contains(value, "\t")
       || string.contains(value, ",")
       || string.contains(value, "(")

@@ -254,10 +254,11 @@ pub fn compile_from_strings_test() {
       ),
       True,
     ),
-    // String values containing colons must be quoted in Datadog queries to avoid
-    // colliding with the tag:value syntax (issue #81).
+    // String values containing colons must NOT be quoted in Datadog queries:
+    // the metric query parser accepts bare `tag:foo::bar` (greedy parse to
+    // delimiter) but 400s on `tag:"foo::bar"` (issue #81 follow-up).
     #(
-      "happy path - string with colons gets quoted in Datadog query",
+      "happy path - string with colons stays unquoted in Datadog query",
       #(
         "\"controller_success\":
   Requires { controller: String }
@@ -278,7 +279,7 @@ pub fn compile_from_strings_test() {
     }
 ",
         "acme/payments/slos.caffeine",
-        ["rails.controller:\\\"api::v0::elevenlabscontroller\\\""],
+        ["rails.controller:api::v0::elevenlabscontroller"],
       ),
       True,
     ),

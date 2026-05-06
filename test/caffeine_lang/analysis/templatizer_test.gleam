@@ -817,26 +817,28 @@ pub fn resolve_string_value_test() {
       "bar",
       "!foo:bar",
     ),
-    // Datadog requires quoting for values containing special chars (issue #81).
+    // Datadog requires quoting for values containing special chars (issue #81),
+    // but NOT for colons — its metric query parser accepts bare `tag:foo::bar`
+    // and rejects `tag:"foo::bar"`.
     #(
-      "Default: value with embedded colons gets quoted",
+      "Default: value with embedded colons stays unquoted",
       templatizer.TemplateVariable(
         "controller",
         "rails.controller",
         templatizer.Default,
       ),
       "api::v0::elevenlabscontroller",
-      "rails.controller:\"api::v0::elevenlabscontroller\"",
+      "rails.controller:api::v0::elevenlabscontroller",
     ),
     #(
-      "Not: value with embedded colons gets quoted",
+      "Not: value with embedded colons stays unquoted",
       templatizer.TemplateVariable(
         "controller",
         "rails.controller",
         templatizer.Not,
       ),
       "api::v0::elevenlabscontroller",
-      "!rails.controller:\"api::v0::elevenlabscontroller\"",
+      "!rails.controller:api::v0::elevenlabscontroller",
     ),
     #(
       "Default: value with whitespace gets quoted",
@@ -873,6 +875,73 @@ pub fn resolve_string_value_test() {
       templatizer.TemplateVariable("msg", "msg", templatizer.Default),
       "he said \"hi\"",
       "msg:\"he said \\\"hi\\\"\"",
+    ),
+    // ==== Plain string values (no special chars) ====
+    #(
+      "Default: alphanumeric value stays unquoted",
+      templatizer.TemplateVariable("env", "env", templatizer.Default),
+      "production",
+      "env:production",
+    ),
+    #(
+      "Default: value with dots/hyphens/underscores stays unquoted",
+      templatizer.TemplateVariable("svc", "service.name", templatizer.Default),
+      "payments-api_v2.beta",
+      "service.name:payments-api_v2.beta",
+    ),
+    #(
+      "Not: alphanumeric value stays unquoted",
+      templatizer.TemplateVariable("env", "env", templatizer.Not),
+      "staging",
+      "!env:staging",
+    ),
+    #(
+      "Not: value with whitespace gets quoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Not),
+      "my service",
+      "!service.name:\"my service\"",
+    ),
+    // ==== Wildcards ====
+    // Wildcard semantics MUST be preserved — never quote a value containing `*`.
+    // Quoting would make `*` a literal character in Datadog's filter parser.
+    // Note: Datadog metric filters only honor prefix-anchored (`web*`) or
+    // suffix-anchored (`*api`) wildcards. Embedded/multi-star values parse but
+    // silently match nothing — that's a Datadog grammar concern, not the
+    // templatizer's. We just need to never quote the `*` away.
+    #(
+      "Default: bare `*` stays unquoted (full wildcard)",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      "*",
+      "service.name:*",
+    ),
+    #(
+      "Default: prefix wildcard stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      "payments-*",
+      "service.name:payments-*",
+    ),
+    #(
+      "Default: suffix wildcard stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      "*api",
+      "service.name:*api",
+    ),
+    #(
+      "Not: wildcard value stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Not),
+      "prefix*",
+      "!service.name:prefix*",
+    ),
+    // ==== Wildcards combined with colons (both bare-safe) ====
+    #(
+      "Default: wildcard + colon stays unquoted",
+      templatizer.TemplateVariable(
+        "ctrl",
+        "rails.controller",
+        templatizer.Default,
+      ),
+      "api::v*",
+      "rails.controller:api::v*",
     ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_string_value)
@@ -925,16 +994,17 @@ pub fn resolve_list_value_test() {
       [],
       "",
     ),
-    // Datadog requires quoting for elements containing special chars (issue #81).
+    // Datadog requires quoting for elements containing special chars (issue #81),
+    // but NOT for colons (metric query parser accepts bare `tag:foo::bar`).
     #(
-      "Default: list elements with colons get individually quoted",
+      "Default: list elements with colons stay unquoted",
       templatizer.TemplateVariable(
         "controller",
         "rails.controller",
         templatizer.Default,
       ),
       ["api::v0::ctrl", "api::v1::ctrl"],
-      "rails.controller IN (\"api::v0::ctrl\", \"api::v1::ctrl\")",
+      "rails.controller IN (api::v0::ctrl, api::v1::ctrl)",
     ),
     #(
       "Default: mixed quoted and bare elements",
@@ -943,16 +1013,71 @@ pub fn resolve_list_value_test() {
       "env IN (prod, \"us east\")",
     ),
     #(
-      "Not: list elements with colons get individually quoted",
+      "Not: list elements with colons stay unquoted",
       templatizer.TemplateVariable("path", "path", templatizer.Not),
       ["a:b", "c:d"],
-      "path NOT IN (\"a:b\", \"c:d\")",
+      "path NOT IN (a:b, c:d)",
     ),
     #(
       "Raw: list elements not quoted (raw substitution)",
       templatizer.TemplateVariable("vals", "", templatizer.Raw),
       ["a:b", "c"],
       "a:b, c",
+    ),
+    // ==== Plain string lists (no special chars) ====
+    #(
+      "Default: list of plain alphanumeric values stays unquoted",
+      templatizer.TemplateVariable("env", "env", templatizer.Default),
+      ["prod", "staging", "dev"],
+      "env IN (prod, staging, dev)",
+    ),
+    #(
+      "Not: list of plain alphanumeric values stays unquoted",
+      templatizer.TemplateVariable("env", "env", templatizer.Not),
+      ["prod", "staging"],
+      "env NOT IN (prod, staging)",
+    ),
+    // ==== Wildcards in list elements ====
+    // Same wildcard rule as scalar values: never quote a `*`-bearing element.
+    #(
+      "Default: list with bare `*` element stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      ["foo", "*"],
+      "service.name IN (foo, *)",
+    ),
+    #(
+      "Default: list with prefix-wildcard element stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      ["payments-*", "billing-api"],
+      "service.name IN (payments-*, billing-api)",
+    ),
+    #(
+      "Not: list with suffix-wildcard element stays unquoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Not),
+      ["*-canary", "concrete"],
+      "service.name NOT IN (*-canary, concrete)",
+    ),
+    // ==== Wildcard + colon in same element (both bare-safe) ====
+    #(
+      "Default: list element with wildcard + colon stays unquoted",
+      templatizer.TemplateVariable(
+        "ctrl",
+        "rails.controller",
+        templatizer.Default,
+      ),
+      ["api::v0::*", "api::v1::ctrl"],
+      "rails.controller IN (api::v0::*, api::v1::ctrl)",
+    ),
+    // ==== Mixed: plain + colons + whitespace in same list ====
+    #(
+      "Default: list mixing plain, colon-bearing, and whitespace elements",
+      templatizer.TemplateVariable(
+        "ctrl",
+        "rails.controller",
+        templatizer.Default,
+      ),
+      ["plain", "api::v0::ctrl", "name with space"],
+      "rails.controller IN (plain, api::v0::ctrl, \"name with space\")",
     ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_list_value)
