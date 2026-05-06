@@ -387,11 +387,9 @@ pub fn lower_expectations_doc_comments_test() {
 
   checkout.name |> should.equal("checkout")
   checkout.description
-  |> should.equal(
-    option.Some(
-      "Tracks the checkout flow availability.\n   Owner: payments team.",
-    ),
-  )
+  |> should.equal(option.Some(
+    "Tracks the checkout flow availability.\n   Owner: payments team.",
+  ))
 
   payment.name |> should.equal("payment")
   payment.description |> should.equal(option.None)

@@ -88,7 +88,8 @@ fn tokenize_loop(
                   )
                 }
                 _ -> {
-                  let #(comment_text, remaining) = read_until_newline(after_hash)
+                  let #(comment_text, remaining) =
+                    read_until_newline(after_hash)
                   tokenize_loop(
                     advance(state, remaining, 2 + string.length(comment_text)),
                     [

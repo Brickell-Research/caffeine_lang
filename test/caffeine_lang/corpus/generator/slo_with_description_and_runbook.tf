@@ -39,7 +39,7 @@ EOT
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:Auth Latency SLO",
+    "expectation:\"Auth Latency SLO\"",
   ]
   type = "metric"
 

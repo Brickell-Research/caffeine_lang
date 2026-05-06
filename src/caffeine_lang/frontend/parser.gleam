@@ -1268,9 +1268,7 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralTrue -> "true"
     ast.LiteralFalse -> "false"
     ast.LiteralList(elements) ->
-      "["
-      <> elements |> list.map(literal_to_string) |> string.join(", ")
-      <> "]"
+      "[" <> elements |> list.map(literal_to_string) |> string.join(", ") <> "]"
     ast.LiteralStruct(_, _) -> "{}"
   }
 }

@@ -727,9 +727,9 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "success_status_codes",
         typ: types.ModifierType(types.Defaulted(
-          types.CollectionType(types.List(
-            types.PrimitiveType(types.NumericType(types.Integer)),
-          )),
+          types.CollectionType(
+            types.List(types.PrimitiveType(types.NumericType(types.Integer))),
+          ),
           "[200]",
         )),
         value: value.NilValue,
@@ -746,9 +746,9 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "codes",
         typ: types.ModifierType(types.Defaulted(
-          types.CollectionType(types.List(
-            types.PrimitiveType(types.NumericType(types.Integer)),
-          )),
+          types.CollectionType(
+            types.List(types.PrimitiveType(types.NumericType(types.Integer))),
+          ),
           "[200, 404]",
         )),
         value: value.NilValue,
@@ -779,9 +779,9 @@ pub fn resolve_template_test() {
       helpers.ValueTuple(
         label: "codes",
         typ: types.ModifierType(types.Defaulted(
-          types.CollectionType(types.List(
-            types.PrimitiveType(types.NumericType(types.Integer)),
-          )),
+          types.CollectionType(
+            types.List(types.PrimitiveType(types.NumericType(types.Integer))),
+          ),
           "[200]",
         )),
         value: value.ListValue([value.IntValue(500), value.IntValue(503)]),

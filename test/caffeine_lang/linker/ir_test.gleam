@@ -60,7 +60,12 @@ pub fn map_slo_test() {
   // Applies transformation
   let updated =
     ir.map_slo(test_ir, fn(s) {
-      ir.SloFields(..s, threshold: 99.9, tags: [#("env", "prod")], description: option.None)
+      ir.SloFields(
+        ..s,
+        threshold: 99.9,
+        tags: [#("env", "prod")],
+        description: option.None,
+      )
     })
   updated.slo.threshold |> should.equal(99.9)
   updated.slo.tags |> should.equal([#("env", "prod")])

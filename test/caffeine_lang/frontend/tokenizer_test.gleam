@@ -288,11 +288,7 @@ pub fn tokenize_comments_test() {
       "# comment\n",
       Ok([token.CommentLine(" comment"), token.WhitespaceNewline, token.EOF]),
     ),
-    #(
-      "four hashes",
-      "#### body",
-      Ok([token.CommentDoc("# body"), token.EOF]),
-    ),
+    #("four hashes", "#### body", Ok([token.CommentDoc("# body"), token.EOF])),
     #("empty line comment at EOF", "#", Ok([token.CommentLine(""), token.EOF])),
     #(
       "empty section comment at EOF",
