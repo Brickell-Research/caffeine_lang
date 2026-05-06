@@ -222,6 +222,66 @@ pub fn compile_from_strings_test() {
       ),
       True,
     ),
+    // Defaulted(List(...)) default must flow through to codegen when the field
+    // is omitted at the call site (issue #80). Previously the list contents were
+    // collapsed to "[]" at parse time and the generated query contained
+    // `http.status_code:[]` rather than `http.status_code IN (200, 404)`.
+    #(
+      "happy path - Defaulted(List(Integer)) default flows to IN clause when omitted",
+      #(
+        "_codes (Type): Defaulted(List(Integer), [200, 404])
+
+\"endpoint_success\":
+  Requires { codes: _codes, endpoint: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$endpoint->endpoint$ AND $http.status_code->codes$}\",
+      denominator: \"sum:http.requests{$endpoint->endpoint$}\"
+    }
+  }
+",
+        "Expectations measured by \"endpoint_success\"
+  * \"checkout_success\":
+    Provides {
+      endpoint: \"/checkout\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+",
+        "acme/payments/slos.caffeine",
+        ["http.status_code IN (200, 404)"],
+      ),
+      True,
+    ),
+    // String values containing colons must be quoted in Datadog queries to avoid
+    // colliding with the tag:value syntax (issue #81).
+    #(
+      "happy path - string with colons gets quoted in Datadog query",
+      #(
+        "\"controller_success\":
+  Requires { controller: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:rails.action.hits{$rails.controller->controller$}\",
+      denominator: \"sum:rails.action.hits{*}\"
+    }
+  }
+",
+        "Expectations measured by \"controller_success\"
+  * \"elevenlabs_uptime\":
+    Provides {
+      controller: \"api::v0::elevenlabscontroller\",
+      threshold: 99.9%,
+      window_in_days: 30
+    }
+",
+        "acme/payments/slos.caffeine",
+        ["rails.controller:\\\"api::v0::elevenlabscontroller\\\""],
+      ),
+      True,
+    ),
     // sad path - invalid measurement DSL
     #(
       "sad path - invalid measurement DSL",

@@ -311,7 +311,12 @@ fn resolve_values_for_tag(
     }
     ModifierType(Defaulted(inner, default)) -> {
       case val {
-        value.NilValue -> Ok([default])
+        value.NilValue ->
+          case inner {
+            CollectionType(ListType(_)) ->
+              Ok(types.parse_list_default_string(default))
+            _ -> Ok([default])
+          }
         _ -> resolve_values_for_tag(inner, val)
       }
     }

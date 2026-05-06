@@ -255,7 +255,9 @@ pub fn ir_to_terraform_resource(
 
   let tags =
     list.append(final_system_tag_pairs, user_tag_pairs)
-    |> list.map(fn(pair) { hcl.StringLiteral(pair.0 <> ":" <> pair.1) })
+    |> list.map(fn(pair) {
+      hcl.StringLiteral(pair.0 <> ":" <> templatizer.quote_for_datadog(pair.1))
+    })
     |> hcl.ListExpr
 
   let identifier = ir_to_identifier(ir)

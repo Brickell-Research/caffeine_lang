@@ -33,7 +33,7 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:Auth Latency SLO",
+    "expectation:\"Auth Latency SLO\"",
   ]
   type = "metric"
 
@@ -56,7 +56,7 @@ resource "datadog_service_level_objective" "org_team_api_availability_slo" {
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:API Availability SLO",
+    "expectation:\"API Availability SLO\"",
   ]
   type = "metric"
 

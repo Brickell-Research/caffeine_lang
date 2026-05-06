@@ -33,9 +33,9 @@ resource "datadog_service_level_objective" "org_team_auth_latency_slo" {
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:Auth Latency SLO",
-    "hard_dependency:db_slo,storage_slo",
-    "soft_dependency:cache_slo,logging_slo",
+    "expectation:\"Auth Latency SLO\"",
+    "hard_dependency:\"db_slo,storage_slo\"",
+    "soft_dependency:\"cache_slo,logging_slo\"",
   ]
   type = "metric"
 

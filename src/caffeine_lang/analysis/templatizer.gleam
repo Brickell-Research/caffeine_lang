@@ -31,6 +31,7 @@ import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/types
 import gleam/dict
+import gleam/list
 import gleam/result
 import gleam/string
 
@@ -289,8 +290,8 @@ pub fn resolve_string_value(
   let attr = template.datadog_attr
   case template.template_type {
     Raw -> value
-    Default -> attr <> ":" <> value
-    Not -> "!" <> attr <> ":" <> value
+    Default -> attr <> ":" <> quote_for_datadog(value)
+    Not -> "!" <> attr <> ":" <> quote_for_datadog(value)
   }
 }
 
@@ -307,8 +308,41 @@ pub fn resolve_list_value(
   case template.template_type, values {
     _, [] -> ""
     Raw, values -> values |> string.join(", ")
-    Default, values -> attr <> " IN (" <> values |> string.join(", ") <> ")"
-    Not, values -> attr <> " NOT IN (" <> values |> string.join(", ") <> ")"
+    Default, values ->
+      attr
+      <> " IN ("
+      <> values |> list.map(quote_for_datadog) |> string.join(", ")
+      <> ")"
+    Not, values ->
+      attr
+      <> " NOT IN ("
+      <> values |> list.map(quote_for_datadog) |> string.join(", ")
+      <> ")"
+  }
+}
+
+/// Wraps a value in double quotes when it contains characters that would otherwise
+/// be ambiguous to the Datadog query/tag parser (colons, whitespace, commas,
+/// parentheses). Embedded double quotes are escaped. Values containing wildcards
+/// (`*`) are intentionally left unquoted so wildcard semantics are preserved.
+@internal
+pub fn quote_for_datadog(value: String) -> String {
+  case needs_datadog_quoting(value) {
+    True -> "\"" <> string.replace(value, "\"", "\\\"") <> "\""
+    False -> value
+  }
+}
+
+fn needs_datadog_quoting(value: String) -> Bool {
+  case string.contains(value, "*") {
+    True -> False
+    False ->
+      string.contains(value, ":")
+      || string.contains(value, " ")
+      || string.contains(value, "\t")
+      || string.contains(value, ",")
+      || string.contains(value, "(")
+      || string.contains(value, ")")
   }
 }
 
