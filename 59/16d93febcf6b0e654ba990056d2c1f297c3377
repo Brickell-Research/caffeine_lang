@@ -1,0 +1,20 @@
+README.md
+  h_55b93de7ce5e50 25
+.github/workflows/release.yml
+  h_55b93de7ce5e50 10
+gleam.toml
+  h_55b93de7ce5e50 2
+src/caffeine_lang/constants.gleam
+  h_55b93de7ce5e50 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "5916d93febcf6b0e654ba990056d2c1f297c3377",
+  "prompts": {},
+  "humans": {
+    "h_55b93de7ce5e50": {
+      "author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
