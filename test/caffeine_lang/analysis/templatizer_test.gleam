@@ -714,6 +714,80 @@ pub fn resolve_template_test() {
       ),
       Ok("42"),
     ),
+    // Defaulted(List(Integer), [200]) with NilValue must render the default through
+    // the list resolver (issue #80). Previously it was concatenated as the literal
+    // string `[]` because list defaults were dropped at parse time.
+    #(
+      "E2E: Defaulted(List(Integer), [200]) with NilValue uses default IN clause",
+      templatizer.TemplateVariable(
+        "success_status_codes",
+        "http.status_code",
+        templatizer.Default,
+      ),
+      helpers.ValueTuple(
+        label: "success_status_codes",
+        typ: types.ModifierType(types.Defaulted(
+          types.CollectionType(types.List(
+            types.PrimitiveType(types.NumericType(types.Integer)),
+          )),
+          "[200]",
+        )),
+        value: value.NilValue,
+      ),
+      Ok("http.status_code IN (200)"),
+    ),
+    #(
+      "E2E: Defaulted(List(Integer), [200, 404]) with NilValue uses default IN clause",
+      templatizer.TemplateVariable(
+        "codes",
+        "http.status_code",
+        templatizer.Default,
+      ),
+      helpers.ValueTuple(
+        label: "codes",
+        typ: types.ModifierType(types.Defaulted(
+          types.CollectionType(types.List(
+            types.PrimitiveType(types.NumericType(types.Integer)),
+          )),
+          "[200, 404]",
+        )),
+        value: value.NilValue,
+      ),
+      Ok("http.status_code IN (200, 404)"),
+    ),
+    #(
+      "E2E: Defaulted(List(String), []) with NilValue resolves to empty",
+      templatizer.TemplateVariable("envs", "env", templatizer.Default),
+      helpers.ValueTuple(
+        label: "envs",
+        typ: types.ModifierType(types.Defaulted(
+          types.CollectionType(types.List(types.PrimitiveType(types.String))),
+          "[]",
+        )),
+        value: value.NilValue,
+      ),
+      Ok(""),
+    ),
+    // When a value is provided at the call site, the default is ignored.
+    #(
+      "E2E: Defaulted(List(Integer), [200]) with provided value uses the value",
+      templatizer.TemplateVariable(
+        "codes",
+        "http.status_code",
+        templatizer.Default,
+      ),
+      helpers.ValueTuple(
+        label: "codes",
+        typ: types.ModifierType(types.Defaulted(
+          types.CollectionType(types.List(
+            types.PrimitiveType(types.NumericType(types.Integer)),
+          )),
+          "[200]",
+        )),
+        value: value.ListValue([value.IntValue(500), value.IntValue(503)]),
+      ),
+      Ok("http.status_code IN (500, 503)"),
+    ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_template)
 }
@@ -742,6 +816,63 @@ pub fn resolve_string_value_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Not),
       "bar",
       "!foo:bar",
+    ),
+    // Datadog requires quoting for values containing special chars (issue #81).
+    #(
+      "Default: value with embedded colons gets quoted",
+      templatizer.TemplateVariable(
+        "controller",
+        "rails.controller",
+        templatizer.Default,
+      ),
+      "api::v0::elevenlabscontroller",
+      "rails.controller:\"api::v0::elevenlabscontroller\"",
+    ),
+    #(
+      "Not: value with embedded colons gets quoted",
+      templatizer.TemplateVariable(
+        "controller",
+        "rails.controller",
+        templatizer.Not,
+      ),
+      "api::v0::elevenlabscontroller",
+      "!rails.controller:\"api::v0::elevenlabscontroller\"",
+    ),
+    #(
+      "Default: value with whitespace gets quoted",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      "my service",
+      "service.name:\"my service\"",
+    ),
+    #(
+      "Default: value with comma gets quoted",
+      templatizer.TemplateVariable("path", "url.path", templatizer.Default),
+      "a,b",
+      "url.path:\"a,b\"",
+    ),
+    #(
+      "Default: value with parens gets quoted",
+      templatizer.TemplateVariable("expr", "expr", templatizer.Default),
+      "f(x)",
+      "expr:\"f(x)\"",
+    ),
+    #(
+      "Default: wildcard value left unquoted (preserves wildcard semantics)",
+      templatizer.TemplateVariable("name", "service.name", templatizer.Default),
+      "prefix*",
+      "service.name:prefix*",
+    ),
+    #(
+      "Raw: special chars are not quoted (raw substitution)",
+      templatizer.TemplateVariable("threshold", "", templatizer.Raw),
+      "a:b",
+      "a:b",
+    ),
+    #(
+      "Default: embedded double quote gets escaped",
+      templatizer.TemplateVariable("msg", "msg", templatizer.Default),
+      "he said \"hi\"",
+      "msg:\"he said \\\"hi\\\"\"",
     ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_string_value)
@@ -793,6 +924,35 @@ pub fn resolve_list_value_test() {
       templatizer.TemplateVariable("foo", "foo", templatizer.Not),
       [],
       "",
+    ),
+    // Datadog requires quoting for elements containing special chars (issue #81).
+    #(
+      "Default: list elements with colons get individually quoted",
+      templatizer.TemplateVariable(
+        "controller",
+        "rails.controller",
+        templatizer.Default,
+      ),
+      ["api::v0::ctrl", "api::v1::ctrl"],
+      "rails.controller IN (\"api::v0::ctrl\", \"api::v1::ctrl\")",
+    ),
+    #(
+      "Default: mixed quoted and bare elements",
+      templatizer.TemplateVariable("env", "env", templatizer.Default),
+      ["prod", "us east"],
+      "env IN (prod, \"us east\")",
+    ),
+    #(
+      "Not: list elements with colons get individually quoted",
+      templatizer.TemplateVariable("path", "path", templatizer.Not),
+      ["a:b", "c:d"],
+      "path NOT IN (\"a:b\", \"c:d\")",
+    ),
+    #(
+      "Raw: list elements not quoted (raw substitution)",
+      templatizer.TemplateVariable("vals", "", templatizer.Raw),
+      ["a:b", "c"],
+      "a:b, c",
     ),
   ]
   |> test_helpers.table_test_2(templatizer.resolve_list_value)

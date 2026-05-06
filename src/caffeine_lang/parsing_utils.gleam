@@ -7,7 +7,7 @@ import gleam/string
 @internal
 pub fn split_at_top_level_comma(s: String) -> List(String) {
   let chars = string.to_graphemes(s)
-  do_split_at_top_level_comma(chars, 0, 0, [], [])
+  do_split_at_top_level_comma(chars, 0, 0, 0, [], [])
 }
 
 /// Extracts the content inside the outermost pair of parentheses,
@@ -77,6 +77,7 @@ fn do_split_at_top_level_comma(
   chars: List(String),
   paren_depth: Int,
   brace_depth: Int,
+  bracket_depth: Int,
   current: List(String),
   acc: List(String),
 ) -> List(String) {
@@ -93,6 +94,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth + 1,
         brace_depth,
+        bracket_depth,
         ["(", ..current],
         acc,
       )
@@ -101,6 +103,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth - 1,
         brace_depth,
+        bracket_depth,
         [")", ..current],
         acc,
       )
@@ -109,6 +112,7 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth + 1,
+        bracket_depth,
         ["{", ..current],
         acc,
       )
@@ -117,21 +121,47 @@ fn do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth - 1,
+        bracket_depth,
         ["}", ..current],
         acc,
       )
-    [",", ..rest] if paren_depth == 0 && brace_depth == 0 -> {
+    ["[", ..rest] ->
+      do_split_at_top_level_comma(
+        rest,
+        paren_depth,
+        brace_depth,
+        bracket_depth + 1,
+        ["[", ..current],
+        acc,
+      )
+    ["]", ..rest] ->
+      do_split_at_top_level_comma(
+        rest,
+        paren_depth,
+        brace_depth,
+        bracket_depth - 1,
+        ["]", ..current],
+        acc,
+      )
+    [",", ..rest]
+      if paren_depth == 0 && brace_depth == 0 && bracket_depth == 0
+    -> {
       let trimmed = string.trim(string.concat(list.reverse(current)))
-      do_split_at_top_level_comma(rest, paren_depth, brace_depth, [], [
-        trimmed,
-        ..acc
-      ])
+      do_split_at_top_level_comma(
+        rest,
+        paren_depth,
+        brace_depth,
+        bracket_depth,
+        [],
+        [trimmed, ..acc],
+      )
     }
     [char, ..rest] ->
       do_split_at_top_level_comma(
         rest,
         paren_depth,
         brace_depth,
+        bracket_depth,
         [char, ..current],
         acc,
       )

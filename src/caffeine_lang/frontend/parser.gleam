@@ -1253,6 +1253,10 @@ fn parse_literal_struct_value(
 }
 
 /// Convert a Literal to its string representation for use in refinements/defaults.
+/// List literals are serialized as "[a, b, c]" using the same element format as
+/// types.gleam's value-to-string, so list defaults can be round-tripped at the
+/// resolver. Round-trip via comma-split does not preserve commas embedded inside
+/// individual string elements.
 fn literal_to_string(literal: Literal) -> String {
   case literal {
     ast.LiteralString(s) -> s
@@ -1261,7 +1265,10 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralPercentage(f) -> float.to_string(f) <> "%"
     ast.LiteralTrue -> "true"
     ast.LiteralFalse -> "false"
-    ast.LiteralList(_) -> "[]"
+    ast.LiteralList(elements) ->
+      "["
+      <> elements |> list.map(literal_to_string) |> string.join(", ")
+      <> "]"
     ast.LiteralStruct(_, _) -> "{}"
   }
 }

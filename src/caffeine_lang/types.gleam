@@ -893,8 +893,39 @@ fn validate_string_literal(
         value,
         validate_string_literal,
       )
+    CollectionType(List(inner)) ->
+      validate_list_default_value(inner, value, validate_string_literal)
     CollectionType(_) -> Error(Nil)
     RecordType(_) -> Error(Nil)
+  }
+}
+
+/// Validates a list default like "[200, 404]" or "[a, b]" for a `List(inner)` type.
+/// The default must be bracket-delimited, and every element must be valid for the
+/// inner type per the supplied element validator.
+fn validate_list_default_value(
+  inner: AcceptedTypes,
+  value: String,
+  validate_inner: fn(AcceptedTypes, String) -> Result(Nil, Nil),
+) -> Result(Nil, Nil) {
+  let trimmed = string.trim(value)
+  case string.starts_with(trimmed, "["), string.ends_with(trimmed, "]") {
+    True, True -> {
+      let body =
+        trimmed
+        |> string.drop_start(1)
+        |> string.drop_end(1)
+        |> string.trim
+      case body {
+        "" -> Ok(Nil)
+        _ ->
+          body
+          |> string.split(",")
+          |> list.map(string.trim)
+          |> list.try_each(validate_inner(inner, _))
+      }
+    }
+    _, _ -> Error(Nil)
   }
 }
 
@@ -1497,10 +1528,56 @@ fn resolve_modifier_to_string(
     }
     Defaulted(inner_type, default_val) -> {
       case val {
-        value.NilValue -> Ok(resolve_string(default_val))
+        value.NilValue ->
+          resolve_default_value_to_string(
+            inner_type,
+            default_val,
+            resolve_string,
+            resolve_list,
+          )
         _ -> resolve_to_string(inner_type, val, resolve_string, resolve_list)
       }
     }
+  }
+}
+
+/// Turns a Defaulted's stored default-string into a resolved output. Routes through
+/// resolve_list when the inner type is a List so list-typed defaults render as
+/// `IN (...)` rather than getting concatenated as one opaque string. Other types
+/// fall through to resolve_string (the historical behavior).
+fn resolve_default_value_to_string(
+  inner_type: AcceptedTypes,
+  default_val: String,
+  resolve_string: fn(String) -> String,
+  resolve_list: fn(List(String)) -> String,
+) -> Result(String, String) {
+  case inner_type {
+    CollectionType(List(_)) ->
+      Ok(resolve_list(parse_list_default_string(default_val)))
+    _ -> Ok(resolve_string(default_val))
+  }
+}
+
+/// Parses a serialized list default like "[200]" or "[a, b]" back into its element
+/// strings. Returns the original string wrapped in a single-element list as a
+/// best-effort fallback if it isn't bracket-delimited. Does not preserve commas
+/// embedded inside individual string elements.
+@internal
+pub fn parse_list_default_string(default_val: String) -> List(String) {
+  let trimmed = string.trim(default_val)
+  case string.starts_with(trimmed, "["), string.ends_with(trimmed, "]") {
+    True, True -> {
+      let inner =
+        trimmed
+        |> string.drop_start(1)
+        |> string.drop_end(1)
+        |> string.trim
+      case inner {
+        "" -> []
+        _ -> inner |> string.split(",") |> list.map(string.trim)
+      }
+    }
+    _, _ -> [default_val]
   }
 }
 

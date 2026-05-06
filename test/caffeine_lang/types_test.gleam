@@ -2063,10 +2063,46 @@ pub fn parse_accepted_type_test() {
       "Defaulted(Optional(String), default)",
       Error(Nil),
     ),
-    // Invalid - Defaulted only allows primitives, refinements, or collections
+    // Defaulted(List(...)) is allowed when the default is a bracketed list literal
+    // whose elements parse as the inner type. Bareword defaults remain invalid.
     #(
-      "Defaulted wrapping List not allowed",
+      "Defaulted wrapping List with bareword default rejected",
       "Defaulted(List(String), default)",
+      Error(Nil),
+    ),
+    #(
+      "Defaulted(List(Integer)) with list literal default",
+      "Defaulted(List(Integer), [200, 404])",
+      Ok(
+        ModifierType(Defaulted(
+          CollectionType(List(PrimitiveType(NumericType(Integer)))),
+          "[200, 404]",
+        )),
+      ),
+    ),
+    #(
+      "Defaulted(List(String)) with list literal default",
+      "Defaulted(List(String), [a, b])",
+      Ok(
+        ModifierType(Defaulted(
+          CollectionType(List(PrimitiveType(String))),
+          "[a, b]",
+        )),
+      ),
+    ),
+    #(
+      "Defaulted(List(Integer)) with empty list default",
+      "Defaulted(List(Integer), [])",
+      Ok(
+        ModifierType(Defaulted(
+          CollectionType(List(PrimitiveType(NumericType(Integer)))),
+          "[]",
+        )),
+      ),
+    ),
+    #(
+      "Defaulted(List(Integer)) with non-integer element rejected",
+      "Defaulted(List(Integer), [200, abc])",
       Error(Nil),
     ),
     // Defaulted with refinement inner type (what happens after type alias resolution)

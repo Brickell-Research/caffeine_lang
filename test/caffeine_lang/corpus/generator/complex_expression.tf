@@ -33,7 +33,7 @@ resource "datadog_service_level_objective" "org_team_auth_composite_slo" {
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:Composite SLO",
+    "expectation:\"Composite SLO\"",
   ]
   type = "metric"
 

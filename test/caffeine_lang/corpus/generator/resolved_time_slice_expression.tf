@@ -33,7 +33,7 @@ resource "datadog_service_level_objective" "org_team_auth_time_slice_slo" {
     "team:test_team",
     "service:team",
     "measurement:test_measurement",
-    "expectation:Time Slice SLO",
+    "expectation:\"Time Slice SLO\"",
   ]
   type = "time_slice"
 
