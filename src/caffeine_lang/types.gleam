@@ -100,6 +100,209 @@ pub type ValidationError {
   ValidationError(expected: String, found: String, path: List(String))
 }
 
+/// Type metadata for display purposes.
+pub type TypeMeta {
+  TypeMeta(name: String, description: String, syntax: String, example: String)
+}
+
+// ---------------------------------------------------------------------------
+// Metadata
+// ---------------------------------------------------------------------------
+
+/// Returns all type metadata across all type categories.
+/// Includes refinement types (OneOf, InclusiveRange) which are not standalone
+/// types but are useful for documentation (hover, CLI `types` command).
+pub fn all_type_metas() -> List(TypeMeta) {
+  list.flatten([
+    completable_type_metas(),
+    structured_all_type_metas(),
+    refinement_all_type_metas(),
+  ])
+}
+
+/// Returns type metadata for types that can be used directly in type position.
+/// Excludes refinement types (OneOf, InclusiveRange) since those are syntactic
+/// modifiers applied to other types (e.g. `String { x | x in { a, b } }`),
+/// not standalone type names a user would type.
+pub fn completable_type_metas() -> List(TypeMeta) {
+  list.flatten([
+    primitive_all_type_metas(),
+    collection_all_type_metas(),
+    modifier_all_type_metas(),
+  ])
+}
+
+/// Returns type metadata for all primitive types.
+pub fn primitive_all_type_metas() -> List(TypeMeta) {
+  list.flatten([
+    [primitive_type_meta(Boolean), primitive_type_meta(String)],
+    numeric_all_type_metas(),
+    semantic_all_type_metas(),
+  ])
+}
+
+fn primitive_type_meta(typ: PrimitiveTypes) -> TypeMeta {
+  case typ {
+    Boolean ->
+      TypeMeta(
+        name: "Boolean",
+        description: "True or false",
+        syntax: "Boolean",
+        example: "true, false",
+      )
+    String ->
+      TypeMeta(
+        name: "String",
+        description: "Any text between double quotes",
+        syntax: "String",
+        example: "\"hello\", \"my-service\"",
+      )
+    NumericType(n) -> numeric_type_meta(n)
+    SemanticType(s) -> semantic_type_meta(s)
+  }
+}
+
+fn numeric_all_type_metas() -> List(TypeMeta) {
+  [
+    numeric_type_meta(Integer),
+    numeric_type_meta(Float),
+    numeric_type_meta(Percentage),
+  ]
+}
+
+/// Returns metadata for a NumericTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+pub fn numeric_type_meta(typ: NumericTypes) -> TypeMeta {
+  case typ {
+    Integer ->
+      TypeMeta(
+        name: "Integer",
+        description: "Whole numbers",
+        syntax: "Integer",
+        example: "42, 0, -10",
+      )
+    Float ->
+      TypeMeta(
+        name: "Float",
+        description: "Decimal numbers",
+        syntax: "Float",
+        example: "3.14, 99.9, 0.0",
+      )
+    Percentage ->
+      TypeMeta(
+        name: "Percentage",
+        description: "A numeric value between 0.0 and 100.0 representing a percentage",
+        syntax: "Percentage",
+        example: "99.9%",
+      )
+  }
+}
+
+fn semantic_all_type_metas() -> List(TypeMeta) {
+  [semantic_type_meta(URL)]
+}
+
+/// Returns metadata for a SemanticStringTypes variant.
+/// Exhaustive pattern matching ensures new types must have descriptions.
+pub fn semantic_type_meta(typ: SemanticStringTypes) -> TypeMeta {
+  case typ {
+    URL ->
+      TypeMeta(
+        name: "URL",
+        description: "A valid URL starting with http:// or https://",
+        syntax: "URL",
+        example: "\"https://example.com\"",
+      )
+  }
+}
+
+/// Returns type metadata for all collection types.
+pub fn collection_all_type_metas() -> List(TypeMeta) {
+  [collection_type_meta(List(Nil)), collection_type_meta(Dict(Nil, Nil))]
+}
+
+fn collection_type_meta(typ: CollectionTypes(accepted)) -> TypeMeta {
+  case typ {
+    List(_) ->
+      TypeMeta(
+        name: "List",
+        description: "An ordered sequence where each element shares the same type",
+        syntax: "List(T)",
+        example: "List(String), List(Integer)",
+      )
+    Dict(_, _) ->
+      TypeMeta(
+        name: "Dict",
+        description: "A key-value map with typed keys and values",
+        syntax: "Dict(K, V)",
+        example: "Dict(String, String), Dict(String, Integer)",
+      )
+  }
+}
+
+/// Returns type metadata for all modifier types.
+pub fn modifier_all_type_metas() -> List(TypeMeta) {
+  [modifier_type_meta(Optional(Nil)), modifier_type_meta(Defaulted(Nil, ""))]
+}
+
+fn modifier_type_meta(typ: ModifierTypes(accepted)) -> TypeMeta {
+  case typ {
+    Optional(_) ->
+      TypeMeta(
+        name: "Optional",
+        description: "A type where the value may be left unspecified",
+        syntax: "Optional(T)",
+        example: "Optional(String), Optional(Integer)",
+      )
+    Defaulted(_, _) ->
+      TypeMeta(
+        name: "Defaulted",
+        description: "A type with a default value if none is provided",
+        syntax: "Defaulted(T, default)",
+        example: "Defaulted(Integer, 30), Defaulted(String, \"prod\")",
+      )
+  }
+}
+
+/// Returns type metadata for all refinement types.
+pub fn refinement_all_type_metas() -> List(TypeMeta) {
+  [
+    refinement_type_meta(OneOf(Nil, set.new())),
+    refinement_type_meta(InclusiveRange(Nil, "", "")),
+  ]
+}
+
+fn refinement_type_meta(typ: RefinementTypes(accepted)) -> TypeMeta {
+  case typ {
+    OneOf(_, _) ->
+      TypeMeta(
+        name: "OneOf",
+        description: "Value must be one of a finite set",
+        syntax: "T { x | x in { val1, val2, ... } }",
+        example: "String { x | x in { datadog, prometheus } }",
+      )
+    InclusiveRange(_, _, _) ->
+      TypeMeta(
+        name: "InclusiveRange",
+        description: "Value must be within a numeric range (inclusive)",
+        syntax: "T { x | x in ( low..high ) }",
+        example: "Integer { x | x in ( 0..100 ) }",
+      )
+  }
+}
+
+/// Returns type metadata for structured types (Record).
+pub fn structured_all_type_metas() -> List(TypeMeta) {
+  [
+    TypeMeta(
+      name: "Record",
+      description: "A group of named, typed fields",
+      syntax: "{ field: T, ... }",
+      example: "{ numerator: String, denominator: String }",
+    ),
+  ]
+}
+
 // ---------------------------------------------------------------------------
 // To-string operations
 // ---------------------------------------------------------------------------
