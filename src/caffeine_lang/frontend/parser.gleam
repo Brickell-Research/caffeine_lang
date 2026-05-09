@@ -398,22 +398,36 @@ fn parse_expect_item(
 // ERROR RECOVERY
 // =============================================================================
 
-/// Skip tokens until the next block boundary (Expectations, Unmeasured, or EOF).
-fn skip_to_block_boundary(state: ParserState) -> ParserState {
-  case peek(state) {
-    token.KeywordExpectations | token.KeywordUnmeasured | token.EOF -> state
-    _ -> skip_to_block_boundary(advance(state))
+/// Advance the state until `peek(state)` satisfies `predicate`.
+/// Used by recovery loops to resync to the next item/block boundary.
+fn skip_until(state: ParserState, predicate: fn(Token) -> Bool) -> ParserState {
+  case predicate(peek(state)) {
+    True -> state
+    False -> skip_until(advance(state), predicate)
   }
 }
 
-/// Skip tokens until the next item boundary (*, block keyword, or EOF).
-fn skip_to_item_boundary(state: ParserState) -> ParserState {
-  case peek(state) {
+fn at_block_boundary(tok: Token) -> Bool {
+  case tok {
+    token.KeywordExpectations | token.KeywordUnmeasured | token.EOF -> True
+    _ -> False
+  }
+}
+
+fn at_item_boundary(tok: Token) -> Bool {
+  case tok {
     token.SymbolStar
     | token.KeywordExpectations
     | token.KeywordUnmeasured
-    | token.EOF -> state
-    _ -> skip_to_item_boundary(advance(state))
+    | token.EOF -> True
+    _ -> False
+  }
+}
+
+fn at_measurement_item_boundary(tok: Token) -> Bool {
+  case tok {
+    token.LiteralString(_) | token.EOF -> True
+    _ -> False
   }
 }
 
@@ -450,7 +464,7 @@ fn expects_blocks_loop(
           )
         }
         Error(err) -> {
-          let state = skip_to_block_boundary(advance(state))
+          let state = skip_until(advance(state), at_block_boundary)
           let #(next_pending, state) = consume_comments(state)
           expects_blocks_loop(
             state,
@@ -573,21 +587,13 @@ fn measurement_items_loop(
           measurement_items_loop(state, [item, ..items], errors, next_pending)
         }
         Error(err) -> {
-          let state = skip_to_measurement_item_boundary(advance(state))
+          let state = skip_until(advance(state), at_measurement_item_boundary)
           let #(next_pending, state) = consume_comments(state)
           measurement_items_loop(state, items, [err, ..errors], next_pending)
         }
       }
     }
     _ -> #(list.reverse(items), list.reverse(errors), pending, state)
-  }
-}
-
-/// Skip tokens until the next measurement item boundary (string literal or EOF).
-fn skip_to_measurement_item_boundary(state: ParserState) -> ParserState {
-  case peek(state) {
-    token.LiteralString(_) | token.EOF -> state
-    _ -> skip_to_measurement_item_boundary(advance(state))
   }
 }
 
@@ -622,7 +628,7 @@ fn items_recovering_loop(
           )
         }
         Error(err) -> {
-          let state = skip_to_item_boundary(advance(state))
+          let state = skip_until(advance(state), at_item_boundary)
           let #(next_pending, state) = consume_comments(state)
           items_recovering_loop(
             state,
@@ -677,10 +683,18 @@ fn parse_extends_list(
 ) -> Result(#(List(String), ParserState), ParserError) {
   case peek(state) {
     token.SymbolRightBracket -> Ok(#([], state))
-    token.Identifier(name) -> {
-      let state = advance(state)
-      parse_extends_list_loop(state, [name])
+    _ -> {
+      use #(first, state) <- result.try(parse_identifier(state))
+      sep_by_comma(state, [first], parse_identifier)
     }
+  }
+}
+
+fn parse_identifier(
+  state: ParserState,
+) -> Result(#(String, ParserState), ParserError) {
+  case peek(state) {
+    token.Identifier(name) -> Ok(#(name, advance(state)))
     tok ->
       Error(parser_error.UnexpectedToken(
         "identifier",
@@ -691,26 +705,18 @@ fn parse_extends_list(
   }
 }
 
-fn parse_extends_list_loop(
+/// Consume `, item , item ...` until a non-comma token. Does not allow
+/// trailing commas (the parse_one callback runs after every comma).
+fn sep_by_comma(
   state: ParserState,
-  acc: List(String),
-) -> Result(#(List(String), ParserState), ParserError) {
+  acc: List(a),
+  parse_one: fn(ParserState) -> Result(#(a, ParserState), ParserError),
+) -> Result(#(List(a), ParserState), ParserError) {
   case peek(state) {
     token.SymbolComma -> {
       let state = advance(state)
-      case peek(state) {
-        token.Identifier(name) -> {
-          let state = advance(state)
-          parse_extends_list_loop(state, [name, ..acc])
-        }
-        tok ->
-          Error(parser_error.UnexpectedToken(
-            "identifier",
-            token.to_string(tok),
-            state.line,
-            state.column,
-          ))
-      }
+      use #(item, state) <- result.try(parse_one(state))
+      sep_by_comma(state, [item, ..acc], parse_one)
     }
     _ -> Ok(#(list.reverse(acc), state))
   }
@@ -842,53 +848,62 @@ fn parse_field(
 // TYPES
 // =============================================================================
 
-fn parse_type(
+/// Match a primitive type keyword and consume it. Returns Error(Nil) on miss.
+fn try_parse_primitive_keyword(
   state: ParserState,
-) -> Result(#(ParsedType, ParserState), ParserError) {
+) -> Result(#(PrimitiveTypes, ParserState), Nil) {
   case peek(state) {
-    token.KeywordString -> parse_type_with_refinement(state, StringType)
-    token.KeywordInteger ->
-      parse_type_with_refinement(state, NumericType(Integer))
-    token.KeywordFloat -> parse_type_with_refinement(state, NumericType(Float))
-    token.KeywordBoolean -> parse_type_with_refinement(state, Boolean)
-    token.KeywordURL -> parse_type_with_refinement(state, SemanticType(URL))
-    token.KeywordPercentage ->
-      parse_type_with_refinement(state, NumericType(Percentage))
-    token.KeywordList -> parse_list_type(state)
-    token.KeywordDict -> parse_dict_type(state)
-    token.KeywordOptional -> parse_optional_type(state)
-    token.KeywordDefaulted -> parse_defaulted_type(state)
-    // Record type (e.g., { numerator: String, denominator: String })
-    token.SymbolLeftBrace -> parse_record_type(state)
-    // Type alias reference (must start with _, e.g., _env)
-    token.Identifier(name) ->
-      case string.starts_with(name, "_") {
-        True -> {
-          let state = advance(state)
-          Ok(#(ParsedTypeAliasRef(name), state))
-        }
-        False -> Error(parser_error.UnknownType(name, state.line, state.column))
-      }
-    tok ->
-      Error(parser_error.UnknownType(
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
+    token.KeywordString -> Ok(#(StringType, advance(state)))
+    token.KeywordInteger -> Ok(#(NumericType(Integer), advance(state)))
+    token.KeywordFloat -> Ok(#(NumericType(Float), advance(state)))
+    token.KeywordBoolean -> Ok(#(Boolean, advance(state)))
+    token.KeywordURL -> Ok(#(SemanticType(URL), advance(state)))
+    token.KeywordPercentage -> Ok(#(NumericType(Percentage), advance(state)))
+    _ -> Error(Nil)
   }
 }
 
-fn parse_type_with_refinement(
+/// Parse a type-alias reference (`_name`) or surface UnknownType for a bare identifier.
+fn parse_type_alias_ref_or_error(
   state: ParserState,
-  primitive: PrimitiveTypes,
+  name: String,
 ) -> Result(#(ParsedType, ParserState), ParserError) {
-  let state = advance(state)
-  case peek(state) {
-    token.SymbolLeftBrace -> {
-      use #(refinement, state) <- result.try(parse_refinement(state, primitive))
-      Ok(#(ParsedRefinement(refinement), state))
-    }
-    _ -> Ok(#(ParsedPrimitive(primitive), state))
+  case string.starts_with(name, "_") {
+    True -> Ok(#(ParsedTypeAliasRef(name), advance(state)))
+    False -> Error(parser_error.UnknownType(name, state.line, state.column))
+  }
+}
+
+fn parse_type(
+  state: ParserState,
+) -> Result(#(ParsedType, ParserState), ParserError) {
+  case try_parse_primitive_keyword(state) {
+    Ok(#(primitive, state)) ->
+      case peek(state) {
+        token.SymbolLeftBrace -> {
+          use #(refinement, state) <- result.try(parse_refinement(
+            state,
+            primitive,
+          ))
+          Ok(#(ParsedRefinement(refinement), state))
+        }
+        _ -> Ok(#(ParsedPrimitive(primitive), state))
+      }
+    Error(_) ->
+      case peek(state) {
+        token.KeywordList -> parse_list_type(state)
+        token.KeywordDict -> parse_dict_type(state)
+        token.KeywordOptional -> parse_optional_type(state)
+        token.KeywordDefaulted -> parse_defaulted_type(state)
+        token.SymbolLeftBrace -> parse_record_type(state)
+        token.Identifier(name) -> parse_type_alias_ref_or_error(state, name)
+        tok ->
+          Error(parser_error.UnknownType(
+            token.to_string(tok),
+            state.line,
+            state.column,
+          ))
+      }
   }
 }
 
@@ -913,50 +928,21 @@ fn parse_record_type(
 fn parse_collection_inner_type(
   state: ParserState,
 ) -> Result(#(ParsedType, ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordString -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(StringType), state))
-    }
-    token.KeywordInteger -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(NumericType(Integer)), state))
-    }
-    token.KeywordFloat -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(NumericType(Float)), state))
-    }
-    token.KeywordBoolean -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(Boolean), state))
-    }
-    token.KeywordURL -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(SemanticType(URL)), state))
-    }
-    token.KeywordPercentage -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(NumericType(Percentage)), state))
-    }
-    token.KeywordList -> parse_list_type(state)
-    token.KeywordDict -> parse_dict_type(state)
-    // Record type (e.g., { numerator: String, denominator: String })
-    token.SymbolLeftBrace -> parse_record_type(state)
-    // Type alias reference (must start with _, e.g., _env)
-    token.Identifier(name) ->
-      case string.starts_with(name, "_") {
-        True -> {
-          let state = advance(state)
-          Ok(#(ParsedTypeAliasRef(name), state))
-        }
-        False -> Error(parser_error.UnknownType(name, state.line, state.column))
+  case try_parse_primitive_keyword(state) {
+    Ok(#(primitive, state)) -> Ok(#(ParsedPrimitive(primitive), state))
+    Error(_) ->
+      case peek(state) {
+        token.KeywordList -> parse_list_type(state)
+        token.KeywordDict -> parse_dict_type(state)
+        token.SymbolLeftBrace -> parse_record_type(state)
+        token.Identifier(name) -> parse_type_alias_ref_or_error(state, name)
+        tok ->
+          Error(parser_error.UnknownType(
+            token.to_string(tok),
+            state.line,
+            state.column,
+          ))
       }
-    tok ->
-      Error(parser_error.UnknownType(
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
   }
 }
 
@@ -990,19 +976,8 @@ fn parse_dict_key_type(
   state: ParserState,
 ) -> Result(#(ParsedType, ParserState), ParserError) {
   case peek(state) {
-    token.KeywordString -> {
-      let state = advance(state)
-      Ok(#(ParsedPrimitive(StringType), state))
-    }
-    // Type alias reference (must start with _, e.g., _env) - must resolve to a String-based type
-    token.Identifier(name) ->
-      case string.starts_with(name, "_") {
-        True -> {
-          let state = advance(state)
-          Ok(#(ParsedTypeAliasRef(name), state))
-        }
-        False -> Error(parser_error.UnknownType(name, state.line, state.column))
-      }
+    token.KeywordString -> Ok(#(ParsedPrimitive(StringType), advance(state)))
+    token.Identifier(name) -> parse_type_alias_ref_or_error(state, name)
     tok ->
       Error(parser_error.UnknownType(
         token.to_string(tok),
@@ -1035,7 +1010,7 @@ fn parse_defaulted_type(
   // Check for optional refinement: Defaulted(String, "x") { x | x in { ... } }
   case peek(state) {
     token.SymbolLeftBrace -> {
-      use #(refinement, state) <- result.try(parse_defaulted_refinement(
+      use #(refinement, state) <- result.try(parse_refinement_with_inner(
         state,
         defaulted,
       ))
@@ -1045,77 +1020,30 @@ fn parse_defaulted_type(
   }
 }
 
-/// Parse refinement on a Defaulted type: { x | x in { ... } } or { x | x in ( ... ) }
-fn parse_defaulted_refinement(
-  state: ParserState,
-  defaulted: ParsedType,
-) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
-  use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
-  use state <- result.try(expect_x(state))
-  use state <- result.try(expect(state, token.SymbolPipe, "|"))
-  use state <- result.try(expect_x(state))
-  use state <- result.try(expect(state, token.KeywordIn, "in"))
-  use #(refinement, state) <- result.try(parse_defaulted_refinement_body(
-    state,
-    defaulted,
-  ))
-  use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-  Ok(#(refinement, state))
-}
-
-fn parse_defaulted_refinement_body(
-  state: ParserState,
-  defaulted: ParsedType,
-) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
-  case peek(state) {
-    // OneOf: { value1, value2, ... }
-    token.SymbolLeftBrace -> {
-      let state = advance(state)
-      use #(values, state) <- result.try(parse_literal_list_contents(state))
-      use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
-      let string_values = list.map(values, literal_to_string)
-      Ok(#(OneOf(defaulted, set.from_list(string_values)), state))
-    }
-    // Range: ( min..max )
-    token.SymbolLeftParen -> {
-      let state = advance(state)
-      use #(min, state) <- result.try(parse_literal(state))
-      use state <- result.try(expect(state, token.SymbolDotDot, ".."))
-      use #(max, state) <- result.try(parse_literal(state))
-      use state <- result.try(expect(state, token.SymbolRightParen, ")"))
-      Ok(#(
-        InclusiveRange(
-          defaulted,
-          literal_to_string(min),
-          literal_to_string(max),
-        ),
-        state,
-      ))
-    }
-    tok ->
-      Error(parser_error.UnexpectedToken(
-        "{ or (",
-        token.to_string(tok),
-        state.line,
-        state.column,
-      ))
-  }
-}
-
 // =============================================================================
 // REFINEMENTS
 // =============================================================================
 
+/// Parse `{ x | x in <body> }` for a primitive base type.
 fn parse_refinement(
   state: ParserState,
   primitive: PrimitiveTypes,
+) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
+  parse_refinement_with_inner(state, ParsedPrimitive(primitive))
+}
+
+/// Parse `{ x | x in <body> }` wrapping an arbitrary inner type. Shared
+/// implementation for primitive refinements and Defaulted-with-refinement.
+fn parse_refinement_with_inner(
+  state: ParserState,
+  inner: ParsedType,
 ) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
   use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
   use state <- result.try(expect_x(state))
   use state <- result.try(expect(state, token.SymbolPipe, "|"))
   use state <- result.try(expect_x(state))
   use state <- result.try(expect(state, token.KeywordIn, "in"))
-  use #(refinement, state) <- result.try(parse_refinement_body(state, primitive))
+  use #(refinement, state) <- result.try(parse_refinement_body(state, inner))
   use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
   Ok(#(refinement, state))
 }
@@ -1134,7 +1062,7 @@ fn expect_x(state: ParserState) -> Result(ParserState, ParserError) {
 
 fn parse_refinement_body(
   state: ParserState,
-  primitive: PrimitiveTypes,
+  inner: ParsedType,
 ) -> Result(#(RefinementTypes(ParsedType), ParserState), ParserError) {
   case peek(state) {
     // OneOf: { value1, value2, ... }
@@ -1143,10 +1071,7 @@ fn parse_refinement_body(
       use #(values, state) <- result.try(parse_literal_list_contents(state))
       use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
       let string_values = list.map(values, literal_to_string)
-      Ok(#(
-        OneOf(ParsedPrimitive(primitive), set.from_list(string_values)),
-        state,
-      ))
+      Ok(#(OneOf(inner, set.from_list(string_values)), state))
     }
     // Range: ( min..max )
     token.SymbolLeftParen -> {
@@ -1156,11 +1081,7 @@ fn parse_refinement_body(
       use #(max, state) <- result.try(parse_literal(state))
       use state <- result.try(expect(state, token.SymbolRightParen, ")"))
       Ok(#(
-        InclusiveRange(
-          ParsedPrimitive(primitive),
-          literal_to_string(min),
-          literal_to_string(max),
-        ),
+        InclusiveRange(inner, literal_to_string(min), literal_to_string(max)),
         state,
       ))
     }
@@ -1217,22 +1138,8 @@ fn parse_literal_list_contents(
     token.SymbolRightBracket | token.SymbolRightBrace -> Ok(#([], state))
     _ -> {
       use #(first, state) <- result.try(parse_literal(state))
-      parse_literal_list_loop(state, [first])
+      sep_by_comma(state, [first], parse_literal)
     }
-  }
-}
-
-fn parse_literal_list_loop(
-  state: ParserState,
-  acc: List(Literal),
-) -> Result(#(List(Literal), ParserState), ParserError) {
-  case peek(state) {
-    token.SymbolComma -> {
-      let state = advance(state)
-      use #(literal, state) <- result.try(parse_literal(state))
-      parse_literal_list_loop(state, [literal, ..acc])
-    }
-    _ -> Ok(#(list.reverse(acc), state))
   }
 }
 
