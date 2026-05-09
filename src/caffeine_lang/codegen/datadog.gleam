@@ -13,6 +13,8 @@ import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
 import caffeine_lang/value
+import datadog_query/lint
+import datadog_query/quote
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -257,7 +259,7 @@ pub fn ir_to_terraform_resource(
     indicators
     |> dict.values
     |> list.append([evaluation_expr])
-    |> list.flat_map(templatizer.detect_at_prefixed_attrs)
+    |> list.flat_map(lint.at_prefixed_attrs)
     |> list.unique
   let at_prefix_warnings =
     at_prefixed_attrs
@@ -276,7 +278,7 @@ pub fn ir_to_terraform_resource(
   let tags =
     list.append(final_system_tag_pairs, user_tag_pairs)
     |> list.map(fn(pair) {
-      hcl.StringLiteral(pair.0 <> ":" <> templatizer.quote_for_datadog(pair.1))
+      hcl.StringLiteral(pair.0 <> ":" <> quote.value(pair.1))
     })
     |> hcl.ListExpr
 

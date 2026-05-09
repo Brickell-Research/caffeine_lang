@@ -13,6 +13,7 @@ target = "erlang"
 [dependencies]
 gleam_stdlib = ">= 0.70.0 and < 1.0.2"
 terra_madre = ">=0.0.6"
+datadog_query = ">= 1.0.0 and < 2.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.2"

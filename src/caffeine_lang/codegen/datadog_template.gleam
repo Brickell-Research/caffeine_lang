@@ -30,8 +30,8 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/types
+import datadog_query/filter
 import gleam/dict
-import gleam/list
 import gleam/result
 import gleam/string
 
@@ -287,11 +287,10 @@ pub fn resolve_string_value(
   template: TemplateVariable,
   value: String,
 ) -> String {
-  let attr = template.datadog_attr
   case template.template_type {
     Raw -> value
-    Default -> attr <> ":" <> quote_for_datadog(value)
-    Not -> "!" <> attr <> ":" <> quote_for_datadog(value)
+    Default -> filter.tag(template.datadog_attr, value)
+    Not -> filter.negated_tag(template.datadog_attr, value)
   }
 }
 
@@ -304,49 +303,11 @@ pub fn resolve_list_value(
   template: TemplateVariable,
   values: List(String),
 ) -> String {
-  let attr = template.datadog_attr
   case template.template_type, values {
     _, [] -> ""
     Raw, values -> values |> string.join(", ")
-    Default, values ->
-      attr
-      <> " IN ("
-      <> values |> list.map(quote_for_datadog) |> string.join(", ")
-      <> ")"
-    Not, values ->
-      attr
-      <> " NOT IN ("
-      <> values |> list.map(quote_for_datadog) |> string.join(", ")
-      <> ")"
-  }
-}
-
-/// Wraps a value in double quotes when it contains characters that would otherwise
-/// be ambiguous to the Datadog query/tag parser (whitespace, commas, parentheses).
-/// Embedded double quotes are escaped. Values containing wildcards (`*`) are
-/// intentionally left unquoted so wildcard semantics are preserved.
-///
-/// Colons are NOT a quoting trigger: Datadog's metric query parser greedily
-/// consumes everything up to the next delimiter after `tag:`, so `tag:foo::bar`
-/// parses as the tag value `foo::bar`. Wrapping such values in quotes (e.g.
-/// `tag:"foo::bar"`) is rejected with a 400.
-@internal
-pub fn quote_for_datadog(value: String) -> String {
-  case needs_datadog_quoting(value) {
-    True -> "\"" <> string.replace(value, "\"", "\\\"") <> "\""
-    False -> value
-  }
-}
-
-fn needs_datadog_quoting(value: String) -> Bool {
-  case string.contains(value, "*") {
-    True -> False
-    False ->
-      string.contains(value, " ")
-      || string.contains(value, "\t")
-      || string.contains(value, ",")
-      || string.contains(value, "(")
-      || string.contains(value, ")")
+    Default, values -> filter.tag_in(template.datadog_attr, values)
+    Not, values -> filter.tag_not_in(template.datadog_attr, values)
   }
 }
 
@@ -377,46 +338,3 @@ fn parse_datadog_template_variable(
   }
 }
 
-/// Scans a Datadog query string for `@`-prefixed attribute names used in
-/// filter position (e.g. `@type:foo` or `@type IN (...)`).
-///
-/// Datadog metric filters strip the leading `@` from log facets when log-based
-/// metrics are generated — the metric tag for log facet `@type` is just `type`.
-/// A query that filters on `@type` against a log-based metric is rejected by
-/// the SLO API with `400: numerator query is invalid`. We surface these at
-/// compile time as warnings so users can switch to the bare attribute name
-/// before `terraform apply`.
-///
-/// Returns a deduplicated list of `@`-prefixed attribute names found.
-@internal
-pub fn detect_at_prefixed_attrs(query: String) -> List(String) {
-  query
-  |> string.replace("{", " ")
-  |> string.replace("}", " ")
-  |> string.replace("(", " ")
-  |> string.replace(")", " ")
-  |> string.replace(",", " ")
-  |> string.split(" ")
-  |> list.filter_map(token_to_at_attr)
-  |> list.unique
-}
-
-fn token_to_at_attr(token: String) -> Result(String, Nil) {
-  let stripped = case string.starts_with(token, "!") {
-    True -> string.drop_start(token, 1)
-    False -> token
-  }
-  case string.starts_with(stripped, "@") {
-    False -> Error(Nil)
-    True -> {
-      let attr = case string.split_once(stripped, ":") {
-        Ok(#(before_colon, _)) -> before_colon
-        Error(_) -> stripped
-      }
-      case attr {
-        "@" -> Error(Nil)
-        _ -> Ok(attr)
-      }
-    }
-  }
-}
