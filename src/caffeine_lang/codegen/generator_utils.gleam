@@ -1,15 +1,7 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, type IntermediateRepresentationMetaData,
-  type SloFields, ir_to_identifier,
-}
-import caffeine_query_language/generator as cql_generator
-import gleam/dict
-import gleam/list
+import caffeine_lang/linker/ir.{type IntermediateRepresentationMetaData}
 import gleam/option
-import gleam/result
 import gleam/string
-import terra_madre/hcl
 import terra_madre/render
 import terra_madre/terraform.{
   type Provider, type Resource, type TerraformSettings, type Variable,
@@ -74,71 +66,6 @@ pub fn render_resource_to_string(resource: Resource) -> String {
   |> string.drop_end(1)
 }
 
-/// Build a description string for an SLO resource.
-/// Uses the runbook URL if present, otherwise a standard "Managed by Caffeine" message.
-@internal
-pub fn build_description(
-  ir: IntermediateRepresentation(phase),
-  with slo: SloFields,
-) -> String {
-  case slo.runbook {
-    option.Some(url) -> "[Runbook](" <> url <> ")"
-    option.None ->
-      "Managed by Caffeine ("
-      <> ir.metadata.org_name.value
-      <> "/"
-      <> ir.metadata.team_name.value
-      <> "/"
-      <> ir.metadata.service_name.value
-      <> ")"
-  }
-}
-
-/// Extract evaluation expression from SLO fields, returning a codegen error if missing.
-@internal
-pub fn require_evaluation(
-  slo: SloFields,
-  ir: IntermediateRepresentation(phase),
-  vendor vendor_name: String,
-) -> Result(String, CompilationError) {
-  slo.evaluation
-  |> option.to_result(resolution_error(
-    vendor: vendor_name,
-    msg: "expectation '"
-      <> ir_to_identifier(ir)
-      <> "' - missing evaluation for "
-      <> vendor_display_name(vendor_name)
-      <> " SLO",
-  ))
-}
-
-/// Maps a vendor constant to a human-friendly display name.
-/// Falls back to the raw string for unrecognized vendors so new variants
-/// surface readably in error messages even before they are registered here.
-fn vendor_display_name(vendor: String) -> String {
-  case vendor {
-    "datadog" -> "Datadog"
-    other -> other
-  }
-}
-
-/// Resolve a CQL expression by substituting indicators, wrapping errors with vendor context.
-@internal
-pub fn resolve_cql_expression(
-  evaluation_expr: String,
-  indicators: dict.Dict(String, String),
-  ir: IntermediateRepresentation(phase),
-  vendor vendor_name: String,
-) -> Result(String, CompilationError) {
-  cql_generator.resolve_slo_to_expression(evaluation_expr, indicators)
-  |> result.map_error(fn(err) {
-    resolution_error(
-      vendor: vendor_name,
-      msg: "expectation '" <> ir_to_identifier(ir) <> "' - " <> err,
-    )
-  })
-}
-
 /// Build a codegen resolution error with empty context.
 @internal
 pub fn resolution_error(
@@ -146,64 +73,4 @@ pub fn resolution_error(
   msg msg: String,
 ) -> CompilationError {
   errors.generator_terraform_resolution_error(vendor: vendor_name, msg:)
-}
-
-/// Build a TerraformSettings block with a single required provider.
-@internal
-pub fn build_terraform_settings(
-  provider_name provider_name: String,
-  source source: String,
-  version version: String,
-) -> TerraformSettings {
-  terraform.TerraformSettings(
-    required_version: option.None,
-    required_providers: dict.from_list([
-      #(
-        provider_name,
-        terraform.ProviderRequirement(source, option.Some(version)),
-      ),
-    ]),
-    backend: option.None,
-    cloud: option.None,
-  )
-}
-
-/// Build a Provider block with the given name and attributes.
-@internal
-pub fn build_provider(
-  name name: String,
-  attributes attributes: List(#(String, hcl.Expr)),
-) -> Provider {
-  terraform.Provider(
-    name: name,
-    alias: option.None,
-    attributes: dict.from_list(attributes),
-    blocks: [],
-  )
-}
-
-/// Generate resources by mapping each IR to a single resource.
-/// Returns an empty warnings list. Suitable for vendors without per-resource warnings.
-@internal
-pub fn generate_resources_simple(
-  irs: List(IntermediateRepresentation(phase)),
-  mapper mapper: fn(IntermediateRepresentation(phase)) ->
-    Result(Resource, CompilationError),
-) -> Result(#(List(Resource), List(String)), CompilationError) {
-  irs
-  |> list.try_map(mapper)
-  |> result.map(fn(r) { #(r, []) })
-}
-
-/// Generate resources by mapping each IR to a list of resources, then flattening.
-/// Returns an empty warnings list. Suitable for vendors that produce multiple resources per IR.
-@internal
-pub fn generate_resources_multi(
-  irs: List(IntermediateRepresentation(phase)),
-  mapper mapper: fn(IntermediateRepresentation(phase)) ->
-    Result(List(Resource), CompilationError),
-) -> Result(#(List(Resource), List(String)), CompilationError) {
-  irs
-  |> list.try_map(mapper)
-  |> result.map(fn(lists) { #(list.flatten(lists), []) })
 }

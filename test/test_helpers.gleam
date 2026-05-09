@@ -32,12 +32,6 @@ fn collapse_spaces_before_equals(terraform: String) -> String {
   }
 }
 
-pub fn normalize_terraform_result(
-  value: Result(String, error),
-) -> Result(String, error) {
-  value |> result.map(normalize_terraform)
-}
-
 pub fn normalize_terraform_result_with_warnings(
   value: Result(#(String, List(String)), error),
 ) -> Result(#(String, List(String)), error) {

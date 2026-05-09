@@ -112,7 +112,6 @@ pub type TypeMeta {
 /// Returns all type metadata across all type categories.
 /// Includes refinement types (OneOf, InclusiveRange) which are not standalone
 /// types but are useful for documentation (hover, CLI `types` command).
-@internal
 pub fn all_type_metas() -> List(TypeMeta) {
   list.flatten([
     completable_type_metas(),
@@ -125,7 +124,6 @@ pub fn all_type_metas() -> List(TypeMeta) {
 /// Excludes refinement types (OneOf, InclusiveRange) since those are syntactic
 /// modifiers applied to other types (e.g. `String { x | x in { a, b } }`),
 /// not standalone type names a user would type.
-@internal
 pub fn completable_type_metas() -> List(TypeMeta) {
   list.flatten([
     primitive_all_type_metas(),
@@ -135,7 +133,6 @@ pub fn completable_type_metas() -> List(TypeMeta) {
 }
 
 /// Returns type metadata for all primitive types.
-@internal
 pub fn primitive_all_type_metas() -> List(TypeMeta) {
   list.flatten([
     [primitive_type_meta(Boolean), primitive_type_meta(String)],
@@ -175,7 +172,6 @@ fn numeric_all_type_metas() -> List(TypeMeta) {
 
 /// Returns metadata for a NumericTypes variant.
 /// Exhaustive pattern matching ensures new types must have descriptions.
-@internal
 pub fn numeric_type_meta(typ: NumericTypes) -> TypeMeta {
   case typ {
     Integer ->
@@ -208,7 +204,6 @@ fn semantic_all_type_metas() -> List(TypeMeta) {
 
 /// Returns metadata for a SemanticStringTypes variant.
 /// Exhaustive pattern matching ensures new types must have descriptions.
-@internal
 pub fn semantic_type_meta(typ: SemanticStringTypes) -> TypeMeta {
   case typ {
     URL ->
@@ -222,7 +217,6 @@ pub fn semantic_type_meta(typ: SemanticStringTypes) -> TypeMeta {
 }
 
 /// Returns type metadata for all collection types.
-@internal
 pub fn collection_all_type_metas() -> List(TypeMeta) {
   [collection_type_meta(List(Nil)), collection_type_meta(Dict(Nil, Nil))]
 }
@@ -247,7 +241,6 @@ fn collection_type_meta(typ: CollectionTypes(accepted)) -> TypeMeta {
 }
 
 /// Returns type metadata for all modifier types.
-@internal
 pub fn modifier_all_type_metas() -> List(TypeMeta) {
   [modifier_type_meta(Optional(Nil)), modifier_type_meta(Defaulted(Nil, ""))]
 }
@@ -272,7 +265,6 @@ fn modifier_type_meta(typ: ModifierTypes(accepted)) -> TypeMeta {
 }
 
 /// Returns type metadata for all refinement types.
-@internal
 pub fn refinement_all_type_metas() -> List(TypeMeta) {
   [
     refinement_type_meta(OneOf(Nil, set.new())),
@@ -300,7 +292,6 @@ fn refinement_type_meta(typ: RefinementTypes(accepted)) -> TypeMeta {
 }
 
 /// Returns type metadata for structured types (Record).
-@internal
 pub fn structured_all_type_metas() -> List(TypeMeta) {
   [
     TypeMeta(

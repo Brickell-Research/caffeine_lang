@@ -21,17 +21,15 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 [internal-modules]
 # Analysis pipeline (internal orchestration)
 "caffeine_lang/analysis/dependency_validator" = true
-"caffeine_lang/analysis/semantic_analyzer" = true
-"caffeine_lang/analysis/templatizer" = true
 # Code generation (vendor-specific internals)
 "caffeine_lang/codegen/datadog" = true
 "caffeine_lang/codegen/datadog_cql" = true
+"caffeine_lang/codegen/datadog_template" = true
 "caffeine_lang/codegen/dependency_graph" = true
 "caffeine_lang/codegen/generator_utils" = true
 # Frontend (internal helpers)
 "caffeine_lang/frontend/lowering" = true
 # Linker (internal orchestration)
-"caffeine_lang/linker/blueprints" = true
 "caffeine_lang/linker/ir" = true
 "caffeine_lang/linker/ir_builder" = true
 "caffeine_lang/linker/linker" = true
@@ -40,8 +38,6 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 "caffeine_lang/error_renderer" = true
 "caffeine_lang/helpers" = true
 "caffeine_lang/parsing_utils" = true
-"caffeine_lang/position_utils" = true
-"caffeine_lang/rich_error" = true
 "caffeine_lang/string_distance" = true
 # CQL (internal parser)
 "caffeine_query_language/ast" = true
