@@ -1,4 +1,4 @@
-import caffeine_lang/analysis/templatizer
+import caffeine_lang/codegen/datadog_template as templatizer
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/types

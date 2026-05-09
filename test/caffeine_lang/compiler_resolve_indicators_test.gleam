@@ -1,9 +1,10 @@
 /// Most of these tests are just integration tests so we'll focus mostly
 /// just on the happy path to avoid duplicative testing.
 /// Uses array-based test pattern for consistency.
-import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/compiler
 import caffeine_lang/constants
+import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 
@@ -11,10 +12,15 @@ import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
+import gleam/list
 import gleam/option
 import gleam/set
 import gleeunit/should
 import test_helpers
+
+fn resolve_all(irs) {
+  irs |> list.map(compiler.resolve_indicators) |> errors.from_results
+}
 
 // ==== resolve_intermediate_representations ====
 // * ✅ happy path - two IRs with vendor resolution and indicator template resolution
@@ -223,9 +229,7 @@ pub fn resolve_intermediate_representations_test() {
       ]),
     ),
   ]
-  |> test_helpers.table_test_1(
-    semantic_analyzer.resolve_intermediate_representations,
-  )
+  |> test_helpers.table_test_1(resolve_all)
 }
 
 // TODO: resolve_vendor has been moved to IR builder level; update or remove these tests
@@ -774,7 +778,7 @@ pub fn resolve_indicators_test() {
       )),
     ),
   ]
-  |> test_helpers.table_test_1(semantic_analyzer.resolve_indicators)
+  |> test_helpers.table_test_1(compiler.resolve_indicators)
 }
 
 // ==== resolve_indicators ====
@@ -818,7 +822,7 @@ pub fn resolve_indicators_no_vendor_error_test() {
       vendor: option.None,
     )
 
-  semantic_analyzer.resolve_indicators(ir)
+  compiler.resolve_indicators(ir)
   |> should.be_ok()
 }
 
@@ -850,6 +854,6 @@ pub fn resolve_intermediate_representations_no_vendor_error_test() {
       vendor: option.None,
     )
 
-  semantic_analyzer.resolve_intermediate_representations([no_vendor_ir])
+  resolve_all([no_vendor_ir])
   |> should.be_ok()
 }

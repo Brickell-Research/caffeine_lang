@@ -8,7 +8,6 @@ import caffeine_lang/types.{
 }
 import caffeine_lang/value
 import gleam/dict
-import gleam/list
 import gleam/result
 import gleam/set
 import gleam/string
@@ -632,19 +631,6 @@ pub fn parse_refinement_compatible_primitive_test() {
   |> test_helpers.table_test_1(types.parse_refinement_compatible_primitive)
 }
 
-// ==== primitive_all_type_metas ====
-// * ✅ returns non-empty list with expected type names
-pub fn primitive_all_type_metas_test() {
-  let metas = types.all_type_metas()
-  { metas != [] } |> should.be_true()
-
-  let names = list.map(metas, fn(m) { m.name })
-  list.contains(names, "Boolean") |> should.be_true()
-  list.contains(names, "String") |> should.be_true()
-  list.contains(names, "Integer") |> should.be_true()
-  list.contains(names, "Float") |> should.be_true()
-}
-
 // ===========================================================================
 // CollectionTypes tests
 // ===========================================================================
@@ -853,15 +839,6 @@ pub fn resolve_collection_to_string_test() {
     let #(typ, value) = input
     types.resolve_to_string(typ, value, string_resolver, list_resolver)
   })
-}
-
-// ==== collection_all_type_metas ====
-// * ✅ returns entries for List and Dict
-pub fn collection_all_type_metas_test() {
-  let metas = types.all_type_metas()
-  let names = list.map(metas, fn(m) { m.name })
-  list.contains(names, "List") |> should.be_true()
-  list.contains(names, "Dict") |> should.be_true()
 }
 
 // ===========================================================================
@@ -1193,15 +1170,6 @@ pub fn resolve_modifier_to_string_test() {
     types.resolve_to_string(typ, value, resolve_string, resolve_list)
     |> result_to_ok_string_from_string_error
   })
-}
-
-// ==== modifier_all_type_metas ====
-// * ✅ returns entries for Optional and Defaulted
-pub fn modifier_all_type_metas_test() {
-  let metas = types.all_type_metas()
-  let names = list.map(metas, fn(m) { m.name })
-  list.contains(names, "Optional") |> should.be_true()
-  list.contains(names, "Defaulted") |> should.be_true()
 }
 
 // ==== modifier_try_each_inner ====
@@ -1884,15 +1852,6 @@ pub fn resolve_refinement_to_string_test() {
   })
 }
 
-// ==== refinement_all_type_metas ====
-// * ✅ returns entries for OneOf and InclusiveRange
-pub fn refinement_all_type_metas_test() {
-  let metas = types.all_type_metas()
-  let names = list.map(metas, fn(m) { m.name })
-  list.contains(names, "OneOf") |> should.be_true()
-  list.contains(names, "InclusiveRange") |> should.be_true()
-}
-
 // ==== refinement_try_each_inner ====
 // * ✅ OneOf calls f with inner type
 // * ✅ InclusiveRange calls f with inner type
@@ -2337,38 +2296,6 @@ pub fn is_optional_or_defaulted_test() {
     #("Collection -> False", CollectionType(List(PrimitiveType(String))), False),
   ]
   |> test_helpers.table_test_1(types.is_optional_or_defaulted)
-}
-
-// ==== all_type_metas ====
-// * ✅ returns non-empty list with entries from all 5 categories
-pub fn all_type_metas_test() {
-  let metas = types.all_type_metas()
-  // Should have entries from primitives, collections, structured, modifiers, and refinements
-  { metas != [] } |> should.be_true()
-
-  // Verify it includes entries from each category by checking known names
-  let names = list.map(metas, fn(m) { m.name })
-  list.contains(names, "Boolean") |> should.be_true()
-  list.contains(names, "List") |> should.be_true()
-  list.contains(names, "Optional") |> should.be_true()
-  list.contains(names, "OneOf") |> should.be_true()
-}
-
-// ==== completable_type_metas ====
-// * ✅ includes primitives, collections, and modifiers
-// * ✅ excludes refinement types (OneOf, InclusiveRange)
-pub fn completable_type_metas_test() {
-  let metas = types.completable_type_metas()
-  let names = list.map(metas, fn(m) { m.name })
-
-  // Includes completable types
-  list.contains(names, "Boolean") |> should.be_true()
-  list.contains(names, "List") |> should.be_true()
-  list.contains(names, "Optional") |> should.be_true()
-
-  // Excludes refinement types — they are not standalone types
-  list.contains(names, "OneOf") |> should.be_false()
-  list.contains(names, "InclusiveRange") |> should.be_false()
 }
 
 // ==== try_each_inner ====

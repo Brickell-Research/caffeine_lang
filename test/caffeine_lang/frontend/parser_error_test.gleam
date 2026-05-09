@@ -6,7 +6,6 @@ import gleeunit/should
 // ==== to_string ====
 // * ✅ TokenizerError delegates to tokenizer_error.to_string
 // * ✅ UnexpectedToken includes expected, got, line, column
-// * ✅ UnexpectedEOF includes expected, line, column
 // * ✅ UnknownType includes name, line, column
 // * ✅ InvalidRefinement includes message, line, column
 // * ✅ QuotedFieldName includes name, line, column
@@ -31,16 +30,6 @@ pub fn to_string_test() {
   { string.contains(result, "line 3") } |> should.be_true()
   { string.contains(result, "column 10") } |> should.be_true()
   { string.contains(result, "identifier") } |> should.be_true()
-
-  // UnexpectedEOF
-  let result =
-    parser_error.to_string(parser_error.UnexpectedEOF(
-      expected: "}",
-      line: 5,
-      column: 1,
-    ))
-  { string.contains(result, "Unexpected end of file") } |> should.be_true()
-  { string.contains(result, "line 5") } |> should.be_true()
 
   // UnknownType
   let result =

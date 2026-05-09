@@ -127,17 +127,6 @@ pub fn extract_bool_test() {
   |> test_helpers.table_test_1(value.extract_bool)
 }
 
-// ==== extract_list ====
-// * ✅ extracts from ListValue
-// * ✅ returns Error for non-list
-pub fn extract_list_test() {
-  [
-    #("extracts from ListValue", ListValue([IntValue(1)]), Ok([IntValue(1)])),
-    #("returns Error for non-list", StringValue("x"), Error(Nil)),
-  ]
-  |> test_helpers.table_test_1(value.extract_list)
-}
-
 // ==== extract_dict ====
 // * ✅ extracts from DictValue
 // * ✅ returns Error for non-dict
@@ -169,15 +158,4 @@ pub fn extract_string_dict_test() {
     #("returns Error for non-dict", StringValue("x"), Error(Nil)),
   ]
   |> test_helpers.table_test_1(value.extract_string_dict)
-}
-
-// ==== is_nil ====
-// * ✅ returns True for NilValue
-// * ✅ returns False for other values
-pub fn is_nil_test() {
-  [
-    #("returns True for NilValue", NilValue, True),
-    #("returns False for other values", StringValue("x"), False),
-  ]
-  |> test_helpers.table_test_1(value.is_nil)
 }

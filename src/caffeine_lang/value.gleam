@@ -118,15 +118,6 @@ pub fn extract_bool(value: Value) -> Result(Bool, Nil) {
   }
 }
 
-/// Extracts a List from a Value, returning Error if not a ListValue.
-@internal
-pub fn extract_list(value: Value) -> Result(List(Value), Nil) {
-  case value {
-    ListValue(l) -> Ok(l)
-    _ -> Error(Nil)
-  }
-}
-
 /// Extracts a Dict from a Value, returning Error if not a DictValue.
 @internal
 pub fn extract_dict(value: Value) -> Result(Dict(String, Value), Nil) {
@@ -152,14 +143,5 @@ pub fn extract_string_dict(value: Value) -> Result(Dict(String, String), Nil) {
       })
       |> result.map(dict.from_list)
     _ -> Error(Nil)
-  }
-}
-
-/// Checks if a Value is NilValue.
-@internal
-pub fn is_nil(value: Value) -> Bool {
-  case value {
-    NilValue -> True
-    _ -> False
   }
 }

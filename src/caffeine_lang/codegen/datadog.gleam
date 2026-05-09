@@ -1,5 +1,5 @@
-import caffeine_lang/analysis/templatizer
 import caffeine_lang/codegen/datadog_cql
+import caffeine_lang/codegen/datadog_template as templatizer
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
@@ -151,11 +151,8 @@ pub fn resolve_indicators(
 /// Default evaluation expression used when no explicit evaluation is provided.
 const default_evaluation = "numerator / denominator"
 
-/// Generate Terraform HCL from a list of Datadog IntermediateRepresentations.
-/// Includes provider configuration and variables.
-/// Note: Datadog does not use generator_utils.generate_terraform because it
-/// returns warnings alongside the HCL string.
 /// Generate only the Terraform resources for Datadog IRs (no config/provider).
+/// Returns warnings alongside the resource list.
 @internal
 pub fn generate_resources(
   irs: List(IntermediateRepresentation(Resolved)),

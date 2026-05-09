@@ -1,6 +1,6 @@
 import caffeine_lang/analysis/dependency_validator
-import caffeine_lang/analysis/semantic_analyzer
 import caffeine_lang/analysis/vendor
+import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/platforms
@@ -8,7 +8,8 @@ import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{
-  type IntermediateRepresentation, type Linked, type Resolved,
+  type DepsValidated, type IntermediateRepresentation, type Linked,
+  type Resolved,
 }
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/linker
@@ -82,7 +83,21 @@ fn run_semantic_analysis(
   use validated_irs <- result.try(
     dependency_validator.validate_dependency_relations(irs),
   )
-  semantic_analyzer.resolve_intermediate_representations(validated_irs)
+  validated_irs
+  |> list.map(resolve_indicators)
+  |> errors.from_results()
+}
+
+/// Vendor dispatch for indicator template resolution. Datadog uses template
+/// substitution; unmeasured IRs (vendor = None) pass through unchanged.
+@internal
+pub fn resolve_indicators(
+  ir: IntermediateRepresentation(DepsValidated),
+) -> Result(IntermediateRepresentation(Resolved), errors.CompilationError) {
+  case ir.vendor {
+    option.Some(vendor.Datadog) -> datadog.resolve_indicators(ir)
+    option.None -> Ok(ir.promote(ir))
+  }
 }
 
 fn run_code_generation(
