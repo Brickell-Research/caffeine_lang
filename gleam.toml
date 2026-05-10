@@ -1,5 +1,5 @@
 name = "caffeine_lang"
-version = "5.4.2"
+version = "5.4.3"
 description = "A compiler for generating reliability artifacts from service expectation definitions."
 licences = ["GPL-3.0"]
 
@@ -13,7 +13,7 @@ target = "erlang"
 [dependencies]
 gleam_stdlib = ">= 0.70.0 and < 1.0.2"
 terra_madre = ">=0.0.6"
-datadog_query = ">= 1.0.0 and < 2.0.0"
+datadog_query = ">= 2.0.0 and < 3.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.2"

@@ -13,8 +13,8 @@ import caffeine_lang/types.{
   CollectionType, Dict, PrimitiveType, String as StringType,
 }
 import caffeine_lang/value
+import datadog_query/filter
 import datadog_query/lint
-import datadog_query/quote
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -278,7 +278,7 @@ pub fn ir_to_terraform_resource(
   let tags =
     list.append(final_system_tag_pairs, user_tag_pairs)
     |> list.map(fn(pair) {
-      hcl.StringLiteral(pair.0 <> ":" <> quote.value(pair.1))
+      hcl.StringLiteral(filter.tag(pair.0, pair.1))
     })
     |> hcl.ListExpr
 
