@@ -1,5 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{Hard}
+import caffeine_lang/linker/dependency.{Hard}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, ir_to_identifier,
 }
@@ -17,7 +17,7 @@ import gleam/string
 /// Extracts depends_on from an IR's SloFields.
 fn get_depends_on(
   ir: IntermediateRepresentation(phase),
-) -> Option(Dict(artifacts.DependencyRelationType, List(String))) {
+) -> Option(Dict(dependency.DependencyRelationType, List(String))) {
   ir.slo.depends_on
 }
 
@@ -105,7 +105,7 @@ fn validate_ir_dependencies(
 }
 
 fn get_all_dependency_targets(
-  relations: Dict(artifacts.DependencyRelationType, List(String)),
+  relations: Dict(dependency.DependencyRelationType, List(String)),
 ) -> List(String) {
   relations
   |> dict.values
@@ -113,7 +113,7 @@ fn get_all_dependency_targets(
 }
 
 fn check_for_duplicates_per_relation(
-  relations: Dict(artifacts.DependencyRelationType, List(String)),
+  relations: Dict(dependency.DependencyRelationType, List(String)),
   self_path: String,
 ) -> Result(Nil, CompilationError) {
   relations

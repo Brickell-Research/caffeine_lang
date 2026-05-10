@@ -3,7 +3,7 @@ import caffeine_lang/identifiers.{
   type ExpectationLabel, type MeasurementName, type OrgName, type ServiceName,
   type TeamName,
 }
-import caffeine_lang/linker/artifacts.{type DependencyRelationType}
+import caffeine_lang/linker/dependency.{type DependencyRelationType}
 import caffeine_lang/types
 import caffeine_lang/value.{type Value}
 import gleam/dict
@@ -127,7 +127,7 @@ fn extract_relations_from_value_tuple(
         |> result.map(fn(pairs) {
           pairs
           |> list.filter_map(fn(pair) {
-            case artifacts.parse_relation_type(pair.0) {
+            case dependency.parse_relation_type(pair.0) {
               Ok(rt) -> Ok(#(rt, pair.1))
               Error(Nil) -> Error(Nil)
             }

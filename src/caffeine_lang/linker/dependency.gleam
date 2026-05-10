@@ -1,21 +1,3 @@
-import caffeine_lang/types.{type AcceptedTypes}
-import gleam/dict
-
-/// Information about a parameter including its type and description.
-pub type ParamInfo {
-  ParamInfo(type_: AcceptedTypes, description: String)
-}
-
-/// Extracts just the types from artifact params, discarding descriptions.
-/// Useful when downstream code only needs type information.
-@internal
-pub fn params_to_types(
-  params: dict.Dict(String, ParamInfo),
-) -> dict.Dict(String, AcceptedTypes) {
-  params
-  |> dict.map_values(fn(_, param_info) { param_info.type_ })
-}
-
 /// Types of dependency relationships between expectations.
 pub type DependencyRelationType {
   /// If dependency down, dependent down.

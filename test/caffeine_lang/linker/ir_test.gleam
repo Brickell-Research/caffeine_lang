@@ -1,4 +1,4 @@
-import caffeine_lang/linker/artifacts.{Hard, Soft}
+import caffeine_lang/linker/dependency.{Hard, Soft}
 import caffeine_lang/linker/ir
 import gleam/dict
 import gleam/option

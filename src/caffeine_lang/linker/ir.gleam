@@ -7,7 +7,7 @@ import caffeine_lang/identifiers.{
   type ExpectationLabel, type MeasurementName, type OrgName, type ServiceName,
   type TeamName,
 }
-import caffeine_lang/linker/artifacts.{type DependencyRelationType}
+import caffeine_lang/linker/dependency.{type DependencyRelationType}
 import gleam/dict
 import gleam/option.{type Option}
 

@@ -2,7 +2,7 @@ import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{type ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
 import caffeine_lang/linker/measurements.{
@@ -197,7 +197,7 @@ fn build_unmeasured_param_types(
   let allowed = set.from_list(["threshold", "window_in_days", "depends_on"])
   slo_params
   |> dict.filter(fn(key, _) { set.contains(allowed, key) })
-  |> artifacts.params_to_types()
+  |> params_to_types()
 }
 
 /// Build value tuples from merged inputs and params.

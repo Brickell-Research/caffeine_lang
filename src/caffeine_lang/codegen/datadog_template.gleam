@@ -282,8 +282,7 @@ pub fn resolve_template(
 /// ASSUMPTION: we already checked the value type is correct and the label matches
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw string value.
-@internal
-pub fn resolve_string_value(
+fn resolve_string_value(
   template: TemplateVariable,
   value: String,
 ) -> String {
@@ -298,8 +297,7 @@ pub fn resolve_string_value(
 /// ASSUMPTION: we already checked the value type is correct and the label matches
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw list value of strings.
-@internal
-pub fn resolve_list_value(
+fn resolve_list_value(
   template: TemplateVariable,
   values: List(String),
 ) -> String {
