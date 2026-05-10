@@ -113,9 +113,9 @@ fn run_code_generation(
   let active_groups =
     grouped
     |> dict.to_list
-    |> list.map(fn(pair) { #(platforms.for_vendor(pair.0), pair.1) })
+    |> list.map(fn(pair) { #(platforms.datadog_platform(), pair.1) })
   let active_groups = case list.is_empty(active_groups) {
-    True -> [#(platforms.for_vendor(vendor.Datadog), [])]
+    True -> [#(platforms.datadog_platform(), [])]
     False -> active_groups
   }
 

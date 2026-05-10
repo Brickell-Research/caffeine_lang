@@ -2,7 +2,7 @@
 import caffeine_lang/analysis/vendor
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{Hard, Soft}
+import caffeine_lang/linker/dependency.{Hard, Soft}
 import caffeine_lang/linker/ir
 import caffeine_lang/types
 import caffeine_lang/value
@@ -140,7 +140,7 @@ fn make_test_slo_fields_with_deps(
   threshold: Float,
   indicators: dict.Dict(String, String),
   depends_on: option.Option(
-    dict.Dict(artifacts.DependencyRelationType, List(String)),
+    dict.Dict(dependency.DependencyRelationType, List(String)),
   ),
 ) -> ir.SloFields {
   ir.SloFields(

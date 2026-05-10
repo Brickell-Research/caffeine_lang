@@ -1,4 +1,4 @@
-import caffeine_lang/linker/artifacts.{Hard, Soft}
+import caffeine_lang/linker/dependency.{Hard, Soft}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type Resolved, ir_to_identifier,
 }

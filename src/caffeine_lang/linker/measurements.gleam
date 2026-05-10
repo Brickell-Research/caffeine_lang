@@ -1,5 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
-import caffeine_lang/linker/artifacts.{type ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/validations
 import caffeine_lang/types.{type AcceptedTypes}
 import caffeine_lang/value.{type Value}
@@ -13,8 +13,8 @@ pub type Raw
 /// Marker type for measurements that have passed validation.
 pub type MeasurementValidated
 
-/// A Measurement that references one or more Artifacts with parameters and inputs. It provides further params
-/// for the Expectation to satisfy while providing a partial set of inputs for the Artifact's params.
+/// A Measurement provides a partial set of inputs to the SLO param schema and
+/// declares any additional params the bound Expectation must satisfy.
 /// The phantom type parameter `state` tracks whether the measurement is `Raw` or `MeasurementValidated`.
 pub type Measurement(state) {
   Measurement(
@@ -39,7 +39,7 @@ pub fn validate_measurements(
   ))
 
   // Get SLO param types for validation.
-  let slo_param_types = artifacts.params_to_types(slo_params)
+  let slo_param_types = params_to_types(slo_params)
 
   // Validate exactly the right number of inputs and each input is the
   // correct type as per the param. A measurement needs to specify inputs for
@@ -65,7 +65,7 @@ pub fn validate_measurements(
       get_error_label: fn(measurement) {
         "measurement '"
         <> measurement.name
-        <> "' - overshadowing inherited_params from artifact: "
+        <> "' - overshadowing inherited SLO params: "
       },
     ),
   )

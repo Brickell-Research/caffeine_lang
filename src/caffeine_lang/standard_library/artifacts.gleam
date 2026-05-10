@@ -3,7 +3,7 @@
 /// hardcoded string. That's way more offensive. We will work towards a better state, just know that even
 /// in its existing offensive state right now (02/01/2026), it's much better than it was before.
 /// - Rob
-import caffeine_lang/linker/artifacts.{type ParamInfo, ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo, ParamInfo}
 import caffeine_lang/types.{
   CollectionType, Defaulted, Dict, InclusiveRange, Integer, List as ListType,
   ModifierType, NumericType, Optional, Percentage, PrimitiveType, RecordType,

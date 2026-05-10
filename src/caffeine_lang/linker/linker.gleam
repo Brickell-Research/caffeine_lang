@@ -1,6 +1,6 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/artifacts.{type ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo}
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import caffeine_lang/linker/ir_builder

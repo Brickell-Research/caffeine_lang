@@ -1,5 +1,5 @@
 import caffeine_lang/errors
-import caffeine_lang/linker/artifacts.{type ParamInfo, ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo, ParamInfo}
 import caffeine_lang/linker/measurements
 import caffeine_lang/types
 import caffeine_lang/value
@@ -179,7 +179,7 @@ pub fn validate_measurements_test() {
         ),
       ],
       Error(errors.LinkerDuplicateError(
-        msg: "measurement 'success_rate' - overshadowing inherited_params from artifact: threshold",
+        msg: "measurement 'success_rate' - overshadowing inherited SLO params: threshold",
         context: errors.empty_context(),
       )),
     ),

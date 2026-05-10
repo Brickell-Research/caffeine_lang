@@ -5,7 +5,7 @@ import caffeine_lang/constants
 import caffeine_lang/errors
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/artifacts.{Hard, Soft}
+import caffeine_lang/linker/dependency.{Hard, Soft}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, IntermediateRepresentation, SloFields,
 }
@@ -26,7 +26,7 @@ import test_helpers
 // * ✅ version constraint is ~> 3.0
 pub fn terraform_settings_test() {
   let settings =
-    platforms.terraform_settings(platforms.for_vendor(vendor.Datadog))
+    platforms.terraform_settings(platforms.datadog_platform())
 
   // Check that datadog provider is required
   dict.get(settings.required_providers, constants.vendor_datadog)
@@ -43,7 +43,7 @@ pub fn terraform_settings_test() {
 // * ✅ provider name is datadog
 // * ✅ uses variable references for credentials
 pub fn provider_test() {
-  let provider = platforms.provider(platforms.for_vendor(vendor.Datadog))
+  let provider = platforms.provider(platforms.datadog_platform())
 
   provider.name |> should.equal(constants.vendor_datadog)
   provider.alias |> should.equal(option.None)
@@ -58,7 +58,7 @@ pub fn provider_test() {
 // * ✅ includes datadog_app_key variable
 // * ✅ variables are marked as sensitive
 pub fn variables_test() {
-  let vars = platforms.for_vendor(vendor.Datadog).variables
+  let vars = platforms.datadog_platform().variables
 
   // Should have 2 variables
   list.length(vars) |> should.equal(2)
@@ -1264,7 +1264,7 @@ pub fn generate_terraform_test() {
         let expected = test_helpers.read_generator_corpus(actual_corpus)
         let result =
           platforms.generate_terraform(
-            platforms.for_vendor(vendor.Datadog),
+            platforms.datadog_platform(),
             input,
           )
           |> test_helpers.normalize_terraform_result_with_warnings
@@ -1279,7 +1279,7 @@ pub fn generate_terraform_test() {
       False -> {
         let expected = test_helpers.read_generator_corpus(corpus_file)
         platforms.generate_terraform(
-          platforms.for_vendor(vendor.Datadog),
+          platforms.datadog_platform(),
           input,
         )
         |> test_helpers.normalize_terraform_result_with_warnings

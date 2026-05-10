@@ -5,7 +5,6 @@ import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Resolved}
 import gleam/dict
-import gleam/list
 import gleam/option
 import gleam/result
 import terra_madre/hcl
@@ -25,19 +24,6 @@ pub type Platform {
     generate_resources: fn(List(IntermediateRepresentation(Resolved))) ->
       Result(#(List(terraform.Resource), List(String)), CompilationError),
   )
-}
-
-/// All supported platforms. Order is stable for deterministic output.
-/// New vendors are added by appending another `*_platform()` constructor here.
-pub fn all() -> List(Platform) {
-  [datadog_platform()]
-}
-
-/// Look up the platform configuration for a given vendor.
-/// Total: every Vendor variant has a corresponding Platform.
-pub fn for_vendor(v: vendor.Vendor) -> Platform {
-  let assert Ok(p) = list.find(all(), fn(p) { p.vendor == v })
-  p
 }
 
 /// Derive the TerraformSettings block for a platform.
@@ -88,7 +74,7 @@ pub fn generate_terraform(
 
 // ==== Per-vendor platform definitions ====
 
-fn datadog_platform() -> Platform {
+pub fn datadog_platform() -> Platform {
   Platform(
     vendor: vendor.Datadog,
     provider_name: constants.provider_datadog,

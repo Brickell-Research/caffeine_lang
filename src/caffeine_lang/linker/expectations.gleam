@@ -1,6 +1,6 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts.{type ParamInfo}
+import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/measurements.{
   type Measurement, type MeasurementValidated,
 }
@@ -14,9 +14,10 @@ import gleam/result
 import gleam/set
 import gleam/string
 
-/// An Expectation is a concrete implementation of an Artifact + Measurement.
-/// Unmeasured expectations have `measurement_ref: option.None` and skip codegen
-/// but participate in dependency validation and graph generation.
+/// An Expectation is a concrete service-level assertion. When paired with a
+/// measurement (`measurement_ref: option.Some`), it lowers to an SLO at codegen.
+/// Unmeasured expectations skip codegen but participate in dependency
+/// validation and graph generation.
 ///
 /// `description` carries the joined text of `###` doc comments that immediately
 /// preceded the source `*` entry. It flows into the Datadog SLO `description`.
@@ -145,7 +146,7 @@ fn validate_unmeasured_expectations(
   let restricted_params =
     slo_params
     |> dict.filter(fn(key, _) { set.contains(allowed_keys, key) })
-    |> artifacts.params_to_types()
+    |> params_to_types()
 
   // Validate inputs against restricted params.
   let input_param_collections =

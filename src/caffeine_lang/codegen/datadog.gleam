@@ -4,7 +4,7 @@ import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/artifacts
+import caffeine_lang/linker/dependency
 import caffeine_lang/linker/ir.{
   type DepsValidated, type IntermediateRepresentation, type Resolved,
   IntermediateRepresentation, SloFields, ir_to_identifier,
@@ -352,21 +352,21 @@ fn description_text_to_expr(text: String) -> hcl.Expr {
 /// Build dependency relation tag pairs from the relations dict.
 /// Generates pairs like #("soft_dependency", "target1,target2").
 fn build_dependency_tags(
-  relations: dict.Dict(artifacts.DependencyRelationType, List(String)),
+  relations: dict.Dict(dependency.DependencyRelationType, List(String)),
 ) -> List(#(String, String)) {
   relations
   |> dict.to_list
   |> list.sort(fn(a, b) {
     string.compare(
-      artifacts.relation_type_to_string(a.0),
-      artifacts.relation_type_to_string(b.0),
+      dependency.relation_type_to_string(a.0),
+      dependency.relation_type_to_string(b.0),
     )
   })
   |> list.map(fn(pair) {
     let #(relation_type, targets) = pair
     let sorted_targets = targets |> list.sort(string.compare)
     #(
-      artifacts.relation_type_to_string(relation_type) <> "_dependency",
+      dependency.relation_type_to_string(relation_type) <> "_dependency",
       string.join(sorted_targets, ","),
     )
   })
