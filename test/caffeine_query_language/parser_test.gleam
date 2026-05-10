@@ -4,7 +4,7 @@ import caffeine_query_language/ast.{
   OperatorExpr, Primary, PrimaryWord, Sub, TimeSliceExp, TimeSliceExpr, Word,
 }
 import caffeine_query_language/parser.{
-  find_rightmost_operator_at_level, is_balanced_parens, is_last_char, parse_expr,
+  find_rightmost_operator_at_level, is_balanced_parens, parse_expr,
 }
 import caffeine_query_language/test_helpers as cql_test_helpers
 import gleeunit/should
@@ -281,32 +281,6 @@ pub fn find_rightmost_operator_at_level_test() {
   |> test_helpers.table_test_2(fn(input, operator) {
     find_rightmost_operator_at_level(input, operator, 0, 0, -1)
   })
-}
-
-// ==== is_last_char Tests ====
-// * ✅ empty string at index 0
-// * ✅ single character at index 0
-// * ✅ index not the last character
-// * ✅ negative index
-// * ✅ index beyond string length
-// * ✅ index is the last character
-
-pub fn is_last_char_test() {
-  [
-    // empty string at index 0
-    #("empty string at index 0", "", 0, True),
-    // single character at index 0
-    #("single character at index 0", "a", 0, True),
-    // index not the last character
-    #("index not the last character", "()", 0, False),
-    // negative index
-    #("negative index", "(()))", -1, False),
-    // index beyond string length
-    #("index beyond string length", "(()))", 100, False),
-    // index is the last character
-    #("index is the last character", "(a(b)(c)((())))", 14, True),
-  ]
-  |> test_helpers.table_test_2(is_last_char)
 }
 
 // ==== time_slice valid parsing Tests ====

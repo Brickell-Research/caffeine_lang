@@ -18,17 +18,6 @@ pub type Primitives {
   )
 }
 
-/// Converts a comparator to its quoted string representation.
-@internal
-pub fn comparator_to_string(comparator: Comparator) {
-  case comparator {
-    ast.LessThan -> "\"<\""
-    ast.LessThanOrEqualTo -> "\"<=\""
-    ast.GreaterThan -> "\">\""
-    ast.GreaterThanOrEqualTo -> "\">=\""
-  }
-}
-
 /// Resolves a parsed CQL expression into a primitive type.
 /// Supports GoodOverTotal (division at the top level) and TimeSlice.
 /// Returns an error if the expression doesn't match a known primitive pattern.

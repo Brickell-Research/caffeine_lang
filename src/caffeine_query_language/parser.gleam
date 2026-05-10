@@ -301,15 +301,6 @@ fn is_balanced_parens_loop(
   && is_balanced_parens_loop(input, pos + 1, new_count, input_len)
 }
 
-/// Returns true if the position is at the last character of the input string.
-@internal
-pub fn is_last_char(input: String, pos: Int) -> Bool {
-  let is_empty = string.is_empty(input)
-  let is_last = pos == string.length(input) - 1
-
-  is_empty || is_last
-}
-
 /// Finds the rightmost occurrence of an operator at parenthesis level 0.
 /// Returns the left and right parts of the expression split at the operator.
 @internal
