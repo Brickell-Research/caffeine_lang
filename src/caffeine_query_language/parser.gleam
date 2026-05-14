@@ -11,6 +11,36 @@ import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 
+/// Codeunit (UTF-16 on JS, UTF-8 byte on Erlang) at index, or -1 if out of bounds.
+/// Used in per-position scans where we look for ASCII tokens — bypassing
+/// gleam_stdlib's grapheme-safe slicing avoids an O(N) Intl.Segmenter setup
+/// per char (which turns the scans into O(N^2)).
+@external(erlang, "parser_ffi", "code_unit_at")
+@external(javascript, "./parser_ffi.mjs", "code_unit_at")
+fn code_unit_at(s: String, i: Int) -> Int
+
+/// True if `haystack[pos..pos+|needle|]` exactly equals `needle` (codeunit-wise).
+@external(erlang, "parser_ffi", "substring_equals_at")
+@external(javascript, "./parser_ffi.mjs", "substring_equals_at")
+fn substring_equals_at(haystack: String, pos: Int, needle: String) -> Bool
+
+/// Codeunit count — the indexing space used by code_unit_at / substring_equals_at /
+/// slice_codeunits. NOT grapheme count (which `string.length` returns and which
+/// also walks the string via Intl.Segmenter on JS).
+@external(erlang, "parser_ffi", "code_unit_length")
+@external(javascript, "./parser_ffi.mjs", "code_unit_length")
+fn code_unit_length(s: String) -> Int
+
+/// Slice by codeunit range. Mirrors `string.slice` but skips the grapheme walk.
+@external(erlang, "parser_ffi", "slice_codeunits")
+@external(javascript, "./parser_ffi.mjs", "slice_codeunits")
+fn slice_codeunits(s: String, start: Int, len: Int) -> String
+
+// ASCII codeunits for parens used in count_parens.
+const open_paren: Int = 0x28
+
+const close_paren: Int = 0x29
+
 /// Parses a CQL expression string into an Exp AST node.
 /// Returns an error if the input cannot be parsed.
 @internal
@@ -138,10 +168,10 @@ fn find_comparator_loop(
     [#(comp_str, comp), ..rest] -> {
       case find_substring_position(input, comp_str) {
         option.Some(pos) -> {
-          let query = string.slice(input, 0, pos)
-          let rest_start = pos + string.length(comp_str)
-          let rest_len = string.length(input) - rest_start
-          let rest_str = string.slice(input, rest_start, rest_len)
+          let query = slice_codeunits(input, 0, pos)
+          let rest_start = pos + code_unit_length(comp_str)
+          let rest_len = code_unit_length(input) - rest_start
+          let rest_str = slice_codeunits(input, rest_start, rest_len)
           Ok(#(query, comp, rest_str))
         }
         option.None -> find_comparator_loop(input, rest)
@@ -150,14 +180,14 @@ fn find_comparator_loop(
   }
 }
 
-/// Finds the position of a substring in a string.
+/// Finds the position of a substring in a string. Returns a codeunit position.
 fn find_substring_position(haystack: String, needle: String) -> Option(Int) {
   find_substring_position_loop(
     haystack,
     needle,
     0,
-    string.length(needle),
-    string.length(haystack),
+    code_unit_length(needle),
+    code_unit_length(haystack),
   )
 }
 
@@ -170,7 +200,7 @@ fn find_substring_position_loop(
 ) -> Option(Int) {
   use <- bool.guard(when: pos + needle_len > haystack_len, return: option.None)
   use <- bool.guard(
-    when: string.slice(haystack, pos, needle_len) == needle,
+    when: substring_equals_at(haystack, pos, needle),
     return: option.Some(pos),
   )
   find_substring_position_loop(
@@ -186,10 +216,11 @@ fn find_substring_position_loop(
 fn split_on_per(input: String) -> Result(#(String, String), String) {
   case find_substring_position(input, "per") {
     option.Some(pos) -> {
-      let threshold_str = string.trim(string.slice(input, 0, pos))
+      let threshold_str = string.trim(slice_codeunits(input, 0, pos))
       let rest_start = pos + 3
-      let rest_len = string.length(input) - rest_start
-      let interval_str = string.trim(string.slice(input, rest_start, rest_len))
+      let rest_len = code_unit_length(input) - rest_start
+      let interval_str =
+        string.trim(slice_codeunits(input, rest_start, rest_len))
       Ok(#(threshold_str, interval_str))
     }
     option.None -> Error("Missing 'per' keyword in time_slice expression")
@@ -283,7 +314,7 @@ fn find_operator(
 /// Used to validate parenthesized expressions during parsing.
 @internal
 pub fn is_balanced_parens(input: String, pos: Int, count: Int) -> Bool {
-  is_balanced_parens_loop(input, pos, count, string.length(input))
+  is_balanced_parens_loop(input, pos, count, code_unit_length(input))
 }
 
 /// Internal loop with pre-computed input length.
@@ -317,8 +348,8 @@ pub fn find_rightmost_operator_at_level(
     start_pos,
     paren_level,
     rightmost_pos,
-    string.length(operator),
-    string.length(input),
+    code_unit_length(operator),
+    code_unit_length(input),
   )
 }
 
@@ -337,11 +368,11 @@ fn find_rightmost_operator_at_level_loop(
       case rightmost_pos {
         -1 -> Error(errors.cql_parser_error(msg: "Operator not found"))
         pos -> {
-          let left = string.trim(string.slice(input, 0, pos))
+          let left = string.trim(slice_codeunits(input, 0, pos))
           let right_start = pos + operator_length
           let right_length = input_len - right_start
           let right =
-            string.trim(string.slice(input, right_start, right_length))
+            string.trim(slice_codeunits(input, right_start, right_length))
           Ok(#(left, right))
         }
       }
@@ -349,7 +380,7 @@ fn find_rightmost_operator_at_level_loop(
       let new_paren_level = count_parens(paren_level, input, start_pos)
       let new_rightmost_pos = case
         new_paren_level == 0
-        && string.slice(input, start_pos, operator_length) == operator
+        && substring_equals_at(input, start_pos, operator)
       {
         True -> start_pos
         False -> rightmost_pos
@@ -369,10 +400,9 @@ fn find_rightmost_operator_at_level_loop(
 }
 
 fn count_parens(cur_count: Int, input: String, pos: Int) -> Int {
-  let char = string.slice(input, pos, 1)
-  case char {
-    "(" -> cur_count + 1
-    ")" -> cur_count - 1
+  case code_unit_at(input, pos) {
+    c if c == open_paren -> cur_count + 1
+    c if c == close_paren -> cur_count - 1
     _ -> cur_count
   }
 }

@@ -6,6 +6,40 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+/// Pops the next codepoint off `s`. Returns ("", "") for empty input — the
+/// wrapper below turns that into Error(Nil) so call sites read like the
+/// gleam_stdlib `pop_codepoint` they replaced. We split by codepoint
+/// instead of grapheme to skip the Intl.Segmenter that turns gleam_stdlib's
+/// per-char tokenizing into O(N^2) on JS. Grapheme vs codepoint only differs
+/// for combining-mark / ZWJ sequences in string-literal / comment bodies,
+/// which we never slice grapheme-by-grapheme — just scan for ASCII terminators.
+@external(erlang, "tokenizer_ffi", "pop_codepoint")
+@external(javascript, "./tokenizer_ffi.mjs", "pop_codepoint")
+fn pop_codepoint_raw(s: String) -> #(String, String)
+
+fn pop_codepoint(s: String) -> Result(#(String, String), Nil) {
+  case pop_codepoint_raw(s) {
+    #("", _) -> Error(Nil)
+    pair -> Ok(pair)
+  }
+}
+
+/// UTF-16 code unit at index — used by is_digit/is_letter on single-codepoint
+/// strings. ASCII chars (digits, letters) have codeunit == codepoint, so a
+/// range check on the codeunit is sufficient.
+@external(erlang, "tokenizer_ffi", "code_unit_at")
+@external(javascript, "./tokenizer_ffi.mjs", "code_unit_at")
+fn code_unit_at(s: String, i: Int) -> Int
+
+/// Codeunit length of the just-read token; used for column advance. For
+/// ASCII tokens this equals grapheme count; for multi-codepoint chars in
+/// string/comment bodies, column reports codeunits instead of graphemes —
+/// acceptable tradeoff: gleam_stdlib's string.length walks the whole token
+/// via Intl.Segmenter per call, and was ~5–10% of total tokenizer time.
+@external(erlang, "tokenizer_ffi", "code_unit_length")
+@external(javascript, "./tokenizer_ffi.mjs", "code_unit_length")
+fn code_unit_length(s: String) -> Int
+
 /// Internal tokenizer state.
 type TokenizerState {
   TokenizerState(source: String, line: Int, column: Int, at_line_start: Bool)
@@ -24,7 +58,7 @@ fn tokenize_loop(
   state: TokenizerState,
   acc: List(PositionedToken),
 ) -> Result(List(PositionedToken), TokenizerError) {
-  case string.pop_grapheme(state.source) {
+  case pop_codepoint(state.source) {
     Error(Nil) ->
       Ok([token.PositionedToken(token.EOF, state.line, state.column), ..acc])
 
@@ -69,14 +103,14 @@ fn tokenize_loop(
         "\t" -> tokenize_loop(advance(state, rest, 2), acc)
 
         "#" -> {
-          case string.pop_grapheme(rest) {
+          case pop_codepoint(rest) {
             Ok(#("#", after_hash)) -> {
-              case string.pop_grapheme(after_hash) {
+              case pop_codepoint(after_hash) {
                 Ok(#("#", after_third_hash)) -> {
                   let #(comment_text, remaining) =
                     read_until_newline(after_third_hash)
                   tokenize_loop(
-                    advance(state, remaining, 3 + string.length(comment_text)),
+                    advance(state, remaining, 3 + code_unit_length(comment_text)),
                     [
                       token.PositionedToken(
                         token.CommentDoc(comment_text),
@@ -91,7 +125,7 @@ fn tokenize_loop(
                   let #(comment_text, remaining) =
                     read_until_newline(after_hash)
                   tokenize_loop(
-                    advance(state, remaining, 2 + string.length(comment_text)),
+                    advance(state, remaining, 2 + code_unit_length(comment_text)),
                     [
                       token.PositionedToken(
                         token.CommentSection(comment_text),
@@ -107,7 +141,7 @@ fn tokenize_loop(
             _ -> {
               let #(comment_text, remaining) = read_until_newline(rest)
               tokenize_loop(
-                advance(state, remaining, 1 + string.length(comment_text)),
+                advance(state, remaining, 1 + code_unit_length(comment_text)),
                 [
                   token.PositionedToken(
                     token.CommentLine(comment_text),
@@ -125,7 +159,7 @@ fn tokenize_loop(
           case read_string(rest, []) {
             Ok(#(str_content, remaining)) ->
               tokenize_loop(
-                advance(state, remaining, 2 + string.length(str_content)),
+                advance(state, remaining, 2 + code_unit_length(str_content)),
                 [
                   token.PositionedToken(
                     token.LiteralString(str_content),
@@ -152,7 +186,7 @@ fn tokenize_loop(
         "|" -> emit_token(state, rest, token.SymbolPipe, acc)
         "=" -> emit_token(state, rest, token.SymbolEquals, acc)
         "." -> {
-          case string.pop_grapheme(rest) {
+          case pop_codepoint(rest) {
             Ok(#(".", after_dot)) ->
               emit_token_n(state, after_dot, 2, token.SymbolDotDot, acc)
             _ ->
@@ -206,7 +240,7 @@ fn tokenize_loop(
           case is_identifier_start(char) {
             True -> {
               let #(word, remaining) = read_identifier(state.source)
-              tokenize_loop(advance(state, remaining, string.length(word)), [
+              tokenize_loop(advance(state, remaining, code_unit_length(word)), [
                 token.PositionedToken(
                   keyword_or_identifier(word),
                   state.line,
@@ -260,14 +294,14 @@ fn emit_token_n(
 }
 
 fn skip_empty_lines(source: String, count: Int) -> #(String, Int) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#("\n", rest)) -> skip_empty_lines(rest, count + 1)
     _ -> #(source, count)
   }
 }
 
 fn count_indentation(source: String, count: Int) -> #(Int, String) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#(" ", rest)) -> count_indentation(rest, count + 1)
     Ok(#("\t", rest)) -> count_indentation(rest, count + 2)
     _ -> #(count, source)
@@ -282,7 +316,7 @@ fn read_until_newline_loop(
   source: String,
   acc: List(String),
 ) -> #(String, String) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#("\n", _)) -> #(string.concat(list.reverse(acc)), source)
     Ok(#(char, rest)) -> read_until_newline_loop(rest, [char, ..acc])
     Error(Nil) -> #(string.concat(list.reverse(acc)), source)
@@ -293,7 +327,7 @@ fn read_string(
   source: String,
   acc: List(String),
 ) -> Result(#(String, String), Nil) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#("\"", rest)) -> Ok(#(string.concat(list.reverse(acc)), rest))
     Ok(#("\n", _)) -> Error(Nil)
     Ok(#(char, rest)) -> read_string(rest, [char, ..acc])
@@ -306,9 +340,9 @@ fn read_number(
   prefix: String,
 ) -> Result(#(Token, String, Int), Nil) {
   let #(digits, remaining) = read_digits(source, prefix)
-  case string.pop_grapheme(remaining) {
+  case pop_codepoint(remaining) {
     Ok(#(".", after_dot)) -> {
-      case string.pop_grapheme(after_dot) {
+      case pop_codepoint(after_dot) {
         Ok(#(next_char, _)) if next_char == "." -> {
           parse_integer(digits, remaining)
         }
@@ -339,7 +373,7 @@ fn read_digits(source: String, prefix: String) -> #(String, String) {
 }
 
 fn read_digits_loop(source: String, acc: List(String)) -> #(String, String) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#(char, rest)) -> {
       case is_digit(char) {
         True -> read_digits_loop(rest, [char, ..acc])
@@ -355,7 +389,7 @@ fn parse_integer(
   remaining: String,
 ) -> Result(#(Token, String, Int), Nil) {
   case int.parse(digits) {
-    Ok(n) -> Ok(#(token.LiteralInteger(n), remaining, string.length(digits)))
+    Ok(n) -> Ok(#(token.LiteralInteger(n), remaining, code_unit_length(digits)))
     Error(Nil) -> Error(Nil)
   }
 }
@@ -365,7 +399,7 @@ fn parse_float(
   remaining: String,
 ) -> Result(#(Token, String, Int), Nil) {
   case float.parse(float_str) {
-    Ok(f) -> Ok(#(token.LiteralFloat(f), remaining, string.length(float_str)))
+    Ok(f) -> Ok(#(token.LiteralFloat(f), remaining, code_unit_length(float_str)))
     Error(Nil) -> Error(Nil)
   }
 }
@@ -376,7 +410,7 @@ fn maybe_percentage(
   remaining: String,
   len: Int,
 ) -> #(Token, String, Int) {
-  case string.pop_grapheme(remaining) {
+  case pop_codepoint(remaining) {
     Ok(#("%", after_percent)) -> {
       let float_val = case tok {
         token.LiteralInteger(n) -> int.to_float(n)
@@ -390,13 +424,8 @@ fn maybe_percentage(
 }
 
 fn is_digit(char: String) -> Bool {
-  case string.to_utf_codepoints(char) {
-    [cp] -> {
-      let code = string.utf_codepoint_to_int(cp)
-      code >= 48 && code <= 57
-    }
-    _ -> False
-  }
+  let code = code_unit_at(char, 0)
+  code >= 48 && code <= 57
 }
 
 fn is_identifier_start(char: String) -> Bool {
@@ -408,13 +437,8 @@ fn is_identifier_char(char: String) -> Bool {
 }
 
 fn is_letter(char: String) -> Bool {
-  case string.to_utf_codepoints(char) {
-    [cp] -> {
-      let code = string.utf_codepoint_to_int(cp)
-      { code >= 65 && code <= 90 } || { code >= 97 && code <= 122 }
-    }
-    _ -> False
-  }
+  let code = code_unit_at(char, 0)
+  { code >= 65 && code <= 90 } || { code >= 97 && code <= 122 }
 }
 
 fn read_identifier(source: String) -> #(String, String) {
@@ -425,7 +449,7 @@ fn read_identifier_loop(
   source: String,
   acc: List(String),
 ) -> #(String, String) {
-  case string.pop_grapheme(source) {
+  case pop_codepoint(source) {
     Ok(#(char, rest)) -> {
       case is_identifier_char(char) {
         True -> read_identifier_loop(rest, [char, ..acc])
