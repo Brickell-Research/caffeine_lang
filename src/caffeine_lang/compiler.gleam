@@ -103,59 +103,33 @@ pub fn resolve_indicators(
 fn run_code_generation(
   resolved_irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(CompilationOutput, errors.CompilationError) {
-  // Filter out unmeasured IRs (vendor = None) before grouping for codegen.
+  // Filter out unmeasured IRs (vendor = None) before codegen.
   // Unmeasured IRs participate in dependency graphs but not Terraform generation.
+  // Sort by unique_identifier for deterministic output.
   let measured_irs =
-    list.filter(resolved_irs, fn(ir) { option.is_some(ir.vendor) })
-  let grouped = group_by_vendor(measured_irs)
+    resolved_irs
+    |> list.filter(fn(ir) { option.is_some(ir.vendor) })
+    |> list.sort(fn(a, b) {
+      string.compare(a.unique_identifier, b.unique_identifier)
+    })
 
-  // Build active platform groups, defaulting to Datadog boilerplate if no IRs.
-  let active_groups =
-    grouped
-    |> dict.to_list
-    |> list.map(fn(pair) { #(platforms.datadog_platform(), pair.1) })
-  let active_groups = case list.is_empty(active_groups) {
-    True -> [#(platforms.datadog_platform(), [])]
-    False -> active_groups
-  }
+  // Datadog is the only platform today. Multi-vendor dispatch will return
+  // when a second `Platform` is added.
+  let platform = platforms.datadog_platform()
+  use #(all_resources, all_warnings) <- result.try(platform.generate_resources(
+    measured_irs,
+  ))
 
-  // Generate resources and accumulate config from all active vendors.
-  // Note: active_groups has at most 4 elements (one per vendor), so the
-  // list.append calls here are bounded and not a performance concern.
-  use #(all_resources, all_warnings, required_providers, providers, variables) <- result.try(
-    list.try_fold(active_groups, #([], [], [], [], []), fn(acc, group) {
-      let #(platform, irs) = group
-      let #(resources, warnings, req_provs, provs, vars) = acc
-      use #(vendor_resources, vendor_warnings) <- result.try(
-        platform.generate_resources(irs),
-      )
-      let settings = platforms.terraform_settings(platform)
-      Ok(#(
-        list.append(resources, vendor_resources),
-        list.append(warnings, vendor_warnings),
-        list.append(req_provs, dict.to_list(settings.required_providers)),
-        list.append(provs, [platforms.provider(platform)]),
-        list.append(vars, platform.variables),
-      ))
-    }),
-  )
-
-  let terraform_settings =
-    terraform.TerraformSettings(
-      required_version: option.None,
-      required_providers: dict.from_list(required_providers),
-      backend: option.None,
-      cloud: option.None,
-    )
+  let terraform_settings = platforms.terraform_settings(platform)
 
   // Render boilerplate (terraform/provider/variable blocks) without resources.
   let boilerplate_config =
     terraform.Config(
       terraform: option.Some(terraform_settings),
-      providers: providers,
+      providers: [platforms.provider(platform)],
       resources: [],
       data_sources: [],
-      variables: variables,
+      variables: platform.variables,
       outputs: [],
       locals: [],
       modules: [],
@@ -207,22 +181,6 @@ fn run_code_generation(
     dependency_graph: graph,
     warnings: all_warnings,
   ))
-}
-
-/// Groups measured IRs by their resolved vendor, sorted by unique_identifier within each group.
-/// Only called with IRs that have a vendor (unmeasured IRs are filtered before this step).
-fn group_by_vendor(
-  irs: List(IntermediateRepresentation(Resolved)),
-) -> dict.Dict(vendor.Vendor, List(IntermediateRepresentation(Resolved))) {
-  list.group(irs, fn(ir) {
-    let assert option.Some(v) = ir.vendor
-    v
-  })
-  |> dict.map_values(fn(_, group) {
-    list.sort(group, fn(a, b) {
-      string.compare(a.unique_identifier, b.unique_identifier)
-    })
-  })
 }
 
 fn parse_from_strings(
