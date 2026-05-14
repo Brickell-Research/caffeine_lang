@@ -2,12 +2,12 @@ import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
-import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/ir
 import caffeine_lang/linker/measurements.{
   type Measurement, type MeasurementValidated,
 }
+import caffeine_lang/linker/slo_params.{type ParamInfo}
 import caffeine_lang/types.{
   type AcceptedTypes, CollectionType, Defaulted, Dict, InclusiveRange,
   List as ListType, ModifierType, OneOf, Optional, PrimitiveType, RecordType,
@@ -42,9 +42,9 @@ pub fn build_all(
   ),
   reserved_labels reserved_labels: Set(String),
   vendor_lookup vendor_lookup: dict.Dict(String, Vendor),
-  slo_params slo_params: dict.Dict(String, ParamInfo),
+  slo_params params: dict.Dict(String, ParamInfo),
 ) -> Result(List(ir.IntermediateRepresentation(ir.Linked)), CompilationError) {
-  let unmeasured_params = build_unmeasured_param_types(slo_params)
+  let unmeasured_params = slo_params.unmeasured_param_types(params)
 
   expectations_with_paths
   |> list.map(fn(pair) {
@@ -187,17 +187,6 @@ fn build_unmeasured(
     slo: slo,
     vendor: option.None,
   )
-}
-
-/// Derives the restricted param types for unmeasured expectations from SLO params.
-/// Only includes threshold, window_in_days, and depends_on.
-fn build_unmeasured_param_types(
-  slo_params: dict.Dict(String, ParamInfo),
-) -> dict.Dict(String, AcceptedTypes) {
-  let allowed = set.from_list(["threshold", "window_in_days", "depends_on"])
-  slo_params
-  |> dict.filter(fn(key, _) { set.contains(allowed, key) })
-  |> params_to_types()
 }
 
 /// Build value tuples from merged inputs and params.

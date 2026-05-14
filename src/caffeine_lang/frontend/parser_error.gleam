@@ -13,6 +13,7 @@ pub type ParserError {
 }
 
 /// Converts a parser error to a human-readable string.
+@internal
 pub fn to_string(err: ParserError) -> String {
   case err {
     TokenizerError(tok_err) -> tokenizer_error.to_string(tok_err)

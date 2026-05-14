@@ -66,36 +66,43 @@ pub type CompilationError {
 // ==== Smart constructors ====
 
 /// Creates a FrontendParseError with empty context.
+@internal
 pub fn frontend_parse_error(msg msg: String) -> CompilationError {
   FrontendParseError(msg:, context: empty_context())
 }
 
 /// Creates a FrontendValidationError with empty context.
+@internal
 pub fn frontend_validation_error(msg msg: String) -> CompilationError {
   FrontendValidationError(msg:, context: empty_context())
 }
 
 /// Creates a LinkerValueValidationError with empty context.
+@internal
 pub fn linker_value_validation_error(msg msg: String) -> CompilationError {
   LinkerValueValidationError(msg:, context: empty_context())
 }
 
 /// Creates a LinkerDuplicateError with empty context.
+@internal
 pub fn linker_duplicate_error(msg msg: String) -> CompilationError {
   LinkerDuplicateError(msg:, context: empty_context())
 }
 
 /// Creates a LinkerParseError with empty context.
+@internal
 pub fn linker_parse_error(msg msg: String) -> CompilationError {
   LinkerParseError(msg:, context: empty_context())
 }
 
 /// Creates a LinkerVendorResolutionError with empty context.
+@internal
 pub fn linker_vendor_resolution_error(msg msg: String) -> CompilationError {
   LinkerVendorResolutionError(msg:, context: empty_context())
 }
 
 /// Creates a SemanticAnalysisTemplateParseError with empty context.
+@internal
 pub fn semantic_analysis_template_parse_error(
   msg msg: String,
 ) -> CompilationError {
@@ -103,6 +110,7 @@ pub fn semantic_analysis_template_parse_error(
 }
 
 /// Creates a SemanticAnalysisTemplateResolutionError with empty context.
+@internal
 pub fn semantic_analysis_template_resolution_error(
   msg msg: String,
 ) -> CompilationError {
@@ -110,6 +118,7 @@ pub fn semantic_analysis_template_resolution_error(
 }
 
 /// Creates a SemanticAnalysisDependencyValidationError with empty context.
+@internal
 pub fn semantic_analysis_dependency_validation_error(
   msg msg: String,
 ) -> CompilationError {
@@ -117,6 +126,7 @@ pub fn semantic_analysis_dependency_validation_error(
 }
 
 /// Creates a GeneratorSloQueryResolutionError with empty context.
+@internal
 pub fn generator_slo_query_resolution_error(
   msg msg: String,
 ) -> CompilationError {
@@ -124,6 +134,7 @@ pub fn generator_slo_query_resolution_error(
 }
 
 /// Creates a GeneratorTerraformResolutionError with empty context.
+@internal
 pub fn generator_terraform_resolution_error(
   vendor vendor: String,
   msg msg: String,
@@ -132,11 +143,13 @@ pub fn generator_terraform_resolution_error(
 }
 
 /// Creates a CQLResolverError with empty context.
+@internal
 pub fn cql_resolver_error(msg msg: String) -> CompilationError {
   CQLResolverError(msg:, context: empty_context())
 }
 
 /// Creates a CQLParserError with empty context.
+@internal
 pub fn cql_parser_error(msg msg: String) -> CompilationError {
   CQLParserError(msg:, context: empty_context())
 }
@@ -149,6 +162,7 @@ pub type ErrorCode {
 }
 
 /// Converts an ErrorCode to its display string (e.g., "E103").
+@internal
 pub fn error_code_to_string(code: ErrorCode) -> String {
   let s = int.to_string(code.number)
   let padding = 3 - string.length(s)

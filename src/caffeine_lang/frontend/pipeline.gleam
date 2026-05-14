@@ -4,7 +4,7 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/lowering
 import caffeine_lang/frontend/parser
-import caffeine_lang/frontend/parser_error.{type ParserError}
+import caffeine_lang/frontend/parser_error
 import caffeine_lang/frontend/validator
 import caffeine_lang/linker/expectations.{type Expectation}
 import caffeine_lang/linker/measurements.{type Measurement, type Raw}
@@ -21,15 +21,21 @@ pub fn compile_measurements(
 ) -> Result(List(Measurement(Raw)), CompilationError) {
   use ast <- result.try(
     parser.parse_measurements_file(source.content)
-    |> result.map_error(fn(errs) {
-      parser_errors_to_compilation_error(errs, source.path)
-    }),
+    |> result.map_error(errs_to_compilation_error(
+      _,
+      source.path,
+      parser_error.to_string,
+      errors.frontend_parse_error,
+    )),
   )
   use validated <- result.try(
     validator.validate_measurements_file(ast)
-    |> result.map_error(fn(errs) {
-      validator_errors_to_compilation_error(errs, source.path)
-    }),
+    |> result.map_error(errs_to_compilation_error(
+      _,
+      source.path,
+      validator.error_to_string,
+      errors.frontend_validation_error,
+    )),
   )
   Ok(lowering.lower_measurements(validated))
 }
@@ -41,131 +47,37 @@ pub fn compile_expects(
 ) -> Result(List(Expectation), CompilationError) {
   use ast <- result.try(
     parser.parse_expects_file(source.content)
-    |> result.map_error(fn(errs) {
-      parser_errors_to_compilation_error(errs, source.path)
-    }),
+    |> result.map_error(errs_to_compilation_error(
+      _,
+      source.path,
+      parser_error.to_string,
+      errors.frontend_parse_error,
+    )),
   )
   use validated <- result.try(
     validator.validate_expects_file(ast)
-    |> result.map_error(fn(errs) {
-      validator_errors_to_compilation_error(errs, source.path)
-    }),
+    |> result.map_error(errs_to_compilation_error(
+      _,
+      source.path,
+      validator.error_to_string,
+      errors.frontend_validation_error,
+    )),
   )
   Ok(lowering.lower_expectations(validated))
 }
 
-fn parser_error_to_compilation_error(
-  err: parser_error.ParserError,
+/// Converts a list of stage-specific errors to a CompilationError, parameterised
+/// by the renderer and the smart-constructor for the wrapping error kind.
+fn errs_to_compilation_error(
+  errs: List(err),
   file_path: String,
+  to_string: fn(err) -> String,
+  make: fn(String) -> CompilationError,
 ) -> CompilationError {
-  errors.frontend_parse_error(
-    msg: file_path <> ": " <> parser_error.to_string(err),
-  )
-}
-
-/// Converts a list of ParserErrors to a single CompilationError.
-fn parser_errors_to_compilation_error(
-  errs: List(ParserError),
-  file_path: String,
-) -> CompilationError {
+  let to_compilation = fn(err) { make(file_path <> ": " <> to_string(err)) }
   case errs {
-    [single] -> parser_error_to_compilation_error(single, file_path)
-    multiple -> {
-      let compilation_errors =
-        multiple
-        |> list.map(parser_error_to_compilation_error(_, file_path))
-      errors.CompilationErrors(errors: compilation_errors)
-    }
-  }
-}
-
-fn validator_error_to_compilation_error(
-  err: validator.ValidatorError,
-  file_path: String,
-) -> CompilationError {
-  errors.frontend_validation_error(
-    msg: file_path <> ": " <> validator_error_to_string(err),
-  )
-}
-
-/// Converts a list of ValidatorErrors to a single CompilationError.
-fn validator_errors_to_compilation_error(
-  errs: List(validator.ValidatorError),
-  file_path: String,
-) -> CompilationError {
-  case errs {
-    [single] -> validator_error_to_compilation_error(single, file_path)
-    multiple -> {
-      let compilation_errors =
-        multiple
-        |> list.map(validator_error_to_compilation_error(_, file_path))
-      errors.CompilationErrors(errors: compilation_errors)
-    }
-  }
-}
-
-fn validator_error_to_string(err: validator.ValidatorError) -> String {
-  case err {
-    validator.DuplicateExtendable(name) -> "Duplicate extendable: " <> name
-    validator.UndefinedExtendable(name, referenced_by, _candidates) ->
-      "Undefined extendable '"
-      <> name
-      <> "' referenced by '"
-      <> referenced_by
-      <> "'"
-    validator.DuplicateExtendsReference(name, referenced_by) ->
-      "Duplicate extends reference '"
-      <> name
-      <> "' in '"
-      <> referenced_by
-      <> "'"
-    validator.InvalidExtendableKind(name, expected, got) ->
-      "Invalid extendable kind for '"
-      <> name
-      <> "': expected "
-      <> expected
-      <> ", got "
-      <> got
-    validator.UndefinedTypeAlias(name, referenced_by, _candidates) ->
-      "Undefined type alias '"
-      <> name
-      <> "' referenced by '"
-      <> referenced_by
-      <> "'"
-    validator.DuplicateTypeAlias(name) -> "Duplicate type alias: " <> name
-    validator.CircularTypeAlias(name, _cycle) ->
-      "Circular type alias reference detected in '" <> name <> "'"
-    validator.InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) ->
-      "Type alias '"
-      <> alias_name
-      <> "' used as Dict key resolves to '"
-      <> resolved_to
-      <> "' which is not String-based, in '"
-      <> referenced_by
-      <> "'"
-    validator.ExtendableOvershadowing(field_name, item_name, extendable_name) ->
-      "Field '"
-      <> field_name
-      <> "' in '"
-      <> item_name
-      <> "' overshadows field from extendable '"
-      <> extendable_name
-      <> "'"
-    validator.ExtendableTypeAliasNameCollision(name) ->
-      "Name '" <> name <> "' is used as both an extendable and a type alias"
-    validator.InvalidRefinementValue(value, expected_type, referenced_by) ->
-      "Refinement value '"
-      <> value
-      <> "' is not a valid "
-      <> expected_type
-      <> " literal, in '"
-      <> referenced_by
-      <> "'"
-    validator.InvalidPercentageBounds(value, referenced_by) ->
-      "Percentage value '"
-      <> value
-      <> "' must be between 0.0 and 100.0, in '"
-      <> referenced_by
-      <> "'"
+    [single] -> to_compilation(single)
+    multiple ->
+      errors.CompilationErrors(errors: list.map(multiple, to_compilation))
   }
 }

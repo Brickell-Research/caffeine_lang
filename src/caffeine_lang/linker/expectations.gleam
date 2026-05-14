@@ -3,7 +3,7 @@ import caffeine_lang/helpers
 import caffeine_lang/linker/measurements.{
   type Measurement, type MeasurementValidated,
 }
-import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
+import caffeine_lang/linker/slo_params.{type ParamInfo}
 import caffeine_lang/linker/validations
 import caffeine_lang/string_distance
 import caffeine_lang/value.{type Value}
@@ -130,7 +130,7 @@ fn validate_measured_expectations(
 /// Unmeasured expectations may only provide: threshold, window_in_days, depends_on.
 fn validate_unmeasured_expectations(
   expectations: List(Expectation),
-  slo_params: dict.Dict(String, ParamInfo),
+  params: dict.Dict(String, ParamInfo),
   source_path: String,
 ) -> Result(
   List(#(Expectation, Option(Measurement(MeasurementValidated)))),
@@ -139,13 +139,7 @@ fn validate_unmeasured_expectations(
   let #(org, team, service) = helpers.extract_path_prefix(source_path)
   let path_prefix = org <> "." <> team <> "." <> service <> "."
 
-  // Filter slo_params to only the allowed unmeasured params.
-  let allowed_keys =
-    set.from_list(["threshold", "window_in_days", "depends_on"])
-  let restricted_params =
-    slo_params
-    |> dict.filter(fn(key, _) { set.contains(allowed_keys, key) })
-    |> params_to_types()
+  let restricted_params = slo_params.unmeasured_param_types(params)
 
   // Validate inputs against restricted params.
   let input_param_collections =

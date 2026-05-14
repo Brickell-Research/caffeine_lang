@@ -53,6 +53,7 @@ pub type Token {
 }
 
 /// Convert token to string for error messages.
+@internal
 pub fn to_string(tok: Token) -> String {
   case tok {
     KeywordExpectations -> "Expectations"

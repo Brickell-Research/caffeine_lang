@@ -31,9 +31,10 @@ import terra_madre/terraform
 pub fn resolve_indicators(
   ir: IntermediateRepresentation(DepsValidated),
 ) -> Result(IntermediateRepresentation(Resolved), CompilationError) {
+  let values_index = helpers.index_value_tuples(ir.values)
+
   use indicators_value_tuple <- result.try(
-    ir.values
-    |> list.find(fn(vt) { vt.label == "indicators" })
+    dict.get(values_index, "indicators")
     |> result.replace_error(errors.semantic_analysis_template_resolution_error(
       msg: "expectation '"
       <> ir_to_identifier(ir)
@@ -85,9 +86,7 @@ pub fn resolve_indicators(
     )
 
   // Also resolve templates in the "evaluation" field if present.
-  let evaluation_tuple_result =
-    ir.values
-    |> list.find(fn(vt) { vt.label == "evaluation" })
+  let evaluation_tuple_result = dict.get(values_index, "evaluation")
 
   use resolved_evaluation_tuple <- result.try(case evaluation_tuple_result {
     Error(_) -> Ok(option.None)
@@ -277,9 +276,7 @@ pub fn ir_to_terraform_resource(
 
   let tags =
     list.append(final_system_tag_pairs, user_tag_pairs)
-    |> list.map(fn(pair) {
-      hcl.StringLiteral(filter.tag(pair.0, pair.1))
-    })
+    |> list.map(fn(pair) { hcl.StringLiteral(filter.tag(pair.0, pair.1)) })
     |> hcl.ListExpr
 
   let identifier = ir_to_identifier(ir)

@@ -56,6 +56,74 @@ pub type ValidatorError {
   InvalidPercentageBounds(value: String, referenced_by: String)
 }
 
+/// Renders a validator error as a human-readable string.
+@internal
+pub fn error_to_string(err: ValidatorError) -> String {
+  case err {
+    DuplicateExtendable(name) -> "Duplicate extendable: " <> name
+    UndefinedExtendable(name, referenced_by, _candidates) ->
+      "Undefined extendable '"
+      <> name
+      <> "' referenced by '"
+      <> referenced_by
+      <> "'"
+    DuplicateExtendsReference(name, referenced_by) ->
+      "Duplicate extends reference '"
+      <> name
+      <> "' in '"
+      <> referenced_by
+      <> "'"
+    InvalidExtendableKind(name, expected, got) ->
+      "Invalid extendable kind for '"
+      <> name
+      <> "': expected "
+      <> expected
+      <> ", got "
+      <> got
+    UndefinedTypeAlias(name, referenced_by, _candidates) ->
+      "Undefined type alias '"
+      <> name
+      <> "' referenced by '"
+      <> referenced_by
+      <> "'"
+    DuplicateTypeAlias(name) -> "Duplicate type alias: " <> name
+    CircularTypeAlias(name, _cycle) ->
+      "Circular type alias reference detected in '" <> name <> "'"
+    InvalidDictKeyTypeAlias(alias_name, resolved_to, referenced_by) ->
+      "Type alias '"
+      <> alias_name
+      <> "' used as Dict key resolves to '"
+      <> resolved_to
+      <> "' which is not String-based, in '"
+      <> referenced_by
+      <> "'"
+    ExtendableOvershadowing(field_name, item_name, extendable_name) ->
+      "Field '"
+      <> field_name
+      <> "' in '"
+      <> item_name
+      <> "' overshadows field from extendable '"
+      <> extendable_name
+      <> "'"
+    ExtendableTypeAliasNameCollision(name) ->
+      "Name '" <> name <> "' is used as both an extendable and a type alias"
+    InvalidRefinementValue(value, expected_type, referenced_by) ->
+      "Refinement value '"
+      <> value
+      <> "' is not a valid "
+      <> expected_type
+      <> " literal, in '"
+      <> referenced_by
+      <> "'"
+    InvalidPercentageBounds(value, referenced_by) ->
+      "Percentage value '"
+      <> value
+      <> "' must be between 0.0 and 100.0, in '"
+      <> referenced_by
+      <> "'"
+  }
+}
+
 /// Validates a measurements file.
 /// Checks for duplicate extendables, undefined extendable references,
 /// duplicate type aliases, circular type aliases, undefined type alias references,
