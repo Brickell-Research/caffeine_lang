@@ -13,7 +13,6 @@ import gleam/option
 import gleam/set
 import gleam/string
 import gleeunit/should
-import test_helpers
 
 /// Standard reserved labels set for tests.
 fn test_reserved_labels() {
@@ -28,35 +27,6 @@ fn test_vendor_lookup() {
 /// Standard SLO params for tests.
 fn test_slo_params() {
   stdlib_artifacts.slo_params()
-}
-
-// ==== extract_path_prefix ====
-// * ✅ standard path with .json extension
-// * ✅ path without enough segments returns unknown
-pub fn extract_path_prefix_test() {
-  [
-    #(
-      "standard path with .json extension",
-      "org/team/service.json",
-      #("org", "team", "service"),
-    ),
-    #(
-      "path with extra leading segments",
-      "examples/acme/platform_team/auth.json",
-      #("acme", "platform_team", "auth"),
-    ),
-    #(
-      "path without enough segments returns unknown",
-      "org/team",
-      #("unknown", "unknown", "unknown"),
-    ),
-    #(
-      "single segment returns unknown",
-      "single",
-      #("unknown", "unknown", "unknown"),
-    ),
-  ]
-  |> test_helpers.table_test_1(helpers.extract_path_prefix)
 }
 
 // ==== build_all ====

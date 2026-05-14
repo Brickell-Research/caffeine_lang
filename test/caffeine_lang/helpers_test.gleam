@@ -75,6 +75,9 @@ pub fn extract_value_test() {
 // * ✅ standard path with 3+ segments
 // * ✅ path ending in .caffeine
 // * ✅ path ending in .json
+// * ✅ three-segment .json without leading prefix
+// * ✅ insufficient segments returns unknown
+// * ✅ single segment returns unknown
 pub fn extract_path_prefix_test() {
   [
     #(
@@ -88,6 +91,21 @@ pub fn extract_path_prefix_test() {
       #("org", "platform_team", "auth"),
     ),
     #("path ending in .caffeine", "a/b/c", #("a", "b", "c")),
+    #(
+      "three-segment .json without leading prefix",
+      "org/team/service.json",
+      #("org", "team", "service"),
+    ),
+    #(
+      "insufficient segments returns unknown",
+      "org/team",
+      #("unknown", "unknown", "unknown"),
+    ),
+    #(
+      "single segment returns unknown",
+      "single",
+      #("unknown", "unknown", "unknown"),
+    ),
   ]
   |> test_helpers.table_test_1(helpers.extract_path_prefix)
 }

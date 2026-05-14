@@ -84,20 +84,3 @@ pub fn error_line(err: ParserError) -> Int {
     InvalidTypeAliasName(_, _, line, _) -> line
   }
 }
-
-/// Extracts the column number from a parser error.
-pub fn error_column(err: ParserError) -> Int {
-  case err {
-    TokenizerError(tok_err) ->
-      case tok_err {
-        tokenizer_error.UnterminatedString(_, column) -> column
-        tokenizer_error.InvalidCharacter(_, column, _) -> column
-      }
-    UnexpectedToken(_, _, _, column) -> column
-    UnexpectedEOF(_, _, column) -> column
-    UnknownType(_, _, column) -> column
-    InvalidRefinement(_, _, column) -> column
-    QuotedFieldName(_, _, column) -> column
-    InvalidTypeAliasName(_, _, _, column) -> column
-  }
-}
