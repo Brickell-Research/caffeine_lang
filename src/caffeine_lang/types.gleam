@@ -172,6 +172,7 @@ fn numeric_all_type_metas() -> List(TypeMeta) {
 
 /// Returns metadata for a NumericTypes variant.
 /// Exhaustive pattern matching ensures new types must have descriptions.
+@internal
 pub fn numeric_type_meta(typ: NumericTypes) -> TypeMeta {
   case typ {
     Integer ->
@@ -204,6 +205,7 @@ fn semantic_all_type_metas() -> List(TypeMeta) {
 
 /// Returns metadata for a SemanticStringTypes variant.
 /// Exhaustive pattern matching ensures new types must have descriptions.
+@internal
 pub fn semantic_type_meta(typ: SemanticStringTypes) -> TypeMeta {
   case typ {
     URL ->
@@ -333,6 +335,7 @@ pub fn primitive_type_to_string(primitive_type: PrimitiveTypes) -> String {
 }
 
 /// Converts a NumericTypes to its string representation.
+@internal
 pub fn numeric_type_to_string(numeric_type: NumericTypes) -> String {
   case numeric_type {
     Float -> "Float"
@@ -342,6 +345,7 @@ pub fn numeric_type_to_string(numeric_type: NumericTypes) -> String {
 }
 
 /// Converts a SemanticStringTypes to its string representation.
+@internal
 pub fn semantic_type_to_string(typ: SemanticStringTypes) -> String {
   case typ {
     URL -> "URL"

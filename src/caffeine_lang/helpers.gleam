@@ -67,9 +67,11 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
 }
 
 /// Default SLO threshold percentage used when no explicit threshold is provided.
+@internal
 pub const default_threshold_percentage = 99.9
 
 /// Default SLO window in days used when no explicit window is provided.
+@internal
 pub const default_window_in_days = 30
 
 /// Build a Dict index from a list of ValueTuples for O(1) label lookups.
@@ -179,6 +181,7 @@ pub fn extract_tags(
 
 /// Build system tag key-value pairs from IR metadata fields.
 /// Returns a sorted, deterministic list of tag pairs shared across all generators.
+@internal
 pub fn build_system_tag_pairs(
   org_name org_name: OrgName,
   team_name team_name: TeamName,

@@ -6,6 +6,7 @@ import gleam/option.{type Option}
 import gleam/string
 
 /// Computes the Levenshtein edit distance between two strings.
+@internal
 pub fn levenshtein(a: String, b: String) -> Int {
   let a_graphemes = string.to_graphemes(a)
   let b_graphemes = string.to_graphemes(b)
@@ -68,6 +69,7 @@ fn build_row_loop(
 
 /// Returns the closest match from a list of candidates, if within threshold.
 /// Threshold: distance <= max(2, ceil(length(target) * 0.4)).
+@internal
 pub fn closest_match(
   target: String,
   candidates: List(String),

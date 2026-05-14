@@ -10,6 +10,7 @@ import gleam/string
 
 /// Generates a Mermaid flowchart string from dependency relations in IRs.
 /// Nodes are grouped into subgraphs by service.
+@internal
 pub fn generate(irs: List(IntermediateRepresentation(Resolved))) -> String {
   let subgraphs = build_subgraphs(irs)
   let edges = build_edges(irs)
