@@ -1,11 +1,18 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/linker/ir.{type IntermediateRepresentationMetaData}
 import gleam/option
-import gleam/string
 import terra_madre/render
 import terra_madre/terraform.{
   type Provider, type Resource, type TerraformSettings, type Variable,
 }
+
+/// Drop the last `n` UTF-16 codeunits. `string.drop_end` walks the entire
+/// rendered Terraform via Intl.Segmenter to count graphemes from the end —
+/// pure overhead for an ASCII trailing newline, and called once per resource
+/// (~600× on the huge corpus, where it was the largest residual grapheme cost).
+@external(erlang, "codegen_ffi", "drop_end_codeunits")
+@external(javascript, "./codegen_ffi.mjs", "drop_end_codeunits")
+fn drop_end_codeunits(s: String, n: Int) -> String
 
 /// Render a Terraform config from resources, settings, providers, and variables.
 /// Assembles the standard Config structure and renders it to HCL.
@@ -63,7 +70,7 @@ pub fn render_resource_to_string(resource: Resource) -> String {
       modules: [],
     )
   render.render_config(config)
-  |> string.drop_end(1)
+  |> drop_end_codeunits(1)
 }
 
 /// Build a codegen resolution error with empty context.
