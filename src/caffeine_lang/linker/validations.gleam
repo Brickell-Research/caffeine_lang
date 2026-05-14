@@ -119,7 +119,12 @@ pub fn validate_relevant_uniqueness(
   let dupe_names =
     items
     |> list.group(fn(thing) { fetch_property(thing) })
-    |> dict.filter(fn(_, occurrences) { list.length(occurrences) > 1 })
+    |> dict.filter(fn(_, occurrences) {
+      case occurrences {
+        [_, _, ..] -> True
+        _ -> False
+      }
+    })
     |> dict.keys
 
   case dupe_names {

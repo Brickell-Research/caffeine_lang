@@ -1,9 +1,9 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/helpers
-import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/measurements.{
   type Measurement, type MeasurementValidated,
 }
+import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/validations
 import caffeine_lang/string_distance
 import caffeine_lang/value.{type Value}
@@ -110,9 +110,8 @@ fn validate_measured_expectations(
     input_param_collections: expectations_measurement_collection,
     get_inputs: fn(expectation) { expectation.inputs },
     get_params: fn(measurement) {
-      let measurement_input_keys = measurement.inputs |> dict.keys
       measurement.params
-      |> dict.filter(fn(key, _) { !list.contains(measurement_input_keys, key) })
+      |> dict.filter(fn(key, _) { !dict.has_key(measurement.inputs, key) })
     },
     with: fn(expectation) {
       "expectation '" <> path_prefix <> expectation.name <> "'"
