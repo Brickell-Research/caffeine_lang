@@ -441,6 +441,8 @@ fn parse_expects_blocks_recovering(
 }
 
 /// Custom block-level recovery loop that matches either KeywordExpectations or KeywordUnmeasured.
+/// `error_acc` is accumulated in reverse order (cons head) and reversed at exit,
+/// matching the convention in `measurement_items_loop` and `items_recovering_loop`.
 fn expects_blocks_loop(
   state: ParserState,
   block_acc: List(ExpectsBlock),
@@ -448,7 +450,12 @@ fn expects_blocks_loop(
   pending: List(Comment),
 ) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
   case peek(state) {
-    token.EOF -> #(list.reverse(block_acc), error_acc, pending, state)
+    token.EOF -> #(
+      list.reverse(block_acc),
+      list.reverse(error_acc),
+      pending,
+      state,
+    )
     token.KeywordExpectations | token.KeywordUnmeasured -> {
       let #(block_result, item_errors, state) =
         parse_expects_block_recovering(state, pending)
@@ -459,7 +466,7 @@ fn expects_blocks_loop(
           expects_blocks_loop(
             state,
             [block, ..block_acc],
-            list.append(error_acc, item_errors),
+            prepend_in_order(error_acc, item_errors),
             next_pending,
           )
         }
@@ -469,7 +476,7 @@ fn expects_blocks_loop(
           expects_blocks_loop(
             state,
             block_acc,
-            list.append(error_acc, [err, ..item_errors]),
+            prepend_in_order(error_acc, [err, ..item_errors]),
             next_pending,
           )
         }
@@ -483,9 +490,20 @@ fn expects_blocks_loop(
           state.line,
           state.column,
         )
-      #(list.reverse(block_acc), list.append(error_acc, [err]), pending, state)
+      #(
+        list.reverse(block_acc),
+        list.reverse([err, ..error_acc]),
+        pending,
+        state,
+      )
     }
   }
+}
+
+/// Prepends `items` onto a reverse-order accumulator such that, after the
+/// accumulator is reversed, the items appear in their original forward order.
+fn prepend_in_order(reverse_acc: List(a), items: List(a)) -> List(a) {
+  list.fold(items, reverse_acc, fn(acc, item) { [item, ..acc] })
 }
 
 /// Parse a single expects block, recovering from item-level errors.
