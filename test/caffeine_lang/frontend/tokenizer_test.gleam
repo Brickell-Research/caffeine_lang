@@ -159,6 +159,66 @@ pub fn tokenize_numeric_literals_test() {
   |> test_helpers.table_test_1(tokenize_tokens)
 }
 
+// ==== tokenize_duration_literals ====
+// * ✅ days
+// * ✅ hours
+// * ✅ minutes
+// * ✅ seconds
+// * ✅ milliseconds (ms wins over m)
+// * ✅ float days
+// * ✅ float seconds with sub-second precision
+// * ✅ negative duration
+// * ✅ zero duration
+// * ✅ identifier suffix does NOT match (5days → 5 then identifier days)
+// * ✅ ms followed by identifier char does NOT match (5msx)
+// * ✅ duration followed by punctuation
+pub fn tokenize_duration_literals_test() {
+  [
+    #("days", "10d", Ok([token.LiteralDuration(10.0, "d"), token.EOF])),
+    #("hours", "2h", Ok([token.LiteralDuration(2.0, "h"), token.EOF])),
+    #("minutes", "5m", Ok([token.LiteralDuration(5.0, "m"), token.EOF])),
+    #("seconds", "30s", Ok([token.LiteralDuration(30.0, "s"), token.EOF])),
+    #(
+      "milliseconds beats minutes",
+      "50ms",
+      Ok([token.LiteralDuration(50.0, "ms"), token.EOF]),
+    ),
+    #("float days", "1.5d", Ok([token.LiteralDuration(1.5, "d"), token.EOF])),
+    #(
+      "sub-second precision",
+      "0.200s",
+      Ok([token.LiteralDuration(0.2, "s"), token.EOF]),
+    ),
+    #(
+      "negative duration",
+      "-10d",
+      Ok([token.LiteralDuration(-10.0, "d"), token.EOF]),
+    ),
+    #("zero duration", "0d", Ok([token.LiteralDuration(0.0, "d"), token.EOF])),
+    #(
+      "identifier suffix does not match",
+      "5days",
+      Ok([token.LiteralInteger(5), token.Identifier("days"), token.EOF]),
+    ),
+    #(
+      "ms followed by identifier char",
+      "5msx",
+      Ok([token.LiteralInteger(5), token.Identifier("msx"), token.EOF]),
+    ),
+    #(
+      "duration followed by comma",
+      "10d,",
+      Ok([token.LiteralDuration(10.0, "d"), token.SymbolComma, token.EOF]),
+    ),
+    #(
+      "duration followed by colon",
+      "10d:",
+      Ok([token.LiteralDuration(10.0, "d"), token.SymbolColon, token.EOF]),
+    ),
+  ]
+  |> test_helpers.table_test_1(tokenize_tokens)
+}
+
 // ==== tokenize_boolean_literals ====
 // * ✅ true literal
 // * ✅ false literal

@@ -110,7 +110,11 @@ fn tokenize_loop(
                   let #(comment_text, remaining) =
                     read_until_newline(after_third_hash)
                   tokenize_loop(
-                    advance(state, remaining, 3 + code_unit_length(comment_text)),
+                    advance(
+                      state,
+                      remaining,
+                      3 + code_unit_length(comment_text),
+                    ),
                     [
                       token.PositionedToken(
                         token.CommentDoc(comment_text),
@@ -125,7 +129,11 @@ fn tokenize_loop(
                   let #(comment_text, remaining) =
                     read_until_newline(after_hash)
                   tokenize_loop(
-                    advance(state, remaining, 2 + code_unit_length(comment_text)),
+                    advance(
+                      state,
+                      remaining,
+                      2 + code_unit_length(comment_text),
+                    ),
                     [
                       token.PositionedToken(
                         token.CommentSection(comment_text),
@@ -202,7 +210,7 @@ fn tokenize_loop(
           case read_number(rest, "-") {
             Ok(#(tok, remaining, len)) -> {
               let #(final_tok, final_remaining, final_len) =
-                maybe_percentage(tok, remaining, len)
+                maybe_duration_or_percentage(tok, remaining, len)
               tokenize_loop(advance(state, final_remaining, final_len), [
                 token.PositionedToken(final_tok, state.line, state.column),
                 ..acc
@@ -221,7 +229,7 @@ fn tokenize_loop(
           case read_number(state.source, "") {
             Ok(#(tok, remaining, len)) -> {
               let #(final_tok, final_remaining, final_len) =
-                maybe_percentage(tok, remaining, len)
+                maybe_duration_or_percentage(tok, remaining, len)
               tokenize_loop(advance(state, final_remaining, final_len), [
                 token.PositionedToken(final_tok, state.line, state.column),
                 ..acc
@@ -399,7 +407,8 @@ fn parse_float(
   remaining: String,
 ) -> Result(#(Token, String, Int), Nil) {
   case float.parse(float_str) {
-    Ok(f) -> Ok(#(token.LiteralFloat(f), remaining, code_unit_length(float_str)))
+    Ok(f) ->
+      Ok(#(token.LiteralFloat(f), remaining, code_unit_length(float_str)))
     Error(Nil) -> Error(Nil)
   }
 }
@@ -420,6 +429,60 @@ fn maybe_percentage(
       #(token.LiteralPercentage(float_val), after_percent, len + 1)
     }
     _ -> #(tok, remaining, len)
+  }
+}
+
+/// Tries to attach a duration unit suffix to a numeric token; falls through to
+/// `maybe_percentage` if no unit matches. A duration unit only matches when the
+/// character after the suffix is NOT an identifier character — so `10d` is a
+/// duration but `10days` is `10` followed by identifier `days`.
+fn maybe_duration_or_percentage(
+  tok: Token,
+  remaining: String,
+  len: Int,
+) -> #(Token, String, Int) {
+  case match_duration_unit(remaining) {
+    Ok(#(unit, after_unit, unit_len)) -> {
+      let float_val = case tok {
+        token.LiteralInteger(n) -> int.to_float(n)
+        token.LiteralFloat(f) -> f
+        _ -> 0.0
+      }
+      #(token.LiteralDuration(float_val, unit), after_unit, len + unit_len)
+    }
+    Error(Nil) -> maybe_percentage(tok, remaining, len)
+  }
+}
+
+/// Tries to match a duration unit suffix at the start of `source`. The suffix
+/// must be followed by a non-identifier character (or end of input) to count.
+/// Longest match wins: `ms` is tried before `m`.
+fn match_duration_unit(source: String) -> Result(#(String, String, Int), Nil) {
+  // Try "ms" before "m" so that `5ms` is milliseconds, not 5-minutes-then-s.
+  try_unit(source, "ms")
+  |> result.lazy_or(fn() { try_unit(source, "s") })
+  |> result.lazy_or(fn() { try_unit(source, "m") })
+  |> result.lazy_or(fn() { try_unit(source, "h") })
+  |> result.lazy_or(fn() { try_unit(source, "d") })
+}
+
+fn try_unit(
+  source: String,
+  unit: String,
+) -> Result(#(String, String, Int), Nil) {
+  case string.starts_with(source, unit) {
+    False -> Error(Nil)
+    True -> {
+      let after = string.drop_start(source, code_unit_length(unit))
+      case pop_codepoint(after) {
+        Error(Nil) -> Ok(#(unit, after, code_unit_length(unit)))
+        Ok(#(next, _)) ->
+          case is_identifier_char(next) {
+            True -> Error(Nil)
+            False -> Ok(#(unit, after, code_unit_length(unit)))
+          }
+      }
+    }
   }
 }
 

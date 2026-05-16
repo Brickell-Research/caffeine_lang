@@ -1126,6 +1126,8 @@ fn parse_literal(
     token.LiteralFloat(f) -> Ok(#(ast.LiteralFloat(f), advance(state)))
     token.LiteralPercentage(f) ->
       Ok(#(ast.LiteralPercentage(f), advance(state)))
+    token.LiteralDuration(amount, unit) ->
+      Ok(#(ast.LiteralDuration(amount, unit), advance(state)))
     token.LiteralTrue -> Ok(#(ast.LiteralTrue, advance(state)))
     token.LiteralFalse -> Ok(#(ast.LiteralFalse, advance(state)))
     token.SymbolLeftBracket -> parse_literal_list(state)
@@ -1190,6 +1192,7 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralInteger(n) -> int.to_string(n)
     ast.LiteralFloat(f) -> float.to_string(f)
     ast.LiteralPercentage(f) -> float.to_string(f) <> "%"
+    ast.LiteralDuration(amount, unit) -> float.to_string(amount) <> unit
     ast.LiteralTrue -> "true"
     ast.LiteralFalse -> "false"
     ast.LiteralList(elements) ->

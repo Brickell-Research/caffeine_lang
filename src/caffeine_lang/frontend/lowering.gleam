@@ -295,6 +295,13 @@ pub fn literal_to_value(lit: Literal) -> value.Value {
     ast.LiteralInteger(i) -> value.IntValue(i)
     ast.LiteralFloat(f) -> value.FloatValue(f)
     ast.LiteralPercentage(f) -> value.PercentageValue(f)
+    ast.LiteralDuration(amount, unit) ->
+      case value.duration_unit_from_string(unit) {
+        Ok(parsed_unit) -> value.DurationValue(amount, parsed_unit)
+        // Tokenizer only emits known suffixes, so this branch is unreachable.
+        // Fall back to NilValue rather than crashing.
+        Error(Nil) -> value.NilValue
+      }
     ast.LiteralTrue -> value.BoolValue(True)
     ast.LiteralFalse -> value.BoolValue(False)
     ast.LiteralList(elements) ->

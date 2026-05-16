@@ -29,6 +29,10 @@ pub type Token {
   LiteralInteger(Int)
   LiteralFloat(Float)
   LiteralPercentage(Float)
+  /// A duration literal like `10d`, `50ms`, `0.200s`. `unit` is the raw suffix
+  /// as written (one of "ms", "s", "m", "h", "d"); kept as a string so the
+  /// formatter can round-trip the source.
+  LiteralDuration(amount: Float, unit: String)
   LiteralTrue
   LiteralFalse
   SymbolLeftBrace
@@ -80,6 +84,7 @@ pub fn to_string(tok: Token) -> String {
     LiteralInteger(_) -> "integer"
     LiteralFloat(_) -> "float"
     LiteralPercentage(_) -> "percentage"
+    LiteralDuration(_, _) -> "duration"
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     SymbolLeftBrace -> "{"

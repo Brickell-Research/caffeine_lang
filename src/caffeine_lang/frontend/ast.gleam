@@ -180,6 +180,9 @@ pub type Literal {
   LiteralInteger(value: Int)
   LiteralFloat(value: Float)
   LiteralPercentage(value: Float)
+  /// `unit` is the raw suffix as written (one of "ms", "s", "m", "h", "d") so
+  /// the formatter can round-trip the source.
+  LiteralDuration(amount: Float, unit: String)
   LiteralTrue
   LiteralFalse
   LiteralList(elements: List(Literal))
@@ -212,6 +215,7 @@ pub fn literal_to_string(lit: Literal) -> String {
     LiteralInteger(n) -> string.inspect(n)
     LiteralFloat(f) -> string.inspect(f)
     LiteralPercentage(f) -> string.inspect(f) <> "%"
+    LiteralDuration(amount, unit) -> string.inspect(amount) <> unit
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(_) -> "[...]"

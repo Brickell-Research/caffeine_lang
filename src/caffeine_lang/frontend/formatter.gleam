@@ -4,9 +4,9 @@ import caffeine_lang/frontend/ast.{
   type Comment, type ExpectItem, type ExpectsBlock, type ExpectsFile,
   type Extendable, type Field, type Literal, type MeasurementItem,
   type MeasurementsFile, type Parsed, type Struct, type TypeAlias,
-  ExtendableProvides, ExtendableRequires, LiteralFalse, LiteralFloat,
-  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
-  LiteralTrue, LiteralValue, Struct, TypeValue,
+  ExtendableProvides, ExtendableRequires, LiteralDuration, LiteralFalse,
+  LiteralFloat, LiteralInteger, LiteralList, LiteralPercentage, LiteralString,
+  LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -402,6 +402,7 @@ fn format_literal(l: Literal, indent: Int, context: FieldContext) -> String {
     LiteralInteger(i) -> int.to_string(i)
     LiteralFloat(f) -> float.to_string(f)
     LiteralPercentage(f) -> float.to_string(f) <> "%"
+    LiteralDuration(amount, unit) -> float.to_string(amount) <> unit
     LiteralTrue -> "true"
     LiteralFalse -> "false"
     LiteralList(elements) -> format_literal_list(elements, indent, context)

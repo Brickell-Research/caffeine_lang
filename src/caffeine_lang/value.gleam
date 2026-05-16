@@ -15,8 +15,58 @@ pub type Value {
   BoolValue(Bool)
   ListValue(List(Value))
   DictValue(Dict(String, Value))
+  /// A duration literal such as `10d`, `50ms`, `0.200s`.
+  /// `amount` is the as-written magnitude; `unit` the as-written suffix.
+  /// Use `duration_to_milliseconds` for unit-normalized comparison.
+  DurationValue(amount: Float, unit: DurationUnit)
   /// Represents an absent Optional or Defaulted value.
   NilValue
+}
+
+/// Unit suffix on a duration literal. Round-trippable with `duration_unit_to_string`.
+pub type DurationUnit {
+  Millisecond
+  Second
+  Minute
+  Hour
+  Day
+}
+
+/// Renders a duration unit back to its source-syntax suffix.
+@internal
+pub fn duration_unit_to_string(unit: DurationUnit) -> String {
+  case unit {
+    Millisecond -> "ms"
+    Second -> "s"
+    Minute -> "m"
+    Hour -> "h"
+    Day -> "d"
+  }
+}
+
+/// Parses a duration unit suffix string back into the typed enum.
+@internal
+pub fn duration_unit_from_string(raw: String) -> Result(DurationUnit, Nil) {
+  case raw {
+    "ms" -> Ok(Millisecond)
+    "s" -> Ok(Second)
+    "m" -> Ok(Minute)
+    "h" -> Ok(Hour)
+    "d" -> Ok(Day)
+    _ -> Error(Nil)
+  }
+}
+
+/// Normalizes a duration value to milliseconds. Used for unit-agnostic comparison.
+@internal
+pub fn duration_to_milliseconds(amount: Float, unit: DurationUnit) -> Float {
+  case unit {
+    Millisecond -> amount
+    Second -> amount *. 1000.0
+    Minute -> amount *. 60_000.0
+    Hour -> amount *. 3_600_000.0
+    Day -> amount *. 86_400_000.0
+  }
 }
 
 /// Converts a Value to its string representation for template resolution.
@@ -38,6 +88,8 @@ pub fn to_string(value: Value) -> String {
       |> list.map(fn(pair) { pair.0 <> ": " <> to_string(pair.1) })
       |> string.join(", ")
       <> "}"
+    DurationValue(amount, unit) ->
+      float.to_string(amount) <> duration_unit_to_string(unit)
     NilValue -> ""
   }
 }
@@ -54,6 +106,8 @@ pub fn to_preview_string(value: Value) -> String {
     BoolValue(False) -> "false"
     ListValue(_) -> "List"
     DictValue(_) -> "Dict"
+    DurationValue(amount, unit) ->
+      float.to_string(amount) <> duration_unit_to_string(unit)
     NilValue -> "Nil"
   }
 }
@@ -69,6 +123,7 @@ pub fn classify(value: Value) -> String {
     BoolValue(_) -> "Bool"
     ListValue(_) -> "List"
     DictValue(_) -> "Dict"
+    DurationValue(_, _) -> "Duration"
     NilValue -> "Nil"
   }
 }
@@ -114,6 +169,15 @@ pub fn extract_percentage(value: Value) -> Result(Float, Nil) {
 pub fn extract_bool(value: Value) -> Result(Bool, Nil) {
   case value {
     BoolValue(b) -> Ok(b)
+    _ -> Error(Nil)
+  }
+}
+
+/// Extracts a duration's amount and unit, returning Error if not a DurationValue.
+@internal
+pub fn extract_duration(value: Value) -> Result(#(Float, DurationUnit), Nil) {
+  case value {
+    DurationValue(amount, unit) -> Ok(#(amount, unit))
     _ -> Error(Nil)
   }
 }
