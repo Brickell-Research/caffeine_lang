@@ -2,27 +2,20 @@
 _common (Provides): { threshold: 99.9, window_in_days: 7 }
 
 ## Success Rate SLOs
-Expectations measured by "success_rate"
-  # Sync Jobs
-  ## Purpose: keep data in sync
-  * "sync_job" extends [_common]:
-    Provides { job_name: "sync" }
+"sync_job" extends [_common]:
+  Guarantees 99.9% over 30d window as measured by "success_rate" with: {
+    job_name: "sync"
+  }
 
-  # Event Jobs
-  ## Purpose: send events
-  * "event_job" extends [_common]:
-    Provides { job_name: "event" }
-
-##  === Latency SLOs ===
-Expectations measured by "latency_10m"
-  # Event Jobs
-  ## Purpose: send events
-  * "event_latency" extends [_common]:
-    Provides { job_name: "event" }
-
-## One Hour Latency
-Expectations measured by "latency_1h"
-  # Sync Jobs
-  ## Purpose: keep data in sync
-  * "sync_latency" extends [_common]:
-    Provides { job_name: "sync" }
+"event_job" extends [_common]:
+  Guarantees 99.9% over 30d window as measured by "success_rate" with: {
+    job_name: "event"
+  }
+"event_latency" extends [_common]:
+  Guarantees 99.9% over 30d window as measured by "latency_10m" with: {
+    job_name: "event"
+  }
+"sync_latency" extends [_common]:
+  Guarantees 99.9% over 30d window as measured by "latency_1h" with: {
+    job_name: "sync"
+  }

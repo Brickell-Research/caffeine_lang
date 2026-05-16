@@ -1,10 +1,9 @@
-Expectations measured by "api_availability"
-  ## Section header that should not become a description.
-  ### Tracks the checkout flow availability.
-  ###    Owner: payments team.
-  * "checkout":
-    Provides { env: "production", threshold: 99.95 }
+"checkout":
+  Guarantees 99.95% over 30d window as measured by "api_availability" with: {
+    env: "production"
+  }
 
-  # informal note
-  * "payment":
-    Provides { env: "production", threshold: 99.99 }
+"payment":
+  Guarantees 99.99% over 30d window as measured by "api_availability" with: {
+    env: "production"
+  }

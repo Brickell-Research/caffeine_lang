@@ -1,12 +1,12 @@
 /// AST-based pretty-printer for Caffeine source files.
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/frontend/ast.{
-  type Comment, type ExpectItem, type ExpectsBlock, type ExpectsFile,
-  type Extendable, type Field, type Literal, type MeasurementItem,
-  type MeasurementsFile, type Parsed, type Struct, type TypeAlias,
-  ExtendableProvides, ExtendableRequires, LiteralDuration, LiteralFalse,
-  LiteralFloat, LiteralInteger, LiteralList, LiteralPercentage, LiteralString,
-  LiteralStruct, LiteralTrue, LiteralValue, Struct, TypeValue,
+  type Comment, type ExpectItem, type ExpectsFile, type Extendable, type Field,
+  type Literal, type MeasurementItem, type MeasurementsFile, type Parsed,
+  type Struct, type TypeAlias, ExtendableProvides, ExtendableRequires,
+  LiteralDuration, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
+  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
+  Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -34,7 +34,7 @@ type FieldContext {
 }
 
 /// Format a Caffeine source file. Auto-detects whether it's a measurements or expectations file.
-/// Expectations files are detected by the presence of the Expectations keyword;
+/// Expectations files are detected by the presence of the `Guarantees` keyword;
 /// all other files are treated as measurements files.
 pub fn format(source: String) -> Result(String, String) {
   use tokens <- result.try(
@@ -45,7 +45,7 @@ pub fn format(source: String) -> Result(String, String) {
   let has_expectations =
     list.any(tokens, fn(ptok) {
       case ptok {
-        token.PositionedToken(token.KeywordExpectations, _, _) -> True
+        token.PositionedToken(token.KeywordGuarantees, _, _) -> True
         _ -> False
       }
     })
@@ -111,9 +111,9 @@ fn format_expects_file(file: ExpectsFile(Parsed)) -> String {
       ])
   }
 
-  let sections = case file.blocks {
+  let sections = case file.items {
     [] -> sections
-    blocks -> list.append(sections, list.map(blocks, format_expects_block))
+    items -> list.append(sections, list.map(items, format_expect_item))
   }
 
   let trailing = format_comments(file.trailing_comments, "")
@@ -161,21 +161,6 @@ fn format_extendable(ext: Extendable) -> String {
   <> format_struct(ext.body, 0, context)
 }
 
-fn format_expects_block(block: ExpectsBlock) -> String {
-  let comments = format_comments(block.leading_comments, "")
-  let header = case block.measurement {
-    option.Some(name) -> "Expectations measured by \"" <> name <> "\""
-    option.None -> "Unmeasured Expectations"
-  }
-
-  let items =
-    block.items
-    |> list.map(format_expect_item)
-    |> string.join("\n\n")
-
-  comments <> header <> "\n" <> items
-}
-
 fn format_measurement_item(item: MeasurementItem) -> String {
   let comments = format_comments(item.leading_comments, "")
   let name_line =
@@ -188,14 +173,66 @@ fn format_measurement_item(item: MeasurementItem) -> String {
 }
 
 fn format_expect_item(item: ExpectItem) -> String {
-  let comments = format_comments(item.leading_comments, "  ")
+  let comments = format_comments(item.leading_comments, "")
   let name_line =
-    "  * \"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "\"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
 
-  let provides =
-    "    Provides " <> format_struct(item.provides, 4, LiteralFields)
+  let assumes_section = case item.assumes {
+    option.Some(a) -> "\n" <> format_assumes(a)
+    option.None -> ""
+  }
 
-  comments <> name_line <> "\n" <> provides
+  let guarantees_line = "\n  " <> format_guarantees(item.guarantees)
+
+  comments <> name_line <> assumes_section <> guarantees_line
+}
+
+fn format_assumes(a: ast.Assumes) -> String {
+  let header = "  Assumes:"
+  let dep_lines =
+    a.deps
+    |> list.map(format_dependency_line)
+    |> string.join("\n")
+  let body = case dep_lines {
+    "" -> ""
+    _ -> "\n" <> dep_lines
+  }
+  let trailing = case a.trailing_comments {
+    [] -> ""
+    _ -> "\n" <> format_comments(a.trailing_comments, "    ")
+  }
+  header <> body <> trailing
+}
+
+fn format_dependency_line(d: ast.Dependency) -> String {
+  let kind = case d.kind {
+    ast.HardDep -> "hard"
+    ast.SoftDep -> "soft"
+  }
+  let leading = format_comments(d.leading_comments, "    ")
+  leading <> "    " <> kind <> " dependency on \"" <> d.target <> "\""
+}
+
+fn format_guarantees(g: ast.Guarantees) -> String {
+  let head = "Guarantees " <> float.to_string(g.threshold) <> "%"
+  let below = case g.below {
+    option.Some(d) -> " below " <> format_duration_literal(d)
+    option.None -> ""
+  }
+  let window = " over " <> format_duration_literal(g.window) <> " window"
+  let measured = case g.measured_by {
+    option.Some(mb) ->
+      " as measured by \""
+      <> mb.measurement
+      <> "\" with: "
+      <> format_struct(mb.with_args, 2, LiteralFields)
+    option.None -> ""
+  }
+  head <> below <> window <> measured
+}
+
+fn format_duration_literal(d: ast.DurationLiteral) -> String {
+  float.to_string(d.amount) <> d.unit
 }
 
 fn format_extends(extends: List(String)) -> String {

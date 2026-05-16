@@ -1,10 +1,10 @@
 import caffeine_lang/errors.{type CompilationError}
 import caffeine_lang/frontend/pipeline
-import caffeine_lang/linker/slo_params.{type ParamInfo}
 import caffeine_lang/linker/expectations
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import caffeine_lang/linker/ir_builder
 import caffeine_lang/linker/measurements
+import caffeine_lang/linker/slo_params.{type ParamInfo}
 import caffeine_lang/source_file.{
   type ExpectationSource, type SourceFile, type VendorMeasurementSource,
 }

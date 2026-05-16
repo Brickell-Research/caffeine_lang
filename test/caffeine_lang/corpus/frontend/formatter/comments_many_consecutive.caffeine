@@ -1,12 +1,4 @@
-Expectations measured by "slo_a"
-  * "item_a":
-    Provides { threshold: 99.9 }
-
-# Comment 1
-# Comment 2
-## Section Comment
-# Comment 3
-# Comment 4
-Expectations measured by "slo_b"
-  * "item_b":
-    Provides { threshold: 99.95 }
+"item_a":
+  Guarantees 99.9% over 30d window as measured by "slo_a" with: {}
+"item_b":
+  Guarantees 99.95% over 30d window as measured by "slo_b" with: {}

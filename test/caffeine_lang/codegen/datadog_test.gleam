@@ -25,8 +25,7 @@ import test_helpers
 // * ✅ includes Datadog provider requirement
 // * ✅ version constraint is ~> 3.0
 pub fn terraform_settings_test() {
-  let settings =
-    platforms.terraform_settings(platforms.datadog_platform())
+  let settings = platforms.terraform_settings(platforms.datadog_platform())
 
   // Check that datadog provider is required
   dict.get(settings.required_providers, constants.vendor_datadog)
@@ -1263,10 +1262,7 @@ pub fn generate_terraform_test() {
           string.drop_end(corpus_file, string.length("_WITH_WARNINGS"))
         let expected = test_helpers.read_generator_corpus(actual_corpus)
         let result =
-          platforms.generate_terraform(
-            platforms.datadog_platform(),
-            input,
-          )
+          platforms.generate_terraform(platforms.datadog_platform(), input)
           |> test_helpers.normalize_terraform_result_with_warnings
         case result {
           Ok(#(tf, warnings)) -> {
@@ -1278,10 +1274,7 @@ pub fn generate_terraform_test() {
       }
       False -> {
         let expected = test_helpers.read_generator_corpus(corpus_file)
-        platforms.generate_terraform(
-          platforms.datadog_platform(),
-          input,
-        )
+        platforms.generate_terraform(platforms.datadog_platform(), input)
         |> test_helpers.normalize_terraform_result_with_warnings
         |> should.equal(Ok(#(expected, [])))
       }

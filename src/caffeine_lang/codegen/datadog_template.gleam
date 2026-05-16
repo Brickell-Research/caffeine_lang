@@ -282,10 +282,7 @@ pub fn resolve_template(
 /// ASSUMPTION: we already checked the value type is correct and the label matches
 ///             the Datadog template name. Thus instead of passing in a ValueTuple
 ///             we can just pass in the raw string value.
-fn resolve_string_value(
-  template: TemplateVariable,
-  value: String,
-) -> String {
+fn resolve_string_value(template: TemplateVariable, value: String) -> String {
   case template.template_type {
     Raw -> value
     Default -> filter.tag(template.datadog_attr, value)
@@ -335,4 +332,3 @@ fn parse_datadog_template_variable(
     }
   }
 }
-

@@ -1,4 +1,0 @@
-Expectations measured by "test"
-  * "item":
-    Requires { env: String }
-    Provides { value: "x" }

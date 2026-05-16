@@ -1,8 +1,5 @@
-Expectations measured by "api_availability"
-  * "auth_service_availability":
-    Provides {
-      env: "production",
-      service: "auth-service",
-      threshold: 99.99%,
-      window_in_days: 30
-    }
+"auth_service_availability":
+  Guarantees 99.99% over 30d window as measured by "api_availability" with: {
+    env: "production",
+    service: "auth-service"
+  }

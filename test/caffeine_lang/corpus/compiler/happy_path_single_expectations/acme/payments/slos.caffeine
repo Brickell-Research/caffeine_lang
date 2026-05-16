@@ -1,8 +1,5 @@
-Expectations measured by "api_availability"
-  * "checkout_availability":
-    Provides {
-      env: "production",
-      status: true,
-      threshold: 99.95%,
-      window_in_days: 30
-    }
+"checkout_availability":
+  Guarantees 99.95% over 30d window as measured by "api_availability" with: {
+    env: "production",
+    status: true
+  }

@@ -1,3 +1,6 @@
-Expectations measured by "test"
-  * "item":
-    Provides { tags: ["a", "b"], config: { key: "value" }, enabled: false }
+"item":
+  Guarantees 99.9% over 30d window as measured by "test" with: {
+    tags: ["a", "b"],
+    config: { key: "value" },
+    enabled: false
+  }

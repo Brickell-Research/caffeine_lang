@@ -17,6 +17,7 @@ import caffeine_lang/types.{
 }
 import caffeine_lang/value
 import gleam/dict.{type Dict}
+import gleam/float
 import gleam/list
 import gleam/option
 import gleam/string
@@ -40,13 +41,8 @@ pub fn lower_measurements(
 pub fn lower_expectations(file: ExpectsFile(Validated)) -> List(Expectation) {
   let extendables = build_extendable_map(file.extendables)
 
-  file.blocks
-  |> list.flat_map(fn(block) {
-    block.items
-    |> list.map(fn(item) {
-      generate_expect_item(item, block.measurement, extendables)
-    })
-  })
+  file.items
+  |> list.map(fn(item) { generate_expect_item(item, extendables) })
 }
 
 /// Builds a map of extendable name to extendable for quick lookup.
@@ -81,22 +77,110 @@ fn generate_measurement_item(
   Measurement(name: item.name, params: params, inputs: inputs)
 }
 
-/// Generates a single expectation from an AST item.
+/// Generates a single expectation from a new-envelope AST item.
+///
+/// Flattens the structured envelope (Assumes section, Guarantees clause,
+/// optional `as measured by ... with: {...}`) into the flat `inputs` dict the
+/// linker IR builder expects. Keys produced:
+///   - "threshold": PercentageValue from `Guarantees N%`
+///   - "window_in_days": IntValue from `over <dur> window` (any unit normalized to days)
+///   - "depends_on": DictValue with "hard"/"soft" -> ListValue(StringValue) from `Assumes:`
+///   - <each `with:` field>: literal value (after extendable merge)
 fn generate_expect_item(
   item: ExpectItem,
-  measurement: option.Option(String),
   extendables: Dict(String, Extendable),
 ) -> Expectation {
-  let merged_provides = merge_expect_extends(item, extendables)
-  let inputs = struct_to_inputs(merged_provides)
+  let with_args = merge_expect_with_args(item, extendables)
+  let base_inputs = struct_to_inputs(with_args)
+
+  let inputs =
+    base_inputs
+    |> dict.insert(
+      "threshold",
+      value.PercentageValue(item.guarantees.threshold),
+    )
+    |> dict.insert(
+      "window_in_days",
+      value.IntValue(duration_to_days(item.guarantees.window)),
+    )
+    |> maybe_insert_depends_on(item.assumes)
+
+  let measurement_ref = case item.guarantees.measured_by {
+    option.Some(mb) -> option.Some(mb.measurement)
+    option.None -> option.None
+  }
+
   let description = extract_doc_description(item.leading_comments)
 
   Expectation(
     name: item.name,
-    measurement_ref: measurement,
+    measurement_ref: measurement_ref,
     inputs: inputs,
     description: description,
   )
+}
+
+/// Converts a duration literal to whole days. Non-day units are normalized
+/// through `value.duration_to_milliseconds` and divided down. Floors fractional
+/// days (e.g. `1h` -> 0 days, `25h` -> 1 day) since the IR currently carries
+/// `window_in_days` as an integer. Negative values clamp to 0.
+fn duration_to_days(d: ast.DurationLiteral) -> Int {
+  case value.duration_unit_from_string(d.unit) {
+    Ok(unit) -> {
+      let ms = value.duration_to_milliseconds(d.amount, unit)
+      let days_float = ms /. 86_400_000.0
+      case days_float <. 0.0 {
+        True -> 0
+        False -> float_floor_to_int(days_float)
+      }
+    }
+    // Tokenizer only emits known suffixes, so this branch is unreachable.
+    Error(Nil) -> 0
+  }
+}
+
+fn float_floor_to_int(f: Float) -> Int {
+  let rounded = float.round(f -. 0.5)
+  case rounded < 0 {
+    True -> 0
+    False -> rounded
+  }
+}
+
+fn maybe_insert_depends_on(
+  inputs: Dict(String, value.Value),
+  assumes: option.Option(ast.Assumes),
+) -> Dict(String, value.Value) {
+  case assumes {
+    option.None -> inputs
+    option.Some(a) ->
+      case a.deps {
+        [] -> inputs
+        _ -> dict.insert(inputs, "depends_on", deps_to_value(a.deps))
+      }
+  }
+}
+
+fn deps_to_value(deps: List(ast.Dependency)) -> value.Value {
+  let #(hard, soft) =
+    list.partition(deps, fn(d) {
+      case d.kind {
+        ast.HardDep -> True
+        ast.SoftDep -> False
+      }
+    })
+  let hard_list =
+    hard
+    |> list.map(fn(d) { value.StringValue(d.target) })
+    |> value.ListValue
+  let soft_list =
+    soft
+    |> list.map(fn(d) { value.StringValue(d.target) })
+    |> value.ListValue
+  dict.new()
+  |> dict.insert("hard", hard_list)
+  |> dict.insert("soft", soft_list)
+  |> value.DictValue
 }
 
 /// Extracts `###` doc-comment text from a node's leading comments and joins
@@ -164,18 +248,24 @@ fn merge_measurement_extends(
   )
 }
 
-/// Merges extended fields into an expect item's provides.
-/// Order: extended extendables left-to-right, then item's own fields (can override).
-fn merge_expect_extends(
+/// Merges extended fields into an expect item's `with: {...}` args.
+/// Order: extended extendables left-to-right, then the item's own with-fields
+/// (can override). Unmeasured expectations have no `with:`; for them only the
+/// extendable fields contribute.
+fn merge_expect_with_args(
   item: ExpectItem,
   extendables: Dict(String, Extendable),
 ) -> Struct {
-  let provides_fields =
+  let item_fields = case item.guarantees.measured_by {
+    option.Some(mb) -> mb.with_args.fields
+    option.None -> []
+  }
+  let merged =
     collect_extended_fields(item.extends, extendables, ast.ExtendableProvides)
-    |> list.append(item.provides.fields)
+    |> list.append(item_fields)
     |> dedupe_fields
 
-  ast.Struct(provides_fields, trailing_comments: [])
+  ast.Struct(merged, trailing_comments: [])
 }
 
 /// Removes duplicate field names, keeping the last occurrence (allows overrides).

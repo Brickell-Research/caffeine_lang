@@ -50,12 +50,12 @@ pub type TypeAlias {
   TypeAlias(name: String, type_: ParsedType, leading_comments: List(Comment))
 }
 
-/// An expects file containing extendables and expects blocks.
+/// An expects file containing extendables and standalone expectation items.
 /// The phantom `phase` parameter tracks whether the file has been validated.
 pub type ExpectsFile(phase) {
   ExpectsFile(
     extendables: List(Extendable),
-    blocks: List(ExpectsBlock),
+    items: List(ExpectItem),
     trailing_comments: List(Comment),
   )
 }
@@ -78,7 +78,7 @@ pub fn promote_measurements_file(
 pub fn promote_expects_file(file: ExpectsFile(a)) -> ExpectsFile(b) {
   ExpectsFile(
     extendables: file.extendables,
-    blocks: file.blocks,
+    items: file.items,
     trailing_comments: file.trailing_comments,
   )
 }
@@ -97,7 +97,9 @@ pub type Extendable {
   )
 }
 
-/// The kind of extendable (Requires for types, Provides for values).
+/// The kind of extendable (Requires for measurement types, Provides for
+/// literal-valued field bundles — merged into measurement `Provides {}` or
+/// expectation `with: {...}` depending on context).
 pub type ExtendableKind {
   ExtendableRequires
   ExtendableProvides
@@ -131,23 +133,63 @@ pub type MeasurementItem {
 // EXPECTS NODES
 // =============================================================================
 
-/// A block of expectations for a measurement.
-pub type ExpectsBlock {
-  ExpectsBlock(
-    measurement: Option(String),
-    items: List(ExpectItem),
-    leading_comments: List(Comment),
-  )
-}
-
-/// A single expectation item with name, extends, and provides.
+/// A single expectation item. Each item stands alone (no enclosing
+/// `Expectations measured by "X"` group).
+///
+/// An expectation has an optional `Assumes:` section listing dependencies and
+/// a required `Guarantees ...` clause carrying threshold, window, optional
+/// latency, and an optional `as measured by ... with: {...}` reference.
 pub type ExpectItem {
   ExpectItem(
     name: String,
     extends: List(String),
-    provides: Struct,
+    assumes: Option(Assumes),
+    guarantees: Guarantees,
     leading_comments: List(Comment),
   )
+}
+
+/// The `Assumes:` section of an expectation. Holds dependency lines.
+pub type Assumes {
+  Assumes(deps: List(Dependency), trailing_comments: List(Comment))
+}
+
+/// A single `hard|soft dependency on "<target>"` line inside Assumes.
+pub type Dependency {
+  Dependency(
+    kind: DependencyKind,
+    target: String,
+    leading_comments: List(Comment),
+  )
+}
+
+/// Whether a dependency is hard (participates in threshold math) or soft
+/// (tracked in graph only).
+pub type DependencyKind {
+  HardDep
+  SoftDep
+}
+
+/// The `Guarantees N% [below D] over D window [as measured by "X" with: {...}]` clause.
+pub type Guarantees {
+  Guarantees(
+    threshold: Float,
+    below: Option(DurationLiteral),
+    window: DurationLiteral,
+    measured_by: Option(MeasuredBy),
+  )
+}
+
+/// A duration literal value attached to `over`/`below` clauses.
+/// Mirrors `ast.LiteralDuration` so the parser can plug the same token into
+/// these fixed-position clauses without going through full literal parsing.
+pub type DurationLiteral {
+  DurationLiteral(amount: Float, unit: String)
+}
+
+/// The `as measured by "X" with: {...}` tail of a Guarantees clause.
+pub type MeasuredBy {
+  MeasuredBy(measurement: String, with_args: Struct)
 }
 
 // =============================================================================

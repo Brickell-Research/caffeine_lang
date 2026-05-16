@@ -5,10 +5,19 @@ pub type PositionedToken {
 
 /// A token produced by the tokenizer.
 pub type Token {
-  KeywordExpectations
-  KeywordUnmeasured
+  KeywordAssumes
+  KeywordGuarantees
+  KeywordOver
+  KeywordWindow
+  KeywordAs
   KeywordMeasured
   KeywordBy
+  KeywordWith
+  KeywordBelow
+  KeywordHard
+  KeywordSoft
+  KeywordDependency
+  KeywordOn
   KeywordExtends
   KeywordRequires
   KeywordProvides
@@ -60,10 +69,19 @@ pub type Token {
 @internal
 pub fn to_string(tok: Token) -> String {
   case tok {
-    KeywordExpectations -> "Expectations"
-    KeywordUnmeasured -> "Unmeasured"
+    KeywordAssumes -> "Assumes"
+    KeywordGuarantees -> "Guarantees"
+    KeywordOver -> "over"
+    KeywordWindow -> "window"
+    KeywordAs -> "as"
     KeywordMeasured -> "measured"
     KeywordBy -> "by"
+    KeywordWith -> "with"
+    KeywordBelow -> "below"
+    KeywordHard -> "hard"
+    KeywordSoft -> "soft"
+    KeywordDependency -> "dependency"
+    KeywordOn -> "on"
     KeywordExtends -> "extends"
     KeywordRequires -> "Requires"
     KeywordProvides -> "Provides"

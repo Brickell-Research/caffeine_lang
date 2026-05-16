@@ -1,8 +1,7 @@
 import caffeine_lang/frontend/ast.{
-  type Comment, type ExpectItem, type ExpectsBlock, type ExpectsFile,
-  type Extendable, type ExtendableKind, type Field, type Literal,
-  type MeasurementItem, type MeasurementsFile, type Parsed, type Struct,
-  type TypeAlias,
+  type Comment, type ExpectItem, type ExpectsFile, type Extendable,
+  type ExtendableKind, type Field, type Literal, type MeasurementItem,
+  type MeasurementsFile, type Parsed, type Struct, type TypeAlias,
 }
 import caffeine_lang/frontend/parser_error.{type ParserError}
 import caffeine_lang/frontend/token.{type PositionedToken, type Token}
@@ -84,10 +83,10 @@ pub fn parse_expects_file(
     parse_extendables(state, pending)
     |> result.map_error(fn(e) { [e] }),
   )
-  let #(blocks, errors, pending, _state) =
-    parse_expects_blocks_recovering(state, pending)
+  let #(items, errors, pending, _state) =
+    parse_expect_items_recovering(state, pending)
   case errors {
-    [] -> Ok(ast.ExpectsFile(extendables:, blocks:, trailing_comments: pending))
+    [] -> Ok(ast.ExpectsFile(extendables:, items:, trailing_comments: pending))
     errs -> Error(errs)
   }
 }
@@ -367,30 +366,158 @@ fn parse_measurement_item(
 }
 
 // =============================================================================
-// EXPECTS BLOCKS
+// EXPECT ITEMS
 // =============================================================================
 
+/// Parses a single standalone expectation:
+///
+///   "<name>" (extends [...])?:
+///     (Assumes:
+///        (hard|soft) dependency on "<target>"
+///        ...)?
+///     Guarantees <pct>% (below <dur>)? over <dur> window
+///       (as measured by "<measurement>" with: { <fields> })?
 fn parse_expect_item(
   state: ParserState,
   leading_comments: List(Comment),
 ) -> Result(#(ExpectItem, ParserState), ParserError) {
-  use state <- result.try(expect(state, token.SymbolStar, "*"))
   use #(name, state) <- result.try(parse_string_literal(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
+  let #(_pending, state) = consume_comments(state)
+  use #(assumes, state) <- result.try(parse_optional_assumes(state))
+  use #(guarantees, state) <- result.try(parse_guarantees(state))
+  Ok(#(
+    ast.ExpectItem(name:, extends:, assumes:, guarantees:, leading_comments:),
+    state,
+  ))
+}
+
+fn parse_optional_assumes(
+  state: ParserState,
+) -> Result(#(option.Option(ast.Assumes), ParserState), ParserError) {
   case peek(state) {
-    token.KeywordRequires ->
+    token.KeywordAssumes -> {
+      let state = advance(state)
+      use state <- result.try(expect(state, token.SymbolColon, ":"))
+      let #(pending, state) = consume_comments(state)
+      use #(deps, trailing, state) <- result.try(
+        parse_dependency_lines(state, pending, []),
+      )
+      Ok(#(option.Some(ast.Assumes(deps:, trailing_comments: trailing)), state))
+    }
+    _ -> Ok(#(option.None, state))
+  }
+}
+
+fn parse_dependency_lines(
+  state: ParserState,
+  leading: List(Comment),
+  acc: List(ast.Dependency),
+) -> Result(#(List(ast.Dependency), List(Comment), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordHard | token.KeywordSoft -> {
+      use #(dep, state) <- result.try(parse_dependency_line(state, leading))
+      let #(next_pending, state) = consume_comments(state)
+      parse_dependency_lines(state, next_pending, [dep, ..acc])
+    }
+    _ -> Ok(#(list.reverse(acc), leading, state))
+  }
+}
+
+fn parse_dependency_line(
+  state: ParserState,
+  leading_comments: List(Comment),
+) -> Result(#(ast.Dependency, ParserState), ParserError) {
+  use #(kind, state) <- result.try(case peek(state) {
+    token.KeywordHard -> Ok(#(ast.HardDep, advance(state)))
+    token.KeywordSoft -> Ok(#(ast.SoftDep, advance(state)))
+    tok ->
       Error(parser_error.UnexpectedToken(
-        "Provides",
-        "Requires",
+        "hard or soft",
+        token.to_string(tok),
         state.line,
         state.column,
       ))
-    _ -> {
-      use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
-      use #(provides, state) <- result.try(parse_literal_struct(state))
-      Ok(#(ast.ExpectItem(name:, extends:, provides:, leading_comments:), state))
+  })
+  use state <- result.try(expect(state, token.KeywordDependency, "dependency"))
+  use state <- result.try(expect(state, token.KeywordOn, "on"))
+  use #(target, state) <- result.try(parse_string_literal(state))
+  Ok(#(ast.Dependency(kind:, target:, leading_comments:), state))
+}
+
+fn parse_guarantees(
+  state: ParserState,
+) -> Result(#(ast.Guarantees, ParserState), ParserError) {
+  use state <- result.try(expect(state, token.KeywordGuarantees, "Guarantees"))
+  use #(threshold, state) <- result.try(parse_percentage_literal(state))
+  use #(below, state) <- result.try(parse_optional_below(state))
+  use state <- result.try(expect(state, token.KeywordOver, "over"))
+  use #(window, state) <- result.try(parse_duration_literal(state))
+  use state <- result.try(expect(state, token.KeywordWindow, "window"))
+  use #(measured_by, state) <- result.try(parse_optional_measured_by(state))
+  Ok(#(ast.Guarantees(threshold:, below:, window:, measured_by:), state))
+}
+
+fn parse_optional_below(
+  state: ParserState,
+) -> Result(#(option.Option(ast.DurationLiteral), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordBelow -> {
+      let state = advance(state)
+      use #(dur, state) <- result.try(parse_duration_literal(state))
+      Ok(#(option.Some(dur), state))
     }
+    _ -> Ok(#(option.None, state))
+  }
+}
+
+fn parse_optional_measured_by(
+  state: ParserState,
+) -> Result(#(option.Option(ast.MeasuredBy), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordAs -> {
+      let state = advance(state)
+      use state <- result.try(expect(state, token.KeywordMeasured, "measured"))
+      use state <- result.try(expect(state, token.KeywordBy, "by"))
+      use #(measurement, state) <- result.try(parse_string_literal(state))
+      use state <- result.try(expect(state, token.KeywordWith, "with"))
+      use state <- result.try(expect(state, token.SymbolColon, ":"))
+      use #(with_args, state) <- result.try(parse_literal_struct(state))
+      Ok(#(option.Some(ast.MeasuredBy(measurement:, with_args:)), state))
+    }
+    _ -> Ok(#(option.None, state))
+  }
+}
+
+fn parse_percentage_literal(
+  state: ParserState,
+) -> Result(#(Float, ParserState), ParserError) {
+  case peek(state) {
+    token.LiteralPercentage(f) -> Ok(#(f, advance(state)))
+    tok ->
+      Error(parser_error.UnexpectedToken(
+        "percentage (e.g. 99.9%)",
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
+}
+
+fn parse_duration_literal(
+  state: ParserState,
+) -> Result(#(ast.DurationLiteral, ParserState), ParserError) {
+  case peek(state) {
+    token.LiteralDuration(amount, unit) ->
+      Ok(#(ast.DurationLiteral(amount:, unit:), advance(state)))
+    tok ->
+      Error(parser_error.UnexpectedToken(
+        "duration (e.g. 10d, 50ms)",
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
   }
 }
 
@@ -407,19 +534,9 @@ fn skip_until(state: ParserState, predicate: fn(Token) -> Bool) -> ParserState {
   }
 }
 
-fn at_block_boundary(tok: Token) -> Bool {
+fn at_expect_item_boundary(tok: Token) -> Bool {
   case tok {
-    token.KeywordExpectations | token.KeywordUnmeasured | token.EOF -> True
-    _ -> False
-  }
-}
-
-fn at_item_boundary(tok: Token) -> Bool {
-  case tok {
-    token.SymbolStar
-    | token.KeywordExpectations
-    | token.KeywordUnmeasured
-    | token.EOF -> True
+    token.LiteralString(_) | token.EOF -> True
     _ -> False
   }
 }
@@ -431,158 +548,8 @@ fn at_measurement_item_boundary(tok: Token) -> Bool {
   }
 }
 
-/// Parse expects blocks with error recovery between blocks and items.
-/// Recognizes both `Expectations measured by "..."` and `Unmeasured Expectations` headers.
-fn parse_expects_blocks_recovering(
-  state: ParserState,
-  pending: List(Comment),
-) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
-  expects_blocks_loop(state, [], [], pending)
-}
-
-/// Custom block-level recovery loop that matches either KeywordExpectations or KeywordUnmeasured.
-/// `error_acc` is accumulated in reverse order (cons head) and reversed at exit,
-/// matching the convention in `measurement_items_loop` and `items_recovering_loop`.
-fn expects_blocks_loop(
-  state: ParserState,
-  block_acc: List(ExpectsBlock),
-  error_acc: List(ParserError),
-  pending: List(Comment),
-) -> #(List(ExpectsBlock), List(ParserError), List(Comment), ParserState) {
-  case peek(state) {
-    token.EOF -> #(
-      list.reverse(block_acc),
-      list.reverse(error_acc),
-      pending,
-      state,
-    )
-    token.KeywordExpectations | token.KeywordUnmeasured -> {
-      let #(block_result, item_errors, state) =
-        parse_expects_block_recovering(state, pending)
-      let #(more_comments, state) = consume_comments(state)
-      case block_result {
-        Ok(#(block, trailing)) -> {
-          let next_pending = list.append(trailing, more_comments)
-          expects_blocks_loop(
-            state,
-            [block, ..block_acc],
-            prepend_in_order(error_acc, item_errors),
-            next_pending,
-          )
-        }
-        Error(err) -> {
-          let state = skip_until(advance(state), at_block_boundary)
-          let #(next_pending, state) = consume_comments(state)
-          expects_blocks_loop(
-            state,
-            block_acc,
-            prepend_in_order(error_acc, [err, ..item_errors]),
-            next_pending,
-          )
-        }
-      }
-    }
-    tok -> {
-      let err =
-        parser_error.UnexpectedToken(
-          "Expectations or Unmeasured Expectations",
-          token.to_string(tok),
-          state.line,
-          state.column,
-        )
-      #(
-        list.reverse(block_acc),
-        list.reverse([err, ..error_acc]),
-        pending,
-        state,
-      )
-    }
-  }
-}
-
-/// Prepends `items` onto a reverse-order accumulator such that, after the
-/// accumulator is reversed, the items appear in their original forward order.
-fn prepend_in_order(reverse_acc: List(a), items: List(a)) -> List(a) {
-  list.fold(items, reverse_acc, fn(acc, item) { [item, ..acc] })
-}
-
-/// Parse a single expects block, recovering from item-level errors.
-fn parse_expects_block_recovering(
-  state: ParserState,
-  leading_comments: List(Comment),
-) -> #(
-  Result(#(ExpectsBlock, List(Comment)), ParserError),
-  List(ParserError),
-  ParserState,
-) {
-  block_recovering(
-    state,
-    leading_comments,
-    parse_expects_block_header,
-    parse_expect_items_recovering,
-    fn(measurement, items, comments) {
-      ast.ExpectsBlock(measurement:, items:, leading_comments: comments)
-    },
-  )
-}
-
-/// Parse just the header of an expects block.
-/// Handles both `Expectations measured by "name"` and `Unmeasured Expectations`.
-fn parse_expects_block_header(
-  state: ParserState,
-) -> Result(#(option.Option(String), ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordUnmeasured -> {
-      let state = advance(state)
-      use state <- result.try(expect(
-        state,
-        token.KeywordExpectations,
-        "Expectations",
-      ))
-      Ok(#(option.None, state))
-    }
-    _ -> {
-      use state <- result.try(expect(
-        state,
-        token.KeywordExpectations,
-        "Expectations",
-      ))
-      use state <- result.try(expect(state, token.KeywordMeasured, "measured"))
-      use state <- result.try(expect(state, token.KeywordBy, "by"))
-      use #(measurement, state) <- result.try(parse_string_literal(state))
-      Ok(#(option.Some(measurement), state))
-    }
-  }
-}
-
-/// Generic single-block recovery parameterized by header parser, item parser, and block constructor.
-fn block_recovering(
-  state: ParserState,
-  leading_comments: List(Comment),
-  parse_header: fn(ParserState) -> Result(#(header, ParserState), ParserError),
-  parse_items: fn(ParserState) ->
-    #(List(item), List(ParserError), List(Comment), ParserState),
-  build_block: fn(header, List(item), List(Comment)) -> block,
-) -> #(
-  Result(#(block, List(Comment)), ParserError),
-  List(ParserError),
-  ParserState,
-) {
-  case parse_header(state) {
-    Error(err) -> #(Error(err), [], state)
-    Ok(#(header_data, state)) -> {
-      let #(items, item_errors, trailing, state) = parse_items(state)
-      #(
-        Ok(#(build_block(header_data, items, leading_comments), trailing)),
-        item_errors,
-        state,
-      )
-    }
-  }
-}
-
 /// Parse measurement items with recovery between items.
-/// Measurement items start with a string literal name (no `*` prefix).
+/// Measurement items start with a string literal name.
 fn parse_measurement_items_recovering(
   state: ParserState,
   pending: List(Comment),
@@ -590,7 +557,6 @@ fn parse_measurement_items_recovering(
   measurement_items_loop(state, [], [], pending)
 }
 
-/// Recovery loop for measurement items, detecting boundaries by string literal tokens.
 fn measurement_items_loop(
   state: ParserState,
   items: List(MeasurementItem),
@@ -616,49 +582,35 @@ fn measurement_items_loop(
 }
 
 /// Parse expect items with recovery between items.
+/// Each expect item starts with a string literal name (top-level, no grouping).
 fn parse_expect_items_recovering(
   state: ParserState,
+  pending: List(Comment),
 ) -> #(List(ExpectItem), List(ParserError), List(Comment), ParserState) {
-  let #(pending, state) = consume_comments(state)
-  items_recovering_loop(state, [], [], pending, parse_expect_item)
+  expect_items_loop(state, [], [], pending)
 }
 
-/// Generic item-level recovery loop parameterized by item parser.
-fn items_recovering_loop(
+fn expect_items_loop(
   state: ParserState,
-  item_acc: List(item),
-  error_acc: List(ParserError),
+  items: List(ExpectItem),
+  errors: List(ParserError),
   pending: List(Comment),
-  parse_item: fn(ParserState, List(Comment)) ->
-    Result(#(item, ParserState), ParserError),
-) -> #(List(item), List(ParserError), List(Comment), ParserState) {
+) -> #(List(ExpectItem), List(ParserError), List(Comment), ParserState) {
   case peek(state) {
-    token.SymbolStar -> {
-      case parse_item(state, pending) {
+    token.LiteralString(_) -> {
+      case parse_expect_item(state, pending) {
         Ok(#(item, state)) -> {
           let #(next_pending, state) = consume_comments(state)
-          items_recovering_loop(
-            state,
-            [item, ..item_acc],
-            error_acc,
-            next_pending,
-            parse_item,
-          )
+          expect_items_loop(state, [item, ..items], errors, next_pending)
         }
         Error(err) -> {
-          let state = skip_until(advance(state), at_item_boundary)
+          let state = skip_until(advance(state), at_expect_item_boundary)
           let #(next_pending, state) = consume_comments(state)
-          items_recovering_loop(
-            state,
-            item_acc,
-            [err, ..error_acc],
-            next_pending,
-            parse_item,
-          )
+          expect_items_loop(state, items, [err, ..errors], next_pending)
         }
       }
     }
-    _ -> #(list.reverse(item_acc), list.reverse(error_acc), pending, state)
+    _ -> #(list.reverse(items), list.reverse(errors), pending, state)
   }
 }
 

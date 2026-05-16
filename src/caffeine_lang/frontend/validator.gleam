@@ -16,6 +16,7 @@ import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
@@ -200,9 +201,7 @@ pub fn validate_expects_file(
   file: ExpectsFile(Parsed),
 ) -> Result(ExpectsFile(Validated), List(ValidatorError)) {
   let extendables = file.extendables
-  let items =
-    file.blocks
-    |> list.flat_map(fn(block) { block.items })
+  let items = file.items
 
   // Structural checks (independent of each other)
   let structural_errors =
@@ -344,13 +343,17 @@ fn validate_expect_items_extends(
       extendable_names,
     ))
     use _ <- result.try(validate_no_duplicate_extends(item.extends, item.name))
-    // Check that item's provides don't overshadow extended fields
-    let provides_fields =
-      item.provides.fields |> list.map(fn(f) { f.name }) |> set.from_list
+    // Check that item's `with: {...}` args don't overshadow extended fields.
+    // Unmeasured expectations have no `with:`, so contribute an empty set.
+    let with_fields = case item.guarantees.measured_by {
+      option.Some(mb) ->
+        mb.with_args.fields |> list.map(fn(f) { f.name }) |> set.from_list
+      option.None -> set.new()
+    }
     validate_no_overshadowing(
       item.name,
       item.extends,
-      [provides_fields],
+      [with_fields],
       extendable_map,
     )
   })

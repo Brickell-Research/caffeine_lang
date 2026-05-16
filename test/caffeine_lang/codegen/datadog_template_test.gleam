@@ -791,4 +791,3 @@ pub fn resolve_template_test() {
   ]
   |> test_helpers.table_test_2(templatizer.resolve_template)
 }
-

@@ -1,8 +1,7 @@
-Expectations measured by "slo"
-  * "item":
-    Provides {
-      config: {
+"item":
+  Guarantees 99.9% over 30d window as measured by "slo" with: {
+    config: {
         key: "value"
         # trailing comment in literal struct
       }
-    }
+  }

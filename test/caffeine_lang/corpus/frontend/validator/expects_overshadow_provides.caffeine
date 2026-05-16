@@ -1,5 +1,7 @@
-_defaults (Provides): { env: "production", threshold: 99.9 }
+_defaults (Provides): { env: "production" }
 
-Expectations measured by "api_availability"
-  * "checkout" extends [_defaults]:
-    Provides { env: "staging", status: true }
+"checkout" extends [_defaults]:
+  Guarantees 99.9% over 30d window as measured by "api_availability" with: {
+    env: "staging",
+    status: true
+  }

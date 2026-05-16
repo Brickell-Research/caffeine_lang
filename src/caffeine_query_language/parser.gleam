@@ -379,8 +379,7 @@ fn find_rightmost_operator_at_level_loop(
     False -> {
       let new_paren_level = count_parens(paren_level, input, start_pos)
       let new_rightmost_pos = case
-        new_paren_level == 0
-        && substring_equals_at(input, start_pos, operator)
+        new_paren_level == 0 && substring_equals_at(input, start_pos, operator)
       {
         True -> start_pos
         False -> rightmost_pos

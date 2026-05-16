@@ -5,6 +5,7 @@ _defaults (Provides): {
   window_in_days: 7
 }
 
-Expectations measured by "slo"
-  * "item" extends [_defaults]:
-    Provides { service: "api" }
+"item" extends [_defaults]:
+  Guarantees 99.9% over 30d window as measured by "slo" with: {
+    service: "api"
+  }

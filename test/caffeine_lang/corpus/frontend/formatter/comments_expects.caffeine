@@ -1,9 +1,6 @@
 ## Service Expectations
-Expectations measured by "api_availability"
-  # Checkout service SLO
-  * "checkout":
-    Provides { threshold: 99.95 }
+"checkout":
+  Guarantees 99.95% over 30d window as measured by "api_availability" with: {}
 
-  # Payment service SLO
-  * "payment":
-    Provides { threshold: 99.99 }
+"payment":
+  Guarantees 99.99% over 30d window as measured by "api_availability" with: {}

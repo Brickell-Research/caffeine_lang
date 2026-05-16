@@ -1,6 +1,6 @@
 import caffeine_lang/errors
-import caffeine_lang/linker/slo_params.{type ParamInfo, ParamInfo}
 import caffeine_lang/linker/measurements
+import caffeine_lang/linker/slo_params.{type ParamInfo, ParamInfo}
 import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict

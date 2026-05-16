@@ -26,13 +26,27 @@ fn tokenize_tokens(
 // * ✅ x keyword
 pub fn tokenize_keywords_test() {
   [
+    #("Assumes keyword", "Assumes", Ok([token.KeywordAssumes, token.EOF])),
     #(
-      "Expects keyword",
-      "Expectations",
-      Ok([token.KeywordExpectations, token.EOF]),
+      "Guarantees keyword",
+      "Guarantees",
+      Ok([token.KeywordGuarantees, token.EOF]),
     ),
+    #("over keyword", "over", Ok([token.KeywordOver, token.EOF])),
+    #("window keyword", "window", Ok([token.KeywordWindow, token.EOF])),
+    #("as keyword", "as", Ok([token.KeywordAs, token.EOF])),
     #("measured keyword", "measured", Ok([token.KeywordMeasured, token.EOF])),
     #("by keyword", "by", Ok([token.KeywordBy, token.EOF])),
+    #("with keyword", "with", Ok([token.KeywordWith, token.EOF])),
+    #("below keyword", "below", Ok([token.KeywordBelow, token.EOF])),
+    #("hard keyword", "hard", Ok([token.KeywordHard, token.EOF])),
+    #("soft keyword", "soft", Ok([token.KeywordSoft, token.EOF])),
+    #(
+      "dependency keyword",
+      "dependency",
+      Ok([token.KeywordDependency, token.EOF]),
+    ),
+    #("on keyword", "on", Ok([token.KeywordOn, token.EOF])),
     #("extends keyword", "extends", Ok([token.KeywordExtends, token.EOF])),
     #("Requires keyword", "Requires", Ok([token.KeywordRequires, token.EOF])),
     #("Provides keyword", "Provides", Ok([token.KeywordProvides, token.EOF])),
@@ -360,18 +374,71 @@ pub fn tokenize_comments_test() {
   |> test_helpers.table_test_1(tokenize_tokens)
 }
 
-// ==== tokenize_expects_header ====
-// * ✅ expects header line
-pub fn tokenize_expects_header_test() {
+// ==== tokenize_guarantees_clause ====
+// * ✅ measured guarantees clause
+// * ✅ unmeasured guarantees clause
+pub fn tokenize_guarantees_clause_test() {
   [
     #(
-      "expects header line",
-      "Expectations measured by \"api_availability\"",
+      "measured guarantees clause",
+      "Guarantees 99.95% over 10d window as measured by \"api_availability\" with: {}",
       Ok([
-        token.KeywordExpectations,
+        token.KeywordGuarantees,
+        token.LiteralPercentage(99.95),
+        token.KeywordOver,
+        token.LiteralDuration(10.0, "d"),
+        token.KeywordWindow,
+        token.KeywordAs,
         token.KeywordMeasured,
         token.KeywordBy,
         token.LiteralString("api_availability"),
+        token.KeywordWith,
+        token.SymbolColon,
+        token.SymbolLeftBrace,
+        token.SymbolRightBrace,
+        token.EOF,
+      ]),
+    ),
+    #(
+      "unmeasured guarantees clause",
+      "Guarantees 99.9% over 30d window",
+      Ok([
+        token.KeywordGuarantees,
+        token.LiteralPercentage(99.9),
+        token.KeywordOver,
+        token.LiteralDuration(30.0, "d"),
+        token.KeywordWindow,
+        token.EOF,
+      ]),
+    ),
+  ]
+  |> test_helpers.table_test_1(tokenize_tokens)
+}
+
+// ==== tokenize_assumes_block ====
+// * ✅ hard dependency
+// * ✅ soft dependency
+pub fn tokenize_assumes_block_test() {
+  [
+    #(
+      "hard dependency",
+      "hard dependency on \"acme.platform.db.availability_slo\"",
+      Ok([
+        token.KeywordHard,
+        token.KeywordDependency,
+        token.KeywordOn,
+        token.LiteralString("acme.platform.db.availability_slo"),
+        token.EOF,
+      ]),
+    ),
+    #(
+      "soft dependency",
+      "soft dependency on \"acme.platform.cache.redis_slo\"",
+      Ok([
+        token.KeywordSoft,
+        token.KeywordDependency,
+        token.KeywordOn,
+        token.LiteralString("acme.platform.cache.redis_slo"),
         token.EOF,
       ]),
     ),

@@ -525,10 +525,19 @@ fn read_identifier_loop(
 
 fn keyword_or_identifier(word: String) -> Token {
   case word {
-    "Expectations" -> token.KeywordExpectations
-    "Unmeasured" -> token.KeywordUnmeasured
+    "Assumes" -> token.KeywordAssumes
+    "Guarantees" -> token.KeywordGuarantees
+    "over" -> token.KeywordOver
+    "window" -> token.KeywordWindow
+    "as" -> token.KeywordAs
     "measured" -> token.KeywordMeasured
     "by" -> token.KeywordBy
+    "with" -> token.KeywordWith
+    "below" -> token.KeywordBelow
+    "hard" -> token.KeywordHard
+    "soft" -> token.KeywordSoft
+    "dependency" -> token.KeywordDependency
+    "on" -> token.KeywordOn
     "extends" -> token.KeywordExtends
     "Requires" -> token.KeywordRequires
     "Provides" -> token.KeywordProvides

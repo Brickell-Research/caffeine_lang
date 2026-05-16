@@ -1,10 +1,9 @@
-Expectations measured by "slo"
-  * "item":
-    Provides {
-      # The threshold
+"item":
+  Guarantees 99.9% over 30d window as measured by "slo" with: {
+    # The threshold
       threshold: 99.9,
-      # The window
+    # The window
       window_in_days: 7,
-      # The service
+    # The service
       service_name: "my-service"
-    }
+  }

@@ -11,10 +11,20 @@ import test_helpers
 // * ✅ EOF
 pub fn to_string_test() {
   [
-    // Keywords
-    #("keyword Expectations", token.KeywordExpectations, "Expectations"),
+    // Envelope keywords
+    #("keyword Assumes", token.KeywordAssumes, "Assumes"),
+    #("keyword Guarantees", token.KeywordGuarantees, "Guarantees"),
+    #("keyword over", token.KeywordOver, "over"),
+    #("keyword window", token.KeywordWindow, "window"),
+    #("keyword as", token.KeywordAs, "as"),
     #("keyword measured", token.KeywordMeasured, "measured"),
     #("keyword by", token.KeywordBy, "by"),
+    #("keyword with", token.KeywordWith, "with"),
+    #("keyword below", token.KeywordBelow, "below"),
+    #("keyword hard", token.KeywordHard, "hard"),
+    #("keyword soft", token.KeywordSoft, "soft"),
+    #("keyword dependency", token.KeywordDependency, "dependency"),
+    #("keyword on", token.KeywordOn, "on"),
     #("keyword extends", token.KeywordExtends, "extends"),
     #("keyword Requires", token.KeywordRequires, "Requires"),
     #("keyword Provides", token.KeywordProvides, "Provides"),
