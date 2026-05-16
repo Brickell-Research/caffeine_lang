@@ -1,3 +1,2 @@
-Unmeasured  Expectations
-  *   "third_party_auth" :
-    Provides  {  threshold :  99.9% ,  window_in_days :  30  }
+"third_party_auth":
+  Guarantees 99.9% over 30d window

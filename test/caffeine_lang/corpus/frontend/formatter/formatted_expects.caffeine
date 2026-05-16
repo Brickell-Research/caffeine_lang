@@ -1,6 +1,4 @@
 _defaults (Provides): { env: "production", window_in_days: 30 }
 
 "checkout_availability" extends [_defaults]:
-  Guarantees 99.95% over 30d window as measured by "api_availability" with: {
-    status: true
-  }
+  Guarantees 99.95% over 30d window as measured by "api_availability" with: { status: true }

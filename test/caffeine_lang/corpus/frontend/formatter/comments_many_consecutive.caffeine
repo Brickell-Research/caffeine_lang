@@ -1,4 +1,5 @@
 "item_a":
   Guarantees 99.9% over 30d window as measured by "slo_a" with: {}
+
 "item_b":
   Guarantees 99.95% over 30d window as measured by "slo_b" with: {}

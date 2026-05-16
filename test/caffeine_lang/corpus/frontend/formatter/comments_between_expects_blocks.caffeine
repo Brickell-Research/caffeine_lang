@@ -4,11 +4,9 @@
 
 "payment":
   Guarantees 99.99% over 30d window as measured by "api_availability" with: {}
+
 "checkout_p99":
-  Guarantees 99.9% over 30d window as measured by "api_latency" with: {
-    threshold_ms: 500
-  }
+  Guarantees 99.9% over 30d window as measured by "api_latency" with: { threshold_ms: 500 }
+
 "checkout_rps":
-  Guarantees 99.9% over 30d window as measured by "api_throughput" with: {
-    threshold_rps: 1000
-  }
+  Guarantees 99.9% over 30d window as measured by "api_throughput" with: { threshold_rps: 1000 }

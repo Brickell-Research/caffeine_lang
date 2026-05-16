@@ -322,14 +322,15 @@ pub fn lower_expectations_simple_test() {
   let assert Ok(exp) = list.first(expectations)
   exp.name |> should.equal("checkout")
   exp.measurement_ref |> should.equal(option.Some("api_availability"))
-  dict.size(exp.inputs) |> should.equal(2)
+  // threshold + window_in_days + the with-arg `env`
+  dict.size(exp.inputs) |> should.equal(3)
 
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
   let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = value.extract_float(threshold_val)
+  let assert Ok(threshold_float) = value.extract_percentage(threshold_val)
   threshold_float |> should.equal(99.95)
 }
 
@@ -340,13 +341,15 @@ pub fn lower_expectations_with_extends_test() {
   exp.name |> should.equal("checkout")
   exp.measurement_ref |> should.equal(option.Some("api_availability"))
 
-  // Should have merged fields from _defaults extendable + own provides
+  // Extendable `_defaults (Provides): { env: "production" }` contributes `env`
+  // to the `with: {...}` args. Threshold and window come from the Guarantees
+  // clause now, not the extendable.
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
   let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = value.extract_float(threshold_val)
+  let assert Ok(threshold_float) = value.extract_percentage(threshold_val)
   threshold_float |> should.equal(99.95)
 
   let assert Ok(window_val) = dict.get(exp.inputs, "window_in_days")
@@ -358,17 +361,17 @@ pub fn lower_expectations_multiple_extends_test() {
   let expectations = parse_and_lower_expects("expects_multiple_extends")
   let assert Ok(exp) = list.first(expectations)
 
-  // From _defaults: env: "production"
+  // From _defaults: env: "production" (merged into with:)
   let assert Ok(env_val) = dict.get(exp.inputs, "env")
   let assert Ok(env_str) = value.extract_string(env_val)
   env_str |> should.equal("production")
 
-  // From _strict: threshold: 99.99, window_in_days: 7
+  // Threshold from the Guarantees clause
   let assert Ok(threshold_val) = dict.get(exp.inputs, "threshold")
-  let assert Ok(threshold_float) = value.extract_float(threshold_val)
+  let assert Ok(threshold_float) = value.extract_percentage(threshold_val)
   threshold_float |> should.equal(99.99)
 
-  // From item's own provides: status: true
+  // From the item's own `with: {...}` args: status: true
   let assert Ok(status_val) = dict.get(exp.inputs, "status")
   let assert Ok(status_bool) = value.extract_bool(status_val)
   status_bool |> should.be_true

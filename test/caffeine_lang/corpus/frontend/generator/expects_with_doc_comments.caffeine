@@ -1,8 +1,12 @@
+### Tracks the checkout flow availability.
+###    Owner: payments team.
 "checkout":
   Guarantees 99.95% over 30d window as measured by "api_availability" with: {
     env: "production"
   }
 
+## Section comment (ignored)
+# Line comment (ignored)
 "payment":
   Guarantees 99.99% over 30d window as measured by "api_availability" with: {
     env: "production"

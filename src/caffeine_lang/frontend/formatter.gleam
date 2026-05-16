@@ -232,7 +232,17 @@ fn format_guarantees(g: ast.Guarantees) -> String {
 }
 
 fn format_duration_literal(d: ast.DurationLiteral) -> String {
-  float.to_string(d.amount) <> d.unit
+  format_amount(d.amount) <> d.unit
+}
+
+/// Renders the magnitude of a duration. Whole numbers drop the trailing ".0"
+/// so `30d` round-trips cleanly; fractional values keep their decimal form.
+fn format_amount(f: Float) -> String {
+  let rounded = int.to_float(float.round(f))
+  case rounded == f {
+    True -> int.to_string(float.round(f))
+    False -> float.to_string(f)
+  }
 }
 
 fn format_extends(extends: List(String)) -> String {
@@ -258,7 +268,7 @@ fn format_struct(s: Struct, indent: Int, context: FieldContext) -> String {
           )
           <> string.repeat(" ", indent)
           <> "}"
-        False -> "{ }"
+        False -> "{}"
       }
     fields -> {
       // Force multiline if any comments are present

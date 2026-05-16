@@ -13,11 +13,13 @@ _common_sidekiq (Provides): { threshold: 99.9, window_in_days: 7, service_name: 
     job_names: ["trackeventjob"],
     tags: { iterable_job_category: "TrackEvent" }
   }
+
 "Track Event Job Latency" extends [_common_sidekiq]:
   Guarantees 99.9% over 30d window as measured by "sidekiq_job_latency_within_10_minutes" with: {
     job_name: "trackeventjob",
     tags: { iterable_job_category: "TrackEvent" }
   }
+
 "Bulk Sync Job Latency" extends [_common_sidekiq]:
   Guarantees 99.9% over 30d window as measured by "sidekiq_job_latency_within_1_hour" with: {
     job_name: "bulksyncchangesjob",

@@ -147,15 +147,11 @@ pub fn compile_from_strings_test() {
     }
   }
 ",
-        "Expectations measured by \"api_availability\"
-  * \"checkout_availability\":
-    Provides {
-      env: \"production\",
-      status: true,
-      threshold: 99.95%,
-      window_in_days: 30
-    }
-",
+        "\"checkout_availability\":
+  Guarantees 99.95% over 30d window as measured by \"api_availability\" with: {
+    env: \"production\",
+    status: true
+  }",
         "acme/payments/slos.caffeine",
         [
           "datadog_service_level_objective",
@@ -176,13 +172,8 @@ pub fn compile_from_strings_test() {
     indicators: { numerator: \"count:test\", denominator: \"count:test\" }
   }
 ",
-        "Expectations measured by \"simple_slo\"
-  * \"my_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 7
-    }
-",
+        "\"my_slo\":
+  Guarantees 99.0% over 7d window as measured by \"simple_slo\" with: {}",
         "myorg/myteam/myservice.caffeine",
         ["org:myorg", "team:myteam", "service:myservice"],
       ),
@@ -199,14 +190,10 @@ pub fn compile_from_strings_test() {
     indicators: {}
   }
 ",
-        "Expectations measured by \"cpu_slo\"
-  * \"cpu_availability\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-",
+        "\"cpu_availability\":
+  Guarantees 99.9% over 30d window as measured by \"cpu_slo\" with: {
+    env: \"production\"
+  }",
         "acme/infra/slos.caffeine",
         [
           "datadog_service_level_objective",
@@ -241,14 +228,10 @@ pub fn compile_from_strings_test() {
     }
   }
 ",
-        "Expectations measured by \"endpoint_success\"
-  * \"checkout_success\":
-    Provides {
-      endpoint: \"/checkout\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-",
+        "\"checkout_success\":
+  Guarantees 99.9% over 30d window as measured by \"endpoint_success\" with: {
+    endpoint: \"/checkout\"
+  }",
         "acme/payments/slos.caffeine",
         ["http.status_code IN (200, 404)"],
       ),
@@ -270,14 +253,10 @@ pub fn compile_from_strings_test() {
     }
   }
 ",
-        "Expectations measured by \"controller_success\"
-  * \"elevenlabs_uptime\":
-    Provides {
-      controller: \"api::v0::elevenlabscontroller\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-",
+        "\"elevenlabs_uptime\":
+  Guarantees 99.9% over 30d window as measured by \"controller_success\" with: {
+    controller: \"api::v0::elevenlabscontroller\"
+  }",
         "acme/payments/slos.caffeine",
         ["rails.controller:api::v0::elevenlabscontroller"],
       ),
@@ -299,15 +278,11 @@ pub fn compile_from_strings_test() {
     }
   }
 ",
-        "Expectations measured by \"event_success\"
-  * \"pipeline_success\":
-    Provides {
-      env: \"prod\",
-      event_types: [\"Foo::Bar::ok\", \"Foo::Baz::ok\"],
-      threshold: 99.9%,
-      window_in_days: 7
-    }
-",
+        "\"pipeline_success\":
+  Guarantees 99.9% over 7d window as measured by \"event_success\" with: {
+    env: \"prod\",
+    event_types: [\"Foo::Bar::ok\", \"Foo::Baz::ok\"]
+  }",
         "acme/payments/slos.caffeine",
         ["type IN (Foo::Bar::ok, Foo::Baz::ok)"],
       ),
@@ -318,10 +293,8 @@ pub fn compile_from_strings_test() {
       "sad path - invalid measurement DSL",
       #(
         "this is not valid caffeine syntax !!!",
-        "Expectations measured by \"x\"
-  * \"y\":
-    Provides {}
-",
+        "\"y\":
+  Guarantees 99.9% over 30d window as measured by \"x\" with: {}",
         "playground/demo/service.caffeine",
         [],
       ),
@@ -355,10 +328,8 @@ pub fn compile_from_strings_test() {
     indicators: { numerator: \"1\", denominator: \"1\" }
   }
 ",
-        "Expectations measured by \"nonexistent_measurement\"
-  * \"my_slo\":
-    Provides {}
-",
+        "\"my_slo\":
+  Guarantees 99.9% over 30d window as measured by \"nonexistent_measurement\" with: {}",
         "playground/demo/service.caffeine",
         [],
       ),
@@ -376,13 +347,8 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"nonexistent.org.team.slo\"] }
   }
 ",
-        "Expectations measured by \"slo_with_deps\"
-  * \"my_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 7
-    }
-",
+        "\"my_slo\":
+  Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
       ),
@@ -400,13 +366,8 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"invalid_format\"] }
   }
 ",
-        "Expectations measured by \"slo_with_deps\"
-  * \"my_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 7
-    }
-",
+        "\"my_slo\":
+  Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
       ),
@@ -424,13 +385,8 @@ pub fn compile_from_strings_test() {
     depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
   }
 ",
-        "Expectations measured by \"slo_with_deps\"
-  * \"my_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 7
-    }
-",
+        "\"my_slo\":
+  Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
       ),
@@ -475,15 +431,11 @@ pub fn compile_from_strings_warns_on_at_prefixed_attrs_test() {
 "
 
   let expectations_src =
-    "Expectations measured by \"event_success\"
-  * \"pipeline_success\":
-    Provides {
-      env: \"prod\",
-      event_types: [\"Foo::Bar::ok\"],
-      threshold: 99.9%,
-      window_in_days: 7
-    }
-"
+    "\"pipeline_success\":
+  Guarantees 99.9% over 7d window as measured by \"event_success\" with: {
+    env: \"prod\",
+    event_types: [\"Foo::Bar::ok\"]
+  }"
 
   let assert Ok(output) =
     compiler.compile_from_strings(
@@ -512,13 +464,8 @@ pub fn compile_from_strings_dependency_graph_none_test() {
     indicators: { good: \"count:ok\", total: \"count:all\" }
   }
 ",
-      "Expectations measured by \"simple\"
-  * \"my_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 30
-    }
-",
+      "\"my_slo\":
+  Guarantees 99.0% over 30d window as measured by \"simple\" with: {}",
       "acme/platform/payments.caffeine",
       vendor: "datadog",
     )
@@ -533,8 +480,7 @@ pub fn compile_from_strings_dependency_graph_some_test() {
   Requires {}
   Provides {
     evaluation: \"good / total\",
-    indicators: { good: \"count:ok\", total: \"count:all\" },
-    depends_on: { hard: [\"acme.platform.payments.standalone_slo\"], soft: [] }
+    indicators: { good: \"count:ok\", total: \"count:all\" }
   }
 
 \"standalone\":
@@ -544,20 +490,13 @@ pub fn compile_from_strings_dependency_graph_some_test() {
     indicators: { good: \"count:ok\", total: \"count:all\" }
   }
 ",
-      "Expectations measured by \"tracked\"
-  * \"tracked_slo\":
-    Provides {
-      threshold: 99.0%,
-      window_in_days: 30
-    }
+      "\"tracked_slo\":
+  Assumes:
+    hard dependency on \"acme.platform.payments.standalone_slo\"
+  Guarantees 99.0% over 30d window as measured by \"tracked\" with: {}
 
-Expectations measured by \"standalone\"
-  * \"standalone_slo\":
-    Provides {
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-",
+\"standalone_slo\":
+  Guarantees 99.9% over 30d window as measured by \"standalone\" with: {}",
       "acme/platform/payments.caffeine",
       vendor: "datadog",
     )
@@ -600,10 +539,8 @@ pub fn compile_unmeasured_only_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Unmeasured Expectations
-  * \"third_party_auth\":
-    Provides { threshold: 99.9%, window_in_days: 30 }
-",
+      content: "\"third_party_auth\":
+  Guarantees 99.9% over 30d window",
     ),
   ]
 
@@ -643,18 +580,12 @@ pub fn compile_mixed_measured_unmeasured_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations measured by \"api_availability\"
-  * \"checkout_slo\":
-    Provides {
-      env: \"production\",
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-
-Unmeasured Expectations
-  * \"third_party_auth\":
-    Provides { threshold: 99.5%, window_in_days: 30 }
-",
+      content: "\"checkout_slo\":
+  Guarantees 99.9% over 30d window as measured by \"api_availability\" with: {
+    env: \"production\"
+  }
+\"third_party_auth\":
+  Guarantees 99.5% over 30d window",
     ),
   ]
 
@@ -696,23 +627,12 @@ pub fn compile_unmeasured_with_depends_on_in_graph_test() {
   let expectations = [
     SourceFile(
       path: "acme/platform/payments.caffeine",
-      content: "Expectations measured by \"api_availability\"
-  * \"checkout_slo\":
-    Provides {
-      threshold: 99.9%,
-      window_in_days: 30
-    }
-
-Unmeasured Expectations
-  * \"third_party_auth\":
-    Provides {
-      threshold: 99.5%,
-      window_in_days: 30,
-      depends_on: {
-        hard: [\"acme.platform.payments.checkout_slo\"]
-      }
-    }
-",
+      content: "\"checkout_slo\":
+  Guarantees 99.9% over 30d window as measured by \"api_availability\" with: {}
+\"third_party_auth\":
+  Assumes:
+    hard dependency on \"acme.platform.payments.checkout_slo\"
+  Guarantees 99.5% over 30d window",
     ),
   ]
 
@@ -735,40 +655,10 @@ Unmeasured Expectations
   |> string.contains("\"third_party_auth\"")
   |> should.be_false()
 }
-
-/// Unmeasured expectations should reject unknown keys (only threshold, window_in_days, depends_on allowed).
-pub fn compile_unmeasured_rejects_unknown_keys_test() {
-  let dd_source =
-    VendorMeasurementSource(
-      source: SourceFile(
-        path: "measurements/datadog.caffeine",
-        content: "\"api_availability\":
-  Requires {}
-  Provides {
-    evaluation: \"numerator / denominator\",
-    indicators: {
-      numerator: \"sum:http.ok\",
-      denominator: \"sum:http.total\"
-    }
-  }
-",
-      ),
-      vendor: vendor.Datadog,
-    )
-  let expectations = [
-    SourceFile(
-      path: "acme/platform/payments.caffeine",
-      content: "Unmeasured Expectations
-  * \"bad_expectation\":
-    Provides {
-      threshold: 99.9%,
-      window_in_days: 30,
-      env: \"production\"
-    }
-",
-    ),
-  ]
-
-  let result = compiler.compile([dd_source], expectations)
-  result |> should.be_error()
-}
+// NOTE: `compile_unmeasured_rejects_unknown_keys_test` was removed. The pre-6.0
+// grammar allowed `Provides {}` to carry arbitrary keys on unmeasured
+// expectations, so we needed a runtime check that only `threshold`,
+// `window_in_days`, and `depends_on` were permitted. The new envelope grammar
+// makes that failure mode unrepresentable: an unmeasured expectation has no
+// `with: {...}` clause, so there is no way to inject extra fields. Threshold
+// and window are first-class clauses, and depends_on lives in `Assumes:`.

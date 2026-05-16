@@ -772,18 +772,15 @@ pub fn parse_error_line_numbers_test() {
   ]
   |> test_helpers.table_test_1(parser.parse_measurements_file)
 
-  // Expects file errors
+  // Expects file errors — an item with `:` followed by Requires (invalid in
+  // the new envelope, only Assumes/Guarantees are allowed) should report the
+  // error on the line of the offending token.
   [
     #(
       "expects file error reports correct line",
-      "Expectations measured by \"test\"\ninvalid",
+      "\"test\":\n  Requires { foo: String }",
       Error([
-        parser_error.UnexpectedToken(
-          "Expectations or Unmeasured Expectations",
-          "invalid",
-          2,
-          1,
-        ),
+        parser_error.UnexpectedToken("Guarantees", "Requires", 1, 7),
       ]),
     ),
   ]

@@ -1,9 +1,9 @@
 "item":
   Guarantees 99.9% over 30d window as measured by "slo" with: {
     # The threshold
-      threshold: 99.9,
+    threshold: 99.9,
     # The window
-      window_in_days: 7,
+    window_in_days: 7,
     # The service
-      service_name: "my-service"
+    service_name: "my-service"
   }

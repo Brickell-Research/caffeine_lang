@@ -1,5 +1,5 @@
 "item":
   Guarantees 99.9% over 30d window as measured by "slo" with: {
-    window: 7
-      # TODO: add more fields later
+    retries: 7
+    # TODO: add more fields later
   }

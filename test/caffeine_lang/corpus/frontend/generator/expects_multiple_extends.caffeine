@@ -1,7 +1,7 @@
 _defaults (Provides): { env: "production" }
-_strict (Provides): { threshold: 99.99, window_in_days: 7 }
+_strict (Provides): { extra: "x" }
 
 "checkout" extends [_defaults, _strict]:
-  Guarantees 99.9% over 30d window as measured by "api_availability" with: {
+  Guarantees 99.99% over 7d window as measured by "api_availability" with: {
     status: true
   }
