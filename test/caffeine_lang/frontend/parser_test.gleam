@@ -17,12 +17,6 @@ fn measurements_path(file_name: String) {
   <> ".caffeine"
 }
 
-fn expects_path(file_name: String) {
-  "test/caffeine_lang/corpus/frontend/parser/expects_file/"
-  <> file_name
-  <> ".caffeine"
-}
-
 fn errors_path(file_name: String) {
   "test/caffeine_lang/corpus/frontend/parser/errors/"
   <> file_name
