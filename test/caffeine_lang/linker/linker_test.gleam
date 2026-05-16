@@ -74,7 +74,7 @@ pub fn link_invalid_expectation_test() {
   let bad_expectation =
     SourceFile(
       path: "acme/payments/bad.caffeine",
-      content: "Expectations measured by invalid {",
+      content: "\"checkout\":\n  Guarantees junk over 30d window",
     )
 
   let result =

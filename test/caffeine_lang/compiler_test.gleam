@@ -343,11 +343,12 @@ pub fn compile_from_strings_test() {
   Requires {}
   Provides {
     evaluation: \"numerator / denominator\",
-    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-    depends_on: { hard: [\"nonexistent.org.team.slo\"] }
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" }
   }
 ",
         "\"my_slo\":
+  Assumes:
+    hard dependency on \"nonexistent.org.team.slo\"
   Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
@@ -362,11 +363,12 @@ pub fn compile_from_strings_test() {
   Requires {}
   Provides {
     evaluation: \"numerator / denominator\",
-    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-    depends_on: { hard: [\"invalid_format\"] }
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" }
   }
 ",
         "\"my_slo\":
+  Assumes:
+    hard dependency on \"invalid_format\"
   Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
@@ -381,11 +383,12 @@ pub fn compile_from_strings_test() {
   Requires {}
   Provides {
     evaluation: \"numerator / denominator\",
-    indicators: { numerator: \"count:test\", denominator: \"count:test\" },
-    depends_on: { hard: [\"myorg.myteam.myservice.my_slo\"] }
+    indicators: { numerator: \"count:test\", denominator: \"count:test\" }
   }
 ",
         "\"my_slo\":
+  Assumes:
+    hard dependency on \"myorg.myteam.myservice.my_slo\"
   Guarantees 99.0% over 7d window as measured by \"slo_with_deps\" with: {}",
         "myorg/myteam/myservice.caffeine",
         [],
