@@ -5,6 +5,7 @@ import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
 import gleam/list
+import gleam/option
 import test_helpers
 
 // ==== Helpers ====
@@ -52,6 +53,7 @@ pub fn validate_measurements_test() {
             #("percentile", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
+          expectation_type: option.None,
         ),
       ],
       Ok([
@@ -63,6 +65,7 @@ pub fn validate_measurements_test() {
             #("value", types.PrimitiveType(types.String)),
           ]),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
+          expectation_type: option.None,
         ),
       ]),
     ),
@@ -80,6 +83,7 @@ pub fn validate_measurements_test() {
           name: "minimal",
           params: dict.new(),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
       ],
       True,
@@ -101,6 +105,7 @@ pub fn validate_measurements_test() {
           name: "minimal_params",
           params: dict.new(),
           inputs: dict.from_list([#("value", value.StringValue("foobar"))]),
+          expectation_type: option.None,
         ),
       ],
       True,
@@ -122,11 +127,13 @@ pub fn validate_measurements_test() {
           name: "first",
           params: dict.new(),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
         measurements.Measurement(
           name: "second",
           params: dict.new(),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
       ],
       True,
@@ -148,11 +155,13 @@ pub fn validate_measurements_test() {
           name: "success_rate",
           params: dict.new(),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
         measurements.Measurement(
           name: "success_rate",
           params: dict.new(),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
       ],
       Error(errors.LinkerDuplicateError(
@@ -176,6 +185,7 @@ pub fn validate_measurements_test() {
             #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
           ]),
           inputs: dict.new(),
+          expectation_type: option.None,
         ),
       ],
       Error(errors.LinkerDuplicateError(
@@ -200,6 +210,7 @@ pub fn validate_measurements_test() {
             #("value", value.StringValue("foobar")),
             #("extra", value.StringValue("bad")),
           ]),
+          expectation_type: option.None,
         ),
       ],
       Error(errors.LinkerValueValidationError(
@@ -221,6 +232,7 @@ pub fn validate_measurements_test() {
           name: "success_rate",
           params: dict.new(),
           inputs: dict.from_list([#("value", value.IntValue(123))]),
+          expectation_type: option.None,
         ),
       ],
       Error(errors.LinkerValueValidationError(

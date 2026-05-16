@@ -347,15 +347,28 @@ fn parse_measurement_item(
   leading_comments: List(Comment),
 ) -> Result(#(MeasurementItem, ParserState), ParserError) {
   use #(name, state) <- result.try(parse_string_literal(state))
+  use #(expectation_type, state) <- result.try(parse_optional_expectation_type(
+    state,
+  ))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  use state <- result.try(expect(state, token.KeywordRequires, "Requires"))
-  use #(requires, state) <- result.try(parse_type_struct(state))
+  let #(_pending, state) = consume_comments(state)
+  // `Requires {}` is optional — measurements with no params can skip it
+  // entirely and jump straight to `Provides`.
+  use #(requires, state) <- result.try(case peek(state) {
+    token.KeywordRequires -> {
+      let state = advance(state)
+      parse_type_struct(state)
+    }
+    _ -> Ok(#(ast.Struct(fields: [], trailing_comments: []), state))
+  })
+  let #(_pending, state) = consume_comments(state)
   use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
   use #(provides, state) <- result.try(parse_literal_struct(state))
   Ok(#(
     ast.MeasurementItem(
       name:,
+      expectation_type:,
       extends:,
       requires:,
       provides:,
@@ -363,6 +376,21 @@ fn parse_measurement_item(
     ),
     state,
   ))
+}
+
+/// Recognises an optional `success_rate` or `time_slice` keyword in the
+/// measurement header, e.g. `"api" success_rate:` or `"api" time_slice:`.
+/// Returns None if the next token is `:` or `extends` (legacy untyped header).
+fn parse_optional_expectation_type(
+  state: ParserState,
+) -> Result(#(option.Option(ast.ExpectationType), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordSuccessRate ->
+      Ok(#(option.Some(ast.SuccessRateType), advance(state)))
+    token.KeywordTimeSlice ->
+      Ok(#(option.Some(ast.TimeSliceType), advance(state)))
+    _ -> Ok(#(option.None, state))
+  }
 }
 
 // =============================================================================

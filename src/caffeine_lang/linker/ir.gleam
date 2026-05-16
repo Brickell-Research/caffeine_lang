@@ -2,6 +2,7 @@
 /// These types represent the intermediate representation between linking and code generation.
 /// The phantom type parameter `phase` tracks pipeline progress at the type level.
 import caffeine_lang/analysis/vendor.{type Vendor}
+import caffeine_lang/frontend/ast
 import caffeine_lang/helpers.{type ValueTuple}
 import caffeine_lang/identifiers.{
   type ExpectationLabel, type MeasurementName, type OrgName, type ServiceName,
@@ -35,6 +36,15 @@ pub type SloFields {
     runbook: Option(String),
     depends_on: Option(dict.Dict(DependencyRelationType, List(String))),
     description: Option(String),
+    /// Latency threshold in milliseconds, sourced from a `Guarantees N% below
+    /// <duration>` clause. Valid only on `time_slice`-shaped SLOs; codegen
+    /// errors if present on a metric SLO.
+    below_ms: Option(Float),
+    /// Declared SLO type from the measurement header (`success_rate` or
+    /// `time_slice`). None when the measurement uses the legacy untyped header
+    /// — semantic checks that need the type (E10 alignment, F13 latency
+    /// monotonicity) skip pairs where either side is None.
+    expectation_type: Option(ast.ExpectationType),
   )
 }
 

@@ -1,8 +1,11 @@
 import caffeine_lang/analysis/dependency_validator
 import caffeine_lang/errors
+import caffeine_lang/frontend/ast
 import caffeine_lang/helpers
 import caffeine_lang/linker/ir.{type IntermediateRepresentation, type Linked}
 import gleam/dict
+import gleam/option
+import gleeunit/should
 import ir_test_helpers
 import test_helpers
 
@@ -838,4 +841,186 @@ pub fn build_expectation_index_test() {
       Error(_) -> False
     }
   })
+}
+
+// ==== E10: hard-dep expectation-type alignment ====
+// * ✅ aligned types pass
+// * ✅ mismatched types error
+// * ✅ undeclared type on either side is permissive
+pub fn validate_hard_type_alignment_test() {
+  let success = option.Some(ast.SuccessRateType)
+  let time_slice = option.Some(ast.TimeSliceType)
+  let undeclared = option.None
+  let threshold = helpers.default_threshold_percentage
+
+  // Aligned: parent and dep both success_rate → ok
+  let aligned = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: success,
+      below_ms: option.None,
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: success,
+      below_ms: option.None,
+    ),
+  ]
+  validate_ok(aligned) |> should.be_ok
+
+  // Mismatched: parent time_slice, dep success_rate → error
+  let mismatched = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.None,
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: success,
+      below_ms: option.None,
+    ),
+  ]
+  validate_ok(mismatched) |> should.be_error
+
+  // Undeclared on either side → permissive (no error)
+  let permissive = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: undeclared,
+      below_ms: option.None,
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.None,
+    ),
+  ]
+  validate_ok(permissive) |> should.be_ok
+}
+
+// ==== F13: hard-dep latency monotonicity ====
+// * ✅ child no slower than dep passes
+// * ✅ child slower than dep errors
+// * ✅ missing below_ms on either side is permissive
+pub fn validate_hard_latency_monotonicity_test() {
+  let time_slice = option.Some(ast.TimeSliceType)
+  let threshold = helpers.default_threshold_percentage
+
+  // Child below 50ms, dep below 30ms → child is no slower than dep (ok)
+  let ok_irs = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.Some(50.0),
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.Some(30.0),
+    ),
+  ]
+  validate_ok(ok_irs) |> should.be_ok
+
+  // Child below 50ms, dep below 200ms → dep is slower → error
+  let bad_irs = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.Some(50.0),
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.Some(200.0),
+    ),
+  ]
+  validate_ok(bad_irs) |> should.be_error
+
+  // No below_ms on parent → no check at all (ok regardless of dep)
+  let no_parent_below = [
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "a",
+      "slo",
+      hard_deps: ["acme.p.b.slo"],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.None,
+    ),
+    ir_test_helpers.make_typed_ir_with_deps(
+      "acme",
+      "p",
+      "b",
+      "slo",
+      hard_deps: [],
+      soft_deps: [],
+      threshold: threshold,
+      expectation_type: time_slice,
+      below_ms: option.Some(200.0),
+    ),
+  ]
+  validate_ok(no_parent_below) |> should.be_ok
 }

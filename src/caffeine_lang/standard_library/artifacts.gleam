@@ -5,9 +5,10 @@
 /// - Rob
 import caffeine_lang/linker/slo_params.{type ParamInfo, ParamInfo}
 import caffeine_lang/types.{
-  CollectionType, Defaulted, Dict, InclusiveRange, Integer, List as ListType,
-  ModifierType, NumericType, Optional, Percentage, PrimitiveType, RecordType,
-  RefinementType, SemanticType, String as StringType, URL,
+  CollectionType, Defaulted, Dict, Float, InclusiveRange, Integer,
+  List as ListType, ModifierType, NumericType, Optional, Percentage,
+  PrimitiveType, RecordType, RefinementType, SemanticType, String as StringType,
+  URL,
 }
 import gleam/dict
 
@@ -71,6 +72,13 @@ pub fn slo_params() -> dict.Dict(String, ParamInfo) {
       ParamInfo(
         type_: ModifierType(Optional(PrimitiveType(SemanticType(URL)))),
         description: "An optional runbook URL surfaced via the SLO description",
+      ),
+    ),
+    #(
+      "below_ms",
+      ParamInfo(
+        type_: ModifierType(Optional(PrimitiveType(NumericType(Float)))),
+        description: "Latency threshold in milliseconds (from `below <duration>` clause on Guarantees, time_slice expectations only)",
       ),
     ),
     #(

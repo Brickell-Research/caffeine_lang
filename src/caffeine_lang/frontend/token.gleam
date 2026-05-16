@@ -5,6 +5,8 @@ pub type PositionedToken {
 
 /// A token produced by the tokenizer.
 pub type Token {
+  KeywordSuccessRate
+  KeywordTimeSlice
   KeywordAssumes
   KeywordGuarantees
   KeywordOver
@@ -69,6 +71,8 @@ pub type Token {
 @internal
 pub fn to_string(tok: Token) -> String {
   case tok {
+    KeywordSuccessRate -> "success_rate"
+    KeywordTimeSlice -> "time_slice"
     KeywordAssumes -> "Assumes"
     KeywordGuarantees -> "Guarantees"
     KeywordOver -> "over"

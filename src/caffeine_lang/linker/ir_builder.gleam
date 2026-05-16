@@ -1,5 +1,6 @@
 import caffeine_lang/analysis/vendor.{type Vendor}
 import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/frontend/ast
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 import caffeine_lang/linker/expectations.{type Expectation}
@@ -119,7 +120,12 @@ fn build_measured(
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name
-  let slo = build_slo_fields(index, expectation.description)
+  let slo =
+    build_slo_fields(
+      index,
+      expectation.description,
+      measurement.expectation_type,
+    )
 
   // Resolve vendor from lookup.
   let resolved_vendor = case dict.get(vendor_lookup, measurement.name) {
@@ -171,7 +177,8 @@ fn build_unmeasured(
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name
-  let slo = build_slo_fields(index, expectation.description)
+  // Unmeasured expectations have no backing measurement, so no declared type.
+  let slo = build_slo_fields(index, expectation.description, option.None)
 
   ir.IntermediateRepresentation(
     metadata: ir.IntermediateRepresentationMetaData(
@@ -315,10 +322,12 @@ fn resolve_values_for_tag(
 /// Extract SLO-specific fields from an indexed Dict of ValueTuples.
 /// Threshold defaults to the standard default when not present (e.g. unmeasured expectations).
 /// `description` is sourced from the expectation's leading doc comments, not
-/// from value tuples.
+/// from value tuples. `expectation_type` flows from the bound measurement's
+/// declared `success_rate` / `time_slice` header (None for unmeasured).
 fn build_slo_fields(
   index: dict.Dict(String, helpers.ValueTuple),
   description: option.Option(String),
+  expectation_type: option.Option(ast.ExpectationType),
 ) -> ir.SloFields {
   let threshold =
     helpers.extract_value(index, "threshold", value.extract_percentage)
@@ -343,6 +352,9 @@ fn build_slo_fields(
     True -> option.None
     False -> option.Some(relations)
   }
+  let below_ms =
+    helpers.extract_value(index, "below_ms", value.extract_float)
+    |> option.from_result
 
   ir.SloFields(
     threshold: threshold,
@@ -353,5 +365,7 @@ fn build_slo_fields(
     runbook: runbook,
     depends_on: depends_on,
     description: description,
+    below_ms: below_ms,
+    expectation_type: expectation_type,
   )
 }

@@ -525,6 +525,8 @@ fn read_identifier_loop(
 
 fn keyword_or_identifier(word: String) -> Token {
   case word {
+    "success_rate" -> token.KeywordSuccessRate
+    "time_slice" -> token.KeywordTimeSlice
     "Assumes" -> token.KeywordAssumes
     "Guarantees" -> token.KeywordGuarantees
     "over" -> token.KeywordOver

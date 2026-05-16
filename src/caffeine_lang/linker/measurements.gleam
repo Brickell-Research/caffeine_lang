@@ -1,10 +1,12 @@
 import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/frontend/ast.{type ExpectationType}
 import caffeine_lang/linker/slo_params.{type ParamInfo, params_to_types}
 import caffeine_lang/linker/validations
 import caffeine_lang/types.{type AcceptedTypes}
 import caffeine_lang/value.{type Value}
 import gleam/dict
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 
 /// Marker type for measurements that have not yet been validated.
@@ -21,6 +23,10 @@ pub type Measurement(state) {
     name: String,
     params: dict.Dict(String, AcceptedTypes),
     inputs: dict.Dict(String, Value),
+    /// Optional declared SLO type from `"name" success_rate:` / `"name" time_slice:`
+    /// header. When None, downstream consumers fall back to inferring the type
+    /// from the formula shape at codegen.
+    expectation_type: Option(ExpectationType),
   )
 }
 

@@ -181,6 +181,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        expectation_type: option.None,
       )
     let expectation =
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
@@ -231,6 +232,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        expectation_type: option.None,
       )
     let expectation =
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
@@ -285,6 +287,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        expectation_type: option.None,
       )
     let expectation =
       make_expectation("my_test", [#("required", value.FloatValue(1.0))])
@@ -337,6 +340,7 @@ pub fn build_all_test() {
           #("threshold", value.PercentageValue(99.9)),
           #("from_measurement", value.StringValue("measurement_value")),
         ]),
+        expectation_type: option.None,
       )
     let expectation =
       make_expectation("my_test", [
@@ -379,6 +383,7 @@ pub fn build_all_test() {
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         ]),
         inputs: dict.new(),
+        expectation_type: option.None,
       )
     let expectation =
       expectations.Expectation(
@@ -426,6 +431,7 @@ pub fn build_all_list_misc_test() {
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
       ]),
       inputs: dict.new(),
+      expectation_type: option.None,
     )
   let expectation =
     expectations.Expectation(
@@ -473,6 +479,7 @@ pub fn build_all_optional_none_misc_test() {
         ),
       ]),
       inputs: dict.new(),
+      expectation_type: option.None,
     )
   let expectation =
     make_expectation("my_test", [#("threshold", value.PercentageValue(1.0))])
@@ -516,6 +523,7 @@ fn make_measurement(
       })
       |> dict.from_list,
     inputs: dict.new(),
+    expectation_type: option.None,
   )
 }
 

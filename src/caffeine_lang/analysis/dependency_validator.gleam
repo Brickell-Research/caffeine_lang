@@ -1,4 +1,5 @@
 import caffeine_lang/errors.{type CompilationError}
+import caffeine_lang/frontend/ast
 import caffeine_lang/linker/dependency.{Hard}
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, ir_to_identifier,
@@ -55,6 +56,28 @@ pub fn validate_dependency_relations(
     |> list.filter(fn(ir) { option.is_some(get_depends_on(ir)) })
     |> list.map(fn(ir) {
       validate_single_ir_hard_thresholds(ir, expectation_index)
+    })
+    |> errors.from_results()
+    |> result.map(fn(_) { Nil }),
+  )
+
+  // E10: hard-dep expectation-type alignment.
+  use _ <- result.try(
+    irs
+    |> list.filter(fn(ir) { option.is_some(get_depends_on(ir)) })
+    |> list.map(fn(ir) {
+      validate_single_ir_hard_type_alignment(ir, expectation_index)
+    })
+    |> errors.from_results()
+    |> result.map(fn(_) { Nil }),
+  )
+
+  // F13: hard-dep latency monotonicity (time_slice only).
+  use _ <- result.try(
+    irs
+    |> list.filter(fn(ir) { option.is_some(get_depends_on(ir)) })
+    |> list.map(fn(ir) {
+      validate_single_ir_hard_latency(ir, expectation_index)
     })
     |> errors.from_results()
     |> result.map(fn(_) { Nil }),
@@ -408,4 +431,101 @@ fn compute_composite_ceiling(thresholds: List(Float)) -> Float {
 /// Rounds a float to 4 decimal places for cleaner display.
 fn round_to_4(f: Float) -> Float {
   int.to_float(float.round(f *. 10_000.0)) /. 10_000.0
+}
+
+// ==== E10: hard-dep expectation-type alignment ====
+
+/// For each hard dep with a declared expectation type, error if it doesn't
+/// match the dependent's declared type. Skips pairs where either side is
+/// unmeasured or undeclared.
+fn validate_single_ir_hard_type_alignment(
+  ir: IntermediateRepresentation(phase),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
+) -> Result(Nil, CompilationError) {
+  let self_path = ir_to_identifier(ir)
+  let parent_type = ir.slo.expectation_type
+  let hard_targets = case ir.slo.depends_on {
+    option.Some(relations) -> dict.get(relations, Hard) |> result.unwrap([])
+    option.None -> []
+  }
+
+  hard_targets
+  |> list.try_each(fn(target) {
+    case dict.get(expectation_index, target) {
+      Error(Nil) -> Ok(Nil)
+      Ok(target_ir) -> {
+        case parent_type, target_ir.slo.expectation_type {
+          option.Some(p), option.Some(d) if p != d ->
+            Error(errors.semantic_analysis_dependency_validation_error(
+              msg: "Expectation-type mismatch on hard dependency: '"
+              <> self_path
+              <> "' ("
+              <> expectation_type_to_string(p)
+              <> ") hard-depends on '"
+              <> target
+              <> "' ("
+              <> expectation_type_to_string(d)
+              <> "); hard dependencies must share an expectation type",
+            ))
+          _, _ -> Ok(Nil)
+        }
+      }
+    }
+  })
+}
+
+fn expectation_type_to_string(t: ast.ExpectationType) -> String {
+  case t {
+    ast.SuccessRateType -> "success_rate"
+    ast.TimeSliceType -> "time_slice"
+  }
+}
+
+// ==== F13: hard-dep latency monotonicity ====
+
+/// For each hard dep of a `time_slice` expectation with a `below` bound,
+/// error if the dep's `below_ms` exceeds the dependent's. Skips deps that
+/// aren't time_slice or have no `below_ms`.
+fn validate_single_ir_hard_latency(
+  ir: IntermediateRepresentation(phase),
+  expectation_index: Dict(String, IntermediateRepresentation(phase)),
+) -> Result(Nil, CompilationError) {
+  let self_path = ir_to_identifier(ir)
+  let parent_below = ir.slo.below_ms
+  // Only relevant when the parent declares a `below` bound.
+  use <- bool.guard(when: option.is_none(parent_below), return: Ok(Nil))
+  let assert option.Some(parent_ms) = parent_below
+
+  let hard_targets = case ir.slo.depends_on {
+    option.Some(relations) -> dict.get(relations, Hard) |> result.unwrap([])
+    option.None -> []
+  }
+
+  hard_targets
+  |> list.try_each(fn(target) {
+    case dict.get(expectation_index, target) {
+      Error(Nil) -> Ok(Nil)
+      Ok(target_ir) -> {
+        case target_ir.slo.below_ms {
+          option.None -> Ok(Nil)
+          option.Some(dep_ms) ->
+            case float.compare(dep_ms, parent_ms) {
+              order.Gt ->
+                Error(errors.semantic_analysis_dependency_validation_error(
+                  msg: "Hard-dep latency monotonicity violation: '"
+                  <> self_path
+                  <> "' guarantees below "
+                  <> float.to_string(parent_ms)
+                  <> "ms but hard-depends on '"
+                  <> target
+                  <> "' which guarantees below "
+                  <> float.to_string(dep_ms)
+                  <> "ms; child must be no slower than its hard dependencies",
+                ))
+              _ -> Ok(Nil)
+            }
+        }
+      }
+    }
+  })
 }

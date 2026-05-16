@@ -1,6 +1,7 @@
 import caffeine_lang/codegen/datadog_cql
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleeunit/should
 import terra_madre/hcl
 
@@ -10,6 +11,41 @@ import terra_madre/hcl
 // time_slice
 // * ✅ time_slice returns TimeSliceSlo with sli_specification block
 // * ✅ time_slice with formula expression generates multiple metric_query blocks
+// below override
+// * ✅ time_slice with below_ms_override Some uses override
+// * ✅ metric SLO with below_ms_override Some errors
+pub fn resolve_slo_to_hcl_below_override_test() {
+  // time_slice with below_ms override should use the override
+  {
+    let assert Ok(datadog_cql.ResolvedSloHcl(slo_type, blocks)) =
+      datadog_cql.resolve_slo_to_hcl(
+        "time_slice(avg:system.cpu{env:production} > 99.5 per 300s)",
+        dict.new(),
+        option.Some(50.0),
+      )
+
+    slo_type |> should.equal(datadog_cql.TimeSliceSlo)
+    let assert [sli_spec_block] = blocks
+    let assert [time_slice_block] = sli_spec_block.blocks
+    dict.get(time_slice_block.attributes, "threshold")
+    |> should.equal(Ok(hcl.FloatLiteral(50.0)))
+  }
+
+  // metric SLO with below_ms override should error
+  {
+    let result =
+      datadog_cql.resolve_slo_to_hcl(
+        "numerator / denominator",
+        dict.from_list([
+          #("numerator", "sum:http.requests{status:2xx}"),
+          #("denominator", "sum:http.requests{*}"),
+        ]),
+        option.Some(50.0),
+      )
+    result |> should.be_error
+  }
+}
+
 pub fn resolve_slo_to_hcl_test() {
   // simple good over total query returns MetricSlo with query block
   {
@@ -20,6 +56,7 @@ pub fn resolve_slo_to_hcl_test() {
           #("numerator", "sum:http.requests{status:2xx}"),
           #("denominator", "sum:http.requests{*}"),
         ]),
+        option.None,
       )
 
     slo_type |> should.equal(datadog_cql.MetricSlo)
@@ -39,6 +76,7 @@ pub fn resolve_slo_to_hcl_test() {
       datadog_cql.resolve_slo_to_hcl(
         "time_slice(avg:system.cpu{env:production} > 99.5 per 300s)",
         dict.new(),
+        option.None,
       )
 
     slo_type |> should.equal(datadog_cql.TimeSliceSlo)
@@ -74,6 +112,7 @@ pub fn resolve_slo_to_hcl_test() {
             "sum:circleci.completed_build_time.avg{job_name:deploy-prod}",
           ),
         ]),
+        option.None,
       )
 
     slo_type |> should.equal(datadog_cql.TimeSliceSlo)

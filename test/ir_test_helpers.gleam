@@ -1,5 +1,6 @@
 /// Shared test helpers for constructing IntermediateRepresentation values.
 import caffeine_lang/analysis/vendor
+import caffeine_lang/frontend/ast
 import caffeine_lang/helpers
 import caffeine_lang/identifiers
 import caffeine_lang/linker/dependency.{Hard, Soft}
@@ -132,6 +133,57 @@ fn make_test_slo_fields(
     runbook: option.None,
     depends_on: option.None,
     description: option.None,
+    below_ms: option.None,
+    expectation_type: option.None,
+  )
+}
+
+/// Builds an SLO IR with a declared expectation type, optional `below_ms`,
+/// and hard/soft dependency lists. Mirrors `make_ir_with_deps` but exposes
+/// the E9/C7 fields needed to exercise E10/F13 checks.
+pub fn make_typed_ir_with_deps(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+  hard_deps hard_deps: List(String),
+  soft_deps soft_deps: List(String),
+  threshold threshold: Float,
+  expectation_type expectation_type: option.Option(ast.ExpectationType),
+  below_ms below_ms: option.Option(Float),
+) {
+  let values = [
+    helpers.ValueTuple(
+      "vendor",
+      types.PrimitiveType(types.String),
+      value.StringValue("datadog"),
+    ),
+    helpers.ValueTuple(
+      "threshold",
+      types.PrimitiveType(types.NumericType(types.Float)),
+      value.PercentageValue(threshold),
+    ),
+    make_relations_value(hard_deps, soft_deps),
+  ]
+  let depends_on =
+    option.Some(dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]))
+  ir.IntermediateRepresentation(
+    metadata: make_test_metadata(org, team, service, name),
+    unique_identifier: make_unique_id(org, service, name),
+    values: values,
+    slo: ir.SloFields(
+      threshold: threshold,
+      indicators: dict.new(),
+      window_in_days: 30,
+      evaluation: option.None,
+      tags: [],
+      runbook: option.None,
+      depends_on: depends_on,
+      description: option.None,
+      below_ms: below_ms,
+      expectation_type: expectation_type,
+    ),
+    vendor: option.Some(vendor.Datadog),
   )
 }
 
@@ -152,5 +204,7 @@ fn make_test_slo_fields_with_deps(
     runbook: option.None,
     depends_on: depends_on,
     description: option.None,
+    below_ms: option.None,
+    expectation_type: option.None,
   )
 }

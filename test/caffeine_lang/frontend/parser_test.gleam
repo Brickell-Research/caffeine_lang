@@ -136,6 +136,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api_availability",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -169,6 +170,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "availability",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -188,6 +190,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "hard_dep",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -226,6 +229,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "tracked_slo",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -282,6 +286,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -333,6 +338,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api",
+              expectation_type: option.None,
               extends: ["_common"],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -366,6 +372,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api",
+              expectation_type: option.None,
               extends: ["_base"],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -399,6 +406,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api",
+              expectation_type: option.None,
               extends: ["_base", "_common"],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -432,6 +440,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "test",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -502,6 +511,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "test_nested",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 // Order must match corpus file
@@ -582,6 +592,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "test",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -615,6 +626,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "api",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -655,6 +667,7 @@ pub fn parse_measurements_file_test() {
             ast.MeasurementItem(
               leading_comments: [],
               name: "test",
+              expectation_type: option.None,
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
@@ -815,6 +828,41 @@ pub fn parse_empty_requires_struct_test() {
   let assert Ok(file) = parser.parse_measurements_file(source)
   let assert [item] = file.items
   item.requires.fields |> should.equal([])
+}
+
+// ==== parse_omitted_requires (G16) ====
+// * ✅ measurement with no Requires block parses to empty requires
+pub fn parse_omitted_requires_test() {
+  let source = "\"test\":\n  Provides { v: \"x\" }\n"
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert [item] = file.items
+  item.requires.fields |> should.equal([])
+  item.name |> should.equal("test")
+}
+
+// ==== parse_declared_expectation_type (E9) ====
+// * ✅ `success_rate` header declares the type
+// * ✅ `time_slice` header declares the type
+// * ✅ no declared type → None
+pub fn parse_declared_expectation_type_test() {
+  let assert Ok(file) =
+    parser.parse_measurements_file(
+      "\"a\" success_rate:\n  Provides { v: \"x\" }\n",
+    )
+  let assert [item] = file.items
+  item.expectation_type |> should.equal(option.Some(ast.SuccessRateType))
+
+  let assert Ok(file) =
+    parser.parse_measurements_file(
+      "\"a\" time_slice:\n  Provides { v: \"x\" }\n",
+    )
+  let assert [item] = file.items
+  item.expectation_type |> should.equal(option.Some(ast.TimeSliceType))
+
+  let assert Ok(file) =
+    parser.parse_measurements_file("\"a\":\n  Provides { v: \"x\" }\n")
+  let assert [item] = file.items
+  item.expectation_type |> should.equal(option.None)
 }
 
 pub fn parse_empty_with_args_test() {

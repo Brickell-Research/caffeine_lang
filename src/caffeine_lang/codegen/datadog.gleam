@@ -185,9 +185,12 @@ pub fn ir_to_terraform_resource(
   let runbook = slo.runbook
   let description = slo.description
 
-  // Parse the evaluation expression using CQL and get HCL blocks.
+  // Parse the evaluation expression using CQL and get HCL blocks. The
+  // `below_ms` override from a `Guarantees N% below <duration>` clause flows
+  // through here; it overrides the time_slice latency threshold and errors on
+  // a metric SLO.
   use datadog_cql.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
-    datadog_cql.resolve_slo_to_hcl(evaluation_expr, indicators)
+    datadog_cql.resolve_slo_to_hcl(evaluation_expr, indicators, slo.below_ms)
     |> result.map_error(fn(err) {
       errors.generator_slo_query_resolution_error(
         msg: "expectation '"

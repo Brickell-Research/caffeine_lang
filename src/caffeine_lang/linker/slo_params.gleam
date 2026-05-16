@@ -21,7 +21,9 @@ pub fn params_to_types(
 /// The params an unmeasured expectation is allowed to provide.
 /// Used by both validation and IR construction to keep the two in sync.
 @internal
-pub const unmeasured_param_keys = ["threshold", "window_in_days", "depends_on"]
+pub const unmeasured_param_keys = [
+  "threshold", "window_in_days", "depends_on", "below_ms",
+]
 
 /// Derives the restricted param types for unmeasured expectations from SLO params.
 @internal

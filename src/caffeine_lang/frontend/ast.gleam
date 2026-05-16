@@ -119,14 +119,27 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 // =============================================================================
 
 /// A single measurement item with name, extends, requires, and provides.
+///
+/// `expectation_type` carries the declared SLO shape from a header like
+/// `"name" success_rate:` or `"name" time_slice:`. When None, the type is
+/// inferred from the evaluation formula shape at codegen time (legacy behavior).
 pub type MeasurementItem {
   MeasurementItem(
     name: String,
+    expectation_type: Option(ExpectationType),
     extends: List(String),
     requires: Struct,
     provides: Struct,
     leading_comments: List(Comment),
   )
+}
+
+/// The two surfaced SLO shapes a measurement can declare. Mirrors the CQL
+/// resolver's `GoodOverTotal` / `TimeSlice` discriminant, but on the
+/// user-visible surface so dependency-edge alignment can be enforced.
+pub type ExpectationType {
+  SuccessRateType
+  TimeSliceType
 }
 
 // =============================================================================

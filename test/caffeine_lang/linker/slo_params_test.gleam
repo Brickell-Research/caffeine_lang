@@ -10,7 +10,7 @@ import test_helpers
 pub fn slo_params_test() {
   let result = stdlib_artifacts.slo_params()
 
-  [#("returns seven params", dict.size(result), 7)]
+  [#("returns eight params", dict.size(result), 8)]
   |> test_helpers.table_test_1(fn(expected) { expected })
 }
 

@@ -74,7 +74,12 @@ fn generate_measurement_item(
   let params = struct_to_params(merged_requires, type_aliases)
   let inputs = struct_to_inputs(merged_provides)
 
-  Measurement(name: item.name, params: params, inputs: inputs)
+  Measurement(
+    name: item.name,
+    params: params,
+    inputs: inputs,
+    expectation_type: item.expectation_type,
+  )
 }
 
 /// Generates a single expectation from a new-envelope AST item.
@@ -103,6 +108,7 @@ fn generate_expect_item(
       "window_in_days",
       value.IntValue(duration_to_days(item.guarantees.window)),
     )
+    |> maybe_insert_below_ms(item.guarantees.below)
     |> maybe_insert_depends_on(item.assumes)
 
   let measurement_ref = case item.guarantees.measured_by {
@@ -144,6 +150,26 @@ fn float_floor_to_int(f: Float) -> Int {
   case rounded < 0 {
     True -> 0
     False -> rounded
+  }
+}
+
+fn maybe_insert_below_ms(
+  inputs: Dict(String, value.Value),
+  below: option.Option(ast.DurationLiteral),
+) -> Dict(String, value.Value) {
+  case below {
+    option.None -> inputs
+    option.Some(d) ->
+      case value.duration_unit_from_string(d.unit) {
+        Ok(unit) ->
+          dict.insert(
+            inputs,
+            "below_ms",
+            value.FloatValue(value.duration_to_milliseconds(d.amount, unit)),
+          )
+        // Unreachable — tokenizer only emits known suffixes.
+        Error(Nil) -> inputs
+      }
   }
 }
 

@@ -11,6 +11,7 @@ import caffeine_query_language/printer
 import caffeine_query_language/resolver
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleam/result
 import terra_madre/hcl
 
@@ -127,19 +128,32 @@ pub fn resolve_slo_query_typed(
 
 /// Parse a value expression, resolve to primitive, substitute words,
 /// and return HCL blocks ready for Datadog terraform generation.
+///
+/// `below_ms_override`, when `Some`, overrides the latency threshold inside a
+/// `time_slice` SLO with the user-supplied `Guarantees N% below <duration>`
+/// value. On a metric (success-rate) SLO, a non-None override is an error.
 @internal
 pub fn resolve_slo_to_hcl(
   value_expr: String,
   substitutions: dict.Dict(String, String),
+  below_ms_override: option.Option(Float),
 ) -> Result(ResolvedSloHcl, String) {
   case resolve_slo_query_typed(value_expr, substitutions) {
     Ok(ResolvedGoodOverTotal(numerator, denominator)) -> {
-      let query_block =
-        hcl.simple_block("query", [
-          #("numerator", hcl.StringLiteral(numerator)),
-          #("denominator", hcl.StringLiteral(denominator)),
-        ])
-      Ok(ResolvedSloHcl(MetricSlo, [query_block]))
+      case below_ms_override {
+        option.Some(_) ->
+          Error(
+            "`below` clause is only valid on time_slice SLOs; this expectation resolves to a success-rate SLO",
+          )
+        option.None -> {
+          let query_block =
+            hcl.simple_block("query", [
+              #("numerator", hcl.StringLiteral(numerator)),
+              #("denominator", hcl.StringLiteral(denominator)),
+            ])
+          Ok(ResolvedSloHcl(MetricSlo, [query_block]))
+        }
+      }
     }
     Ok(ResolvedTimeSlice(
       comparator,
@@ -148,6 +162,10 @@ pub fn resolve_slo_to_hcl(
       formula_expression,
       named_queries,
     )) -> {
+      let effective_threshold = case below_ms_override {
+        option.Some(ms) -> ms
+        option.None -> threshold
+      }
       let inner_query_blocks =
         named_queries
         |> list.map(fn(nq) {
@@ -190,7 +208,7 @@ pub fn resolve_slo_to_hcl(
           attributes: dict.from_list([
             #("comparator", hcl.StringLiteral(comparator)),
             #("query_interval_seconds", hcl.IntLiteral(interval_seconds)),
-            #("threshold", hcl.FloatLiteral(threshold)),
+            #("threshold", hcl.FloatLiteral(effective_threshold)),
           ]),
           blocks: [outer_query_block],
         )

@@ -90,6 +90,8 @@ pub fn slo_with_depends_on_test() {
         ]),
       ),
       description: option.None,
+      below_ms: option.None,
+      expectation_type: option.None,
     )
 
   let assert option.Some(relations) = slo.depends_on
