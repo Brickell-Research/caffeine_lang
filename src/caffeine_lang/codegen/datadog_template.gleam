@@ -34,6 +34,7 @@ import datadog_query/filter
 import gleam/dict
 import gleam/result
 import gleam/string
+import gleam/string_tree.{type StringTree}
 
 /// A parsed template variable containing all the information needed for substitution.
 pub type TemplateVariable {
@@ -86,17 +87,19 @@ pub fn parse_and_resolve_query_template(
     do_parse_and_resolve_query_template(query, index)
     |> result.map_error(fn(err) { errors.prefix_error(err, identifier) }),
   )
-  Ok(cleanup_empty_template_artifacts(resolved))
+  Ok(cleanup_empty_template_artifacts(string_tree.to_string(resolved)))
 }
 
 /// Internal recursive implementation of template resolution.
+/// Returns a StringTree so per-placeholder appends are O(1) on the BEAM;
+/// the caller realizes it to a String once at the top.
 fn do_parse_and_resolve_query_template(
   query: String,
   index: dict.Dict(String, ValueTuple),
-) -> Result(String, CompilationError) {
+) -> Result(StringTree, CompilationError) {
   case string.split_once(query, "$$") {
     // No more `$$`.
-    Error(_) -> Ok(query)
+    Error(_) -> Ok(string_tree.from_string(query))
     Ok(#(before, rest)) -> {
       case string.split_once(rest, "$$") {
         Error(_) ->
@@ -124,7 +127,11 @@ fn do_parse_and_resolve_query_template(
             value_tuple,
           ))
 
-          Ok(before <> resolved_template <> rest_of_items)
+          Ok(
+            string_tree.from_string(before)
+            |> string_tree.append(resolved_template)
+            |> string_tree.append_tree(rest_of_items),
+          )
         }
       }
     }
