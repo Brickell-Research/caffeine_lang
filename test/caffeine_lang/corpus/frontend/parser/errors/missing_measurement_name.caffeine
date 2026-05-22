@@ -1,3 +1,0 @@
-:
-  Requires { env: String }
-  Provides { value: "x" }

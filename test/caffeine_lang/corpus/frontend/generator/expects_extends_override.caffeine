@@ -1,6 +1,0 @@
-_defaults (Provides): { env: "staging", threshold: 99.0 }
-
-"checkout" extends [_defaults]:
-  Guarantees 99.95% over 30d window as measured by "api_availability" with: {
-    env: "production"
-  }

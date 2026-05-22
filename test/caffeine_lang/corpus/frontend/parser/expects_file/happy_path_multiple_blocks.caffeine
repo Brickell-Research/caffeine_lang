@@ -1,6 +1,0 @@
-"checkout":
-  Guarantees 99.95% over 30d window as measured by "api_availability" with: {}
-"checkout_p99":
-  Guarantees 99.9% over 30d window as measured by "latency" with: {
-    threshold_ms: 500
-  }

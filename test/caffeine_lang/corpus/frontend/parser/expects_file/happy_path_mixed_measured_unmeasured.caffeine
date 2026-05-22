@@ -1,6 +1,0 @@
-"checkout_slo":
-  Guarantees 99.95% over 30d window as measured by "api_availability" with: {
-    env: "production"
-  }
-"payment_gateway":
-  Guarantees 99.5% over 30d window

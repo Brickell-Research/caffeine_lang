@@ -1,4 +1,0 @@
-_defaults (Provides): { env: "production", window_in_days: 30 }
-
-"checkout":
-  Guarantees 99.95% over 30d window as measured by "api_availability" with: {}

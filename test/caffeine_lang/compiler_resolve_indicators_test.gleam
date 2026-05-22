@@ -240,13 +240,6 @@ pub fn resolve_intermediate_representations_test() {
   |> test_helpers.table_test_1(resolve_all)
 }
 
-// TODO: resolve_vendor has been moved to IR builder level; update or remove these tests
-// // ==== resolve_vendor ====
-// // * ✅ happy path - known vendor, Datadog
-// pub fn resolve_vendor_test() {
-//   ...
-// }
-
 // ==== resolve_indicators ====
 // * ✅ happy path - multiple indicators with template variable resolution
 // * ✅ happy path - defaulted param with nil uses default value
