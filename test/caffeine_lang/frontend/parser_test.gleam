@@ -973,3 +973,38 @@ pub fn parse_external_indicator_missing_equals_test() {
     "\"M\":\n  Provides {\n    indicators: {\n      bad: from langfuse where name \"x\"\n    }\n  }\n"
   let assert Error(_) = parser.parse_measurements_file(source)
 }
+
+// ==== Guarantees with trailing `where` filter ====
+// * ✅ no `where` clause → filter_where = []
+// * ✅ single where clause is captured as one MatchClause
+// * ✅ `and` chains parse as multiple MatchClauses in source order
+pub fn parse_guarantees_no_where_test() {
+  let source =
+    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {}\n"
+  let assert Ok(file) = parser.parse_expects_file(source)
+  let assert [item] = file.items
+  item.guarantees.filter_where |> should.equal([])
+}
+
+pub fn parse_guarantees_where_single_test() {
+  let source =
+    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where env = \"prod\"\n"
+  let assert Ok(file) = parser.parse_expects_file(source)
+  let assert [item] = file.items
+  item.guarantees.filter_where
+  |> should.equal([
+    ast.MatchClause(field: "env", value: ast.LiteralString("prod")),
+  ])
+}
+
+pub fn parse_guarantees_where_and_chain_test() {
+  let source =
+    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where env = \"prod\" and prompt_version = \"v2\"\n"
+  let assert Ok(file) = parser.parse_expects_file(source)
+  let assert [item] = file.items
+  item.guarantees.filter_where
+  |> should.equal([
+    ast.MatchClause(field: "env", value: ast.LiteralString("prod")),
+    ast.MatchClause(field: "prompt_version", value: ast.LiteralString("v2")),
+  ])
+}

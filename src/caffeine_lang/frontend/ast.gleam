@@ -183,13 +183,22 @@ pub type DependencyKind {
   SoftDep
 }
 
-/// The `Guarantees N% [below D] over D window [as measured by "X" with: {...}]` clause.
+/// The `Guarantees N% [below D] over D window [as measured by "X" with: {...}]
+/// [where K = V [and K = V]...]` clause.
+///
+/// `filter_where` is the optional trailing `where` filter — keys must be in
+/// the reserved tag-key set (env, prompt_version) and values are string
+/// literals. Empty list when no `where` clause is written. The same
+/// `MatchClause` shape used by external-indicator literals is reused here so
+/// `$$var$$` template variables can flow through if a parameterized
+/// measurement ever needs them.
 pub type Guarantees {
   Guarantees(
     threshold: Float,
     below: Option(DurationLiteral),
     window: DurationLiteral,
     measured_by: Option(MeasuredBy),
+    filter_where: List(MatchClause),
   )
 }
 

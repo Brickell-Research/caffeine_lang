@@ -153,6 +153,7 @@ fn generate_expect_item(
     )
     |> maybe_insert_below_ms(item.guarantees.below)
     |> maybe_insert_depends_on(item.assumes)
+    |> maybe_insert_filter_where(item.guarantees.filter_where)
 
   let measurement_ref = case item.guarantees.measured_by {
     option.Some(mb) -> option.Some(mb.measurement)
@@ -227,6 +228,30 @@ fn maybe_insert_depends_on(
         [] -> inputs
         _ -> dict.insert(inputs, "depends_on", deps_to_value(a.deps))
       }
+  }
+}
+
+/// Convert the `where K = V [and K = V]...` clause on a Guarantees into a
+/// `tags` entry in the expectation's inputs. The `tags` SLO param is the
+/// internal carrier for filter-tag dimensions (env, prompt_version); users
+/// can no longer supply it directly via `with: { tags: ... }` — the linker
+/// rejects that — so this is the only producer.
+fn maybe_insert_filter_where(
+  inputs: Dict(String, value.Value),
+  filter_where: List(ast.MatchClause),
+) -> Dict(String, value.Value) {
+  case filter_where {
+    [] -> inputs
+    clauses -> {
+      let tag_dict =
+        clauses
+        |> list.map(fn(clause) {
+          let ast.MatchClause(field, val) = clause
+          #(field, literal_to_value(val))
+        })
+        |> dict.from_list
+      dict.insert(inputs, "tags", value.DictValue(tag_dict))
+    }
   }
 }
 

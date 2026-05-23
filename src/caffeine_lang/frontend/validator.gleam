@@ -55,6 +55,18 @@ pub type ValidatorError {
     referenced_by: String,
   )
   InvalidPercentageBounds(value: String, referenced_by: String)
+  /// User wrote `tags: { ... }` in an expectation's `with:` args. The `tags`
+  /// param is now Caffeine-owned (populated from the `where` filter on the
+  /// Guarantees clause); supplying it directly is reserved.
+  ReservedTagsField(expectation_name: String)
+  /// A `where K = V` filter key is not in the canonical reserved tag-key set.
+  InvalidWhereKey(
+    expectation_name: String,
+    key: String,
+    allowed: List(String),
+  )
+  /// A `where K = V` filter value is not a string literal.
+  NonStringWhereValue(expectation_name: String, key: String, got: String)
 }
 
 /// Renders a validator error as a human-readable string.
@@ -122,7 +134,35 @@ pub fn error_to_string(err: ValidatorError) -> String {
       <> "' must be between 0.0 and 100.0, in '"
       <> referenced_by
       <> "'"
+    ReservedTagsField(expectation_name) ->
+      "Expectation '"
+      <> expectation_name
+      <> "' supplies `tags:` in its `with:` args; `tags` is reserved — use a "
+      <> "`where K = V [and K = V]...` filter on the Guarantees clause instead"
+    InvalidWhereKey(expectation_name, key, allowed) ->
+      "Expectation '"
+      <> expectation_name
+      <> "' has a `where` filter on key '"
+      <> key
+      <> "' which is not one of "
+      <> string.join(allowed, ", ")
+    NonStringWhereValue(expectation_name, key, got) ->
+      "Expectation '"
+      <> expectation_name
+      <> "' has a `where` filter on '"
+      <> key
+      <> "' with a non-string value ("
+      <> got
+      <> "); only string literals are allowed"
   }
+}
+
+/// The canonical reserved tag-key set: filter dimensions Caffeine knows
+/// how to populate end-to-end (relay emit + SLO resource tags). The
+/// `where` clause on a Guarantees may only reference keys in this set.
+@internal
+pub fn reserved_tag_keys() -> set.Set(String) {
+  set.from_list(["env", "prompt_version"])
 }
 
 /// Validates a measurements file.
@@ -216,7 +256,62 @@ pub fn validate_expects_file(
     validate_expect_items_extends(items, extendables) |> errors_to_list
   use <- guard_errors(extends_errors)
 
+  // Reserved-tag-key checks: no `tags:` in with-args; `where` keys must be in
+  // the canonical reserved set with string values.
+  let tags_field_errors = validate_no_user_tags_field(items)
+  let where_errors = validate_where_filter_keys(items)
+  use <- guard_errors(list.append(tags_field_errors, where_errors))
+
   Ok(ast.promote_expects_file(file))
+}
+
+/// Reject expectations whose `with:` args include a `tags` field — the
+/// `tags` SLO param is now populated by the `where` filter on Guarantees,
+/// not by user assignment.
+fn validate_no_user_tags_field(
+  items: List(ast.ExpectItem),
+) -> List(ValidatorError) {
+  items
+  |> list.filter_map(fn(item) {
+    case item.guarantees.measured_by {
+      option.Some(mb) ->
+        case
+          mb.with_args.fields
+          |> list.any(fn(f) { f.name == "tags" })
+        {
+          True -> Ok(ReservedTagsField(item.name))
+          False -> Error(Nil)
+        }
+      option.None -> Error(Nil)
+    }
+  })
+}
+
+/// Reject `where K = V` filters whose key is not in the reserved set or
+/// whose value isn't a string literal.
+fn validate_where_filter_keys(
+  items: List(ast.ExpectItem),
+) -> List(ValidatorError) {
+  let allowed = reserved_tag_keys()
+  let allowed_list = allowed |> set.to_list |> list.sort(string.compare)
+  items
+  |> list.flat_map(fn(item) {
+    item.guarantees.filter_where
+    |> list.flat_map(fn(clause) {
+      let ast.MatchClause(field, val) = clause
+      let key_errors = case set.contains(allowed, field) {
+        True -> []
+        False -> [InvalidWhereKey(item.name, field, allowed_list)]
+      }
+      let value_errors = case val {
+        ast.LiteralString(_) -> []
+        other -> [
+          NonStringWhereValue(item.name, field, ast.literal_to_string(other)),
+        ]
+      }
+      list.append(key_errors, value_errors)
+    })
+  })
 }
 
 /// Validates that no two items in a list share the same name.
