@@ -58,6 +58,9 @@ jobs:
         env:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          # Override for self-hosted / EU cloud; leave the repo var unset
+          # to default to https://cloud.langfuse.com.
+          LANGFUSE_BASE_URL: ${{ vars.LANGFUSE_BASE_URL }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
 
       - if: always()

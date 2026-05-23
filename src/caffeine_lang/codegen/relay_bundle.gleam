@@ -375,9 +375,13 @@ fn load_langfuse_credentials() -> Result(LangfuseCredentials, String) {
     envoy.get(\"LANGFUSE_SECRET_KEY\")
     |> result.replace_error(\"LANGFUSE_SECRET_KEY not set\"),
   )
-  let base_url =
-    envoy.get(\"LANGFUSE_BASE_URL\")
-    |> result.unwrap(\"https://cloud.langfuse.com\")
+  // Treat an empty string the same as unset — GHA expands an undefined repo
+  // variable to `\"\"`, and an empty base URL would silently break every
+  // outbound request. Default to the documented Langfuse cloud endpoint.
+  let base_url = case envoy.get(\"LANGFUSE_BASE_URL\") {
+    Ok(s) if s != \"\" -> s
+    _ -> \"https://cloud.langfuse.com\"
+  }
   Ok(LangfuseCredentials(
     public_key: public_key,
     secret_key: secret_key,
