@@ -1,7 +1,6 @@
 import caffeine_lang/frontend/ast
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/validator
-import gleeunit/should
 import simplifile
 import test_helpers
 
@@ -560,68 +559,4 @@ pub fn validate_refinement_values_test() {
   |> test_helpers.table_test_1(fn(file) {
     validator.validate_measurements_file(file)
   })
-}
-
-// ==== validate_expects_file: reserved tag keys / where filter ====
-fn parse_expects_inline(source: String) -> ast.ExpectsFile(ast.Parsed) {
-  let assert Ok(file) = parser.parse_expects_file(source)
-  file
-}
-
-// * ✅ user writes `tags:` in with-args → ReservedTagsField error
-pub fn validate_rejects_user_tags_field_test() {
-  let source =
-    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {\n    tags: { env: \"prod\" }\n  }\n"
-  let file = parse_expects_inline(source)
-  let assert Error(errs) = validator.validate_expects_file(file)
-  errs
-  |> should.equal([validator.ReservedTagsField(expectation_name: "checkout")])
-}
-
-// * ✅ `where env = "prod"` parses + validates
-pub fn validate_accepts_where_with_env_test() {
-  let source =
-    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where env = \"prod\"\n"
-  let file = parse_expects_inline(source)
-  let assert Ok(_) = validator.validate_expects_file(file)
-}
-
-// * ✅ `where env = "prod" and prompt_version = "v2"` parses + validates
-pub fn validate_accepts_where_chain_test() {
-  let source =
-    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where env = \"prod\" and prompt_version = \"v2\"\n"
-  let file = parse_expects_inline(source)
-  let assert Ok(_) = validator.validate_expects_file(file)
-}
-
-// * ✅ where key outside reserved set → InvalidWhereKey
-pub fn validate_rejects_unknown_where_key_test() {
-  let source =
-    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where region = \"us-east\"\n"
-  let file = parse_expects_inline(source)
-  let assert Error(errs) = validator.validate_expects_file(file)
-  errs
-  |> should.equal([
-    validator.InvalidWhereKey(
-      expectation_name: "checkout",
-      key: "region",
-      allowed: ["env", "prompt_version"],
-    ),
-  ])
-}
-
-// * ✅ non-string where value → NonStringWhereValue
-pub fn validate_rejects_non_string_where_value_test() {
-  let source =
-    "\"checkout\":\n  Guarantees 99.9% over 30d window as measured by \"M\" with: {} where env = 42\n"
-  let file = parse_expects_inline(source)
-  let assert Error(errs) = validator.validate_expects_file(file)
-  errs
-  |> should.equal([
-    validator.NonStringWhereValue(
-      expectation_name: "checkout",
-      key: "env",
-      got: "42",
-    ),
-  ])
 }

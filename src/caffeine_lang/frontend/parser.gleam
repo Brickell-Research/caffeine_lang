@@ -484,28 +484,7 @@ fn parse_guarantees(
   use #(window, state) <- result.try(parse_duration_literal(state))
   use state <- result.try(expect(state, token.KeywordWindow, "window"))
   use #(measured_by, state) <- result.try(parse_optional_measured_by(state))
-  use #(filter_where, state) <- result.try(parse_optional_filter_where(state))
-  Ok(#(
-    ast.Guarantees(threshold:, below:, window:, measured_by:, filter_where:),
-    state,
-  ))
-}
-
-/// Parse an optional `where <key> = <value> [and <key> = <value>]...` filter
-/// trailing a Guarantees clause. Reuses `parse_match_chain` from the
-/// external-indicator surface so `and`-chains parse identically in both
-/// positions. Keys are validated against the reserved tag-key set in the
-/// linker, not here.
-fn parse_optional_filter_where(
-  state: ParserState,
-) -> Result(#(List(ast.MatchClause), ParserState), ParserError) {
-  case peek(state) {
-    token.KeywordWhere -> {
-      let state = advance(state)
-      parse_match_chain(state)
-    }
-    _ -> Ok(#([], state))
-  }
+  Ok(#(ast.Guarantees(threshold:, below:, window:, measured_by:), state))
 }
 
 fn parse_optional_below(

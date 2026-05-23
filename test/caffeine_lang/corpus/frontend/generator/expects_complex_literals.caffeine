@@ -1,5 +1,6 @@
 "checkout":
   Guarantees 99.9% over 30d window as measured by "api_availability" with: {
+    tags: { team: "payments", env: "prod" },
     codes: [200, 201, 404],
     enabled: true
-  } where env = "prod"
+  }
