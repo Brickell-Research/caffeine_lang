@@ -64,6 +64,7 @@ pub type SignalEntry {
     kind: String,
     source: String,
     match: dict.Dict(String, String),
+    tags: dict.Dict(String, String),
     value_path: Option(String),
   )
 }
@@ -89,7 +90,12 @@ pub type LangfuseCredentials {
 }
 
 pub type DatadogPoint {
-  DatadogPoint(metric: String, value: Float, timestamp: Int)
+  DatadogPoint(
+    metric: String,
+    value: Float,
+    timestamp: Int,
+    tags: dict.Dict(String, String),
+  )
 }
 
 /// Self-observability counters accumulated over a single relay run. Emitted
@@ -287,6 +293,10 @@ fn signal_entry_decoder() -> decode.Decoder(SignalEntry) {
     \"match\",
     decode.dict(decode.string, decode.string),
   )
+  use tags <- decode.field(
+    \"tags\",
+    decode.dict(decode.string, decode.string),
+  )
   use value_path <- decode.field(
     \"value_path\",
     decode.optional(decode.string),
@@ -296,6 +306,7 @@ fn signal_entry_decoder() -> decode.Decoder(SignalEntry) {
     kind: kind,
     source: source,
     match: match,
+    tags: tags,
     value_path: value_path,
   ))
 }
@@ -452,7 +463,12 @@ fn dispatch_scores(
     signals
     |> list.filter(fn(s) { score_matches(score, s) })
     |> list.map(fn(s) {
-      DatadogPoint(metric: s.metric, value: 1.0, timestamp: now_unix())
+      DatadogPoint(
+        metric: s.metric,
+        value: 1.0,
+        timestamp: now_unix(),
+        tags: s.tags,
+      )
     })
   })
 }
@@ -632,18 +648,22 @@ fn send_dd_series(
 }
 
 /// Build the Datadog series JSON array from score-derived metric points.
-/// Groups by metric name so each appears once with its points nested,
-/// matching the DD `/api/v2/series` shape.
+/// Groups by (metric, tags) so each series-shape gets its own entry —
+/// matters because multiple indicators (good / total) share a metric and
+/// disambiguate by tag, so naive metric-only grouping would collapse them.
+/// Maps to the Datadog `/api/v2/series` shape: `{metric, type, tags, points}`.
 fn score_points_series(points: List(DatadogPoint)) -> List(json.Json) {
   points
-  |> list.group(fn(p) { p.metric })
+  |> list.group(fn(p) { #(p.metric, tags_signature(p.tags)) })
   |> dict.to_list
   |> list.map(fn(pair) {
-    let #(metric, ps) = pair
+    let #(_key, ps) = pair
+    let assert [first, ..] = ps
     json.object([
-      #(\"metric\", json.string(metric)),
+      #(\"metric\", json.string(first.metric)),
       // type=1 → count in the Datadog series API
       #(\"type\", json.int(1)),
+      #(\"tags\", tags_for_series(first.tags)),
       #(
         \"points\",
         json.array(ps, fn(p) {
@@ -655,6 +675,26 @@ fn score_points_series(points: List(DatadogPoint)) -> List(json.Json) {
       ),
     ])
   })
+}
+
+/// Stable signature for a tags dict — used as a grouping key. Sorting by
+/// key ensures two dicts with the same content but different insertion
+/// order group together.
+fn tags_signature(tags: dict.Dict(String, String)) -> String {
+  tags
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.map(fn(pair) { pair.0 <> \":\" <> pair.1 })
+  |> string.join(\",\")
+}
+
+/// Datadog `/api/v2/series` expects tags as an array of `\"key:value\"` strings.
+fn tags_for_series(tags: dict.Dict(String, String)) -> json.Json {
+  tags
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.map(fn(pair) { json.string(pair.0 <> \":\" <> pair.1) })
+  |> json.preprocessed_array
 }
 "
 

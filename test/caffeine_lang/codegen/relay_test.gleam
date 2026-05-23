@@ -109,11 +109,12 @@ pub fn generate_single_count_test() {
   ]
   let assert option.Some(json_text) = relay.generate(irs)
 
-  // Schema-shape assertions. The JSON encoder's key order isn't guaranteed,
-  // so we use substring presence rather than byte-exact equality.
+  // Schema v2: one metric per measurement (`caffeine.<unique>`), per-indicator
+  // entries disambiguate via the `tags: {indicator: <name>}` field. Matches
+  // the synthesis convention in codegen/datadog.gleam.
   json_text
   |> should.equal(
-    "{\"version\":1,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout.good\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"outcome\",\"value\":\"pass\"},\"value_path\":null}]}",
+    "{\"version\":2,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"outcome\",\"value\":\"pass\"},\"tags\":{\"indicator\":\"good\"},\"value_path\":null}]}",
   )
 }
 
@@ -137,7 +138,7 @@ pub fn generate_single_distribution_test() {
   let assert option.Some(json_text) = relay.generate(irs)
   json_text
   |> should.equal(
-    "{\"version\":1,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout.score\",\"kind\":\"distribution\",\"source\":\"langfuse\",\"match\":{\"name\":\"faithfulness\"},\"value_path\":\"value\"}]}",
+    "{\"version\":2,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout\",\"kind\":\"distribution\",\"source\":\"langfuse\",\"match\":{\"name\":\"faithfulness\"},\"tags\":{\"indicator\":\"score\"},\"value_path\":\"value\"}]}",
   )
 }
 
@@ -158,7 +159,7 @@ pub fn generate_mixed_indicators_test() {
 
   json_text
   |> should.equal(
-    "{\"version\":1,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout.good\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"outcome\"},\"value_path\":null}]}",
+    "{\"version\":2,\"signals\":[{\"metric\":\"caffeine.acme_payments_checkout\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"outcome\"},\"tags\":{\"indicator\":\"good\"},\"value_path\":null}]}",
   )
 }
 
@@ -181,9 +182,9 @@ pub fn generate_multiple_irs_test() {
 
   json_text
   |> should.equal(
-    "{\"version\":1,\"signals\":["
-      <> "{\"metric\":\"caffeine.acme_payments_faithfulness.score\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"score\"},\"value_path\":null},"
-      <> "{\"metric\":\"caffeine.acme_payments_groundedness.score\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"score\"},\"value_path\":null}"
+    "{\"version\":2,\"signals\":["
+      <> "{\"metric\":\"caffeine.acme_payments_faithfulness\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"score\"},\"tags\":{\"indicator\":\"score\"},\"value_path\":null},"
+      <> "{\"metric\":\"caffeine.acme_payments_groundedness\",\"kind\":\"count\",\"source\":\"langfuse\",\"match\":{\"name\":\"score\"},\"tags\":{\"indicator\":\"score\"},\"value_path\":null}"
       <> "]}",
   )
 }

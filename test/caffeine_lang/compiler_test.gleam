@@ -697,36 +697,41 @@ pub fn compile_external_signal_emits_all_relay_artifacts_test() {
       "datadog",
     )
 
-  // Synthesized metric names follow `caffeine.<unique_identifier>.<indicator>`.
-  // For this expectation the unique_identifier is `acme_checkout_checkout_pass_rate`
-  // (org_service_expectation; team isn't part of the unique id).
-  let expected_good_metric =
-    "caffeine.acme_checkout_checkout_pass_rate.good"
-  let expected_total_metric =
-    "caffeine.acme_checkout_checkout_pass_rate.total"
+  // One metric per measurement (`caffeine.<unique_identifier>`); per-indicator
+  // routing entries disambiguate via the `indicator:<name>` tag. Synthesized
+  // TF queries filter on that tag (`{indicator:good}` / `{indicator:total}`).
+  let expected_metric = "caffeine.acme_checkout_checkout_pass_rate"
+  let expected_good_query =
+    "sum:caffeine.acme_checkout_checkout_pass_rate{indicator:good}.as_count()"
+  let expected_total_query =
+    "sum:caffeine.acme_checkout_checkout_pass_rate{indicator:total}.as_count()"
 
-  // 1. Terraform: DD SLO resource references the synthesized metrics.
+  // 1. Terraform: DD SLO resource references the synthesized queries with
+  //    the indicator-tag filter scope (the canonical metric-SLO shape).
   output.terraform
   |> string.contains("datadog_service_level_objective")
   |> should.be_true
   output.terraform
-  |> string.contains(expected_good_metric)
+  |> string.contains(expected_good_query)
   |> should.be_true
   output.terraform
-  |> string.contains(expected_total_metric)
+  |> string.contains(expected_total_query)
   |> should.be_true
 
-  // 2. signals.json: emitted and references the SAME metric names. Cross-
-  //    artifact coherence: the relay emits to the metrics the SLO queries.
+  // 2. signals.json: emitted and references the SAME metric name on both
+  //    indicators. Per-indicator entry tagged so relay emits a single metric
+  //    sliced by indicator.
   output.relay_signals |> should.be_some
   let assert option.Some(signals_json) = output.relay_signals
-  signals_json |> string.contains(expected_good_metric) |> should.be_true
-  signals_json |> string.contains(expected_total_metric) |> should.be_true
+  signals_json |> string.contains(expected_metric) |> should.be_true
+  signals_json |> string.contains("\"indicator\":\"good\"") |> should.be_true
+  signals_json |> string.contains("\"indicator\":\"total\"") |> should.be_true
   // Match filters round-tripped from the where-clause.
   signals_json |> string.contains("\"langfuse\"") |> should.be_true
   signals_json |> string.contains("\"name\":\"outcome\"") |> should.be_true
   signals_json |> string.contains("\"value\":\"pass\"") |> should.be_true
-  // Count-style: no value_path, kind=count.
+  // Count-style: no value_path, kind=count, schema v2.
+  signals_json |> string.contains("\"version\":2") |> should.be_true
   signals_json |> string.contains("\"kind\":\"count\"") |> should.be_true
   signals_json |> string.contains("\"value_path\":null") |> should.be_true
 

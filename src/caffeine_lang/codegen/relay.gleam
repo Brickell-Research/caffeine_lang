@@ -3,12 +3,14 @@
 /// Walks resolved IRs and emits one routing entry per external-signal
 /// indicator. The relay binary consumes this file at runtime to decide
 /// which incoming source events (e.g. Langfuse scores) map to which
-/// Datadog metrics.
+/// Datadog metrics, and what tags to attach.
 ///
-/// Metric naming convention: `caffeine.<unique_identifier>.<indicator_name>`
-/// — per-expectation metric streams to avoid cross-expectation collision.
-/// Matches the synthesis function in `codegen/datadog.gleam` so the SLO
-/// query and the relay emission land on the same metric.
+/// Metric naming convention: `caffeine.<unique_identifier>` — ONE metric
+/// per expectation. The per-indicator routing entries all share that
+/// metric name and disambiguate by writing an `indicator:<name>` tag on
+/// every emitted data point. This matches the synthesis function in
+/// `codegen/datadog.gleam` (`sum:caffeine.<unique>{indicator:<name>}`)
+/// and the idiomatic Datadog metric-SLO shape.
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type Resolved, ExternalSignal,
 }
@@ -21,14 +23,15 @@ import gleam/string
 
 /// Routing entry for one external-signal indicator. The fields mirror what
 /// the relay binary needs at runtime: which source kind to pull from, which
-/// events to match, what metric to emit, and how to extract a numeric value
-/// (if any).
+/// events to match, what metric to emit, what tags to attach, and how to
+/// extract a numeric value (if any).
 pub type SignalEntry {
   SignalEntry(
     metric: String,
     kind: SignalKind,
     source: String,
     match: dict.Dict(String, value.Value),
+    tags: dict.Dict(String, String),
     value_path: option.Option(String),
   )
 }
@@ -70,13 +73,16 @@ fn ir_to_signal_entries(
     case src {
       ExternalSignal(source, match, value_extraction) ->
         Ok(SignalEntry(
-          metric: "caffeine." <> ir.unique_identifier <> "." <> name,
+          // One metric per measurement; per-indicator routing entries
+          // disambiguate by writing an `indicator:<name>` tag.
+          metric: "caffeine." <> ir.unique_identifier,
           kind: case value_extraction {
             option.None -> Count
             option.Some(_) -> Distribution
           },
           source: source,
           match: match,
+          tags: dict.from_list([#("indicator", name)]),
           value_path: option.map(value_extraction, fn(ve) { ve.path }),
         ))
       _ -> Error(Nil)
@@ -85,10 +91,11 @@ fn ir_to_signal_entries(
 }
 
 /// Wrap a list of entries in the top-level `signals.json` object: a version
-/// tag plus the routing array.
+/// tag plus the routing array. Schema version 2 adds the per-entry `tags`
+/// field; relay builds before 2026-05-23 read v1 and don't know about tags.
 fn signals_json(entries: List(SignalEntry)) -> json.Json {
   json.object([
-    #("version", json.int(1)),
+    #("version", json.int(2)),
     #("signals", json.array(entries, signal_entry_json)),
   ])
 }
@@ -99,11 +106,22 @@ fn signal_entry_json(entry: SignalEntry) -> json.Json {
     #("kind", json.string(signal_kind_to_string(entry.kind))),
     #("source", json.string(entry.source)),
     #("match", match_dict_json(entry.match)),
+    #("tags", tags_dict_json(entry.tags)),
     #("value_path", case entry.value_path {
       option.None -> json.null()
       option.Some(p) -> json.string(p)
     }),
   ])
+}
+
+/// Serialize the `tags` dict — already `Dict(String, String)` because every
+/// codegen-emitted tag is a string. Sorted by key for deterministic output.
+fn tags_dict_json(tags: dict.Dict(String, String)) -> json.Json {
+  tags
+  |> dict.to_list
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> list.map(fn(pair) { #(pair.0, json.string(pair.1)) })
+  |> json.object
 }
 
 fn signal_kind_to_string(kind: SignalKind) -> String {

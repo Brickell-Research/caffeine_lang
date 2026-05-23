@@ -237,15 +237,18 @@ const default_evaluation = "numerator / denominator"
 /// Synthesize a Datadog metric query string for an indicator. `LiteralQuery`
 /// passes through unchanged (the user-authored query). `ExternalSignal`
 /// produces a query against the synthesized metric the relay will emit to:
-///   - no value extraction → count-style: `sum:<metric>{*}.as_count()`
-///   - with value extraction → distribution-style: `avg:<metric>{*}`
+///   - no value extraction → count-style:
+///     `sum:caffeine.<unique>{indicator:<name>}.as_count()`
+///   - with value extraction → distribution-style:
+///     `avg:caffeine.<unique>{indicator:<name>}`
 ///
-/// The `{*}` filter scope is mandatory — Datadog's `metric` SLO type rejects
-/// queries without one, even when no tag filtering is wanted.
-///
-/// The metric name follows the convention
-/// `caffeine.<unique_identifier>.<indicator_name>` so each expectation gets
-/// a dedicated metric stream with no risk of cross-expectation collision.
+/// One metric per measurement, distinguished by the `indicator:<name>` tag.
+/// This is the idiomatic Datadog metric-SLO shape — every working example
+/// in the provider's acceptance tests uses the same metric on both sides
+/// of the ratio, sliced by tags (e.g. `{type:good}` vs `{*}`). Emitting two
+/// sibling metrics like `caffeine.<unique>.good` and `caffeine.<unique>.total`
+/// works in theory but doubles the chicken-and-egg problem (both metrics
+/// must exist before the SLO can be created).
 fn synthesize_indicator_query(
   unique_identifier: String,
   indicator_name: String,
@@ -254,11 +257,11 @@ fn synthesize_indicator_query(
   case src {
     ir.LiteralQuery(q) -> q
     ir.ExternalSignal(_, _, value_extraction) -> {
-      let metric =
-        "caffeine." <> unique_identifier <> "." <> indicator_name
+      let metric = "caffeine." <> unique_identifier
+      let filter = "{indicator:" <> indicator_name <> "}"
       case value_extraction {
-        option.None -> "sum:" <> metric <> "{*}.as_count()"
-        option.Some(_) -> "avg:" <> metric <> "{*}"
+        option.None -> "sum:" <> metric <> filter <> ".as_count()"
+        option.Some(_) -> "avg:" <> metric <> filter
       }
     }
   }
