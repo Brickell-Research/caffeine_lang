@@ -5,6 +5,7 @@ import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/platforms
 import caffeine_lang/codegen/relay
+import caffeine_lang/codegen/relay_bundle
 import caffeine_lang/codegen/relay_workflow
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
@@ -31,15 +32,21 @@ import terra_madre/render
 import terra_madre/terraform
 
 /// Output of the compilation process. Includes Terraform (always), the
-/// dependency graph when relations exist, the relay's `signals.json` and
-/// GHA workflow when any expectation uses external-signal indicators, and
-/// any warnings the codegen accumulated.
+/// dependency graph when relations exist, the relay's `signals.json`,
+/// the GHA workflow, and the bundled relay Gleam project when any
+/// expectation uses external-signal indicators, and any warnings the
+/// codegen accumulated.
+///
+/// `relay_bundle` is a path -> contents map relative to the bundle root
+/// (`build/relay/relay/` is the conventional drop location). The CLI is
+/// responsible for writing the files; the compiler just produces them.
 pub type CompilationOutput {
   CompilationOutput(
     terraform: String,
     dependency_graph: Option(String),
     relay_signals: Option(String),
     relay_workflow: Option(String),
+    relay_bundle: Option(dict.Dict(String, String)),
     warnings: List(String),
   )
 }
@@ -183,22 +190,25 @@ fn run_code_generation(
     False -> option.None
   }
 
-  // Relay routing table (`signals.json`) is emitted only when at least one
-  // expectation uses an external-signal indicator. Pure literal-query
-  // pipelines need no relay and skip this artifact. The GHA workflow rides
-  // alongside on the same gate — it only makes sense when there's a relay
-  // to invoke.
+  // Relay artifacts (signals.json, GHA workflow, bundled Gleam project) are
+  // emitted as a set whenever at least one expectation uses an external-
+  // signal indicator. Pure literal-query pipelines need no relay and skip
+  // all three.
   let relay_signals = relay.generate(resolved_irs)
-  let relay_workflow = case relay_signals {
-    option.None -> option.None
-    option.Some(_) -> option.Some(relay_workflow.generate())
+  let #(relay_workflow_artifact, relay_bundle_artifact) = case relay_signals {
+    option.None -> #(option.None, option.None)
+    option.Some(_) -> #(
+      option.Some(relay_workflow.generate()),
+      relay_bundle.generate(),
+    )
   }
 
   Ok(CompilationOutput(
     terraform: terraform_output,
     dependency_graph: graph,
     relay_signals: relay_signals,
-    relay_workflow: relay_workflow,
+    relay_workflow: relay_workflow_artifact,
+    relay_bundle: relay_bundle_artifact,
     warnings: all_warnings,
   ))
 }

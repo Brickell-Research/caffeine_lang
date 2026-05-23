@@ -30,6 +30,7 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 "caffeine_lang/codegen/dependency_graph" = true
 "caffeine_lang/codegen/generator_utils" = true
 "caffeine_lang/codegen/relay" = true
+"caffeine_lang/codegen/relay_bundle" = true
 "caffeine_lang/codegen/relay_workflow" = true
 # Frontend (internal helpers)
 "caffeine_lang/frontend/lowering" = true
