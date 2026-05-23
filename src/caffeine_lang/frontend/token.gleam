@@ -36,6 +36,9 @@ pub type Token {
   KeywordType
   KeywordURL
   KeywordPercentage
+  KeywordFrom
+  KeywordWhere
+  KeywordAnd
   LiteralString(String)
   LiteralInteger(Int)
   LiteralFloat(Float)
@@ -102,6 +105,9 @@ pub fn to_string(tok: Token) -> String {
     KeywordType -> "Type"
     KeywordURL -> "URL"
     KeywordPercentage -> "Percentage"
+    KeywordFrom -> "from"
+    KeywordWhere -> "where"
+    KeywordAnd -> "and"
     LiteralString(s) -> "\"" <> s <> "\""
     LiteralInteger(_) -> "integer"
     LiteralFloat(_) -> "float"

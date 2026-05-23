@@ -242,6 +242,31 @@ pub type Literal {
   LiteralFalse
   LiteralList(elements: List(Literal))
   LiteralStruct(fields: List(Field), trailing_comments: List(Comment))
+  /// An indicator value sourced from a runtime relay (e.g. Langfuse). The
+  /// compiler emits both a relay routing entry (in signals.json) and a
+  /// vendor metric-query string that consumes the emitted metric. Match
+  /// clauses filter source events; `value_extraction` is None for counts
+  /// (every matching event is +1) and Some for numeric scores.
+  LiteralExternalIndicator(
+    source: String,
+    match: List(MatchClause),
+    value_extraction: Option(ValueExtraction),
+  )
+}
+
+/// A single `where ... and ...` predicate inside an external-indicator
+/// literal. The value is a `Literal` so it round-trips through the formatter
+/// and supports `$$var$$` template variables.
+pub type MatchClause {
+  MatchClause(field: String, value: Literal)
+}
+
+/// Optional value-extraction spec on an external indicator. `path` is the
+/// dotted path into the source event (e.g. "value" for a Langfuse score's
+/// numeric value); `type_` is the declared type/refinement the value must
+/// satisfy.
+pub type ValueExtraction {
+  ValueExtraction(path: String, type_: ParsedType)
 }
 
 /// Builds a list of name-type pairs from type aliases for lookup purposes.
@@ -275,5 +300,6 @@ pub fn literal_to_string(lit: Literal) -> String {
     LiteralFalse -> "false"
     LiteralList(_) -> "[...]"
     LiteralStruct(_, _) -> "{...}"
+    LiteralExternalIndicator(source, _, _) -> "from " <> source <> " {...}"
   }
 }

@@ -1112,6 +1112,7 @@ fn parse_literal(
     token.LiteralFalse -> Ok(#(ast.LiteralFalse, advance(state)))
     token.SymbolLeftBracket -> parse_literal_list(state)
     token.SymbolLeftBrace -> parse_literal_struct_value(state)
+    token.KeywordFrom -> parse_external_indicator(state)
     tok ->
       Error(parser_error.UnexpectedToken(
         "literal value",
@@ -1119,6 +1120,131 @@ fn parse_literal(
         state.line,
         state.column,
       ))
+  }
+}
+
+// =============================================================================
+// EXTERNAL INDICATORS
+// =============================================================================
+//
+// Surface forms supported:
+//
+//   single-line (count of matching events):
+//     from <source> where <field> = <literal> [and <field> = <literal>]...
+//
+//   block (with value extraction):
+//     from <source> {
+//       where: <field> = <literal> [and <field> = <literal>]...
+//       value: <path> as <type>
+//     }
+//
+// The block form's `value:` line is optional; omitting it produces the same
+// shape as the single-line form. Field names inside match clauses are
+// identifiers; literal RHS values support template variables (e.g. `"$$->v$$"`)
+// because they round-trip through the normal literal parser.
+
+/// Parse a `from <source> ...` external-indicator literal. Dispatches on the
+/// token after the source identifier: `{` opens the block form, `where`
+/// starts the single-line form.
+fn parse_external_indicator(
+  state: ParserState,
+) -> Result(#(Literal, ParserState), ParserError) {
+  use state <- result.try(expect(state, token.KeywordFrom, "from"))
+  use #(source, state) <- result.try(parse_identifier(state))
+  case peek(state) {
+    token.SymbolLeftBrace -> parse_external_indicator_block(state, source)
+    token.KeywordWhere -> {
+      use #(match, state) <- result.try(parse_where_chain(state))
+      Ok(#(ast.LiteralExternalIndicator(source, match, option.None), state))
+    }
+    tok ->
+      Error(parser_error.UnexpectedToken(
+        "`where` or `{` after `from " <> source <> "`",
+        token.to_string(tok),
+        state.line,
+        state.column,
+      ))
+  }
+}
+
+/// Parse `{ where: <chain> [value: <path> as <type>] }`. Requires `where:`
+/// to come first; `value:` is optional. The block form is what enables
+/// value extraction; the single-line form is sugar for the where-only case.
+fn parse_external_indicator_block(
+  state: ParserState,
+  source: String,
+) -> Result(#(Literal, ParserState), ParserError) {
+  use state <- result.try(expect(state, token.SymbolLeftBrace, "{"))
+  use state <- result.try(expect(state, token.KeywordWhere, "where"))
+  use state <- result.try(expect(state, token.SymbolColon, ":"))
+  use #(match, state) <- result.try(parse_match_chain(state))
+  use #(value_extraction, state) <- result.try(parse_optional_value_extraction(
+    state,
+  ))
+  use state <- result.try(expect(state, token.SymbolRightBrace, "}"))
+  Ok(#(ast.LiteralExternalIndicator(source, match, value_extraction), state))
+}
+
+/// Parse a `where <chain>` clause: consumes `where`, then one or more
+/// `and`-separated match clauses. Used by the single-line surface form.
+fn parse_where_chain(
+  state: ParserState,
+) -> Result(#(List(ast.MatchClause), ParserState), ParserError) {
+  use state <- result.try(expect(state, token.KeywordWhere, "where"))
+  parse_match_chain(state)
+}
+
+/// Parse a chain of one or more match clauses separated by `and`. Stops at
+/// the first non-`and` token. Returns the chain in source order.
+fn parse_match_chain(
+  state: ParserState,
+) -> Result(#(List(ast.MatchClause), ParserState), ParserError) {
+  use #(first, state) <- result.try(parse_match_clause(state))
+  parse_match_chain_loop(state, [first])
+}
+
+fn parse_match_chain_loop(
+  state: ParserState,
+  acc: List(ast.MatchClause),
+) -> Result(#(List(ast.MatchClause), ParserState), ParserError) {
+  case peek(state) {
+    token.KeywordAnd -> {
+      let state = advance(state)
+      use #(clause, state) <- result.try(parse_match_clause(state))
+      parse_match_chain_loop(state, [clause, ..acc])
+    }
+    _ -> Ok(#(list.reverse(acc), state))
+  }
+}
+
+/// Parse `<field> = <literal>`. The field name is an identifier; the value
+/// is a literal that supports `$$var$$` template interpolation via the
+/// normal literal parser.
+fn parse_match_clause(
+  state: ParserState,
+) -> Result(#(ast.MatchClause, ParserState), ParserError) {
+  use #(field, state) <- result.try(parse_identifier(state))
+  use state <- result.try(expect(state, token.SymbolEquals, "="))
+  use #(value, state) <- result.try(parse_literal(state))
+  Ok(#(ast.MatchClause(field, value), state))
+}
+
+/// Parse `value: <path> as <type>` if present (block form only). Returns
+/// None if the next token isn't an Identifier opening the value-extraction
+/// line, so callers can fall through to `}`.
+fn parse_optional_value_extraction(
+  state: ParserState,
+) -> Result(#(option.Option(ast.ValueExtraction), ParserState), ParserError) {
+  case peek(state) {
+    token.Identifier("value") -> {
+      let state = advance(state)
+      use state <- result.try(expect(state, token.SymbolColon, ":"))
+      use #(path, state) <- result.try(parse_identifier(state))
+      use state <- result.try(expect(state, token.KeywordAs, "as"))
+      use #(type_, state) <- result.try(parse_type(state))
+      Ok(#(option.Some(ast.ValueExtraction(path, type_)), state))
+    }
+    _ -> Ok(#(option.None, state))
   }
 }
 
@@ -1178,5 +1304,10 @@ fn literal_to_string(literal: Literal) -> String {
     ast.LiteralList(elements) ->
       "[" <> elements |> list.map(literal_to_string) |> string.join(", ") <> "]"
     ast.LiteralStruct(_, _) -> "{}"
+    // External indicators only appear inside measurement `indicators:` blocks
+    // and never inside refinement/default value positions, so this branch is
+    // unreachable from real source. A placeholder string keeps the totality
+    // check happy.
+    ast.LiteralExternalIndicator(source, _, _) -> "<from " <> source <> ">"
   }
 }

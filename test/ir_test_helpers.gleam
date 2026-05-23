@@ -119,14 +119,16 @@ fn make_relations_value(
   )
 }
 
-/// Builds default SloFields for tests with no dependencies.
+/// Builds default SloFields for tests with no dependencies. Accepts plain
+/// query strings and wraps them as `LiteralQuery` so tests don't have to
+/// know about the `IndicatorSource` variant.
 fn make_test_slo_fields(
   threshold: Float,
   indicators: dict.Dict(String, String),
 ) -> ir.SloFields {
   ir.SloFields(
     threshold: threshold,
-    indicators: indicators,
+    indicators: dict.map_values(indicators, fn(_, q) { ir.LiteralQuery(q) }),
     window_in_days: 30,
     evaluation: option.None,
     tags: [],
@@ -187,7 +189,9 @@ pub fn make_typed_ir_with_deps(
   )
 }
 
-/// Builds SloFields for tests with dependency relations.
+/// Builds SloFields for tests with dependency relations. Wraps the plain
+/// query strings in `LiteralQuery` so callers stay oblivious to the
+/// `IndicatorSource` variant.
 fn make_test_slo_fields_with_deps(
   threshold: Float,
   indicators: dict.Dict(String, String),
@@ -197,7 +201,7 @@ fn make_test_slo_fields_with_deps(
 ) -> ir.SloFields {
   ir.SloFields(
     threshold: threshold,
-    indicators: indicators,
+    indicators: dict.map_values(indicators, fn(_, q) { ir.LiteralQuery(q) }),
     window_in_days: 30,
     evaluation: option.None,
     tags: [],

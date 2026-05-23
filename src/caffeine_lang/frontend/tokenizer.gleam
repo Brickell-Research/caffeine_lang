@@ -556,6 +556,9 @@ fn keyword_or_identifier(word: String) -> Token {
     "Type" -> token.KeywordType
     "URL" -> token.KeywordURL
     "Percentage" -> token.KeywordPercentage
+    "from" -> token.KeywordFrom
+    "where" -> token.KeywordWhere
+    "and" -> token.KeywordAnd
     "true" -> token.LiteralTrue
     "false" -> token.LiteralFalse
     _ -> token.Identifier(word)

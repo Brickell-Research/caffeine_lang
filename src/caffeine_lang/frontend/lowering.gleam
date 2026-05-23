@@ -432,6 +432,21 @@ pub fn literal_to_value(lit: Literal) -> value.Value {
       })
       |> dict.from_list
       |> value.DictValue
+    ast.LiteralExternalIndicator(source, match, value_extraction) -> {
+      let match_dict =
+        match
+        |> list.map(fn(clause) {
+          let ast.MatchClause(field, val) = clause
+          #(field, literal_to_value(val))
+        })
+        |> dict.from_list
+      let value_path =
+        option.map(value_extraction, fn(ve) {
+          let ast.ValueExtraction(path, _) = ve
+          path
+        })
+      value.ExternalIndicatorValue(source, match_dict, value_path)
+    }
   }
 }
 

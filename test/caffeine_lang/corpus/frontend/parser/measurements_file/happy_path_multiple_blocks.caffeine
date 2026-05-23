@@ -3,5 +3,5 @@
   Provides { vendor: "datadog" }
 
 "hard_dep":
-  Requires { from: String, to: String }
+  Requires { source: String, target: String }
   Provides { type: "hard" }

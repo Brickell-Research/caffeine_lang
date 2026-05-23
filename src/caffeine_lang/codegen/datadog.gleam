@@ -132,7 +132,13 @@ pub fn resolve_indicators(
     })
 
   // Also update the structured slo fields with resolved values.
-  let resolved_indicators_dict = resolved_indicators |> dict.from_list
+  // Resolved indicators are query strings; wrap each into the typed
+  // `IndicatorSource` form. ExternalSignal cases will land here once Task #5
+  // rewrites them in-line during this same pass.
+  let resolved_indicators_dict =
+    resolved_indicators
+    |> list.map(fn(pair) { #(pair.0, ir.LiteralQuery(pair.1)) })
+    |> dict.from_list
   let resolved_eval = case resolved_evaluation_tuple {
     option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
     option.None -> ir.slo.evaluation
@@ -185,12 +191,24 @@ pub fn ir_to_terraform_resource(
   let runbook = slo.runbook
   let description = slo.description
 
+  // CQL parsing consumes resolved literal query strings. By this point in the
+  // pipeline `resolve_indicators` has rewritten any ExternalSignal entries
+  // into LiteralQuery (Task #5); `require_literal_query` enforces that
+  // invariant.
+  let indicator_strings =
+    indicators
+    |> dict.map_values(fn(_, src) { ir.require_literal_query(src) })
+
   // Parse the evaluation expression using CQL and get HCL blocks. The
   // `below_ms` override from a `Guarantees N% below <duration>` clause flows
   // through here; it overrides the time_slice latency threshold and errors on
   // a metric SLO.
   use datadog_cql.ResolvedSloHcl(slo_type, slo_blocks) <- result.try(
-    datadog_cql.resolve_slo_to_hcl(evaluation_expr, indicators, slo.below_ms)
+    datadog_cql.resolve_slo_to_hcl(
+      evaluation_expr,
+      indicator_strings,
+      slo.below_ms,
+    )
     |> result.map_error(fn(err) {
       errors.generator_slo_query_resolution_error(
         msg: "expectation '"
@@ -258,7 +276,7 @@ pub fn ir_to_terraform_resource(
   // Datadog rejects these because log-based metrics expose log facet `@type`
   // as the bare metric tag `type` — querying `@type:foo` 400s.
   let at_prefixed_attrs =
-    indicators
+    indicator_strings
     |> dict.values
     |> list.append([evaluation_expr])
     |> list.flat_map(lint.at_prefixed_attrs)

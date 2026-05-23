@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 
@@ -21,6 +22,15 @@ pub type Value {
   DurationValue(amount: Float, unit: DurationUnit)
   /// Represents an absent Optional or Defaulted value.
   NilValue
+  /// An indicator value sourced from a runtime relay. Carries the match
+  /// predicate and an optional value-extraction path. The declared type
+  /// constraint on the extracted value lives at the IR layer
+  /// (`ExternalValueExtraction.type_`); this variant is the plumbing form.
+  ExternalIndicatorValue(
+    source: String,
+    match: Dict(String, Value),
+    value_path: Option(String),
+  )
 }
 
 /// Unit suffix on a duration literal. Round-trippable with `duration_unit_to_string`.
@@ -91,6 +101,7 @@ pub fn to_string(value: Value) -> String {
     DurationValue(amount, unit) ->
       float.to_string(amount) <> duration_unit_to_string(unit)
     NilValue -> ""
+    ExternalIndicatorValue(source, _, _) -> "from " <> source <> " {...}"
   }
 }
 
@@ -109,6 +120,7 @@ pub fn to_preview_string(value: Value) -> String {
     DurationValue(amount, unit) ->
       float.to_string(amount) <> duration_unit_to_string(unit)
     NilValue -> "Nil"
+    ExternalIndicatorValue(source, _, _) -> "ExternalIndicator(" <> source <> ")"
   }
 }
 
@@ -125,6 +137,7 @@ pub fn classify(value: Value) -> String {
     DictValue(_) -> "Dict"
     DurationValue(_, _) -> "Duration"
     NilValue -> "Nil"
+    ExternalIndicatorValue(_, _, _) -> "ExternalIndicator"
   }
 }
 

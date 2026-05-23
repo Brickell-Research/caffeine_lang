@@ -167,7 +167,7 @@ pub fn resolve_intermediate_representations_test() {
           ],
           slo: ir.SloFields(
             threshold: 0.0,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("query_a", "avg:memory{env:staging}"),
             ]),
             window_in_days: 30,
@@ -220,7 +220,7 @@ pub fn resolve_intermediate_representations_test() {
           ],
           slo: ir.SloFields(
             threshold: 0.0,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("query_b", "sum:requests{region:us-east}"),
             ]),
             window_in_days: 30,
@@ -362,7 +362,7 @@ pub fn resolve_indicators_test() {
         ],
         slo: ir.SloFields(
           threshold: 0.0,
-          indicators: dict.from_list([
+          indicators: ir.literal_indicators_from([
             #("denominator", "avg:system.cpu{env:production}"),
             #("numerator", "avg:system.cpu{env:production AND !status:true}"),
           ]),
@@ -497,7 +497,7 @@ pub fn resolve_indicators_test() {
         ],
         slo: ir.SloFields(
           threshold: 0.0,
-          indicators: dict.from_list([
+          indicators: ir.literal_indicators_from([
             #("query", "p75:rum.lcp.duration{env:production}"),
           ]),
           window_in_days: 30,
@@ -619,7 +619,7 @@ pub fn resolve_indicators_test() {
         ],
         slo: ir.SloFields(
           threshold: 0.0,
-          indicators: dict.from_list([
+          indicators: ir.literal_indicators_from([
             #("query", "p75:rum.lcp.duration{env:production}"),
           ]),
           window_in_days: 30,
@@ -776,7 +776,7 @@ pub fn resolve_indicators_test() {
         ],
         slo: ir.SloFields(
           threshold: 0.0,
-          indicators: dict.from_list([
+          indicators: ir.literal_indicators_from([
             #(
               "query",
               "p75:rum.lcp.duration{application.name:member_portal, env:production, view.url_path_group:/members/messages}",

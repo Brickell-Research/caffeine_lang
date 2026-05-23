@@ -4,9 +4,9 @@ import caffeine_lang/frontend/ast.{
   type Comment, type ExpectItem, type ExpectsFile, type Extendable, type Field,
   type Literal, type MeasurementItem, type MeasurementsFile, type Parsed,
   type Struct, type TypeAlias, ExtendableProvides, ExtendableRequires,
-  LiteralDuration, LiteralFalse, LiteralFloat, LiteralInteger, LiteralList,
-  LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue, LiteralValue,
-  Struct, TypeValue,
+  LiteralDuration, LiteralExternalIndicator, LiteralFalse, LiteralFloat,
+  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
+  LiteralTrue, LiteralValue, Struct, TypeValue,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -459,6 +459,12 @@ fn format_literal(l: Literal, indent: Int, context: FieldContext) -> String {
         indent,
         context,
       )
+    // External indicators land in source via the parser in Task #2; proper
+    // formatting (single-line vs block; `where:`/`value:` layout) ships with
+    // that task. For now emit a stable placeholder so the formatter remains
+    // total and any caffeine_lang consumer that round-trips test fixtures
+    // doesn't panic.
+    LiteralExternalIndicator(source, _, _) -> "from " <> source <> " { ... }"
   }
 }
 

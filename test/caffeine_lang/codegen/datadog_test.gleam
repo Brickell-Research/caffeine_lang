@@ -135,7 +135,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -206,7 +206,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{env:production,status:2xx}"),
               #("denominator", "sum:http.requests{env:production}"),
             ]),
@@ -272,7 +272,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -332,7 +332,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.5,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:api.requests{!status:5xx}"),
               #("denominator", "sum:api.requests{*}"),
             ]),
@@ -404,7 +404,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("good", "sum:http.requests{status:2xx}"),
               #("partial", "sum:http.requests{status:3xx}"),
               #("total", "sum:http.requests{*}"),
@@ -554,7 +554,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -645,7 +645,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -736,7 +736,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -819,7 +819,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -902,7 +902,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -984,7 +984,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -1059,7 +1059,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -1127,7 +1127,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -1195,7 +1195,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -1263,7 +1263,7 @@ pub fn generate_terraform_test() {
           ],
           slo: ir.SloFields(
             threshold: 99.9,
-            indicators: dict.from_list([
+            indicators: ir.literal_indicators_from([
               #("numerator", "sum:http.requests{status:2xx}"),
               #("denominator", "sum:http.requests{*}"),
             ]),
@@ -1438,7 +1438,7 @@ pub fn resolve_indicators_bad_evaluation_decode_test() {
       ],
       slo: SloFields(
         threshold: 99.0,
-        indicators: dict.from_list([#("numerator", "count:test")]),
+        indicators: ir.literal_indicators_from([#("numerator", "count:test")]),
         window_in_days: 30,
         evaluation: option.None,
         tags: [],

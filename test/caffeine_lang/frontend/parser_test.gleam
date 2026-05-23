@@ -188,12 +188,12 @@ pub fn parse_measurements_file_test() {
               extends: [],
               requires: ast.Struct(trailing_comments: [], fields: [
                 ast.Field(
-                  "from",
+                  "source",
                   ast.TypeValue(string_type()),
                   leading_comments: [],
                 ),
                 ast.Field(
-                  "to",
+                  "target",
                   ast.TypeValue(string_type()),
                   leading_comments: [],
                 ),
@@ -875,4 +875,101 @@ pub fn parse_multiple_errors_across_items_test() {
   let assert Error(errors) = parser.parse_measurements_file(source)
   // Should have at least 2 errors (one per bad type)
   { list.length(errors) >= 2 } |> should.be_true()
+}
+
+// ==== external-indicator literal: single-line, single match clause ====
+// * ✅ `from <source> where <field> = <value>` parses as LiteralExternalIndicator
+//      with one MatchClause and no value extraction.
+pub fn parse_external_indicator_single_line_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      good: from langfuse where name = \"outcome\"\n    }\n  }\n"
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert [item] = file.items
+  let assert [ast.Field(name: "indicators", value: indicators_value, ..)] =
+    item.provides.fields
+  let assert ast.LiteralValue(ast.LiteralStruct(fields, _)) = indicators_value
+  let assert [ast.Field(name: "good", value: good_value, ..)] = fields
+  let assert ast.LiteralValue(ast.LiteralExternalIndicator(
+    source: "langfuse",
+    match: [ast.MatchClause(field: "name", value: ast.LiteralString("outcome"))],
+    value_extraction: option.None,
+  )) = good_value
+}
+
+// ==== external-indicator literal: single-line, `and` chain ====
+// * ✅ `and` chains parse as a flat list of MatchClauses in source order.
+pub fn parse_external_indicator_and_chain_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      good: from langfuse where name = \"outcome\" and value = \"pass\"\n    }\n  }\n"
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert [item] = file.items
+  let assert [ast.Field(name: "indicators", value: indicators_value, ..)] =
+    item.provides.fields
+  let assert ast.LiteralValue(ast.LiteralStruct(fields, _)) = indicators_value
+  let assert [ast.Field(name: "good", value: good_value, ..)] = fields
+  let assert ast.LiteralValue(ast.LiteralExternalIndicator(
+    source: "langfuse",
+    match: matches,
+    value_extraction: option.None,
+  )) = good_value
+  matches
+  |> should.equal([
+    ast.MatchClause(field: "name", value: ast.LiteralString("outcome")),
+    ast.MatchClause(field: "value", value: ast.LiteralString("pass")),
+  ])
+}
+
+// ==== external-indicator literal: block form with value extraction ====
+// * ✅ `value: <path> as <type>` parses as Some(ValueExtraction(path, type))
+pub fn parse_external_indicator_block_with_value_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      score: from langfuse {\n        where: name = \"faithfulness\"\n        value: value as Float\n      }\n    }\n  }\n"
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert [item] = file.items
+  let assert [ast.Field(name: "indicators", value: indicators_value, ..)] =
+    item.provides.fields
+  let assert ast.LiteralValue(ast.LiteralStruct(fields, _)) = indicators_value
+  let assert [ast.Field(name: "score", value: score_value, ..)] = fields
+  let assert ast.LiteralValue(ast.LiteralExternalIndicator(
+    source: "langfuse",
+    match: [
+      ast.MatchClause(field: "name", value: ast.LiteralString("faithfulness")),
+    ],
+    value_extraction: option.Some(ast.ValueExtraction(path: "value", type_: t)),
+  )) = score_value
+  t |> should.equal(float_type())
+}
+
+// ==== external-indicator literal: block form without value extraction ====
+// * ✅ omitting `value:` leaves value_extraction at None (count semantics)
+pub fn parse_external_indicator_block_no_value_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      hits: from langfuse {\n        where: name = \"x\"\n      }\n    }\n  }\n"
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert [item] = file.items
+  let assert [ast.Field(name: "indicators", value: indicators_value, ..)] =
+    item.provides.fields
+  let assert ast.LiteralValue(ast.LiteralStruct(fields, _)) = indicators_value
+  let assert [ast.Field(name: "hits", value: hits_value, ..)] = fields
+  let assert ast.LiteralValue(ast.LiteralExternalIndicator(
+    source: "langfuse",
+    match: [ast.MatchClause(field: "name", value: ast.LiteralString("x"))],
+    value_extraction: option.None,
+  )) = hits_value
+}
+
+// ==== external-indicator literal: error — missing `where`/`{` after source ====
+// * ✅ `from langfuse 123` is rejected with a clear error mentioning where/{
+pub fn parse_external_indicator_missing_where_or_brace_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      bad: from langfuse 123\n    }\n  }\n"
+  let assert Error(_) = parser.parse_measurements_file(source)
+}
+
+// ==== external-indicator literal: error — missing `=` in match clause ====
+// * ✅ `from langfuse where name "x"` is rejected
+pub fn parse_external_indicator_missing_equals_test() {
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      bad: from langfuse where name \"x\"\n    }\n  }\n"
+  let assert Error(_) = parser.parse_measurements_file(source)
 }

@@ -332,7 +332,9 @@ fn build_slo_fields(
   let threshold =
     helpers.extract_value(index, "threshold", value.extract_percentage)
     |> result.unwrap(helpers.default_threshold_percentage)
-  let indicators = helpers.extract_indicators(index)
+  let indicators =
+    helpers.extract_indicators(index)
+    |> dict.map_values(fn(_, q) { ir.LiteralQuery(q) })
   let window_in_days = helpers.extract_window_in_days(index)
   let evaluation =
     helpers.extract_value(index, "evaluation", value.extract_string)
