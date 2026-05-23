@@ -1,35 +1,12 @@
 /// Codegen for the bundled relay Gleam project.
-///
-/// The compiler "vends" a small standalone Gleam project — `gleam.toml` plus
-/// one or more source modules — into the user's repo at `build/relay/relay/`
-/// on every compile. The contents are identical for every user; only the
-/// per-spec `signals.json` (from `codegen/relay`) varies. At CI time the GHA
-/// workflow (from `codegen/relay_workflow`) installs Gleam, `cd`s into this
-/// project, and runs it.
-///
-/// The files are stored here as string constants so the bundle works
-/// transparently on both compile targets (Erlang CLI + JavaScript browser
-/// bundle) without a filesystem dependency at compile time. If the relay
-/// grows large enough that inline constants become awkward, swap in a
-/// build-step that reads files from `priv/relay/` and emits this module.
-///
-/// Task #7 ships a stub that compiles and runs but does no real work; the
-/// Langfuse + Datadog clients land in Task #8.
 import gleam/dict.{type Dict}
 import gleam/option.{type Option}
 
-/// Generate the bundled relay project as a path -> contents map. Returns
-/// `None` when the caller decided no relay is needed (gated alongside the
-/// other relay artifacts in `compiler.gleam`). Map keys are relative to
-/// the bundle root — typically the consumer writes them under
-/// `build/relay/relay/<key>`.
 @internal
 pub fn generate() -> Option(Dict(String, String)) {
   option.Some(
     dict.from_list([
       #("gleam.toml", relay_gleam_toml),
-      // Module name has to match the package name so `gleam run` (no `-m`)
-      // resolves it — the GHA workflow invokes it that way.
       #("src/caffeine_relay.gleam", relay_src),
       #(".gitignore", relay_gitignore),
     ]),
@@ -38,25 +15,457 @@ pub fn generate() -> Option(Dict(String, String)) {
 
 const relay_gleam_toml = "name = \"caffeine_relay\"
 version = \"0.0.0\"
-description = \"Auto-vended by caffeine_lang. Do not hand-edit; rerun `caffeine compile` to regenerate.\"
 target = \"erlang\"
 
 [dependencies]
-gleam_stdlib = \">= 0.70.0 and < 2.0.0\"
+gleam_stdlib = \">= 1.0.0 and < 2.0.0\"
+gleam_json = \">= 3.0.0 and < 4.0.0\"
+gleam_http = \">= 4.0.0 and < 5.0.0\"
+gleam_httpc = \">= 5.0.0 and < 6.0.0\"
+simplifile = \">= 2.0.0 and < 3.0.0\"
+argv = \">= 1.0.0 and < 2.0.0\"
+envoy = \">= 1.0.0 and < 2.0.0\"
 "
 
-const relay_src = "//// Caffeine relay — entry point.
+const relay_src = "
+//// Caffeine relay — Langfuse score → Datadog metric forwarder.
 ////
 //// Auto-vended by `caffeine_lang`. Do not hand-edit; rerun
-//// `caffeine compile` to regenerate. Real implementation (Langfuse client,
-//// Datadog submitter, cursor management) lands in Task #8; this stub just
-//// confirms the bundling, install, and GHA-workflow plumbing all line up.
+//// `caffeine compile` to regenerate.
 
+import argv
+import envoy
+import gleam/bit_array
+import gleam/dict
+import gleam/dynamic/decode
+import gleam/http.{Post}
+import gleam/http/request
+import gleam/httpc
+import gleam/int
 import gleam/io
+import gleam/json
+import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/result
+import gleam/string
+import simplifile
+
+// ===========================================================================
+// Types
+// ===========================================================================
+
+pub type Config {
+  Config(signals: List(SignalEntry))
+}
+
+pub type SignalEntry {
+  SignalEntry(
+    metric: String,
+    kind: String,
+    source: String,
+    match: dict.Dict(String, String),
+    value_path: Option(String),
+  )
+}
+
+pub type Cursor {
+  Cursor(langfuse_since: Option(String))
+}
+
+pub type LangfuseScore {
+  LangfuseScore(
+    name: String,
+    string_value: Option(String),
+    timestamp: String,
+  )
+}
+
+pub type LangfuseCredentials {
+  LangfuseCredentials(
+    public_key: String,
+    secret_key: String,
+    base_url: String,
+  )
+}
+
+pub type DatadogPoint {
+  DatadogPoint(metric: String, value: Float, timestamp: Int)
+}
+
+// ===========================================================================
+// Entry point
+// ===========================================================================
 
 pub fn main() -> Nil {
-  io.println(
-    \"caffeine relay stub — Task #8 fills this in (Langfuse pull + Datadog push)\",
+  case run() {
+    Ok(summary) -> io.println(summary)
+    Error(msg) -> {
+      io.println_error(\"caffeine-relay error: \" <> msg)
+      panic as msg
+    }
+  }
+}
+
+fn run() -> Result(String, String) {
+  let args = argv.load().arguments
+  use #(config_path, cursor_path) <- result.try(parse_args(args))
+  use config <- result.try(load_config(config_path))
+  use cursor <- result.try(load_cursor(cursor_path))
+
+  let langfuse_signals =
+    list.filter(config.signals, fn(s) { s.source == \"langfuse\" })
+
+  case langfuse_signals {
+    [] -> Ok(\"caffeine-relay: no langfuse signals to route, skipping\")
+    _ -> {
+      use lf_creds <- result.try(load_langfuse_credentials())
+      use dd_key <- result.try(load_dd_api_key())
+      use scores <- result.try(fetch_langfuse_scores(
+        lf_creds,
+        cursor.langfuse_since,
+      ))
+      let points = dispatch_scores(scores, langfuse_signals)
+      use _ <- result.try(submit_to_datadog(dd_key, points))
+      let new_cursor = cursor_after(cursor, scores)
+      use _ <- result.try(save_cursor(cursor_path, new_cursor))
+      Ok(
+        \"caffeine-relay: processed \"
+        <> int.to_string(list.length(scores))
+        <> \" scores, emitted \"
+        <> int.to_string(list.length(points))
+        <> \" metric points\",
+      )
+    }
+  }
+}
+
+// ===========================================================================
+// Argument parsing
+// ===========================================================================
+
+fn parse_args(args: List(String)) -> Result(#(String, String), String) {
+  parse_args_loop(args, None, None)
+}
+
+fn parse_args_loop(
+  args: List(String),
+  config: Option(String),
+  cursor: Option(String),
+) -> Result(#(String, String), String) {
+  case args {
+    [] ->
+      case config, cursor {
+        Some(c), Some(cu) -> Ok(#(c, cu))
+        None, _ -> Error(\"--config <path> is required\")
+        _, None -> Error(\"--cursor <path> is required\")
+      }
+    [\"--config\", path, ..rest] -> parse_args_loop(rest, Some(path), cursor)
+    [\"--cursor\", path, ..rest] -> parse_args_loop(rest, config, Some(path))
+    [unknown, ..] -> Error(\"unknown argument: \" <> unknown)
+  }
+}
+
+// ===========================================================================
+// Config (signals.json) parsing
+// ===========================================================================
+
+fn load_config(path: String) -> Result(Config, String) {
+  use text <- result.try(
+    simplifile.read(path)
+    |> result.map_error(fn(_) { \"failed to read config: \" <> path }),
+  )
+  json.parse(text, config_decoder())
+  |> result.map_error(fn(err) {
+    \"failed to parse config: \" <> string.inspect(err)
+  })
+}
+
+fn config_decoder() -> decode.Decoder(Config) {
+  use signals <- decode.field(\"signals\", decode.list(signal_entry_decoder()))
+  decode.success(Config(signals: signals))
+}
+
+fn signal_entry_decoder() -> decode.Decoder(SignalEntry) {
+  use metric <- decode.field(\"metric\", decode.string)
+  use kind <- decode.field(\"kind\", decode.string)
+  use source <- decode.field(\"source\", decode.string)
+  use match <- decode.field(
+    \"match\",
+    decode.dict(decode.string, decode.string),
+  )
+  use value_path <- decode.field(
+    \"value_path\",
+    decode.optional(decode.string),
+  )
+  decode.success(SignalEntry(
+    metric: metric,
+    kind: kind,
+    source: source,
+    match: match,
+    value_path: value_path,
+  ))
+}
+
+// ===========================================================================
+// Cursor I/O
+// ===========================================================================
+
+fn load_cursor(path: String) -> Result(Cursor, String) {
+  case simplifile.read(path) {
+    Error(_) -> Ok(Cursor(langfuse_since: None))
+    Ok(text) ->
+      json.parse(text, cursor_decoder())
+      |> result.map_error(fn(err) {
+        \"failed to parse cursor: \" <> string.inspect(err)
+      })
+  }
+}
+
+fn cursor_decoder() -> decode.Decoder(Cursor) {
+  use since <- decode.field(\"langfuse_since\", decode.optional(decode.string))
+  decode.success(Cursor(langfuse_since: since))
+}
+
+fn save_cursor(path: String, cursor: Cursor) -> Result(Nil, String) {
+  let body =
+    json.to_string(
+      json.object([
+        #(\"langfuse_since\", case cursor.langfuse_since {
+          None -> json.null()
+          Some(s) -> json.string(s)
+        }),
+      ]),
+    )
+  simplifile.write(path, body)
+  |> result.map_error(fn(_) { \"failed to write cursor: \" <> path })
+}
+
+fn cursor_after(prev: Cursor, scores: List(LangfuseScore)) -> Cursor {
+  case scores {
+    [] -> prev
+    _ -> {
+      let latest =
+        scores
+        |> list.map(fn(s) { s.timestamp })
+        |> list.sort(string.compare)
+        |> list.last
+      case latest {
+        Ok(ts) -> Cursor(langfuse_since: Some(ts))
+        Error(_) -> prev
+      }
+    }
+  }
+}
+
+// ===========================================================================
+// Langfuse client
+// ===========================================================================
+
+fn load_langfuse_credentials() -> Result(LangfuseCredentials, String) {
+  use public_key <- result.try(
+    envoy.get(\"LANGFUSE_PUBLIC_KEY\")
+    |> result.replace_error(\"LANGFUSE_PUBLIC_KEY not set\"),
+  )
+  use secret_key <- result.try(
+    envoy.get(\"LANGFUSE_SECRET_KEY\")
+    |> result.replace_error(\"LANGFUSE_SECRET_KEY not set\"),
+  )
+  let base_url =
+    envoy.get(\"LANGFUSE_BASE_URL\")
+    |> result.unwrap(\"https://cloud.langfuse.com\")
+  Ok(LangfuseCredentials(
+    public_key: public_key,
+    secret_key: secret_key,
+    base_url: base_url,
+  ))
+}
+
+fn fetch_langfuse_scores(
+  creds: LangfuseCredentials,
+  since: Option(String),
+) -> Result(List(LangfuseScore), String) {
+  let path = \"/api/public/scores\"
+  let query = case since {
+    None -> \"?limit=50\"
+    Some(ts) -> \"?limit=50&fromTimestamp=\" <> ts
+  }
+  let auth_token = basic_auth(creds.public_key, creds.secret_key)
+
+  use req <- result.try(
+    request.to(creds.base_url <> path <> query)
+    |> result.replace_error(\"failed to construct langfuse request\"),
+  )
+  let req =
+    req
+    |> request.set_header(\"authorization\", \"Basic \" <> auth_token)
+    |> request.set_header(\"accept\", \"application/json\")
+
+  use resp <- result.try(
+    httpc.send(req)
+    |> result.map_error(fn(e) { \"langfuse http error: \" <> string.inspect(e) }),
+  )
+
+  case resp.status {
+    200 ->
+      json.parse(resp.body, scores_response_decoder())
+      |> result.map_error(fn(err) {
+        \"failed to decode langfuse scores: \" <> string.inspect(err)
+      })
+    code ->
+      Error(
+        \"langfuse returned HTTP \"
+        <> int.to_string(code)
+        <> \": \"
+        <> string.slice(resp.body, 0, 200),
+      )
+  }
+}
+
+fn scores_response_decoder() -> decode.Decoder(List(LangfuseScore)) {
+  use scores <- decode.field(\"data\", decode.list(score_decoder()))
+  decode.success(scores)
+}
+
+fn score_decoder() -> decode.Decoder(LangfuseScore) {
+  use name <- decode.field(\"name\", decode.string)
+  use string_value <- decode.field(
+    \"stringValue\",
+    decode.optional(decode.string),
+  )
+  use timestamp <- decode.field(\"timestamp\", decode.string)
+  decode.success(LangfuseScore(
+    name: name,
+    string_value: string_value,
+    timestamp: timestamp,
+  ))
+}
+
+fn basic_auth(user: String, pass: String) -> String {
+  bit_array.from_string(user <> \":\" <> pass)
+  |> bit_array.base64_encode(False)
+}
+
+// ===========================================================================
+// Dispatch (score → metric point)
+// ===========================================================================
+
+fn dispatch_scores(
+  scores: List(LangfuseScore),
+  signals: List(SignalEntry),
+) -> List(DatadogPoint) {
+  scores
+  |> list.flat_map(fn(score) {
+    signals
+    |> list.filter(fn(s) { score_matches(score, s) })
+    |> list.map(fn(s) {
+      DatadogPoint(metric: s.metric, value: 1.0, timestamp: now_unix())
+    })
+  })
+}
+
+fn score_matches(score: LangfuseScore, signal: SignalEntry) -> Bool {
+  signal.match
+  |> dict.to_list
+  |> list.all(fn(pair) {
+    let #(field, expected) = pair
+    case field {
+      \"name\" -> score.name == expected
+      \"value\" ->
+        case score.string_value {
+          Some(v) -> v == expected
+          None -> False
+        }
+      _ -> False
+    }
+  })
+}
+
+// ===========================================================================
+// Datadog client
+// ===========================================================================
+
+@external(erlang, \"erlang\", \"system_time\")
+fn erlang_system_time_seconds(unit: SecondAtom) -> Int
+
+type SecondAtom {
+  Second
+}
+
+fn now_unix() -> Int {
+  erlang_system_time_seconds(Second)
+}
+
+fn load_dd_api_key() -> Result(String, String) {
+  envoy.get(\"DD_API_KEY\")
+  |> result.replace_error(\"DD_API_KEY not set\")
+}
+
+fn submit_to_datadog(
+  api_key: String,
+  points: List(DatadogPoint),
+) -> Result(Nil, String) {
+  case points {
+    [] -> Ok(Nil)
+    _ -> {
+      let body = datadog_series_json(points)
+      use req <- result.try(
+        request.to(\"https://api.datadoghq.com/api/v2/series\")
+        |> result.replace_error(\"failed to construct datadog request\"),
+      )
+      let req =
+        req
+        |> request.set_method(Post)
+        |> request.set_header(\"dd-api-key\", api_key)
+        |> request.set_header(\"content-type\", \"application/json\")
+        |> request.set_body(body)
+
+      use resp <- result.try(
+        httpc.send(req)
+        |> result.map_error(fn(e) {
+          \"datadog http error: \" <> string.inspect(e)
+        }),
+      )
+      case resp.status {
+        202 -> Ok(Nil)
+        code ->
+          Error(
+            \"datadog returned HTTP \"
+            <> int.to_string(code)
+            <> \": \"
+            <> string.slice(resp.body, 0, 200),
+          )
+      }
+    }
+  }
+}
+
+fn datadog_series_json(points: List(DatadogPoint)) -> String {
+  let grouped =
+    points
+    |> list.group(fn(p) { p.metric })
+
+  let series_array =
+    grouped
+    |> dict.to_list
+    |> list.map(fn(pair) {
+      let #(metric, ps) = pair
+      json.object([
+        #(\"metric\", json.string(metric)),
+        #(\"type\", json.int(1)),
+        #(
+          \"points\",
+          json.array(ps, fn(p) {
+            json.object([
+              #(\"timestamp\", json.int(p.timestamp)),
+              #(\"value\", json.float(p.value)),
+            ])
+          }),
+        ),
+      ])
+    })
+
+  json.to_string(
+    json.object([#(\"series\", json.preprocessed_array(series_array))]),
   )
 }
 "
