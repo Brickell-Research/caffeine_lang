@@ -5,6 +5,7 @@ import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/platforms
 import caffeine_lang/codegen/relay
+import caffeine_lang/codegen/relay_workflow
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/expectations
@@ -30,14 +31,15 @@ import terra_madre/render
 import terra_madre/terraform
 
 /// Output of the compilation process. Includes Terraform (always), the
-/// dependency graph when relations exist, the relay's `signals.json` when
-/// any expectation uses external-signal indicators, and any warnings the
-/// codegen accumulated.
+/// dependency graph when relations exist, the relay's `signals.json` and
+/// GHA workflow when any expectation uses external-signal indicators, and
+/// any warnings the codegen accumulated.
 pub type CompilationOutput {
   CompilationOutput(
     terraform: String,
     dependency_graph: Option(String),
     relay_signals: Option(String),
+    relay_workflow: Option(String),
     warnings: List(String),
   )
 }
@@ -183,13 +185,20 @@ fn run_code_generation(
 
   // Relay routing table (`signals.json`) is emitted only when at least one
   // expectation uses an external-signal indicator. Pure literal-query
-  // pipelines need no relay and skip this artifact.
+  // pipelines need no relay and skip this artifact. The GHA workflow rides
+  // alongside on the same gate — it only makes sense when there's a relay
+  // to invoke.
   let relay_signals = relay.generate(resolved_irs)
+  let relay_workflow = case relay_signals {
+    option.None -> option.None
+    option.Some(_) -> option.Some(relay_workflow.generate())
+  }
 
   Ok(CompilationOutput(
     terraform: terraform_output,
     dependency_graph: graph,
     relay_signals: relay_signals,
+    relay_workflow: relay_workflow,
     warnings: all_warnings,
   ))
 }
