@@ -12,6 +12,7 @@ target = "erlang"
 
 [dependencies]
 gleam_stdlib = ">= 0.70.0 and < 1.0.2"
+gleam_json = ">= 3.0.0 and < 4.0.0"
 terra_madre = ">=0.0.6"
 datadog_query = ">= 2.0.0 and < 3.0.0"
 
@@ -28,6 +29,7 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 "caffeine_lang/codegen/datadog_template" = true
 "caffeine_lang/codegen/dependency_graph" = true
 "caffeine_lang/codegen/generator_utils" = true
+"caffeine_lang/codegen/relay" = true
 # Frontend (internal helpers)
 "caffeine_lang/frontend/lowering" = true
 # Linker (internal orchestration)

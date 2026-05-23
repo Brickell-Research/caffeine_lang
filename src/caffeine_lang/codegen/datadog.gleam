@@ -9,9 +9,6 @@ import caffeine_lang/linker/ir.{
   type DepsValidated, type IntermediateRepresentation, type Resolved,
   IntermediateRepresentation, SloFields, ir_to_identifier,
 }
-import caffeine_lang/types.{
-  CollectionType, Dict, PrimitiveType, String as StringType,
-}
 import caffeine_lang/value
 import datadog_query/filter
 import datadog_query/lint
@@ -27,6 +24,17 @@ import terra_madre/hcl
 import terra_madre/terraform
 
 /// Resolves Datadog indicator templates in an intermediate representation.
+///
+/// Walks `ir.values["indicators"]` (the canonical Value-typed dict the linker
+/// populates) and produces a Resolved IR where both:
+///   - `ir.values["indicators"]` has template variables (`$$var$$`) expanded
+///   - `slo.indicators` is a fully-typed `Dict(String, IndicatorSource)` —
+///     `LiteralQuery(resolved)` for string-valued entries; `ExternalSignal`
+///     for the new relay-fed indicators (with match clauses also template-
+///     resolved, preserving `value_extraction` from the upstream linker).
+///
+/// `evaluation` is also template-resolved here because it's the only other
+/// templated field today.
 @internal
 pub fn resolve_indicators(
   ir: IntermediateRepresentation(DepsValidated),
@@ -42,8 +50,8 @@ pub fn resolve_indicators(
     )),
   )
 
-  use indicators_dict <- result.try(
-    value.extract_string_dict(indicators_value_tuple.value)
+  use raw_indicators_dict <- result.try(
+    value.extract_dict(indicators_value_tuple.value)
     |> result.map_error(fn(_) {
       errors.semantic_analysis_template_resolution_error(
         msg: "expectation '"
@@ -55,40 +63,40 @@ pub fn resolve_indicators(
 
   let identifier = ir_to_identifier(ir)
 
-  // Resolve all indicators and collect results.
-  use resolved_indicators <- result.try(
-    indicators_dict
+  // Resolve every indicator entry to both its post-resolution Value form
+  // (for `ir.values` writeback) and its typed `IndicatorSource` form (for
+  // `slo.indicators`).
+  use resolved_pairs <- result.try(
+    raw_indicators_dict
     |> dict.to_list
     |> list.try_map(fn(pair) {
-      let #(key, indicator) = pair
-      use resolved <- result.map(templatizer.parse_and_resolve_query_template(
-        indicator,
-        ir.values,
-        from: identifier,
-      ))
-      #(key, resolved)
+      let #(name, raw_value) = pair
+      resolve_one_indicator(name, raw_value, ir, identifier)
     }),
   )
 
-  // Build the new indicators dict as a Value.
-  let resolved_indicators_value =
-    resolved_indicators
-    |> list.map(fn(pair) { #(pair.0, value.StringValue(pair.1)) })
+  let new_value_dict =
+    resolved_pairs
+    |> list.map(fn(triple) { #(triple.0, triple.1) })
     |> dict.from_list
     |> value.DictValue
 
-  // Create the new indicators ValueTuple.
   let new_indicators_value_tuple =
     helpers.ValueTuple(
       "indicators",
-      CollectionType(Dict(PrimitiveType(StringType), PrimitiveType(StringType))),
-      resolved_indicators_value,
+      indicators_value_tuple.typ,
+      new_value_dict,
     )
 
-  // Also resolve templates in the "evaluation" field if present.
-  let evaluation_tuple_result = dict.get(values_index, "evaluation")
+  let resolved_indicators_dict =
+    resolved_pairs
+    |> list.map(fn(triple) { #(triple.0, triple.2) })
+    |> dict.from_list
 
-  use resolved_evaluation_tuple <- result.try(case evaluation_tuple_result {
+  // Also resolve templates in the "evaluation" field if present.
+  use resolved_evaluation_tuple <- result.try(case
+    dict.get(values_index, "evaluation")
+  {
     Error(_) -> Ok(option.None)
     Ok(evaluation_tuple) -> {
       use evaluation_string <- result.try(
@@ -109,14 +117,13 @@ pub fn resolve_indicators(
       |> result.map(fn(resolved_evaluation) {
         option.Some(helpers.ValueTuple(
           "evaluation",
-          PrimitiveType(StringType),
+          evaluation_tuple.typ,
           value.StringValue(resolved_evaluation),
         ))
       })
     }
   })
 
-  // Update the IR with the resolved indicators and evaluation.
   let new_values =
     ir.values
     |> list.map(fn(vt) {
@@ -131,14 +138,6 @@ pub fn resolve_indicators(
       }
     })
 
-  // Also update the structured slo fields with resolved values.
-  // Resolved indicators are query strings; wrap each into the typed
-  // `IndicatorSource` form. ExternalSignal cases will land here once Task #5
-  // rewrites them in-line during this same pass.
-  let resolved_indicators_dict =
-    resolved_indicators
-    |> list.map(fn(pair) { #(pair.0, ir.LiteralQuery(pair.1)) })
-    |> dict.from_list
   let resolved_eval = case resolved_evaluation_tuple {
     option.Some(vt) -> value.extract_string(vt.value) |> option.from_result
     option.None -> ir.slo.evaluation
@@ -155,8 +154,112 @@ pub fn resolve_indicators(
   Ok(ir.promote(new_ir))
 }
 
+/// Resolve a single indicator entry. Returns a triple `#(name, resolved_value,
+/// indicator_source)`:
+///   - `resolved_value` is the post-template-resolution Value (StringValue
+///     for inline-query indicators, ExternalIndicatorValue for relay-fed)
+///     for the `ir.values` writeback.
+///   - `indicator_source` is the typed `IndicatorSource` for `slo.indicators`.
+/// External-indicator `value_extraction` is preserved from the pre-existing
+/// `ir.slo.indicators` entry (populated by the linker) — the Value layer
+/// can't carry the resolved type, so we look it up here.
+fn resolve_one_indicator(
+  name: String,
+  val: value.Value,
+  ir: IntermediateRepresentation(DepsValidated),
+  identifier: String,
+) -> Result(
+  #(String, value.Value, ir.IndicatorSource),
+  CompilationError,
+) {
+  case val {
+    value.StringValue(q) -> {
+      use resolved <- result.map(templatizer.parse_and_resolve_query_template(
+        q,
+        ir.values,
+        from: identifier,
+      ))
+      #(name, value.StringValue(resolved), ir.LiteralQuery(resolved))
+    }
+    value.ExternalIndicatorValue(source, match, value_path) -> {
+      use resolved_match <- result.try(
+        match
+        |> dict.to_list
+        |> list.try_map(fn(pair) {
+          let #(field, field_val) = pair
+          case field_val {
+            value.StringValue(s) -> {
+              use resolved <- result.map(
+                templatizer.parse_and_resolve_query_template(
+                  s,
+                  ir.values,
+                  from: identifier,
+                ),
+              )
+              #(field, value.StringValue(resolved))
+            }
+            other -> Ok(#(field, other))
+          }
+        })
+        |> result.map(dict.from_list),
+      )
+      // Recover the resolved type extraction from the linker-populated
+      // slo.indicators; the Value layer dropped the AcceptedTypes constraint.
+      let value_extraction = case dict.get(ir.slo.indicators, name) {
+        Ok(ir.ExternalSignal(_, _, ve)) -> ve
+        _ -> option.None
+      }
+      Ok(#(
+        name,
+        value.ExternalIndicatorValue(source, resolved_match, value_path),
+        ir.ExternalSignal(
+          source: source,
+          match: resolved_match,
+          value_extraction: value_extraction,
+        ),
+      ))
+    }
+    other ->
+      Error(errors.semantic_analysis_template_resolution_error(
+        msg: "expectation '"
+          <> identifier
+          <> "' - indicator '"
+          <> name
+          <> "' has unsupported value shape: "
+          <> value.classify(other),
+      ))
+  }
+}
+
 /// Default evaluation expression used when no explicit evaluation is provided.
 const default_evaluation = "numerator / denominator"
+
+/// Synthesize a Datadog metric query string for an indicator. `LiteralQuery`
+/// passes through unchanged (the user-authored query). `ExternalSignal`
+/// produces a query against the synthesized metric the relay will emit to:
+///   - no value extraction → count-style: `sum:<metric>.as_count()`
+///   - with value extraction → distribution-style: `avg:<metric>`
+///
+/// The metric name follows the convention
+/// `caffeine.<unique_identifier>.<indicator_name>` so each expectation gets
+/// a dedicated metric stream with no risk of cross-expectation collision.
+fn synthesize_indicator_query(
+  unique_identifier: String,
+  indicator_name: String,
+  src: ir.IndicatorSource,
+) -> String {
+  case src {
+    ir.LiteralQuery(q) -> q
+    ir.ExternalSignal(_, _, value_extraction) -> {
+      let metric =
+        "caffeine." <> unique_identifier <> "." <> indicator_name
+      case value_extraction {
+        option.None -> "sum:" <> metric <> ".as_count()"
+        option.Some(_) -> "avg:" <> metric
+      }
+    }
+  }
+}
 
 /// Generate only the Terraform resources for Datadog IRs (no config/provider).
 /// Returns warnings alongside the resource list.
@@ -191,13 +294,17 @@ pub fn ir_to_terraform_resource(
   let runbook = slo.runbook
   let description = slo.description
 
-  // CQL parsing consumes resolved literal query strings. By this point in the
-  // pipeline `resolve_indicators` has rewritten any ExternalSignal entries
-  // into LiteralQuery (Task #5); `require_literal_query` enforces that
-  // invariant.
+  // CQL parsing consumes resolved query strings. `LiteralQuery` indicators
+  // pass through; `ExternalSignal` indicators get a query synthesized on the
+  // fly that references the metric the relay emits to.
   let indicator_strings =
     indicators
-    |> dict.map_values(fn(_, src) { ir.require_literal_query(src) })
+    |> dict.to_list
+    |> list.map(fn(pair) {
+      let #(name, src) = pair
+      #(name, synthesize_indicator_query(ir.unique_identifier, name, src))
+    })
+    |> dict.from_list
 
   // Parse the evaluation expression using CQL and get HCL blocks. The
   // `below_ms` override from a `Guarantees N% below <duration>` clause flows

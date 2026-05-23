@@ -4,7 +4,8 @@
 packages = [
   { name = "datadog_query", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "datadog_query", source = "hex", outer_checksum = "1B3F0A45D549EE7F33091008C5667C624CBFB59E4EB90856F208B74A50096EA3" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
-  { name = "gleam_stdlib", version = "1.0.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "960090C2FB391784BB34267B099DC9315CC1B1F6013E7415BC763CEF1905D7D3" },
+  { name = "gleam_json", version = "3.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_json", source = "hex", outer_checksum = "44FDAA8847BE8FC48CA7A1C089706BD54BADCC4C45B237A992EDDF9F2CDB2836" },
+  { name = "gleam_stdlib", version = "1.0.1", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "D268F930A1F09925D2E66E336FC9F31F8DC50DB190585711B965E49E874A23CD" },
   { name = "gleeunit", version = "1.10.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "254B697FE72EEAD7BF82E941723918E421317813AC49923EE76A18C788C61E72" },
   { name = "simplifile", version = "2.4.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "7C18AFA4FED0B4CE1FA5B0B4BAC1FA1744427054EA993565F6F3F82E5453170D" },
   { name = "terra_madre", version = "0.0.6", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "terra_madre", source = "hex", outer_checksum = "48648BC2CB0750A724D741E7573D8D5A474DFB457D177DBFDB7A3462334DE2B0" },
@@ -12,6 +13,7 @@ packages = [
 
 [requirements]
 datadog_query = { version = ">= 2.0.0 and < 3.0.0" }
+gleam_json = { version = ">= 3.0.0 and < 4.0.0" }
 gleam_stdlib = { version = ">= 0.70.0 and < 1.0.2" }
 gleeunit = { version = ">= 1.0.2" }
 simplifile = { version = ">= 2.4.0 and < 3.0.0" }

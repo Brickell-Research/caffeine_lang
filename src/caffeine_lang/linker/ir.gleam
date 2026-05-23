@@ -143,20 +143,6 @@ pub fn map_slo(
   IntermediateRepresentation(..ir, slo: updater(ir.slo))
 }
 
-/// Extract a literal query string from an `IndicatorSource`. Panics on
-/// `ExternalSignal` — callers should only invoke this after `resolve_indicators`
-/// has rewritten external signals into synthesized literal queries
-/// (implemented in the relay codegen pass; see Task #5). Used by sites that
-/// consume resolved query strings (CQL parsing, query lints).
-@internal
-pub fn require_literal_query(src: IndicatorSource) -> String {
-  case src {
-    LiteralQuery(q) -> q
-    ExternalSignal(_, _, _) ->
-      panic as "ExternalSignal indicator reached a codegen site that expects a literal query — should have been rewritten in resolve_indicators (Task #5)"
-  }
-}
-
 /// Build an `IndicatorSource` dict from a list of `(name, literal_query)`
 /// pairs. Drop-in replacement for `dict.from_list` at SloFields construction
 /// sites that produce only literal queries (which today is everything except

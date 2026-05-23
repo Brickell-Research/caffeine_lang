@@ -4,6 +4,7 @@ import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/dependency_graph
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/codegen/platforms
+import caffeine_lang/codegen/relay
 import caffeine_lang/errors
 import caffeine_lang/frontend/pipeline
 import caffeine_lang/linker/expectations
@@ -28,11 +29,15 @@ import terra_madre/common
 import terra_madre/render
 import terra_madre/terraform
 
-/// Output of the compilation process containing Terraform, optional dependency graph, and warnings.
+/// Output of the compilation process. Includes Terraform (always), the
+/// dependency graph when relations exist, the relay's `signals.json` when
+/// any expectation uses external-signal indicators, and any warnings the
+/// codegen accumulated.
 pub type CompilationOutput {
   CompilationOutput(
     terraform: String,
     dependency_graph: Option(String),
+    relay_signals: Option(String),
     warnings: List(String),
   )
 }
@@ -176,9 +181,15 @@ fn run_code_generation(
     False -> option.None
   }
 
+  // Relay routing table (`signals.json`) is emitted only when at least one
+  // expectation uses an external-signal indicator. Pure literal-query
+  // pipelines need no relay and skip this artifact.
+  let relay_signals = relay.generate(resolved_irs)
+
   Ok(CompilationOutput(
     terraform: terraform_output,
     dependency_graph: graph,
+    relay_signals: relay_signals,
     warnings: all_warnings,
   ))
 }
