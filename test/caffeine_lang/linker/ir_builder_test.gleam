@@ -181,6 +181,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        external_indicator_types: dict.new(),
         expectation_type: option.None,
       )
     let expectation =
@@ -232,6 +233,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        external_indicator_types: dict.new(),
         expectation_type: option.None,
       )
     let expectation =
@@ -287,6 +289,7 @@ pub fn build_all_test() {
         inputs: dict.from_list([
           #("threshold", value.PercentageValue(99.9)),
         ]),
+        external_indicator_types: dict.new(),
         expectation_type: option.None,
       )
     let expectation =
@@ -340,6 +343,7 @@ pub fn build_all_test() {
           #("threshold", value.PercentageValue(99.9)),
           #("from_measurement", value.StringValue("measurement_value")),
         ]),
+        external_indicator_types: dict.new(),
         expectation_type: option.None,
       )
     let expectation =
@@ -383,6 +387,7 @@ pub fn build_all_test() {
           #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
         ]),
         inputs: dict.new(),
+        external_indicator_types: dict.new(),
         expectation_type: option.None,
       )
     let expectation =
@@ -431,6 +436,7 @@ pub fn build_all_list_misc_test() {
         #("threshold", types.PrimitiveType(types.NumericType(types.Float))),
       ]),
       inputs: dict.new(),
+      external_indicator_types: dict.new(),
       expectation_type: option.None,
     )
   let expectation =
@@ -479,6 +485,7 @@ pub fn build_all_optional_none_misc_test() {
         ),
       ]),
       inputs: dict.new(),
+      external_indicator_types: dict.new(),
       expectation_type: option.None,
     )
   let expectation =
@@ -523,6 +530,7 @@ fn make_measurement(
       })
       |> dict.from_list,
     inputs: dict.new(),
+    external_indicator_types: dict.new(),
     expectation_type: option.None,
   )
 }

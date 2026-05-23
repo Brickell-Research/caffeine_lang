@@ -125,6 +125,7 @@ fn build_measured(
       index,
       expectation.description,
       measurement.expectation_type,
+      measurement.external_indicator_types,
     )
 
   // Resolve vendor from lookup.
@@ -177,8 +178,10 @@ fn build_unmeasured(
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
   let unique_name = org <> "_" <> service <> "_" <> expectation.name
-  // Unmeasured expectations have no backing measurement, so no declared type.
-  let slo = build_slo_fields(index, expectation.description, option.None)
+  // Unmeasured expectations have no backing measurement, so no declared type
+  // and no external-indicator type constraints.
+  let slo =
+    build_slo_fields(index, expectation.description, option.None, dict.new())
 
   ir.IntermediateRepresentation(
     metadata: ir.IntermediateRepresentationMetaData(
@@ -319,22 +322,78 @@ fn resolve_values_for_tag(
   }
 }
 
+/// Build the typed indicator dict (`Dict(String, IndicatorSource)`) from the
+/// raw indicators value-tuple. String-valued indicators become `LiteralQuery`
+/// (the legacy inline-query form). `ExternalIndicatorValue` entries become
+/// `ExternalSignal`, with `value_extraction` populated by looking up the
+/// indicator name in `external_indicator_types` — that's how the AST-level
+/// type info from the `value:` clause survives the trip through lowering.
+/// Indicators whose values are neither shape (shouldn't happen post-validate)
+/// are silently dropped; the validator should have caught them earlier.
+fn build_indicator_sources(
+  index: dict.Dict(String, helpers.ValueTuple),
+  external_indicator_types: dict.Dict(String, AcceptedTypes),
+) -> dict.Dict(String, ir.IndicatorSource) {
+  case dict.get(index, "indicators") {
+    Error(_) -> dict.new()
+    Ok(vt) ->
+      case vt.value {
+        value.DictValue(d) ->
+          d
+          |> dict.to_list
+          |> list.filter_map(fn(pair) {
+            let #(name, val) = pair
+            case val {
+              value.StringValue(s) -> Ok(#(name, ir.LiteralQuery(s)))
+              value.ExternalIndicatorValue(source, match, value_path) -> {
+                let value_extraction = case value_path {
+                  option.None -> option.None
+                  option.Some(path) ->
+                    case dict.get(external_indicator_types, name) {
+                      Ok(t) ->
+                        option.Some(ir.ExternalValueExtraction(path, t))
+                      // Path declared but no type info — only reachable if
+                      // lowering and IR construction got out of sync, which
+                      // would be a compiler bug. Stay graceful.
+                      Error(_) -> option.None
+                    }
+                }
+                Ok(#(
+                  name,
+                  ir.ExternalSignal(
+                    source: source,
+                    match: match,
+                    value_extraction: value_extraction,
+                  ),
+                ))
+              }
+              _ -> Error(Nil)
+            }
+          })
+          |> dict.from_list
+        _ -> dict.new()
+      }
+  }
+}
+
 /// Extract SLO-specific fields from an indexed Dict of ValueTuples.
 /// Threshold defaults to the standard default when not present (e.g. unmeasured expectations).
 /// `description` is sourced from the expectation's leading doc comments, not
 /// from value tuples. `expectation_type` flows from the bound measurement's
 /// declared `success_rate` / `time_slice` header (None for unmeasured).
+/// `external_indicator_types` is the measurement's resolved type constraints
+/// for external-indicator value extractions, keyed by indicator name; empty
+/// for unmeasured expectations.
 fn build_slo_fields(
   index: dict.Dict(String, helpers.ValueTuple),
   description: option.Option(String),
   expectation_type: option.Option(ast.ExpectationType),
+  external_indicator_types: dict.Dict(String, AcceptedTypes),
 ) -> ir.SloFields {
   let threshold =
     helpers.extract_value(index, "threshold", value.extract_percentage)
     |> result.unwrap(helpers.default_threshold_percentage)
-  let indicators =
-    helpers.extract_indicators(index)
-    |> dict.map_values(fn(_, q) { ir.LiteralQuery(q) })
+  let indicators = build_indicator_sources(index, external_indicator_types)
   let window_in_days = helpers.extract_window_in_days(index)
   let evaluation =
     helpers.extract_value(index, "evaluation", value.extract_string)

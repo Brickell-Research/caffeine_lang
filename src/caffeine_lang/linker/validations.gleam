@@ -108,6 +108,59 @@ pub fn inputs_validator(
   }
 }
 
+/// The set of source kinds Caffeine understands today. v0 ships with
+/// Langfuse only; per-source plugins behind this list will land alongside
+/// the relay codegen.
+@internal
+pub fn known_external_indicator_sources() -> set.Set(String) {
+  set.from_list(["langfuse"])
+}
+
+/// Walk a measurement's `Provides { indicators: { ... } }` block looking for
+/// `ExternalIndicatorValue` entries and reject any whose source kind isn't
+/// in `known_external_indicator_sources`. Match-clause field validation is
+/// per-source-kind and lives elsewhere (deferred until we have >1 source).
+@internal
+pub fn validate_external_indicator_sources(
+  measurement_name: String,
+  inputs: Dict(String, Value),
+) -> Result(Nil, CompilationError) {
+  case dict.get(inputs, "indicators") {
+    Error(_) -> Ok(Nil)
+    Ok(value.DictValue(d)) -> {
+      let unknown =
+        d
+        |> dict.to_list
+        |> list.filter_map(fn(pair) {
+          let #(_name, val) = pair
+          case val {
+            value.ExternalIndicatorValue(source, _, _) ->
+              case
+                set.contains(known_external_indicator_sources(), source)
+              {
+                True -> Error(Nil)
+                False -> Ok(source)
+              }
+            _ -> Error(Nil)
+          }
+        })
+        |> list.unique
+        |> list.sort(string.compare)
+      case unknown {
+        [] -> Ok(Nil)
+        sources ->
+          Error(errors.linker_value_validation_error(
+            msg: "measurement '"
+              <> measurement_name
+              <> "' - unknown external indicator source(s): "
+              <> string.join(sources, ", "),
+          ))
+      }
+    }
+    Ok(_) -> Ok(Nil)
+  }
+}
+
 /// Validates that all items in a list have unique values for a given property.
 /// Returns a LinkerDuplicateError listing any duplicate values found.
 @internal

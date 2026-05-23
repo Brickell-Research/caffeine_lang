@@ -412,6 +412,68 @@ pub fn literal_to_dynamic_test() {
   { expectations != [] } |> should.be_true
 }
 
+// ==== lower_measurements (external indicators) ====
+// * ✅ external indicator value (no extraction) lowers to ExternalIndicatorValue
+//      with empty external_indicator_types entry
+// * ✅ external indicator with `value:` extraction populates
+//      external_indicator_types with the resolved type
+fn parse_and_lower_inline(source: String) -> List(Measurement(Raw)) {
+  let assert Ok(file) = parser.parse_measurements_file(source)
+  let assert Ok(validated) = validator.validate_measurements_file(file)
+  lowering.lower_measurements(validated)
+}
+
+pub fn lower_measurements_external_indicator_count_test() {
+  // Single-line form; no value extraction, so external_indicator_types stays
+  // empty even though the indicator itself is external.
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      good: from langfuse where name = \"outcome\" and value = \"pass\"\n    }\n  }\n"
+  let measurements = parse_and_lower_inline(source)
+  let assert Ok(bp) = list.first(measurements)
+
+  // Indicators surface as a DictValue containing an ExternalIndicatorValue
+  // for `good` with two match clauses and no value_path.
+  let assert Ok(indicators_val) = dict.get(bp.inputs, "indicators")
+  let assert Ok(indicators_dict) = value.extract_dict(indicators_val)
+  let assert Ok(good_val) = dict.get(indicators_dict, "good")
+  let assert value.ExternalIndicatorValue(
+    source: "langfuse",
+    match: match,
+    value_path: option.None,
+  ) = good_val
+  dict.size(match) |> should.equal(2)
+  let assert Ok(name_val) = dict.get(match, "name")
+  let assert Ok(name_str) = value.extract_string(name_val)
+  name_str |> should.equal("outcome")
+
+  // No value extraction → no entries in external_indicator_types.
+  dict.size(bp.external_indicator_types) |> should.equal(0)
+}
+
+pub fn lower_measurements_external_indicator_value_extraction_test() {
+  // Block form with value extraction.
+  let source =
+    "\"M\":\n  Provides {\n    indicators: {\n      score: from langfuse {\n        where: name = \"faithfulness\"\n        value: value as Float\n      }\n    }\n  }\n"
+  let measurements = parse_and_lower_inline(source)
+  let assert Ok(bp) = list.first(measurements)
+
+  // ExternalIndicatorValue carries the value_path (type info dropped here).
+  let assert Ok(indicators_val) = dict.get(bp.inputs, "indicators")
+  let assert Ok(indicators_dict) = value.extract_dict(indicators_val)
+  let assert Ok(score_val) = dict.get(indicators_dict, "score")
+  let assert value.ExternalIndicatorValue(
+    source: "langfuse",
+    match: _,
+    value_path: option.Some("value"),
+  ) = score_val
+
+  // The type for `score` shows up in external_indicator_types as the resolved
+  // AcceptedTypes — recovering what was dropped on the Value side.
+  let assert Ok(score_type) = dict.get(bp.external_indicator_types, "score")
+  score_type
+  |> should.equal(types.PrimitiveType(types.NumericType(types.Float)))
+}
+
 // ==== lower_measurements (record types) ====
 // * ✅ type alias resolves to RecordType
 // * ✅ inline record type resolves to RecordType

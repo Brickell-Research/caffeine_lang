@@ -23,6 +23,14 @@ pub type Measurement(state) {
     name: String,
     params: dict.Dict(String, AcceptedTypes),
     inputs: dict.Dict(String, Value),
+    /// Resolved type constraints on `value:` extractions for any external
+    /// indicators in this measurement's `Provides { indicators: { ... } }`
+    /// block. Keyed by indicator name (same key used in `inputs.indicators`).
+    /// Empty when no external indicators have value extraction. Populated by
+    /// lowering because the type info would otherwise have nowhere to live —
+    /// `value.Value` can't carry `AcceptedTypes` without a circular import
+    /// (`types.gleam` imports `value.gleam`).
+    external_indicator_types: dict.Dict(String, AcceptedTypes),
     /// Optional declared SLO type from `"name" success_rate:` / `"name" time_slice:`
     /// header. When None, downstream consumers fall back to inferring the type
     /// from the formula shape at codegen.
@@ -74,6 +82,16 @@ pub fn validate_measurements(
         <> "' - overshadowing inherited SLO params: "
       },
     ),
+  )
+
+  // Reject external indicators whose source kind isn't supported. Aggregates
+  // errors across measurements so authors see every bad source in one pass.
+  use _ <- result.try(
+    measurements
+    |> list.map(fn(m) {
+      validations.validate_external_indicator_sources(m.name, m.inputs)
+    })
+    |> errors.from_results(),
   )
 
   // At this point everything is validated, so we can merge SLO params with measurement params.

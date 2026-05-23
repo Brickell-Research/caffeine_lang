@@ -4,6 +4,7 @@ import caffeine_lang/types
 import caffeine_lang/value
 import gleam/dict
 import gleam/list
+import gleam/option
 import gleam/set
 import gleam/string
 import gleeunit/should
@@ -1129,4 +1130,136 @@ pub fn check_collection_key_overshadowing_test() {
       )
     result |> should.be_error
   })
+}
+
+// ==== validate_external_indicator_sources ====
+// * ✅ no indicators block → Ok(Nil)
+// * ✅ indicators block with literal-string entries only → Ok(Nil)
+// * ✅ external indicator with known source (langfuse) → Ok(Nil)
+// * ✅ external indicator with unknown source → Error w/ measurement-scoped msg
+// * ✅ multiple unknown sources → deduped, sorted, joined in error msg
+pub fn validate_external_indicator_sources_no_indicators_test() {
+  // Measurement with no `indicators` entry in inputs is trivially valid.
+  validations.validate_external_indicator_sources("m", dict.new())
+  |> should.equal(Ok(Nil))
+}
+
+pub fn validate_external_indicator_sources_only_strings_test() {
+  // Mixed indicators dict with only StringValue entries: pre-external-indicator
+  // shape, must keep passing.
+  let inputs =
+    dict.from_list([
+      #(
+        "indicators",
+        value.DictValue(
+          dict.from_list([
+            #("numerator", value.StringValue("count:requests")),
+            #("denominator", value.StringValue("count:total")),
+          ]),
+        ),
+      ),
+    ])
+  validations.validate_external_indicator_sources("m", inputs)
+  |> should.equal(Ok(Nil))
+}
+
+pub fn validate_external_indicator_sources_known_test() {
+  let inputs =
+    dict.from_list([
+      #(
+        "indicators",
+        value.DictValue(
+          dict.from_list([
+            #(
+              "good",
+              value.ExternalIndicatorValue(
+                source: "langfuse",
+                match: dict.from_list([
+                  #("name", value.StringValue("outcome")),
+                ]),
+                value_path: option.None,
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ])
+  validations.validate_external_indicator_sources("score_rate", inputs)
+  |> should.equal(Ok(Nil))
+}
+
+pub fn validate_external_indicator_sources_unknown_test() {
+  let inputs =
+    dict.from_list([
+      #(
+        "indicators",
+        value.DictValue(
+          dict.from_list([
+            #(
+              "good",
+              value.ExternalIndicatorValue(
+                source: "braintrust",
+                match: dict.from_list([
+                  #("name", value.StringValue("outcome")),
+                ]),
+                value_path: option.None,
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ])
+  validations.validate_external_indicator_sources("score_rate", inputs)
+  |> should.equal(
+    Error(errors.LinkerValueValidationError(
+      msg: "measurement 'score_rate' - unknown external indicator source(s): braintrust",
+      context: errors.empty_context(),
+    )),
+  )
+}
+
+pub fn validate_external_indicator_sources_unknown_dedup_test() {
+  // Two indicators reference the same unknown source plus another unknown.
+  // Expect deduped + sorted in the error message.
+  let inputs =
+    dict.from_list([
+      #(
+        "indicators",
+        value.DictValue(
+          dict.from_list([
+            #(
+              "a",
+              value.ExternalIndicatorValue(
+                source: "openai",
+                match: dict.new(),
+                value_path: option.None,
+              ),
+            ),
+            #(
+              "b",
+              value.ExternalIndicatorValue(
+                source: "braintrust",
+                match: dict.new(),
+                value_path: option.None,
+              ),
+            ),
+            #(
+              "c",
+              value.ExternalIndicatorValue(
+                source: "braintrust",
+                match: dict.new(),
+                value_path: option.None,
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ])
+  validations.validate_external_indicator_sources("m", inputs)
+  |> should.equal(
+    Error(errors.LinkerValueValidationError(
+      msg: "measurement 'm' - unknown external indicator source(s): braintrust, openai",
+      context: errors.empty_context(),
+    )),
+  )
 }

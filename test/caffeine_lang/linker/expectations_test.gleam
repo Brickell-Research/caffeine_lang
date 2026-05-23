@@ -23,6 +23,7 @@ fn measurements() -> List(
         ),
       ]),
       inputs: dict.from_list([]),
+      external_indicator_types: dict.new(),
       expectation_type: option.None,
     ),
   ]
@@ -41,6 +42,7 @@ fn measurements_with_inputs() -> List(
       inputs: dict.from_list([
         #("env", value.StringValue("production")),
       ]),
+      external_indicator_types: dict.new(),
       expectation_type: option.None,
     ),
   ]
@@ -63,6 +65,7 @@ fn measurements_with_defaulted() -> List(
         ),
       ]),
       inputs: dict.from_list([]),
+      external_indicator_types: dict.new(),
       expectation_type: option.None,
     ),
   ]
@@ -124,6 +127,7 @@ pub fn validate_expectations_test() {
               ),
             ]),
             inputs: dict.from_list([]),
+            external_indicator_types: dict.new(),
             expectation_type: option.None,
           )),
         ),

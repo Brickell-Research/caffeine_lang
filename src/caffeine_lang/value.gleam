@@ -120,7 +120,8 @@ pub fn to_preview_string(value: Value) -> String {
     DurationValue(amount, unit) ->
       float.to_string(amount) <> duration_unit_to_string(unit)
     NilValue -> "Nil"
-    ExternalIndicatorValue(source, _, _) -> "ExternalIndicator(" <> source <> ")"
+    ExternalIndicatorValue(source, _, _) ->
+      "ExternalIndicator(" <> source <> ")"
   }
 }
 

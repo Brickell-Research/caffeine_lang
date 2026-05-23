@@ -73,13 +73,56 @@ fn generate_measurement_item(
 
   let params = struct_to_params(merged_requires, type_aliases)
   let inputs = struct_to_inputs(merged_provides)
+  let external_indicator_types =
+    collect_external_indicator_types(merged_provides, type_aliases)
 
   Measurement(
     name: item.name,
     params: params,
     inputs: inputs,
+    external_indicator_types: external_indicator_types,
     expectation_type: item.expectation_type,
   )
+}
+
+/// Walks a measurement's `Provides` struct looking for an `indicators:` field
+/// whose value is a `LiteralStruct` of indicator-name -> indicator-value
+/// entries. For each entry whose value is a `LiteralExternalIndicator` with a
+/// `value_extraction.type_`, resolve the parsed type through the same
+/// type-alias resolver used for `Requires` fields and stash the result keyed
+/// by indicator name. This is the only place the AST-level type info from the
+/// `value:` clause is recovered for downstream IR construction.
+fn collect_external_indicator_types(
+  provides: ast.Struct,
+  type_aliases: Dict(String, ParsedType),
+) -> Dict(String, AcceptedTypes) {
+  let indicators_field =
+    provides.fields
+    |> list.find(fn(f) { f.name == "indicators" })
+
+  case indicators_field {
+    Error(_) -> dict.new()
+    Ok(field) ->
+      case field.value {
+        ast.LiteralValue(ast.LiteralStruct(inner_fields, _)) ->
+          inner_fields
+          |> list.filter_map(fn(inner_field) {
+            case inner_field.value {
+              ast.LiteralValue(ast.LiteralExternalIndicator(
+                _source,
+                _match,
+                option.Some(ast.ValueExtraction(_path, parsed_type)),
+              )) -> {
+                let resolved = resolve_type_aliases(parsed_type, type_aliases)
+                Ok(#(inner_field.name, resolved))
+              }
+              _ -> Error(Nil)
+            }
+          })
+          |> dict.from_list
+        _ -> dict.new()
+      }
+  }
 }
 
 /// Generates a single expectation from a new-envelope AST item.
