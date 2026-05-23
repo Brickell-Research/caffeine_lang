@@ -237,8 +237,11 @@ const default_evaluation = "numerator / denominator"
 /// Synthesize a Datadog metric query string for an indicator. `LiteralQuery`
 /// passes through unchanged (the user-authored query). `ExternalSignal`
 /// produces a query against the synthesized metric the relay will emit to:
-///   - no value extraction → count-style: `sum:<metric>.as_count()`
-///   - with value extraction → distribution-style: `avg:<metric>`
+///   - no value extraction → count-style: `sum:<metric>{*}.as_count()`
+///   - with value extraction → distribution-style: `avg:<metric>{*}`
+///
+/// The `{*}` filter scope is mandatory — Datadog's `metric` SLO type rejects
+/// queries without one, even when no tag filtering is wanted.
 ///
 /// The metric name follows the convention
 /// `caffeine.<unique_identifier>.<indicator_name>` so each expectation gets
@@ -254,8 +257,8 @@ fn synthesize_indicator_query(
       let metric =
         "caffeine." <> unique_identifier <> "." <> indicator_name
       case value_extraction {
-        option.None -> "sum:" <> metric <> ".as_count()"
-        option.Some(_) -> "avg:" <> metric
+        option.None -> "sum:" <> metric <> "{*}.as_count()"
+        option.Some(_) -> "avg:" <> metric <> "{*}"
       }
     }
   }
