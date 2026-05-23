@@ -4,6 +4,7 @@ import caffeine_lang/source_file.{
   type ExpectationSource, type SourceFile, type VendorMeasurementSource,
   SourceFile, VendorMeasurementSource,
 }
+import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/result
@@ -665,3 +666,117 @@ pub fn compile_unmeasured_with_depends_on_in_graph_test() {
 // makes that failure mode unrepresentable: an unmeasured expectation has no
 // `with: {...}` clause, so there is no way to inject extra fields. Threshold
 // and window are first-class clauses, and depends_on lives in `Assumes:`.
+
+// ==== End-to-end: external-signal indicators ====
+// * ✅ a measurement using `from langfuse where ...` produces all four
+//      artifact types coherently — terraform query + signals.json + workflow
+//      + bundle all agree on the synthesized metric name
+// * ✅ legacy literal-query pipelines emit None for every relay artifact
+//      (existing behavior preserved)
+
+pub fn compile_external_signal_emits_all_relay_artifacts_test() {
+  let measurements =
+    "\"PassRate\":
+  Provides {
+    indicators: {
+      good: from langfuse where name = \"outcome\" and value = \"pass\",
+      total: from langfuse where name = \"outcome\"
+    },
+    evaluation: \"good / total\"
+  }
+"
+  let expectations =
+    "\"checkout_pass_rate\":
+  Guarantees 99.0% over 30d window as measured by \"PassRate\" with: {}"
+
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      measurements,
+      expectations,
+      "acme/platform/checkout.caffeine",
+      "datadog",
+    )
+
+  // Synthesized metric names follow `caffeine.<unique_identifier>.<indicator>`.
+  // For this expectation the unique_identifier is `acme_checkout_checkout_pass_rate`
+  // (org_service_expectation; team isn't part of the unique id).
+  let expected_good_metric =
+    "caffeine.acme_checkout_checkout_pass_rate.good"
+  let expected_total_metric =
+    "caffeine.acme_checkout_checkout_pass_rate.total"
+
+  // 1. Terraform: DD SLO resource references the synthesized metrics.
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_true
+  output.terraform
+  |> string.contains(expected_good_metric)
+  |> should.be_true
+  output.terraform
+  |> string.contains(expected_total_metric)
+  |> should.be_true
+
+  // 2. signals.json: emitted and references the SAME metric names. Cross-
+  //    artifact coherence: the relay emits to the metrics the SLO queries.
+  output.relay_signals |> should.be_some
+  let assert option.Some(signals_json) = output.relay_signals
+  signals_json |> string.contains(expected_good_metric) |> should.be_true
+  signals_json |> string.contains(expected_total_metric) |> should.be_true
+  // Match filters round-tripped from the where-clause.
+  signals_json |> string.contains("\"langfuse\"") |> should.be_true
+  signals_json |> string.contains("\"name\":\"outcome\"") |> should.be_true
+  signals_json |> string.contains("\"value\":\"pass\"") |> should.be_true
+  // Count-style: no value_path, kind=count.
+  signals_json |> string.contains("\"kind\":\"count\"") |> should.be_true
+  signals_json |> string.contains("\"value_path\":null") |> should.be_true
+
+  // 3. GHA workflow: emitted and invokes the bundled relay against the
+  //    signals.json path.
+  output.relay_workflow |> should.be_some
+  let assert option.Some(workflow) = output.relay_workflow
+  workflow |> string.contains("caffeine-relay") |> should.be_true
+  workflow |> string.contains("../signals.json") |> should.be_true
+
+  // 4. Bundle: emitted with the right files.
+  output.relay_bundle |> should.be_some
+  let assert option.Some(bundle) = output.relay_bundle
+  bundle |> dict.has_key("gleam.toml") |> should.be_true
+  bundle |> dict.has_key("src/caffeine_relay.gleam") |> should.be_true
+}
+
+pub fn compile_legacy_literal_query_emits_no_relay_artifacts_test() {
+  // Existing pipelines using inline query strings should be completely
+  // untouched by the relay codegen — None across the board.
+  let measurements =
+    "\"api_availability\":
+  Requires { env: String }
+  Provides {
+    evaluation: \"numerator / denominator\",
+    indicators: {
+      numerator: \"sum:http.requests{$env->env$, status:ok}\",
+      denominator: \"sum:http.requests{$env->env$}\"
+    }
+  }
+"
+  let expectations =
+    "\"checkout_availability\":
+  Guarantees 99.95% over 30d window as measured by \"api_availability\" with: {
+    env: \"production\"
+  }"
+
+  let assert Ok(output) =
+    compiler.compile_from_strings(
+      measurements,
+      expectations,
+      "acme/platform/checkout.caffeine",
+      "datadog",
+    )
+
+  output.relay_signals |> should.equal(option.None)
+  output.relay_workflow |> should.equal(option.None)
+  output.relay_bundle |> should.equal(option.None)
+  // Terraform is still produced — the legacy path is unaffected.
+  output.terraform
+  |> string.contains("datadog_service_level_objective")
+  |> should.be_true
+}

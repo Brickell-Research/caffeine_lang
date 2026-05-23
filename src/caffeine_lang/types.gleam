@@ -973,6 +973,12 @@ fn validate_primitive_value(
         ValidationError(expected: "Bool", found: value.classify(val), path: []),
       ])
     String, value.StringValue(_) -> Ok(val)
+    // External-indicator values stand in for the resolved query string the
+    // relay will emit to. The DD codegen rewrites them into literal queries
+    // before terraform emission, so anywhere a `String` slot is expected
+    // (notably the `indicators` SLO param of type `Dict(String, String)`)
+    // they're accepted as a valid pre-resolution value.
+    String, value.ExternalIndicatorValue(_, _, _) -> Ok(val)
     String, _ ->
       Error([
         ValidationError(
