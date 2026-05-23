@@ -1,5 +1,6 @@
 import caffeine_lang/frontend/formatter
 import gleam/list
+import gleam/string
 import gleeunit/should
 import simplifile
 
@@ -143,4 +144,57 @@ pub fn format_idempotent_test() {
 pub fn format_invalid_source_test() {
   formatter.format("this is not valid caffeine")
   |> should.be_error()
+}
+
+// ==== format (external-signal indicators) ====
+// * ✅ single-line `from <source> where K = V [and ...]` round-trips
+// * ✅ block form with `value:` extraction round-trips
+// * ✅ already-formatted external-indicator source is unchanged (idempotent)
+
+pub fn format_external_indicator_single_line_test() {
+  let source =
+    "\"PassRate\":
+  Provides {
+    indicators: {
+      good: from langfuse where name = \"outcome\" and value = \"pass\",
+      total: from langfuse where name = \"outcome\"
+    },
+    evaluation: \"good / total\"
+  }
+"
+  let assert Ok(formatted) = formatter.format(source)
+  // The single-line form survives — no collapse to `from langfuse { ... }`.
+  formatted
+  |> string.contains("from langfuse where name = \"outcome\" and value = \"pass\"")
+  |> should.be_true
+  formatted
+  |> string.contains("from langfuse where name = \"outcome\"")
+  |> should.be_true
+  // No leakage of the old stub.
+  formatted |> string.contains("from langfuse { ... }") |> should.be_false
+  // Idempotent: format(format(x)) == format(x).
+  let assert Ok(formatted2) = formatter.format(formatted)
+  formatted2 |> should.equal(formatted)
+}
+
+pub fn format_external_indicator_block_test() {
+  let source =
+    "\"FaithfulnessScore\":
+  Provides {
+    indicators: {
+      score: from langfuse {
+        where: name = \"faithfulness\"
+        value: value as Float
+      }
+    },
+    evaluation: \"time_slice(score < 0.7 per 5m)\"
+  }
+"
+  let assert Ok(formatted) = formatter.format(source)
+  // The `value:` extraction line survives.
+  formatted |> string.contains("value: value as Float") |> should.be_true
+  formatted |> string.contains("where: name = \"faithfulness\"") |> should.be_true
+  // Idempotent.
+  let assert Ok(formatted2) = formatter.format(formatted)
+  formatted2 |> should.equal(formatted)
 }

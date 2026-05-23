@@ -2,11 +2,12 @@
 /// Parses source to AST then emits canonical formatting.
 import caffeine_lang/frontend/ast.{
   type Comment, type ExpectItem, type ExpectsFile, type Extendable, type Field,
-  type Literal, type MeasurementItem, type MeasurementsFile, type Parsed,
-  type Struct, type TypeAlias, ExtendableProvides, ExtendableRequires,
-  LiteralDuration, LiteralExternalIndicator, LiteralFalse, LiteralFloat,
-  LiteralInteger, LiteralList, LiteralPercentage, LiteralString, LiteralStruct,
-  LiteralTrue, LiteralValue, Struct, TypeValue,
+  type Literal, type MatchClause, type MeasurementItem, type MeasurementsFile,
+  type Parsed, type Struct, type TypeAlias, type ValueExtraction,
+  ExtendableProvides, ExtendableRequires, LiteralDuration,
+  LiteralExternalIndicator, LiteralFalse, LiteralFloat, LiteralInteger,
+  LiteralList, LiteralPercentage, LiteralString, LiteralStruct, LiteralTrue,
+  LiteralValue, MatchClause, Struct, TypeValue, ValueExtraction,
 }
 import caffeine_lang/frontend/parser
 import caffeine_lang/frontend/token
@@ -459,13 +460,71 @@ fn format_literal(l: Literal, indent: Int, context: FieldContext) -> String {
         indent,
         context,
       )
-    // External indicators land in source via the parser in Task #2; proper
-    // formatting (single-line vs block; `where:`/`value:` layout) ships with
-    // that task. For now emit a stable placeholder so the formatter remains
-    // total and any caffeine_lang consumer that round-trips test fixtures
-    // doesn't panic.
-    LiteralExternalIndicator(source, _, _) -> "from " <> source <> " { ... }"
+    LiteralExternalIndicator(source, match, value_extraction) ->
+      format_external_indicator(source, match, value_extraction, indent, context)
   }
+}
+
+/// Format a `from <source> where ...` literal. Two surface forms:
+///
+///   single-line (no value extraction):
+///     from langfuse where name = "outcome" and value = "pass"
+///
+///   block (with value extraction):
+///     from langfuse {
+///       where: name = "faithfulness"
+///       value: value as Float
+///     }
+///
+/// Single-line stays single-line — match clauses don't get broken across lines
+/// today even on long chains. If that ever bites, mirror `format_struct`'s
+/// 80-column-aware inline/multiline split.
+fn format_external_indicator(
+  source: String,
+  match: List(MatchClause),
+  value_extraction: option.Option(ValueExtraction),
+  indent: Int,
+  context: FieldContext,
+) -> String {
+  case value_extraction {
+    option.None ->
+      "from " <> source <> " where " <> format_match_chain(match, indent, context)
+    option.Some(ValueExtraction(path, type_)) -> {
+      let inner_indent = string.repeat(" ", indent + 2)
+      let closing_indent = string.repeat(" ", indent)
+      "from "
+      <> source
+      <> " {\n"
+      <> inner_indent
+      <> "where: "
+      <> format_match_chain(match, indent + 2, context)
+      <> "\n"
+      <> inner_indent
+      <> "value: "
+      <> path
+      <> " as "
+      <> format_type(type_)
+      <> "\n"
+      <> closing_indent
+      <> "}"
+    }
+  }
+}
+
+/// `name = "x" and field = "y"` style chain. Match-clause values can be any
+/// literal, so we recurse back into `format_literal` — that's where things
+/// like template variables (`"$$->scorer$$"`) get preserved verbatim.
+fn format_match_chain(
+  match: List(MatchClause),
+  indent: Int,
+  context: FieldContext,
+) -> String {
+  match
+  |> list.map(fn(clause) {
+    let MatchClause(field, value) = clause
+    field <> " = " <> format_literal(value, indent, context)
+  })
+  |> string.join(" and ")
 }
 
 fn format_literal_list(
