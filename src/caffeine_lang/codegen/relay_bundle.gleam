@@ -92,51 +92,145 @@ pub type DatadogPoint {
   DatadogPoint(metric: String, value: Float, timestamp: Int)
 }
 
+/// Self-observability counters accumulated over a single relay run. Emitted
+/// at the end of every run (success or failure) as `caffeine.relay.*`
+/// metrics so operators can alert on relay health independently of the
+/// signals it forwards.
+pub type RunStats {
+  RunStats(
+    scores_processed: Int,
+    metric_points_emitted: Int,
+    failure_phase: Option(String),
+  )
+}
+
+fn empty_stats() -> RunStats {
+  RunStats(
+    scores_processed: 0,
+    metric_points_emitted: 0,
+    failure_phase: None,
+  )
+}
+
 // ===========================================================================
 // Entry point
 // ===========================================================================
 
 pub fn main() -> Nil {
-  case run() {
-    Ok(summary) -> io.println(summary)
+  let start = now_unix()
+  // Load the DD API key up front: without it we can't emit self-observability
+  // metrics, so there's no point continuing.
+  case load_dd_api_key() {
     Error(msg) -> {
       io.println_error(\"caffeine-relay error: \" <> msg)
       panic as msg
     }
+    Ok(dd_key) -> {
+      let #(stats, outcome) = run_with_stats(dd_key)
+      // Always emit self-metrics — success or failure. If this submission
+      // itself fails (e.g. DD outage is the root cause) the GHA cron log is
+      // the fallback signal. Ignore the result; we're already exiting.
+      let _ = emit_self_metrics(dd_key, stats, start)
+      case outcome {
+        Ok(summary) -> io.println(summary)
+        Error(msg) -> {
+          io.println_error(\"caffeine-relay error: \" <> msg)
+          panic as msg
+        }
+      }
+    }
   }
 }
 
-fn run() -> Result(String, String) {
+fn run_with_stats(dd_key: String) -> #(RunStats, Result(String, String)) {
   let args = argv.load().arguments
-  use #(config_path, cursor_path) <- result.try(parse_args(args))
-  use config <- result.try(load_config(config_path))
-  use cursor <- result.try(load_cursor(cursor_path))
+  case parse_args(args) {
+    Error(msg) -> #(failure_stats(\"parse\"), Error(msg))
+    Ok(#(config_path, cursor_path)) ->
+      case load_config(config_path) {
+        Error(msg) -> #(failure_stats(\"parse\"), Error(msg))
+        Ok(config) ->
+          case load_cursor(cursor_path) {
+            Error(msg) -> #(failure_stats(\"cursor_io\"), Error(msg))
+            Ok(cursor) ->
+              run_pipeline(config, cursor, cursor_path, dd_key)
+          }
+      }
+  }
+}
 
+fn run_pipeline(
+  config: Config,
+  cursor: Cursor,
+  cursor_path: String,
+  dd_key: String,
+) -> #(RunStats, Result(String, String)) {
   let langfuse_signals =
     list.filter(config.signals, fn(s) { s.source == \"langfuse\" })
-
   case langfuse_signals {
-    [] -> Ok(\"caffeine-relay: no langfuse signals to route, skipping\")
-    _ -> {
-      use lf_creds <- result.try(load_langfuse_credentials())
-      use dd_key <- result.try(load_dd_api_key())
-      use scores <- result.try(fetch_langfuse_scores(
-        lf_creds,
-        cursor.langfuse_since,
-      ))
-      let points = dispatch_scores(scores, langfuse_signals)
-      use _ <- result.try(submit_to_datadog(dd_key, points))
-      let new_cursor = cursor_after(cursor, scores)
-      use _ <- result.try(save_cursor(cursor_path, new_cursor))
-      Ok(
-        \"caffeine-relay: processed \"
-        <> int.to_string(list.length(scores))
-        <> \" scores, emitted \"
-        <> int.to_string(list.length(points))
-        <> \" metric points\",
-      )
-    }
+    [] -> #(
+      empty_stats(),
+      Ok(\"caffeine-relay: no langfuse signals to route, skipping\"),
+    )
+    _ ->
+      case load_langfuse_credentials() {
+        Error(msg) -> #(failure_stats(\"parse\"), Error(msg))
+        Ok(lf_creds) ->
+          case fetch_langfuse_scores(lf_creds, cursor.langfuse_since) {
+            Error(msg) -> #(failure_stats(\"langfuse_fetch\"), Error(msg))
+            Ok(scores) -> {
+              let points = dispatch_scores(scores, langfuse_signals)
+              let scores_n = list.length(scores)
+              let points_n = list.length(points)
+              case submit_to_datadog(dd_key, points) {
+                Error(msg) -> #(
+                  RunStats(
+                    scores_processed: scores_n,
+                    metric_points_emitted: 0,
+                    failure_phase: Some(\"dd_submit\"),
+                  ),
+                  Error(msg),
+                )
+                Ok(_) -> {
+                  let new_cursor = cursor_after(cursor, scores)
+                  case save_cursor(cursor_path, new_cursor) {
+                    Error(msg) -> #(
+                      RunStats(
+                        scores_processed: scores_n,
+                        metric_points_emitted: points_n,
+                        failure_phase: Some(\"cursor_io\"),
+                      ),
+                      Error(msg),
+                    )
+                    Ok(_) -> #(
+                      RunStats(
+                        scores_processed: scores_n,
+                        metric_points_emitted: points_n,
+                        failure_phase: None,
+                      ),
+                      Ok(
+                        \"caffeine-relay: processed \"
+                        <> int.to_string(scores_n)
+                        <> \" scores, emitted \"
+                        <> int.to_string(points_n)
+                        <> \" metric points\",
+                      ),
+                    )
+                  }
+                }
+              }
+            }
+          }
+      }
   }
+}
+
+fn failure_stats(phase: String) -> RunStats {
+  RunStats(
+    scores_processed: 0,
+    metric_points_emitted: 0,
+    failure_phase: Some(phase),
+  )
 }
 
 // ===========================================================================
@@ -404,10 +498,109 @@ fn submit_to_datadog(
   api_key: String,
   points: List(DatadogPoint),
 ) -> Result(Nil, String) {
-  case points {
+  send_dd_series(api_key, score_points_series(points))
+}
+
+/// Emit relay self-observability metrics. Always called from `main` after
+/// `run_with_stats` returns, regardless of success or failure, so a failed
+/// run still increments the relevant error counter. Tagged uniformly with
+/// `phase` on the error metric so operators can localize blame.
+///
+/// Lag is stubbed at 0 in v0 (the relay currently uses `now()` as the
+/// score timestamp). A real `now - latest_score_timestamp` lands when the
+/// ISO 8601 parser does.
+fn emit_self_metrics(
+  api_key: String,
+  stats: RunStats,
+  start: Int,
+) -> Result(Nil, String) {
+  let duration = now_unix() - start
+  let series = self_metrics_series(stats, duration)
+  send_dd_series(api_key, series)
+}
+
+fn self_metrics_series(stats: RunStats, duration: Int) -> List(json.Json) {
+  let ts = now_unix()
+  let heartbeat =
+    series_entry(\"caffeine.relay.heartbeat\", 1, 1.0, ts, [])
+  let scores =
+    series_entry(
+      \"caffeine.relay.scores_processed\",
+      1,
+      int.to_float(stats.scores_processed),
+      ts,
+      [],
+    )
+  let points =
+    series_entry(
+      \"caffeine.relay.metric_points_emitted\",
+      1,
+      int.to_float(stats.metric_points_emitted),
+      ts,
+      [],
+    )
+  let dur =
+    // type=3 → gauge in the Datadog series API
+    series_entry(
+      \"caffeine.relay.run_duration_seconds\",
+      3,
+      int.to_float(duration),
+      ts,
+      [],
+    )
+  let lag = series_entry(\"caffeine.relay.lag_seconds\", 3, 0.0, ts, [])
+  let outcome = case stats.failure_phase {
+    None -> series_entry(\"caffeine.relay.runs_succeeded\", 1, 1.0, ts, [])
+    Some(phase) ->
+      series_entry(\"caffeine.relay.errors\", 1, 1.0, ts, [
+        #(\"phase\", phase),
+      ])
+  }
+  [heartbeat, scores, points, dur, lag, outcome]
+}
+
+fn series_entry(
+  metric: String,
+  type_: Int,
+  value: Float,
+  timestamp: Int,
+  tags: List(#(String, String)),
+) -> json.Json {
+  let tag_strings =
+    list.map(tags, fn(pair) { pair.0 <> \":\" <> pair.1 })
+  json.object([
+    #(\"metric\", json.string(metric)),
+    #(\"type\", json.int(type_)),
+    #(\"tags\", json.array(tag_strings, json.string)),
+    #(
+      \"points\",
+      json.array(
+        [#(timestamp, value)],
+        fn(point) {
+          let #(t, v) = point
+          json.object([
+            #(\"timestamp\", json.int(t)),
+            #(\"value\", json.float(v)),
+          ])
+        },
+      ),
+    ),
+  ])
+}
+
+/// Shared HTTP submitter so `submit_to_datadog` and `emit_self_metrics`
+/// agree on auth + endpoint. Takes a pre-built series array.
+fn send_dd_series(
+  api_key: String,
+  series: List(json.Json),
+) -> Result(Nil, String) {
+  case series {
     [] -> Ok(Nil)
     _ -> {
-      let body = datadog_series_json(points)
+      let body =
+        json.to_string(
+          json.object([#(\"series\", json.preprocessed_array(series))]),
+        )
       use req <- result.try(
         request.to(\"https://api.datadoghq.com/api/v2/series\")
         |> result.replace_error(\"failed to construct datadog request\"),
@@ -418,7 +611,6 @@ fn submit_to_datadog(
         |> request.set_header(\"dd-api-key\", api_key)
         |> request.set_header(\"content-type\", \"application/json\")
         |> request.set_body(body)
-
       use resp <- result.try(
         httpc.send(req)
         |> result.map_error(fn(e) {
@@ -439,34 +631,30 @@ fn submit_to_datadog(
   }
 }
 
-fn datadog_series_json(points: List(DatadogPoint)) -> String {
-  let grouped =
-    points
-    |> list.group(fn(p) { p.metric })
-
-  let series_array =
-    grouped
-    |> dict.to_list
-    |> list.map(fn(pair) {
-      let #(metric, ps) = pair
-      json.object([
-        #(\"metric\", json.string(metric)),
-        #(\"type\", json.int(1)),
-        #(
-          \"points\",
-          json.array(ps, fn(p) {
-            json.object([
-              #(\"timestamp\", json.int(p.timestamp)),
-              #(\"value\", json.float(p.value)),
-            ])
-          }),
-        ),
-      ])
-    })
-
-  json.to_string(
-    json.object([#(\"series\", json.preprocessed_array(series_array))]),
-  )
+/// Build the Datadog series JSON array from score-derived metric points.
+/// Groups by metric name so each appears once with its points nested,
+/// matching the DD `/api/v2/series` shape.
+fn score_points_series(points: List(DatadogPoint)) -> List(json.Json) {
+  points
+  |> list.group(fn(p) { p.metric })
+  |> dict.to_list
+  |> list.map(fn(pair) {
+    let #(metric, ps) = pair
+    json.object([
+      #(\"metric\", json.string(metric)),
+      // type=1 → count in the Datadog series API
+      #(\"type\", json.int(1)),
+      #(
+        \"points\",
+        json.array(ps, fn(p) {
+          json.object([
+            #(\"timestamp\", json.int(p.timestamp)),
+            #(\"value\", json.float(p.value)),
+          ])
+        }),
+      ),
+    ])
+  })
 }
 "
 
