@@ -257,8 +257,15 @@ fn synthesize_indicator_query(
   case src {
     ir.LiteralQuery(q) -> q
     ir.ExternalSignal(_, _, value_extraction) -> {
-      let metric = "caffeine." <> unique_identifier
-      let filter = "{indicator:" <> indicator_name <> "}"
+      // Datadog metric names allow only `[A-Za-z0-9._]`; user-supplied
+      // expectation / measurement names can carry spaces and other chars
+      // that DD silently rewrites at submission time. Force the rewrite
+      // at codegen time so the synthesized query, the relay emission, and
+      // any DD-side stored name all agree by construction.
+      let metric =
+        "caffeine." <> generator_utils.dd_metric_safe(unique_identifier)
+      let filter =
+        "{indicator:" <> generator_utils.dd_metric_safe(indicator_name) <> "}"
       case value_extraction {
         option.None -> "sum:" <> metric <> filter <> ".as_count()"
         option.Some(_) -> "avg:" <> metric <> filter

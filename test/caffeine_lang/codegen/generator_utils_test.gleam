@@ -76,3 +76,30 @@ pub fn render_terraform_config_with_resource_test() {
   // Should contain variable
   { string.contains(result, "dd_api_key") } |> should.be_true()
 }
+
+// ==== dd_metric_safe ====
+// * ✅ alphanumerics, dots, and underscores pass through unchanged
+// * ✅ spaces become underscores
+// * ✅ hyphens and other special characters become underscores
+// * ✅ unicode characters become underscores
+
+pub fn dd_metric_safe_alphanum_test() {
+  generator_utils.dd_metric_safe("caffeine.acme_payments_checkout")
+  |> should.equal("caffeine.acme_payments_checkout")
+}
+
+pub fn dd_metric_safe_spaces_test() {
+  generator_utils.dd_metric_safe("caffeine.acme_platform_My First SLO")
+  |> should.equal("caffeine.acme_platform_My_First_SLO")
+}
+
+pub fn dd_metric_safe_punctuation_test() {
+  // Hyphens, slashes, colons all coerce to underscores. Dots survive.
+  generator_utils.dd_metric_safe("a-b.c/d:e")
+  |> should.equal("a_b.c_d_e")
+}
+
+pub fn dd_metric_safe_unicode_test() {
+  generator_utils.dd_metric_safe("café.metric")
+  |> should.equal("caf_.metric")
+}

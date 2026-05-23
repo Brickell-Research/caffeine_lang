@@ -11,6 +11,7 @@
 /// every emitted data point. This matches the synthesis function in
 /// `codegen/datadog.gleam` (`sum:caffeine.<unique>{indicator:<name>}`)
 /// and the idiomatic Datadog metric-SLO shape.
+import caffeine_lang/codegen/generator_utils
 import caffeine_lang/linker/ir.{
   type IntermediateRepresentation, type Resolved, ExternalSignal,
 }
@@ -74,15 +75,20 @@ fn ir_to_signal_entries(
       ExternalSignal(source, match, value_extraction) ->
         Ok(SignalEntry(
           // One metric per measurement; per-indicator routing entries
-          // disambiguate by writing an `indicator:<name>` tag.
-          metric: "caffeine." <> ir.unique_identifier,
+          // disambiguate by writing an `indicator:<name>` tag. Sanitize
+          // both fragments to DD's metric-name charset so the relay's
+          // submission target matches the SLO query exactly.
+          metric: "caffeine."
+            <> generator_utils.dd_metric_safe(ir.unique_identifier),
           kind: case value_extraction {
             option.None -> Count
             option.Some(_) -> Distribution
           },
           source: source,
           match: match,
-          tags: dict.from_list([#("indicator", name)]),
+          tags: dict.from_list([
+            #("indicator", generator_utils.dd_metric_safe(name)),
+          ]),
           value_path: option.map(value_extraction, fn(ve) { ve.path }),
         ))
       _ -> Error(Nil)
