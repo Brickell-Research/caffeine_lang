@@ -55,14 +55,14 @@ pub fn main() {
 
   list.each(count_rows, fn(row) {
     let m =
-      metric.count("langfuse.scores.count", int.to_float(row.count))
+      metric.count("{{METRIC_PREFIX}}.count", int.to_float(row.count))
       |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
     let assert Ok(_) = datadog_client.send_one(dd, m)
   })
 
   list.each(numeric_values, fn(row) {
     let m =
-      metric.gauge("langfuse.scores.value", row.avg_value)
+      metric.gauge("{{METRIC_PREFIX}}.value", row.avg_value)
       |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
     let assert Ok(_) = datadog_client.send_one(dd, m)
   })
@@ -83,7 +83,7 @@ pub fn main() {
 fn tags_for(name: String, data_type: String, source: String) -> List(String) {
   [
     "source:langfuse",
-    "relay:langfuse_to_datadog",
+    "relay:{{RELAY_NAME}}",
     "scorer:" <> name,
     "data_type:" <> data_type,
     "score_source:" <> source,

@@ -14,10 +14,10 @@ target = "erlang"
 gleam_stdlib = ">= 0.70.0 and < 1.0.2"
 terra_madre = ">=0.0.6"
 datadog_query = ">= 2.0.0 and < 3.0.0"
+simplifile = ">= 2.4.0 and < 3.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.2"
-simplifile = ">= 2.4.0 and < 3.0.0"
 
 [internal-modules]
 # Analysis pipeline (internal orchestration)
