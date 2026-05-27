@@ -4,6 +4,6 @@ target = "erlang"
 
 [dependencies]
 gleam_stdlib = ">= 0.40.0 and < 2.0.0"
-langfuse_client = ">= 1.2.0 and < 2.0.0"
+langfuse_client = ">= 2.0.0 and < 3.0.0"
 datadog_client = ">= 1.0.0 and < 2.0.0"
 envoy = ">= 1.0.0 and < 2.0.0"

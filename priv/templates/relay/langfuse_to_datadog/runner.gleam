@@ -1,7 +1,8 @@
 //// Relay runner: queries Langfuse v2 metrics for the window
 //// `[LANGFUSE_FROM, LANGFUSE_TO)` and submits one Datadog metric per
-//// (scorer, data_type, score_source) row, filtered to the scorers
-//// declared in `manifest.scorers()`.
+//// (scorer, data_type, score_source) row. The scorer allowlist comes from
+//// `manifest.scorers()` and is passed to Langfuse as a server-side filter,
+//// so we only pay for the data we actually use.
 
 import datadog_client
 import datadog_client/metric
@@ -28,6 +29,10 @@ pub fn main() {
       secret_key: langfuse_sk,
     )
 
+  let filters = [
+    metrics.scorer_names(list.map(manifest.scorers(), fn(s) { s.name })),
+  ]
+
   let assert Ok(numeric_counts) =
     metrics.list_score_counts(
       lf,
@@ -35,6 +40,7 @@ pub fn main() {
         view: ScoresNumeric,
         from: from_ts,
         to: to_ts,
+        filters: filters,
       ),
     )
   let assert Ok(categorical_counts) =
@@ -44,21 +50,20 @@ pub fn main() {
         view: ScoresCategorical,
         from: from_ts,
         to: to_ts,
+        filters: filters,
       ),
     )
   let assert Ok(numeric_values) =
     metrics.list_score_values(
       lf,
-      metrics.score_value_query(from: from_ts, to: to_ts),
+      metrics.score_value_query(
+        from: from_ts,
+        to: to_ts,
+        filters: filters,
+      ),
     )
 
-  let allowed = list.map(manifest.scorers(), fn(s) { s.name })
-  let count_rows =
-    list.append(numeric_counts, categorical_counts)
-    |> list.filter(fn(row) { list.contains(allowed, row.name) })
-  let value_rows =
-    list.filter(numeric_values, fn(row) { list.contains(allowed, row.name) })
-
+  let count_rows = list.append(numeric_counts, categorical_counts)
   let dd = datadog_client.new(dd_api_key)
 
   list.each(count_rows, fn(row) {
@@ -71,7 +76,7 @@ pub fn main() {
     let assert Ok(_) = datadog_client.send_one(dd, m)
   })
 
-  list.each(value_rows, fn(row) {
+  list.each(numeric_values, fn(row) {
     let m =
       metric.gauge(manifest.metric_prefix <> ".value", row.avg_value)
       |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
@@ -82,7 +87,7 @@ pub fn main() {
     "relayed "
     <> int.to_string(list.length(count_rows))
     <> " counts + "
-    <> int.to_string(list.length(value_rows))
+    <> int.to_string(list.length(numeric_values))
     <> " values for ["
     <> from_ts
     <> ", "
