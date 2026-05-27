@@ -1,0 +1,25 @@
+priv/templates/relay/langfuse_to_datadog/manifest.gleam
+  s_08d4e85a3e46c7::t_217175818d7e18 1-24
+priv/templates/relay/langfuse_to_datadog/runner.gleam
+  s_08d4e85a3e46c7::t_fdd9f925e4468d 2-4,14,55-61,66-69,74,76,85,97
+src/caffeine_lang/codegen/relay.gleam
+  s_08d4e85a3e46c7::t_e9b1942ea7dc0a 7,12-16,33-48,67-70,88-91,115,124-151
+test/caffeine_lang/codegen/relay_test.gleam
+  s_08d4e85a3e46c7::t_8d7bbae19250bb 2,21,25,32-35,38,48-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "84cb55fb04e11c4635a2d17db14bc8cd7471a2c7",
+  "prompts": {},
+  "sessions": {
+    "s_08d4e85a3e46c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de395837-6f57-4b3b-8388-744ffba3886a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
