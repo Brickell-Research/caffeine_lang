@@ -26,7 +26,7 @@ pub fn langfuse_to_datadog_matches_fixtures_test() {
   let files =
     relay.generate_langfuse_to_datadog(LangfuseDatadogRelay(
       name: "langfuse_to_datadog",
-      metric_name: "langfuse.scores.count",
+      metric_prefix: "langfuse.scores",
       schedule_cron: "*/15 * * * *",
     ))
 

@@ -14,9 +14,24 @@ jobs:
         with:
           otp-version: "27"
           gleam-version: "1.6.0"
+
+      - name: Read cursor
+        id: cursor
+        env:
+          GH_TOKEN: ${{ secrets.RELAY_PAT }}
+        run: |
+          FROM=$(gh variable get RELAY_CURSOR_LANGFUSE_TO_DATADOG --repo "$GITHUB_REPOSITORY" 2>/dev/null || true)
+          if [ -z "$FROM" ]; then
+            FROM=$(date -u -d '15 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          fi
+          TO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "from=$FROM" >> "$GITHUB_OUTPUT"
+          echo "to=$TO" >> "$GITHUB_OUTPUT"
+
       - name: Install deps
         working-directory: relay
         run: gleam deps download
+
       - name: Run relay
         working-directory: relay
         env:
@@ -24,4 +39,13 @@ jobs:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          LANGFUSE_FROM: ${{ steps.cursor.outputs.from }}
+          LANGFUSE_TO: ${{ steps.cursor.outputs.to }}
         run: gleam run
+
+      - name: Advance cursor
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.RELAY_PAT }}
+        run: |
+          gh variable set RELAY_CURSOR_LANGFUSE_TO_DATADOG --repo "$GITHUB_REPOSITORY" --body "${{ steps.cursor.outputs.to }}"

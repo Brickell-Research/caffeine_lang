@@ -1,16 +1,23 @@
+//// Relay runner: queries Langfuse v2 metrics for the window
+//// `[LANGFUSE_FROM, LANGFUSE_TO)` and submits one Datadog gauge per
+//// (scorer, data_type, score_source) row.
+
 import datadog_client
 import datadog_client/metric
 import envoy
 import gleam/int
 import gleam/io
+import gleam/list
 import langfuse_client/client
-import langfuse_client/score
+import langfuse_client/metrics.{ScoresCategorical, ScoresNumeric}
 
 pub fn main() {
   let assert Ok(langfuse_base) = envoy.get("LANGFUSE_BASE_URL")
   let assert Ok(langfuse_pk) = envoy.get("LANGFUSE_PUBLIC_KEY")
   let assert Ok(langfuse_sk) = envoy.get("LANGFUSE_SECRET_KEY")
   let assert Ok(dd_api_key) = envoy.get("DATADOG_API_KEY")
+  let assert Ok(from_ts) = envoy.get("LANGFUSE_FROM")
+  let assert Ok(to_ts) = envoy.get("LANGFUSE_TO")
 
   let lf =
     client.new(
@@ -19,17 +26,66 @@ pub fn main() {
       secret_key: langfuse_sk,
     )
 
-  let assert Ok(scores) =
-    score.list(lf, score.query() |> score.with_limit(1))
-  let count = scores.meta.total_items
+  let assert Ok(numeric_counts) =
+    metrics.list_score_counts(
+      lf,
+      metrics.score_count_query(
+        view: ScoresNumeric,
+        from: from_ts,
+        to: to_ts,
+      ),
+    )
+  let assert Ok(categorical_counts) =
+    metrics.list_score_counts(
+      lf,
+      metrics.score_count_query(
+        view: ScoresCategorical,
+        from: from_ts,
+        to: to_ts,
+      ),
+    )
+  let assert Ok(numeric_values) =
+    metrics.list_score_values(
+      lf,
+      metrics.score_value_query(from: from_ts, to: to_ts),
+    )
 
+  let count_rows = list.append(numeric_counts, categorical_counts)
   let dd = datadog_client.new(dd_api_key)
-  let m =
-    metric.gauge("langfuse.scores.count", int.to_float(count))
-    |> metric.with_tags(with: ["source:langfuse"])
 
-  let assert Ok(_) = datadog_client.send_one(dd, m)
+  list.each(count_rows, fn(row) {
+    let m =
+      metric.gauge("langfuse.scores.count", int.to_float(row.count))
+      |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
+    let assert Ok(_) = datadog_client.send_one(dd, m)
+  })
+
+  list.each(numeric_values, fn(row) {
+    let m =
+      metric.gauge("langfuse.scores.value", row.avg_value)
+      |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
+    let assert Ok(_) = datadog_client.send_one(dd, m)
+  })
+
   io.println(
-    "relayed langfuse.scores.count=" <> int.to_string(count),
+    "relayed "
+    <> int.to_string(list.length(count_rows))
+    <> " counts + "
+    <> int.to_string(list.length(numeric_values))
+    <> " values for ["
+    <> from_ts
+    <> ", "
+    <> to_ts
+    <> ")",
   )
+}
+
+fn tags_for(name: String, data_type: String, source: String) -> List(String) {
+  [
+    "source:langfuse",
+    "relay:langfuse_to_datadog",
+    "scorer:" <> name,
+    "data_type:" <> data_type,
+    "score_source:" <> source,
+  ]
 }
