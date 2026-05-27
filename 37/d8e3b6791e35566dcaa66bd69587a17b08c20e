@@ -1,0 +1,32 @@
+manifest.toml
+  s_08d4e85a3e46c7::t_0a2a6bba9adc08 7
+priv/templates/relay/langfuse_to_datadog/workflow.yml
+  s_08d4e85a3e46c7::t_565fa4a24086a3 1-51
+priv/templates/relay/langfuse_to_datadog/runner.gleam
+  s_08d4e85a3e46c7::t_979662f29a3421 1-91
+gleam.toml
+  s_08d4e85a3e46c7::t_f24c2632983548 17
+src/caffeine_lang/codegen/relay.gleam
+  s_08d4e85a3e46c7::t_7264365663e3c4 13-14,16-19,21,23,59-64,69,71-80,83,85-88
+  s_08d4e85a3e46c7::t_06a62e17c30e26 40-45
+priv/templates/relay/langfuse_to_datadog/gleam.toml
+  s_08d4e85a3e46c7::t_694a397b47b980 1-9
+test/caffeine_lang/corpus/generator/relay/langfuse_to_datadog/relay.gleam.txt
+  s_08d4e85a3e46c7::t_443863ec16f83d 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "37d8e3b6791e35566dcaa66bd69587a17b08c20e",
+  "prompts": {},
+  "sessions": {
+    "s_08d4e85a3e46c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de395837-6f57-4b3b-8388-744ffba3886a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
