@@ -24,3 +24,6 @@ _build/*
 # Temporary
 *.tmp
 *.bak
+
+# Relay sandbox (local end-to-end testing)
+/relay_sandbox/
