@@ -1,6 +1,7 @@
 //// Relay runner: queries Langfuse v2 metrics for the window
-//// `[LANGFUSE_FROM, LANGFUSE_TO)` and submits one Datadog gauge per
-//// (scorer, data_type, score_source) row.
+//// `[LANGFUSE_FROM, LANGFUSE_TO)` and submits one Datadog metric per
+//// (scorer, data_type, score_source) row, filtered to the scorers
+//// declared in `manifest.scorers()`.
 
 import datadog_client
 import datadog_client/metric
@@ -10,6 +11,7 @@ import gleam/io
 import gleam/list
 import langfuse_client/client
 import langfuse_client/metrics.{ScoresCategorical, ScoresNumeric}
+import manifest
 
 pub fn main() {
   let assert Ok(langfuse_base) = envoy.get("LANGFUSE_BASE_URL")
@@ -50,19 +52,28 @@ pub fn main() {
       metrics.score_value_query(from: from_ts, to: to_ts),
     )
 
-  let count_rows = list.append(numeric_counts, categorical_counts)
+  let allowed = list.map(manifest.scorers(), fn(s) { s.name })
+  let count_rows =
+    list.append(numeric_counts, categorical_counts)
+    |> list.filter(fn(row) { list.contains(allowed, row.name) })
+  let value_rows =
+    list.filter(numeric_values, fn(row) { list.contains(allowed, row.name) })
+
   let dd = datadog_client.new(dd_api_key)
 
   list.each(count_rows, fn(row) {
     let m =
-      metric.count("langfuse.scores.count", int.to_float(row.count))
+      metric.count(
+        manifest.metric_prefix <> ".count",
+        int.to_float(row.count),
+      )
       |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
     let assert Ok(_) = datadog_client.send_one(dd, m)
   })
 
-  list.each(numeric_values, fn(row) {
+  list.each(value_rows, fn(row) {
     let m =
-      metric.gauge("langfuse.scores.value", row.avg_value)
+      metric.gauge(manifest.metric_prefix <> ".value", row.avg_value)
       |> metric.with_tags(with: tags_for(row.name, row.data_type, row.source))
     let assert Ok(_) = datadog_client.send_one(dd, m)
   })
@@ -71,7 +82,7 @@ pub fn main() {
     "relayed "
     <> int.to_string(list.length(count_rows))
     <> " counts + "
-    <> int.to_string(list.length(numeric_values))
+    <> int.to_string(list.length(value_rows))
     <> " values for ["
     <> from_ts
     <> ", "
@@ -83,7 +94,7 @@ pub fn main() {
 fn tags_for(name: String, data_type: String, source: String) -> List(String) {
   [
     "source:langfuse",
-    "relay:langfuse_to_datadog",
+    "relay:" <> manifest.relay_name,
     "scorer:" <> name,
     "data_type:" <> data_type,
     "score_source:" <> source,
