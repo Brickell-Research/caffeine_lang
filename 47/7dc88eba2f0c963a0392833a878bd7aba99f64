@@ -1,0 +1,19 @@
+.gitignore
+  s_08d4e85a3e46c7::t_f5a9f9ef454567 27-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "477dc88eba2f0c963a0392833a878bd7aba99f64",
+  "prompts": {},
+  "sessions": {
+    "s_08d4e85a3e46c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de395837-6f57-4b3b-8388-744ffba3886a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
