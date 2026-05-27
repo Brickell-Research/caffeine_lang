@@ -1,0 +1,35 @@
+import datadog_client
+import datadog_client/metric
+import envoy
+import gleam/int
+import gleam/io
+import langfuse_client/client
+import langfuse_client/score
+
+pub fn main() {
+  let assert Ok(langfuse_base) = envoy.get("LANGFUSE_BASE_URL")
+  let assert Ok(langfuse_pk) = envoy.get("LANGFUSE_PUBLIC_KEY")
+  let assert Ok(langfuse_sk) = envoy.get("LANGFUSE_SECRET_KEY")
+  let assert Ok(dd_api_key) = envoy.get("DATADOG_API_KEY")
+
+  let lf =
+    client.new(
+      base_url: langfuse_base,
+      public_key: langfuse_pk,
+      secret_key: langfuse_sk,
+    )
+
+  let assert Ok(scores) =
+    score.list(lf, score.query() |> score.with_limit(1))
+  let count = scores.meta.total_items
+
+  let dd = datadog_client.new(dd_api_key)
+  let m =
+    metric.gauge("langfuse.scores.count", int.to_float(count))
+    |> metric.with_tags(with: ["source:langfuse"])
+
+  let assert Ok(_) = datadog_client.send_one(dd, m)
+  io.println(
+    "relayed langfuse.scores.count=" <> int.to_string(count),
+  )
+}

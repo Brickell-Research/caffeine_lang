@@ -1,0 +1,27 @@
+name: langfuse_to_datadog
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          gleam-version: "1.6.0"
+      - name: Install deps
+        working-directory: relay
+        run: gleam deps download
+      - name: Run relay
+        working-directory: relay
+        env:
+          LANGFUSE_BASE_URL: ${{ vars.LANGFUSE_BASE_URL }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: gleam run
