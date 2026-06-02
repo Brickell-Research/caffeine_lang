@@ -1,0 +1,16 @@
+.github/workflows/release.yml
+  h_55b93de7ce5e50 35
+.github/workflows/test_caffeine.yml
+  h_55b93de7ce5e50 27,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c1cbb231ea8d30f67661ea49cd697b9d7df05f74",
+  "prompts": {},
+  "humans": {
+    "h_55b93de7ce5e50": {
+      "author": "robertDurst <me@robdurst.com>"
+    }
+  }
+}
