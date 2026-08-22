@@ -7,17 +7,17 @@
 # You should check this file into your source control repository.
 
 packages = [
-  { name = "datadog_query", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "datadog_query", source = "hex", outer_checksum = "1B3F0A45D549EE7F33091008C5667C624CBFB59E4EB90856F208B74A50096EA3" },
+  { name = "datadog_query", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "datadog_query", source = "hex", outer_checksum = "8464D8E6E9CC727FEC1E7A9EE81BA253A877F317A8601B1FCAB6DE3C84A1D054" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
-  { name = "gleam_stdlib", version = "1.0.1", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "D268F930A1F09925D2E66E336FC9F31F8DC50DB190585711B965E49E874A23CD" },
-  { name = "gleeunit", version = "1.10.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "254B697FE72EEAD7BF82E941723918E421317813AC49923EE76A18C788C61E72" },
-  { name = "simplifile", version = "2.4.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "7C18AFA4FED0B4CE1FA5B0B4BAC1FA1744427054EA993565F6F3F82E5453170D" },
+  { name = "gleam_stdlib", version = "1.0.5", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "CEE5B6C076A85B45F60C585F4316C63EC8B7127C119D5738C3958A9C4D50404E" },
+  { name = "gleeunit", version = "1.11.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "EC31ABA74256AEA531EDF8169931D775BBB384FED0A8A1BDC4DD9354E3E21826" },
+  { name = "simplifile", version = "2.7.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "A2727627B063E87351934C7F7F008F2D1FDB16F6DE0B8C79F9E46459CFC9C164" },
   { name = "terra_madre", version = "0.0.6", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "terra_madre", source = "hex", outer_checksum = "48648BC2CB0750A724D741E7573D8D5A474DFB457D177DBFDB7A3462334DE2B0" },
 ]
 
 [requirements]
 datadog_query = { version = ">= 2.0.0 and < 3.0.0" }
-gleam_stdlib = { version = ">= 0.70.0 and < 1.0.2" }
+gleam_stdlib = { version = ">= 1.0.2 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.2" }
 simplifile = { version = ">= 2.4.0 and < 3.0.0" }
 terra_madre = { version = ">=0.0.6" }

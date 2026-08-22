@@ -11,7 +11,7 @@ links = [
 target = "erlang"
 
 [dependencies]
-gleam_stdlib = ">= 0.70.0 and < 1.0.2"
+gleam_stdlib = ">= 1.0.2 and < 2.0.0"
 terra_madre = ">=0.0.6"
 datadog_query = ">= 2.0.0 and < 3.0.0"
 simplifile = ">= 2.4.0 and < 3.0.0"
