@@ -13,7 +13,7 @@ The pure compiler core for the [Caffeine](https://caffeine-lang.run) DSL. It gen
 
 </div>
 
-***
+---
 
 ## Usage
 
@@ -22,7 +22,7 @@ The pure compiler core for the [Caffeine](https://caffeine-lang.run) DSL. It gen
 ```toml
 # gleam.toml
 [dependencies]
-caffeine_lang = ">= 6.3.1 and < 6.3.1"
+caffeine_lang = ">= 6.3.1 and < 7.0.0"
 ```
 
 ```gleam
@@ -35,7 +35,11 @@ let result = compiler.compile_from_strings(blueprints, expectations, output_path
 
 ```javascript
 import { compile_from_strings } from "./caffeine-browser.js";
-const result = compile_from_strings(blueprintsJson, expectationsJson, "org/team/service.json");
+const result = compile_from_strings(
+  blueprintsJson,
+  expectationsJson,
+  "org/team/service.json",
+);
 ```
 
 ## Looking for the CLI or LSP?
