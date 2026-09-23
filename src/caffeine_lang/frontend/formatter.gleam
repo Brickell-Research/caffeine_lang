@@ -164,12 +164,33 @@ fn format_extendable(ext: Extendable) -> String {
 fn format_measurement_item(item: MeasurementItem) -> String {
   let comments = format_comments(item.leading_comments, "")
   let name_line =
-    "\"" <> item.name <> "\"" <> format_extends(item.extends) <> ":"
+    "\""
+    <> item.name
+    <> "\""
+    <> format_expectation_type(item.expectation_type)
+    <> format_extends(item.extends)
+    <> ":"
 
-  let requires = "  Requires " <> format_struct(item.requires, 2, TypeFields)
-  let provides = "  Provides " <> format_struct(item.provides, 2, LiteralFields)
+  let requires =
+    format_comments(item.requires_comments, "  ")
+    <> "  Requires "
+    <> format_struct(item.requires, 2, TypeFields)
+  let provides =
+    format_comments(item.provides_comments, "  ")
+    <> "  Provides "
+    <> format_struct(item.provides, 2, LiteralFields)
 
   comments <> name_line <> "\n" <> requires <> "\n" <> provides
+}
+
+fn format_expectation_type(
+  expectation_type: option.Option(ast.ExpectationType),
+) -> String {
+  case expectation_type {
+    option.Some(ast.SuccessRateType) -> " success_rate"
+    option.Some(ast.TimeSliceType) -> " time_slice"
+    option.None -> ""
+  }
 }
 
 fn format_expect_item(item: ExpectItem) -> String {
@@ -184,7 +205,12 @@ fn format_expect_item(item: ExpectItem) -> String {
 
   let guarantees_line = "\n  " <> format_guarantees(item.guarantees)
 
-  comments <> name_line <> assumes_section <> guarantees_line
+  let body_comments = case item.body_comments {
+    [] -> ""
+    body -> "\n" <> string.drop_end(format_comments(body, "  "), 1)
+  }
+
+  comments <> name_line <> body_comments <> assumes_section <> guarantees_line
 }
 
 fn format_assumes(a: ast.Assumes) -> String {
@@ -374,8 +400,22 @@ fn format_modifier_type(m: ModifierTypes(ParsedType)) -> String {
       "Defaulted("
       <> format_type(inner)
       <> ", "
-      <> quote_if_string_type(inner, default_val)
+      <> format_default_value(inner, default_val)
       <> ")"
+  }
+}
+
+/// The parser flattens list defaults to `"[a, b]"`, so string elements have
+/// to be split back out and quoted individually.
+fn format_default_value(inner: ParsedType, val: String) -> String {
+  case inner {
+    ParsedCollection(ListType(element)) ->
+      "["
+      <> types.parse_list_default_string(val)
+      |> list.map(quote_if_string_type(element, _))
+      |> string.join(", ")
+      <> "]"
+    _ -> quote_if_string_type(inner, val)
   }
 }
 
@@ -396,6 +436,7 @@ fn needs_string_quoting(t: ParsedType) -> Bool {
     ParsedPrimitive(SemanticType(_)) -> True
     ParsedRefinement(OneOf(inner, _)) -> needs_string_quoting(inner)
     ParsedRefinement(InclusiveRange(inner, _, _)) -> needs_string_quoting(inner)
+    ParsedModifier(Defaulted(inner, _)) -> needs_string_quoting(inner)
     ParsedRecord(_) -> False
     _ -> False
   }

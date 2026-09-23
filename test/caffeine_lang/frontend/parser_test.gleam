@@ -129,6 +129,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api_availability",
               expectation_type: option.None,
               extends: [],
@@ -163,6 +165,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "availability",
               expectation_type: option.None,
               extends: [],
@@ -183,6 +187,8 @@ pub fn parse_measurements_file_test() {
             ),
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "hard_dep",
               expectation_type: option.None,
               extends: [],
@@ -222,6 +228,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "tracked_slo",
               expectation_type: option.None,
               extends: [],
@@ -279,6 +287,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api",
               expectation_type: option.None,
               extends: [],
@@ -331,6 +341,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api",
               expectation_type: option.None,
               extends: ["_common"],
@@ -365,6 +377,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api",
               expectation_type: option.None,
               extends: ["_base"],
@@ -399,6 +413,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api",
               expectation_type: option.None,
               extends: ["_base", "_common"],
@@ -433,6 +449,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "test",
               expectation_type: option.None,
               extends: [],
@@ -504,6 +522,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "test_nested",
               expectation_type: option.None,
               extends: [],
@@ -585,6 +605,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "test",
               expectation_type: option.None,
               extends: [],
@@ -619,6 +641,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "api",
               expectation_type: option.None,
               extends: [],
@@ -660,6 +684,8 @@ pub fn parse_measurements_file_test() {
           items: [
             ast.MeasurementItem(
               leading_comments: [],
+              requires_comments: [],
+              provides_comments: [],
               name: "test",
               expectation_type: option.None,
               extends: [],

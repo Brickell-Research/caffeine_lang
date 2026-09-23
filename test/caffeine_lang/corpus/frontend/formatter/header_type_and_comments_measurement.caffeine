@@ -1,0 +1,18 @@
+"api_availability" success_rate:
+  # Params come from the service config.
+  Requires {
+    env: Defaulted(String, "production") { x | x in { "production", "staging" } },
+    regions: Defaulted(List(String), ["us-east-1", "eu-west-1"])
+  }
+  # Good requests over total.
+  Provides {
+    evaluation: "numerator / denominator",
+    indicators: {
+      numerator: "sum:http.requests{!status:5xx}",
+      denominator: "sum:http.requests"
+    }
+  }
+
+"api_latency" time_slice:
+  Requires {}
+  Provides { evaluation: "time_slice(query < 500 per 10s)" }

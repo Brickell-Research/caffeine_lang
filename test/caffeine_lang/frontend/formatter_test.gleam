@@ -1,5 +1,7 @@
 import caffeine_lang/frontend/formatter
+import caffeine_lang/frontend/parser
 import gleam/list
+import gleam/string
 import gleeunit/should
 import simplifile
 
@@ -45,6 +47,9 @@ fn read_file(path: String) -> String {
 // * ✅ multiline struct at 66 chars goes multiline (66 + 14 = 80, not < 80)
 // ==== format (empty struct with comment) ====
 // * ✅ empty extendable struct with trailing comment preserves comment
+// ==== format (round-trip regressions) ====
+// * ✅ measurement type header, comments above Requires/Provides, quoted defaults
+// * ✅ expects comment between header and Guarantees
 pub fn format_test() {
   [
     #("unformatted_measurement", "formatted_measurement"),
@@ -93,6 +98,12 @@ pub fn format_test() {
     #("boundary_80_col", "boundary_80_col"),
     // Empty struct with trailing comment
     #("empty_struct_trailing_comment", "empty_struct_trailing_comment"),
+    // Round-trip regressions
+    #(
+      "header_type_and_comments_measurement",
+      "header_type_and_comments_measurement",
+    ),
+    #("header_comments_expects", "header_comments_expects"),
   ]
   |> list.each(fn(pair) {
     let #(input_name, expected_name) = pair
@@ -135,6 +146,27 @@ pub fn format_idempotent_test() {
     let assert Ok(first) = formatter.format(input)
     let assert Ok(second) = formatter.format(first)
     second |> should.equal(first)
+  })
+}
+
+// ==== format (round-trip) ====
+// * ✅ parse(format(x)) == parse(x) for every formatter corpus file
+pub fn format_round_trip_test() {
+  let assert Ok(files) =
+    simplifile.read_directory("test/caffeine_lang/corpus/frontend/formatter")
+  files
+  |> list.each(fn(file) {
+    let input =
+      read_file("test/caffeine_lang/corpus/frontend/formatter/" <> file)
+    let assert Ok(formatted) = formatter.format(input)
+    case string.contains(input, "Guarantees") {
+      True ->
+        parser.parse_expects_file(formatted)
+        |> should.equal(parser.parse_expects_file(input))
+      False ->
+        parser.parse_measurements_file(formatted)
+        |> should.equal(parser.parse_measurements_file(input))
+    }
   })
 }
 

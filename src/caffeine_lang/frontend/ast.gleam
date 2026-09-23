@@ -119,6 +119,8 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 // =============================================================================
 
 /// A single measurement item with name, extends, requires, and provides.
+/// `requires_comments` and `provides_comments` are the comments on their own
+/// lines directly above the `Requires` and `Provides` keywords.
 ///
 /// `expectation_type` carries the declared SLO shape from a header like
 /// `"name" success_rate:` or `"name" time_slice:`. When None, the type is
@@ -131,6 +133,8 @@ pub type MeasurementItem {
     requires: Struct,
     provides: Struct,
     leading_comments: List(Comment),
+    requires_comments: List(Comment),
+    provides_comments: List(Comment),
   )
 }
 
@@ -152,6 +156,8 @@ pub type ExpectationType {
 /// An expectation has an optional `Assumes:` section listing dependencies and
 /// a required `Guarantees ...` clause carrying threshold, window, optional
 /// latency, and an optional `as measured by ... with: {...}` reference.
+/// `body_comments` are the comments between the header line and the first
+/// `Assumes`/`Guarantees` clause.
 pub type ExpectItem {
   ExpectItem(
     name: String,
@@ -159,6 +165,7 @@ pub type ExpectItem {
     assumes: Option(Assumes),
     guarantees: Guarantees,
     leading_comments: List(Comment),
+    body_comments: List(Comment),
   )
 }
 

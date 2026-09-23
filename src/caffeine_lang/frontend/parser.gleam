@@ -352,7 +352,7 @@ fn parse_measurement_item(
   ))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  let #(_pending, state) = consume_comments(state)
+  let #(requires_comments, state) = consume_comments(state)
   // `Requires {}` is optional — measurements with no params can skip it
   // entirely and jump straight to `Provides`.
   use #(requires, state) <- result.try(case peek(state) {
@@ -362,7 +362,7 @@ fn parse_measurement_item(
     }
     _ -> Ok(#(ast.Struct(fields: [], trailing_comments: []), state))
   })
-  let #(_pending, state) = consume_comments(state)
+  let #(provides_comments, state) = consume_comments(state)
   use state <- result.try(expect(state, token.KeywordProvides, "Provides"))
   use #(provides, state) <- result.try(parse_literal_struct(state))
   Ok(#(
@@ -373,6 +373,8 @@ fn parse_measurement_item(
       requires:,
       provides:,
       leading_comments:,
+      requires_comments:,
+      provides_comments:,
     ),
     state,
   ))
@@ -412,11 +414,18 @@ fn parse_expect_item(
   use #(name, state) <- result.try(parse_string_literal(state))
   use #(extends, state) <- result.try(parse_optional_extends(state))
   use state <- result.try(expect(state, token.SymbolColon, ":"))
-  let #(_pending, state) = consume_comments(state)
+  let #(body_comments, state) = consume_comments(state)
   use #(assumes, state) <- result.try(parse_optional_assumes(state))
   use #(guarantees, state) <- result.try(parse_guarantees(state))
   Ok(#(
-    ast.ExpectItem(name:, extends:, assumes:, guarantees:, leading_comments:),
+    ast.ExpectItem(
+      name:,
+      extends:,
+      assumes:,
+      guarantees:,
+      leading_comments:,
+      body_comments:,
+    ),
     state,
   ))
 }
