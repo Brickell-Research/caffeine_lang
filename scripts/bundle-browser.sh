@@ -32,4 +32,4 @@ ls -lh "$OUTPUT_DIR/caffeine-browser.js"
 echo ""
 echo "Usage in browser:"
 echo '  import { compile_from_strings } from "./caffeine-browser.js";'
-echo '  const result = compile_from_strings(blueprintsJson, expectationsJson, "org/team/service.json");'
+echo '  const result = compile_from_strings(measurements, expectations, "org/team/service.caffeine", "datadog");'

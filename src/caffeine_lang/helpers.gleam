@@ -51,11 +51,7 @@ pub fn extract_path_prefix(path: String) -> #(String, String, String) {
       // Remove file extension if present.
       case string.ends_with(segment, ".caffeine") {
         True -> string.drop_end(segment, 9)
-        False ->
-          case string.ends_with(segment, ".json") {
-            True -> string.drop_end(segment, 5)
-            False -> segment
-          }
+        False -> segment
       }
     })
   {

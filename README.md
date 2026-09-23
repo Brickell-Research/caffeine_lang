@@ -28,7 +28,13 @@ caffeine_lang = ">= 6.3.1 and < 7.0.0"
 ```gleam
 import caffeine_lang/compiler
 
-let result = compiler.compile_from_strings(blueprints, expectations, output_path)
+let result =
+  compiler.compile_from_strings(
+    measurements,
+    expectations,
+    "org/team/service.caffeine",
+    vendor: "datadog",
+  )
 ```
 
 ### In the browser
@@ -36,9 +42,10 @@ let result = compiler.compile_from_strings(blueprints, expectations, output_path
 ```javascript
 import { compile_from_strings } from "./caffeine-browser.js";
 const result = compile_from_strings(
-  blueprintsJson,
-  expectationsJson,
-  "org/team/service.json",
+  measurements,
+  expectations,
+  "org/team/service.caffeine",
+  "datadog",
 );
 ```
 

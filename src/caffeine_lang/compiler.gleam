@@ -219,7 +219,7 @@ fn parse_from_strings(
 
   let vendor_lookup =
     raw_measurements
-    |> list.map(fn(bp) { #(bp.name, resolved_vendor) })
+    |> list.map(fn(m) { #(m.name, resolved_vendor) })
     |> dict.from_list
 
   use expectations_measurement_collection <- result.try(

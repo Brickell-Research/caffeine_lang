@@ -49,21 +49,21 @@ pub fn lower_measurements_simple_test() {
   let measurements = parse_and_lower_measurements("measurements_simple")
   list.length(measurements) |> should.equal(1)
 
-  let assert Ok(bp) = list.first(measurements)
-  bp.name |> should.equal("api_availability")
+  let assert Ok(measurement) = list.first(measurements)
+  measurement.name |> should.equal("api_availability")
 
-  dict.size(bp.params) |> should.equal(2)
+  dict.size(measurement.params) |> should.equal(2)
 
-  let assert Ok(env_type) = dict.get(bp.params, "env")
+  let assert Ok(env_type) = dict.get(measurement.params, "env")
   env_type |> should.equal(types.PrimitiveType(types.String))
 
-  let assert Ok(threshold_type) = dict.get(bp.params, "threshold")
+  let assert Ok(threshold_type) = dict.get(measurement.params, "threshold")
   threshold_type
   |> should.equal(types.PrimitiveType(types.NumericType(types.Float)))
 
   // Check inputs
-  dict.size(bp.inputs) |> should.equal(2)
-  let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
+  dict.size(measurement.inputs) |> should.equal(2)
+  let assert Ok(vendor_val) = dict.get(measurement.inputs, "vendor")
   let assert Ok(vendor_str) = value.extract_string(vendor_val)
   vendor_str |> should.equal("datadog")
 }
@@ -72,42 +72,42 @@ pub fn lower_measurements_multi_artifact_test() {
   let measurements = parse_and_lower_measurements("measurements_multi_artifact")
   list.length(measurements) |> should.equal(1)
 
-  let assert Ok(bp) = list.first(measurements)
-  bp.name |> should.equal("tracked_slo")
+  let assert Ok(measurement) = list.first(measurements)
+  measurement.name |> should.equal("tracked_slo")
 
   // Should have params from both requires and artifacts
-  { dict.size(bp.params) > 0 } |> should.be_true
+  { dict.size(measurement.params) > 0 } |> should.be_true
 }
 
 pub fn lower_measurements_with_extends_test() {
   let measurements = parse_and_lower_measurements("measurements_with_extends")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
-  bp.name |> should.equal("api")
+  measurement.name |> should.equal("api")
 
   // Should have merged requires from _common extendable + own requires
-  let assert Ok(_) = dict.get(bp.params, "env")
-  let assert Ok(_) = dict.get(bp.params, "threshold")
+  let assert Ok(_) = dict.get(measurement.params, "env")
+  let assert Ok(_) = dict.get(measurement.params, "threshold")
 
   // Should have merged provides from _base extendable + own provides
-  let assert Ok(vendor_val) = dict.get(bp.inputs, "vendor")
+  let assert Ok(vendor_val) = dict.get(measurement.inputs, "vendor")
   let assert Ok(vendor_str) = value.extract_string(vendor_val)
   vendor_str |> should.equal("datadog")
 }
 
 pub fn lower_measurements_advanced_types_test() {
   let measurements = parse_and_lower_measurements("measurements_advanced_types")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // List(String)
-  let assert Ok(tags_type) = dict.get(bp.params, "tags")
+  let assert Ok(tags_type) = dict.get(measurement.params, "tags")
   tags_type
   |> should.equal(
     types.CollectionType(types.List(types.PrimitiveType(types.String))),
   )
 
   // Dict(String, Integer)
-  let assert Ok(counts_type) = dict.get(bp.params, "counts")
+  let assert Ok(counts_type) = dict.get(measurement.params, "counts")
   counts_type
   |> should.equal(
     types.CollectionType(types.Dict(
@@ -117,14 +117,14 @@ pub fn lower_measurements_advanced_types_test() {
   )
 
   // Optional(String)
-  let assert Ok(name_type) = dict.get(bp.params, "name")
+  let assert Ok(name_type) = dict.get(measurement.params, "name")
   name_type
   |> should.equal(
     types.ModifierType(types.Optional(types.PrimitiveType(types.String))),
   )
 
   // Defaulted(String, "production")
-  let assert Ok(env_type) = dict.get(bp.params, "env")
+  let assert Ok(env_type) = dict.get(measurement.params, "env")
   env_type
   |> should.equal(
     types.ModifierType(types.Defaulted(
@@ -134,7 +134,7 @@ pub fn lower_measurements_advanced_types_test() {
   )
 
   // OneOf refinement
-  let assert Ok(status_type) = dict.get(bp.params, "status")
+  let assert Ok(status_type) = dict.get(measurement.params, "status")
   status_type
   |> should.equal(
     types.RefinementType(types.OneOf(
@@ -144,7 +144,7 @@ pub fn lower_measurements_advanced_types_test() {
   )
 
   // InclusiveRange refinement
-  let assert Ok(threshold_type) = dict.get(bp.params, "threshold")
+  let assert Ok(threshold_type) = dict.get(measurement.params, "threshold")
   threshold_type
   |> should.equal(
     types.RefinementType(types.InclusiveRange(
@@ -158,10 +158,10 @@ pub fn lower_measurements_advanced_types_test() {
 pub fn lower_measurements_defaulted_type_alias_test() {
   let measurements =
     parse_and_lower_measurements("measurements_defaulted_type_alias")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // environment param should be Defaulted containing a resolved OneOf from _env alias
-  let assert Ok(env_type) = dict.get(bp.params, "environment")
+  let assert Ok(env_type) = dict.get(measurement.params, "environment")
   env_type
   |> should.equal(
     types.ModifierType(types.Defaulted(
@@ -176,14 +176,14 @@ pub fn lower_measurements_defaulted_type_alias_test() {
 
 pub fn lower_measurements_template_vars_test() {
   let measurements = parse_and_lower_measurements("measurements_template_vars")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // Template vars should be transformed: $env->env$ -> $$env->env$$
-  let assert Ok(value_val) = dict.get(bp.inputs, "value")
+  let assert Ok(value_val) = dict.get(measurement.inputs, "value")
   let assert Ok(value_str) = value.extract_string(value_val)
   value_str |> should.equal("numerator / denominator")
 
-  let assert Ok(queries_val) = dict.get(bp.inputs, "queries")
+  let assert Ok(queries_val) = dict.get(measurement.inputs, "queries")
   let assert value.DictValue(queries_dict) = queries_val
   let assert Ok(num_val) = dict.get(queries_dict, "numerator")
   let assert Ok(num_str) = value.extract_string(num_val)
@@ -194,40 +194,40 @@ pub fn lower_measurements_template_vars_test() {
 pub fn lower_measurements_template_vars_edge_cases_test() {
   let measurements =
     parse_and_lower_measurements("measurements_template_vars_edge_cases")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // Multiple variables in one string
-  let assert Ok(multi_val) = dict.get(bp.inputs, "multi_var")
+  let assert Ok(multi_val) = dict.get(measurement.inputs, "multi_var")
   let assert Ok(multi_str) = value.extract_string(multi_val)
   multi_str |> should.equal("count:$$a->x$$.sum{$$b->y$$}")
 
   // Unclosed variable stays as-is
-  let assert Ok(unclosed_val) = dict.get(bp.inputs, "unclosed")
+  let assert Ok(unclosed_val) = dict.get(measurement.inputs, "unclosed")
   let assert Ok(unclosed_str) = value.extract_string(unclosed_val)
   unclosed_str |> should.equal("$env->env no closing")
 
   // Already escaped $$ preserved
-  let assert Ok(escaped_val) = dict.get(bp.inputs, "already_escaped")
+  let assert Ok(escaped_val) = dict.get(measurement.inputs, "already_escaped")
   let assert Ok(escaped_str) = value.extract_string(escaped_val)
   escaped_str |> should.equal("$$skip->this$$")
 
   // Multiple .not replacements
-  let assert Ok(not_val) = dict.get(bp.inputs, "multi_not")
+  let assert Ok(not_val) = dict.get(measurement.inputs, "multi_not")
   let assert Ok(not_str) = value.extract_string(not_val)
   not_str |> should.equal("$$a->b:not$$ $$c->d:not$$")
 
   // Mixed content with prefix and suffix
-  let assert Ok(mixed_val) = dict.get(bp.inputs, "mixed")
+  let assert Ok(mixed_val) = dict.get(measurement.inputs, "mixed")
   let assert Ok(mixed_str) = value.extract_string(mixed_val)
   mixed_str |> should.equal("prefix $$var->attr$$ suffix")
 }
 
 pub fn lower_measurements_type_alias_test() {
   let measurements = parse_and_lower_measurements("measurements_type_alias")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // _env alias should be resolved to OneOf(String, {"production", "staging"})
-  let assert Ok(env_type) = dict.get(bp.params, "env")
+  let assert Ok(env_type) = dict.get(measurement.params, "env")
   env_type
   |> should.equal(
     types.RefinementType(types.OneOf(
@@ -237,7 +237,7 @@ pub fn lower_measurements_type_alias_test() {
   )
 
   // Dict key uses _relation alias, should be resolved
-  let assert Ok(config_type) = dict.get(bp.params, "config")
+  let assert Ok(config_type) = dict.get(measurement.params, "config")
   config_type
   |> should.equal(
     types.CollectionType(types.Dict(
@@ -250,7 +250,7 @@ pub fn lower_measurements_type_alias_test() {
   )
 
   // List uses _env alias
-  let assert Ok(items_type) = dict.get(bp.params, "items")
+  let assert Ok(items_type) = dict.get(measurement.params, "items")
   items_type
   |> should.equal(
     types.CollectionType(
@@ -271,15 +271,15 @@ pub fn lower_measurements_type_alias_test() {
 pub fn lower_measurements_percentage_types_test() {
   let measurements =
     parse_and_lower_measurements("measurements_percentage_types")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // Plain Percentage
-  let assert Ok(threshold_type) = dict.get(bp.params, "threshold")
+  let assert Ok(threshold_type) = dict.get(measurement.params, "threshold")
   threshold_type
   |> should.equal(types.PrimitiveType(types.NumericType(types.Percentage)))
 
   // Percentage { x | x in ( 99.0..100.0 ) }
-  let assert Ok(target_type) = dict.get(bp.params, "target")
+  let assert Ok(target_type) = dict.get(measurement.params, "target")
   target_type
   |> should.equal(
     types.RefinementType(types.InclusiveRange(
@@ -290,7 +290,7 @@ pub fn lower_measurements_percentage_types_test() {
   )
 
   // Defaulted(Percentage, 99.9%)
-  let assert Ok(level_type) = dict.get(bp.params, "level")
+  let assert Ok(level_type) = dict.get(measurement.params, "level")
   level_type
   |> should.equal(
     types.ModifierType(types.Defaulted(
@@ -417,10 +417,10 @@ pub fn literal_to_dynamic_test() {
 // * ✅ inline record type resolves to RecordType
 pub fn lower_measurements_record_type_test() {
   let measurements = parse_and_lower_measurements("measurements_record_type")
-  let assert Ok(bp) = list.first(measurements)
+  let assert Ok(measurement) = list.first(measurements)
 
   // _indicators alias should resolve to RecordType
-  let assert Ok(indicators_type) = dict.get(bp.params, "indicators")
+  let assert Ok(indicators_type) = dict.get(measurement.params, "indicators")
   indicators_type
   |> should.equal(
     RecordType(
@@ -432,7 +432,7 @@ pub fn lower_measurements_record_type_test() {
   )
 
   // Inline record type
-  let assert Ok(config_type) = dict.get(bp.params, "config")
+  let assert Ok(config_type) = dict.get(measurement.params, "config")
   config_type
   |> should.equal(
     RecordType(

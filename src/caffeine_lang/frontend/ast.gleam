@@ -115,7 +115,7 @@ pub fn extendable_kind_to_string(kind: ExtendableKind) -> String {
 }
 
 // =============================================================================
-// BLUEPRINT NODES
+// MEASUREMENT NODES
 // =============================================================================
 
 /// A single measurement item with name, extends, requires, and provides.

@@ -59,7 +59,10 @@ pub fn build_all_test() {
     let assert Ok([ir]) =
       ir_builder.build_all(
         [
-          #([#(expectation, option.Some(measurement))], "org/team/service.json"),
+          #(
+            [#(expectation, option.Some(measurement))],
+            "org/team/service.caffeine",
+          ),
         ],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
@@ -112,7 +115,7 @@ pub fn build_all_test() {
               #(exp1, option.Some(measurement)),
               #(exp2, option.Some(measurement)),
             ],
-            "org/team/service.json",
+            "org/team/service.caffeine",
           ),
         ],
         reserved_labels: test_reserved_labels(),
@@ -149,8 +152,8 @@ pub fn build_all_test() {
     let assert Ok(result) =
       ir_builder.build_all(
         [
-          #([#(exp1, option.Some(measurement))], "org/team/file1.json"),
-          #([#(exp2, option.Some(measurement))], "org/team/file2.json"),
+          #([#(exp1, option.Some(measurement))], "org/team/file1.caffeine"),
+          #([#(exp2, option.Some(measurement))], "org/team/file2.caffeine"),
         ],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
@@ -188,7 +191,7 @@ pub fn build_all_test() {
 
     let assert Ok([ir]) =
       ir_builder.build_all(
-        [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+        [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
         slo_params: test_slo_params(),
@@ -239,7 +242,7 @@ pub fn build_all_test() {
 
     let assert Ok([ir]) =
       ir_builder.build_all(
-        [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+        [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
         slo_params: test_slo_params(),
@@ -294,7 +297,7 @@ pub fn build_all_test() {
 
     let assert Ok([ir]) =
       ir_builder.build_all(
-        [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+        [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
         slo_params: test_slo_params(),
@@ -349,7 +352,7 @@ pub fn build_all_test() {
 
     let assert Ok([ir]) =
       ir_builder.build_all(
-        [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+        [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
         slo_params: test_slo_params(),
@@ -400,7 +403,7 @@ pub fn build_all_test() {
     let assert Ok([ir]) =
       ir_builder.build_all(
         [
-          #([#(expectation, option.Some(measurement))], "org/team/svc.json"),
+          #([#(expectation, option.Some(measurement))], "org/team/svc.caffeine"),
         ],
         reserved_labels: test_reserved_labels(),
         vendor_lookup: test_vendor_lookup(),
@@ -452,7 +455,7 @@ pub fn build_all_list_misc_test() {
 
   let assert Ok([ir]) =
     ir_builder.build_all(
-      [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+      [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
       reserved_labels: test_reserved_labels(),
       vendor_lookup: test_vendor_lookup(),
       slo_params: test_slo_params(),
@@ -486,7 +489,7 @@ pub fn build_all_optional_none_misc_test() {
 
   let assert Ok([ir]) =
     ir_builder.build_all(
-      [#([#(expectation, option.Some(measurement))], "org/team/svc.json")],
+      [#([#(expectation, option.Some(measurement))], "org/team/svc.caffeine")],
       reserved_labels: test_reserved_labels(),
       vendor_lookup: test_vendor_lookup(),
       slo_params: test_slo_params(),

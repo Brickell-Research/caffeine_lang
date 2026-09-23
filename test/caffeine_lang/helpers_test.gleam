@@ -74,8 +74,7 @@ pub fn extract_value_test() {
 // ==== extract_path_prefix ====
 // * ✅ standard path with 3+ segments
 // * ✅ path ending in .caffeine
-// * ✅ path ending in .json
-// * ✅ three-segment .json without leading prefix
+// * ✅ three-segment path without leading prefix
 // * ✅ insufficient segments returns unknown
 // * ✅ single segment returns unknown
 pub fn extract_path_prefix_test() {
@@ -85,15 +84,10 @@ pub fn extract_path_prefix_test() {
       "examples/org/platform_team/authentication.caffeine",
       #("org", "platform_team", "authentication"),
     ),
-    #(
-      "path ending in .json",
-      "examples/org/platform_team/auth.json",
-      #("org", "platform_team", "auth"),
-    ),
     #("path ending in .caffeine", "a/b/c", #("a", "b", "c")),
     #(
-      "three-segment .json without leading prefix",
-      "org/team/service.json",
+      "three-segment path without leading prefix",
+      "org/team/service.caffeine",
       #("org", "team", "service"),
     ),
     #(
@@ -152,7 +146,7 @@ pub fn build_system_tag_pairs_test() {
       org_name: identifiers.OrgName("my_org"),
       team_name: identifiers.TeamName("my_team"),
       service_name: identifiers.ServiceName("my_service"),
-      measurement_name: identifiers.MeasurementName("my_bp"),
+      measurement_name: identifiers.MeasurementName("my_measurement"),
       friendly_label: identifiers.ExpectationLabel("my_label"),
       misc: dict.from_list([#("env", ["prod", "dev"])]),
     )
@@ -162,7 +156,7 @@ pub fn build_system_tag_pairs_test() {
   list.contains(result, #("org", "my_org")) |> should.be_true()
   list.contains(result, #("team", "my_team")) |> should.be_true()
   list.contains(result, #("service", "my_service")) |> should.be_true()
-  list.contains(result, #("measurement", "my_bp")) |> should.be_true()
+  list.contains(result, #("measurement", "my_measurement")) |> should.be_true()
   list.contains(result, #("expectation", "my_label")) |> should.be_true()
   // Misc tags (sorted)
   list.contains(result, #("env", "dev")) |> should.be_true()

@@ -20,10 +20,10 @@ pub fn compile_measurements_test() {
   let assert Ok(measurements) = pipeline.compile_measurements(source)
 
   list.length(measurements) |> should.equal(1)
-  let assert Ok(bp) = list.first(measurements)
-  bp.name |> should.equal("api_availability")
-  { dict.size(bp.params) > 0 } |> should.be_true
-  { dict.size(bp.inputs) > 0 } |> should.be_true
+  let assert Ok(measurement) = list.first(measurements)
+  measurement.name |> should.equal("api_availability")
+  { dict.size(measurement.params) > 0 } |> should.be_true
+  { dict.size(measurement.inputs) > 0 } |> should.be_true
 }
 
 // ==== compile_expects ====

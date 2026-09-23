@@ -27,9 +27,9 @@ pub fn link(
   // Compile each vendor measurement source and pair measurements with their vendor.
   use compiled_pairs <- result.try(
     measurements
-    |> list.map(fn(vbs) {
-      pipeline.compile_measurements(vbs.source)
-      |> result.map(fn(raw_bps) { #(raw_bps, vbs.vendor) })
+    |> list.map(fn(source) {
+      pipeline.compile_measurements(source.source)
+      |> result.map(fn(raw_measurements) { #(raw_measurements, source.vendor) })
     })
     |> errors.from_results(),
   )
@@ -40,8 +40,8 @@ pub fn link(
   let vendor_lookup =
     compiled_pairs
     |> list.flat_map(fn(pair) {
-      let #(raw_bps, v) = pair
-      list.map(raw_bps, fn(bp) { #(bp.name, v) })
+      let #(raw_measurements, v) = pair
+      list.map(raw_measurements, fn(m) { #(m.name, v) })
     })
     |> dict.from_list
 

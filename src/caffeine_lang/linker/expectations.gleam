@@ -89,7 +89,7 @@ fn validate_measured_expectations(
     helpers.map_reference_to_referrer_over_collection(
       references: measurements,
       referrers: expectations,
-      reference_name: fn(b) { b.name },
+      reference_name: fn(m) { m.name },
       referrer_reference: fn(e) {
         let assert option.Some(ref) = e.measurement_ref
         ref
@@ -166,7 +166,7 @@ fn validate_measurement_refs(
   expectations: List(Expectation),
   measurements: List(Measurement(MeasurementValidated)),
 ) -> Result(Nil, CompilationError) {
-  let measurement_names = list.map(measurements, fn(b) { b.name })
+  let measurement_names = list.map(measurements, fn(m) { m.name })
   let measurement_name_set = set.from_list(measurement_names)
   let missing =
     expectations

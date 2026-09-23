@@ -884,7 +884,7 @@ pub fn parse_declared_expectation_type_test() {
 
 pub fn parse_empty_with_args_test() {
   let source =
-    "\"test\":\n  Guarantees 99.9% over 30d window as measured by \"bp\" with: {}\n"
+    "\"test\":\n  Guarantees 99.9% over 30d window as measured by \"api_availability\" with: {}\n"
   let assert Ok(file) = parser.parse_expects_file(source)
   let assert [item] = file.items
   let assert option.Some(mb) = item.guarantees.measured_by

@@ -40,7 +40,7 @@ pub fn validate_measurements(
   // Validate all names are unique.
   use _ <- result.try(validations.validate_relevant_uniqueness(
     measurements,
-    by: fn(b) { b.name },
+    by: fn(m) { m.name },
     label: "measurement names",
   ))
 

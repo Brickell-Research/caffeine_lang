@@ -38,8 +38,8 @@ fn slo_params() -> dict.Dict(String, ParamInfo) {
 pub fn validate_measurements_test() {
   // Happy path - empty list
   [#("empty list", [], Ok([]))]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 
   // Happy path - single valid measurement, SLO params get merged in
@@ -70,8 +70,8 @@ pub fn validate_measurements_test() {
       ]),
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 
   // No inputs - allowed since measurements can provide partial inputs
@@ -89,8 +89,8 @@ pub fn validate_measurements_test() {
       True,
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case measurements.validate_measurements(bps, slo_params()) {
+  |> test_helpers.table_test_1(fn(raw) {
+    case measurements.validate_measurements(raw, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
@@ -111,8 +111,8 @@ pub fn validate_measurements_test() {
       True,
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case measurements.validate_measurements(bps, slo_params()) {
+  |> test_helpers.table_test_1(fn(raw) {
+    case measurements.validate_measurements(raw, slo_params()) {
       Ok(_) -> True
       Error(_) -> False
     }
@@ -139,8 +139,8 @@ pub fn validate_measurements_test() {
       True,
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    case measurements.validate_measurements(bps, slo_params()) {
+  |> test_helpers.table_test_1(fn(raw) {
+    case measurements.validate_measurements(raw, slo_params()) {
       Ok(result) -> list.length(result) == 2
       Error(_) -> False
     }
@@ -170,8 +170,8 @@ pub fn validate_measurements_test() {
       )),
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 
   // Overshadowing SLO params
@@ -194,8 +194,8 @@ pub fn validate_measurements_test() {
       )),
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 
   // Extra input field
@@ -219,8 +219,8 @@ pub fn validate_measurements_test() {
       )),
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 
   // Wrong type input value
@@ -241,7 +241,7 @@ pub fn validate_measurements_test() {
       )),
     ),
   ]
-  |> test_helpers.table_test_1(fn(bps) {
-    measurements.validate_measurements(bps, slo_params())
+  |> test_helpers.table_test_1(fn(raw) {
+    measurements.validate_measurements(raw, slo_params())
   })
 }
