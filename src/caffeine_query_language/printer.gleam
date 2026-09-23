@@ -10,7 +10,7 @@ import gleam/string
 @internal
 pub fn exp_to_string(exp: Exp(a)) -> String {
   case exp {
-    ast.Primary(primary:) -> primary_to_string(primary, option.None)
+    ast.Primary(primary:) -> primary_to_string(primary)
     ast.TimeSliceExpr(spec) ->
       "time_slice("
       <> spec.query
@@ -27,14 +27,8 @@ pub fn exp_to_string(exp: Exp(a)) -> String {
           exp_to_string_no_spaces(exp)
         }
         _, _ -> {
-          let left =
-            exp_to_string_with_context(numerator, option.Some(operator), True)
-          let right =
-            exp_to_string_with_context(
-              denominator,
-              option.Some(operator),
-              False,
-            )
+          let left = exp_to_string(numerator)
+          let right = exp_to_string(denominator)
           let op = operator_to_string(operator)
           left <> " " <> op <> " " <> right
         }
@@ -112,38 +106,7 @@ fn exp_to_string_no_spaces(exp: Exp(a)) -> String {
   }
 }
 
-fn exp_to_string_with_context(
-  exp: Exp(a),
-  parent_op: Option(Operator),
-  _is_left: Bool,
-) -> String {
-  case exp {
-    ast.Primary(primary:) -> primary_to_string(primary, parent_op)
-    ast.TimeSliceExpr(_) -> exp_to_string(exp)
-    ast.OperatorExpr(numerator:, denominator:, operator:) -> {
-      case operator, is_path_expression(exp) {
-        ast.Div, True -> exp_to_string_no_spaces(exp)
-        _, _ -> {
-          let left =
-            exp_to_string_with_context(numerator, option.Some(operator), True)
-          let right =
-            exp_to_string_with_context(
-              denominator,
-              option.Some(operator),
-              False,
-            )
-          let op = operator_to_string(operator)
-          left <> " " <> op <> " " <> right
-        }
-      }
-    }
-  }
-}
-
-fn primary_to_string(
-  primary: Primary(a),
-  _parent_op: Option(Operator),
-) -> String {
+fn primary_to_string(primary: Primary(a)) -> String {
   case primary {
     ast.PrimaryWord(word:) -> word.value
     ast.PrimaryExp(exp:) -> {

@@ -184,7 +184,7 @@ pub fn lower_measurements_template_vars_test() {
   value_str |> should.equal("numerator / denominator")
 
   let assert Ok(queries_val) = dict.get(bp.inputs, "queries")
-  let assert Ok(queries_dict) = value.extract_dict(queries_val)
+  let assert value.DictValue(queries_dict) = queries_val
   let assert Ok(num_val) = dict.get(queries_dict, "numerator")
   let assert Ok(num_str) = value.extract_string(num_val)
   num_str
@@ -373,7 +373,7 @@ pub fn lower_expectations_multiple_extends_test() {
 
   // From the item's own `with: {...}` args: status: true
   let assert Ok(status_val) = dict.get(exp.inputs, "status")
-  let assert Ok(status_bool) = value.extract_bool(status_val)
+  let assert value.BoolValue(status_bool) = status_val
   status_bool |> should.be_true
 }
 

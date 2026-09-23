@@ -37,7 +37,6 @@ simplifile = ">= 2.4.0 and < 3.0.0"
 "caffeine_lang/linker/validations" = true
 # Utilities (internal helpers)
 "caffeine_lang/helpers" = true
-"caffeine_lang/parsing_utils" = true
 "caffeine_lang/string_distance" = true
 # CQL (internal parser)
 "caffeine_query_language/ast" = true

@@ -75,17 +75,6 @@ pub fn classify_test() {
   |> test_helpers.table_test_1(value.classify)
 }
 
-// ==== extract_duration ====
-// * ✅ extracts from DurationValue
-// * ✅ returns Error for non-duration
-pub fn extract_duration_test() {
-  [
-    #("extracts from DurationValue", DurationValue(10.0, Day), Ok(#(10.0, Day))),
-    #("returns Error for non-duration", IntValue(10), Error(Nil)),
-  ]
-  |> test_helpers.table_test_1(value.extract_duration)
-}
-
 // ==== duration_to_milliseconds ====
 // * ✅ ms identity
 // * ✅ seconds → ms
@@ -165,29 +154,6 @@ pub fn extract_percentage_test() {
     #("returns Error for non-percentage", IntValue(1), Error(Nil)),
   ]
   |> test_helpers.table_test_1(value.extract_percentage)
-}
-
-// ==== extract_bool ====
-// * ✅ extracts from BoolValue
-// * ✅ returns Error for non-bool
-pub fn extract_bool_test() {
-  [
-    #("extracts from BoolValue", BoolValue(True), Ok(True)),
-    #("returns Error for non-bool", StringValue("x"), Error(Nil)),
-  ]
-  |> test_helpers.table_test_1(value.extract_bool)
-}
-
-// ==== extract_dict ====
-// * ✅ extracts from DictValue
-// * ✅ returns Error for non-dict
-pub fn extract_dict_test() {
-  let d = dict.from_list([#("k", StringValue("v"))])
-  [
-    #("extracts from DictValue", DictValue(d), Ok(d)),
-    #("returns Error for non-dict", StringValue("x"), Error(Nil)),
-  ]
-  |> test_helpers.table_test_1(value.extract_dict)
 }
 
 // ==== extract_string_dict ====

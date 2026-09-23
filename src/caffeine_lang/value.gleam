@@ -164,33 +164,6 @@ pub fn extract_percentage(value: Value) -> Result(Float, Nil) {
   }
 }
 
-/// Extracts a Bool from a Value, returning Error if not a BoolValue.
-@internal
-pub fn extract_bool(value: Value) -> Result(Bool, Nil) {
-  case value {
-    BoolValue(b) -> Ok(b)
-    _ -> Error(Nil)
-  }
-}
-
-/// Extracts a duration's amount and unit, returning Error if not a DurationValue.
-@internal
-pub fn extract_duration(value: Value) -> Result(#(Float, DurationUnit), Nil) {
-  case value {
-    DurationValue(amount, unit) -> Ok(#(amount, unit))
-    _ -> Error(Nil)
-  }
-}
-
-/// Extracts a Dict from a Value, returning Error if not a DictValue.
-@internal
-pub fn extract_dict(value: Value) -> Result(Dict(String, Value), Nil) {
-  case value {
-    DictValue(d) -> Ok(d)
-    _ -> Error(Nil)
-  }
-}
-
 /// Extracts a Dict(String, String) from a Value.
 /// Returns Error if not a DictValue or if any value is not a StringValue.
 @internal

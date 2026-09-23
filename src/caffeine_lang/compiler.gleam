@@ -139,9 +139,8 @@ fn run_code_generation(
   // Build resource name → metadata lookup for source comments.
   let metadata_by_name =
     resolved_irs
-    |> list.flat_map(fn(ir) {
-      let base = common.sanitize_terraform_identifier(ir.unique_identifier)
-      [#(base, ir.metadata), #(base <> "_sli", ir.metadata)]
+    |> list.map(fn(ir) {
+      #(common.sanitize_terraform_identifier(ir.unique_identifier), ir.metadata)
     })
     |> dict.from_list
 

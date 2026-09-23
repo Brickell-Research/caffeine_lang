@@ -1,4 +1,3 @@
-import caffeine_lang/analysis/vendor
 import caffeine_lang/codegen/datadog
 import caffeine_lang/codegen/generator_utils
 import caffeine_lang/constants
@@ -15,7 +14,6 @@ import terra_madre/terraform
 /// and the function that turns IRs into Terraform resources.
 pub type Platform {
   Platform(
-    vendor: vendor.Vendor,
     provider_name: String,
     provider_source: String,
     provider_version: String,
@@ -76,7 +74,6 @@ pub fn generate_terraform(
 
 pub fn datadog_platform() -> Platform {
   Platform(
-    vendor: vendor.Datadog,
     provider_name: constants.provider_datadog,
     provider_source: "DataDog/datadog",
     provider_version: "~> 3.0",
