@@ -24,34 +24,8 @@ variable "datadog_app_key" {
   type = string
 }
 
-# Caffeine: acme.platform.slos.auth_service_availability (measurement: api_availability)
-resource "datadog_service_level_objective" "acme_slos_auth_service_availability" {
-  name = "auth_service_availability"
-  tags = [
-    "managed_by:caffeine",
-    "caffeine_version:{{VERSION}}",
-    "org:acme",
-    "team:platform",
-    "service:slos",
-    "measurement:api_availability",
-    "expectation:auth_service_availability",
-    "env:production",
-    "service:auth-service",
-  ]
-  type = "metric"
-
-  query {
-    denominator = "sum:http.requests{env:production,service:auth-service}"
-    numerator = "sum:http.requests{env:production,service:auth-service,!status:5xx}"
-  }
-  thresholds {
-    target = 99.99
-    timeframe = "30d"
-  }
-}
-
 # Caffeine: acme.payments.slos.checkout_availability (measurement: api_availability)
-resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
+resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability" {
   name = "checkout_availability"
   tags = [
     "managed_by:caffeine",
@@ -77,7 +51,7 @@ resource "datadog_service_level_objective" "acme_slos_checkout_availability" {
 }
 
 # Caffeine: acme.payments.slos.checkout_latency_p99 (measurement: api_latency_p99)
-resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
+resource "datadog_service_level_objective" "acme_payments_slos_checkout_latency_p99" {
   name = "checkout_latency_p99"
   tags = [
     "managed_by:caffeine",
@@ -99,5 +73,31 @@ resource "datadog_service_level_objective" "acme_slos_checkout_latency_p99" {
   thresholds {
     target = 99.0
     timeframe = "7d"
+  }
+}
+
+# Caffeine: acme.platform.slos.auth_service_availability (measurement: api_availability)
+resource "datadog_service_level_objective" "acme_platform_slos_auth_service_availability" {
+  name = "auth_service_availability"
+  tags = [
+    "managed_by:caffeine",
+    "caffeine_version:{{VERSION}}",
+    "org:acme",
+    "team:platform",
+    "service:slos",
+    "measurement:api_availability",
+    "expectation:auth_service_availability",
+    "env:production",
+    "service:auth-service",
+  ]
+  type = "metric"
+
+  query {
+    denominator = "sum:http.requests{env:production,service:auth-service}"
+    numerator = "sum:http.requests{env:production,service:auth-service,!status:5xx}"
+  }
+  thresholds {
+    target = 99.99
+    timeframe = "30d"
   }
 }

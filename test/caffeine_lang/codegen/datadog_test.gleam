@@ -16,6 +16,7 @@ import gleam/list
 import gleam/option
 import gleam/string
 import gleeunit/should
+import ir_test_helpers
 import terra_madre/terraform
 import test_helpers
 
@@ -1312,6 +1313,37 @@ pub fn generate_terraform_test() {
       }
     }
   })
+}
+
+// ==== generate_resources ====
+// * ❌ expectations whose names sanitize to the same resource name
+pub fn generate_resources_test() {
+  [
+    #(
+      "expectations whose names sanitize to the same resource name",
+      [
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "team",
+          "svc",
+          "a b",
+          threshold: 99.9,
+        ),
+        ir_test_helpers.make_slo_ir(
+          "acme",
+          "team",
+          "svc",
+          "a_b",
+          threshold: 99.9,
+        ),
+      ],
+      Error(errors.generator_terraform_resolution_error(
+        vendor: constants.vendor_datadog,
+        msg: "expectations 'acme.team.svc.a b' and 'acme.team.svc.a_b' both map to Terraform resource name 'acme_team_svc_a_b'",
+      )),
+    ),
+  ]
+  |> test_helpers.table_test_1(datadog.generate_resources)
 }
 
 // ==== resolve_indicators ====

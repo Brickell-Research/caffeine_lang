@@ -75,7 +75,7 @@ pub fn build_all_test() {
     ir.metadata.service_name |> should.equal(identifiers.ServiceName("service"))
     ir.metadata.measurement_name
     |> should.equal(identifiers.MeasurementName("test_measurement"))
-    ir.unique_identifier |> should.equal("org_service_my_test")
+    ir.unique_identifier |> should.equal("org_team_service_my_test")
     ir.vendor |> should.equal(option.Some(vendor.Datadog))
     // Check values contain expected tuples (order-independent)
     ir.values

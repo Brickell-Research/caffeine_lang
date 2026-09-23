@@ -33,7 +33,7 @@ pub fn make_slo_ir(
   ]
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
-    unique_identifier: make_unique_id(org, service, name),
+    unique_identifier: make_unique_id(org, team, service, name),
     values: values,
     slo: make_test_slo_fields(threshold, dict.new()),
     vendor: option.Some(vendor.Datadog),
@@ -67,7 +67,7 @@ pub fn make_ir_with_deps(
     option.Some(dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]))
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
-    unique_identifier: make_unique_id(org, service, name),
+    unique_identifier: make_unique_id(org, team, service, name),
     values: values,
     slo: make_test_slo_fields_with_deps(threshold, dict.new(), depends_on),
     vendor: option.Some(vendor.Datadog),
@@ -92,8 +92,13 @@ fn make_test_metadata(
 }
 
 /// Builds a unique identifier from org, service, and name.
-fn make_unique_id(org: String, service: String, name: String) -> String {
-  org <> "_" <> service <> "_" <> name
+fn make_unique_id(
+  org: String,
+  team: String,
+  service: String,
+  name: String,
+) -> String {
+  org <> "_" <> team <> "_" <> service <> "_" <> name
 }
 
 /// Builds the relations ValueTuple from hard and soft dependency lists.
@@ -169,7 +174,7 @@ pub fn make_typed_ir_with_deps(
     option.Some(dict.from_list([#(Hard, hard_deps), #(Soft, soft_deps)]))
   ir.IntermediateRepresentation(
     metadata: make_test_metadata(org, team, service, name),
-    unique_identifier: make_unique_id(org, service, name),
+    unique_identifier: make_unique_id(org, team, service, name),
     values: values,
     slo: ir.SloFields(
       threshold: threshold,

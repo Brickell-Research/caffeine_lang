@@ -119,7 +119,7 @@ fn build_measured(
   let value_tuples = build_value_tuples(merged_inputs, measurement.params)
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
-  let unique_name = org <> "_" <> service <> "_" <> expectation.name
+  let unique_name = unique_name(org, team, service, expectation.name)
   let slo =
     build_slo_fields(
       index,
@@ -176,7 +176,7 @@ fn build_unmeasured(
   let value_tuples = build_value_tuples(expectation.inputs, unmeasured_params)
   let index = helpers.index_value_tuples(value_tuples)
   let misc_metadata = extract_misc_metadata(value_tuples, reserved_labels)
-  let unique_name = org <> "_" <> service <> "_" <> expectation.name
+  let unique_name = unique_name(org, team, service, expectation.name)
   // Unmeasured expectations have no backing measurement, so no declared type.
   let slo = build_slo_fields(index, expectation.description, option.None)
 
@@ -194,6 +194,15 @@ fn build_unmeasured(
     slo: slo,
     vendor: option.None,
   )
+}
+
+fn unique_name(
+  org: String,
+  team: String,
+  service: String,
+  expectation_name: String,
+) -> String {
+  org <> "_" <> team <> "_" <> service <> "_" <> expectation_name
 }
 
 /// Build value tuples from merged inputs and params.

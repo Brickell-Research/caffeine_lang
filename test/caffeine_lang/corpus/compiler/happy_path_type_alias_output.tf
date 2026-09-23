@@ -25,7 +25,7 @@ variable "datadog_app_key" {
 }
 
 # Caffeine: acme.payments.slos.checkout_availability_type_alias (measurement: api_availability_with_type_alias)
-resource "datadog_service_level_objective" "acme_slos_checkout_availability_type_alias" {
+resource "datadog_service_level_objective" "acme_payments_slos_checkout_availability_type_alias" {
   name = "checkout_availability_type_alias"
   tags = [
     "managed_by:caffeine",

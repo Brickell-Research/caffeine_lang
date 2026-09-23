@@ -158,6 +158,7 @@ const default_evaluation = "numerator / denominator"
 pub fn generate_resources(
   irs: List(IntermediateRepresentation(Resolved)),
 ) -> Result(#(List(terraform.Resource), List(String)), CompilationError) {
+  use _ <- result.try(check_resource_name_collisions(irs))
   irs
   |> list.try_fold(#([], []), fn(acc, ir) {
     let #(resources, warning_lists) = acc
@@ -167,6 +168,33 @@ pub fn generate_resources(
   |> result.map(fn(pair) {
     #(list.reverse(pair.0), list.flatten(list.reverse(pair.1)))
   })
+}
+
+/// Distinct expectations can sanitize to the same Terraform identifier
+/// (e.g. `"a b"` and `"a_b"`), which Terraform would reject as a duplicate.
+fn check_resource_name_collisions(
+  irs: List(IntermediateRepresentation(Resolved)),
+) -> Result(Nil, CompilationError) {
+  irs
+  |> list.try_fold(dict.new(), fn(seen, ir) {
+    let resource_name =
+      common.sanitize_terraform_identifier(ir.unique_identifier)
+    case dict.get(seen, resource_name) {
+      Ok(other) ->
+        Error(generator_utils.resolution_error(
+          vendor: constants.vendor_datadog,
+          msg: "expectations '"
+            <> other
+            <> "' and '"
+            <> ir_to_identifier(ir)
+            <> "' both map to Terraform resource name '"
+            <> resource_name
+            <> "'",
+        ))
+      Error(Nil) -> Ok(dict.insert(seen, resource_name, ir_to_identifier(ir)))
+    }
+  })
+  |> result.replace(Nil)
 }
 
 /// Convert a single IntermediateRepresentation to a Terraform Resource.
