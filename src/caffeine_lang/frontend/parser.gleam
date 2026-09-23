@@ -605,7 +605,13 @@ fn measurement_items_loop(
         }
       }
     }
-    _ -> #(list.reverse(items), list.reverse(errors), pending, state)
+    token.EOF -> #(list.reverse(items), list.reverse(errors), pending, state)
+    tok -> {
+      let err = unexpected_item_start(state, tok)
+      let state = skip_until(advance(state), at_measurement_item_boundary)
+      let #(next_pending, state) = consume_comments(state)
+      measurement_items_loop(state, items, [err, ..errors], next_pending)
+    }
   }
 }
 
@@ -638,8 +644,23 @@ fn expect_items_loop(
         }
       }
     }
-    _ -> #(list.reverse(items), list.reverse(errors), pending, state)
+    token.EOF -> #(list.reverse(items), list.reverse(errors), pending, state)
+    tok -> {
+      let err = unexpected_item_start(state, tok)
+      let state = skip_until(advance(state), at_expect_item_boundary)
+      let #(next_pending, state) = consume_comments(state)
+      expect_items_loop(state, items, [err, ..errors], next_pending)
+    }
   }
+}
+
+fn unexpected_item_start(state: ParserState, tok: Token) -> ParserError {
+  parser_error.UnexpectedToken(
+    "item name (string)",
+    token.to_string(tok),
+    state.line,
+    state.column,
+  )
 }
 
 // =============================================================================

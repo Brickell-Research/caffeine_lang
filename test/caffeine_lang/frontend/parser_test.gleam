@@ -794,6 +794,29 @@ pub fn parse_error_line_numbers_test() {
   |> test_helpers.table_test_1(parser.parse_expects_file)
 }
 
+// ==== parse_error_trailing_tokens ====
+// * ✅ measurements file with junk after the last item reports it
+// * ✅ expects file with a stray token between items reports it
+pub fn parse_error_trailing_tokens_test() {
+  [
+    #(
+      "measurements file with junk after the last item reports it",
+      "\"a\":\n  Provides { v: \"x\" }\nfoo bar ]]]",
+      Error([parser_error.UnexpectedToken("item name (string)", "foo", 3, 1)]),
+    ),
+  ]
+  |> test_helpers.table_test_1(parser.parse_measurements_file)
+
+  [
+    #(
+      "expects file with a stray token between items reports it",
+      "\"a\":\n  Guarantees 99.9% over 30d window\n}\n\"b\":\n  Guarantees 99.9% over 30d window\n",
+      Error([parser_error.UnexpectedToken("item name (string)", "}", 3, 1)]),
+    ),
+  ]
+  |> test_helpers.table_test_1(parser.parse_expects_file)
+}
+
 // ==== parse_error_missing_delimiter ====
 // * ✅ missing } at end of file points to correct line (not EOF line)
 // * ✅ missing } in refinement produces error
